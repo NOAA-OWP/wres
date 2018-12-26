@@ -85,7 +85,8 @@ public class GriddedNWMValueSaver extends WRESRunnable
     {
         Path path = Paths.get( this.fileName);
 
-        try
+        if ( this.fileName.getScheme() != null &&
+             this.fileName.getScheme().startsWith( "http" ) )
         {
             URL url = this.fileName.toURL();
             HttpURLConnection huc = (HttpURLConnection)url.openConnection();
@@ -97,7 +98,7 @@ public class GriddedNWMValueSaver extends WRESRunnable
                 this.retrieveFile( path );
             }
         }
-        catch ( MalformedURLException e )
+        else
         {
             LOGGER.trace("It was determined that {} is not remote data.", this.fileName);
 
