@@ -370,6 +370,7 @@ public final class Operations {
      * @param projectConfig the projectConfig for the evaluation
      * @return the {@link Project} (state about this evaluation)
      * @throws IOException when anything goes wrong
+     * @throws IllegalStateException when another process already holds lock.
      */
     public static Project ingest( ProjectConfig projectConfig )
             throws IOException
