@@ -2,8 +2,10 @@ package wres.datamodel.metadata;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.StringJoiner;
 
 /**
@@ -79,6 +81,26 @@ public final class TimeWindow implements Comparable<TimeWindow>
 
     private final Duration latestLead;
 
+    /**
+     * Constructs a {@link TimeWindow} where the earliest and latest lead durations are both 
+     * {@link Duration#ZERO}, the earliest valid time is {@link Instant#MIN}, the latest valid 
+     * time is {@link Instant#MAX}, the earliest reference time is {@link Instant#MIN} and the 
+     * latest reference time is {@link Instant#MAX}.
+     * 
+     * @return a time window
+     */
+
+    public static TimeWindow of()
+    {       
+        return new Builder().setEarliestReferenceTime( Instant.MIN )
+                            .setLatestReferenceTime( Instant.MAX )
+                            .setEarliestValidTime( Instant.MIN )
+                            .setLatestValidTime( Instant.MAX )
+                            .setEarliestLeadDuration( Duration.ZERO )
+                            .setLatestLeadDuration( Duration.ZERO )
+                            .build();
+    }    
+    
     /**
      * Constructs a {@link TimeWindow} where the {@link #earliestLead} and {@link #latestLead} are both 
      * {@link Duration#ZERO}, the earliest valid time is {@link Instant#MIN} and the latest valid time is 
