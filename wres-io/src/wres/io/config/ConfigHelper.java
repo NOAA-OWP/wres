@@ -53,10 +53,12 @@ import wres.config.generated.DestinationType;
 import wres.config.generated.DurationUnit;
 import wres.config.generated.Feature;
 import wres.config.generated.Format;
+import wres.config.generated.IntBoundsType;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
 import wres.config.generated.OutputTypeSelection;
+import wres.config.generated.PairConfig;
 import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Outputs;
@@ -1780,5 +1782,128 @@ public class ConfigHelper
 
         return returnMe;
     }
+    
+    
+    /**
+     * Consumes a {@link ProjectConfig} and returns a {@link Set} of {@link TimeWindow}
+     * for evaluation. Returns at least one {@link TimeWindow}.
+     * 
+     * @param projectConfig the project declaration, cannot be null
+     * @return a set of one or more time windows for evaluation
+     * @throws NullPointerException if the projectConfig is null
+     * @throws UnsupportedOperationException if the time windows cannot be determined
+     */
 
+    public static Set<TimeWindow> getTimeWindowsFromProjectConfig( ProjectConfig projectConfig )
+    {
+        Objects.requireNonNull( projectConfig, "Expected a non-null project declaration." );
+
+        // Has a leadTimesPoolingWindow
+        if ( Objects.nonNull( projectConfig.getPair().getLeadTimesPoolingWindow() ) )
+        {
+            // No issuedDatesPoolingWindow
+            if( Objects.isNull( projectConfig.getPair().getIssuedDatesPoolingWindow() ) )
+            {
+                return ConfigHelper.getLeadDurationTimeWindowsFromPairConfig( projectConfig.getPair() );
+            }
+            // Has a issuedDatesPoolingWindow
+            else
+            {
+                throw new UnsupportedOperationException( "Issued dates "
+                        + "pooling windows are not yet implemented." );
+            }
+        }
+        
+        throw new UnsupportedOperationException( "Cannot determine the time windows for the "
+                                                 + "specified project." );
+    }
+
+    
+    /**
+     * <p>Consumes a {@link PairConfig} and returns a {@link Set} of {@link TimeWindow}
+     * for evaluation using the {@link PairConfig#getLeadTimesPoolingWindow()} and 
+     * the {@link PairConfig#getLeadHours()}. Returns at least one {@link TimeWindow}. 
+     * 
+     * <p>Throws an exception if one or both of the <code>leadHours</code> and 
+     * <code>leadTimesPoolingWindow</code> are undefined or the declaration contains
+     * an <code>issuedDatesPoolingWindow</code>. 
+     * 
+     * @param pairConfig the pairs configuration
+     * @return the set of lead duration time windows 
+     * @throws NullPointerException if the pairConfig is null
+     * @throws an UnsupportedOperationException if the time windows cannot be determined
+     */
+    
+    private static Set<TimeWindow> getLeadDurationTimeWindowsFromPairConfig( PairConfig pairConfig )
+    {
+        Objects.requireNonNull( pairConfig, "Cannot determine lead duration time windows from "
+                + "null pair configuration." );
+        
+        IntBoundsType leadHours = pairConfig.getLeadHours();
+
+        if( Objects.isNull( leadHours ) )
+        {
+            throw new UnsupportedOperationException( "Cannot determine lead duration "
+                    + "time windows without a leadHours." );
+        }
+        
+        PoolingWindowConfig leadTimesPoolingWindow = pairConfig.getLeadTimesPoolingWindow();
+        
+        if( Objects.isNull( leadTimesPoolingWindow ) )
+        {
+            throw new UnsupportedOperationException( "Cannot determine lead duration "
+                    + "time windows without a leadTimesPoolingWindow." );
+        }
+        
+        if( Objects.nonNull( pairConfig.getIssuedDatesPoolingWindow() ) )
+        {
+            throw new UnsupportedOperationException( "Unexpected "
+                    + "issuedDatesPoolingWindow when attempting to build "
+                    + "a leadTimesPoolingWindow." );
+        }
+        
+        // Create the elements necessary to increment the windows
+        ChronoUnit leadUnits = ChronoUnit.valueOf( leadTimesPoolingWindow.getUnit()
+                                                                         .toString()
+                                                                         .toUpperCase() );
+        // Period associated with the leadTimesPoolingWindow
+        Duration periodOfLeadTimesPoolingWindow = Duration.of( leadTimesPoolingWindow.getPeriod(), leadUnits );
+
+        // Exclusive lower bound, which is the minimum leadHours minus the period
+        // associated with the leadTimesPoolingWindow
+        Duration earliestLeadDurationExclusive =
+                Duration.ofHours( leadHours.getMinimum() ).minus( periodOfLeadTimesPoolingWindow );
+
+        // Upper bound at which to stop. Stop when the latest bookend of the time window is 
+        // equal to or greater than this duration
+        Duration latestLeadDurationInclusive = Duration.ofHours( leadHours.getMaximum() );
+
+        // Duration by which to increment. Defaults to the period, otherwise the frequency
+        Duration increment = periodOfLeadTimesPoolingWindow;        
+        if( Objects.nonNull( leadTimesPoolingWindow.getFrequency() ) )
+        {
+            increment = Duration.of( leadTimesPoolingWindow.getFrequency(), leadUnits );
+        }
+        
+        // Lower bound of the current window
+        Duration earliestExclusive = earliestLeadDurationExclusive;
+        // Upper bound of the current window
+        Duration latestInclusive = earliestExclusive.plus( periodOfLeadTimesPoolingWindow );
+        
+        // Create the time windows
+        Set<TimeWindow> timeWindows = new HashSet<>();
+        while( latestInclusive.compareTo( latestLeadDurationInclusive ) <= 0 ) 
+        {
+            // Add the current time window
+            timeWindows.add( TimeWindow.of( earliestExclusive, latestInclusive ) );
+            
+            // Increment
+            earliestExclusive = earliestExclusive.plus( increment );
+            latestInclusive = latestInclusive.plus( increment );
+        }
+        
+        return Collections.unmodifiableSet( timeWindows );
+    }
+       
+    
 }

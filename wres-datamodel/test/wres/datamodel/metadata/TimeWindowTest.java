@@ -425,9 +425,7 @@ public final class TimeWindowTest
 
         assertFalse( bounded.hasUnboundedReferenceTimes() );
 
-        TimeWindow unbounded = TimeWindow.of( Instant.MIN,
-                                              Instant.MAX,
-                                              Duration.ZERO );
+        TimeWindow unbounded = TimeWindow.of();
         assertTrue( unbounded.hasUnboundedReferenceTimes() );
 
         TimeWindow partlyLow = TimeWindow.of( Instant.MIN,
