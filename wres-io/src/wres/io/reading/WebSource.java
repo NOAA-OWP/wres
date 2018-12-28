@@ -12,8 +12,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
@@ -29,6 +37,7 @@ import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.IngestSaver;
 import wres.io.data.caching.Features;
 import wres.io.data.details.FeatureDetails;
+import wres.system.SystemSettings;
 import wres.util.Strings;
 
 /**
@@ -43,6 +52,8 @@ class WebSource implements Callable<List<IngestResult>>
     private final DataSourceConfig dataSourceConfig;
     private final DataSourceConfig.Source sourceConfig;
     private final URI baseUri;
+
+    private final ThreadPoolExecutor executor;
 
     WebSource( ProjectConfig projectConfig,
                DataSourceConfig dataSourceConfig,
@@ -59,6 +70,20 @@ class WebSource implements Callable<List<IngestResult>>
             throw new IllegalArgumentException( "URI " + this.baseUri.toString()
                                                 + " does not appear to be a web source." );
         }
+
+        ThreadFactory webClientFactory = new BasicThreadFactory.Builder()
+                .namingPattern( "WebSource Ingest Executor" )
+                .build();
+
+        BlockingQueue<Runnable> webClientQueue = new ArrayBlockingQueue<>( 10
+                                                                           * SystemSettings.getMaximumWebClientThreads() );
+        this.executor = new ThreadPoolExecutor( SystemSettings.getMaximumWebClientThreads(),
+                                                SystemSettings.getMaximumWebClientThreads(),
+                                                SystemSettings.poolObjectLifespan(),
+                                                TimeUnit.MILLISECONDS,
+                                                webClientQueue,
+                                                webClientFactory );
+        this.executor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
     }
 
     private ProjectConfig getProjectConfig()
@@ -81,6 +106,11 @@ class WebSource implements Callable<List<IngestResult>>
         return this.baseUri;
     }
 
+    private ThreadPoolExecutor getExecutor()
+    {
+        return this.executor;
+    }
+
     @Override
     public List<IngestResult> call() throws IOException
     {
@@ -98,6 +128,9 @@ class WebSource implements Callable<List<IngestResult>>
         }
 
         List<Pair<Instant,Instant>> issuedRanges = createWeekRanges( this.getProjectConfig() );
+
+        List<Future<List<IngestResult>>> ingests = new ArrayList<>( features.size()
+                                                                    * issuedRanges.size() );
 
         for ( FeatureDetails featureDetails : features )
         {
@@ -118,10 +151,26 @@ class WebSource implements Callable<List<IngestResult>>
                                                      .isRemote()
                                                      .build();
 
-                // TODO: parallelize
-                List<IngestResult> ingestResult = ingestSaver.execute();
-                ingestResults.addAll( ingestResult );
+                ingests.add( this.getExecutor().submit( ingestSaver ) );
             }
+        }
+
+        try
+        {
+            for ( Future<List<IngestResult>> ingestTask : ingests )
+            {
+                List<IngestResult> ingested = ingestTask.get();
+                ingestResults.addAll( ingested );
+            }
+        }
+        catch ( InterruptedException ie )
+        {
+            LOGGER.warn( "Interrupted while getting web ingest results.", ie );
+            Thread.currentThread().interrupt();
+        }
+        catch ( ExecutionException ee )
+        {
+            throw new IngestException( "Failed to get web ingest results.", ee );
         }
 
         return Collections.unmodifiableList( ingestResults );
