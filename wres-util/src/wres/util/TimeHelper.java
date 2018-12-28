@@ -7,7 +7,6 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAccessor;
-import java.time.temporal.TemporalQuery;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
@@ -17,17 +16,13 @@ import java.util.regex.Pattern;
  */
 public final class TimeHelper
 {
-    /**
-     * The global format for dates is {@value}
-     */
-    public static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss'Z'";
 
     /**
      * The temporal unit that lead numbers in the database represent
      */
     public static final ChronoUnit LEAD_RESOLUTION = ChronoUnit.MINUTES;
 
-    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern( DATE_FORMAT );
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ISO_INSTANT;
     private static final Pattern TIMESTAMP_PATTERN =
             Pattern.compile( "\\d\\d\\d\\d-\\d\\d-\\d\\d(T| )\\d?\\d:\\d\\d(:\\d\\d\\.?\\d*)?((-|\\+)\\d\\d:?\\d\\d)?Z?" );
     private static final Pattern DATE_PATTERN = Pattern.compile( "\\d\\d\\d\\d(-|/)?\\d\\d(-|/)?\\d\\d" );
@@ -83,7 +78,7 @@ public final class TimeHelper
     /**
      * Converts a passed in time object to the system standard string format
      * @param datetime The date and time to interpret
-     * @return The string interpretation of datetime formatted to match {@value #DATE_FORMAT}
+     * @return The string interpretation of datetime formatted as ISO instant
      */
     public static String convertDateToString(TemporalAccessor datetime)
     {
@@ -170,8 +165,7 @@ public final class TimeHelper
     {
         TemporalAccessor actualDateTime = TimeHelper.convertStringToDate( datetime );
         LocalDate actualDate = LocalDate.from( actualDateTime );
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_FORMAT);
-        return actualDate.format(formatter);
+        return actualDate.format( DATE_TIME_FORMATTER );
     }
 
     /**
