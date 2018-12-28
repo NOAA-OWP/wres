@@ -9,6 +9,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -42,7 +43,8 @@ import wres.util.Strings;
 
 /**
  * Takes a single web source and splits it into week-long chunks, creates an
- * ingest task for each chunk.
+ * ingest task for each chunk, GETs chunks of data several at a time, ingests
+ * them, and returns the results.
  */
 class WebSource implements Callable<List<IngestResult>>
 {
@@ -52,12 +54,24 @@ class WebSource implements Callable<List<IngestResult>>
     private final DataSourceConfig dataSourceConfig;
     private final DataSourceConfig.Source sourceConfig;
     private final URI baseUri;
+    private final OffsetDateTime now;
 
     private final ThreadPoolExecutor executor;
 
+    static WebSource of( ProjectConfig projectConfig,
+                         DataSourceConfig dataSourceConfig,
+                         DataSourceConfig.Source sourceConfig )
+    {
+        return new WebSource( projectConfig,
+                              dataSourceConfig,
+                              sourceConfig,
+                              OffsetDateTime.now() );
+    }
+
     WebSource( ProjectConfig projectConfig,
                DataSourceConfig dataSourceConfig,
-               DataSourceConfig.Source sourceConfig )
+               DataSourceConfig.Source sourceConfig,
+               OffsetDateTime now )
     {
         this.projectConfig = projectConfig;
         this.dataSourceConfig = dataSourceConfig;
@@ -84,6 +98,7 @@ class WebSource implements Callable<List<IngestResult>>
                                                 webClientQueue,
                                                 webClientFactory );
         this.executor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
+        this.now = now;
     }
 
     private ProjectConfig getProjectConfig()
@@ -111,6 +126,11 @@ class WebSource implements Callable<List<IngestResult>>
         return this.executor;
     }
 
+    private OffsetDateTime getNow()
+    {
+        return this.now;
+    }
+
     @Override
     public List<IngestResult> call() throws IOException
     {
@@ -127,7 +147,8 @@ class WebSource implements Callable<List<IngestResult>>
             throw new IngestException( "Failed to get features/locations.", se );
         }
 
-        List<Pair<Instant,Instant>> issuedRanges = createWeekRanges( this.getProjectConfig() );
+        Set<Pair<Instant,Instant>> issuedRanges = createWeekRanges( this.getProjectConfig(),
+                                                                    this.getNow() );
 
         List<Future<List<IngestResult>>> ingests = new ArrayList<>( features.size()
                                                                     * issuedRanges.size() );
@@ -151,7 +172,9 @@ class WebSource implements Callable<List<IngestResult>>
                                                      .isRemote()
                                                      .build();
 
-                ingests.add( this.getExecutor().submit( ingestSaver ) );
+                Future<List<IngestResult>> future = this.getExecutor()
+                                                        .submit( ingestSaver );
+                ingests.add( future );
             }
         }
 
@@ -183,6 +206,7 @@ class WebSource implements Callable<List<IngestResult>>
      * filter further by valid dates. We are here going to get a superset of
      * what is needed when the user specified issued dates.
      *
+     * <p>TODO: support retrieval without issuedDates specified</p>
      * <p>In case of issued dates not being specified, a naive approach would be
      * to get four more weeks cushion on either side and hope we captured all.
      * Really we should do a walk by week until we get at least 1 forecast and
@@ -190,17 +214,19 @@ class WebSource implements Callable<List<IngestResult>>
      * the user.</p>
      *
      * <p>Not specific to a particular API.</p>
-     * @param config
-     * @return
+     * @param config the evaluation project configuration
+     * @return a set of week ranges
      */
-    private List<Pair<Instant,Instant>> createWeekRanges( ProjectConfig config )
+
+    private Set<Pair<Instant,Instant>> createWeekRanges( ProjectConfig config,
+                                                         OffsetDateTime nowDate )
     {
         if ( config == null || config.getPair() == null )
         {
-            return Collections.unmodifiableList( Collections.emptyList() );
+            return Collections.unmodifiableSet( Collections.emptySet() );
         }
 
-        List<Pair<Instant,Instant>> weekRanges = new ArrayList<>();
+        Set<Pair<Instant,Instant>> weekRanges = new HashSet<>();
 
         DateCondition issuedDates = config.getPair().getIssuedDates();
 
@@ -231,34 +257,45 @@ class WebSource implements Callable<List<IngestResult>>
 
             if ( specifiedLatest == null )
             {
-                OffsetDateTime now = OffsetDateTime.now();
-                LOGGER.warn( "No latest issued date specified, using {} instead.", now );
-                latest = now.with( next( SUNDAY ) );
+                LOGGER.warn( "No latest issued date specified, using {} instead.",
+                             nowDate );
+                // Intentionally keep this raw, un-sunday-ified.
+                latest = nowDate;
             }
             else
             {
+                // Intentionally keep this raw, un-sunday-ified.
                 latest = OffsetDateTime.parse( specifiedLatest );
             }
 
-            latest = latest.withHour( 0 )
-                           .withMinute( 0 )
-                           .withSecond( 0 )
-                           .withNano( 0 );
-
-            LOGGER.debug( "Given {} calculated {} for latest.",
+            LOGGER.debug( "Given {} using {} for latest.",
                           specifiedLatest, latest );
 
             OffsetDateTime left = earliest;
-            OffsetDateTime right = earliest;
+            OffsetDateTime right = left.with( next( SUNDAY ) );
 
-            while ( right.isBefore( latest ) )
+            while ( left.isBefore( latest ) )
             {
-                right = left.with( next( SUNDAY ) );
+                // Because we chunk a week at a time, and because these will not
+                // be retrieved again if already present, we need to ensure the
+                // right hand date does not exceed "now".
+                if ( right.isAfter( nowDate ) )
+                {
+                    if ( latest.isAfter( nowDate ) )
+                    {
+                        right = nowDate;
+                    }
+                    else
+                    {
+                        right = latest;
+                    }
+                }
+
                 Pair<Instant,Instant> range = Pair.of( left.toInstant(), right.toInstant() );
                 LOGGER.debug( "Created range {}", range );
                 weekRanges.add( range );
-                left = right;
-                // TODO: when "now" is the latest, use "now" instead of SUNDAY
+                left = left.with( next( SUNDAY ) );
+                right = right.with( next( SUNDAY ) );
             }
 
             LOGGER.debug( "Calculated ranges {}", weekRanges );
@@ -268,7 +305,7 @@ class WebSource implements Callable<List<IngestResult>>
             throw new UnsupportedOperationException( "Must specify <issuedDates earliest=\"...\"> when using web APIs." );
         }
 
-        return Collections.unmodifiableList( weekRanges );
+        return Collections.unmodifiableSet( weekRanges );
     }
 
 
@@ -347,9 +384,9 @@ class WebSource implements Callable<List<IngestResult>>
      * Get a URI based on given URI but with urlParameters set.
      *
      * <p>Not specific to a particular API.</p>
-     * @param uri
-     * @param urlParameters
-     * @return
+     * @param uri the uri to build upon
+     * @param urlParameters the parameters to add to the uri
+     * @return the uri with the urlParameters added
      */
     private URI getURIWithParameters( URI uri, Map<String,String> urlParameters )
     {

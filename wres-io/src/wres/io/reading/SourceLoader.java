@@ -93,9 +93,9 @@ public class SourceLoader
                 if ( sourceUri.getScheme() != null
                      && sourceUri.getHost() != null )
                 {
-                    WebSource webSource = new WebSource( projectConfig,
-                                                         config,
-                                                         source );
+                    WebSource webSource = WebSource.of( projectConfig,
+                                                        config,
+                                                        source );
                     Future<List<IngestResult>> webResourceResults = Executor.submit( webSource );
                     savingFiles.add( webResourceResults );
                     continue;
