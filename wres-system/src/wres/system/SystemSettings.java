@@ -57,6 +57,7 @@ public final class SystemSettings extends XMLReader
     private int hardNetcdfCacheLimit = 0;
 	private String netcdfStorePath = "systests/data/";
 	private Integer maximumArchiveThreads = null;
+	private int maximumWebClientThreads = 3;
 
 	/**
 	 * The Default constructor
@@ -102,6 +103,9 @@ public final class SystemSettings extends XMLReader
                         break;
                     case "maximum_archive_threads":
                         this.setMaximumArchiveThreads(reader);
+                        break;
+                    case "maximum_web_client_threads":
+                        this.setMaximumWebClientThreads( reader );
                         break;
                     case "pool_object_lifespan":
                         this.setPoolObjectLifespan( reader );
@@ -223,6 +227,17 @@ public final class SystemSettings extends XMLReader
         }
     }
 
+    private void setMaximumWebClientThreads( XMLStreamReader reader )
+        throws XMLStreamException
+    {
+        String value = XMLHelper.getXMLText( reader );
+
+        if ( StringUtils.isNumeric( value ) )
+        {
+            this.maximumWebClientThreads = Integer.parseInt( value );
+        }
+    }
+
     private void setPoolObjectLifespan(XMLStreamReader reader)
             throws XMLStreamException
     {
@@ -319,6 +334,11 @@ public final class SystemSettings extends XMLReader
         }
 
         return instance.maximumArchiveThreads;
+    }
+
+    public static int getMaximumWebClientThreads()
+    {
+        return instance.maximumWebClientThreads;
     }
 
 	/**
