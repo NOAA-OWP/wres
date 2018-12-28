@@ -1869,37 +1869,38 @@ public class ConfigHelper
         // Period associated with the leadTimesPoolingWindow
         Duration periodOfLeadTimesPoolingWindow = Duration.of( leadTimesPoolingWindow.getPeriod(), leadUnits );
 
-        // Exclusive lower bound, which is the minimum leadHours minus the period
-        // associated with the leadTimesPoolingWindow
+        // Exclusive lower bound
         Duration earliestLeadDurationExclusive =
                 Duration.ofHours( leadHours.getMinimum() ).minus( periodOfLeadTimesPoolingWindow );
 
-        // Upper bound at which to stop. Stop when the latest bookend of the time window is 
-        // equal to or greater than this duration
+        // Inclusive upper bound
         Duration latestLeadDurationInclusive = Duration.ofHours( leadHours.getMaximum() );
 
-        // Duration by which to increment. Defaults to the period, otherwise the frequency
+        // Duration by which to increment. Defaults to the period associated
+        // with the leadTimesPoolingWindow, otherwise the frequency.
         Duration increment = periodOfLeadTimesPoolingWindow;        
         if( Objects.nonNull( leadTimesPoolingWindow.getFrequency() ) )
         {
             increment = Duration.of( leadTimesPoolingWindow.getFrequency(), leadUnits );
         }
         
-        // Lower bound of the current window
-        Duration earliestExclusive = earliestLeadDurationExclusive;
         // Upper bound of the current window
-        Duration latestInclusive = earliestExclusive.plus( periodOfLeadTimesPoolingWindow );
+        Duration latestInclusive = latestLeadDurationInclusive;
+        
+        // Lower bound of the current window
+        Duration earliestExclusive = latestInclusive.minus( periodOfLeadTimesPoolingWindow );
         
         // Create the time windows
         Set<TimeWindow> timeWindows = new HashSet<>();
-        while( latestInclusive.compareTo( latestLeadDurationInclusive ) <= 0 ) 
+        // Increment downwards from the inclusive upper bound
+        while( earliestExclusive.compareTo( earliestLeadDurationExclusive ) >= 0 ) 
         {
             // Add the current time window
             timeWindows.add( TimeWindow.of( earliestExclusive, latestInclusive ) );
             
-            // Increment
-            earliestExclusive = earliestExclusive.plus( increment );
-            latestInclusive = latestInclusive.plus( increment );
+            // Increment downwards
+            earliestExclusive = earliestExclusive.minus( increment );
+            latestInclusive = latestInclusive.minus( increment );
         }
         
         return Collections.unmodifiableSet( timeWindows );
