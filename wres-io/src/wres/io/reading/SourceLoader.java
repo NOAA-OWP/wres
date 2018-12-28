@@ -88,7 +88,19 @@ public class SourceLoader
         if (config != null) {
             for (DataSourceConfig.Source source : config.getSource())
             {
-                if ( source.getFormat() == Format.USGS)
+                URI sourceUri = URI.create( source.getValue() );
+
+                if ( sourceUri.getScheme() != null
+                     && sourceUri.getHost() != null )
+                {
+                    WebSource webSource = new WebSource( projectConfig,
+                                                         config,
+                                                         source );
+                    Future<List<IngestResult>> webResourceResults = Executor.submit( webSource );
+                    savingFiles.add( webResourceResults );
+                    continue;
+                }
+                else if ( source.getFormat() == Format.USGS)
                 {
                     if (ConfigHelper.isForecast( config ))
                     {
