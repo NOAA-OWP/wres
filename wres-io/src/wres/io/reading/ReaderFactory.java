@@ -2,7 +2,6 @@ package wres.io.reading;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Paths;
 
 import wres.config.generated.Format;
 import wres.config.generated.ProjectConfig;
@@ -77,7 +76,11 @@ public class ReaderFactory {
 
 		// Can't do switch because of the PIXML logic
 
-		if (pathName.endsWith("tar.gz") || pathName.endsWith(".tgz"))
+        if ( filename.getScheme() != null && filename.getScheme().startsWith( "http" ) )
+        {
+            type = Format.WRDS;
+        }
+		else if (pathName.endsWith("tar.gz") || pathName.endsWith(".tgz"))
 		{
             type = Format.ARCHIVE;
 		}
