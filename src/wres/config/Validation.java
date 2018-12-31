@@ -53,6 +53,8 @@ import wres.util.Strings;
 /**
  * Helps validate project configurations at a higher level than parser, with
  * detailed messaging.
+ *
+ * TODO: formal interface for validation text rather than log messages
  */
 
 public class Validation
@@ -67,6 +69,12 @@ public class Validation
     private static final String FILE_LINE_COLUMN_BOILERPLATE =
             "In file {}, near line {} and column {}, WRES found an issue with "
             + "the project configuration.";
+
+    private static final String API_SOURCE_MISSING_ISSUED_DATES_ERROR_MESSAGE =
+            "One must specify issued dates with both earliest and latest (e.g. "
+            + "<issuedDates earliest=\"2018-12-28T15:42:00Z\" "
+            + "latest=\"2019-01-01T00:00:00Z\" />) when using a web API as a "
+            + "source for forecasts (see source near line {} and column {}";
 
     private Validation()
     {
@@ -1478,13 +1486,9 @@ public class Validation
         {
             for ( DataSourceConfig.Source s : dataSourceConfig.getSource() )
             {
-                dataSourcesValid =
-                        Validation.isDateConfigValid( projectConfigPlus,
-                                                      s )
-                        && dataSourcesValid;
-
-                dataSourcesValid = Validation.isS3SourceValid( projectConfigPlus, s )
-                                   && dataSourcesValid;
+                dataSourcesValid = Validation.isSourceValid( projectConfigPlus,
+                                                             dataSourceConfig,
+                                                             s );
             }
         }
 
@@ -1493,15 +1497,111 @@ public class Validation
         return result;
     }
 
+    /**
+     * Checks the validity of an individual DataSourceConfig.Source
+     * @param projectConfigPlus the evaluation project configuration
+     * @param dataSourceConfig the dataSourceConfig being checked
+     * @param source the source being checked
+     * @return
+     */
+    private static boolean isSourceValid( ProjectConfigPlus projectConfigPlus,
+                                          DataSourceConfig dataSourceConfig,
+                                          DataSourceConfig.Source source )
+    {
+        boolean sourceValid = true;
+
+        sourceValid = Validation.isDateConfigValid( projectConfigPlus, source )
+                      && sourceValid;
+
+        if ( source.getFormat() != null && source.getFormat().equals( Format.S_3 ) )
+        {
+            sourceValid = Validation.isS3SourceValid( projectConfigPlus, source )
+                          && sourceValid;
+        }
+
+        if ( source.getValue() != null && source.getValue().startsWith( "http" ) )
+        {
+            sourceValid = Validation.isAPISourceValid( projectConfigPlus,
+                                                       dataSourceConfig,
+                                                       source )
+                          && sourceValid;
+        }
+
+        return sourceValid;
+    }
+
+    private static boolean isAPISourceValid( ProjectConfigPlus projectConfigPlus,
+                                             DataSourceConfig dataSourceConfig,
+                                             DataSourceConfig.Source source )
+    {
+        boolean apiSourceValid = true;
+
+        if ( source.getFormat().equals( Format.WRDS ) )
+        {
+
+            if ( dataSourceConfig.equals( projectConfigPlus.getProjectConfig()
+                                                           .getInputs()
+                                                           .getLeft() ) )
+            {
+                if ( LOGGER.isWarnEnabled() )
+                {
+                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE +
+                                 " WRDS observations are not supported. Please use WRDS on 'right' or 'baseline'",
+                                 projectConfigPlus,
+                                 source.sourceLocation().getLineNumber(),
+                                 source.sourceLocation().getColumnNumber() );
+                }
+
+                apiSourceValid = false;
+            }
+
+            DateCondition issuedDates = projectConfigPlus.getProjectConfig()
+                                                         .getPair()
+                                                         .getIssuedDates();
+            if ( issuedDates == null )
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE + " "
+                             + API_SOURCE_MISSING_ISSUED_DATES_ERROR_MESSAGE,
+                             projectConfigPlus,
+                             projectConfigPlus.getProjectConfig()
+                                              .getPair()
+                                              .sourceLocation()
+                                              .getLineNumber(),
+                             projectConfigPlus.getProjectConfig()
+                                              .getPair()
+                                              .sourceLocation()
+                                              .getColumnNumber(),
+                             source.sourceLocation()
+                                   .getLineNumber(),
+                             source.sourceLocation()
+                                   .getColumnNumber() );
+                apiSourceValid = false;
+            }
+            else if ( issuedDates.getEarliest() == null
+                      || issuedDates.getLatest() == null )
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE + " "
+                             + API_SOURCE_MISSING_ISSUED_DATES_ERROR_MESSAGE,
+                             projectConfigPlus,
+                             issuedDates.sourceLocation()
+                                        .getLineNumber(),
+                             issuedDates.sourceLocation()
+                                        .getColumnNumber(),
+                             source.sourceLocation()
+                                   .getLineNumber(),
+                             source.sourceLocation()
+                                   .getColumnNumber() );
+                apiSourceValid = false;
+            }
+        }
+
+        return apiSourceValid;
+    }
+
+
     private static boolean isS3SourceValid(ProjectConfigPlus projectConfigPlus,
                                            DataSourceConfig.Source source)
     {
-        if (source.getFormat() == null || !source.getFormat().equals( Format.S_3 ))
-        {
-            // If this isn't an S3 format, then S3 rules don't apply
-            return true;
-        }
-
         boolean result = true;
 
         if (!Strings.hasValue(source.getPattern()))
@@ -1542,6 +1642,7 @@ public class Validation
 
         return result;
     }
+
 
 
     /**
