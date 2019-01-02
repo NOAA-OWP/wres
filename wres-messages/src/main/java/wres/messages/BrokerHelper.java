@@ -148,17 +148,11 @@ public class BrokerHelper
 
     private static TrustManager getDefaultTrustManager()
     {
-        KeyStore customTrustStore;
         String ourCustomTrustFileName = "trustedCertificateAuthorities.jks";
 
-        try
-        {
-            customTrustStore = KeyStore.getInstance( "JKS" );
-        }
-        catch ( KeyStoreException kse )
-        {
-            throw new IllegalStateException( "WRES expected JRE to have JKS KeyStore instance", kse );
-        }
+        // Does KeyStore.getInstance( "JKS" ) but translates checked exception
+        // to unchecked exception.
+        KeyStore customTrustStore = BrokerHelper.getJKSKeyStore();
 
         boolean useClasspathTrustStore = true;
 
@@ -210,18 +204,9 @@ public class BrokerHelper
             }
         }
 
-        TrustManagerFactory trustManagerFactory;
-        String algorithm = "PKIX";
-
-        try
-        {
-            trustManagerFactory = TrustManagerFactory.getInstance( algorithm );
-        }
-        catch ( NoSuchAlgorithmException nsae )
-        {
-            throw new IllegalStateException( "WRES expected JRE to support algorithm '"
-                                             + algorithm + "'.", nsae );
-        }
+        // Does TrustManagerFactory.getInstance( "PKIX" ) but translates checked
+        // exceptions to unchecked exception.
+        TrustManagerFactory trustManagerFactory = BrokerHelper.getPKIXTrustManagerFactory();
 
         try
         {
@@ -242,6 +227,49 @@ public class BrokerHelper
         }
 
         throw new IllegalStateException( "WRES expected an X509TrustManager to exist in JRE, but no trust manager was found." );
+    }
+
+
+    /**
+     * Calls KeyStore.getInstance( "JKS" ) and translates checked exceptions to
+     * unchecked exception.
+     * @return a KeyStore instance of type JKS
+     * @throws IllegalStateException when KeyStoreException occurs
+     */
+
+    private static KeyStore getJKSKeyStore()
+    {
+        try
+        {
+            return KeyStore.getInstance( "JKS" );
+        }
+        catch ( KeyStoreException kse )
+        {
+            throw new IllegalStateException( "WRES expected JRE to have JKS KeyStore instance", kse );
+        }
+
+    }
+
+
+    /**
+     * Calls TrustManagerFactory.getInstance( "PKIX" ) and translates checked
+     * exceptions to unchecked exception.
+     * @return the TrustManagerFactory
+     * @throws IllegalStateException when NoSuchAlgorithmException occurs
+     */
+    private static TrustManagerFactory getPKIXTrustManagerFactory()
+    {
+        String algorithm = "PKIX";
+
+        try
+        {
+            return TrustManagerFactory.getInstance( algorithm );
+        }
+        catch ( NoSuchAlgorithmException nsae )
+        {
+            throw new IllegalStateException( "WRES expected JRE to support algorithm '"
+                                             + algorithm + "'.", nsae );
+        }
     }
 
 
