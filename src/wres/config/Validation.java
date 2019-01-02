@@ -63,7 +63,7 @@ public class Validation
     private static final Logger LOGGER = LoggerFactory.getLogger( Validation.class );
 
     /** A message to display for programmers when null project config occurs */
-    private static final String NON_NULL = "The ProjectConfigPlus must not be null";
+    private static final String NON_NULL = "The args must not be null";
 
     /** The warning message boilerplate for logger (includes 3 placeholders) */
     private static final String FILE_LINE_COLUMN_BOILERPLATE =
@@ -75,6 +75,13 @@ public class Validation
             + "<issuedDates earliest=\"2018-12-28T15:42:00Z\" "
             + "latest=\"2019-01-01T00:00:00Z\" />) when using a web API as a "
             + "source for forecasts (see source near line {} and column {}";
+
+
+    private static final String FEATURE_ALIAS_ALREADY_USED =
+            " The lid or alias {} was already used as an lid or alias earlier. "
+            + "Any and all aliases for an lid must be specified in one stanza, "
+            + "e.g. <feature lid=\"{}\"><alias>{}ONE</alias><alias>{}TWO"
+            + "</alias></feature>.";
 
     private Validation()
     {
@@ -847,12 +854,6 @@ public class Validation
 
         boolean result = true;
 
-        final String ALREADY_USED = " The lid or alias {} was already used as "
-                                    + "an lid or alias earlier. Any and all "
-                                    + "aliases for an lid must be specified in "
-                                    + "one stanza, e.g. <feature lid=\"{}\">"
-                                    + "<alias>{}ONE</alias><alias>{}TWO"
-                                    + "</alias></feature>.";
 
         List<String> aliases = featureConfig.getAlias();
 
@@ -871,7 +872,7 @@ public class Validation
                 if ( LOGGER.isWarnEnabled() )
                 {
                     LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                 + ALREADY_USED,
+                                 + FEATURE_ALIAS_ALREADY_USED,
                                  projectConfigPlus.getOrigin(),
                                  featureConfig.sourceLocation().getLineNumber(),
                                  featureConfig.sourceLocation().getColumnNumber(),
@@ -898,6 +899,30 @@ public class Validation
             result = false;
         }
 
+        result = Validation.areFeatureAliasesStringsValid( projectConfigPlus,
+                                                           featureConfig,
+                                                           aliases,
+                                                           stuffAlreadyUsed )
+                 && result;
+
+        return result;
+    }
+
+
+    private static boolean areFeatureAliasesStringsValid( ProjectConfigPlus projectConfigPlus,
+                                                          Feature featureConfig,
+                                                          List<String> aliases,
+                                                          SortedSet<String> stuffAlreadyUsed )
+    {
+        Objects.requireNonNull( projectConfigPlus );
+        Objects.requireNonNull( featureConfig );
+        Objects.requireNonNull( aliases );
+        Objects.requireNonNull( stuffAlreadyUsed );
+
+        boolean result = true;
+
+        String name = featureConfig.getLocationId();
+
         for ( String alias : aliases )
         {
             if ( stuffAlreadyUsed.contains( alias ) )
@@ -905,7 +930,7 @@ public class Validation
                 if ( LOGGER.isWarnEnabled() )
                 {
                     LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                 + ALREADY_USED,
+                                 + FEATURE_ALIAS_ALREADY_USED,
                                  projectConfigPlus.getOrigin(),
                                  featureConfig.sourceLocation().getLineNumber(),
                                  featureConfig.sourceLocation().getColumnNumber(),
@@ -934,7 +959,6 @@ public class Validation
 
         return result;
     }
-
 
     /**
      * Returns true when seasonal verification config is valid, false otherwise
@@ -1463,21 +1487,42 @@ public class Validation
             result = instantMakesSense && result;
         }
 
+        boolean dataSourcesValid = Validation.areDataSourcesValid( projectConfigPlus,
+                                                                   dataSourceConfig );
+
+        result = dataSourcesValid && result;
+
+        return result;
+    }
+
+
+    /**
+     * Checks that given DataSourceConfig has at least one
+     * DataSourceConfig.Source and checks validity of each inner
+     * DataSourceConfig.Source.
+     * @param projectConfigPlus the evaluation project configuration plus
+     * @param dataSourceConfig the data source configuration to validate
+     * @return true when valid, false otherwise.
+     */
+
+    private static boolean areDataSourcesValid( ProjectConfigPlus projectConfigPlus,
+                                                DataSourceConfig dataSourceConfig )
+    {
         boolean dataSourcesValid = true;
 
         if ( dataSourceConfig.getSource() == null )
         {
             if ( LOGGER.isWarnEnabled() )
             {
-                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                 + "A source needs to exist within each of the "
-                                 + "left and right sections of the "
-                                 + "configuration.",
-                                 projectConfigPlus,
-                                 dataSourceConfig.sourceLocation()
-                                                 .getLineNumber(),
-                                 dataSourceConfig.sourceLocation()
-                                                 .getColumnNumber() );
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + "A source needs to exist within each of the "
+                             + "left and right sections of the "
+                             + "configuration.",
+                             projectConfigPlus,
+                             dataSourceConfig.sourceLocation()
+                                             .getLineNumber(),
+                             dataSourceConfig.sourceLocation()
+                                             .getColumnNumber() );
             }
 
             dataSourcesValid = false;
@@ -1492,9 +1537,7 @@ public class Validation
             }
         }
 
-        result = dataSourcesValid && result;
-
-        return result;
+        return dataSourcesValid;
     }
 
     /**
