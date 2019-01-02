@@ -65,6 +65,9 @@ public final class Operations {
         LOGGER.info("Loading preliminary metadata...");
         Future unitConversionLoad = Executor.execute( UnitConversions::initialize );
 
+        final String INTERRUPTED_VARIABLE_VALIDATION_MESSAGE =
+                "The process for determining if '{}' is a valid variable was interrupted.";
+
         boolean isVector;
         Future<Boolean> leftValid = null;
         Future<Boolean> rightValid = null;
@@ -200,9 +203,8 @@ public final class Operations {
         }
         catch ( InterruptedException e )
         {
-            LOGGER.warn( "The process for determining if '"
-                         + project.getLeft().getVariable().getValue()
-                         + "' is a valid variable was interrupted.", e );
+            LOGGER.warn( INTERRUPTED_VARIABLE_VALIDATION_MESSAGE,
+                         project.getLeft().getVariable().getValue(), e );
             Thread.currentThread().interrupt();
         }
         catch ( ExecutionException e )
@@ -267,9 +269,8 @@ public final class Operations {
         }
         catch ( InterruptedException e )
         {
-            LOGGER.warn( "The process for determining if '"
-                         + project.getRightVariableName()
-                         + "' is a valid variable was interrupted.", e );
+            LOGGER.warn( INTERRUPTED_VARIABLE_VALIDATION_MESSAGE,
+                         project.getRightVariableName(), e );
             Thread.currentThread().interrupt();
         }
         catch ( ExecutionException e )
@@ -342,9 +343,8 @@ public final class Operations {
         }
         catch ( InterruptedException e )
         {
-            LOGGER.warn( "The process for determining if '"
-                         + project.getBaseline().getVariable().getValue()
-                         + "' is a valid variable was interrupted.", e );
+            LOGGER.warn( INTERRUPTED_VARIABLE_VALIDATION_MESSAGE,
+                         project.getBaseline().getVariable().getValue(), e );
             Thread.currentThread().interrupt();
         }
         catch ( ExecutionException e )
