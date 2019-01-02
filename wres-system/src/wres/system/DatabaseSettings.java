@@ -653,7 +653,7 @@ final class DatabaseSettings
         return new ToStringBuilder( this )
                 .append( "url", url )
                 .append( "username", username )
-                .append( "password", "(REDACTED)" )
+                // Purposely do not print the password.
                 .append( "port", port )
                 .append( "databaseName", databaseName )
                 .append( "databaseType", databaseType )
