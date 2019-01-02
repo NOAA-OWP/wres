@@ -80,11 +80,12 @@ public class ConfigHelperTest
     /**
      * <p>Tests the {@link ConfigHelper#getTimeWindowsFromProjectConfig(wres.config.generated.ProjectConfig)}
      * where the project declaration includes a <code>leadHours</code> and a 
-     * <code>leadTimesPoolingWindow</code>. Expects twenty-four time windows with
+     * <code>leadTimesPoolingWindow</code>. Expects twenty-three time windows with
      * prescribed characteristics.
      * 
-     * <p>This test scenario is analogous to system test scenario017 as of commit 
-     * 766c6d0b4ad96f191bcafb8f2a357c0f2e6a2d3c
+     * <p>The project declaration from this test scenario matches (in all important ways) the declaration associated 
+     * with system test scenario017, as of commit 766c6d0b4ad96f191bcafb8f2a357c0f2e6a2d3c, but the expected output 
+     * differs.
      */
 
     @Test
@@ -138,8 +139,9 @@ public class ConfigHelperTest
      * <code>leadTimesPoolingWindow</code>. Expects one time windows with
      * prescribed characteristics.
      * 
-     * <p>This test scenario is analogous to system test scenario403 as of commit 
-     * 766c6d0b4ad96f191bcafb8f2a357c0f2e6a2d3c
+     * <p>The project declaration from this test scenario matches (in all important ways) the declaration associated 
+     * with system test scenario403, as of commit 766c6d0b4ad96f191bcafb8f2a357c0f2e6a2d3c, but the expected output 
+     * differs.
      */
 
     @Test
@@ -191,8 +193,9 @@ public class ConfigHelperTest
      * an <code>issuedDatesPoolingWindow</code>. Expects eighteen time 
      * windows with prescribed characteristics.
      * 
-     * <p>This test scenario is analogous to system test scenario505 as of commit 
-     * 766c6d0b4ad96f191bcafb8f2a357c0f2e6a2d3c
+     * <p>The project declaration from this test scenario matches (in all important ways) the declaration associated 
+     * with system test scenario505, as of commit 766c6d0b4ad96f191bcafb8f2a357c0f2e6a2d3c, but the expected output 
+     * differs.
      */
 
     @Test
@@ -336,8 +339,8 @@ public class ConfigHelperTest
      * <code>leadTimesPoolingWindow</code>, a <code>dates</code> and a 
      * <code>issuedDates</code>. Expects one time window with prescribed characteristics.
      * 
-     * <p>This test scenario is an extension of system test scenario403 as of commit 
-     * 766c6d0b4ad96f191bcafb8f2a357c0f2e6a2d3c
+     * <p>The project declaration from this test scenario extends the declaration associated with system test 
+     * scenario403, as of commit 766c6d0b4ad96f191bcafb8f2a357c0f2e6a2d3c.
      */
 
     @Test
@@ -394,8 +397,9 @@ public class ConfigHelperTest
      * where the project declaration includes a <code>timeSeriesMetric</code>. Expects one time window that 
      * is unbounded in all dimensions.
      * 
-     * <p>This test scenario is analogous to system test scenario1000 as of commit 
-     * 766c6d0b4ad96f191bcafb8f2a357c0f2e6a2d3c
+     * <p>The project declaration from this test scenario matches (in all important ways) the declaration associated 
+     * with system test scenario1000, as of commit 766c6d0b4ad96f191bcafb8f2a357c0f2e6a2d3c, but the expected output 
+     * differs.
      */
 
     @Test
