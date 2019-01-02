@@ -391,11 +391,10 @@ public class ConfigHelperTest
 
     /**
      * <p>Tests the {@link ConfigHelper#getTimeWindowsFromProjectConfig(wres.config.generated.ProjectConfig)}
-     * where the project declaration includes a <code>leadHours</code> and a 
-     * <code>leadTimesPoolingWindow</code>. Expects one time windows with
-     * prescribed characteristics.
+     * where the project declaration includes a <code>timeSeriesMetric</code>. Expects one time window that 
+     * is unbounded in all dimensions.
      * 
-     * <p>This test scenario is analogous to system test scenario403 as of commit 
+     * <p>This test scenario is analogous to system test scenario1000 as of commit 
      * 766c6d0b4ad96f191bcafb8f2a357c0f2e6a2d3c
      */
 
