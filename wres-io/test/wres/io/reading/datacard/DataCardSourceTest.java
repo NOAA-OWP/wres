@@ -110,7 +110,7 @@ public class DataCardSourceTest
     public void insertQueryNormalTest()
 			throws IOException, URISyntaxException
     {
-        URI current = new java.io.File( "." ).toURI();
+        String current = new java.io.File( "." ).getCanonicalPath();
         List<DataSourceConfig.Source> sourceList = new ArrayList<DataSourceConfig.Source>();
         Format format = Format.fromValue("datacard");
 
@@ -202,7 +202,7 @@ public class DataCardSourceTest
     public void insertQueryShortRecordTest()
             throws IOException, URISyntaxException
     {
-        URI current = new java.io.File( "." ).toURI();
+        String current = new java.io.File( "." ).getCanonicalPath();
         List<DataSourceConfig.Source> sourceList = new ArrayList<>();
         Format format = Format.fromValue("datacard");
 
