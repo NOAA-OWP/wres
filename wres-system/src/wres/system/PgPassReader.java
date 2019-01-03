@@ -178,7 +178,7 @@ public class PgPassReader
         {
             // When on windows, %APPDATA%\postgres\pgpass.conf
             return Paths.get( System.getenv( "APPDATA" ),
-                              "postgres",
+                              "postgresql",
                               "pgpass.conf" );
         }
         else
