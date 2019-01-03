@@ -101,7 +101,8 @@ public class SourceLoader
                 continue;
             }
 
-            Path sourcePath = Paths.get(source.getValue());
+            // Because above did not short-circuit, local file system is assumed
+            Path sourcePath = Paths.get( source.getValue().getPath() );
             File sourceFile = sourcePath.toFile();
 
             if ( !sourceFile.exists() )
@@ -162,7 +163,7 @@ public class SourceLoader
     private Future<List<IngestResult>> loadNonFileSource( DataSourceConfig config,
                                                           DataSourceConfig.Source source )
     {
-        URI sourceUri = URI.create( source.getValue() );
+        URI sourceUri = source.getValue();
 
         if ( sourceUri.getScheme() != null
              && sourceUri.getHost() != null )

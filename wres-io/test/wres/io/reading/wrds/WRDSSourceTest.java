@@ -2070,7 +2070,7 @@ public class WRDSSourceTest
 
         List<DataSourceConfig.Source> sourceList = new ArrayList<>();
         Format format = Format.WRDS;
-        DataSourceConfig.Source confSource = new DataSourceConfig.Source( fakeAhpsUri.toString(),
+        DataSourceConfig.Source confSource = new DataSourceConfig.Source( fakeAhpsUri,
                                                                           format,
                                                                           null,
                                                                           null,
