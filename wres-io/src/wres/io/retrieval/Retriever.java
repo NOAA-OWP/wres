@@ -3,13 +3,13 @@ package wres.io.retrieval;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.sql.SQLException;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -21,11 +21,11 @@ import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.datamodel.sampledata.pairs.SingleValuedPair;
+import wres.datamodel.time.Event;
 import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
 import wres.io.config.OrderedSampleMetadata;
 import wres.io.data.caching.UnitConversions;
-import wres.io.data.details.EnsembleDetails;
 import wres.io.project.Project;
 import wres.util.CalculationException;
 import wres.util.TimeHelper;
@@ -74,12 +74,12 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
     /**
      * The listing of all pairs between left and right data
      */
-    private final List<ForecastedPair> primaryPairs = new ArrayList<>();
+    private final List<Event<EnsemblePair>> primaryPairs = new ArrayList<>();
 
     /**
      * The Listing of all pairs between left and baseline data
      */
-    private final List<ForecastedPair> baselinePairs = new ArrayList<>(  );
+    private final List<Event<EnsemblePair>> baselinePairs = new ArrayList<>(  );
 
     /**
      * The total set of climatology data to group with the pairs
@@ -101,12 +101,12 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
         this.climatology = climatology;
     }
 
-    List<ForecastedPair> getPrimaryPairs()
+    List<Event<EnsemblePair>> getPrimaryPairs()
     {
         return this.primaryPairs;
     }
 
-    List<ForecastedPair> getBaselinePairs()
+    List<Event<EnsemblePair>> getBaselinePairs()
     {
         return this.baselinePairs;
     }
@@ -121,12 +121,12 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
         return this.sampleMetadata.getFeature();
     }
 
-    void addPrimaryPair(final ForecastedPair pair)
+    void addPrimaryPair(final Event<EnsemblePair> pair)
     {
         this.primaryPairs.add(pair);
     }
 
-    void addBaselinePair(final ForecastedPair pair)
+    void addBaselinePair(final Event<EnsemblePair> pair)
     {
         this.baselinePairs.add(pair);
     }
@@ -226,16 +226,18 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
             {
                 if (this.getProjectDetails().getInputName( dataSourceConfig ).equals( Project.RIGHT_MEMBER))
                 {
-                    this.lastLead = Math.max( this.lastLead, pivottedValues.lead);
-                    this.firstLead = Math.min( this.firstLead, pivottedValues.lead);
+                    this.lastLead = Math.max( this.lastLead,
+                                              TimeHelper.durationToLongUnits( pivottedValues.getLeadDuration(),
+                                                                              TimeHelper.LEAD_RESOLUTION ) );
+                    this.firstLead = Math.min( this.firstLead,
+                                               TimeHelper.durationToLongUnits( pivottedValues.getLeadDuration(),
+                                                                               TimeHelper.LEAD_RESOLUTION ) );
                 }
 
-                ForecastedPair packagedPair = new ForecastedPair(
-                            pivottedValues.lead,
-                            pivottedValues.validTime,
-                            pair,
-                            pivottedValues.getEnsembleMembers( )
-                    );
+                Event<EnsemblePair> packagedPair =
+                        Event.of( pivottedValues.getValidTime().minus( pivottedValues.getLeadDuration() ),
+                                  pivottedValues.getValidTime(),
+                                  pair );
 
                 if (this.getProjectDetails().getInputName( dataSourceConfig ).equals(Project.RIGHT_MEMBER))
                 {
@@ -262,7 +264,7 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
         Double leftAggregation;
         try
         {
-            leftAggregation = this.getLeftAggregation( pivottedValues.validTime );
+            leftAggregation = this.getLeftAggregation( pivottedValues.getValidTime() );
         }
         catch ( CalculationException e )
         {
@@ -412,92 +414,26 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
 
     protected abstract SampleData<?> createInput() throws IOException;
     protected abstract String getLoadScript( final DataSourceConfig dataSourceConfig) throws SQLException, IOException;
-
-
-    // TODO: Should we use this as an argument structure to pass to the PairWriter?
-
-    // TODO: replace this with a wres.datamodel.time.Event, since that is the ultimate abstraction required
-    // to progress the data and it is sufficiently close to this abstraction
-    @Deprecated
-    protected static class ForecastedPair
+    
+    /**
+     * Helper that creates one single-valued event for each right value in the ensemble pair. 
+     * 
+     * TODO: create a retriever for a specific type of pair, rather than using an ensemble pair as a 
+     * generic container.
+     */
+    
+    static List<Event<SingleValuedPair>> unwrapEnsembleEvent( Event<EnsemblePair> pair )
     {
-        private final Instant basisTime;
-        private final Instant validTime;
-        private final EnsemblePair values;
-        private final Collection<EnsembleDetails> members;
-
-        ForecastedPair( Instant basisTime,
-                        Instant validTime,
-                        EnsemblePair values,
-                        Collection<EnsembleDetails> members)
+        List<Event<SingleValuedPair>> eventPairs = new ArrayList<>();
+        for ( double rightValue : pair.getValue().getRight() )
         {
-            this.basisTime = basisTime;
-            this.validTime = validTime;
-            this.values = values;
-            this.members = members;
+            eventPairs.add( Event.of( pair.getReferenceTime(),
+                                      pair.getTime(),
+                                      SingleValuedPair.of( pair.getValue().getLeft(), rightValue ) ) );
         }
-
-        ForecastedPair( int leadMinutes,
-                        Instant validTime,
-                        EnsemblePair values,
-                        Collection<EnsembleDetails> members)
-        {
-            Duration leadTime = Duration.ofMinutes( leadMinutes );
-            this.basisTime = validTime.minus( leadTime );
-            this.validTime = validTime;
-            this.values = values;
-            this.members = members;
-        }
-
-        Instant getBasisTime()
-        {
-            return this.basisTime;
-        }
-
-        Instant getValidTime()
-        {
-            return this.validTime;
-        }
-
-        public EnsemblePair getValues()
-        {
-            return this.values;
-        }
-
-        SingleValuedPair[] getSingleValuedPairs()
-        {
-            SingleValuedPair[] pairOfDoubles = new SingleValuedPair[this.getValues().getRight().length];
-
-            for (int i = 0; i < pairOfDoubles.length; ++i)
-            {
-                pairOfDoubles[i] = SingleValuedPair.of( this.getValues().getLeft(),
-                                                        this.getValues().getRight()[i] );
-            }
-
-            return pairOfDoubles;
-        }
-
-        Duration getLeadDuration()
-        {
-            long millis = this.getValidTime().toEpochMilli()
-                          - this.getBasisTime().toEpochMilli();
-            return Duration.of( millis, ChronoUnit.MILLIS );
-        }
-
-        @Override
-        public String toString()
-        {
-            String string = "Basis: " + this.getBasisTime() + ", ";
-            string += "Valid: " + this.getValidTime() + ", ";
-            string += "Lead: " + this.getLeadDuration() + ", ";
-            string += "Values: " + this.getValues();
-            return string;
-        }
-
-        // TODO: Add function to get lead to print
-        // Leads are saved and passed in TimeHelper.LEAD_RESOLUTION (minutes, currently)
-        // We want to display in hours. What if a set doesn't have leads that are expressed in hours?
-        // AHPS data has data in both hours and minutes. In order to print that correctly, there
-        // needs to be a function to determine a) are the leads in terms of hours, if not, display minutes
+        
+        return Collections.unmodifiableList( eventPairs );
     }
+    
+    
 }

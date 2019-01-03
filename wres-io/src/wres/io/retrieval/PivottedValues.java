@@ -1,5 +1,6 @@
 package wres.io.retrieval;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -36,12 +37,12 @@ class PivottedValues
     /**
      * The date at which the condensed values will represent
      */
-    final Instant validTime;
+    private final Instant validTime;
 
     /**
      * The final lead for the condensed set of values
      */
-    final int lead;
+    private final Duration lead;
 
     /**
      * The collection of values mapped to the position in the arrays they came in as and the id of their ensemble
@@ -54,7 +55,7 @@ class PivottedValues
      * @param lead The lead at which the final set of values are valid
      * @param valueMapping The collection of values that will be condensed
      */
-    PivottedValues( final Instant validTime, final int lead, final Map<EnsemblePosition, List<Double>> valueMapping)
+    PivottedValues( final Instant validTime, final Duration lead, final Map<EnsemblePosition, List<Double>> valueMapping)
     {
         this.validTime = validTime;
         this.lead = lead;
@@ -72,6 +73,24 @@ class PivottedValues
         return Ensembles.getEnsembleDetails(ensembleIDs);
     }
 
+    /**
+     * @return the lead duration
+     */
+    
+    Duration getLeadDuration()
+    {
+        return this.lead;
+    }
+    
+    /**
+     * @return the valid datetime.
+     */
+    
+    Instant getValidTime()
+    {
+        return this.validTime;
+    }
+    
     /**
      * Shrinks down all mapped values into a single array
      * @param scale Whether or not the values should be scaled

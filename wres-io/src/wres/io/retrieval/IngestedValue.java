@@ -1,5 +1,6 @@
 package wres.io.retrieval;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.TemporalAccessor;
 import java.util.Arrays;
@@ -9,6 +10,11 @@ import java.util.TreeMap;
 import wres.io.data.caching.UnitConversions;
 import wres.io.project.Project;
 import wres.io.utilities.DataProvider;
+
+/**
+ * TODO: replace all references to integer leads with {@link Duration}. This will unravel the integer arithmetic in 
+ * {@link IngestedValuesCollection}, but that needs to be unraveled.
+ */
 
 class IngestedValue implements Comparable<IngestedValue>
 {

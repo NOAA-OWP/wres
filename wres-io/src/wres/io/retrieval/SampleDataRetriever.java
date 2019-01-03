@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,9 +25,7 @@ import wres.config.generated.TimeScaleConfig;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
-import wres.datamodel.sampledata.pairs.EnsemblePairs;
 import wres.datamodel.sampledata.pairs.SingleValuedPair;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfEnsemblePairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfEnsemblePairs.TimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
@@ -160,24 +159,6 @@ class SampleDataRetriever extends Retriever
         return input;
     }
 
-    @Deprecated
-    private SingleValuedPairs createSingleValuedInput()
-    {
-        List<SingleValuedPair> primary = convertToPairOfDoubles( this.getPrimaryPairs() );
-        List<SingleValuedPair> baseline = null;
-
-        if ( !this.getBaselinePairs().isEmpty() )
-        {
-            baseline = convertToPairOfDoubles( this.getBaselinePairs() );
-        }
-
-        return SingleValuedPairs.of( primary,
-                                     baseline,
-                                     this.getSampleMetadata().getMetadata(),
-                                     this.getSampleMetadata().getBaselineMetadata(),
-                                     this.getClimatology() );
-    }
-
     private TimeSeriesOfSingleValuedPairs createSingleValuedTimeSeriesInput()
     {
         if ( this.getFirstlead() == Long.MAX_VALUE || this.getLastLead() == Long.MIN_VALUE )
@@ -225,14 +206,14 @@ class SampleDataRetriever extends Retriever
 
         TimeSeriesOfEnsemblePairsBuilder builder = new TimeSeriesOfEnsemblePairsBuilder();
 
-        List<Event<EnsemblePair>> events = this.getEnsembleEvents( this.getPrimaryPairs() );
+        List<Event<EnsemblePair>> events = this.getPrimaryPairs();
 
         builder.addTimeSeries( events );
         builder.setMetadata( this.getSampleMetadata().getMetadata() );
 
         if (!this.getBaselinePairs().isEmpty())
         {
-            events = this.getEnsembleEvents( this.getBaselinePairs() );
+            events = this.getBaselinePairs();
             builder.addTimeSeriesDataForBaseline( events );
             builder.setMetadataForBaseline( this.getSampleMetadata().getBaselineMetadata() );
         }
@@ -242,75 +223,16 @@ class SampleDataRetriever extends Retriever
         return builder.build();
     }
 
-    @Deprecated
-    private EnsemblePairs createEnsembleInput()
-    {
-        List<EnsemblePair> primary =
-                SampleDataRetriever.extractRawPairs( this.getPrimaryPairs() );
-
-
-        List<EnsemblePair> baseline = null;
-
-        if ( !this.getBaselinePairs().isEmpty() )
-        {
-            baseline = SampleDataRetriever.extractRawPairs( this.getBaselinePairs() );
-        }
-
-        return EnsemblePairs.of( primary,
-                                 baseline,
-                                 this.getSampleMetadata().getMetadata(),
-                                 this.getSampleMetadata().getBaselineMetadata(),
-                                 this.getClimatology() );
-    }
-
-    private List<Event<SingleValuedPair>> getSingleValuedEvents(List<ForecastedPair> pairs)
+    private List<Event<SingleValuedPair>> getSingleValuedEvents(List<Event<EnsemblePair>> pairs)
     {
         List<Event<SingleValuedPair>> events = new ArrayList<>(  );
 
-        for (ForecastedPair pair : pairs)
+        for (Event<EnsemblePair> pair : pairs)
         {
-            for (SingleValuedPair singleValue : pair.getSingleValuedPairs())
-            {
-                events.add( Event.of( pair.getBasisTime(), pair.getValidTime(), singleValue ) );
-            }
+            events.addAll( Retriever.unwrapEnsembleEvent( pair ) );
         }
 
         return events;
-    }
-
-    /**
-     * Generates {@link Event} that compose {@link EnsemblePair} from the input.
-     *
-     * @param pairs the input pairs
-     * @return the ensemble events
-     */
-
-    private List<Event<EnsemblePair>> getEnsembleEvents(List<ForecastedPair> pairs)
-    {
-        List<Event<EnsemblePair>> events = new ArrayList<>(  );
-
-        for (ForecastedPair pair : pairs)
-        {
-                events.add( Event.of( pair.getBasisTime(), pair.getValidTime(), pair.getValues() ) );
-        }
-
-        return Collections.unmodifiableList( events );
-    }
-
-    /**
-     * @param pairPairs A set of packaged pairs
-     * @return A list of raw pairs contained within the set of packaged pairs
-     */
-    private static List<EnsemblePair> extractRawPairs( List<ForecastedPair> pairPairs )
-    {
-        List<EnsemblePair> result = new ArrayList<>();
-
-        for ( ForecastedPair pair : pairPairs )
-        {
-            result.add( pair.getValues() );
-        }
-
-        return Collections.unmodifiableList( result );
     }
 
     /**
@@ -318,40 +240,11 @@ class SampleDataRetriever extends Retriever
      * @return A list of basis times from a set of packaged pairs
      */
     private static List<Instant>
-    extractBasisTimes( List<ForecastedPair> pairs )
+    extractBasisTimes( List<Event<EnsemblePair>> pairs )
     {
-        List<Instant> result = new ArrayList<>();
-
-        for ( ForecastedPair pair : pairs )
-        {
-            result.add( pair.getBasisTime() );
-        }
+        List<Instant> result = pairs.stream().map( Event::getReferenceTime ).collect( Collectors.toList() );
 
         return Collections.unmodifiableList( result );
-    }
-
-    /**
-     * @param multiValuedPairs A set of packaged pairs
-     * @return A list of all raw pairs converted into single valued pairs
-     */
-    private static List<SingleValuedPair> convertToPairOfDoubles( List<ForecastedPair> multiValuedPairs )
-    {
-        List<SingleValuedPair> pairs = new ArrayList<>(  );
-
-        for ( ForecastedPair pair : multiValuedPairs)
-        {
-            for ( double pairedValue : pair.getValues().getRight() )
-            {
-                pairs.add(
-                        SingleValuedPair.of(
-                                pair.getValues().getLeft(),
-                                pairedValue
-                        )
-                );
-            }
-        }
-
-        return pairs;
     }
 
     /**
@@ -730,7 +623,7 @@ class SampleDataRetriever extends Retriever
      * @throws RetrievalFailedException
      */
     private void createPersistencePairs( DataSourceConfig dataSourceConfig,
-                                                         List<ForecastedPair> primaryPairs )
+                                                         List<Event<EnsemblePair>> primaryPairs )
             throws RetrievalFailedException
     {
         String loadScript;
@@ -885,9 +778,9 @@ class SampleDataRetriever extends Retriever
         boolean shouldAggregate = mostCommonFrequency > 1;
 
         // Third, for each primary pair, we want to find the latest set of aggregated observations
-        for ( ForecastedPair primaryPair : primaryPairs )
+        for ( Event<EnsemblePair> primaryPair : primaryPairs )
         {
-            ForecastedPair persistencePair;
+            Event<EnsemblePair> persistencePair;
             if ( shouldAggregate )
             {
                 persistencePair =
@@ -920,12 +813,12 @@ class SampleDataRetriever extends Retriever
      * @throws IllegalArgumentException when no persistence pair can be found
      */
 
-    private ForecastedPair getLatestPairFromRawPairs( ForecastedPair primaryPair,
-                                                      List<RawPersistenceRow> rawPersistenceValues )
+    private Event<EnsemblePair> getLatestPairFromRawPairs( Event<EnsemblePair> primaryPair,
+                                                           List<RawPersistenceRow> rawPersistenceValues )
     {
         for ( RawPersistenceRow rawPair : rawPersistenceValues )
         {
-            if ( rawPair.getValidTime().isBefore(primaryPair.getBasisTime()) )
+            if ( rawPair.getValidTime().isBefore( primaryPair.getReferenceTime() ) )
             {
                 // Convert units!
                 Double convertedValue =
@@ -934,15 +827,9 @@ class SampleDataRetriever extends Retriever
 
                 double[] wrappedValue = { convertedValue };
 
-                EnsemblePair pair =
-                        EnsemblePair.of( primaryPair.getValues()
-                                                       .getLeft(),
-                                            wrappedValue );
+                EnsemblePair pair = EnsemblePair.of( primaryPair.getValue().getLeft(), wrappedValue );
 
-                return new ForecastedPair( primaryPair.getBasisTime(),
-                                           primaryPair.getValidTime(),
-                                           pair,
-                                           null);
+                return Event.of( primaryPair.getReferenceTime(), primaryPair.getTime(), pair );
             }
         }
 
@@ -960,10 +847,10 @@ class SampleDataRetriever extends Retriever
      * @return a persistence forecasted pair
      */
 
-    private ForecastedPair getAggregatedPairFromRawPairs( ForecastedPair primaryPair,
-                                                          List<RawPersistenceRow> rawPersistenceValues,
-                                                          int countOfValuesInAGoodWindow,
-                                                          TimeScaleConfig scaleConfig )
+    private Event<EnsemblePair> getAggregatedPairFromRawPairs( Event<EnsemblePair> primaryPair,
+                                                               List<RawPersistenceRow> rawPersistenceValues,
+                                                               int countOfValuesInAGoodWindow,
+                                                               TimeScaleConfig scaleConfig )
     {
         List<Double> valuesToAggregate = new ArrayList<>( 0 );
 
@@ -975,7 +862,7 @@ class SampleDataRetriever extends Retriever
             valuesToAggregate = new ArrayList<>( countOfValuesInAGoodWindow );
 
             // We want to gather values to aggregate if our anchor happens to occur after the primary pair
-            if ( primaryPair.getBasisTime().isAfter( currentEvent.getValidTime() ) )
+            if ( primaryPair.getReferenceTime().isAfter( currentEvent.getValidTime() ) )
             {
                 // We want to gather all values between our anchor and the last value that happens
                 // to come after the earliest time for the anchor
@@ -1023,15 +910,9 @@ class SampleDataRetriever extends Retriever
 
         double[] aggregatedWrapped = { aggregated };
 
-        EnsemblePair pair =
-                EnsemblePair.of( primaryPair.getValues()
-                                               .getLeft(),
-                                    aggregatedWrapped );
+        EnsemblePair pair = EnsemblePair.of( primaryPair.getValue().getLeft(), aggregatedWrapped );
 
-        return new ForecastedPair( primaryPair.getBasisTime(),
-                                   primaryPair.getValidTime(),
-                                   pair,
-                                   null);
+        return Event.of( primaryPair.getReferenceTime(), primaryPair.getTime(), pair );
     }
 
 
