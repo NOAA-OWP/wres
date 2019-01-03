@@ -7,7 +7,9 @@
     jxb:extensionBindingPrefixes="xjc">
 
     <jxb:bindings schemaLocation="ProjectConfig.xsd" node="/xs:schema">
-        <jxb:globalBindings choiceContentProperty="true"/>
+        <jxb:globalBindings choiceContentProperty="true">
+        <jxb:javaType name="java.net.URI" xmlType="xs:anyURI" parseMethod="create" printMethod="toASCIIString"/>
+        </jxb:globalBindings>
     </jxb:bindings>
 
     <!--The following binding injects a delegated implementation of java.lang.Comparable by

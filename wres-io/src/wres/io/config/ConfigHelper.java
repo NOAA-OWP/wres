@@ -1670,8 +1670,8 @@ public class ConfigHelper
             missing = Double.parseDouble( nextSource.getMissingValue() );
         }
 
-        //Path
-        Path commaSeparated = Paths.get( nextSource.getValue() );
+        //Path TODO: permit web thresholds
+        Path commaSeparated = Paths.get( nextSource.getValue().getPath() );
 
         // Condition: default to greater
         ThresholdConstants.Operator operator = ThresholdConstants.Operator.GREATER;
