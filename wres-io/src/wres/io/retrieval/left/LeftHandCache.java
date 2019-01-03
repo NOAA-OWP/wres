@@ -13,7 +13,11 @@ public interface LeftHandCache
 {
 
     /**
+     * @param project the project
+     * @param feature the feature
+     * @return the left hand cache
      * @throws NoDataException when no data is found
+     * @throws SQLException if data could not be retrieved from the database
      */
 
     static LeftHandCache getCache( final Project project, final Feature feature)

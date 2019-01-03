@@ -161,6 +161,8 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
 
     /**
      * Generates a list of TimeWindows that will generate SampleData objects
+     * 
+     * @throws CalculationException if the samples could not be calculated
      */
     protected abstract void calculateSamples() throws CalculationException;
 
@@ -269,6 +271,7 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
 
     /**
      * Submits a retrieval object for asynchronous execution
+     * @param sampleMetadata the sample metadata
      * @return A MetricInput object that will be fully formed later in the application
      * TODO: document what returning null means so caller can decide what to do
      * when null is returned.
