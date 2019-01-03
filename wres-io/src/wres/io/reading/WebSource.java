@@ -83,7 +83,7 @@ class WebSource implements Callable<List<IngestResult>>
         this.projectConfig = projectConfig;
         this.dataSourceConfig = dataSourceConfig;
         this.sourceConfig = sourceConfig;
-        this.baseUri = sourceConfig.getValue();
+        this.baseUri = URI.create( sourceConfig.getValue() );
 
         if ( this.baseUri.getScheme() == null
              || !this.baseUri.getScheme().startsWith( "http" ) )

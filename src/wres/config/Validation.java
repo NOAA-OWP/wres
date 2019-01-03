@@ -1,7 +1,6 @@
 package wres.config;
 
 import java.io.File;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -471,12 +470,12 @@ public class Validation
                 // Locate a threshold with an external source
                 if ( nextSource instanceof ThresholdsConfig.Source )
                 {
-                    URI thresholdData = ( (ThresholdsConfig.Source) nextSource ).getValue();
+                    String pathString = ( (ThresholdsConfig.Source) nextSource ).getValue();
                     
                     final Path destinationPath;
                     try
                     {
-                        destinationPath = Paths.get( thresholdData );
+                        destinationPath = Paths.get( pathString );
                     }
                     catch ( InvalidPathException ipe )
                     {
@@ -488,7 +487,7 @@ public class Validation
                                          projectConfigPlus.getOrigin(),
                                          nextThreshold.sourceLocation().getLineNumber(),
                                          nextThreshold.sourceLocation().getColumnNumber(),
-                                         thresholdData );
+                                         pathString );
                         }
 
                         result = false;
@@ -508,7 +507,7 @@ public class Validation
                                          projectConfigPlus.getOrigin(),
                                          nextThreshold.sourceLocation().getLineNumber(),
                                          nextThreshold.sourceLocation().getColumnNumber(),
-                                         thresholdData );
+                                         pathString );
                         }
 
                         result = false;
@@ -1563,9 +1562,7 @@ public class Validation
                           && sourceValid;
         }
 
-        if ( source.getValue() != null && source.getValue()
-                                                .getScheme()
-                                                .startsWith( "http" ) )
+        if ( source.getValue() != null && source.getValue().startsWith( "http" ) )
         {
             sourceValid = Validation.isAPISourceValid( projectConfigPlus,
                                                        dataSourceConfig,

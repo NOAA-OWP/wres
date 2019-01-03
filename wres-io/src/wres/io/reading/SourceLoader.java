@@ -162,7 +162,7 @@ public class SourceLoader
     private Future<List<IngestResult>> loadNonFileSource( DataSourceConfig config,
                                                           DataSourceConfig.Source source )
     {
-        URI sourceUri = source.getValue();
+        URI sourceUri = URI.create( source.getValue() );
 
         if ( sourceUri.getScheme() != null
              && sourceUri.getHost() != null )
