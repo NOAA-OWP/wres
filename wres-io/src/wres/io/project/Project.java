@@ -52,11 +52,11 @@ import wres.io.data.details.FeatureDetails;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
-import wres.util.LRUMap;
 import wres.io.utilities.NoDataException;
 import wres.util.CalculationException;
 import wres.util.Collections;
 import wres.util.FormattedStopwatch;
+import wres.util.LRUMap;
 import wres.util.TimeHelper;
 
 /**
@@ -408,9 +408,9 @@ public class Project
 
     /**
      * Performs operations that are needed for the project to run between ingest and evaluation
-     * @throws SQLException
-     * @throws IOException
-     * @throws CalculationException
+     * @throws SQLException if retrieval of data from the database fails
+     * @throws IOException if loading fails
+     * @throws CalculationException if required calculations could not be completed
      */
     public void prepareForExecution() throws SQLException, IOException, CalculationException
     {
