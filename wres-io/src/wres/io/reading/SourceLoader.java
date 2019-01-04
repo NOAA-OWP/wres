@@ -165,7 +165,8 @@ public class SourceLoader
     {
         URI sourceUri = source.getValue();
 
-        if ( sourceUri.getScheme() != null
+        if ( sourceUri != null
+             && sourceUri.getScheme() != null
              && sourceUri.getHost() != null )
         {
             WebSource webSource = WebSource.of( projectConfig,
