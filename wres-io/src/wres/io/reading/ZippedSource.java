@@ -106,7 +106,6 @@ public class ZippedSource extends BasicSource {
 	{
         super( projectConfig );
 	    this.setFilename(filename);
-	    this.directoryPath = Paths.get( filename.getPath() ).toAbsolutePath().getParent().toString();
     }
 
     private List<IngestResult> issue()
@@ -215,7 +214,7 @@ public class ZippedSource extends BasicSource {
             throws IOException
     {
         int bytesRead = (int)source.getSize();
-        URI archivedFileName = Paths.get( this.directoryPath, source.getName() ).toUri();
+        URI archivedFileName = this.getFilename().resolve( source.getName() );
         Format sourceType = ReaderFactory.getFiletype( archivedFileName );
         DataSourceConfig.Source originalSource = this.getSourceConfig();
 
@@ -304,15 +303,17 @@ public class ZippedSource extends BasicSource {
         }
         else
         {
-            try ( FileOutputStream stream = new FileOutputStream( new File( archivedFileName ) ) )
+            File tempFile = File.createTempFile( "wres_zipped_source", source.getName() );
+
+            try ( FileOutputStream stream = new FileOutputStream( tempFile ) )
             {
                 stream.write(content);
-                this.savedFiles.add(archivedFileName);
+                this.savedFiles.add( tempFile.toURI() );
 
                 ProgressMonitor.increment();
                 Future<List<IngestResult>> task = Executor.submit(
                         IngestSaver.createTask()
-                                   .withFilePath( archivedFileName )
+                                   .withFilePath( tempFile.toURI() )
                                    .withProject( this.getProjectConfig() )
                                    .withDataSourceConfig( this.getDataSourceConfig() )
                                    .withProgressMonitoring()
@@ -324,6 +325,4 @@ public class ZippedSource extends BasicSource {
 
         return bytesRead;
     }
-
-    private final String directoryPath;
 }
