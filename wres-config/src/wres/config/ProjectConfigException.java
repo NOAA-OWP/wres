@@ -45,7 +45,7 @@ public class ProjectConfigException extends RuntimeException
             return "";
         }
         return "Near line " + problemElement.sourceLocation().getLineNumber()
-               + ", column " + problemElement.sourceLocation().getLineNumber()
+               + ", column " + problemElement.sourceLocation().getColumnNumber()
                + ": ";
     }
 }
