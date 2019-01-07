@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -225,86 +226,84 @@ class WebSource implements Callable<List<IngestResult>>
      * ambiguities and to avoid infinite data requests.</p>
      *
      * <p>Not specific to a particular API.</p>
-     * @param config the evaluation project configuration
+     * @param config the evaluation project configuration, non-null, pair non-null
      * @return a set of week ranges
+     * @throws ProjectConfigException when config is insufficient to make ranges
      */
 
     private Set<Pair<Instant,Instant>> createWeekRanges( ProjectConfig config,
                                                          OffsetDateTime nowDate )
     {
-        if ( config == null || config.getPair() == null )
-        {
-            return Collections.unmodifiableSet( Collections.emptySet() );
-        }
+        Objects.requireNonNull( config );
+        Objects.requireNonNull( config.getPair() );
 
-        Set<Pair<Instant,Instant>> weekRanges = new HashSet<>();
-
-        DateCondition issuedDates = config.getPair().getIssuedDates();
-
-        if ( issuedDates != null )
-        {
-            OffsetDateTime earliest;
-            String specifiedEarliest = issuedDates.getEarliest();
-
-            OffsetDateTime latest;
-            String specifiedLatest = issuedDates.getLatest();
-
-            if ( specifiedEarliest == null || specifiedLatest == null )
-            {
-                throw new ProjectConfigException( issuedDates,
-                                                  ISSUED_DATES_ERROR_MESSAGE );
-            }
-
-            earliest = OffsetDateTime.parse( specifiedEarliest )
-                                     .with( previousOrSame( SUNDAY ) )
-                                     .withHour( 0 )
-                                     .withMinute( 0 )
-                                     .withSecond( 0 )
-                                     .withNano( 0 );
-
-            LOGGER.debug( "Given {} calculated {} for earliest.",
-                          specifiedEarliest, earliest );
-
-            // Intentionally keep this raw, un-sunday-ified.
-            latest = OffsetDateTime.parse( specifiedLatest );
-
-            LOGGER.debug( "Given {} parsed {} for latest.",
-                          specifiedLatest, latest );
-
-            OffsetDateTime left = earliest;
-            OffsetDateTime right = left.with( next( SUNDAY ) );
-
-            while ( left.isBefore( latest ) )
-            {
-                // Because we chunk a week at a time, and because these will not
-                // be retrieved again if already present, we need to ensure the
-                // right hand date does not exceed "now".
-                if ( right.isAfter( nowDate ) )
-                {
-                    if ( latest.isAfter( nowDate ) )
-                    {
-                        right = nowDate;
-                    }
-                    else
-                    {
-                        right = latest;
-                    }
-                }
-
-                Pair<Instant,Instant> range = Pair.of( left.toInstant(), right.toInstant() );
-                LOGGER.debug( "Created range {}", range );
-                weekRanges.add( range );
-                left = left.with( next( SUNDAY ) );
-                right = right.with( next( SUNDAY ) );
-            }
-
-            LOGGER.debug( "Calculated ranges {}", weekRanges );
-        }
-        else
+        if ( config.getPair().getIssuedDates() == null )
         {
             throw new ProjectConfigException( config.getPair(),
                                               ISSUED_DATES_ERROR_MESSAGE );
         }
+
+        DateCondition issuedDates = config.getPair().getIssuedDates();
+
+        if ( issuedDates.getEarliest() == null
+             || issuedDates.getLatest() == null )
+        {
+            throw new ProjectConfigException( issuedDates,
+                                              ISSUED_DATES_ERROR_MESSAGE );
+        }
+
+        Set<Pair<Instant,Instant>> weekRanges = new HashSet<>();
+
+        OffsetDateTime earliest;
+        String specifiedEarliest = issuedDates.getEarliest();
+
+        OffsetDateTime latest;
+        String specifiedLatest = issuedDates.getLatest();
+
+        earliest = OffsetDateTime.parse( specifiedEarliest )
+                                 .with( previousOrSame( SUNDAY ) )
+                                 .withHour( 0 )
+                                 .withMinute( 0 )
+                                 .withSecond( 0 )
+                                 .withNano( 0 );
+
+        LOGGER.debug( "Given {} calculated {} for earliest.",
+                      specifiedEarliest, earliest );
+
+        // Intentionally keep this raw, un-sunday-ified.
+        latest = OffsetDateTime.parse( specifiedLatest );
+
+        LOGGER.debug( "Given {} parsed {} for latest.",
+                      specifiedLatest, latest );
+
+        OffsetDateTime left = earliest;
+        OffsetDateTime right = left.with( next( SUNDAY ) );
+
+        while ( left.isBefore( latest ) )
+        {
+            // Because we chunk a week at a time, and because these will not
+            // be retrieved again if already present, we need to ensure the
+            // right hand date does not exceed "now".
+            if ( right.isAfter( nowDate ) )
+            {
+                if ( latest.isAfter( nowDate ) )
+                {
+                    right = nowDate;
+                }
+                else
+                {
+                    right = latest;
+                }
+            }
+
+            Pair<Instant,Instant> range = Pair.of( left.toInstant(), right.toInstant() );
+            LOGGER.debug( "Created range {}", range );
+            weekRanges.add( range );
+            left = left.with( next( SUNDAY ) );
+            right = right.with( next( SUNDAY ) );
+        }
+
+        LOGGER.debug( "Calculated ranges {}", weekRanges );
 
         return Collections.unmodifiableSet( weekRanges );
     }
