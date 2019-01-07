@@ -614,14 +614,14 @@ project(':wres-tasker')
         testCompile 'junit:junit:4.12'
 
         // To generate fake certificates and keys for testing
-        testCompile 'org.bouncycastle:bcpkix-jdk15on:1.59'
-        testCompile 'org.bouncycastle:bcprov-jdk15on:1.59'
+        testCompile 'org.bouncycastle:bcpkix-jdk15on:1.60'
+        testCompile 'org.bouncycastle:bcprov-jdk15on:1.60'
 
         // To test against an embedded AMQP broker
-        testCompile 'org.apache.qpid:qpid-broker-core:7.0.4'
+        testCompile 'org.apache.qpid:qpid-broker-core:7.1.0'
         // Provides support for both 0-8 and 0-9-1
-        testCompile 'org.apache.qpid:qpid-broker-plugins-amqp-0-8-protocol:7.0.4'
-        testCompile 'org.apache.qpid:qpid-broker-plugins-memory-store:7.0.4'
+        testCompile 'org.apache.qpid:qpid-broker-plugins-amqp-0-8-protocol:7.1.0'
+        testCompile 'org.apache.qpid:qpid-broker-plugins-memory-store:7.1.0'
     }
 
     apply plugin: 'application'
