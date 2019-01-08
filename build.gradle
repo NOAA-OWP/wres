@@ -3,7 +3,7 @@ import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
 import java.nio.file.StandardCopyOption
 
-/* used by sonarqube static analysis and git versioning */
+/* Used by gradle plugins outside the official gradle plugins repository */
 buildscript
 {
     repositories
@@ -12,8 +12,6 @@ buildscript
     }
     dependencies
     {
-        // for static analysis tool sonarqube:
-        classpath 'org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.5'
         // For markdown -> html
         classpath 'com.atlassian.commonmark:commonmark:0.9.0'
         // To create a unified javadoc across submodules and top-level module:
@@ -21,13 +19,17 @@ buildscript
     }
 }
 
+/* Gradle plugins available in the official gradle plugins repository */
 plugins
 {
+    // Static analysis tool sonarqube client, compatible with sonarqube 7.5:
+    id 'org.sonarqube' version '2.6.2'
+
     //id 'com.github.jacobono.jaxb' version '1.3.5'
-    // above is unmaintained, less gradle-y, below fork has several improvements
+    // Above is unmaintained, less gradle-y, below fork has several improvements
     id 'org.openrepose.gradle.plugins.jaxb' version '2.4.1'
 
-    // for ability to use git ids for versioning jar files:
+    // For ability to use git ids for versioning jar files:
     id 'org.ajoberstar.grgit' version '1.7.2'
 
     // To compile user documentation (not working: blows up on compileMarkdown)
