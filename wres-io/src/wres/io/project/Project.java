@@ -455,7 +455,7 @@ public class Project
     }
     
     /**
-     * Feature toggle that filters {@link #}
+     * Feature toggle that filters {@link #validateDesiredTimeScaleAgainstEachIngestedSource()}.
      */
 
     @Deprecated
