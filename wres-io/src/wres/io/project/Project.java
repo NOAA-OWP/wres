@@ -26,6 +26,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -547,51 +548,13 @@ public class Project
             throws SQLException, CalculationException
     {
         // Obtain the existing time scale and corresponding time step for each ingested source
-        Map<TimeScale, Duration> existingTimeScales = new HashMap<>();
+        Map<TimeScale, Duration> observed = this.getTimeScaleAndTimeStepForEachObservedProjectSource();
+        Map<TimeScale, Duration> forecast = this.getTimeScaleAndTimeStepForEachForecastProjectSource();
+        
+        Map<TimeScale, Duration> existingTimeScales = new HashMap<>( observed );
+        existingTimeScales.putAll( forecast );      
 
-        // Ask the database
-        DataScripter script = new DataScripter();
-        script.addLine( "SELECT DISTINCT TS.scale_period," );
-        script.addTab( 2 ).addLine( "TS.scale_function," );
-        script.addTab( 2 ).addLine( "TS.time_step" );
-        script.addLine( "FROM wres.timeseries TS " );
-        script.addTab( 1 ).addLine( "INNER JOIN wres.timeseriessource AS TSS" );
-        script.addTab( 2 ).addLine( "ON TS.timeseries_id = TSS.timeseries_id" );
-        script.addTab( 1 ).addLine( "INNER JOIN wres.projectsource PS" );
-        script.addTab( 2 ).addLine( "ON TSS.source_id = PS.source_id" );
-        script.addLine( "WHERE PS.project_id = " + this.getId() );
-
-        // Consume each result and create a time scale and a time-step for each
-        try
-        {
-            script.consume( scaleAndStepData -> {
-
-                // Time scale
-                Duration period = scaleAndStepData.getDuration( "scale_period" );
-                TimeScale.TimeScaleFunction function =
-                        TimeScale.TimeScaleFunction.valueOf( scaleAndStepData.getString( "scale_function" )
-                                                                             .toUpperCase() );
-
-                TimeScale timeScale = TimeScale.of( period, function );
-
-                // Time step
-                Duration timeStep = scaleAndStepData.getDuration( "time_step" );
-
-                // Store
-                existingTimeScales.put( timeScale, timeStep );
-
-            } );
-        }
-        // Decorate and propagate
-        catch ( SQLException e )
-        {
-            throw new SQLException( "Could not retrieve from the database the "
-                                    + "time scale and time step information "
-                                    + "for one or more ingested sources.",
-                                    e );
-        }
-
-        // No time scales
+        // No time scales: probably should not be tolerant of this
         if ( existingTimeScales.isEmpty() )
         {
             throw new CalculationException( "Could not find the time-scale information for any ingested source." );
@@ -599,6 +562,128 @@ public class Project
 
         return java.util.Collections.unmodifiableMap( existingTimeScales );
     }       
+    
+    /**
+     * Returns the {@link TimeScale} and time-step information for each forecast source associated with the project. 
+     * The time-step is represented as a {@link Duration}.
+     * 
+     * @return the time scale and time-step information for each source
+     * @throws SQLException Thrown on failing to obtain the time scale or time step information from the database
+     */
+
+    private Map<TimeScale, Duration> getTimeScaleAndTimeStepForEachForecastProjectSource()
+            throws SQLException, CalculationException
+    {
+        // Ask the wres.timeseries
+        DataScripter scripter = new DataScripter();
+        scripter.addLine( "SELECT DISTINCT TS.scale_period," );
+        scripter.addTab( 2 ).addLine( "TS.scale_function," );
+        scripter.addTab( 2 ).addLine( "TS.time_step" );
+        scripter.addLine( "FROM wres.timeseries TS " );
+        scripter.addTab( 1 ).addLine( "INNER JOIN wres.timeseriessource AS TSS" );
+        scripter.addTab( 2 ).addLine( "ON TS.timeseries_id = TSS.timeseries_id" );
+        scripter.addTab( 1 ).addLine( "INNER JOIN wres.projectsource PS" );
+        scripter.addTab( 2 ).addLine( "ON TSS.source_id = PS.source_id" );
+        scripter.addLine( "WHERE PS.project_id = " + this.getId() );
+
+        // Obtain the existing time scale and corresponding time step for each ingested source
+        return java.util.Collections.unmodifiableMap( this.consumeTimeScaleAndTimeStep( scripter,
+                                                                                        "wres.timeseries" ) );
+    }     
+  
+    /**
+     * Returns the {@link TimeScale} and time-step information for each observed source associated with the project. 
+     * The time-step is represented as a {@link Duration}.
+     * 
+     * @return the time scale and time-step information for each source
+     * @throws SQLException Thrown on failing to obtain the time scale or time step information from the database
+     */
+
+    private Map<TimeScale, Duration> getTimeScaleAndTimeStepForEachObservedProjectSource()
+            throws SQLException, CalculationException
+    {
+        // Ask the wres.timeseries
+        DataScripter scripter = new DataScripter();
+        scripter.addLine( "SELECT DISTINCT O.scale_period," );
+        scripter.addTab( 2 ).addLine( "O.scale_function," );
+        scripter.addTab( 2 ).addLine( "O.time_step" );
+        scripter.addLine( "FROM wres.observation O " );
+        scripter.addTab( 1 ).addLine( "INNER JOIN wres.projectsource AS PS" );
+        scripter.addTab( 2 ).addLine( "ON O.source_id = PS.source_id" );
+        scripter.addTab( 1 ).addLine( "INNER JOIN wres.project P" );
+        scripter.addTab( 2 ).addLine( "ON PS.project_id = P.project_id" );
+        scripter.addLine( "WHERE PS.project_id = " + this.getId() );
+
+        // Obtain the existing time scale and corresponding time step for each ingested source
+        return java.util.Collections.unmodifiableMap( this.consumeTimeScaleAndTimeStep( scripter,
+                                                                                        "wres.observation" ) );
+    }
+    
+    /**
+     * Returns the time step and time scale information from a {@link DataScripter}.
+     * 
+     * @param scripter the script that provides the time step and time scale information
+     * @param source a helper to distinguish the source of the data for logging purposes
+     * @throws SQLException Thrown on failing to obtain the time scale or time step information from the database 
+     */
+
+    private Map<TimeScale, Duration> consumeTimeScaleAndTimeStep( DataScripter scripter, String source )
+            throws SQLException
+    {
+        Map<TimeScale, Duration> existingTimeScales = new HashMap<>();
+
+        // Consume each result from the wres.timeseries and create a time scale and a time-step for each
+        try
+        {
+            AtomicBoolean warn = new AtomicBoolean();
+
+            scripter.consume( scaleAndStepConsumer -> {
+
+                // Time scale and step information
+                Duration period = scaleAndStepConsumer.getDuration( "scale_period" );
+                String functionString = scaleAndStepConsumer.getString( "scale_function" );
+                Duration timeStep = scaleAndStepConsumer.getDuration( "time_step" );
+
+                // Record or log as null
+                if ( Objects.nonNull( period ) && Objects.nonNull( functionString ) && Objects.nonNull( timeStep ) )
+                {
+                    TimeScale.TimeScaleFunction function =
+                            TimeScale.TimeScaleFunction.valueOf( functionString.toUpperCase() );
+
+                    TimeScale timeScale = TimeScale.of( period, function );
+
+                    // Store
+                    existingTimeScales.put( timeScale, timeStep );
+                }
+                else
+                {
+                    warn.set( true );
+                }
+            } );
+
+            // Warn when potentially important information is missing, but take a lenient approach
+            if ( warn.get() )
+            {
+                LOGGER.warn( "Could not retrieve valid time scale or time step information for one or more ingested "
+                             + "sources from the "
+                             + source
+                             + ". Assuming that the desired time scale is consistent with "
+                             + "the time scales of the existing sources for which information is missing." );
+            }
+        }
+        // Decorate and propagate
+        catch ( SQLException e )
+        {
+            throw new SQLException( "While attempting to retrieve the "
+                                    + "time scale and time step information "
+                                    + "for one or more ingested sources from the "
+                                    + source
+                                    + ":",
+                                    e );
+        }
+
+        return java.util.Collections.unmodifiableMap( existingTimeScales );
+    }
     
     /**
      * Loads metadata about all features that the project needs to use
