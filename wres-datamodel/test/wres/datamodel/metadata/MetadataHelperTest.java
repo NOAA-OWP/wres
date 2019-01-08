@@ -6,7 +6,12 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.TreeSet;
 
+import org.apache.commons.math3.exception.MathArithmeticException;
+import org.hamcrest.CoreMatchers;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -70,7 +75,7 @@ public final class MetadataHelperTest
     @Test
     public void testUnionOfThrowsExceptionWithNullInput()
     {
-        exception.expect( MetadataException.class );
+        exception.expect( NullPointerException.class );
         exception.expectMessage( "Cannot find the union of null metadata." );
 
         MetadataHelper.unionOf( null );
@@ -83,7 +88,7 @@ public final class MetadataHelperTest
     @Test
     public void testUnionOfThrowsExceptionWithEmptyInput()
     {
-        exception.expect( MetadataException.class );
+        exception.expect( IllegalArgumentException.class );
         exception.expectMessage( "Cannot find the union of empty input." );
 
         MetadataHelper.unionOf( Collections.emptyList() );
@@ -96,7 +101,7 @@ public final class MetadataHelperTest
     @Test
     public void testUnionOfThrowsExceptionWithOneNullInput()
     {
-        exception.expect( MetadataException.class );
+        exception.expect( NullPointerException.class );
         exception.expectMessage( "Cannot find the union of null metadata." );
 
         MetadataHelper.unionOf( Arrays.asList( (SampleMetadata) null  ) );
@@ -108,7 +113,7 @@ public final class MetadataHelperTest
      * unequal on attributes that are expected to be equal.
      */
     @Test
-    public void testUnionOfThrowsExceptionWithEmpty2Input()
+    public void testUnionOfThrowsExceptionWithUnequalInputs()
     {
         exception.expect( MetadataException.class );
         exception.expectMessage( "Only the time window and thresholds can differ when finding the union of metadata." );
@@ -328,7 +333,7 @@ public final class MetadataHelperTest
     {
         exception.expect( RescalingException.class );
         exception.expectMessage( "Insufficient data for rescaling: the period associated with the desired "
-                + "time scale matches the time-step of the data." );
+                + "time scale matches the time-step of the data (60 Seconds)." );
 
         MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( TimeScale.of( Duration.ofSeconds( 1 ) ),
                                                                TimeScale.of( Duration.ofSeconds( 60 ) ),
@@ -386,13 +391,176 @@ public final class MetadataHelperTest
     {
         exception.expect( RescalingException.class );
         exception.expectMessage( "Insufficient data for rescaling: the period associated with the desired time "
-                + "scale matches the time-step of the data." );
+                + "scale matches the time-step of the data (3600 Seconds)." );
 
         MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( TimeScale.of( Duration.ofSeconds( 1 ) ),
                                                                TimeScale.of( Duration.ofHours( 1 ),
                                                                              TimeScaleFunction.MEAN ),
                                                                Duration.ofHours( 1 ) );
     
+    }
+    
+    /**
+     * Tests that the {@link MetadataHelper#getLeastCommonScaleInSeconds(java.util.Set) throws an expected exception 
+     * when the input is empty.
+     */
+    @Test
+    public void testGetLCSInSecondsThrowsExceptionWithEmptyInput()
+    {
+        exception.expect( IllegalArgumentException.class );
+        exception.expectMessage( "Cannot compute the Least Common Scale from empty input." );
+
+        MetadataHelper.getLeastCommonScaleInSeconds( Collections.emptySet() );
+    }
+    
+    /**
+     * Tests that the {@link MetadataHelper#getLeastCommonScaleInSeconds(java.util.Set) throws an expected exception 
+     * when the input is null.
+     */
+    @Test
+    public void testGetLCSInSecondsThrowsExceptionWithNullInput()
+    {
+        exception.expect( NullPointerException.class );
+        exception.expectMessage( "Cannot compute the Least Common Scale from null input." );
+
+        MetadataHelper.getLeastCommonScaleInSeconds( null );
+    }
+    
+    /**
+     * Tests that the {@link MetadataHelper#getLeastCommonScaleInSeconds(java.util.Set) throws an expected exception 
+     * when the input contains more than two different time scales.
+     */
+    @Test
+    public void testGetLCSInSecondsThrowsExceptionWithMoreThanTwoTimeScales()
+    {
+        exception.expect( RescalingException.class );
+        exception.expectMessage( "Could not determine the Least Common Scale from the input. Expected input "
+                                 + "with only one scale function that does not correspond to an instantaneous "
+                                 + "time scale. Instead found ["
+                                 + TimeScaleFunction.MEAN
+                                 + ", "
+                                 + TimeScaleFunction.MAXIMUM
+                                 + ", "
+                                 + TimeScaleFunction.TOTAL
+                                 + "]." );
+
+        // Insertion ordered set to reflect declaration order of enum type
+        Set<TimeScale> scales = new TreeSet<>();
+
+        scales.add( TimeScale.of( Duration.ofHours( 1 ), TimeScaleFunction.MEAN ) );
+        scales.add( TimeScale.of( Duration.ofHours( 1 ), TimeScaleFunction.MAXIMUM ) );
+        scales.add( TimeScale.of( Duration.ofHours( 1 ), TimeScaleFunction.TOTAL ) );
+
+        MetadataHelper.getLeastCommonScaleInSeconds( scales );
+    }
+
+    /**
+     * Tests that the {@link MetadataHelper#getLeastCommonScaleInSeconds(java.util.Set) throws an expected exception 
+     * when the input contains two different time scales and none are instantaneous.
+     */
+    @Test
+    public void testGetLCSInSecondsThrowsExceptionWithTwoTimeScalesOfWhichNoneAreInstantaneous()
+    {
+        exception.expect( RescalingException.class );
+        exception.expectMessage( "Could not determine the Least Common Scale from the input. Expected input "
+                                 + "with only one scale function that does not correspond to an instantaneous "
+                                 + "time scale. Instead found ["
+                                 + TimeScaleFunction.MEAN
+                                 + ", "
+                                 + TimeScaleFunction.MAXIMUM
+                                 + "]." );
+
+        Set<TimeScale> scales = new TreeSet<>();
+
+        scales.add( TimeScale.of( Duration.ofHours( 1 ), TimeScaleFunction.MEAN ) );
+        scales.add( TimeScale.of( Duration.ofHours( 1 ), TimeScaleFunction.MAXIMUM ) );
+
+        MetadataHelper.getLeastCommonScaleInSeconds( scales );
+    }
+    
+    /**
+     * Tests that the {@link MetadataHelper#getLeastCommonScaleInSeconds(java.util.Set) throws an expected exception 
+     * when the input contains a time scale that is the {@link Long#MAX_VALUE} in seconds.
+     */
+    @Test
+    public void testGetLCSInSecondsThrowsExceptionWhenTimeScaleOverflowsLongSeconds()
+    {
+        exception.expect( RescalingException.class );
+        exception.expectMessage( "While attempting to compute the Least Common Scale from the input:" );
+        exception.expectCause( CoreMatchers.isA( MathArithmeticException.class ) );
+
+        Set<TimeScale> scales = new TreeSet<>();
+
+        scales.add( TimeScale.of( Duration.ofSeconds( Long.MAX_VALUE ) ) );
+        scales.add( TimeScale.of( Duration.ofHours( 1 ) ) );
+
+        MetadataHelper.getLeastCommonScaleInSeconds( scales );
+    }
+    
+    /**
+     * Tests that the {@link MetadataHelper#getLeastCommonScaleInSeconds(java.util.Set) returns the single time scale
+     * from an input with one time scale.
+     */
+    @Test
+    public void testGetLCSReturnsInputWhenInputHasOne()
+    {
+        TimeScale one = TimeScale.of( Duration.ofSeconds( 1 ) );
+        
+        assertEquals( one, MetadataHelper.getLeastCommonScaleInSeconds( Collections.singleton( one ) ) );
+    }
+    
+    /**
+     * Tests that the {@link MetadataHelper#getLeastCommonScaleInSeconds(java.util.Set) returns the single 
+     * non-instantaneous time scale from the input that contains one non-instantaneous time scale.
+     */
+    @Test
+    public void testGetLCSReturnsNonInstantaneousInputWhenInputHasTwoAndOneIsInstantaneous()
+    {
+        Set<TimeScale> scales = new HashSet<>( 2 );
+        TimeScale expected = TimeScale.of( Duration.ofSeconds( 61 ) );
+        scales.add( TimeScale.of( Duration.ofSeconds( 1 ) ) );
+        scales.add( expected );
+        
+        assertEquals( expected, MetadataHelper.getLeastCommonScaleInSeconds( scales ) );
+    }
+    
+    /**
+     * <p>Tests that the {@link MetadataHelper#getLeastCommonScaleInSeconds(java.util.Set) returns the expected
+     * LCS from an input containing three different time scales. Takes the example of (8,9,21) from:</p>
+     * 
+     * <p>https://en.wikipedia.org/wiki/Least_common_multiple
+     */
+    @Test
+    public void testGetLCSReturnsExpectedResultFromThreeInputs()
+    {
+        Set<TimeScale> scales = new HashSet<>( 3 );
+
+        scales.add( TimeScale.of( Duration.ofHours( 8 ) ) );
+        scales.add( TimeScale.of( Duration.ofHours( 9 ) ) );
+        scales.add( TimeScale.of( Duration.ofHours( 21 ) ) );
+
+        TimeScale expected = TimeScale.of( Duration.ofHours( 504 ) );
+        
+        assertEquals( expected, MetadataHelper.getLeastCommonScaleInSeconds( scales ) );
+    }
+    
+    /**
+     * <p>Tests that the {@link MetadataHelper#getLeastCommonScaleInSeconds(java.util.Set) returns the expected
+     * LCS from an input containing three different time scales. Takes the example of (8,9,21) from:</p>
+     * 
+     * <p>https://en.wikipedia.org/wiki/Least_common_multiple
+     */
+    @Test
+    public void testGetLCSReturnsExpectedResultFromTwoInputs()
+    {
+        Set<TimeScale> scales = new HashSet<>( 3 );
+
+        scales.add( TimeScale.of( Duration.ofHours( 8 ) ) );
+        scales.add( TimeScale.of( Duration.ofHours( 9 ) ) );
+
+        TimeScale expected = TimeScale.of( Duration.ofHours( 72 ) );
+        
+        assertEquals( expected, MetadataHelper.getLeastCommonScaleInSeconds( scales ) );
     }
     
 }

@@ -2,9 +2,19 @@ package wres.datamodel.metadata;
 
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
+
+import org.apache.commons.math3.exception.MathArithmeticException;
+import org.apache.commons.math3.util.ArithmeticUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.datamodel.metadata.TimeScale.TimeScaleFunction;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -19,25 +29,31 @@ public final class MetadataHelper
 {
 
     /**
+     * Logger.
+     */
+
+    private static final Logger LOGGER = LoggerFactory.getLogger( MetadataHelper.class );
+
+    /**
      * Finds the union of the input, based on the {@link TimeWindow}. All components of the input must be equal, 
      * except the {@link SampleMetadata#getTimeWindow()} and {@link SampleMetadata#getThresholds()}, otherwise an exception is 
      * thrown. See also {@link TimeWindow#unionOf(List)}. No threshold information is represented in the union.
      * 
      * @param input the input metadata
      * @return the union of the input
-     * @throws MetadataException if the input is invalid
+     * @throws IllegalArgumentException if the input is empty
+     * @throws NullPointerException if the input is null
      */
 
     public static SampleMetadata unionOf( List<SampleMetadata> input )
     {
         String nullString = "Cannot find the union of null metadata.";
-        if ( Objects.isNull( input ) )
-        {
-            throw new MetadataException( nullString );
-        }
+
+        Objects.requireNonNull( input, nullString );
+
         if ( input.isEmpty() )
         {
-            throw new MetadataException( "Cannot find the union of empty input." );
+            throw new IllegalArgumentException( "Cannot find the union of empty input." );
         }
         List<TimeWindow> unionWindow = new ArrayList<>();
 
@@ -47,10 +63,8 @@ public final class MetadataHelper
         // Validate for equivalence with the first entry and add window to list
         for ( SampleMetadata next : input )
         {
-            if ( Objects.isNull( next ) )
-            {
-                throw new MetadataException( nullString );
-            }
+            Objects.requireNonNull( next, nullString );
+
             if ( !next.equalsWithoutTimeWindowOrThresholds( test ) )
             {
                 throw new MetadataException( "Only the time window and thresholds can differ when finding the union of "
@@ -150,6 +164,84 @@ public final class MetadataHelper
                                                                     desiredTimeScale.getPeriod(),
                                                                     "data time-step" );
 
+    }
+
+
+    /**
+     * <p>Computes the Least Common Multiple or Least Common Scale (LCS) of the inputs at a time resolution of seconds. 
+     * The LCS is the integer number of seconds that is a common multiple of all of the inputs.
+     * 
+     * <p>When the input contains an instantaneous time scale (see {@link TimeScale#isInstantaneous()}), then this
+     * method either returns the other time scale present or throws an exception if more than one additional time 
+     * scale is present. However, there is no other validation of the proposed rescaling, such as the proposed 
+     * {@link TimeScale#getFunction()} associated with the rescaled quantity. 
+     * For that, and other validation see:
+     * {@link MetadataHelper#throwExceptionIfChangeOfScaleIsInvalid(TimeScale, TimeScale, Duration)}.
+     * 
+     * @param timeScales the time scales from which to derive the LCS
+     * @return the LCS for the input
+     * @throws RescalingException if the input contains more than one scale function or one function plus a time scale
+     *            that represents instantaneous data or if the LCS could not be calculated from the input
+     * @throws NullPointerException if the inputs are null
+     * @throws IllegalArgumentException if the input is empty
+     */
+
+    public static TimeScale getLeastCommonScaleInSeconds( Set<TimeScale> timeScales )
+    {
+        Objects.requireNonNull( timeScales, "Cannot compute the Least Common Scale from null input." );
+
+        if ( timeScales.isEmpty() )
+        {
+            throw new IllegalArgumentException( "Cannot compute the Least Common Scale from empty input." );
+        }
+
+        Set<TimeScaleFunction> functions =
+                timeScales.stream().map( TimeScale::getFunction ).collect( Collectors.toCollection( TreeSet::new ) );
+
+        // Only allowed one function unless instantaneous data is present, in which case only two
+        if ( functions.size() > 2
+             || ( functions.size() == 2 && timeScales.stream().noneMatch( TimeScale::isInstantaneous ) ) )
+        {
+            throw new RescalingException( "Could not determine the Least Common Scale from the input. Expected input "
+                                          + "with only one scale function that does not correspond to an instantaneous "
+                                          + "time scale. Instead found "
+                                          + functions
+                                          + "." );
+        }
+
+        // Only one, then that must be the LCS
+        if ( timeScales.size() == 1 )
+        {
+            // Worth logging this situation
+            LOGGER.debug( "When computing the Least Common Scale, found only one time scale in the input." );
+
+            return timeScales.iterator().next();
+        }
+
+        // If the input contains an instantaneous time scale, then return the only non-instantaneous one present
+        // The earlier validation guarantees the latter
+        if ( timeScales.stream().anyMatch( TimeScale::isInstantaneous ) )
+        {
+            return timeScales.stream().filter( scale -> !scale.isInstantaneous() ).findFirst().get();
+        }
+
+        // Compute the LCS from two or more time scales
+        Iterator<TimeScale> it = timeScales.iterator();
+        long lcs = it.next().getPeriod().getSeconds();
+        while ( it.hasNext() )
+        {
+            try
+            {
+                lcs = ArithmeticUtils.lcm( lcs, it.next().getPeriod().getSeconds() );
+            }
+            // Decorate
+            catch ( MathArithmeticException e )
+            {
+                throw new RescalingException( "While attempting to compute the Least Common Scale from the input:", e );
+            }
+        }
+
+        return TimeScale.of( Duration.ofSeconds( lcs ), timeScales.iterator().next().getFunction() );
     }
 
     /**
@@ -271,7 +363,11 @@ public final class MetadataHelper
         if ( timeStep.equals( desiredTimeScale.getPeriod() ) && !existingTimeScale.equals( desiredTimeScale ) )
         {
             throw new RescalingException( "Insufficient data for rescaling: the period associated with the desired "
-                                          + "time scale matches the time-step of the data." );
+                                          + "time scale matches the time-step of the data ("
+                                          + timeStep.getSeconds()
+                                          + " "
+                                          + ChronoUnit.SECONDS
+                                          + ")." );
         }
     }
 

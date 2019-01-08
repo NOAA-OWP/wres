@@ -221,6 +221,7 @@ project(':wres-datamodel')
     {
         compile 'org.slf4j:slf4j-api:1.8.0-beta2'
         compile 'org.apache.commons:commons-lang3:3.6'
+        compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
         compile project(':wres-config')
 
         testCompile 'junit:junit:4.12'

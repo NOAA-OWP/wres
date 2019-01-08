@@ -12,12 +12,14 @@ import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutionException;
@@ -42,6 +44,9 @@ import wres.config.generated.ProjectConfig;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.TimeScaleFunction;
+import wres.datamodel.metadata.MetadataHelper;
+import wres.datamodel.metadata.RescalingException;
+import wres.datamodel.metadata.TimeScale;
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.OffsetEvaluator;
 import wres.io.config.ConfigHelper;
@@ -414,6 +419,13 @@ public class Project
      */
     public void prepareForExecution() throws SQLException, IOException, CalculationException
     {
+        // Validate the time-scale information in the declaration as it applies to ingested sources
+        // Remove the feature toggle when ready for production
+        if( isValidateDesiredTimeScaleAgainstEachIngestedSourceInProduction() )
+        {
+            this.validateDesiredTimeScaleAgainstEachIngestedSource();
+        }
+        
         if (!ConfigHelper.isSimulation( this.getRight() ) &&
             !ProjectConfigs.hasTimeSeriesMetrics( this.getProjectConfig() ) &&
             !this.usesGriddedData( this.getRight() ))
@@ -441,7 +453,153 @@ public class Project
             return this.features;
         }
     }
+    
+    /**
+     * Feature toggle that filters {@link #}
+     */
 
+    @Deprecated
+    private boolean isValidateDesiredTimeScaleAgainstEachIngestedSourceInProduction()
+    {
+        return false;
+    }
+    
+    /**
+     * <p>Validates the "desired time scale" information in the project declaration as it applies to ingested sources. 
+     * The "desired time scale" is either declared explicitly (once instance per declaration) as the 
+     * <code>desiredTimeScale</code> or it is determined by the system (see below).
+     * 
+     * <p>This method is concerned with post-ingest validation, when the existing time scale is maximally described,
+     * either from the <code>existingTimeScale</code> in the project declaration or the information within the source 
+     * (which is canonical). For the same reason, the <code>existingTimeScale</code> is *not* validated separately, but 
+     * this method will validate the <code>existingTimeScale</code> insofar as it was used to describe the source in 
+     * the database. Post-ingest, the database provides a canonical description of the scale information associated 
+     * with each source.
+     * 
+     * <p>When the declaration does not include a <code>desiredTimeScale</code>, an attempt is made to determine 
+     * the Least Common Scale (LCS). The LCS is the smallest common multiple of the time scales associated with every 
+     * ingested source. If the LCS cannot be determined, an exception is thrown.
+     * 
+     * </p>The desired time scale is validated against the existing time scale of each source separately. An 
+     * exception is thrown if the validation fails for any one source.
+     * 
+     * <p> Uses the {@link MetadataHelper#throwExceptionIfChangeOfScaleIsInvalid(TimeScale, TimeScale, Duration)} for
+     * validation.
+     * 
+     * <p> Uses the {@link MetadataHelper#getLeastCommonScale(Set)} to determine the LCS.
+     * 
+     * @throws SQLException Thrown on failing to obtain the time scale or time step information from the database
+     * @throws CalculationException Thrown if no time scale or time step information is discovered
+     * @throws RescalingException Thrown if the desired time scale is not deliverable from the existing sources
+     */
+    
+    private void validateDesiredTimeScaleAgainstEachIngestedSource() throws SQLException, CalculationException
+    {
+        // The desired time scale
+        TimeScale desiredScale = null;
+
+        // Obtain from the declaration if available
+        if ( Objects.nonNull( this.getProjectConfig().getPair() )
+             && Objects.nonNull( this.getProjectConfig().getPair().getDesiredTimeScale() ) )
+        {
+            desiredScale = TimeScale.of( this.getProjectConfig().getPair().getDesiredTimeScale() );
+        }
+
+        // Obtain the existing time scale and corresponding time step for each ingested source
+        Map<TimeScale,Duration> existingScales = this.getTimeScaleAndTimeStepForEachProjectSource();
+
+        // Determine the Least Common Scale if required and available
+        if ( Objects.isNull( desiredScale ) )
+        {
+            LOGGER.debug( "No desired time scale declared. Attempting to substitute the Least Common Scale based on "
+                          + "the ingested sources." );
+
+            desiredScale =
+                    MetadataHelper.getLeastCommonScaleInSeconds( java.util.Collections.unmodifiableSet( existingScales.keySet() ) );
+        }
+
+        // Validate the desired time scale against each existing one
+        LOGGER.debug( "Found {} distinct time scales across all ingested sources. "
+                      + "Validating each against the desired time scale of {}.",
+                      existingScales.size(),
+                      desiredScale );
+
+        final TimeScale finalDesiredScale = desiredScale;
+        existingScales.forEach( ( existingScale,
+                                  timeStep ) -> MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( existingScale,
+                                                                                                       finalDesiredScale,
+                                                                                                       timeStep ) );
+        LOGGER.debug( "Finished validating the existing time scales against the desired time scale.",
+                      existingScales.size() );
+        
+    }
+    
+    /**
+     * Returns the {@link TimeScale} and time-step information for each source associated with the project. The
+     * time-step is represented as a {@link Duration}.
+     * 
+     * @return the time scale and time-step information for each source
+     * @throws SQLException Thrown on failing to obtain the time scale or time step information from the database
+     * @throws CalculationException Thrown if no time scale or time step information is discovered
+     */
+
+    private Map<TimeScale, Duration> getTimeScaleAndTimeStepForEachProjectSource()
+            throws SQLException, CalculationException
+    {
+        // Obtain the existing time scale and corresponding time step for each ingested source
+        Map<TimeScale, Duration> existingTimeScales = new HashMap<>();
+
+        // Ask the database
+        DataScripter script = new DataScripter();
+        script.addLine( "SELECT DISTINCT TS.scale_period," );
+        script.addTab( 2 ).addLine( "TS.scale_function," );
+        script.addTab( 2 ).addLine( "TS.time_step" );
+        script.addLine( "FROM wres.timeseries TS " );
+        script.addTab( 1 ).addLine( "INNER JOIN wres.timeseriessource AS TSS" );
+        script.addTab( 2 ).addLine( "ON TS.timeseries_id = TSS.timeseries_id" );
+        script.addTab( 1 ).addLine( "INNER JOIN wres.projectsource PS" );
+        script.addTab( 2 ).addLine( "ON TSS.source_id = PS.source_id" );
+        script.addLine( "WHERE PS.project_id = " + this.getId() );
+
+        // Consume each result and create a time scale and a time-step for each
+        try
+        {
+            script.consume( scaleAndStepData -> {
+
+                // Time scale
+                Duration period = scaleAndStepData.getDuration( "scale_period" );
+                TimeScale.TimeScaleFunction function =
+                        TimeScale.TimeScaleFunction.valueOf( scaleAndStepData.getString( "scale_function" )
+                                                                             .toUpperCase() );
+
+                TimeScale timeScale = TimeScale.of( period, function );
+
+                // Time step
+                Duration timeStep = scaleAndStepData.getDuration( "time_step" );
+
+                // Store
+                existingTimeScales.put( timeScale, timeStep );
+
+            } );
+        }
+        // Decorate and propagate
+        catch ( SQLException e )
+        {
+            throw new SQLException( "Could not retrieve from the database the "
+                                    + "time scale and time step information "
+                                    + "for one or more ingested sources.",
+                                    e );
+        }
+
+        // No time scales
+        if ( existingTimeScales.isEmpty() )
+        {
+            throw new CalculationException( "Could not find the time-scale information for any ingested source." );
+        }
+
+        return java.util.Collections.unmodifiableMap( existingTimeScales );
+    }       
+    
     /**
      * Loads metadata about all features that the project needs to use
      * @throws SQLException Thrown if metadata about the features could not be loaded from the database
