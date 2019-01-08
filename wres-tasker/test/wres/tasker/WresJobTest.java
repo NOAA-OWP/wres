@@ -22,8 +22,10 @@ import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.StringJoiner;
 import javax.ws.rs.core.Response;
 
+import org.apache.qpid.server.configuration.CommonProperties;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.X500NameBuilder;
 import org.bouncycastle.asn1.x500.style.BCStyle;
@@ -57,6 +59,27 @@ public class WresJobTest
     private static final String SERVER_CERT_FILE_NAME = "***REMOVED***wres-broker-localhost_server_x509_cert.pem";
     private static final String SERVER_KEY_FILE_NAME = "***REMOVED***wres-broker-localhost_server_private_rsa_key.pem";
     private static final String TRUST_STORE_FILE_NAME = "trustedCertificates-localhost.jks";
+
+    private static final String[] APPROVED_CIPHERS = {
+            "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+            "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+            "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA",
+            "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA",
+            "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256",
+            "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384",
+            "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+            "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+            "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
+            "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
+            "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256",
+            "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384",
+            "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256",
+            "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384",
+            "TLS_DHE_RSA_WITH_AES_128_CBC_SHA",
+            "TLS_DHE_RSA_WITH_AES_256_CBC_SHA",
+            "TLS_DHE_RSA_WITH_AES_128_CBC_SHA256",
+            "TLS_DHE_RSA_WITH_AES_256_CBC_SHA256"
+    };
 
     @BeforeClass
     public static void setup() throws IOException, NoSuchAlgorithmException,
@@ -187,6 +210,18 @@ public class WresJobTest
         System.setProperty( "wres.secrets_dir", WresJobTest.tempDir.toString() );
         Path trustPath = Paths.get( WresJobTest.tempDir.toString(), TRUST_STORE_FILE_NAME );
         System.setProperty( "wres.trustStore", trustPath.toString() );
+
+        // Set approved cipher suites for Qpid broker in expected json format
+        StringJoiner approvedCiphersJoiner = new StringJoiner( "\", \"",
+                                                               "[ \"",
+                                                               "\" ]" );
+        for ( String cipherSuite : APPROVED_CIPHERS )
+        {
+            approvedCiphersJoiner.add( cipherSuite );
+        }
+
+        System.setProperty( CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST,
+                            approvedCiphersJoiner.toString() );
     }
 
     @Test
