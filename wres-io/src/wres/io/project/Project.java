@@ -461,7 +461,7 @@ public class Project
     @Deprecated
     private boolean isValidateDesiredTimeScaleAgainstEachIngestedSourceInProduction()
     {
-        return true;
+        return false;
     }
     
     /**
