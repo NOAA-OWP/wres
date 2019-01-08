@@ -314,8 +314,8 @@ public final class MetadataHelperTest
     public void throwExceptionIfDataTimeStepExceedsDesiredPeriod()
     {
         exception.expect( RescalingException.class );
-        exception.expectMessage( "Insufficient data for resclaing: the time-step of the data cannot be "
-                + "greater than the desired time scale." );
+        exception.expectMessage( "Insufficient data for rescaling: the time-step of the data cannot be "
+                + "greater than the desired time scale when rescaling is required [PT2M,PT1M]." );
 
         MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( TimeScale.of( Duration.ofSeconds( 1 ) ),
                                                                TimeScale.of( Duration.ofSeconds( 60 ) ),
@@ -333,7 +333,7 @@ public final class MetadataHelperTest
     {
         exception.expect( RescalingException.class );
         exception.expectMessage( "Insufficient data for rescaling: the period associated with the desired "
-                + "time scale matches the time-step of the data (60 Seconds)." );
+                + "time scale matches the time-step of the data (PT1M)." );
 
         MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( TimeScale.of( Duration.ofSeconds( 1 ) ),
                                                                TimeScale.of( Duration.ofSeconds( 60 ) ),
@@ -391,13 +391,28 @@ public final class MetadataHelperTest
     {
         exception.expect( RescalingException.class );
         exception.expectMessage( "Insufficient data for rescaling: the period associated with the desired time "
-                + "scale matches the time-step of the data (3600 Seconds)." );
+                + "scale matches the time-step of the data (PT1H)." );
 
         MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( TimeScale.of( Duration.ofSeconds( 1 ) ),
                                                                TimeScale.of( Duration.ofHours( 1 ),
                                                                              TimeScaleFunction.MEAN ),
                                                                Duration.ofHours( 1 ) );
     
+    }
+    
+    /**
+     * Checks that no exception is thrown when calling 
+     * {@link MetadataHelper#throwExceptionIfChangeOfScaleIsInvalid(TimeScale, TimeScale, java.time.Duration)} with
+     * an existing time scale that equals the desired time scale.
+     */
+
+    @Test( expected = Test.None.class )
+    public void doNotThrowExceptionWhenNoRescalingRequested()
+    {
+        MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( TimeScale.of( Duration.ofSeconds( 120 ) ),
+                                                               TimeScale.of( Duration.ofSeconds( 120 ) ),
+                                                               Duration.ofMillis( 7 ) );
+
     }
     
     /**

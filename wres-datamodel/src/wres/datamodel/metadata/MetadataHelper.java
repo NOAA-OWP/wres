@@ -2,7 +2,6 @@ package wres.datamodel.metadata;
 
 import java.math.BigDecimal;
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -132,37 +131,43 @@ public final class MetadataHelper
         {
             throw new RescalingException( "The time-step duration cannot be negative for rescaling purposes." );
         }
+        
+        // Change of scale required
+        if ( !existingTimeScale.equals( desiredTimeScale ) )
+        {
+            // Downscaling not currently allowed
+            MetadataHelper.throwExceptionIfDownscalingRequested( existingTimeScale.getPeriod(),
+                                                                 desiredTimeScale.getPeriod() );
 
-        // Downscaling not currently allowed
-        MetadataHelper.throwExceptionIfDownscalingRequested( existingTimeScale.getPeriod(),
-                                                             desiredTimeScale.getPeriod() );
+            // The desired time scale period must be an integer multiple of the existing time scale period
+            MetadataHelper.throwExceptionIfDesiredPeriodDoesNotCommute( existingTimeScale.getPeriod(),
+                                                                        desiredTimeScale.getPeriod(),
+                                                                        "existing period" );
 
-        // The desired time scale period must be an integer multiple of the existing time scale period
-        MetadataHelper.throwExceptionIfDesiredPeriodDoesNotCommute( existingTimeScale.getPeriod(),
-                                                                    desiredTimeScale.getPeriod(),
-                                                                    "existing period" );
+            // If the existing and desired periods are the same, the function cannot differ
+            MetadataHelper.throwExceptionIfPeriodsMatchAndFunctionsDiffer( existingTimeScale, desiredTimeScale );
 
-        // If the existing and desired periods are the same, the function cannot differ
-        MetadataHelper.throwExceptionIfPeriodsMatchAndFunctionsDiffer( existingTimeScale, desiredTimeScale );
+            // If the desired function is a total, then the existing function must also be a total
+            MetadataHelper.throwExceptionIfAccumulatingNonAccumulations( existingTimeScale.getFunction(),
+                                                                         desiredTimeScale.getFunction() );
 
-        // If the desired function is a total, then the existing function must also be a total
-        MetadataHelper.throwExceptionIfAccumulatingNonAccumulations( existingTimeScale.getFunction(),
-                                                                     desiredTimeScale.getFunction() );
+            // The time-step of the data must be less than or equal to the period associated with the desired time scale
+            // if rescaling is required
+            MetadataHelper.throwExceptionIfDataTimeStepExceedsDesiredPeriod( existingTimeScale,
+                                                                             desiredTimeScale,
+                                                                             timeStep );
 
-        // The time-step of the data must be less than or equal to the period associated with the desired time scale
-        MetadataHelper.throwExceptionIfDataTimeStepExceedsDesiredPeriod( timeStep, desiredTimeScale.getPeriod() );
+            // If time-step of the data is equal to the period associated with the desired time scale, then 
+            // rescaling is not allowed
+            MetadataHelper.throwExceptionIfDataTimeStepMatchesDesiredPeriod( existingTimeScale,
+                                                                             desiredTimeScale,
+                                                                             timeStep );
 
-
-        // If time-step of the data is equal to the period associated with the desired time scale, then 
-        // rescaling is not allowed
-        MetadataHelper.throwExceptionIfDataTimeStepMatchesDesiredPeriodAndRescalingIsRequired( existingTimeScale,
-                                                                                               desiredTimeScale,
-                                                                                               timeStep );
-
-        // The desired time scale period must be an integer multiple of the data time-step
-        MetadataHelper.throwExceptionIfDesiredPeriodDoesNotCommute( timeStep,
-                                                                    desiredTimeScale.getPeriod(),
-                                                                    "data time-step" );
+            // The desired time scale period must be an integer multiple of the data time-step
+            MetadataHelper.throwExceptionIfDesiredPeriodDoesNotCommute( timeStep,
+                                                                        desiredTimeScale.getPeriod(),
+                                                                        "data time-step" );
+        }
 
     }
 
@@ -329,19 +334,27 @@ public final class MetadataHelper
     }
 
     /**
-     * Throws an exception if the time-step of the data exceeds the desired period.
+     * Throws an exception if the time-step of the data exceeds the desired period and rescaling is required.
      * 
+     * @param existingTimeScale the existing time scale
+     * @param desiredTimeScale the desired time scale
      * @param timeStep the data time-step
-     * @param desiredPeriod the desired period
      * @throws RescalingException if the timeStep exceeds the desiredPeriod
      */
 
-    private static void throwExceptionIfDataTimeStepExceedsDesiredPeriod( Duration timeStep, Duration desiredPeriod )
+    private static void
+            throwExceptionIfDataTimeStepExceedsDesiredPeriod( TimeScale existingTimeScale,
+                                                              TimeScale desiredTimeScale,
+                                                              Duration timeStep )
     {
-        if ( timeStep.compareTo( desiredPeriod ) > 0 )
+        if ( timeStep.compareTo( desiredTimeScale.getPeriod() ) > 0 )
         {
-            throw new RescalingException( "Insufficient data for resclaing: the time-step of the data cannot be "
-                                          + "greater than the desired time scale." );
+            throw new RescalingException( "Insufficient data for rescaling: the time-step of the data cannot be "
+                                          + "greater than the desired time scale when rescaling is required ["
+                                          + timeStep
+                                          + ","
+                                          + desiredTimeScale.getPeriod()
+                                          + "]." );
         }
     }
 
@@ -356,17 +369,15 @@ public final class MetadataHelper
      */
 
     private static void
-            throwExceptionIfDataTimeStepMatchesDesiredPeriodAndRescalingIsRequired( TimeScale existingTimeScale,
-                                                                                    TimeScale desiredTimeScale,
-                                                                                    Duration timeStep )
+            throwExceptionIfDataTimeStepMatchesDesiredPeriod( TimeScale existingTimeScale,
+                                                              TimeScale desiredTimeScale,
+                                                              Duration timeStep )
     {
-        if ( timeStep.equals( desiredTimeScale.getPeriod() ) && !existingTimeScale.equals( desiredTimeScale ) )
+        if ( timeStep.equals( desiredTimeScale.getPeriod() ) )
         {
             throw new RescalingException( "Insufficient data for rescaling: the period associated with the desired "
                                           + "time scale matches the time-step of the data ("
-                                          + timeStep.getSeconds()
-                                          + " "
-                                          + ChronoUnit.SECONDS
+                                          + timeStep
                                           + ")." );
         }
     }
