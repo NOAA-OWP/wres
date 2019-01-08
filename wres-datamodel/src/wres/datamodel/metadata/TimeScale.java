@@ -37,7 +37,7 @@ import wres.config.generated.TimeScaleConfig;
  * @author james.brown@hydrosolved.com
  */
 
-public final class TimeScale
+public final class TimeScale implements Comparable<TimeScale>
 {
 
     /**
@@ -197,6 +197,36 @@ public final class TimeScale
         return "[" + period + "," + function + "]";
     }
 
+    @Override
+    public int compareTo( TimeScale o )
+    {
+        Objects.requireNonNull( o );
+        
+        int returnMe = this.getPeriod().compareTo( o.getPeriod() );
+        
+        if( returnMe != 0)
+        {
+            return returnMe;
+        }
+        
+        return this.getFunction().compareTo( o.getFunction() );
+    }
+    
+    /**
+     * Helper that returns <code>true</code> if this time scale is effectively "instantaneous", otherwise 
+     * <code>false</code>.
+     * 
+     * A time scale is considered "instantaneous" if the period associated with the time scale is less than or 
+     * equal to sixty seconds. 
+     * 
+     * @return true if the period is less than or equal to 60 seconds, otherwise false.
+     */
+
+    public boolean isInstantaneous()
+    {
+        return this.getPeriod().compareTo( Duration.ofSeconds( 60 ) ) <= 0;
+    }
+    
     /**
      * Hidden constructor.
      * 
