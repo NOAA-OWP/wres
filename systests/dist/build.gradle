@@ -1,0 +1,50 @@
+repositories
+{
+    mavenCentral()
+}
+
+apply plugin: 'application'
+mainClassName = 'wres.systests.SystemTestsSuiteRunner'
+
+versionToTest = "${versionToTest}"
+
+task( unzipArtifactToTest, type: Copy, group: 'test' )
+{
+    description = 'Unzips the wres zip artifact to be tested.'
+
+    def zipFile = file( "${wresZipDirectory}/wres-${versionToTest}.zip" )
+    def outputDir = file( "${buildDir}" )
+
+    println( "buildDir: ${buildDir}" )
+    println( "wresZipDirectory: " + wresZipDirectory )
+    println( "zipFile: " + zipFile )
+    println( "outputDir: " + outputDir )
+
+    from zipTree(zipFile)
+    into outputDir
+}
+
+// To compile the test java code, we need the artifact libs
+compileTestJava.dependsOn( unzipArtifactToTest )
+
+dependencies
+{
+    compile 'org.slf4j:slf4j-api:1.8.0-beta2'
+    compile 'commons-io:commons-io:2.6'
+    compile 'com.google.guava:guava-testlib:21.0'
+    compile 'com.google.guava:guava:22.0'
+    compile 'junit:junit:4.12'
+    compile 'org.mockito:mockito-core:2.8.47'
+
+
+    // Expose all wres contents here, using unzipArtifactToTest task:
+    def wresLibsDir = "${buildDir}/wres-${versionToTest}/lib/"
+    // Use of fileTree is important, lazily evaluated, meaning that the contents
+    // from the unzipArtifactToTest task will be here by now
+    compile fileTree( unzipArtifactToTest.destinationDir )
+
+    println( "buildDir: ${buildDir}" )
+    println( "versionToTest: ${versionToTest}" )
+    println( "wresLibsDir: " + wresLibsDir )
+}
+
