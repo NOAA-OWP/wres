@@ -36,8 +36,25 @@ distributions
                 include 'scenario*/FAILS'
                 include 'scenario*/benchmarks/**'
                 include 'smalldata/**'
-		include 'scripts/*'
-		exclude 'scenario*/output'
+                include 'scripts/*'
+                exclude 'scenario*/output'
+            }
+
+            // JUnit (integration) tests to be run after unzipping and scripts:
+            from('dist')
+            {
+                include 'build.gradle'
+                include 'settings.gradle'
+                include 'gradle.properties'
+                include 'src/test/java/**'
+            }
+
+            // Gradle software itself
+            from('..')
+            {
+                include 'gradlew'
+                include 'gradlew.bat'
+                include 'gradle/wrapper/*'
             }
         }
     }
