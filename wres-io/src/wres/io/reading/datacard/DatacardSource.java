@@ -62,7 +62,6 @@ public class DatacardSource extends BasicSource
     {
         super( projectConfig );
 		setFilename(filename);
-		this.setHash();
 	}
 
     private void setTimeInterval(String interval)
