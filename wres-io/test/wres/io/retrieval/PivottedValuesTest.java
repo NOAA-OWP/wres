@@ -1,5 +1,6 @@
 package wres.io.retrieval;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,6 +26,7 @@ import wres.config.generated.TimeScaleFunction;
 import wres.io.data.caching.Ensembles;
 import wres.io.utilities.DataBuilder;
 import wres.io.utilities.DataProvider;
+import wres.util.TimeHelper;
 
 @RunWith(PowerMockRunner.class)
 @PowerMockIgnore("javax.management.*")
@@ -57,7 +59,9 @@ public class PivottedValuesTest
             Assert.fail("The test could not be properly prepared.");
         }
 
-        PivottedValues pivottedValues = new PivottedValues( Instant.now(), 10, this.getValueMapping() );
+        PivottedValues pivottedValues = new PivottedValues( Instant.now(),
+                                                            Duration.of( 10, TimeHelper.LEAD_RESOLUTION ),
+                                                            this.getValueMapping() );
 
         Collection<Double> sorted = null;
 
@@ -125,7 +129,9 @@ public class PivottedValuesTest
             Assert.fail("The test could not be properly prepared.");
         }
 
-        PivottedValues pivottedValues = new PivottedValues( Instant.now(), 10, this.getValueMapping());
+        PivottedValues pivottedValues = new PivottedValues( Instant.now(),
+                                                            Duration.of( 10, TimeHelper.LEAD_RESOLUTION ),
+                                                            this.getValueMapping() );
 
         Collection<Double> sorted = null;
 
@@ -209,7 +215,8 @@ public class PivottedValuesTest
         valueMapping.put( new PivottedValues.EnsemblePosition( 10, 3 ), Collections.singletonList( 11.0 ) );
         valueMapping.put( new PivottedValues.EnsemblePosition( 11, 3 ), Collections.singletonList( 12.0 ) );
 
-        PivottedValues pivottedValues = new PivottedValues( Instant.now(), 10, valueMapping );
+        PivottedValues pivottedValues =
+                new PivottedValues( Instant.now(), Duration.of( 10, TimeHelper.LEAD_RESOLUTION ), valueMapping );
 
         try
         {
@@ -290,7 +297,8 @@ public class PivottedValuesTest
         valueMapping.put(new PivottedValues.EnsemblePosition( 1, 2 ), member2);
         valueMapping.put(new PivottedValues.EnsemblePosition( 2, 3 ), member3);
 
-        PivottedValues pivottedValues = new PivottedValues( Instant.now(), 10, valueMapping );
+        PivottedValues pivottedValues =
+                new PivottedValues( Instant.now(), Duration.of( 10, TimeHelper.LEAD_RESOLUTION ), valueMapping );
 
         Double[] aggregatedValues = pivottedValues.getAggregatedValues( true, TimeScaleFunction.MEAN);
 
@@ -340,7 +348,8 @@ public class PivottedValuesTest
             Assert.fail("The test could not be properly prepared.");
         }
 
-        PivottedValues pivottedValues = new PivottedValues( Instant.now(), 10, valueMapping );
+        PivottedValues pivottedValues =
+                new PivottedValues( Instant.now(), Duration.of( 10, TimeHelper.LEAD_RESOLUTION ), valueMapping );
 
         Double[] aggregatedValues = pivottedValues.getAggregatedValues( false, TimeScaleFunction.MEAN);
 

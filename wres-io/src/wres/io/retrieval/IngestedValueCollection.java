@@ -1,6 +1,7 @@
 package wres.io.retrieval;
 
 import java.sql.SQLException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -18,6 +19,7 @@ import wres.io.project.Project;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.NoDataException;
 import wres.util.Collections;
+import wres.util.TimeHelper;
 
 /**
  * Organizes sets of values that were previously ingested and recently retrieved so
@@ -158,7 +160,7 @@ class IngestedValueCollection
             }
 
             return new PivottedValues( this.first().getValidTime(),
-                                       this.first().getLead(),
+                                       Duration.of( this.first().getLead(), TimeHelper.LEAD_RESOLUTION ),
                                        valueMapping );
         }
         else if (this.size() == 1)
@@ -271,8 +273,12 @@ class IngestedValueCollection
             for ( int index = 0; index < value.length(); ++index )
             {
                 PivottedValues.EnsemblePosition ensemblePosition = new PivottedValues.EnsemblePosition( index, value.getMemberID( index ) );
+                
+                //TODO: Jbr - check and remove these unused references. Something to do with
+                // propagating ensemble labels?, i.e. #58350
                 Pair<Integer, Integer> keyIndex = Pair.of(index, value.getMemberID( index ));
                 Integer key = value.getMemberID( index );
+                
                 if ( !valueMapping.containsKey( ensemblePosition ) )
                 {
                     valueMapping.put( ensemblePosition, new ArrayList<>() );
@@ -282,7 +288,7 @@ class IngestedValueCollection
             }
         }
         result = new PivottedValues( lastValidTime,
-                                     lastLead,
+                                     Duration.of( lastLead, TimeHelper.LEAD_RESOLUTION ),
                                      valueMapping );
 
         return result;

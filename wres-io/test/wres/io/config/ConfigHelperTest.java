@@ -5,10 +5,11 @@ import static org.junit.Assert.assertEquals;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -20,9 +21,12 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DateCondition;
 import wres.config.generated.DurationUnit;
 import wres.config.generated.IntBoundsType;
+import wres.config.generated.MetricsConfig;
 import wres.config.generated.PairConfig;
 import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
+import wres.config.generated.TimeSeriesMetricConfig;
+import wres.config.generated.TimeSeriesMetricConfigName;
 import wres.datamodel.metadata.TimeWindow;
 
 @RunWith( PowerMockRunner.class )
@@ -76,11 +80,12 @@ public class ConfigHelperTest
     /**
      * <p>Tests the {@link ConfigHelper#getTimeWindowsFromProjectConfig(wres.config.generated.ProjectConfig)}
      * where the project declaration includes a <code>leadHours</code> and a 
-     * <code>leadTimesPoolingWindow</code>. Expects twenty-four time windows with
+     * <code>leadTimesPoolingWindow</code>. Expects twenty-three time windows with
      * prescribed characteristics.
      * 
-     * <p>This test scenario is analogous to system test scenario017 as of commit 
-     * 766c6d0b4ad96f191bcafb8f2a357c0f2e6a2d3c
+     * <p>The project declaration from this test scenario matches (in all important ways) the declaration associated 
+     * with system test scenario017, as of commit 766c6d0b4ad96f191bcafb8f2a357c0f2e6a2d3c, but the expected output 
+     * differs.
      */
 
     @Test
@@ -134,8 +139,9 @@ public class ConfigHelperTest
      * <code>leadTimesPoolingWindow</code>. Expects one time windows with
      * prescribed characteristics.
      * 
-     * <p>This test scenario is analogous to system test scenario403 as of commit 
-     * 766c6d0b4ad96f191bcafb8f2a357c0f2e6a2d3c
+     * <p>The project declaration from this test scenario matches (in all important ways) the declaration associated 
+     * with system test scenario403, as of commit 766c6d0b4ad96f191bcafb8f2a357c0f2e6a2d3c, but the expected output 
+     * differs.
      */
 
     @Test
@@ -187,8 +193,9 @@ public class ConfigHelperTest
      * an <code>issuedDatesPoolingWindow</code>. Expects eighteen time 
      * windows with prescribed characteristics.
      * 
-     * <p>This test scenario is analogous to system test scenario505 as of commit 
-     * 766c6d0b4ad96f191bcafb8f2a357c0f2e6a2d3c
+     * <p>The project declaration from this test scenario matches (in all important ways) the declaration associated 
+     * with system test scenario505, as of commit 766c6d0b4ad96f191bcafb8f2a357c0f2e6a2d3c, but the expected output 
+     * differs.
      */
 
     @Test
@@ -332,8 +339,8 @@ public class ConfigHelperTest
      * <code>leadTimesPoolingWindow</code>, a <code>dates</code> and a 
      * <code>issuedDates</code>. Expects one time window with prescribed characteristics.
      * 
-     * <p>This test scenario is an extension of system test scenario403 as of commit 
-     * 766c6d0b4ad96f191bcafb8f2a357c0f2e6a2d3c
+     * <p>The project declaration from this test scenario extends the declaration associated with system test 
+     * scenario403, as of commit 766c6d0b4ad96f191bcafb8f2a357c0f2e6a2d3c.
      */
 
     @Test
@@ -385,5 +392,66 @@ public class ConfigHelperTest
         assertEquals( expectedTimeWindows, actualTimeWindows );
     }
 
+    /**
+     * <p>Tests the {@link ConfigHelper#getTimeWindowsFromProjectConfig(wres.config.generated.ProjectConfig)}
+     * where the project declaration includes a <code>timeSeriesMetric</code>. Expects one time window that 
+     * is unbounded in all dimensions.
+     * 
+     * <p>The project declaration from this test scenario matches (in all important ways) the declaration associated 
+     * with system test scenario1000, as of commit 766c6d0b4ad96f191bcafb8f2a357c0f2e6a2d3c, but the expected output 
+     * differs.
+     */
 
+    @Test
+    public void testGetTimeWindowsWithTimeSeriesMetricReturnsOneWindow()
+    {
+        // Mock the sufficient elements of the ProjectConfig
+
+        List<TimeSeriesMetricConfig> timeMetrics = new ArrayList<>();
+        
+        timeMetrics.add( new TimeSeriesMetricConfig( null,
+                                                     null,
+                                                     TimeSeriesMetricConfigName.TIME_TO_PEAK_ERROR,
+                                                     null ) );
+        
+        List<MetricsConfig> metrics = Arrays.asList( new MetricsConfig( null, null, timeMetrics ) );
+
+        ProjectConfig mockedConfig = new ProjectConfig( null,
+                                                        new PairConfig( null,
+                                                                        null,
+                                                                        null,
+                                                                        null,
+                                                                        null,
+                                                                        null,
+                                                                        null,
+                                                                        null,
+                                                                        null,
+                                                                        null,
+                                                                        null,
+                                                                        null,
+                                                                        null ),
+                                                        metrics,
+                                                        null,
+                                                        null,
+                                                        null );
+
+        // Generate the expected windows
+        Set<TimeWindow> expectedTimeWindows = new HashSet<>( 1 );
+        expectedTimeWindows.add( TimeWindow.of( Instant.MIN,
+                                                Instant.MAX,
+                                                Instant.MIN,
+                                                Instant.MAX,
+                                                Duration.ofSeconds( Long.MIN_VALUE, 0 ),
+                                                Duration.ofSeconds( Long.MAX_VALUE, 999_999_999 ) ) );
+
+        // Generate the actual windows
+        Set<TimeWindow> actualTimeWindows = ConfigHelper.getTimeWindowsFromProjectConfig( mockedConfig );
+
+        // Assert the expected cardinality
+        assertEquals( 1, actualTimeWindows.size() );
+
+        // Assert that the expected and actual are equal
+        assertEquals( expectedTimeWindows, actualTimeWindows );
+    }
+    
 }

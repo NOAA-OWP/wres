@@ -4,14 +4,13 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,7 +18,6 @@ import wres.config.generated.DataSourceConfig;
 import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
-import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.time.Event;
 import wres.io.config.ConfigHelper;
@@ -28,7 +26,7 @@ import wres.io.retrieval.scripting.Scripter;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
-import wres.util.CalculationException;
+import wres.util.TimeHelper;
 
 // TODO: Come up with handling for gridded data
 public class TimeSeriesRetriever extends Retriever
@@ -56,14 +54,12 @@ public class TimeSeriesRetriever extends Retriever
         builder.setMetadata( this.metadata );
         builder.setClimatology( this.getClimatology() );
 
-        for (ForecastedPair pair : this.getPrimaryPairs())
+        // One single-valued pair per ensemble member
+        // TODO: retrieve single-valued pairs separately from ensemble pairs
+        // so this mapping isn't needed
+        for (Event<EnsemblePair> pair : this.getPrimaryPairs())
         {
-            List<Event<SingleValuedPair>> eventPairs = new ArrayList<>();
-            for (SingleValuedPair singleValuedPair : pair.getSingleValuedPairs())
-            {
-                eventPairs.add( Event.of( pair.getBasisTime(), pair.getValidTime(), singleValuedPair ) );
-            }
-            builder.addTimeSeries( eventPairs );
+            builder.addTimeSeries( Retriever.unwrapEnsembleEvent( pair ) );
         }
 
         return builder.build();
@@ -165,13 +161,10 @@ public class TimeSeriesRetriever extends Retriever
                         continue;
                     }
 
-                    ForecastedPair pair = new ForecastedPair(
-                                lead,
-                                pivottedValues.validTime,
-                                ensemblePair,
-                                pivottedValues.getEnsembleMembers( )
-                        );
-                    this.addPrimaryPair( pair );
+                    this.addPrimaryPair( Event.of( pivottedValues.getValidTime()
+                                                                 .minus( pivottedValues.getLeadDuration() ),
+                                                   pivottedValues.getValidTime(),
+                                                   ensemblePair ) );
                 }
             }
         }
@@ -204,7 +197,9 @@ public class TimeSeriesRetriever extends Retriever
     {
         Map<PivottedValues.EnsemblePosition, List<Double >> mappedResult = new TreeMap<>(  );
         mappedResult.put( new PivottedValues.EnsemblePosition( 0, 0 ), Arrays.asList( value ) );
-        return new PivottedValues( Instant.ofEpochSecond( validSeconds ), lead, mappedResult );
+        return new PivottedValues( Instant.ofEpochSecond( validSeconds ),
+                                   Duration.of( lead, TimeHelper.LEAD_RESOLUTION ),
+                                   mappedResult );
     }
 
     @Override

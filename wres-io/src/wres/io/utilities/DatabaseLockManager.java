@@ -72,8 +72,6 @@ class DatabaseLockManager
 
     private final ScheduledExecutorService connectionMonitorService;
 
-    private ScheduledFuture connectionMonitorTask;
-
 
     DatabaseLockManager( Supplier<Connection> connectionProducer )
     {
@@ -87,11 +85,10 @@ class DatabaseLockManager
 
         this.connectionMonitorService = Executors.newScheduledThreadPool( 1 );
         Runnable recurringTask = new RefreshConnectionsTask( this );
-        this.connectionMonitorTask =
-                this.connectionMonitorService.scheduleAtFixedRate( recurringTask,
-                                                                   REFRESH_FREQUENCY.getSeconds(),
-                                                                   REFRESH_FREQUENCY.getSeconds(),
-                                                                   TimeUnit.SECONDS );
+        this.connectionMonitorService.scheduleAtFixedRate( recurringTask,
+                                                           REFRESH_FREQUENCY.getSeconds(),
+                                                           REFRESH_FREQUENCY.getSeconds(),
+                                                           TimeUnit.SECONDS );
 
         LOGGER.debug( "Finished construction of lock manager {}.", this );
     }
@@ -124,9 +121,7 @@ class DatabaseLockManager
             throw new IllegalStateException( "Already had a lock on " + lockName );
         }
 
-        LOGGER.trace( "Attempting lock one {}. {}", this.lockOne, this );
         this.lockOne.lock();
-        LOGGER.trace( "Acquired lock one {}. {}", this.lockOne, this );
 
         try
         {
@@ -135,12 +130,9 @@ class DatabaseLockManager
         finally
         {
             this.lockOne.unlock();
-            LOGGER.trace( "Released lock one {}. {}", this.lockOne, this );
         }
 
-        LOGGER.trace( "Attempting lock two {}. {}", this.lockTwo, this );
         this.lockTwo.lock();
-        LOGGER.trace( "Acquired lock two {}. {}", this.lockTwo, this );
 
         try
         {
@@ -149,7 +141,6 @@ class DatabaseLockManager
         finally
         {
             this.lockTwo.unlock();
-            LOGGER.trace( "Released lock two {}. {}", this.lockTwo, this );
         }
 
         LOGGER.trace( "Ended DatabaseLockManager.lock( {} ) {}", lockName, this );
@@ -181,9 +172,7 @@ class DatabaseLockManager
                                                 + lockName);
         }
 
-        LOGGER.trace( "Attempting lock one {}. {}", this.lockOne, this );
         this.lockOne.lock();
-        LOGGER.trace( "Acquired lock one {}. {}", this.lockOne, this );
 
         try
         {
@@ -192,13 +181,9 @@ class DatabaseLockManager
         finally
         {
             this.lockOne.unlock();
-            LOGGER.trace( "Released lock one {}. {}", this.lockOne, this );
-
         }
 
-        LOGGER.trace( "Attempting lock two {}. {}", this.lockTwo, this );
         this.lockTwo.lock();
-        LOGGER.trace( "Acquired lock two {}. {}", this.lockTwo, this );
 
         try
         {
@@ -207,7 +192,6 @@ class DatabaseLockManager
         finally
         {
             this.lockTwo.unlock();
-            LOGGER.trace( "Released lock two {}. {}", this.lockTwo, this );
         }
 
         boolean removed = this.lockNames.remove( lockName );
@@ -240,8 +224,6 @@ class DatabaseLockManager
 
         if ( this.lockOne.tryLock() )
         {
-            LOGGER.trace( "Acquired lock one {}. {}", this.lockOne, this );
-
             try
             {
                 isOneWorking = this.isAlive( connectionOne );
@@ -264,7 +246,6 @@ class DatabaseLockManager
             finally
             {
                 this.lockOne.unlock();
-                LOGGER.trace( "Released lock one {}. {}", this.lockOne, this );
             }
         }
         else
@@ -276,8 +257,6 @@ class DatabaseLockManager
 
         if ( this.lockTwo.tryLock() )
         {
-            LOGGER.trace( "Acquired lock two {}. {}", this.lockTwo, this );
-
             try
             {
                 isTwoWorking = this.isAlive( connectionTwo );
@@ -300,7 +279,6 @@ class DatabaseLockManager
             finally
             {
                 this.lockTwo.unlock();
-                LOGGER.trace( "Released lock two {}. {}", this.lockTwo, this );
             }
         }
         else
@@ -445,7 +423,7 @@ class DatabaseLockManager
 
                 if ( !successfullyUnlocked )
                 {
-                    throw new IllegalStateException( "Could not unlock using"
+                    throw new IllegalStateException( "Could not unlock using "
                                                      + semanticLock );
                 }
             }

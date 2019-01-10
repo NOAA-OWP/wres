@@ -756,6 +756,9 @@ public class ConfigHelper
      * the associated formatting requirement. Validation of dates should be conducted at the earliest 
      * opportunity, which may be well before this point.</p>
      * 
+     * TODO: replace this with upfront calculation of the time windows. 
+     * See {@link ConfigHelper#getTimeWindowsFromProjectConfig(ProjectConfig)}
+     * 
      * @param project the project configuration
      * @param firstLead the earliest lead time
      * @param lastLead the latest lead time
@@ -763,6 +766,7 @@ public class ConfigHelper
      * @return a time window 
      * @throws NullPointerException if the config is null
      * @throws DateTimeParseException if the configuration contains dates that cannot be parsed
+     * @deprecated
      */
     public static TimeWindow getTimeWindow( Project project,
                                             Duration firstLead,
@@ -1666,8 +1670,8 @@ public class ConfigHelper
             missing = Double.parseDouble( nextSource.getMissingValue() );
         }
 
-        //Path
-        Path commaSeparated = Paths.get( nextSource.getValue() );
+        //Path TODO: permit web thresholds
+        Path commaSeparated = Paths.get( nextSource.getValue().getPath() );
 
         // Condition: default to greater
         ThresholdConstants.Operator operator = ThresholdConstants.Operator.GREATER;
@@ -1804,22 +1808,42 @@ public class ConfigHelper
             // No issuedDatesPoolingWindow
             if ( Objects.isNull( projectConfig.getPair().getIssuedDatesPoolingWindow() ) )
             {
+                LOGGER.debug( "Building lead duration time windows from project declaration only." );
+                
                 return ConfigHelper.getLeadDurationTimeWindowsFromPairConfig( projectConfig.getPair() );
             }
             // Has an issuedDatesPoolingWindow too
             else
             {
+                LOGGER.debug( "Building issued dates and lead duration time windows from "
+                        + "project declaration only." );
+                
                 return ConfigHelper.getIssuedDatesAndLeadDurationTimeWindowsFromPairConfig( projectConfig.getPair() );
             }
         }
         // Has an issuedDatesPoolingWindow only
         else if ( Objects.nonNull( projectConfig.getPair().getIssuedDatesPoolingWindow() ) )
         {
-            return ConfigHelper.getIssuedDatesTimeWindowsFromPairConfig( projectConfig.getPair() );
-        }
+            LOGGER.debug( "Building issued dates and lead duration time windows from "
+                          + "project declaration and ingested sources." );
 
-        throw new UnsupportedOperationException( "Cannot determine the time windows for the "
-                                                 + "specified project." );
+            return ConfigHelper.getIssuedDatesAndLeadDurationTimeWindowsFromProjectConfigAndIngestedSources( projectConfig );
+        }
+        // No rolling time windows: one unbounded window for time-series metrics
+        else if ( ProjectConfigs.hasTimeSeriesMetrics( projectConfig ) )
+        {
+            LOGGER.debug( "Building unbounded time window for time-series metrics." );
+
+            return Collections.singleton( ConfigHelper.getTimeWindowFromPairConfig( projectConfig.getPair() ) );
+        }
+        // No explicit rolling windows, but the default behavior is one window for
+        // each available lead duration, which requires knowledge of the ingested sources
+        else
+        {
+            LOGGER.debug( "Building lead duration time windows from project declaration and ingested sources." );
+
+            return ConfigHelper.getIssuedDatesAndLeadDurationTimeWindowsFromProjectConfigAndIngestedSources( projectConfig );
+        }
     }
 
     
@@ -2062,7 +2086,70 @@ public class ConfigHelper
 
         return Collections.unmodifiableSet( timeWindows );
     }
-    
+
+    /**
+     * <p>Consumes a {@link PairConfig} and returns a {@link Set} of {@link TimeWindow}
+     * for evaluation using the {@link PairConfig#getIssuedDatesPoolingWindow()}
+     * and the {@link PairConfig#getIssuedDates()}, where applicable, and by 
+     * determining the lead durations from the ingested sources. Returns at least 
+     * one {@link TimeWindow}. 
+     * 
+     * @param projectConfig the project configuration
+     * @return the set of lead duration and issued dates time windows 
+     * @throws NullPointerException if the pairConfig is null
+     * @throws IllegalArgumentException if the projectConfig contains a leadTimesPoolingWindow
+     * @throws an UnsupportedOperationException if the time windows cannot be determined
+     */
+
+    private static Set<TimeWindow>
+            getIssuedDatesAndLeadDurationTimeWindowsFromProjectConfigAndIngestedSources( ProjectConfig projectConfig )
+    {
+        Objects.requireNonNull( projectConfig, "Cannot determine time windows from null project configuration." );
+
+        if ( Objects.nonNull( projectConfig.getPair().getLeadTimesPoolingWindow() ) )
+        {
+            throw new IllegalArgumentException( "Expected a project declaration without lead duration pooling"
+                                                + "windows, in order to determine these from the ingested "
+                                                + "sources." );
+        }
+
+        throw new UnsupportedOperationException( "Cannot determine the time windows for the "
+                                                 + "specified project: need to check ingested sources." );
+
+//        // Obtain any rolling issued dates time windows if declared
+//        Set<TimeWindow> issuedDatesWindows = null;
+//        if( Objects.nonNull( projectConfig.getPair().getIssuedDatesPoolingWindow() ) )
+//        {
+//            issuedDatesWindows = ConfigHelper.getIssuedDatesTimeWindowsFromPairConfig( projectConfig.getPair() );
+//        }
+//        // Otherwise, use the base time window
+//        else
+//        {
+//            issuedDatesWindows =
+//                    Collections.singleton( ConfigHelper.getTimeWindowFromPairConfig( projectConfig.getPair() ) );
+//        }
+//        
+//        // Obtain the set of lead duration windows from the ingested sources
+//        Set<TimeWindow> leadDurationWindows = null;
+//        
+//        // Create a new window for each combination of issued dates and lead duration
+//        Set<TimeWindow> timeWindows = new HashSet<>( leadDurationWindows.size() * issuedDatesWindows.size() );
+//        for ( TimeWindow nextIssuedWindow : issuedDatesWindows )
+//        {
+//            for ( TimeWindow nextLeadWindow : leadDurationWindows )
+//            {
+//                timeWindows.add( TimeWindow.of( nextIssuedWindow.getEarliestReferenceTime(),
+//                                                nextIssuedWindow.getLatestReferenceTime(),
+//                                                nextIssuedWindow.getEarliestValidTime(),
+//                                                nextIssuedWindow.getLatestValidTime(),
+//                                                nextLeadWindow.getEarliestLeadDuration(),
+//                                                nextLeadWindow.getLatestLeadDuration() ) );
+//            }
+//        }
+//
+//        return Collections.unmodifiableSet( timeWindows );
+    }
+
     /**
      * Builds a {@link TimeWindow} whose {@link TimeWindow#getEarliestReferenceTime()}
      * and {@link TimeWindow#getLatestReferenceTime()} return the <code>earliest</earliest> 
