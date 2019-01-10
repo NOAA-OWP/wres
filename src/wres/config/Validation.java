@@ -1,6 +1,7 @@
 package wres.config;
 
 import java.io.File;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -53,6 +54,8 @@ import wres.util.Strings;
 /**
  * Helps validate project configurations at a higher level than parser, with
  * detailed messaging.
+ *
+ * TODO: formal interface for validation text rather than log messages
  */
 
 public class Validation
@@ -61,12 +64,25 @@ public class Validation
     private static final Logger LOGGER = LoggerFactory.getLogger( Validation.class );
 
     /** A message to display for programmers when null project config occurs */
-    private static final String NON_NULL = "The ProjectConfigPlus must not be null";
+    private static final String NON_NULL = "The args must not be null";
 
     /** The warning message boilerplate for logger (includes 3 placeholders) */
     private static final String FILE_LINE_COLUMN_BOILERPLATE =
             "In file {}, near line {} and column {}, WRES found an issue with "
             + "the project configuration.";
+
+    private static final String API_SOURCE_MISSING_ISSUED_DATES_ERROR_MESSAGE =
+            "One must specify issued dates with both earliest and latest (e.g. "
+            + "<issuedDates earliest=\"2018-12-28T15:42:00Z\" "
+            + "latest=\"2019-01-01T00:00:00Z\" />) when using a web API as a "
+            + "source for forecasts (see source near line {} and column {}";
+
+
+    private static final String FEATURE_ALIAS_ALREADY_USED =
+            " The lid or alias {} was already used as an lid or alias earlier. "
+            + "Any and all aliases for an lid must be specified in one stanza, "
+            + "e.g. <feature lid=\"{}\"><alias>{}ONE</alias><alias>{}TWO"
+            + "</alias></feature>.";
 
     private Validation()
     {
@@ -455,12 +471,13 @@ public class Validation
                 // Locate a threshold with an external source
                 if ( nextSource instanceof ThresholdsConfig.Source )
                 {
-                    String pathString = ( (ThresholdsConfig.Source) nextSource ).getValue();
+                    URI thresholdData = ( (ThresholdsConfig.Source) nextSource ).getValue();
                     
                     final Path destinationPath;
                     try
                     {
-                        destinationPath = Paths.get( pathString );
+                        // TODO: permit web resource thresholds, not only files
+                        destinationPath = Paths.get( thresholdData.getPath() );
                     }
                     catch ( InvalidPathException ipe )
                     {
@@ -472,7 +489,7 @@ public class Validation
                                          projectConfigPlus.getOrigin(),
                                          nextThreshold.sourceLocation().getLineNumber(),
                                          nextThreshold.sourceLocation().getColumnNumber(),
-                                         pathString );
+                                         thresholdData );
                         }
 
                         result = false;
@@ -492,7 +509,7 @@ public class Validation
                                          projectConfigPlus.getOrigin(),
                                          nextThreshold.sourceLocation().getLineNumber(),
                                          nextThreshold.sourceLocation().getColumnNumber(),
-                                         pathString );
+                                         thresholdData );
                         }
 
                         result = false;
@@ -839,12 +856,6 @@ public class Validation
 
         boolean result = true;
 
-        final String ALREADY_USED = " The lid or alias {} was already used as "
-                                    + "an lid or alias earlier. Any and all "
-                                    + "aliases for an lid must be specified in "
-                                    + "one stanza, e.g. <feature lid=\"{}\">"
-                                    + "<alias>{}ONE</alias><alias>{}TWO"
-                                    + "</alias></feature>.";
 
         List<String> aliases = featureConfig.getAlias();
 
@@ -863,7 +874,7 @@ public class Validation
                 if ( LOGGER.isWarnEnabled() )
                 {
                     LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                 + ALREADY_USED,
+                                 + FEATURE_ALIAS_ALREADY_USED,
                                  projectConfigPlus.getOrigin(),
                                  featureConfig.sourceLocation().getLineNumber(),
                                  featureConfig.sourceLocation().getColumnNumber(),
@@ -890,6 +901,30 @@ public class Validation
             result = false;
         }
 
+        result = Validation.areFeatureAliasesStringsValid( projectConfigPlus,
+                                                           featureConfig,
+                                                           aliases,
+                                                           stuffAlreadyUsed )
+                 && result;
+
+        return result;
+    }
+
+
+    private static boolean areFeatureAliasesStringsValid( ProjectConfigPlus projectConfigPlus,
+                                                          Feature featureConfig,
+                                                          List<String> aliases,
+                                                          SortedSet<String> stuffAlreadyUsed )
+    {
+        Objects.requireNonNull( projectConfigPlus );
+        Objects.requireNonNull( featureConfig );
+        Objects.requireNonNull( aliases );
+        Objects.requireNonNull( stuffAlreadyUsed );
+
+        boolean result = true;
+
+        String name = featureConfig.getLocationId();
+
         for ( String alias : aliases )
         {
             if ( stuffAlreadyUsed.contains( alias ) )
@@ -897,7 +932,7 @@ public class Validation
                 if ( LOGGER.isWarnEnabled() )
                 {
                     LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                 + ALREADY_USED,
+                                 + FEATURE_ALIAS_ALREADY_USED,
                                  projectConfigPlus.getOrigin(),
                                  featureConfig.sourceLocation().getLineNumber(),
                                  featureConfig.sourceLocation().getColumnNumber(),
@@ -926,7 +961,6 @@ public class Validation
 
         return result;
     }
-
 
     /**
      * Returns true when seasonal verification config is valid, false otherwise
@@ -1455,21 +1489,42 @@ public class Validation
             result = instantMakesSense && result;
         }
 
+        boolean dataSourcesValid = Validation.areDataSourcesValid( projectConfigPlus,
+                                                                   dataSourceConfig );
+
+        result = dataSourcesValid && result;
+
+        return result;
+    }
+
+
+    /**
+     * Checks that given DataSourceConfig has at least one
+     * DataSourceConfig.Source and checks validity of each inner
+     * DataSourceConfig.Source.
+     * @param projectConfigPlus the evaluation project configuration plus
+     * @param dataSourceConfig the data source configuration to validate
+     * @return true when valid, false otherwise.
+     */
+
+    private static boolean areDataSourcesValid( ProjectConfigPlus projectConfigPlus,
+                                                DataSourceConfig dataSourceConfig )
+    {
         boolean dataSourcesValid = true;
 
         if ( dataSourceConfig.getSource() == null )
         {
             if ( LOGGER.isWarnEnabled() )
             {
-                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                 + "A source needs to exist within each of the "
-                                 + "left and right sections of the "
-                                 + "configuration.",
-                                 projectConfigPlus,
-                                 dataSourceConfig.sourceLocation()
-                                                 .getLineNumber(),
-                                 dataSourceConfig.sourceLocation()
-                                                 .getColumnNumber() );
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + "A source needs to exist within each of the "
+                             + "left and right sections of the "
+                             + "configuration.",
+                             projectConfigPlus,
+                             dataSourceConfig.sourceLocation()
+                                             .getLineNumber(),
+                             dataSourceConfig.sourceLocation()
+                                             .getColumnNumber() );
             }
 
             dataSourcesValid = false;
@@ -1478,30 +1533,125 @@ public class Validation
         {
             for ( DataSourceConfig.Source s : dataSourceConfig.getSource() )
             {
-                dataSourcesValid =
-                        Validation.isDateConfigValid( projectConfigPlus,
-                                                      s )
-                        && dataSourcesValid;
-
-                dataSourcesValid = Validation.isS3SourceValid( projectConfigPlus, s )
-                                   && dataSourcesValid;
+                dataSourcesValid = Validation.isSourceValid( projectConfigPlus,
+                                                             dataSourceConfig,
+                                                             s );
             }
         }
 
-        result = dataSourcesValid && result;
-
-        return result;
+        return dataSourcesValid;
     }
+
+    /**
+     * Checks the validity of an individual DataSourceConfig.Source
+     * @param projectConfigPlus the evaluation project configuration
+     * @param dataSourceConfig the dataSourceConfig being checked
+     * @param source the source being checked
+     * @return
+     */
+    private static boolean isSourceValid( ProjectConfigPlus projectConfigPlus,
+                                          DataSourceConfig dataSourceConfig,
+                                          DataSourceConfig.Source source )
+    {
+        boolean sourceValid = true;
+
+        sourceValid = Validation.isDateConfigValid( projectConfigPlus, source )
+                      && sourceValid;
+
+        if ( source.getFormat() != null && source.getFormat().equals( Format.S_3 ) )
+        {
+            sourceValid = Validation.isS3SourceValid( projectConfigPlus, source )
+                          && sourceValid;
+        }
+
+        if ( source.getValue() != null
+             && source.getValue()
+                      .getScheme() != null
+             && source.getValue()
+                      .getScheme()
+                      .startsWith( "http" ) )
+        {
+            sourceValid = Validation.isAPISourceValid( projectConfigPlus,
+                                                       dataSourceConfig,
+                                                       source )
+                          && sourceValid;
+        }
+
+        return sourceValid;
+    }
+
+    private static boolean isAPISourceValid( ProjectConfigPlus projectConfigPlus,
+                                             DataSourceConfig dataSourceConfig,
+                                             DataSourceConfig.Source source )
+    {
+        boolean apiSourceValid = true;
+
+        if ( source.getFormat().equals( Format.WRDS ) )
+        {
+
+            if ( dataSourceConfig.equals( projectConfigPlus.getProjectConfig()
+                                                           .getInputs()
+                                                           .getLeft() ) )
+            {
+                if ( LOGGER.isWarnEnabled() )
+                {
+                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE +
+                                 " WRDS observations are not supported. Please use WRDS on 'right' or 'baseline'",
+                                 projectConfigPlus,
+                                 source.sourceLocation().getLineNumber(),
+                                 source.sourceLocation().getColumnNumber() );
+                }
+
+                apiSourceValid = false;
+            }
+
+            DateCondition issuedDates = projectConfigPlus.getProjectConfig()
+                                                         .getPair()
+                                                         .getIssuedDates();
+            if ( issuedDates == null )
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE + " "
+                             + API_SOURCE_MISSING_ISSUED_DATES_ERROR_MESSAGE,
+                             projectConfigPlus,
+                             projectConfigPlus.getProjectConfig()
+                                              .getPair()
+                                              .sourceLocation()
+                                              .getLineNumber(),
+                             projectConfigPlus.getProjectConfig()
+                                              .getPair()
+                                              .sourceLocation()
+                                              .getColumnNumber(),
+                             source.sourceLocation()
+                                   .getLineNumber(),
+                             source.sourceLocation()
+                                   .getColumnNumber() );
+                apiSourceValid = false;
+            }
+            else if ( issuedDates.getEarliest() == null
+                      || issuedDates.getLatest() == null )
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE + " "
+                             + API_SOURCE_MISSING_ISSUED_DATES_ERROR_MESSAGE,
+                             projectConfigPlus,
+                             issuedDates.sourceLocation()
+                                        .getLineNumber(),
+                             issuedDates.sourceLocation()
+                                        .getColumnNumber(),
+                             source.sourceLocation()
+                                   .getLineNumber(),
+                             source.sourceLocation()
+                                   .getColumnNumber() );
+                apiSourceValid = false;
+            }
+        }
+
+        return apiSourceValid;
+    }
+
 
     private static boolean isS3SourceValid(ProjectConfigPlus projectConfigPlus,
                                            DataSourceConfig.Source source)
     {
-        if (source.getFormat() == null || !source.getFormat().equals( Format.S_3 ))
-        {
-            // If this isn't an S3 format, then S3 rules don't apply
-            return true;
-        }
-
         boolean result = true;
 
         if (!Strings.hasValue(source.getPattern()))
@@ -1542,6 +1692,7 @@ public class Validation
 
         return result;
     }
+
 
 
     /**

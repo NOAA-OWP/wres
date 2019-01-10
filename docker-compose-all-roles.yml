@@ -23,13 +23,13 @@ services:
         ports:
          - "5671:5671"
          - "15671:15671"
-        image: "746a840faa9f"
+        image: "7ab21299ff5a"
         restart: always
         volumes:
          # For certificates and keys that correspond to them:
          - /mnt/wres_secrets:/wres_secrets:ro
         environment:
-         - RABBITMQ_CONFIG_FILE=rabbitmq${WRES_ENV_SUFFIX}.conf
+         - RABBITMQ_CONFIG_FILE=rabbitmq${WRES_ENV_SUFFIX}.config
         # rabbitmq.conf should have 180m specified as high watermark
         mem_limit: 360m
     worker:

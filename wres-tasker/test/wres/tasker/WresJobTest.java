@@ -22,8 +22,10 @@ import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.StringJoiner;
 import javax.ws.rs.core.Response;
 
+import org.apache.qpid.server.configuration.CommonProperties;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.X500NameBuilder;
 import org.bouncycastle.asn1.x500.style.BCStyle;
@@ -46,7 +48,6 @@ import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertEquals;
@@ -59,8 +60,28 @@ public class WresJobTest
     private static final String SERVER_KEY_FILE_NAME = "***REMOVED***wres-broker-localhost_server_private_rsa_key.pem";
     private static final String TRUST_STORE_FILE_NAME = "trustedCertificates-localhost.jks";
 
+    private static final String[] APPROVED_CIPHERS = {
+            "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+            "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+            "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA",
+            "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA",
+            "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256",
+            "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384",
+            "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+            "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+            "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
+            "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
+            "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256",
+            "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384",
+            "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256",
+            "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384",
+            "TLS_DHE_RSA_WITH_AES_128_CBC_SHA",
+            "TLS_DHE_RSA_WITH_AES_256_CBC_SHA",
+            "TLS_DHE_RSA_WITH_AES_128_CBC_SHA256",
+            "TLS_DHE_RSA_WITH_AES_256_CBC_SHA256"
+    };
+
     @BeforeClass
-    @Ignore // until apache-qpid-broker-j version 7.1.0 is out
     public static void setup() throws IOException, NoSuchAlgorithmException,
             OperatorCreationException, CertificateException, KeyStoreException
     {
@@ -189,6 +210,18 @@ public class WresJobTest
         System.setProperty( "wres.secrets_dir", WresJobTest.tempDir.toString() );
         Path trustPath = Paths.get( WresJobTest.tempDir.toString(), TRUST_STORE_FILE_NAME );
         System.setProperty( "wres.trustStore", trustPath.toString() );
+
+        // Set approved cipher suites for Qpid broker in expected json format
+        StringJoiner approvedCiphersJoiner = new StringJoiner( "\", \"",
+                                                               "[ \"",
+                                                               "\" ]" );
+        for ( String cipherSuite : APPROVED_CIPHERS )
+        {
+            approvedCiphersJoiner.add( cipherSuite );
+        }
+
+        System.setProperty( CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST,
+                            approvedCiphersJoiner.toString() );
     }
 
     @Test
@@ -212,21 +245,19 @@ public class WresJobTest
 
 
     @Test
-    @Ignore // until apache-qpid-broker-j version 7.1.0 is out
     public void testMessage() throws Exception
     {
         EmbeddedBroker embeddedBroker = new EmbeddedBroker();
         embeddedBroker.start();
         WresJob wresJob = new WresJob();
         Response response = wresJob.postWresJob( "fake", "hank" );
-        assertEquals( "Expected a 200 OK.", 200, response.getStatus() );
+        assertEquals( "Expected a 201 Created.", 201, response.getStatus() );
         WresJob.shutdownNow();
         embeddedBroker.shutdown();
     }
 
 
     @AfterClass
-    @Ignore // until apache-qpid-broker-j version 7.1.0 is out
     public static void cleanUp() throws IOException
     {
         Files.deleteIfExists( Paths.get( WresJobTest.tempDir.toString(),

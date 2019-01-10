@@ -3,6 +3,7 @@ package wres.datamodel.metadata;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -177,6 +178,51 @@ public final class TimeScaleTest
         exception.expectMessage( "Cannot build a time scale with a negative period." );
         
         TimeScale.of( Duration.ofSeconds( -100 ) );
+    }
+    
+    /**
+     * Tests {@link TimeScale#compareTo(TimeScale)}.
+     */
+
+    @Test
+    public void testCompareTo()
+    {
+        TimeScale scale = TimeScale.of( Duration.ofSeconds( 60 ), TimeScaleFunction.MEAN );
+        TimeScale largerScale = TimeScale.of( Duration.ofSeconds( 120 ), TimeScaleFunction.MEAN );
+        TimeScale largestScale = TimeScale.of( Duration.ofSeconds( 180 ), TimeScaleFunction.MEAN );
+        
+        //Equal returns 0
+        assertTrue( scale.compareTo( TimeScale.of( Duration.ofSeconds( 60 ), TimeScaleFunction.MEAN ) ) == 0 );
+
+        //Transitive
+        //x.compareTo(y) > 0
+        assertTrue( largestScale.compareTo( largerScale ) > 0 );
+        //y.compareTo(z) > 0
+        assertTrue( largerScale.compareTo( scale ) > 0 );
+        //x.compareTo(z) > 0
+        assertTrue( largestScale.compareTo( scale ) > 0 );
+        
+        //Differences on period
+        assertTrue( largestScale.compareTo( largerScale ) > 0 );
+        
+        //Differences on function, declaration order
+        assertTrue( scale.compareTo( TimeScale.of( Duration.ofSeconds( 60 ), TimeScaleFunction.MAXIMUM ) ) < 0 );
+    }
+    
+    /**
+     * Tests the {@link TimeScale#isInstantaneous()}.
+     */
+    
+    @Test
+    public void testIsInstantaneous()
+    {
+        assertTrue( TimeScale.of( Duration.ofSeconds( 60 ) ).isInstantaneous() );
+        
+        assertTrue( TimeScale.of( Duration.ofSeconds( 59 ) ).isInstantaneous() );
+        
+        assertFalse( TimeScale.of( Duration.ofSeconds( 61 ) ).isInstantaneous() );
+        
+        assertFalse( TimeScale.of( Duration.ofSeconds( 60 ).plusNanos( 1 ) ).isInstantaneous() );
     }
     
 }

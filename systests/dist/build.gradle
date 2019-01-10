@@ -1,0 +1,60 @@
+// This build.gradle is released along with gradle wrapper inside a system tests
+// zip, such that the user of the zip may use gradle to compile and run system
+// tests against a given version of WRES. The goal is to follow the "build your
+// binaries once" from a given commit. The goal is also to allow developers to
+// run these tests locally when they have the entire source tree available.
+// There is intentionally no main java source code, it is all tests. The reason
+// for putting it under "test" is to align with tools that expect tests to be
+// under "test", such as junit or jacoco under gradle.
+
+// In order to get the test framework software (e.g. junit):
+repositories
+{
+    mavenCentral()
+}
+
+apply plugin: 'java'
+
+// The default value of the versionToTest will be picked up from
+// gradle.properties file. versionToTest can be overridden at gradle run time
+// by using -PversionToTest=[version] on the gradle command line. The same is
+// true for wresZipDirectory, which is the directory to find the zip ein.
+
+// This task takes the software under test (a wres zip) and extracts it
+task( unzipArtifactToTest, type: Copy, group: 'test' )
+{
+    description = 'Unzips the wres zip artifact to be tested.'
+
+    def zipFile = file( "${wresZipDirectory}/wres-${versionToTest}.zip" )
+    def outputDir = file( "${buildDir}" )
+
+    println( "buildDir: ${buildDir}" )
+    println( "wresZipDirectory: " + wresZipDirectory )
+    println( "zipFile: " + zipFile )
+    println( "outputDir: " + outputDir )
+
+    from zipTree(zipFile)
+    into outputDir
+}
+
+// To compile the test java code, we need the artifact libs
+compileTestJava.dependsOn( unzipArtifactToTest )
+
+dependencies
+{
+    testCompile 'org.slf4j:slf4j-api:1.8.0-beta2'
+    testCompile 'commons-io:commons-io:2.6'
+    testCompile 'com.google.guava:guava-testlib:21.0'
+    testCompile 'com.google.guava:guava:22.0'
+    testCompile 'junit:junit:4.12'
+    testCompile 'org.mockito:mockito-core:2.8.47'
+
+    // Expose all wres contents here, using unzipArtifactToTest task.
+    // Use of fileTree is important, lazily evaluated, meaning that the contents
+    // from the unzipArtifactToTest task will be here by now
+    compile fileTree( unzipArtifactToTest.destinationDir )
+
+    println( "buildDir: ${buildDir}" )
+    println( "versionToTest: ${versionToTest}" )
+    println( "unzipArtifactToTest.destinationDir: " + unzipArtifactToTest.destinationDir )
+}

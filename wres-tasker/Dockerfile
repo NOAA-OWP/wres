@@ -1,6 +1,9 @@
-FROM centos:7.5.1804
+FROM centos:7.6.1810
 
-RUN yum install -y java-1.8.0-openjdk-headless-1.8.0.191.b12-0.el7_5 unzip-6.0-19.el7 which-2.20-7.el7
+RUN yum install -y \
+    java-1.8.0-openjdk-headless-1.8.0.191.b12-1.el7_6 \
+    unzip-6.0-19.el7 \
+    which-2.20-7.el7
 
 # See comments in main/worker/root wres Dockerfile
 RUN groupadd --gid 1370800073 wres \

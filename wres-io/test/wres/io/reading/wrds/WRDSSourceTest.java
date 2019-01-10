@@ -2,12 +2,9 @@ package wres.io.reading.wrds;
 
 import java.io.IOException;
 import java.net.URI;
-import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 
-
-import org.apache.commons.math3.analysis.function.Power;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -2073,7 +2070,7 @@ public class WRDSSourceTest
 
         List<DataSourceConfig.Source> sourceList = new ArrayList<>();
         Format format = Format.WRDS;
-        DataSourceConfig.Source confSource = new DataSourceConfig.Source( fakeAhpsUri.toString(),
+        DataSourceConfig.Source confSource = new DataSourceConfig.Source( fakeAhpsUri,
                                                                           format,
                                                                           null,
                                                                           null,

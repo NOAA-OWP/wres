@@ -72,7 +72,7 @@ public class SourceLoader
 
     /**
      * Searches through the specifications for a set of datasources and
-     * determines what needs to be ingested
+     * determines what needs to be ingested, and initiates ingest.
      * @param config The configuration for a set of datasources
      * @return A listing of asynchronous tasks dispatched to ingest data
      * @throws FileNotFoundException when a source file is not found
@@ -81,111 +81,129 @@ public class SourceLoader
     private List<Future<List<IngestResult>>> loadConfig( DataSourceConfig config )
             throws IOException
     {
-        List<Future<List<IngestResult>>> savingFiles = new ArrayList<>();
-
-        //ProgressMonitor.increment();
-
-        if (config != null) {
-            for (DataSourceConfig.Source source : config.getSource())
-            {
-                URI sourceUri = URI.create( source.getValue() );
-
-                if ( sourceUri.getScheme() != null
-                     && sourceUri.getHost() != null )
-                {
-                    WebSource webSource = WebSource.of( projectConfig,
-                                                        config,
-                                                        source );
-                    Future<List<IngestResult>> webResourceResults = Executor.submit( webSource );
-                    savingFiles.add( webResourceResults );
-                    continue;
-                }
-                else if ( source.getFormat() == Format.USGS)
-                {
-                    if (ConfigHelper.isForecast( config ))
-                    {
-                        throw new IllegalArgumentException( "USGS data cannot be used to supply forecasts." );
-                    }
-
-                    savingFiles.add(
-                            Executor.submit(
-                                    IngestSaver.createTask()
-                                               .withProject( this.projectConfig )
-                                               .withDataSourceConfig( config )
-                                               .withFilePath( URI.create( "usgs" ) )
-                                               .build()
-                            )
-                    );
-                    continue;
-                }
-                else if ( source.getFormat() == Format.S_3 )
-                {
-                    savingFiles.add(
-                            Executor.submit(
-                                    IngestSaver.createTask()
-                                               .withProject( this.projectConfig )
-                                               .withDataSourceConfig( config )
-                                               .withFilePath( URI.create( "s3" ) )
-                                               .withSourceConfig( source )
-                                               .build()
-                            )
-                    );
-                    continue;
-                }
-
-                Path sourcePath = Paths.get(source.getValue());
-                File sourceFile = sourcePath.toFile();
-
-                if ( !sourceFile.exists() )
-                {
-                    throw new FileNotFoundException( "The path: '" +
-                                                     sourceFile.getCanonicalPath() +
-                                                     "' was not found.");
-                }
-                else if ( !sourceFile.canRead() )
-                {
-                    throw new IOException( "The path: '" + sourceFile.getCanonicalPath()
-                                           + "' was not readable. Please set "
-                                           + "the permissions of that path to "
-                                           + "readable for user '"
-                                           + System.getProperty( "user.name" )
-                                           + "' or run WRES as a user with read"
-                                           + " permissions on that path." );
-                }
-                else if ( sourceFile.isDirectory() )
-                {
-                    List<Future<List<IngestResult>>> tasks =
-                            loadDirectory( sourcePath,
-                                           source,
-                                           config );
-
-                    savingFiles.addAll( tasks );
-                }
-                else if ( sourceFile.isFile() )
-                {
-                    Future<List<IngestResult>> task = saveFile( sourcePath,
-                                                                source,
-                                                                config,
-                                                                this.projectConfig );
-
-                    if (task != null)
-                    {
-                        savingFiles.add(task);
-                    }
-                }
-                else if ( LOGGER.isWarnEnabled() )
-                {
-                    LOGGER.warn( "'{}' is not a source of valid input data.",
-                                 sourceFile.getCanonicalPath() );
-                }
-            }
+        if ( config == null )
+        {
+            return Collections.unmodifiableList( Collections.emptyList() );
         }
 
-        //ProgressMonitor.completeStep();
+        List<Future<List<IngestResult>>> savingFiles = new ArrayList<>();
+
+        for (DataSourceConfig.Source source : config.getSource())
+        {
+            // Try to load non-file source
+            Future<List<IngestResult>> nonFileIngest = loadNonFileSource( config,
+                                                                          source );
+
+            // When the non-file source is detected, short-circuit the file way.
+            if ( nonFileIngest != null )
+            {
+                savingFiles.add( nonFileIngest );
+                continue;
+            }
+
+            // Because above did not short-circuit, local file system is assumed
+            Path sourcePath = Paths.get( source.getValue().getPath() );
+            File sourceFile = sourcePath.toFile();
+
+            if ( !sourceFile.exists() )
+            {
+                throw new FileNotFoundException( "The path: '" +
+                                                 sourceFile.getCanonicalPath() +
+                                                 "' was not found.");
+            }
+            else if ( !sourceFile.canRead() )
+            {
+                throw new IOException( "The path: '" + sourceFile.getCanonicalPath()
+                                       + "' was not readable. Please set "
+                                       + "the permissions of that path to "
+                                       + "readable for user '"
+                                       + System.getProperty( "user.name" )
+                                       + "' or run WRES as a user with read"
+                                       + " permissions on that path." );
+            }
+            else if ( sourceFile.isDirectory() )
+            {
+                List<Future<List<IngestResult>>> tasks =
+                        loadDirectory( sourcePath,
+                                       source,
+                                       config );
+
+                savingFiles.addAll( tasks );
+            }
+            else if ( sourceFile.isFile() )
+            {
+                Future<List<IngestResult>> task = saveFile( sourcePath,
+                                                            source,
+                                                            config,
+                                                            this.projectConfig );
+
+                if (task != null)
+                {
+                    savingFiles.add(task);
+                }
+            }
+            else if ( LOGGER.isWarnEnabled() )
+            {
+                LOGGER.warn( "'{}' is not a source of valid input data.",
+                             sourceFile.getCanonicalPath() );
+            }
+        }
 
         return Collections.unmodifiableList( savingFiles );
     }
 
+
+    /**
+     * Load a given source from a given config, return null if file-like source
+     * @param config the data source config (left, right, baseline...)
+     * @param source the specific source to load
+     * @return a single future list of results or null if source was file-like
+     */
+
+    private Future<List<IngestResult>> loadNonFileSource( DataSourceConfig config,
+                                                          DataSourceConfig.Source source )
+    {
+        URI sourceUri = source.getValue();
+
+        if ( sourceUri != null
+             && sourceUri.getScheme() != null
+             && sourceUri.getHost() != null )
+        {
+            WebSource webSource = WebSource.of( projectConfig,
+                                                config,
+                                                source );
+            return Executor.submit( webSource );
+        }
+        else if ( source.getFormat() == Format.USGS)
+        {
+            if (ConfigHelper.isForecast( config ))
+            {
+                throw new IllegalArgumentException( "USGS data cannot be used to supply forecasts." );
+            }
+
+            return Executor.submit(
+                    IngestSaver.createTask()
+                               .withProject( this.projectConfig )
+                               .withDataSourceConfig( config )
+                               .withFilePath( URI.create( "usgs" ) )
+                               .build()
+            );
+        }
+        else if ( source.getFormat() == Format.S_3 )
+        {
+            return Executor.submit(
+                    IngestSaver.createTask()
+                               .withProject( this.projectConfig )
+                               .withDataSourceConfig( config )
+                               .withFilePath( URI.create( "s3" ) )
+                               .withSourceConfig( source )
+                               .build()
+            );
+        }
+
+        // Null signifies the source was a file-ish source.
+        return null;
+    }
     /**
      * Looks through a directory to find data that is needed for ingest
      * @param directory The path of the directory to evaluate

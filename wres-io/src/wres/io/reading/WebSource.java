@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -32,6 +33,7 @@ import static java.time.DayOfWeek.SUNDAY;
 import static java.time.temporal.TemporalAdjusters.next;
 import static java.time.temporal.TemporalAdjusters.previousOrSame;
 
+import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DateCondition;
 import wres.config.generated.ProjectConfig;
@@ -49,6 +51,12 @@ import wres.util.Strings;
 class WebSource implements Callable<List<IngestResult>>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( WebSource.class );
+
+    private static final String ISSUED_DATES_ERROR_MESSAGE =
+            "One must specify issued dates with both earliest and latest (e.g. "
+            + "<issuedDates earliest=\"2018-12-28T15:42:00Z\" "
+            + "latest=\"2019-01-01T00:00:00Z\" />) when using a web API as a "
+            + "source for forecasts.";
 
     private final ProjectConfig projectConfig;
     private final DataSourceConfig dataSourceConfig;
@@ -76,7 +84,7 @@ class WebSource implements Callable<List<IngestResult>>
         this.projectConfig = projectConfig;
         this.dataSourceConfig = dataSourceConfig;
         this.sourceConfig = sourceConfig;
-        this.baseUri = URI.create( sourceConfig.getValue() );
+        this.baseUri = sourceConfig.getValue();
 
         if ( this.baseUri.getScheme() == null
              || !this.baseUri.getScheme().startsWith( "http" ) )
@@ -206,104 +214,96 @@ class WebSource implements Callable<List<IngestResult>>
      * filter further by valid dates. We are here going to get a superset of
      * what is needed when the user specified issued dates.
      *
-     * <p>TODO: support retrieval without issuedDates specified</p>
-     * <p>In case of issued dates not being specified, a naive approach would be
-     * to get four more weeks cushion on either side and hope we captured all.
-     * Really we should do a walk by week until we get at least 1 forecast and
-     * no forecasts in that week contain valid dates in the range specified by
-     * the user.</p>
+     * <p>The purpose of chunking by weeks is re-use between evaluations.
+     * Suppose evaluation A evaluates forecasts issued December 12 through
+     * December 28. Then evaluation B evaluates forecasts issued December 13
+     * through December 29. Rather than each evaluation ingesting the data every
+     * time the dates change, if we chunk by week, we can avoid the re-ingest of
+     * data from say, December 16 through December 22, and if we extend the
+     * chunk to each Sunday, there will be three sources, none re-ingested.</p>
+     *
+     * <p>Issued dates must be specified when using an API source to avoid
+     * ambiguities and to avoid infinite data requests.</p>
      *
      * <p>Not specific to a particular API.</p>
-     * @param config the evaluation project configuration
+     * @param config the evaluation project configuration, non-null, pair non-null
      * @return a set of week ranges
+     * @throws ProjectConfigException when config is insufficient to make ranges
      */
 
     private Set<Pair<Instant,Instant>> createWeekRanges( ProjectConfig config,
                                                          OffsetDateTime nowDate )
     {
-        if ( config == null || config.getPair() == null )
+        Objects.requireNonNull( config );
+        Objects.requireNonNull( config.getPair() );
+
+        if ( config.getPair().getIssuedDates() == null )
         {
-            return Collections.unmodifiableSet( Collections.emptySet() );
+            throw new ProjectConfigException( config.getPair(),
+                                              ISSUED_DATES_ERROR_MESSAGE );
+        }
+
+        DateCondition issuedDates = config.getPair().getIssuedDates();
+
+        if ( issuedDates.getEarliest() == null
+             || issuedDates.getLatest() == null )
+        {
+            throw new ProjectConfigException( issuedDates,
+                                              ISSUED_DATES_ERROR_MESSAGE );
         }
 
         Set<Pair<Instant,Instant>> weekRanges = new HashSet<>();
 
-        DateCondition issuedDates = config.getPair().getIssuedDates();
+        OffsetDateTime earliest;
+        String specifiedEarliest = issuedDates.getEarliest();
 
-        if ( issuedDates != null )
+        OffsetDateTime latest;
+        String specifiedLatest = issuedDates.getLatest();
+
+        earliest = OffsetDateTime.parse( specifiedEarliest )
+                                 .with( previousOrSame( SUNDAY ) )
+                                 .withHour( 0 )
+                                 .withMinute( 0 )
+                                 .withSecond( 0 )
+                                 .withNano( 0 );
+
+        LOGGER.debug( "Given {} calculated {} for earliest.",
+                      specifiedEarliest, earliest );
+
+        // Intentionally keep this raw, un-sunday-ified.
+        latest = OffsetDateTime.parse( specifiedLatest );
+
+        LOGGER.debug( "Given {} parsed {} for latest.",
+                      specifiedLatest, latest );
+
+        OffsetDateTime left = earliest;
+        OffsetDateTime right = left.with( next( SUNDAY ) );
+
+        while ( left.isBefore( latest ) )
         {
-            OffsetDateTime earliest;
-            String specifiedEarliest = issuedDates.getEarliest();
-
-            if ( specifiedEarliest == null )
+            // Because we chunk a week at a time, and because these will not
+            // be retrieved again if already present, we need to ensure the
+            // right hand date does not exceed "now".
+            if ( right.isAfter( nowDate ) )
             {
-                throw new UnsupportedOperationException( "When retrieving from a web API, the <issuedDates earliest=\"...\"> attribute must be specified." );
-            }
-            else
-            {
-                earliest = OffsetDateTime.parse( specifiedEarliest )
-                                  .with( previousOrSame( SUNDAY ) )
-                                         .withHour( 0 )
-                                         .withMinute( 0 )
-                                         .withSecond( 0 )
-                                         .withNano( 0 );
-            }
-
-            LOGGER.debug( "Given {} calculated {} for earliest.",
-                          specifiedEarliest, earliest );
-
-            OffsetDateTime latest;
-            String specifiedLatest = issuedDates.getLatest();
-
-            if ( specifiedLatest == null )
-            {
-                LOGGER.warn( "No latest issued date specified, using {} instead.",
-                             nowDate );
-                // Intentionally keep this raw, un-sunday-ified.
-                latest = nowDate;
-            }
-            else
-            {
-                // Intentionally keep this raw, un-sunday-ified.
-                latest = OffsetDateTime.parse( specifiedLatest );
-            }
-
-            LOGGER.debug( "Given {} using {} for latest.",
-                          specifiedLatest, latest );
-
-            OffsetDateTime left = earliest;
-            OffsetDateTime right = left.with( next( SUNDAY ) );
-
-            while ( left.isBefore( latest ) )
-            {
-                // Because we chunk a week at a time, and because these will not
-                // be retrieved again if already present, we need to ensure the
-                // right hand date does not exceed "now".
-                if ( right.isAfter( nowDate ) )
+                if ( latest.isAfter( nowDate ) )
                 {
-                    if ( latest.isAfter( nowDate ) )
-                    {
-                        right = nowDate;
-                    }
-                    else
-                    {
-                        right = latest;
-                    }
+                    right = nowDate;
                 }
-
-                Pair<Instant,Instant> range = Pair.of( left.toInstant(), right.toInstant() );
-                LOGGER.debug( "Created range {}", range );
-                weekRanges.add( range );
-                left = left.with( next( SUNDAY ) );
-                right = right.with( next( SUNDAY ) );
+                else
+                {
+                    right = latest;
+                }
             }
 
-            LOGGER.debug( "Calculated ranges {}", weekRanges );
+            Pair<Instant,Instant> range = Pair.of( left.toInstant(), right.toInstant() );
+            LOGGER.debug( "Created range {}", range );
+            weekRanges.add( range );
+            left = left.with( next( SUNDAY ) );
+            right = right.with( next( SUNDAY ) );
         }
-        else
-        {
-            throw new UnsupportedOperationException( "Must specify <issuedDates earliest=\"...\"> when using web APIs." );
-        }
+
+        LOGGER.debug( "Calculated ranges {}", weekRanges );
 
         return Collections.unmodifiableSet( weekRanges );
     }

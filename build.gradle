@@ -3,7 +3,7 @@ import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
 import java.nio.file.StandardCopyOption
 
-/* used by sonarqube static analysis and git versioning */
+/* Used by gradle plugins outside the official gradle plugins repository */
 buildscript
 {
     repositories
@@ -12,8 +12,6 @@ buildscript
     }
     dependencies
     {
-        // for static analysis tool sonarqube:
-        classpath 'org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.5'
         // For markdown -> html
         classpath 'com.atlassian.commonmark:commonmark:0.9.0'
         // To create a unified javadoc across submodules and top-level module:
@@ -21,13 +19,17 @@ buildscript
     }
 }
 
+/* Gradle plugins available in the official gradle plugins repository */
 plugins
 {
+    // Static analysis tool sonarqube client, compatible with sonarqube 7.5:
+    id 'org.sonarqube' version '2.6.2'
+
     //id 'com.github.jacobono.jaxb' version '1.3.5'
-    // above is unmaintained, less gradle-y, below fork has several improvements
+    // Above is unmaintained, less gradle-y, below fork has several improvements
     id 'org.openrepose.gradle.plugins.jaxb' version '2.4.1'
 
-    // for ability to use git ids for versioning jar files:
+    // For ability to use git ids for versioning jar files:
     id 'org.ajoberstar.grgit' version '1.7.2'
 
     // To compile user documentation (not working: blows up on compileMarkdown)
@@ -221,6 +223,7 @@ project(':wres-datamodel')
     {
         compile 'org.slf4j:slf4j-api:1.8.0-beta2'
         compile 'org.apache.commons:commons-lang3:3.6'
+        compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
         compile project(':wres-config')
 
         testCompile 'junit:junit:4.12'
@@ -592,10 +595,10 @@ project(':wres-tasker')
         compile 'javax.xml.bind:jaxb-api:2.2.11'
 
         // Server library to run a web server:
-        compile 'org.eclipse.jetty:jetty-server:9.4.12.v20180830'
+        compile 'org.eclipse.jetty:jetty-server:9.4.14.v20181114'
 
         // Servlet container library to run a web application with:
-        compile 'org.eclipse.jetty:jetty-webapp:9.4.12.v20180830'
+        compile 'org.eclipse.jetty:jetty-webapp:9.4.14.v20181114'
 
         // Needed at compile-time to reference ServletContainer.class and
         // DefaultServlet.class
@@ -614,14 +617,14 @@ project(':wres-tasker')
         testCompile 'junit:junit:4.12'
 
         // To generate fake certificates and keys for testing
-        testCompile 'org.bouncycastle:bcpkix-jdk15on:1.59'
-        testCompile 'org.bouncycastle:bcprov-jdk15on:1.59'
+        testCompile 'org.bouncycastle:bcpkix-jdk15on:1.60'
+        testCompile 'org.bouncycastle:bcprov-jdk15on:1.60'
 
         // To test against an embedded AMQP broker
-        testCompile 'org.apache.qpid:qpid-broker-core:7.0.4'
+        testCompile 'org.apache.qpid:qpid-broker-core:7.1.0'
         // Provides support for both 0-8 and 0-9-1
-        testCompile 'org.apache.qpid:qpid-broker-plugins-amqp-0-8-protocol:7.0.4'
-        testCompile 'org.apache.qpid:qpid-broker-plugins-memory-store:7.0.4'
+        testCompile 'org.apache.qpid:qpid-broker-plugins-amqp-0-8-protocol:7.1.0'
+        testCompile 'org.apache.qpid:qpid-broker-plugins-memory-store:7.1.0'
     }
 
     apply plugin: 'application'
@@ -798,8 +801,8 @@ dependencies
 
     compile 'javax.ws.rs:javax.ws.rs-api:2.1'
     compile 'javax.annotation:javax.annotation-api:1.3.2'
-    compile 'org.eclipse.jetty:jetty-server:9.4.12.v20180830'
-    compile 'org.eclipse.jetty:jetty-webapp:9.4.12.v20180830'
+    compile 'org.eclipse.jetty:jetty-server:9.4.14.v20181114'
+    compile 'org.eclipse.jetty:jetty-webapp:9.4.14.v20181114'
     compile 'org.glassfish.jersey.containers:jersey-container-servlet-core:2.27'
 
     compile 'com.github.ben-manes.caffeine:caffeine:2.6.2'

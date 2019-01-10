@@ -18,9 +18,9 @@ COPY nonsrc/*x509*pem ./
 RUN chown wres_docker:wres . && chown wres_docker:wres *
 
 WORKDIR /etc/rabbitmq
-COPY nonsrc/rabbitmq.conf .
-COPY nonsrc/rabbitmq-ti.conf .
-COPY nonsrc/rabbitmq-dev.conf .
+COPY nonsrc/rabbitmq.config .
+COPY nonsrc/rabbitmq-ti.config .
+COPY nonsrc/rabbitmq-dev.config .
 COPY nonsrc/definitions.json .
 
 USER wres_docker
