@@ -37,7 +37,6 @@ public class WaterMLFileReader extends BasicSource
     {
         super( projectConfig );
         this.setFilename( filename );
-        this.setHash();
     }
 
     @Override
