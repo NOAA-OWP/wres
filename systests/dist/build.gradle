@@ -54,9 +54,8 @@ dependencies
     testCompile fileTree( dir: "${unzipArtifactToTest.destinationDir}/wres-${versionToTest}",
                           include: '**/*.jar' )
 
-    // TODO: also include unzipped directory names only in testRuntime
-    // testRuntime filetree( dir: "${unzipArtifactToTest.destinationDir}/wres-${versionToTest}",
-    //                       include: //TODO )
+    // Add the lib/conf directory to testRuntime classpath like actual WRES does
+    testRuntime files( "${unzipArtifactToTest.destinationDir}/wres-${versionToTest}/lib/conf" )
 
     println( "buildDir: ${buildDir}" )
     println( "versionToTest: ${versionToTest}" )
