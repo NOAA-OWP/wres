@@ -42,7 +42,6 @@ compileTestJava.dependsOn( unzipArtifactToTest )
 
 dependencies
 {
-    testCompile 'org.slf4j:slf4j-api:1.8.0-beta2'
     testCompile 'commons-io:commons-io:2.6'
     testCompile 'com.google.guava:guava-testlib:21.0'
     testCompile 'com.google.guava:guava:22.0'
@@ -52,7 +51,12 @@ dependencies
     // Expose all wres contents here, using unzipArtifactToTest task.
     // Use of fileTree is important, lazily evaluated, meaning that the contents
     // from the unzipArtifactToTest task will be here by now
-    compile fileTree( unzipArtifactToTest.destinationDir )
+    testCompile fileTree( dir: "${unzipArtifactToTest.destinationDir}/wres-${versionToTest}",
+                          include: '**/*.jar' )
+
+    // TODO: also include unzipped directory names only in testRuntime
+    // testRuntime filetree( dir: "${unzipArtifactToTest.destinationDir}/wres-${versionToTest}",
+    //                       include: //TODO )
 
     println( "buildDir: ${buildDir}" )
     println( "versionToTest: ${versionToTest}" )
