@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
@@ -131,10 +132,16 @@ public final class MetadataHelper
         {
             throw new RescalingException( "The time-step duration cannot be negative for rescaling purposes." );
         }
-        
-        // Change of scale required
-        if ( !existingTimeScale.equals( desiredTimeScale ) )
+
+        // Change of scale required, i.e. not absolutely equal and not instantaneous 
+        // (which has a more lenient interpretation)
+        if ( !existingTimeScale.equals( desiredTimeScale ) && ( !existingTimeScale.isInstantaneous()
+                                                                || !desiredTimeScale.isInstantaneous() ) )
         {
+
+            // The desired time scale must be a sensible function in the context of rescaling
+            MetadataHelper.throwExceptionIfDesiredFunctionIsUnknown( desiredTimeScale.getFunction() );
+            
             // Downscaling not currently allowed
             MetadataHelper.throwExceptionIfDownscalingRequested( existingTimeScale.getPeriod(),
                                                                  desiredTimeScale.getPeriod() );
@@ -153,24 +160,22 @@ public final class MetadataHelper
 
             // The time-step of the data must be less than or equal to the period associated with the desired time scale
             // if rescaling is required
-            MetadataHelper.throwExceptionIfDataTimeStepExceedsDesiredPeriod( existingTimeScale,
-                                                                             desiredTimeScale,
+            MetadataHelper.throwExceptionIfDataTimeStepExceedsDesiredPeriod( desiredTimeScale,
                                                                              timeStep );
 
             // If time-step of the data is equal to the period associated with the desired time scale, then 
             // rescaling is not allowed
-            MetadataHelper.throwExceptionIfDataTimeStepMatchesDesiredPeriod( existingTimeScale,
-                                                                             desiredTimeScale,
+            MetadataHelper.throwExceptionIfDataTimeStepMatchesDesiredPeriod( desiredTimeScale,
                                                                              timeStep );
 
             // The desired time scale period must be an integer multiple of the data time-step
             MetadataHelper.throwExceptionIfDesiredPeriodDoesNotCommute( timeStep,
                                                                         desiredTimeScale.getPeriod(),
                                                                         "data time-step" );
+            
         }
 
     }
-
 
     /**
      * <p>Computes the Least Common Multiple or Least Common Scale (LCS) of the inputs at a time resolution of seconds. 
@@ -227,7 +232,11 @@ public final class MetadataHelper
         // The earlier validation guarantees the latter
         if ( timeScales.stream().anyMatch( TimeScale::isInstantaneous ) )
         {
-            return timeScales.stream().filter( scale -> !scale.isInstantaneous() ).findFirst().get();
+            Optional<TimeScale> nonInst = timeScales.stream().filter( scale -> !scale.isInstantaneous() ).findFirst();
+            if ( nonInst.isPresent() )
+            {
+                return nonInst.get();
+            }
         }
 
         // Compute the LCS from two or more time scales
@@ -247,6 +256,22 @@ public final class MetadataHelper
         }
 
         return TimeScale.of( Duration.ofSeconds( lcs ), timeScales.iterator().next().getFunction() );
+    }
+
+    /**
+     * Throws an exception if the desiredFunction is {@link TimeScaleFunction#UNKNOWN}.
+     * 
+     * @param desiredFunction the desired function
+     * @throws RescalingException if the desired function is unknown
+     */
+
+    private static void throwExceptionIfDesiredFunctionIsUnknown( TimeScaleFunction desiredFunction )
+    {
+        if ( desiredFunction == TimeScaleFunction.UNKNOWN )
+        {
+            throw new RescalingException( "The desired time scale function is '" + TimeScaleFunction.UNKNOWN
+                                          + "': the function must be a known function." );
+        }
     }
 
     /**
@@ -306,7 +331,11 @@ public final class MetadataHelper
              && existingTimeScale.getFunction() != desiredTimeScale.getFunction() )
         {
             throw new RescalingException( "The periods associated with the existing and desired time scales are the "
-                                          + "same, but the time scale functions are different. The function cannot be "
+                                          + "same, but the time scale functions are different ["
+                                          + existingTimeScale.getFunction()
+                                          + ", "
+                                          + desiredTimeScale.getFunction()
+                                          + "]. The function cannot be "
                                           + "changed without changing the period." );
         }
     }
@@ -336,15 +365,13 @@ public final class MetadataHelper
     /**
      * Throws an exception if the time-step of the data exceeds the desired period and rescaling is required.
      * 
-     * @param existingTimeScale the existing time scale
      * @param desiredTimeScale the desired time scale
      * @param timeStep the data time-step
      * @throws RescalingException if the timeStep exceeds the desiredPeriod
      */
 
     private static void
-            throwExceptionIfDataTimeStepExceedsDesiredPeriod( TimeScale existingTimeScale,
-                                                              TimeScale desiredTimeScale,
+            throwExceptionIfDataTimeStepExceedsDesiredPeriod( TimeScale desiredTimeScale,
                                                               Duration timeStep )
     {
         if ( timeStep.compareTo( desiredTimeScale.getPeriod() ) > 0 )
@@ -362,15 +389,13 @@ public final class MetadataHelper
      * Throws an exception if the time-step of the data matches the period associated with the desiredTimeScale, and 
      * rescaling is required. This is not allowed, because there is insufficient data for rescaling.
      * 
-     * @param existingTimeScale the existing time scale
      * @param desiredTimeScale the desired time scale
      * @param timeStep the data time-step
      * @throws RescalingException if the timeStep matches the desired period and rescaling is required
      */
 
     private static void
-            throwExceptionIfDataTimeStepMatchesDesiredPeriod( TimeScale existingTimeScale,
-                                                              TimeScale desiredTimeScale,
+            throwExceptionIfDataTimeStepMatchesDesiredPeriod( TimeScale desiredTimeScale,
                                                               Duration timeStep )
     {
         if ( timeStep.equals( desiredTimeScale.getPeriod() ) )
