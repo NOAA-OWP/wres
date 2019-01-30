@@ -61,3 +61,31 @@ dependencies
     println( "versionToTest: ${versionToTest}" )
     println( "unzipArtifactToTest.destinationDir: " + unzipArtifactToTest.destinationDir )
 }
+
+test
+{
+    // Jump through some hoops to allow caller to set test JVM system properties
+    // in one variable, like this:
+    // -PtestJvmSystemProperties="-Dwres.useSSL=false -Dwres.blah=true"
+    // or like this:
+    // -PtestJvmSystemProperties="wres.useSSL=false wres.blah=true"
+
+    def testJvmPropertiesRaw = project.properties['testJvmSystemProperties']
+    def splittedTestJvmProperties = testJvmPropertiesRaw.trim().split( " " )
+    println( "Test JVM System Properties split: ${splittedTestJvmProperties}" )
+    def furtherSplittedTestJvmProperties = [:]
+
+    // Without the findall, a seemingly empty array still evaluates the "each"
+    splittedTestJvmProperties.findAll().each{ s ->
+        def noDashD = s
+        if ( s.startsWith( "-D" ) )
+        {
+            noDashD = s.substring( 2 )
+        }
+        def pair = noDashD.split( "=" )
+        furtherSplittedTestJvmProperties[pair[0]] = pair[1]
+    }
+
+    println( "Test JVM System Properties: ${furtherSplittedTestJvmProperties}" )
+    systemProperties = furtherSplittedTestJvmProperties
+}
