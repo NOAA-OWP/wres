@@ -316,7 +316,6 @@ public class DatacardSource extends BasicSource
                                       .measuredIn( this.getMeasurementID() )
                                       .scaledBy( TimeScale.TimeScaleFunction.UNKNOWN )
                                       .scaleOf( Duration.of(1, TimeHelper.LEAD_RESOLUTION) )
-                                      .every( Duration.of(this.timeInterval, ChronoUnit.HOURS))
                                       .inSource( this.getSourceID() )
                                       .forVariableAndFeatureID( this.getVariableFeatureID() )
                                       .add();
@@ -538,17 +537,6 @@ public class DatacardSource extends BasicSource
 	private int valuesPerRecord = 0;
 
 	private static final int FIRST_OBS_VALUE_START_POS = 20;
-
-    private final DataBuilder observations = DataBuilder.with(
-            "variablefeature_id",
-            "observation_time",
-            "observed_value",
-            "measurementunit_id",
-            "source_id",
-            "scale_period",
-            "scale_function",
-            "time_step"
-    );
 
 	/**
 	 * The ID for the variable that is currently being parsed

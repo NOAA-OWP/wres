@@ -4,17 +4,21 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import javax.validation.constraints.NotNull;
@@ -27,7 +31,7 @@ import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
 
 import wres.config.generated.DataSourceConfig;
-import wres.io.concurrency.CopyExecutor;
+import wres.datamodel.metadata.TimeScale;
 import wres.io.concurrency.WRESRunnable;
 import wres.io.concurrency.WRESRunnableException;
 import wres.io.config.ConfigHelper;
@@ -37,10 +41,13 @@ import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
 import wres.io.data.details.SourceDetails;
+import wres.io.reading.IngestException;
 import wres.io.reading.IngestedValues;
 import wres.io.utilities.DataScripter;
+import wres.system.SystemSettings;
 import wres.util.NetCDF;
 import wres.util.Strings;
+import wres.util.TimeHelper;
 
 class VectorNWMValueSaver extends WRESRunnable
 {
@@ -52,10 +59,10 @@ class VectorNWMValueSaver extends WRESRunnable
      * Used as a key to tie variable and position identifiers to their
      * index in the NetCDF variable
      */
-    private static class TimeSeriesIndexKey
+    private static class TimeSeriesIndexKey implements Comparable<TimeSeriesIndexKey>
     {
         TimeSeriesIndexKey(Integer variableID,
-                                  String initializationDate,
+                                  Instant initializationDate,
                                   Integer ensembleID,
                                   Integer measurementUnitID)
         {
@@ -66,7 +73,7 @@ class VectorNWMValueSaver extends WRESRunnable
         }
 
         private final Integer variableID;
-        private final String initializationDate;
+        private final Instant initializationDate;
         private final Integer ensembleID;
         private final Integer measurementUnitID;
 
@@ -74,6 +81,11 @@ class VectorNWMValueSaver extends WRESRunnable
         public boolean equals( Object obj )
         {
             return obj instanceof TimeSeriesIndexKey && this.hashCode() == obj.hashCode();
+        }
+
+        boolean isForecast()
+        {
+            return this.ensembleID >= 1;
         }
 
         @Override
@@ -93,35 +105,74 @@ class VectorNWMValueSaver extends WRESRunnable
                    "', Ensemble ID: " + this.ensembleID +
                    ", Measurement unit ID: " + this.measurementUnitID;
         }
+
+        @Override
+        public int compareTo( TimeSeriesIndexKey other )
+        {
+            int comparison = Integer.compare( this.variableID, other.variableID );
+
+            if (comparison == 0)
+            {
+                comparison = this.initializationDate.compareTo( other.initializationDate );
+            }
+
+            if (comparison == 0)
+            {
+                comparison = Integer.compare( this.ensembleID, other.ensembleID );
+            }
+
+            if (comparison == 0)
+            {
+                comparison = Integer.compare( this.measurementUnitID, other.measurementUnitID );
+            }
+
+            return comparison;
+        }
     }
 
-    // Used to map the mapping between netcdf vector indices to spatiovariable
-    // ids from the database to the key for the series of values.
-    //
-    // If all short range channel_rt NWM forecasts from a certain date are
-    // being ingested, that means that there will be ~432 different files,
-    // split up into 24 groups of 18 files. Each group will get its own mapping
-    // to indices since they will be unique to each group.
-    //
-    // A spatiovariable id is the identifier for the link between a variable
-    // and a location. That id will be used to link a value for a variable
-    // to a location.
-    // In observations, the spatiovariable id is the variable position id,
-    // with forecasts, it is the time series id
-    private static Map<TimeSeriesIndexKey, Map<Integer, Integer>> indexMapping;
+    /**
+     * Used to map the mapping between netcdf vector indices to spatiovariable
+     * ids from the database to the key for the series of values.
+     * <p>
+     * If all short range channel_rt NWM forecasts from a certain date are
+     * being ingested, that means that there will be ~432 different files,
+     * split up into 24 groups of 18 files. Each group will get its own mapping
+     * to indices since they will be unique to each group.
+     * </p>
+     * <p>
+     * A spatiovariable id is the identifier for the link between a variable
+     * and a location. That id will be used to link a value for a variable
+     * to a location.
+     * In observations, the spatiovariable id is the variable position id,
+     * with forecasts, it is the time series id
+     * </p>
+     * <pre>
+     * TimeSeriesIndexKey:1 -> comid:1 -> spatiovariable_id:1
+     *                      -> comid:2 -> spatiovariable_id:2
+     * TimeSeriesIndexKey:2 -> comid:1 -> spatiovariable_id:3
+     *                      -> comid:2 -> spatiovariable_id:4
+     * TimeSeriesIndexKey:3 -> comid:1 -> spatiovariable_id:5
+     *                      -> comid:2 -> spatiovariable_id:6
+     * </pre>
+     **/
+    private static final Map<TimeSeriesIndexKey, Map<Integer, Integer>> indexMapping = new ConcurrentHashMap<>(  );
 
-    // Keeps track of the IDs for all variables whose variable positions have
-    // been generated. Only variables that are not recorded in this list
-    // should have variable positions generated for them.
+    /**
+     * Keeps track of the IDs for all variables whose variable positions have
+     * been generated. Only variables that are not recorded in this list
+     * should have variable positions generated for them.
+     **/
     private static final Set<Integer> addedVariables =
             Collections.synchronizedSet( new HashSet<Integer>() );
 
-    // A collection of locks to use based on a series of values' context
-    // This will allow the application to lock operations for a given
-    // initialization date, variable, type of measurement,
-    // and NWM grouping (short range, assim, etc) without blocking the other
-    // NWM contexts (the short range stream flow for '2017-08-08 00:00:00'
-    // won't block '2017-08-08 01:00:00')
+    /**
+     * A collection of locks to use based on a series of values' context
+     * This will allow the application to lock operations for a given
+     * initialization date, variable, type of measurement,
+     * and NWM grouping (short range, assim, etc) without blocking the other
+     * NWM contexts (the short range stream flow for '2017-08-08 00:00:00'
+     * won't block '2017-08-08 01:00:00')
+     **/
     private static final Map<TimeSeriesIndexKey, Object> keyLocks = new ConcurrentHashMap<>(  );
     private static final Object KEY_LOCK = new Object();
 
@@ -131,6 +182,16 @@ class VectorNWMValueSaver extends WRESRunnable
     private static final double EPSILON = 0.0000001;
 
     /**
+     * Since the NWM uses instantaneous values, the scale period is 1
+     */
+    private static final int SCALE_PERIOD = 1;
+
+    /**
+     * Since the NWM uses instantaneous values, there isn't a function associated with the scale
+     */
+    private static final String SCALE_FUNCTION = TimeScale.TimeScaleFunction.UNKNOWN.toString();
+
+    /**
      * Gets a object to lock on based on the key for a time series
      * @param key The identifier for a set of circumstances that the NetCDF
      *            file belongs to
@@ -138,6 +199,7 @@ class VectorNWMValueSaver extends WRESRunnable
      */
     private static Object getKeyLock(TimeSeriesIndexKey key)
     {
+        // TODO: Is a reentrant lock more appropriate here since there will be a lock per key?
         Object lock;
         synchronized ( KEY_LOCK )
         {
@@ -153,12 +215,12 @@ class VectorNWMValueSaver extends WRESRunnable
 
     private final Path filePath;
     private NetcdfFile source;
-    private Integer lead;
+    private final DataSourceConfig dataSourceConfig;
+
+    private Duration lead;
     private Variable variable;
     private Integer variableID;
-    private final Future<String> futureHash;
-    private String hash;
-    private final DataSourceConfig dataSourceConfig;
+    private final String hash;
     private Integer measurementUnitID;
     private Integer sourceID;
     private Double missingValue;
@@ -179,42 +241,6 @@ class VectorNWMValueSaver extends WRESRunnable
         this.filePath = Paths.get( filename );
         this.hash = hash;
         this.dataSourceConfig = dataSourceConfig;
-        this.futureHash = null;
-    }
-
-    /**
-     * Gets the result of the
-     * @return The hash representing the source file
-     * @throws IOException thrown if hashing was interrupted and if it
-     * encountered an error during processing
-     */
-    private String getHash() throws IOException
-    {
-        if (this.hash == null)
-        {
-            try
-            {
-                this.hash = this.futureHash.get();
-            }
-            catch ( InterruptedException e )
-            {
-                String message = "The hashing process for the file '";
-                message += this.filePath.toString();
-                message += "' was interrupted and could not be completed.";
-                LOGGER.warn( message, e );
-
-                Thread.currentThread().interrupt();
-            }
-            catch ( ExecutionException e )
-            {
-                String message = "An error occurred while hashing the file '";
-                message += this.filePath.toString();
-                message += "'.";
-
-                throw new IOException( message, e );
-            }
-        }
-        return this.hash;
     }
 
     /**
@@ -245,8 +271,8 @@ class VectorNWMValueSaver extends WRESRunnable
             SourceDetails.SourceKey sourceKey = new SourceDetails.SourceKey(
                     this.filePath.toUri(),
                     NetCDF.getReferenceTime( this.getSource() ).toString(),
-                    this.getLead(),
-                    this.getHash()
+                    TimeHelper.durationToLead(this.getLead()),
+                    this.hash
             );
 
             // Ask the cache "do you have this source?"
@@ -270,7 +296,7 @@ class VectorNWMValueSaver extends WRESRunnable
             }
 
             // Regardless of whether we were the ones or not, get it from cache
-            this.sourceID = DataSources.getActiveSourceID( this.getHash() );
+            this.sourceID = DataSources.getActiveSourceID( this.hash );
 
             // Mark whether this reader is the one to perform ingest or yield.
             this.inChargeOfIngest = wasThisReaderTheOneThatInserted;
@@ -304,7 +330,7 @@ class VectorNWMValueSaver extends WRESRunnable
         DataScripter script = new DataScripter(  );
 
         script.addLine("INSERT INTO wres.TimeSeriesSource (timeseries_id, source_id, lead)");
-        script.addLine("SELECT TS.timeseries_id, ", this.sourceID, ", ", this.getLead());
+        script.addLine("SELECT TS.timeseries_id, ", this.sourceID, ", ", TimeHelper.durationToLead( this.getLead()));
         script.addLine("FROM wres.TimeSeries TS");
         script.addLine("INNER JOIN wres.VariableFeature VF");
         script.addTab().addLine("ON VF.variablefeature_id = TS.variablefeature_id");
@@ -382,7 +408,7 @@ class VectorNWMValueSaver extends WRESRunnable
         // and the id for the appropriate time series together
         if (this.isForecast())
         {
-            IngestedValues.addTimeSeriesValue( spatioVariableID, this.getLead(), value );
+            IngestedValues.addTimeSeriesValue( spatioVariableID, TimeHelper.durationToLead(this.getLead()), value );
         }
         else
         {
@@ -391,7 +417,8 @@ class VectorNWMValueSaver extends WRESRunnable
                           .at(NetCDF.getTime(this.getSource()))
                           .inSource( this.getSourceID() )
                           .forVariableAndFeatureID( spatioVariableID )
-                          .every( Duration.ZERO)
+                          .scaleOf( Duration.ofMinutes( 1 ) )
+                          .scaledBy( TimeScale.TimeScaleFunction.UNKNOWN )
                           .add();
         }
     }
@@ -544,12 +571,16 @@ class VectorNWMValueSaver extends WRESRunnable
         script.addTab().addLine("variablefeature_id,");
         script.addTab().addLine("ensemble_id,");
         script.addTab().addLine("measurementunit_id,");
-        script.addTab().addLine("initialization_date");
+        script.addTab().addLine("initialization_date,");
+        script.addTab().addLine("scale_period,");
+        script.addTab().addLine("scale_function");
         script.addLine(")");
         script.addLine("SELECT VF.variablefeature_id,");
         script.addTab().addLine(this.getEnsembleID(), ",");
         script.addTab().addLine(this.getMeasurementUnitID(), "," );
-        script.addTab().addLine("'", NetCDF.getReferenceTime( this.getSource() ), "'");
+        script.addTab().addLine("'", NetCDF.getReferenceTime( this.getSource() ), "',");
+        script.addTab().addLine(VectorNWMValueSaver.SCALE_PERIOD, ",");
+        script.addTab().addLine("'", VectorNWMValueSaver.SCALE_FUNCTION, "'");
         script.addLine("FROM wres.VariableFeature VF");
         script.addLine("INNER JOIN wres.Feature F");
         script.addTab().addLine("ON F.feature_id = VF.feature_id");
@@ -608,8 +639,8 @@ class VectorNWMValueSaver extends WRESRunnable
     @NotNull
     private Map<Integer, Integer> getIndexMapping() throws IOException, SQLException
     {
-        String initializationTime = "";
-        int ensembleID = 0;
+        Instant initializationTime = Instant.MIN;
+        final int ensembleID;
         int measurementUnitID = 0;
 
         // If we are reading a forecast, we need to hold unique sets of IDs
@@ -618,9 +649,14 @@ class VectorNWMValueSaver extends WRESRunnable
         // extra fields to only be populated uniquely if this is a forecast
         if (this.isForecast())
         {
-            initializationTime = NetCDF.getReferenceTime( this.getSource() ).toString();
+            initializationTime = NetCDF.getReferenceTime( this.getSource() );
             ensembleID = this.getEnsembleID();
             measurementUnitID = this.getMeasurementUnitID();
+        }
+        else
+        {
+            // If the values aren't forecasts, the data will be in wres.Observation and won't have a normal ensembleID
+            ensembleID = -1;
         }
 
         // A key is built to ensure proper index information for the variable,
@@ -637,16 +673,14 @@ class VectorNWMValueSaver extends WRESRunnable
 
         // If there is no mapping yet or there is no mapping for these
         // circumstances...
-        if ( VectorNWMValueSaver.indexMapping == null
-             || !VectorNWMValueSaver.indexMapping.containsKey( key ) )
+        if ( !VectorNWMValueSaver.indexMapping.containsKey( key ) )
         {
             // Wait and lock down processing to ensure work isn't duplicated
             synchronized ( VectorNWMValueSaver.getKeyLock( key ) )
             {
                 // Double check to make sure the necessary work wasn't done
                 // while waiting for the lock
-                if ( VectorNWMValueSaver.indexMapping == null
-                     || !VectorNWMValueSaver.indexMapping.containsKey( key ) )
+                if ( !VectorNWMValueSaver.indexMapping.containsKey( key ) )
                 {
                     // Add all missing locations for variables
                     this.addVariableFeatures();
@@ -684,7 +718,7 @@ class VectorNWMValueSaver extends WRESRunnable
                         script.addTab(  2  ).addLine("INNER JOIN (");
                         script.addTab(   3   ).addLine("SELECT S.source_id");
                         script.addTab(   3   ).addLine("FROM wres.Source S");
-                        script.addTab(   3   ).addLine("WHERE S.output_time = '", NetCDF.getReferenceTime( this.getSource() ), "'");
+                        script.addTab(   3   ).addLine("WHERE S.output_time = '", initializationTime, "'");
                         script.addTab(  2  ).addLine(") AS S");
                         script.addTab(   3   ).addLine("ON S.source_id = TSS.source_id");
                         script.addTab(  2  ).addLine("LEFT OUTER JOIN wres.ProjectSource PS");
@@ -710,13 +744,6 @@ class VectorNWMValueSaver extends WRESRunnable
                         script.addTab().addLine("AND VF.variable_id = ", this.getVariableID(), ";");
                     }
 
-                    // If a map hasn't been created yet, create it
-                    if ( VectorNWMValueSaver.indexMapping == null )
-                    {
-                        VectorNWMValueSaver.indexMapping =
-                                new ConcurrentHashMap<>();
-                    }
-
                     // Create a map specific to this set of circumstances
                     Map<Integer, Integer> variableComids =
                             new TreeMap<>();
@@ -727,6 +754,7 @@ class VectorNWMValueSaver extends WRESRunnable
                     );
 
                     // Add the populated map to the overall collection
+                    // TODO: Find way to avoid calling "getFeatureIndexMap"; the value is going to be the same 99.9% of the time
                     VectorNWMValueSaver.indexMapping.put( key,
                                                           getFeatureIndexMap( variableComids ) );
                 }
@@ -737,11 +765,21 @@ class VectorNWMValueSaver extends WRESRunnable
         return VectorNWMValueSaver.indexMapping.get( key );
     }
 
+    /**
+     * Generates a map between the indices in the variable in the netcdf file and the
+     * spatiovariable ids that they correspond to
+     * @param variableComids A mapping of the spatials ids for variables to the spatiovariable ids in the database
+     * @return A mapping between array index and spatiovariable id
+     * @throws IOException Thrown if the netcdf file could not be loaded
+     * @throws IOException Thrown if the netcdf file could not be read
+     */
     private Map<Integer, Integer> getFeatureIndexMap(Map<Integer, Integer> variableComids) throws IOException
     {
         Variable features = NetCDF.getVectorCoordinateVariable( this.getSource() );
         Map<Integer, Integer> featureIndexMap = new ConcurrentHashMap<>( variableComids.size() );
 
+        // Read in all values from the variable; the cost of multiple reads from the disk outweighs
+        // the cost of having these values in memory
         Array comids = features.read();
 
         for (int comidIndex = 0; comidIndex < comids.getSize(); ++comidIndex)
@@ -760,7 +798,7 @@ class VectorNWMValueSaver extends WRESRunnable
      * @return The lead time relative to the initialization date for this data
      * @throws IOException Thrown if communication with the source file failed
      */
-    private int getLead() throws IOException
+    private Duration getLead() throws IOException
     {
         if (this.lead == null)
         {
@@ -833,7 +871,8 @@ class VectorNWMValueSaver extends WRESRunnable
             return;
         }
 
-        // Read all of the values from the NetCDF source at once
+        // Read in all values from the variable; the cost of multiple reads from the disk outweighs
+        // the cost of having these values in memory
         Array values = var.read();
 
         // Loop through each value in the array of stored values

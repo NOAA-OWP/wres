@@ -48,4 +48,6 @@
     <include file="wres.Source_v3.xml" relativeToChangelogFile="true" />
     <include file="wres.projectsource_v2.xml" relativeToChangelogFile="true" />
     <include file="wres.Source_v4.xml" relativeToChangelogFile="true" />
+    <include file="wres.timeseries_v3.xml" relativeToChangelogFile="true" />
+    <include file="wres.observation_v3.xml" relativeToChangelogFile="true" />
 </databaseChangeLog>

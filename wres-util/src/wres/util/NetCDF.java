@@ -15,15 +15,19 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.StringJoiner;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.nio.file.Paths;
@@ -90,6 +94,196 @@ public final class NetCDF {
         }
     }
 
+
+    /**
+     * A buffered iterator over Netcdf Variable values
+     */
+    public static class VectorVariableIterator implements Iterator<Object>
+    {
+        /**
+         * The maximum number of values to load from the variable if none is given upon construction
+         */
+        private static final int DEFAULT_BUFFER_SIZE = 1000;
+
+        /**
+         * Create an instance with the default buffer size
+         * @param variable The variable to iterate over
+         * @param <T> The type of value to get back from the iterator
+         * @return A new VectorVariableIterator instance
+         */
+        public static VectorVariableIterator from(final Variable variable)
+        {
+            return VectorVariableIterator.from(variable, DEFAULT_BUFFER_SIZE);
+        }
+
+        /**
+         * Create an instance
+         * @param variable The variable to iterate over
+         * @param bufferSize The number of values to load at a time when iterating
+         * @param <T> The type of value to get back from the iterator
+         * @return A new VectorVariableIterator instance
+         */
+        public static VectorVariableIterator from(final Variable variable, final int bufferSize)
+        {
+            return new VectorVariableIterator( variable, bufferSize );
+        }
+
+        /**
+         * The variable that is being iterated over
+         */
+        private final Variable variable;
+
+        /**
+         * The maximum number of values that may be loaded at a time
+         */
+        private final int bufferSize;
+
+        /**
+         * The number of values in the variable
+         */
+        private final int length;
+
+        /**
+         * The name of the variable; used for error messaging
+         */
+        private final String variableName;
+
+        /**
+         * The location of the data containing the variable; used for error messaging
+         */
+        private final String location;
+
+        /**
+         * The index of the current value in the variable
+         */
+        private int index = 0;
+
+        /**
+         * The currently loaded buffer of values from the array
+         */
+        private Array currentData;
+
+        private VectorVariableIterator(final Variable variable, final int bufferSize)
+        {
+            this.variable = variable;
+            this.bufferSize = bufferSize;
+            this.length = (int)variable.getSize();
+            this.variableName = variable.getShortName();
+            this.location = variable.getDatasetLocation();
+        }
+
+        @Override
+        public boolean hasNext()
+        {
+            boolean canBufferMoreData = this.index < this.length;
+
+            if (canBufferMoreData && (this.currentData == null || !this.currentData.hasNext()))
+            {
+                this.loadBufferData();
+            }
+
+            return canBufferMoreData && this.currentData.hasNext();
+        }
+
+        @Override
+        @SuppressWarnings( "unchecked" )
+        public Object next()
+        {
+            if (this.hasNext())
+            {
+                Object value = this.currentData.next();
+                this.index++;
+
+                return value;
+            }
+            else
+            {
+                throw new NoSuchElementException("There are no more values to iterate over.");
+            }
+        }
+
+        public int nextInt()
+        {
+            if (this.hasNext())
+            {
+                int value = this.currentData.nextInt();
+                this.index++;
+
+                return value;
+            }
+            else
+            {
+                throw new NoSuchElementException("There are no more values to iterate over.");
+            }
+        }
+
+        public double nextDouble()
+        {
+            if (this.hasNext())
+            {
+                double value = this.currentData.nextDouble();
+                this.index++;
+
+                return value;
+            }
+            else
+            {
+                throw new NoSuchElementException("There are no more values to iterate over.");
+            }
+        }
+
+        private void loadBufferData()
+        {
+            // Create a new Array to iterate over
+
+            // We want the origin to be the index we're on; we start at 0, then continue through the
+            // buffer size and we'll be at 0 + bufferSize, 0 + bufferSize * 2, etc
+            int[] origin = new int[] {this.index};
+
+            // We want to pull in the up to bufferSize values, but we'll suffer an
+            // InvalidRangeException if we try to pull to much. As a result, we want to pull through
+            // the very end if there's less than bufferSize elements left
+            int[] shape = new int[] {Math.min(this.bufferSize, this.length - this.index)};
+
+            try
+            {
+                this.currentData = this.variable.read( origin, shape );
+            }
+            catch ( IOException e )
+            {
+                String message = "The Netcdf variable %s at %s could not be read.";
+                message = String.format( message, this.variableName, this.location );
+                throw new IterationFailedException( message );
+            }
+            catch ( InvalidRangeException e )
+            {
+                String message = "The iterator tried to read past the end of the variable data. ";
+                message += "The iterator tried to read %d elements starting at the index %d, ";
+                message += "but there were only %d elements available to read.";
+
+                message = String.format(message, shape[0], origin[0], this.length);
+                throw new IterationFailedException( message );
+            }
+        }
+
+        @Override
+        public void forEachRemaining( Consumer<? super Object> action )
+        {
+            while(this.hasNext())
+            {
+                action.accept( this.next() );
+            }
+        }
+
+        /**
+         * @return The index of the value last read from the iterator
+         */
+        public int getIndexOfLastValue()
+        {
+            return this.index - 1;
+        }
+    }
+
     private NetCDF() {}
 
     public static DateTimeFormatter getStandardDateFormat()
@@ -143,22 +337,18 @@ public final class NetCDF {
         return vectorCoordinate;
     }
 
-    public static Integer getLeadTime( NetcdfFile file) throws IOException
+    public static Duration getLeadTime( NetcdfFile file) throws IOException
     {
-        int lead = Integer.MAX_VALUE;
+        Duration lead = Duration.ZERO;
         Instant initializedTime = NetCDF.getReferenceTime( file );
         Instant validTime = NetCDF.getTime( file );
 
         if (initializedTime != null && validTime != null)
         {
-            Long timeBetween = LocalDateTime.ofInstant( initializedTime, ZoneId.of( "UTC" ) )
-                                            .until( LocalDateTime.ofInstant( validTime, ZoneId.of( "UTC" ) ),
-                                                    TimeHelper.LEAD_RESOLUTION
-                                            );
-            lead = timeBetween.intValue();
+            lead = Duration.between( initializedTime, validTime );
         }
 
-        if (lead == Integer.MAX_VALUE)
+        if (lead.equals( Duration.ZERO ))
         {
             LOGGER.warn( "A proper lead time could not be determined for the "
                          + "forecast data in '{}'", file.getLocation() );

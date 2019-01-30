@@ -58,16 +58,4 @@
         </addColumn>
         <comment>TimeSeries - added scale_function</comment>
     </changeSet>
-    <changeSet id="TimeSeries - Add time_step" author="Christopher Tubbs">
-        <preConditions onFail="MARK_RAN">
-            <not>
-                <columnExists schemaName="wres" tableName="TimeSeries" columnName="time_step" />
-            </not>
-        </preConditions>
-        <addColumn schemaName="wres" tableName="TimeSeries">
-            <column name="time_step" type="integer"
-                    remarks="The amount of time units between values. The unit is defined by the application." />
-        </addColumn>
-        <comment>TimeSeries - added time_step</comment>
-    </changeSet>
 </databaseChangeLog>

@@ -27,6 +27,7 @@ import wres.io.retrieval.left.LeftHandCache;
 import wres.io.utilities.Database;
 import wres.system.ProgressMonitor;
 import wres.util.CalculationException;
+import wres.util.IterationFailedException;
 import wres.util.TimeHelper;
 
 abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>

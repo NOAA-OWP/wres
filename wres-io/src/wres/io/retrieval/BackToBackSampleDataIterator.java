@@ -15,6 +15,7 @@ import wres.io.config.ConfigHelper;
 import wres.io.config.OrderedSampleMetadata;
 import wres.io.project.Project;
 import wres.util.CalculationException;
+import wres.util.IterationFailedException;
 import wres.util.TimeHelper;
 
 final class BackToBackSampleDataIterator extends SampleDataIterator

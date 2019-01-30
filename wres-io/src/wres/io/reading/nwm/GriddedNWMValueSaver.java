@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.time.Instant;
 
 import org.slf4j.Logger;
@@ -20,6 +21,7 @@ import wres.io.concurrency.WRESRunnable;
 import wres.io.data.details.SourceDetails;
 import wres.system.SystemSettings;
 import wres.util.NetCDF;
+import wres.util.TimeHelper;
 
 /**
  * Executes the database copy operation for every value in the passed in string
@@ -49,13 +51,13 @@ public class GriddedNWMValueSaver extends WRESRunnable
 		try
         {
             Instant outputTime = NetCDF.getReferenceTime( this.getFile() );
-			Integer lead = NetCDF.getLeadTime( this.getFile() );
+			Duration lead = NetCDF.getLeadTime( this.getFile() );
 
             SourceDetails griddedSource = new SourceDetails(  );
 			griddedSource.setSourcePath( this.fileName );
 
 			griddedSource.setOutputTime( outputTime.toString() );
-			griddedSource.setLead( lead );
+			griddedSource.setLead( TimeHelper.durationToLead(lead) );
 			griddedSource.setHash( this.hash );
 			griddedSource.setIsPointData( false );
 

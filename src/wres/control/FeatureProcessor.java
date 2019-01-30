@@ -30,7 +30,7 @@ import wres.io.Operations;
 import wres.io.config.ConfigHelper;
 import wres.io.project.Project;
 import wres.io.retrieval.DataGenerator;
-import wres.io.retrieval.IterationFailedException;
+import wres.util.IterationFailedException;
 import wres.io.writing.SharedSampleDataWriters;
 import wres.io.writing.SharedStatisticsWriters;
 

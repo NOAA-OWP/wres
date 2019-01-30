@@ -428,7 +428,8 @@ public final class Operations {
         List<IngestResult> projectSources = new ArrayList<>();
 
         SourceLoader loader = new SourceLoader( projectConfig);
-        try {
+        try
+        {
             List<Future<List<IngestResult>>> ingestions = loader.load();
             ProgressMonitor.setSteps( (long)ingestions.size());
 
