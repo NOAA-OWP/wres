@@ -1,7 +1,7 @@
 version: '2.2'
 services:
     worker:
-        image: "6b3edcf61dc4"
+        image: "8dc0f7aaa2da"
         restart: always
         volumes:
          - /mnt/wres_share:/mnt/wres_share
