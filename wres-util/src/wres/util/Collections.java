@@ -178,7 +178,7 @@ public final class Collections
      * </p>
      * <pre>Collections.getKeyByValueFunction(
      *      map,
-     *      (value1, value2) -&gt; Math.max(value1, value2) == value1
+     *      (newValue, oldValue) -&gt; Math.max(newValue, oldValue) == newValue
      * )
      * </pre>
      * @param map The map to interrogate

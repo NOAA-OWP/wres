@@ -55,18 +55,4 @@
         </preConditions>
         <addDefaultValue schemaName="wres" tableName="Observation" columnName="scale_function" defaultValue="UNKNOWN" />
     </changeSet>
-    <changeSet id="Add wres.Observation.time_step" author="Christopher Tubbs">
-        <preConditions onFail="MARK_RAN">
-            <not>
-                <columnExists schemaName="wres" tableName="observation" columnName="time_step" />
-            </not>
-        </preConditions>
-        <addColumn schemaName="wres" tableName="Observation">
-            <column name="time_step" type="int"
-                    remarks="The function used to describe the scale of the data"/>
-        </addColumn>
-        <comment>
-            The column wres.Observation.time_step has been created.
-        </comment>
-    </changeSet>
 </databaseChangeLog>

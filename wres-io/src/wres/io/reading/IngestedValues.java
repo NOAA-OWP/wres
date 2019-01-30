@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.datamodel.metadata.TimeScale;
 import wres.io.data.details.TimeSeries;
+import wres.io.reading.nwm.NWMSource;
 import wres.io.utilities.DataBuilder;
 import wres.io.utilities.Database;
 import wres.system.SystemSettings;
@@ -58,8 +59,7 @@ public final class IngestedValues
             "measurementunit_id",
             "source_id",
             "scale_period",
-            "scale_function",
-            "time_step"
+            "scale_function"
     );
 
     static void addObservation(
@@ -69,8 +69,7 @@ public final class IngestedValues
             final int measurementUnitID,
             final int sourceID,
             final int scalePeriod,
-            final TimeScale.TimeScaleFunction scaleFunction,
-            final int timeStep)
+            final TimeScale.TimeScaleFunction scaleFunction)
     {
         synchronized ( OBSERVATIONS_LOCK )
         {
@@ -83,7 +82,6 @@ public final class IngestedValues
             IngestedValues.OBSERVATIONS.set("source_id", sourceID);
             IngestedValues.OBSERVATIONS.set("scale_period", scalePeriod);
             IngestedValues.OBSERVATIONS.set("scale_function", scaleFunction);
-            IngestedValues.OBSERVATIONS.set("time_step", timeStep);
 
             if (IngestedValues.OBSERVATIONS.getRowCount() > SystemSettings.getMaximumCopies())
             {
@@ -210,12 +208,6 @@ public final class IngestedValues
             return this;
         }
 
-        public Observation every(final Duration timestep)
-        {
-            this.timeStep = timestep;
-            return this;
-        }
-
         public Observation scaleOf(final Duration scalePeriod)
         {
             if (scalePeriod != null)
@@ -243,8 +235,7 @@ public final class IngestedValues
                     this.measurementUnitId,
                     this.sourceId,
                     (int)TimeHelper.durationToLongUnits( this.scalePeriod, TimeHelper.LEAD_RESOLUTION ),
-                    this.scaleFunction,
-                    (int)TimeHelper.durationToLongUnits( this.timeStep, TimeHelper.LEAD_RESOLUTION )
+                    this.scaleFunction
             );
         }
 
@@ -255,6 +246,5 @@ public final class IngestedValues
         private Integer sourceId;
         private Duration scalePeriod = Duration.of( 1, TimeHelper.LEAD_RESOLUTION);
         private TimeScale.TimeScaleFunction scaleFunction = TimeScale.TimeScaleFunction.UNKNOWN;
-        private Duration timeStep = Duration.ZERO;
     }
 }

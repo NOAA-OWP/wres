@@ -129,8 +129,6 @@ public class ReadValueManager
         OffsetDateTime startTime = this.getStartTime( forecast, timeDuration );
         TimeSeries timeSeries = this.getTimeSeries( forecast, sourceId, startTime );
 
-        timeSeries.setTimeStep( (int)timeStep );
-
         for (DataPoint dataPoint : dataPointsList)
         {
             Duration between = Duration.between( startTime, dataPoint.getTime());

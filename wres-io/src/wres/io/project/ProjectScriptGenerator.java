@@ -4,6 +4,8 @@
 package wres.io.project;
 
 import java.sql.SQLException;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.StringJoiner;
 
 import wres.config.generated.DataSourceConfig;
@@ -11,33 +13,38 @@ import wres.config.generated.Feature;
 import wres.config.generated.Polygon;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Variables;
+import wres.io.data.details.FeatureDetails;
 import wres.io.utilities.DataScripter;
-import wres.io.utilities.NoDataException;
 import wres.util.CalculationException;
 import wres.util.Strings;
 import wres.util.TimeHelper;
 
 /**
+ * Houses the logic used to create SQL scripts based on a project
  * @author Christopher Tubbs
- *
  */
 final class ProjectScriptGenerator
 {
-    private final Project project;
-
-    ProjectScriptGenerator(final Project project)
-    {
-        this.project = project;
-    }
-
+    // Since this class is only used for helper functions, we don't want anything to instantiate it
+    private ProjectScriptGenerator(){}
 
     /**
-     * @throws NoDataException when ?
+     * Creates a script that retrieves a mapping between forecasted and observed features
+     * @param project The project whose variables and features to load
+     * @throws SQLException Thrown when the ID for the left or right variables cannot be loaded
      */
-
-    DataScripter formVariableFeatureLoadScript() throws SQLException
+    static DataScripter formVariableFeatureLoadScript(final Project project) throws SQLException
     {
-
+        // First, select all forecasted variable feature IDs, feature IDs, and feature metadata
+        //    Whose variable is used as right hand data and located within the confines of the project's
+        //    feature specification that are used within this project
+        // Next, select all observed variable feature IDs and feature IDs
+        //    Whose variable is used as left hand data and located within the confines of the project's
+        //    feature specification that are used within this project
+        // Then join the two resulting data sets based on their shared feature ids and return
+        //    - The observed location's corresponding variable feature ID
+        //    - The forecasted location's corresponding variable feature ID
+        //    - Metadata about the shared feature that may be used for identification
         DataScripter script = new DataScripter(  );
 
         script.addLine( "WITH forecast_features AS" );
@@ -179,11 +186,11 @@ final class ProjectScriptGenerator
             {
                 Double radianLatitude = Math.toRadians(feature.getCoordinate().getLatitude());
 
-                // This is the approximate distance between longitudinal degrees at
+                // is the approximate distance between longitudinal degrees at
                 // the equator
                 final Double distanceAtEquator = 111321.0;
 
-                // This is an approximation
+                // is an approximation
                 Double distanceOfOneDegree = Math.cos(radianLatitude) * distanceAtEquator;
 
                 // We take the max between the approximate distance and 0.00005 because
@@ -393,11 +400,11 @@ final class ProjectScriptGenerator
             {
                 Double radianLatitude = Math.toRadians(feature.getCoordinate().getLatitude());
 
-                // This is the approximate distance between longitudinal degrees at
+                // is the approximate distance between longitudinal degrees at
                 // the equator
                 final Double distanceAtEquator = 111321.0;
 
-                // This is an approximation
+                // is an approximation
                 Double distanceOfOneDegree = Math.cos(radianLatitude) * distanceAtEquator;
 
                 // We take the max between the approximate distance and 0.00005 because
@@ -482,10 +489,21 @@ final class ProjectScriptGenerator
         return script;
     }
 
-    DataScripter formIssuePoolCounter(Feature feature) throws SQLException
+    /**
+     * Creates a script that determines the number of pools across forecast issue dates that will need to be evaluated
+     * @param project The project whose issue pools to find
+     * @param feature The feature whose forecasted data will be evaluated
+     * @return The script that may be used to retrieve the number of pools across forecast issue dates to evaluate
+     * @throws SQLException Thrown if it could not be determined whether or not the evaluated data is gridded
+     * @throws SQLException Thrown if the ID of the forecasted variable could not be loaded
+     * @throws SQLException Thrown when a clause to limit selection based on variable and location could not be formed
+     */
+    static DataScripter formIssuePoolCounter(final Project project, final Feature feature) throws SQLException
     {
-        long period = TimeHelper.unitsToLeadUnits( project.getIssuePoolingWindowUnit(), project.getIssuePoolingWindowPeriod());
-        long frequency = TimeHelper.unitsToLeadUnits( project.getIssuePoolingWindowUnit(), project.getIssuePoolingWindowFrequency() );
+        long period = TimeHelper.unitsToLeadUnits( project.getIssuePoolingWindowUnit(),
+                                                   project.getIssuePoolingWindowPeriod());
+        long frequency = TimeHelper.unitsToLeadUnits( project.getIssuePoolingWindowUnit(),
+                                                      project.getIssuePoolingWindowFrequency() );
 
         long distanceBetween;
 
@@ -503,10 +521,34 @@ final class ProjectScriptGenerator
         }
 
         DataScripter script = new DataScripter(  );
+
+        // Ensure that this logic isn't blocked by the logic that calls it
         script.setHighPriority( true );
 
-        if ( project.usesGriddedData( project.getRight() ))
+        // Since gridded data and vector data are stored differently, data must be selected from different tables,
+        // resulting in seperate scripts
+        boolean usesGriddedData;
+        
+        try
         {
+            usesGriddedData = project.usesGriddedData( project.getRight() );
+        }
+        catch ( SQLException exception )
+        {
+            throw new SQLException( "It could not be determined whether or not project utilizes gridded data.",
+                                    exception );
+        }
+
+        if ( usesGriddedData )
+        {
+            // Where "e" is the earliest of either the last forecast for the data set or the last allowable forecast,
+            // where "s" is the date of the earliest allowable forecast,
+            // where "a" is the amount of time between "e" and "s",
+            // where "p" is "a" converted from seconds to minutes,
+            // where "o" is the number of minutes between issue pools,
+            // and where "c" is the amount of times "o" may occur within "p",
+            // find the minimum whole number for "c" across all sources attached as right hand data for the project
+
             // TODO: Experiment with removing the floor to determine if the issue dates extend beyond the upper limit correctly
             script.addLine("SELECT FLOOR (");
             script.addTab().addLine("(");
@@ -534,67 +576,137 @@ final class ProjectScriptGenerator
         }
         else
         {
-            String timeSeriesVariableFeature =
-                ConfigHelper.getVariableFeatureClause(
+            int rightVariableID;
+            
+            try
+            {
+                rightVariableID = Variables.getVariableID( project.getRight() );
+            }
+            catch ( SQLException e )
+            {
+                throw new SQLException(
+                        "Identification information for what forecasted variable to evaluate could not be loaded.",
+                        e );
+            }
+
+            String timeSeriesVariableFeature;
+            try
+            {
+                timeSeriesVariableFeature = ConfigHelper.getVariableFeatureClause(
                         feature,
-                        Variables.getVariableID( project.getRight() ),
+                        rightVariableID,
                         "TS"
                 );
+            }
+            catch ( SQLException e )
+            {
+                throw new SQLException(
+                        "The clause used to limit what variable and feature to evaluate could not be formed",
+                        e );
+            }
+
+            // Where "e" is the earliest of either the last forecast for the data set or the last allowable forecast,
+            // where "s" is the date of the earliest allowable forecast,
+            // where "a" is the amount of time between "e" and "s",
+            // where "p" is "a" converted from seconds to minutes,
+            // where "o" is the number of minutes between issue pools,
+            // and where "c" is the amount of times "o" may occur within "p",
+            // find the minimum whole number for "c" across all times series attached as right hand
+            // data for the project at the specified location
 
             // TODO: Experiment with removing the floor to determine if the issue dates extend beyond the upper limit correctly
-            script.addLine( "SELECT FLOOR(((EXTRACT( epoch FROM AGE(LEAST(MAX(initialization_date), '",
-                            project.getLatestIssueDate(), "') - INTERVAL '",
-                           period - frequency,
-                            " MINUTES', '",
-                            project.getEarliestIssueDate(),
-                            "')) / 60) / (",
-                            distanceBetween,
-                            ")))::int AS window_count");
+            script.addLine("SELECT FLOOR(");
+            script.addTab().addLine("(");
+            script.addTab(  2  ).addLine("(");
+            script.addTab(   3   ).addLine("EXTRACT (");
+            script.addTab(    4    ).addLine("epoch FROM AGE (");
+            script.addTab(     5     ).addLine("LEAST (");
+            script.addTab(      6      ).addLine("MAX(initialization_date),");
+            script.addTab(      6      ).addLine("'", project.getLatestIssueDate(), "'");
+            script.addTab(     5     ).addLine(") - INTERVAL '", period - frequency, " ", TimeHelper.LEAD_RESOLUTION, "',");
+            script.addTab(     5     ).addLine("'", project.getEarliestIssueDate(), "'");
+            script.addTab(    4    ).addLine(")");
+            script.addTab(   3   ).addLine(")");
+            script.addTab(  2  ).addLine(") / 60");
+            script.addTab().addLine(") / (", distanceBetween, ")");
+            script.addLine(")::int AS window_count");
             script.addLine("FROM wres.TimeSeries TS");
             script.addLine("WHERE ", timeSeriesVariableFeature);
-            script.addLine("    AND EXISTS (");
-            script.addLine("        SELECT 1");
-            script.addLine("        FROM wres.TimeSeriesSource TSS");
-            script.addLine("        INNER JOIN wres.ProjectSource PS");
-            script.addLine("            ON PS.source_id = TSS.source_id");
-            script.addLine( "        WHERE PS.project_id = ", project.getId());
-            script.addLine("            AND PS.member = 'right'");
-            script.addLine("            AND TSS.timeseries_id = TS.timeseries_id");
-            script.addLine("    );");
+            script.addTab().addLine("AND EXISTS (");
+            script.addTab(  2  ).addLine("SELECT 1");
+            script.addTab(  2  ).addLine("FROM wres.TimeSeriesSource TSS");
+            script.addTab(  2  ).addLine("INNER JOIN wres.ProjectSource PS");
+            script.addTab(   3   ).addLine("ON PS.source_id = TSS.source_id");
+            script.addTab(  2  ).addLine("WHERE PS.project_id = ", project.getId());
+            script.addTab(   3   ).addLine("AND PS.member = ", Project.RIGHT_MEMBER);
+            script.addTab(   3   ).addLine("AND TSS.timeseries_id = TS.timeseries_id");
+            script.addTab().add(");");
         }
 
         return script;
     }
 
-    DataScripter generateInitialObservationDateScript( DataSourceConfig simulation, Feature feature) throws SQLException
+    /**
+     * Creates a script that determines the earliest observation for a location
+     * @param project The projects whose first observation date to find
+     * @param observationConfig An observation data source specification
+     * @param feature The location to evaluate
+     * @return The script that determines the earliest observation
+     * @throws SQLException Thrown when the observation variable ID could not be loaded
+     * @throws SQLException Thrown when a clause to limit selection based on variable and location could not be formed 
+     */
+    static DataScripter generateInitialObservationDateScript(
+            final Project project,
+            final DataSourceConfig observationConfig,
+            final Feature feature)
+            throws SQLException
     {
-        if (simulation == null)
+        if (observationConfig == null)
         {
             return null;
+        }
+        
+        int observedVariableID;
+        String observedVariableFeatureClause;
+        
+        try
+        {
+            observedVariableID = Variables.getVariableID( observationConfig );
+        }
+        catch(SQLException exception)
+        {
+            throw new SQLException(
+                    "Identification information for what observed variable to evaluate could not be loaded.",
+                    exception );
+        }
+        
+        try
+        {
+            observedVariableFeatureClause = ConfigHelper.getVariableFeatureClause( feature, observedVariableID,  "O" );
+        }
+        catch ( SQLException e )
+        {
+            throw new SQLException(
+                    "The clause used to limit what variable and feature to evaluate could not be formed",
+                    e );
         }
 
         DataScripter script = new DataScripter(  );
 
         script.addLine( "SELECT '''' || MIN(O.observation_time)::text || '''' AS zero_date" );
         script.addLine("FROM wres.Observation O");
-        script.addLine("WHERE ",
-                       ConfigHelper.getVariableFeatureClause(
-                               feature,
-                               Variables.getVariableID( simulation ),
-                               "O"
-                       )
-        );
+        script.addLine("WHERE ", observedVariableFeatureClause);
         script.addTab().addLine("AND EXISTS (");
         script.addTab(  2  ).addLine("SELECT 1");
         script.addTab(  2  ).addLine("FROM wres.ProjectSource PS");
         script.addTab(  2  ).addLine("WHERE PS.project_id = ", project.getId());
         script.addTab(   3   ).add("AND PS.member = ");
 
-        if ( project.getRight().equals( simulation ))
+        if ( project.getRight().equals( observationConfig ))
         {
             script.addLine( Project.RIGHT_MEMBER);
         }
-        else if ( project.getLeft().equals( simulation ))
+        else if ( project.getLeft().equals( observationConfig ))
         {
             script.addLine( Project.LEFT_MEMBER);
         }
@@ -621,13 +733,50 @@ final class ProjectScriptGenerator
         return script;
     }
 
-    DataScripter generateInitialForecastDateScript( DataSourceConfig forecastConfig, Feature feature) throws SQLException
+    /**
+     * Creates a script that determines the earliest forecast for a location
+     * @param project The project whose earliest forecast will be found
+     * @param forecastConfig A forecast data source specification
+     * @param feature The location to evaluate
+     * @return The script that determines the earliest forecast
+     * @throws SQLException Thrown when the forecast variable ID could not be loaded
+     * @throws SQLException Thrown when a clause to limit selection based on variable and location could not be formed 
+     */
+    static DataScripter generateInitialForecastDateScript(final Project project,
+                                                          final DataSourceConfig forecastConfig,
+                                                          final Feature feature)
+            throws SQLException
     {
+        int forecastVariableID;
+        String forecastVariableFeatureClause;
+        
+        try
+        {
+            forecastVariableID = Variables.getVariableID( forecastConfig );
+        }
+        catch(SQLException exception)
+        {
+            throw new SQLException(
+                    "Identification information for what forecasted variable to evaluate could not be loaded.",
+                    exception );
+        }
+        
+        try
+        {
+            forecastVariableFeatureClause = ConfigHelper.getVariableFeatureClause( feature, forecastVariableID, "TS");
+        }
+        catch(SQLException exception)
+        {
+            throw new SQLException(
+                    "The clause used to limit what variable and feature to evaluate could not be formed",
+                    exception );
+        }
+        
         DataScripter script = new DataScripter(  );
 
         script.addLine("SELECT '''' || MIN(TS.initialization_date)::text || '''' AS zero_date" );
         script.addLine("FROM wres.TimeSeries TS");
-        script.addLine("WHERE ", ConfigHelper.getVariableFeatureClause( feature, Variables.getVariableID( forecastConfig ) , "TS"));
+        script.addLine("WHERE ", forecastVariableFeatureClause);
         script.addTab().addLine("AND EXISTS (");
         script.addTab(  2  ).addLine("SELECT 1");
         script.addTab(  2  ).addLine("FROM wres.ProjectSource PS");
@@ -657,11 +806,21 @@ final class ProjectScriptGenerator
         return script;
     }
 
-    DataScripter createForecastLagScript(final DataSourceConfig dataSourceConfig, final Feature feature)
+    /**
+     * Creates a script that determines the largest distance between sequential forecasts
+     * @param project The project whose forecast lag will be determined
+     * @param dataSourceConfig A forecast data source configuration
+     * @param feature The location to evaluate
+     * @return A script that determines the largest distance between sequential forecasts
+     * @throws CalculationException Thrown when a clause to limit selection based on variable and location could not be formed
+     */
+    static DataScripter createForecastLagScript(final Project project,
+                                                final DataSourceConfig dataSourceConfig,
+                                                final Feature feature)
             throws CalculationException
     {
-        // This script will tell us the maximum distance between
-        // sequential forecasts for a feature for this project.
+        // script will tell us the maximum distance between
+        // sequential forecasts for a feature for project.
         // We don't need the intended distance. If we go with the
         // intended distance (say 3 hours), but the user just doesn't
         // have or chooses not to use a forecast, resulting in a gap of
@@ -703,8 +862,8 @@ final class ProjectScriptGenerator
         script.addTab(   3   ).addLine("FROM wres.TimeSeriesSource TSS");
         script.addTab(   3   ).addLine("INNER JOIN wres.ProjectSource PS");
         script.addTab(    4    ).addLine("ON PS.source_id = TSS.source_id");
-        script.addTab(   3   ).addLine("WHERE PS.project_id = ", this.project.getId());
-        script.addTab(    4    ).addLine("AND PS.member = ", this.project.getInputName( dataSourceConfig ));
+        script.addTab(   3   ).addLine("WHERE PS.project_id = ", project.getId());
+        script.addTab(    4    ).addLine("AND PS.member = ", project.getInputName( dataSourceConfig ));
         script.addTab(    4    ).addLine("AND TSS.timeseries_id = TS.timeseries_id");
         script.addTab(  2  ).addLine(")");
         script.addTab().addLine("GROUP BY TS.initialization_date");
@@ -720,13 +879,23 @@ final class ProjectScriptGenerator
         return script;
     }
 
-    DataScripter createLastLeadScript(final Feature feature) throws CalculationException
+    /**
+     * Creates a script that will determine the last lead time present in a forecast for a location
+     * @param project The project whose last lead needs to be found
+     * @param feature The location to evaluate
+     * @return A script that will determine the last lead time present in a forecast
+     * @throws CalculationException Thrown if it could not be determined if forecasted data was gridded or not
+     * @throws CalculationException Thrown if a script to determine the last lead for vector data could not be formed
+     */
+    static DataScripter createLastLeadScript(final Project project, final Feature feature) throws CalculationException
     {
+        // Since gridded metadata is not distributed throughout multiple tables,
+        // we need a seperate script for gridded data
         boolean usesGriddedData;
 
         try
         {
-            usesGriddedData = this.project.usesGriddedData( this.project.getRight() );
+            usesGriddedData = project.usesGriddedData( project.getRight() );
         }
         catch ( SQLException e )
         {
@@ -739,13 +908,163 @@ final class ProjectScriptGenerator
 
         if (usesGriddedData)
         {
-            return this.createLastGriddedLeadScript();
+            return createLastGriddedLeadScript(project);
         }
 
-        return this.createLastVectorLeadScript(feature);
+        return createLastVectorLeadScript(project, feature);
     }
 
-    private DataScripter createLastGriddedLeadScript()
+    /**
+     * Creates a script that will gather all unique time scales and time steps for all observations for the project
+     * @param project The project whose observed time scales and steps will be found
+     * @return A script that will gather all unique time scales and time steps for all observations
+     * @throws SQLException Thrown if a list of ids for all features for a project could not be formed
+     */
+    static DataScripter createObservedTimeScaleStepRetrieval(final Project project) throws SQLException
+    {
+        DataScripter scripter = new DataScripter();
+
+        scripter.addLine("WITH differences AS");
+        scripter.addLine("(");
+        scripter.addTab().addLine("SELECT observation_time - lag(observation_time) OVER (ORDER BY variablefeature_id, observation_time) AS difference,");
+        scripter.addTab(  2  ).addLine("scale_period,");
+        scripter.addTab(  2  ).addLine("scale_function,");
+        scripter.addTab(  2  ).addLine("variablefeature_id,");
+        scripter.addTab(  2  ).addLine("lag(variablefeature_id) OVER (ORDER BY variablefeature_id) AS previous_variable_feature");
+        scripter.addTab().addLine("FROM wres.Observation O");
+        scripter.addTab().addLine("WHERE EXISTS (");
+        scripter.addTab(   3   ).addLine("SELECT 1");
+        scripter.addTab(   3   ).addLine("FROM wres.ProjectSource PS");
+        scripter.addTab(   3   ).addLine("WHERE PS.project_id = ", project.getId());
+        scripter.addTab(    4    ).addLine("AND O.source_id = PS.source_id");
+        scripter.addTab(  2  ).addLine(")");
+        scripter.addTab(  2  ).addLine("AND EXISTS (");
+        scripter.addTab(   3   ).addLine("SELECT 1");
+        scripter.addTab(   3   ).addLine("FROM wres.VariableByFeature VBF");
+        scripter.addTab(   3   ).addLine("WHERE VBF.variablefeature_id = O.variablefeature_id");
+        scripter.addTab(    4    ).addLine("AND VBF.feature_id = ", createAnyFeatureStatement( project,6 ));
+        scripter.addTab(  2  ).addLine(")");
+        scripter.addLine(")");
+        scripter.addLine("SELECT EXTRACT(EPOCH FROM difference) / 60 AS time_step,");
+        scripter.addTab().addLine("scale_period,");
+        scripter.addTab().addLine("scale_function");
+        scripter.addLine("FROM differences D");
+        scripter.addLine("WHERE D.difference IS NOT NULL");
+        scripter.addTab().addLine("AND D.variablefeature_id = D.previous_variable_feature");
+        scripter.add("GROUP BY difference, scale_period, scale_function;");
+        
+        return scripter;
+    }
+
+    /**
+     * Creates a script that will gather all unique time scales and time steps for all forecasted values for the project
+     * @param project The project whose forecast time scales and steps will be found
+     * @return A script that will gather all unique time scales and time steps for all forecasted values
+     * @throws SQLException Thrown if a list of ids for all features for a project could not be formed
+     */
+    static DataScripter createForecastTimeScaleStepRetrieval(final Project project) throws SQLException
+    {
+        DataScripter scripter = new DataScripter();
+
+        scripter.addLine("WITH differences AS");
+        scripter.addLine("(");
+        scripter.addTab().addLine("SELECT lead - lag(lead) OVER (ORDER BY TSV.timeseries_id, lead) AS difference,");
+        scripter.addTab(  2  ).addLine("TS.timeseries_id,");
+        scripter.addTab(  2  ).addLine("TS.scale_function,");
+        scripter.addTab(  2  ).addLine("TS.scale_period,");
+        scripter.addTab(  2  ).addLine("lag(TSV.timeseries_id) OVER (ORDER BY TSV.timeseries_id, lead) AS previous_timeseries_id");
+        scripter.addTab().addLine("FROM wres.TimeSeriesValue TSV");
+        scripter.addTab().addLine("INNER JOIN (");
+        scripter.addTab(  2  ).addLine("SELECT TS.timeseries_id, TS.scale_function, TS.scale_period");
+        scripter.addTab(  2  ).addLine("FROM wres.TimeSeries TS");
+        scripter.addTab(  2  ).addLine("WHERE EXISTS (");
+        scripter.addTab(    4    ).addLine("SELECT 1");
+        scripter.addTab(    4    ).addLine("FROM wres.TimeSeriesSource TSS");
+        scripter.addTab(    4    ).addLine("INNER JOIN wres.ProjectSource PS");
+        scripter.addTab(     5     ).addLine("ON PS.source_id = TSS.source_id");
+        scripter.addTab(    4    ).addLine("WHERE PS.project_id = ", project.getId());
+        scripter.addTab(     5     ).addLine("AND TSS.timeseries_id = TS.timeseries_id");
+        scripter.addTab(   3   ).addLine(")");
+        scripter.addTab(   3   ).addLine("AND EXISTS (");
+        scripter.addTab(    4    ).addLine("SELECT 1");
+        scripter.addTab(    4    ).addLine("FROM wres.VariableFeature VBF");
+        scripter.addTab(    4    ).addLine("WHERE VBF.variablefeature_id = TS.variablefeature_id");
+        scripter.addTab(     5     ).addLine("AND VBF.feature_id = ", createAnyFeatureStatement( project, 6 ));
+        scripter.addTab(   3   ).addLine(")");
+        scripter.addTab().addLine(") AS TS");
+        scripter.addTab(  2  ).addLine("ON TS.timeseries_id = TSV.timeseries_id");
+
+        if (project.getMinimumLead() != Integer.MIN_VALUE)
+        {
+            scripter.addTab().addLine("WHERE lead > ", project.getMinimumLead());
+        }
+        else
+        {
+            scripter.addTab().addLine("WHERE lead > 0");
+        }
+
+        if (project.getMaximumLead() != Integer.MAX_VALUE)
+        {
+            scripter.addTab(  2  ).addLine("AND lead <= ", project.getMaximumLead());
+        }
+        else
+        {
+            // Set the ceiling to 100 hours. If the maximum lead is 72 hours, then this
+            // should not behave much differently than having no clause at all.
+            // If real maximum was 2880 hours, 100 will provide a large enough sample
+            // size and produce the correct values in a slightly faster fashion.
+            // In one data set, leaving out causes to take 11.5s .
+            // That was even with a subset of the real data (1 month vs 30 years).
+            // If we cut it to 100 hours, it now takes 1.6s. Still not great, but
+            // much faster
+            int ceiling = TimeHelper.durationToLead( Duration.of( 100, ChronoUnit.HOURS) );
+            scripter.addTab(  2  ).addLine( "AND lead <= ", ceiling );
+        }
+
+        scripter.addLine(")");
+        scripter.addLine("SELECT D.difference AS time_step, D.scale_period, D.scale_function");
+        scripter.addLine("FROM differences D");
+        scripter.addLine("WHERE D.difference IS NOT NULL");
+        scripter.addTab().addLine("AND D.timeseries_id = D.previous_timeseries_id");
+        scripter.add("GROUP BY D.difference, D.scale_period, D.scale_function;");
+        
+        return scripter;
+    }
+
+    /**
+     * Creates a SQL 'any' statement containing a list of all ids for features evaluated in a project
+     * @param project The project whose features to list
+     * @param tabOver The number of tabs to use to indent the list items
+     * @return A SQL 'any' statement containing a list of all feature ids used in a project
+     * @throws SQLException Thrown if all feature ids for the project could not be loaded
+     */
+    private static String createAnyFeatureStatement(final Project project, final int tabOver) throws SQLException
+    {
+        StringBuilder seperator = new StringBuilder(  );
+        seperator.append(",");
+        seperator.append(System.lineSeparator());
+
+        for (int tabIndex = 0; tabIndex < tabOver; ++ tabIndex)
+        {
+            seperator.append( "    " );
+        }
+
+        StringJoiner anyJoiner = new StringJoiner( seperator.toString(), "ANY('{", "}')" );
+
+        for ( FeatureDetails featureDetails : project.getFeatures())
+        {
+            anyJoiner.add(String.valueOf( featureDetails.getId() ));
+        }
+
+        return anyJoiner.toString();
+    }
+
+    /**
+     * Creates a script that will determine that latest lead used for gridded data within a project
+     * @param project The project whose gridded data will be evaluated
+     * @return A script that will determine the latest lead used for gridded data
+     */
+    private static DataScripter createLastGriddedLeadScript(final Project project)
     {
         DataScripter script = new DataScripter(  );
 
@@ -753,7 +1072,7 @@ final class ProjectScriptGenerator
         script.addLine("FROM (");
         script.addTab().addLine("SELECT PS.source_id");
         script.addTab().addLine("FROM wres.ProjectSource PS");
-        script.addTab().addLine("WHERE PS.project_id = ", this.project.getId());
+        script.addTab().addLine("WHERE PS.project_id = ", project.getId());
         script.addTab(  2  ).addLine( "AND PS.member = ", Project.RIGHT_MEMBER);
         script.addLine(") AS PS");
         script.addLine("INNER JOIN wres.Source S");
@@ -761,13 +1080,13 @@ final class ProjectScriptGenerator
 
         boolean whereAdded = false;
 
-        if (this.project.getMinimumLead() != Integer.MAX_VALUE)
+        if (project.getMinimumLead() != Integer.MAX_VALUE)
         {
             whereAdded = true;
-            script.addLine("WHERE S.lead >= ", this.project.getMinimumLead());
+            script.addLine("WHERE S.lead >= ", project.getMinimumLead());
         }
 
-        if (this.project.getMaximumLead() != Integer.MIN_VALUE)
+        if (project.getMaximumLead() != Integer.MIN_VALUE)
         {
             if (whereAdded)
             {
@@ -779,10 +1098,10 @@ final class ProjectScriptGenerator
                 script.add("WHERE ");
             }
 
-            script.addLine("S.lead <= ", this.project.getMaximumLead());
+            script.addLine("S.lead <= ", project.getMaximumLead());
         }
 
-        if (Strings.hasValue(this.project.getEarliestIssueDate()))
+        if (Strings.hasValue(project.getEarliestIssueDate()))
         {
             if (whereAdded)
             {
@@ -794,10 +1113,10 @@ final class ProjectScriptGenerator
                 script.add("WHERE ");
             }
 
-            script.addLine("S.output_time >= '", this.project.getEarliestIssueDate(), "'");
+            script.addLine("S.output_time >= '", project.getEarliestIssueDate(), "'");
         }
 
-        if (Strings.hasValue( this.project.getLatestIssueDate() ))
+        if (Strings.hasValue( project.getLatestIssueDate() ))
         {
             if (whereAdded)
             {
@@ -809,10 +1128,10 @@ final class ProjectScriptGenerator
                 script.add("WHERE ");
             }
 
-            script.addLine("S.output_time <= '", this.project.getLatestIssueDate(), "'");
+            script.addLine("S.output_time <= '", project.getLatestIssueDate(), "'");
         }
 
-        if (Strings.hasValue( this.project.getEarliestDate() ))
+        if (Strings.hasValue( project.getEarliestDate() ))
         {
             if (whereAdded)
             {
@@ -824,10 +1143,10 @@ final class ProjectScriptGenerator
                 script.add("WHERE ");
             }
 
-            script.addLine("S.output_time + INTERVAL '1 MINUTE' * S.lead >= '", this.project.getEarliestDate(), "'");
+            script.addLine("S.output_time + INTERVAL '1 MINUTE' * S.lead >= '", project.getEarliestDate(), "'");
         }
 
-        if (Strings.hasValue( this.project.getLatestDate() ))
+        if (Strings.hasValue( project.getLatestDate() ))
         {
             if (whereAdded)
             {
@@ -838,66 +1157,77 @@ final class ProjectScriptGenerator
                 script.add("WHERE ");
             }
 
-            script.addLine("S.output_time + INTERVAL '1 MINUTE' * S.lead <= '", this.project.getLatestDate(), "'");
+            script.addLine("S.output_time + INTERVAL '1 MINUTE' * S.lead <= '", project.getLatestDate(), "'");
         }
 
         return script;
     }
 
-    private DataScripter createLastVectorLeadScript(final Feature feature) throws CalculationException
+    /**
+     * Creates a script that will determine the latest lead used for vector data within a project
+     * @param project The project whose vector data will be evaluated
+     * @param feature The feature that has forecasted values at different lead times
+     * @return A script that will determine the latest lead used for vector data
+     * @throws CalculationException Thrown when a clause to limit selection based on variable and location could not be formed
+     */
+    private static DataScripter createLastVectorLeadScript(final Project project, final Feature feature)
+            throws CalculationException
     {
+        String variableFeatureClause;
+        
+        try
+        {
+            variableFeatureClause = ConfigHelper.getVariableFeatureClause(
+                    feature,
+                    project.getRightVariableID(),
+                    ""
+            );
+        }
+        catch ( SQLException exception )
+        {
+            throw new CalculationException(
+                    "The clause used to limit what variable and feature to evaluate could not be formed",
+                    exception );
+        }
+        
         DataScripter script = new DataScripter();
 
-        if ( ConfigHelper.isForecast( this.project.getRight() ) )
+        if ( ConfigHelper.isForecast( project.getRight() ) )
         {
             script.addLine("SELECT MAX(TSV.lead) AS last_lead");
             script.addLine("FROM wres.TimeSeries TS");
             script.addLine("INNER JOIN wres.TimeSeriesValue TSV");
             script.addTab().addLine("ON TS.timeseries_id = TSV.timeseries_id");
-            try
+            script.addLine("WHERE ", variableFeatureClause);
+
+            if ( project.getMaximumLead() != Integer.MAX_VALUE )
             {
-                script.addLine("WHERE " +
-                               ConfigHelper.getVariableFeatureClause( feature,
-                                                                      this.project.getRightVariableID(),
-                                                                      "TS" ));
-            }
-            catch ( SQLException e )
-            {
-                throw new CalculationException( "The variable is needed to determine the "
-                                                + "last lead for " +
-                                                ConfigHelper.getFeatureDescription( feature ) +
-                                                ", but it could not be loaded.",
-                                                e);
+                script.addTab().addLine("AND TSV.lead <= " + project.getMaximumLead( ));
             }
 
-            if ( this.project.getMaximumLead() != Integer.MAX_VALUE )
+            if ( project.getMinimumLead() != Integer.MIN_VALUE )
             {
-                script.addTab().addLine("AND TSV.lead <= " + this.project.getMaximumLead( ));
+                script.addTab().addLine("AND TSV.lead >= " + project.getMinimumLead( ));
             }
 
-            if ( this.project.getMinimumLead() != Integer.MIN_VALUE )
+            if ( Strings.hasValue( project.getEarliestIssueDate()))
             {
-                script.addTab().addLine("AND TSV.lead >= " + this.project.getMinimumLead( ));
+                script.addTab().addLine("AND TS.initialization_date >= '" + project.getEarliestIssueDate() + "'");
             }
 
-            if ( Strings.hasValue( this.project.getEarliestIssueDate()))
+            if (Strings.hasValue( project.getLatestIssueDate()))
             {
-                script.addTab().addLine("AND TS.initialization_date >= '" + this.project.getEarliestIssueDate() + "'");
+                script.addTab().addLine("AND TS.initialization_date <= '" + project.getLatestIssueDate() + "'");
             }
 
-            if (Strings.hasValue( this.project.getLatestIssueDate()))
+            if ( Strings.hasValue( project.getEarliestDate() ))
             {
-                script.addTab().addLine("AND TS.initialization_date <= '" + this.project.getLatestIssueDate() + "'");
+                script.addTab().addLine("AND TS.initialization_date + INTERVAL '1 MINUTE' * TSV.lead >= '" + project.getEarliestDate() + "'");
             }
 
-            if ( Strings.hasValue( this.project.getEarliestDate() ))
+            if (Strings.hasValue( project.getLatestDate() ))
             {
-                script.addTab().addLine("AND TS.initialization_date + INTERVAL '1 MINUTE' * TSV.lead >= '" + this.project.getEarliestDate() + "'");
-            }
-
-            if (Strings.hasValue( this.project.getLatestDate() ))
-            {
-                script.addTab().addLine("AND TS.initialization_date + INTERVAL '1 MINUTE' * TSV.lead <= '" + this.project.getLatestDate() + "'");
+                script.addTab().addLine("AND TS.initialization_date + INTERVAL '1 MINUTE' * TSV.lead <= '" + project.getLatestDate() + "'");
             }
 
             script.addTab().addLine("AND EXISTS (");
@@ -905,11 +1235,11 @@ final class ProjectScriptGenerator
             script.addTab(  2  ).addLine("FROM wres.ProjectSource PS");
             script.addTab(  2  ).addLine("INNER JOIN wres.TimeSeriesSource TSS");
             script.addTab(   3   ).addLine("ON TSS.source_id = PS.source_id");
-            script.addTab(  2  ).addLine("WHERE PS.project_id = " + this.project.getId());
+            script.addTab(  2  ).addLine("WHERE PS.project_id = " + project.getId());
             script.addTab(   3   ).addLine( "AND PS.member = " + Project.RIGHT_MEMBER);
             script.addTab(   3   ).addLine("AND TSS.timeseries_id = TS.timeseries_id");
 
-            if (ConfigHelper.usesNetCDFData( this.project.getProjectConfig() ))
+            if (ConfigHelper.usesNetCDFData( project.getProjectConfig() ))
             {
                 script.addTab(   3   ).addLine("AND TSS.lead = TSV.lead");
             }
@@ -922,23 +1252,8 @@ final class ProjectScriptGenerator
             script.addLine("FROM wres.Observation O");
             script.addLine("INNER JOIN wres.ProjectSource PS");
             script.addTab().addLine("ON PS.source_id = O.source_id");
-            script.addLine("WHERE PS.project_id = " + this.project.getId());
-            try
-            {
-                script.addTab().addLine("AND " +
-                                        ConfigHelper.getVariableFeatureClause(
-                                                feature,
-                                                this.project.getRightVariableID(),
-                                                "O;" ));
-            }
-            catch ( SQLException e )
-            {
-                throw new CalculationException( "The variable is needed to determine the "
-                                                + "number of observations for " +
-                                                ConfigHelper.getFeatureDescription( feature ) +
-                                                ", but it could not be loaded.",
-                                                e);
-            }
+            script.addLine("WHERE PS.project_id = " + project.getId());
+            script.addTab().add("AND ", variableFeatureClause);
         }
 
         return script;

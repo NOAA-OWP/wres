@@ -1,4 +1,4 @@
-package wres.io.retrieval;
+package wres.util;
 
 /**
  * Exception indicating that io's iteration could not continue due to some
@@ -8,12 +8,12 @@ package wres.io.retrieval;
 
 public class IterationFailedException extends RuntimeException
 {
-    IterationFailedException( String message, Throwable t )
+    public IterationFailedException( String message, Throwable t )
     {
         super( message, t );
     }
 
-    IterationFailedException( String message )
+    public IterationFailedException( String message )
     {
         super( message );
     }

@@ -260,8 +260,6 @@ public class Project
     private Boolean rightUsesGriddedData = null;
     private Boolean baselineUsesGriddedData = null;
 
-    private final ProjectScriptGenerator scriptGenerator;
-
     /**
      * Guards access to the pool counts
      */
@@ -374,7 +372,6 @@ public class Project
         Objects.requireNonNull( inputCode );
         this.projectConfig = projectConfig;
         this.inputCode = inputCode;
-        this.scriptGenerator = new ProjectScriptGenerator( this );
     }
 
     public ProjectConfig getProjectConfig()
@@ -422,10 +419,10 @@ public class Project
     {
         // Validate the time-scale information in the declaration as it applies to ingested sources
         // Remove the feature toggle when ready for production
-        if( isValidateDesiredTimeScaleAgainstEachIngestedSourceInProduction() )
-        {
+        /*if( isValidateDesiredTimeScaleAgainstEachIngestedSourceInProduction() )
+        {*/
             this.validateDesiredTimeScaleAgainstEachIngestedSource();
-        }
+        //}
         
         if (!ConfigHelper.isSimulation( this.getRight() ) &&
             !ProjectConfigs.hasTimeSeriesMetrics( this.getProjectConfig() ) &&
@@ -487,7 +484,7 @@ public class Project
      * <p> Uses the {@link MetadataHelper#throwExceptionIfChangeOfScaleIsInvalid(TimeScale, TimeScale, Duration)} for
      * validation.
      * 
-     * <p> Uses the {@link MetadataHelper#getLeastCommonScale(Set)} to determine the LCS.
+     * <p> Uses the {@link MetadataHelper#getLeastCommonScaleInSeconds(Set)} to determine the LCS.
      * 
      * @throws SQLException Thrown on failing to obtain the time scale or time step information from the database
      * @throws CalculationException Thrown if no time scale or time step information is discovered
@@ -548,8 +545,14 @@ public class Project
             throws SQLException, CalculationException
     {
         // Obtain the existing time scale and corresponding time step for each ingested source
-        Map<TimeScale, Duration> observed = this.getTimeScaleAndTimeStepForEachObservedProjectSource();
-        Map<TimeScale, Duration> forecast = this.getTimeScaleAndTimeStepForEachForecastProjectSource();
+        Map<TimeScale, Duration> observed = this.consumeTimeScaleAndTimeStep(
+                ProjectScriptGenerator.createObservedTimeScaleStepRetrieval(this),
+                "wres.Observation"
+        );
+        Map<TimeScale, Duration> forecast = this.consumeTimeScaleAndTimeStep(
+                ProjectScriptGenerator.createForecastTimeScaleStepRetrieval(this),
+                "wres.TimeSeries"
+        );
         
         Map<TimeScale, Duration> existingTimeScales = new HashMap<>( observed );
         existingTimeScales.putAll( forecast );      
@@ -561,62 +564,6 @@ public class Project
         }
 
         return java.util.Collections.unmodifiableMap( existingTimeScales );
-    }       
-    
-    /**
-     * Returns the {@link TimeScale} and time-step information for each forecast source associated with the project. 
-     * The time-step is represented as a {@link Duration}.
-     * 
-     * @return the time scale and time-step information for each source
-     * @throws SQLException Thrown on failing to obtain the time scale or time step information from the database
-     */
-
-    private Map<TimeScale, Duration> getTimeScaleAndTimeStepForEachForecastProjectSource()
-            throws SQLException, CalculationException
-    {
-        // Ask the wres.timeseries
-        DataScripter scripter = new DataScripter();
-        scripter.addLine( "SELECT DISTINCT TS.scale_period," );
-        scripter.addTab( 2 ).addLine( "TS.scale_function," );
-        scripter.addTab( 2 ).addLine( "TS.time_step" );
-        scripter.addLine( "FROM wres.timeseries TS " );
-        scripter.addTab( 1 ).addLine( "INNER JOIN wres.timeseriessource AS TSS" );
-        scripter.addTab( 2 ).addLine( "ON TS.timeseries_id = TSS.timeseries_id" );
-        scripter.addTab( 1 ).addLine( "INNER JOIN wres.projectsource PS" );
-        scripter.addTab( 2 ).addLine( "ON TSS.source_id = PS.source_id" );
-        scripter.addLine( "WHERE PS.project_id = " + this.getId() );
-
-        // Obtain the existing time scale and corresponding time step for each ingested source
-        return java.util.Collections.unmodifiableMap( this.consumeTimeScaleAndTimeStep( scripter,
-                                                                                        "wres.timeseries" ) );
-    }     
-  
-    /**
-     * Returns the {@link TimeScale} and time-step information for each observed source associated with the project. 
-     * The time-step is represented as a {@link Duration}.
-     * 
-     * @return the time scale and time-step information for each source
-     * @throws SQLException Thrown on failing to obtain the time scale or time step information from the database
-     */
-
-    private Map<TimeScale, Duration> getTimeScaleAndTimeStepForEachObservedProjectSource()
-            throws SQLException, CalculationException
-    {
-        // Ask the wres.timeseries
-        DataScripter scripter = new DataScripter();
-        scripter.addLine( "SELECT DISTINCT O.scale_period," );
-        scripter.addTab( 2 ).addLine( "O.scale_function," );
-        scripter.addTab( 2 ).addLine( "O.time_step" );
-        scripter.addLine( "FROM wres.observation O " );
-        scripter.addTab( 1 ).addLine( "INNER JOIN wres.projectsource AS PS" );
-        scripter.addTab( 2 ).addLine( "ON O.source_id = PS.source_id" );
-        scripter.addTab( 1 ).addLine( "INNER JOIN wres.project P" );
-        scripter.addTab( 2 ).addLine( "ON PS.project_id = P.project_id" );
-        scripter.addLine( "WHERE PS.project_id = " + this.getId() );
-
-        // Obtain the existing time scale and corresponding time step for each ingested source
-        return java.util.Collections.unmodifiableMap( this.consumeTimeScaleAndTimeStep( scripter,
-                                                                                        "wres.observation" ) );
     }
     
     /**
@@ -1779,7 +1726,7 @@ public class Project
             timer.start();
         }
 
-        DataScripter script = this.scriptGenerator.formVariableFeatureLoadScript();
+        DataScripter script = ProjectScriptGenerator.formVariableFeatureLoadScript(this);
 
         Map<FeatureDetails.FeatureKey, Future<Integer>> futureOffsets = new LinkedHashMap<>(  );
 
@@ -1947,7 +1894,7 @@ public class Project
 
                 try
                 {
-                    DataScripter counter = scriptGenerator.formIssuePoolCounter( feature );
+                    DataScripter counter = ProjectScriptGenerator.formIssuePoolCounter( this, feature );
 
                     counter.consume( row -> {
                         Integer sampleCount = row.getInt( "window_count" );
@@ -2100,7 +2047,7 @@ public class Project
     private Duration getForecastInterval( DataSourceConfig dataSourceConfig) throws CalculationException
     {
         // TODO: Forecasts between locations might not be unified.
-        // Generalizing the scale for all locations based on a single one could cause miscalculations
+        // Generalizing the interval for all locations based on a single one could cause miscalculations
         DataScripter script = new DataScripter(  );
 
         script.addLine("WITH differences AS");
@@ -2116,24 +2063,25 @@ public class Project
         }
         else
         {
-            script.addLine("    WHERE lead > 0");
+            script.addTab().addLine("WHERE lead > 0");
         }
 
         if (this.getMaximumLead() != Integer.MAX_VALUE)
         {
-            script.addTab().addLine("AND lead <= ", this.getMaximumLead());
+            script.addTab(  2  ).addLine("AND lead <= ", this.getMaximumLead());
         }
         else
         {
-            // Set the maximum to 6,000 (100 hours). If the maximum is lead is 72 hours, then this
+            // Set the ceiling to 100 hours. If the maximum lead is 72 hours, then this
             // should not behave much differently than having no clause at all.
-            // If real maximum was 172800, 6000 will provide a large enough sample
+            // If real maximum was 2880 hours, 100 will provide a large enough sample
             // size and produce the correct values in a slightly faster fashion.
             // In one data set, leaving this out causes this to take 11.5s .
             // That was even with a subset of the real data (1 month vs 30 years).
-            // If we cut it to 6000, it now takes 1.6s. Still not great, but
+            // If we cut it to 100 hours, it now takes 1.6s. Still not great, but
             // much faster
-            script.addTab().addLine( "AND lead <= ", 6000 );
+            int ceiling = TimeHelper.durationToLead( Duration.of(100, ChronoUnit.HOURS) );
+            script.addTab(  2  ).addLine( "AND lead <= ", ceiling );
         }
 
         Optional<FeatureDetails> featureDetails;
@@ -2177,17 +2125,17 @@ public class Project
                                                 e );
             }
 
-            script.addLine("        AND TS.variablefeature_id = ", variableFeatureId);
+            script.addTab(  2  ).addLine("AND TS.variablefeature_id = ", variableFeatureId);
             script.addTab(  2  ).addLine("AND TS.ensemble_id = ", arbitraryEnsembleId);
 
         }
 
-        script.addLine("        AND EXISTS (");
-        script.addLine("            SELECT 1");
-        script.addLine("            FROM wres.ProjectSource PS");
-        script.addLine("            INNER JOIN wres.TimeSeriesSource TSS");
-        script.addLine("                ON TSS.source_id = PS.source_id");
-        script.addLine("            WHERE PS.project_id = ", this.getId());
+        script.addTab(  2  ).addLine("AND EXISTS (");
+        script.addTab(   3   ).addLine("SELECT 1");
+        script.addTab(   3   ).addLine("FROM wres.ProjectSource PS");
+        script.addTab(   3   ).addLine("INNER JOIN wres.TimeSeriesSource TSS");
+        script.addTab(    4    ).addLine("ON TSS.source_id = PS.source_id");
+        script.addTab(   3   ).addLine("WHERE PS.project_id = ", this.getId());
         script.addLine("                AND PS.member = ", this.getInputName( dataSourceConfig ));
         script.addLine("                AND TSV.timeseries_id = TSS.timeseries_id");
         script.addLine("        )");
@@ -2469,7 +2417,7 @@ public class Project
 
         if (leadIsMissing)
         {
-            DataScripter script = this.scriptGenerator.createLastLeadScript( feature );
+            DataScripter script = ProjectScriptGenerator.createLastLeadScript( this, feature );
 
             try
             {
@@ -2570,7 +2518,8 @@ public class Project
         {
             if (!this.initialObservationDates.containsKey( feature ))
             {
-                DataScripter script = scriptGenerator.generateInitialObservationDateScript(
+                DataScripter script = ProjectScriptGenerator.generateInitialObservationDateScript(
+                        this,
                         sourceConfig,
                         feature
                 );
@@ -2588,7 +2537,8 @@ public class Project
         {
             if (!this.initialForecastDates.containsKey( feature ))
             {
-                DataScripter script =  this.scriptGenerator.generateInitialForecastDateScript(
+                DataScripter script =  ProjectScriptGenerator.generateInitialForecastDateScript(
+                        this,
                         sourceConfig,
                         feature
                 );
@@ -2659,7 +2609,7 @@ public class Project
                 // 6 hours, we'll encounter an error because we're aren't
                 // accounting for that weird gap. By going with the maximum, we
                 // ensure that we will always cover that gap.
-                DataScripter script = this.scriptGenerator.createForecastLagScript( sourceConfig, feature );
+                DataScripter script = ProjectScriptGenerator.createForecastLagScript( this, sourceConfig, feature );
 
                 try
                 {
@@ -2672,7 +2622,6 @@ public class Project
                                                     e );
                 }
             }
-
 
             return this.timeSeriesLag.get( feature );
         }

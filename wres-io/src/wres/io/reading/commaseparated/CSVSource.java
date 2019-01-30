@@ -419,8 +419,7 @@ public class CSVSource extends BasicSource
         TimeSeries timeSeries = this.encounteredTimeSeries.get(
                 series -> series.getEnsembleId() == ensembleId &&
                           series.getInitializationDate().equals( startDate ) &&
-                          series.getVariableFeatureID() == variableFeatureId &&
-                          series.getTimeStep() == timeStep
+                          series.getVariableFeatureID() == variableFeatureId
         );
 
         if (timeSeries != null)
@@ -441,7 +440,6 @@ public class CSVSource extends BasicSource
 
         timeSeries.setVariableFeatureID( variableFeatureId );
         timeSeries.setScalePeriod( 1 );
-        timeSeries.setTimeStep( timeStep );
 
         this.encounteredTimeSeries.add(timeSeries);
 

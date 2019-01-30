@@ -11,6 +11,7 @@ import wres.datamodel.sampledata.SampleData;
 import wres.io.config.ConfigHelper;
 import wres.io.config.OrderedSampleMetadata;
 import wres.io.project.Project;
+import wres.util.IterationFailedException;
 import wres.util.NotImplementedException;
 
 /**

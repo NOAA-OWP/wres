@@ -655,7 +655,6 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
                       .inSource( sourceID )
                       .scaleOf( period )
                       .scaledBy( function )
-                      .every( timeStep )
                       .add();
     }
 

@@ -373,7 +373,6 @@ public final class PIXMLReader extends XMLReader
                               )
                       )
                       .scaledBy( this.scaleFunction )
-                      .every( Duration.of(this.timeStep, TimeHelper.LEAD_RESOLUTION) )
                       .add();
 	}
 
@@ -652,7 +651,6 @@ public final class PIXMLReader extends XMLReader
                     new TimeSeries( this.getSourceID(),
                                     forecastFullDateTime.format( FORMATTER ) );
 
-            this.currentTimeSeries.setTimeStep( this.timeStep );
             this.currentTimeSeries.setScaleFunction( this.scaleFunction );
 
             if (this.scalePeriod != null)

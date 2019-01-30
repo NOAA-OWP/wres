@@ -44,7 +44,6 @@ public final class TimeSeries
         script.addTab().addLine("TSS.source_id,");
         script.addTab().addLine("TSV.highest_lead,");
         script.addTab().addLine("TSV.lowest_lead,");
-        script.addTab().addLine("TS.time_step,");
         script.addTab().addLine("TS.scale_period,");
         script.addTab().addLine("TS.scale_function");
         script.addLine("FROM wres.TimeSeries TS");
@@ -82,11 +81,6 @@ public final class TimeSeries
                 timeSeries.setScalePeriod( data.getInt( "scale_period" ) );
             }
 
-            if (!data.isNull( "time_step" ) )
-            {
-                timeSeries.setTimeStep( data.getInt( "time_step" ) );
-            }
-
             if (!data.isNull( "scale_function" ))
             {
                 timeSeries.setScaleFunction( data.getString( "scale_function" ) );
@@ -121,8 +115,6 @@ public final class TimeSeries
 
 	// 1 represents instantaneous
 	private Integer scalePeriod = 1;
-
-	private Integer timeStep = null;
 
 	private TimeScaleFunction scaleFunction = TimeScaleFunction.UNKNOWN;
 
@@ -252,16 +244,6 @@ public final class TimeSeries
         this.setScaleFunction( TimeScaleFunction.valueOf( scaleFunction ) );
     }
 
-    public Integer getTimeStep()
-    {
-        return this.timeStep;
-    }
-
-    public void setTimeStep(final int timeStep)
-    {
-        this.timeStep = timeStep;
-    }
-
     public int getEnsembleId()
     {
         return this.ensembleID;
@@ -299,16 +281,14 @@ public final class TimeSeries
         script.addTab(  2  ).addLine("measurementunit_id,");
         script.addTab(  2  ).addLine("initialization_date,");
         script.addTab(  2  ).addLine("scale_period,");
-        script.addTab(  2  ).addLine("scale_function,");
-        script.addTab(  2  ).addLine("time_step");
+        script.addTab(  2  ).addLine("scale_function");
         script.addTab().addLine(")");
         script.addTab().addLine("SELECT ", this.variableFeatureID, ",");
         script.addTab(  2  ).addLine(this.ensembleID, ",");
 		script.addTab(  2  ).addLine(this.measurementUnitID, ",");
 		script.addTab(  2  ).addLine("'", this.initializationDate, "',");
 		script.addTab(  2  ).addLine(this.scalePeriod, ",");
-		script.addTab(  2  ).addLine("'", this.scaleFunction.toString(), "',");
-		script.addTab(  2  ).addLine(this.timeStep);
+		script.addTab(  2  ).addLine("'", this.scaleFunction.toString(), "'");
 		script.addTab().addLine("WHERE NOT EXISTS (");
 		script.addTab(  2  ).addLine("SELECT 1");
 		script.addTab(  2  ).addLine("FROM wres.TimeSeries TS");
@@ -319,7 +299,6 @@ public final class TimeSeries
 		script.addTab(   3   ).addLine("AND TS.initialization_date = '", this.initializationDate, "'");
         script.addTab(   3   ).addLine("AND TS.measurementunit_id = ", this.measurementUnitID);
         script.addTab(   3   ).addLine("AND TSS.source_id = ", this.sourceID);
-        script.addTab(   3   ).addLine("AND TS.time_step = ", this.timeStep);
         script.addTab(   3   ).addLine("AND TS.scale_period = ", this.scalePeriod);
         script.addTab(   3   ).addLine("AND TS.scale_function = '", this.scaleFunction.toString(), "'");
         script.addTab().addLine(")");
@@ -349,7 +328,6 @@ public final class TimeSeries
 		script.addTab().addLine("AND TS.ensemble_id = ", this.ensembleID);
 		script.addTab().addLine("AND TS.initialization_date = '", this.initializationDate, "'");
         script.addTab().addLine("AND TS.measurementunit_id = ", this.measurementUnitID);
-        script.addTab().addLine("AND TS.time_step = ", this.timeStep);
         script.addTab().addLine("AND TS.scale_period = ", this.scalePeriod);
         script.addTab().addLine("AND TS.scale_function = '", this.scaleFunction, "'");
         script.addTab().addLine("AND EXISTS (");
