@@ -809,7 +809,7 @@ public class Project
      * it does so without returning the time scale information too, then this method will need to add every possible 
      * combination of time-step and time scale for each time scale with a <code>null</code> entry. This is overkill, 
      * but may be preferable to a more complex implementation of {@link #getValueInterval(DataSourceConfig)} that 
-     * seeks to retainin the pairing with the time scale too, especially since the overhead with checking the different
+     * seeks to retain the pairing with the time scale too, especially since the overhead with checking the different
      * combinations of scale and step should be small. The debug log messages should then be updated too. See #58715-71.
      * 
      * @param dataSourceConfig the declared data source
@@ -844,30 +844,14 @@ public class Project
         boolean warn = false;
         for ( Pair<TimeScale, Duration> nextScaleAndStep : existingScalesAndSteps )
         {
-
-            if ( Objects.isNull( globalTimeStepToReUse ) )
-            {
-                // Timestep analyzed from the data to use when the time_step is unavailable
-                if ( isLeftSource )
-                {
-                    // Locking required because this involves mutation
-                    synchronized ( LEFT_LEAD_LOCK )
-                    {
-                        globalTimeStepToReUse = this.getValueInterval( dataSourceConfig );
-                    }
-                }
-                else
-                {
-                    // Locking required because this involves mutation
-                    synchronized ( RIGHT_LEAD_LOCK )
-                    {
-                        globalTimeStepToReUse = this.getValueInterval( dataSourceConfig );
-                    }
-                }
-            }
-
             if ( Objects.isNull( nextScaleAndStep.getRight() ) )
             {
+                // Compute the global time-step only where required
+                if ( Objects.isNull( globalTimeStepToReUse ) )
+                {
+                    globalTimeStepToReUse = this.getValueIntervalWithLocking( dataSourceConfig, isLeftSource );
+                }
+
                 warn = true;
                 mutableCopy.add( Pair.of( nextScaleAndStep.getLeft(), globalTimeStepToReUse ) );
             }
@@ -891,22 +875,7 @@ public class Project
         {
             if ( Objects.isNull( globalTimeStepToReUse ) )
             {
-                if ( isLeftSource )
-                {
-                    // Locking required because this involves mutation
-                    synchronized ( LEFT_LEAD_LOCK )
-                    {
-                        globalTimeStepToReUse = this.getValueInterval( dataSourceConfig );
-                    }
-                }
-                else
-                {
-                    // Locking required because this involves mutation
-                    synchronized ( RIGHT_LEAD_LOCK )
-                    {
-                        globalTimeStepToReUse = this.getValueInterval( dataSourceConfig );
-                    }
-                }
+                globalTimeStepToReUse = this.getValueIntervalWithLocking( dataSourceConfig, isLeftSource );
             }
 
             LOGGER.debug( "The time_step was missing for all {} sources in the database. "
@@ -919,6 +888,36 @@ public class Project
         return java.util.Collections.unmodifiableSet( mutableCopy );
     }
 
+    /**
+     * Wraps the {@link {@link #getValueInterval(DataSourceConfig)}} and performs locking because this method involves
+     * mutation. TODO: it would be cleaner if the helper itself handled the locking.
+     * 
+     * @return the global time-step
+     * @throws CalculationException if the global time-step could not be calculated
+     * @throws NullPointerException if the dataSourceConfig is null
+     */
+
+    private Duration getValueIntervalWithLocking( DataSourceConfig dataSourceConfig, boolean isLeftSource )
+            throws CalculationException
+    {
+        Objects.requireNonNull( dataSourceConfig );
+
+        if ( isLeftSource )
+        {
+            synchronized ( LEFT_LEAD_LOCK )
+            {
+                return this.getValueInterval( dataSourceConfig );
+            }
+        }
+        else
+        {
+            synchronized ( RIGHT_LEAD_LOCK )
+            {
+                return this.getValueInterval( dataSourceConfig );
+            }
+        }
+    }
+    
     /**
      * Loads metadata about all features that the project needs to use
      * @throws SQLException Thrown if metadata about the features could not be loaded from the database
