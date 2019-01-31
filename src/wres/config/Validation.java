@@ -477,7 +477,8 @@ public class Validation
                     try
                     {
                         // TODO: permit web resource thresholds, not only files
-                        destinationPath = Paths.get( thresholdData.getPath() );
+                        // See #59422
+                        destinationPath = Paths.get( thresholdData.toString() );
                     }
                     catch ( InvalidPathException ipe )
                     {

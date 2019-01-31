@@ -548,6 +548,7 @@ public class Project
      * 
      * @return the time scale and time-step information for each source
      * @throws SQLException Thrown on failing to obtain the time scale or time step information from the database
+     * @throws CalculationException if time step could not be determined from the data
      */
 
     private Set<Pair<TimeScale, Duration>> getTimeScaleAndTimeStepForEachProjectSource()
@@ -575,6 +576,7 @@ public class Project
      * 
      * @return the time scale and time-step information for each source
      * @throws SQLException Thrown on failing to obtain the time scale or time step information from the database
+     * @throws CalculationException if time step could not be determined from the data
      */
 
     private Set<Pair<TimeScale, Duration>> getTimeScaleAndTimeStepForEachForecastProjectSource()
@@ -606,6 +608,7 @@ public class Project
      * 
      * @return the time scale and time-step information for each source
      * @throws SQLException Thrown on failing to obtain the time scale or time step information from the database
+     * @throws CalculationException if time step could not be determined from the data
      */
 
     private Set<Pair<TimeScale, Duration>> getTimeScaleAndTimeStepForEachObservedProjectSource()
