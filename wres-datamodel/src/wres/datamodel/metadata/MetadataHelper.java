@@ -135,8 +135,7 @@ public final class MetadataHelper
 
         // Change of scale required, i.e. not absolutely equal and not instantaneous 
         // (which has a more lenient interpretation)
-        if ( !existingTimeScale.equals( desiredTimeScale ) && ( !existingTimeScale.isInstantaneous()
-                                                                || !desiredTimeScale.isInstantaneous() ) )
+        if ( MetadataHelper.isChangeOfScaleRequired( existingTimeScale, desiredTimeScale ) )
         {
 
             // The desired time scale must be a sensible function in the context of rescaling
@@ -257,6 +256,36 @@ public final class MetadataHelper
 
         return TimeScale.of( Duration.ofSeconds( lcs ), timeScales.iterator().next().getFunction() );
     }
+    
+    /**
+     * Returns <code>true</code> if a change of time scale is required, otherwise false. A change of scale is required
+     * if the two inputs are different, except in one of the following two cases:
+     * 
+     * <ol>
+     * <li>The two inputs are both instantaneous according to {@link TimeScale#isInstantaneous()}</li>
+     * <li>The only difference is the {@link TimeScale#getFunction()} and the existingTimeScale is 
+     * {@link TimeScaleFunction#UNKNOWN}</li>
+     * </ol>
+     * 
+     * @param existingTimeScale the existing time scale
+     * @param desiredTimeScale the desired time scale 
+     * @return true if a change of time scale is required, otherwise false
+     * @throws NullPointerException if either input is null
+     */ 
+
+    public static boolean isChangeOfScaleRequired( TimeScale existingTimeScale, TimeScale desiredTimeScale )
+    {
+        Objects.requireNonNull( existingTimeScale, "Specify a non-null existing time scale." );
+        
+        Objects.requireNonNull( desiredTimeScale, "Specify a non-null desired time scale." );
+        
+        boolean different = !existingTimeScale.equals( desiredTimeScale );
+        boolean exceptionOne = existingTimeScale.isInstantaneous() && desiredTimeScale.isInstantaneous();
+        boolean exceptionTwo = existingTimeScale.getPeriod().equals( desiredTimeScale.getPeriod() )
+                               && existingTimeScale.getFunction() == TimeScaleFunction.UNKNOWN;
+
+        return different && !exceptionOne && !exceptionTwo;
+    }
 
     /**
      * Throws an exception if the desiredFunction is {@link TimeScaleFunction#UNKNOWN}.
@@ -270,7 +299,7 @@ public final class MetadataHelper
         if ( desiredFunction == TimeScaleFunction.UNKNOWN )
         {
             throw new RescalingException( "The desired time scale function is '" + TimeScaleFunction.UNKNOWN
-                                          + "': the function must be a known function." );
+                                          + "': the function must be known to conduct rescaling." );
         }
     }
 
@@ -317,7 +346,9 @@ public final class MetadataHelper
 
     /**
      * Throws an exception if the {@link TimeScale#getPeriod()} of the two periods match, and the 
-     * {@link TimeScale#getFunction()} do not match. Cannot change the function without changing the period.
+     * {@link TimeScale#getFunction()} do not match, except if the existingTimeScale is 
+     * {@link TimeScaleFunction#UNKNOWN}, which is allowed (lenient). Cannot change the function without 
+     * changing the period.
      * 
      * @param existingTimeScale the existing time scale
      * @param desiredTimeScale the desired time scale 
@@ -327,7 +358,8 @@ public final class MetadataHelper
     private static void throwExceptionIfPeriodsMatchAndFunctionsDiffer( TimeScale existingTimeScale,
                                                                         TimeScale desiredTimeScale )
     {
-        if ( existingTimeScale.getPeriod().equals( desiredTimeScale.getPeriod() )
+        if ( existingTimeScale.getFunction() != TimeScaleFunction.UNKNOWN
+             && existingTimeScale.getPeriod().equals( desiredTimeScale.getPeriod() )
              && existingTimeScale.getFunction() != desiredTimeScale.getFunction() )
         {
             throw new RescalingException( "The periods associated with the existing and desired time scales are the "
