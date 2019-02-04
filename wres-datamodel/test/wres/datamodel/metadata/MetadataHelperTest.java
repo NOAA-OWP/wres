@@ -104,10 +104,10 @@ public final class MetadataHelperTest
         exception.expect( NullPointerException.class );
         exception.expectMessage( "Cannot find the union of null metadata." );
 
-        MetadataHelper.unionOf( Arrays.asList( (SampleMetadata) null  ) );
+        MetadataHelper.unionOf( Arrays.asList( (SampleMetadata) null ) );
     }
 
-    
+
     /**
      * Tests that the {@link MetadataHelper#unionOf(java.util.List)} throws an expected exception when the inputs are
      * unequal on attributes that are expected to be equal.
@@ -220,8 +220,10 @@ public final class MetadataHelperTest
         exception.expectMessage( "Downscaling is not supported: the desired time scale cannot be smaller than "
                                  + "the existing time scale." );
 
-        MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( TimeScale.of( Duration.ofSeconds( 1 ) ),
-                                                               TimeScale.of( Duration.ofMillis( 1 ) ),
+        MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( TimeScale.of( Duration.ofHours( 1 ),
+                                                                             TimeScaleFunction.MEAN ),
+                                                               TimeScale.of( Duration.ofMinutes( 1 ),
+                                                                             TimeScaleFunction.MEAN ),
                                                                Duration.ofMillis( 1 ) );
     }
 
@@ -231,14 +233,16 @@ public final class MetadataHelperTest
      * an existing time scale whose period is an integer multiple of the period associated with the desired time scale.
      */
 
-    @Test(expected = Test.None.class /* no exception expected */)
+    @Test( expected = Test.None.class /* no exception expected */ )
     public void doNotThrowExceptionIfDesiredPeriodCommutesFromExistingPeriod()
     {
-        MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( TimeScale.of( Duration.ofSeconds( 1 ) ),
-                                                               TimeScale.of( Duration.ofSeconds( 60 ) ),
+        MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( TimeScale.of( Duration.ofSeconds( 1 ),
+                                                                             TimeScaleFunction.MEAN ),
+                                                               TimeScale.of( Duration.ofSeconds( 60 ),
+                                                                             TimeScaleFunction.MEAN ),
                                                                Duration.ofMillis( 1 ) );
     }
-    
+
     /**
      * Checks for an expected exception when calling 
      * {@link MetadataHelper#throwExceptionIfChangeOfScaleIsInvalid(TimeScale, TimeScale, java.time.Duration)} with
@@ -269,12 +273,12 @@ public final class MetadataHelperTest
     {
         exception.expect( RescalingException.class );
         exception.expectMessage( "The periods associated with the existing and desired time scales are the same, "
-                                 + "but the time scale functions are different. The function cannot be changed without "
-                                 + "changing the period." );
+                                 + "but the time scale functions are different [MEAN, MAXIMUM]. The function cannot "
+                                 + "be changed without changing the period." );
 
-        MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( TimeScale.of( Duration.ofSeconds( 1 ),
+        MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( TimeScale.of( Duration.ofHours( 1 ),
                                                                              TimeScaleFunction.MEAN ),
-                                                               TimeScale.of( Duration.ofSeconds( 1 ),
+                                                               TimeScale.of( Duration.ofHours( 1 ),
                                                                              TimeScaleFunction.MAXIMUM ),
                                                                Duration.ofMillis( 1 ) );
     }
@@ -291,19 +295,19 @@ public final class MetadataHelperTest
     {
         exception.expect( RescalingException.class );
         exception.expectMessage( "Cannot accumulate values that are not already accumulations. The "
-                + "function associated with the existing time scale must be a '"
-                + TimeScaleFunction.TOTAL
-                + "' or the function associated with the desired time scale must "
-                + "be changed." );
+                                 + "function associated with the existing time scale must be a '"
+                                 + TimeScaleFunction.TOTAL
+                                 + "' or the function associated with the desired time scale must "
+                                 + "be changed." );
 
-        MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( TimeScale.of( Duration.ofSeconds( 1 ),
+        MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( TimeScale.of( Duration.ofHours( 1 ),
                                                                              TimeScaleFunction.MAXIMUM ),
-                                                               TimeScale.of( Duration.ofSeconds( 10 ),
+                                                               TimeScale.of( Duration.ofHours( 10 ),
                                                                              TimeScaleFunction.TOTAL ),
                                                                Duration.ofMillis( 1 ) );
     }
-    
-    
+
+
     /**
      * Checks for an expected exception when calling 
      * {@link MetadataHelper#throwExceptionIfChangeOfScaleIsInvalid(TimeScale, TimeScale, java.time.Duration)} with
@@ -315,13 +319,15 @@ public final class MetadataHelperTest
     {
         exception.expect( RescalingException.class );
         exception.expectMessage( "Insufficient data for rescaling: the time-step of the data cannot be "
-                + "greater than the desired time scale when rescaling is required [PT2M,PT1M]." );
+                                 + "greater than the desired time scale when rescaling is required [PT120H,PT60H]." );
 
-        MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( TimeScale.of( Duration.ofSeconds( 1 ) ),
-                                                               TimeScale.of( Duration.ofSeconds( 60 ) ),
-                                                               Duration.ofSeconds( 120 ) );
+        MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( TimeScale.of( Duration.ofHours( 1 ),
+                                                                             TimeScaleFunction.MEAN ),
+                                                               TimeScale.of( Duration.ofHours( 60 ),
+                                                                             TimeScaleFunction.MEAN ),
+                                                               Duration.ofHours( 120 ) );
     }
-    
+
     /**
      * Checks for an expected exception when calling 
      * {@link MetadataHelper#throwExceptionIfChangeOfScaleIsInvalid(TimeScale, TimeScale, java.time.Duration)} with
@@ -333,11 +339,13 @@ public final class MetadataHelperTest
     {
         exception.expect( RescalingException.class );
         exception.expectMessage( "Insufficient data for rescaling: the period associated with the desired "
-                + "time scale matches the time-step of the data (PT1M)." );
+                                 + "time scale matches the time-step of the data (PT60H)." );
 
-        MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( TimeScale.of( Duration.ofSeconds( 1 ) ),
-                                                               TimeScale.of( Duration.ofSeconds( 60 ) ),
-                                                               Duration.ofSeconds( 60 ) );
+        MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( TimeScale.of( Duration.ofHours( 1 ),
+                                                                             TimeScaleFunction.MEAN ),
+                                                               TimeScale.of( Duration.ofHours( 60 ),
+                                                                             TimeScaleFunction.MEAN ),
+                                                               Duration.ofHours( 60 ) );
     }
 
     /**
@@ -352,12 +360,32 @@ public final class MetadataHelperTest
         exception.expect( RescalingException.class );
         exception.expectMessage( "The desired period must be an integer multiple of the data time-step." );
 
-        MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( TimeScale.of( Duration.ofSeconds( 2 ) ),
-                                                               TimeScale.of( Duration.ofSeconds( 60 ) ),
+        MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( TimeScale.of( Duration.ofHours( 2 ),
+                                                                             TimeScaleFunction.MEAN ),
+                                                               TimeScale.of( Duration.ofHours( 60 ),
+                                                                             TimeScaleFunction.MEAN ),
                                                                Duration.ofMillis( 7 ) );
 
-    }  
-    
+    }
+
+    /**
+     * Checks for an expected exception when calling 
+     * {@link MetadataHelper#throwExceptionIfChangeOfScaleIsInvalid(TimeScale, TimeScale, Duration)} with
+     * a desired time scale whose function is unknown.
+     */
+    @Test
+    public void throwExceptionIfDesiredFunctionIsUnknown()
+    {
+        exception.expect( RescalingException.class );
+        exception.expectMessage( "The desired time scale function is '" + TimeScaleFunction.UNKNOWN
+                                 + "': the "
+                                 + "function must be a known function." );
+
+        MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( TimeScale.of( Duration.ofHours( 60 ) ),
+                                                               TimeScale.of( Duration.ofHours( 120 ) ),
+                                                               Duration.ofHours( 1 ) );
+    }
+
     /**
      * Checks for an expected exception when calling 
      * {@link MetadataHelper#throwExceptionIfChangeOfScaleIsInvalid(TimeScale, TimeScale, java.time.Duration)} with
@@ -370,15 +398,16 @@ public final class MetadataHelperTest
     {
         exception.expect( RescalingException.class );
         exception.expectMessage( "Cannot accumulate values that are not already accumulations. The function associated "
-                + "with the existing time scale must be a 'TOTAL' or the function associated with the desired time "
-                + "scale must be changed." );
+                                 + "with the existing time scale must be a 'TOTAL' or the function associated with the desired time "
+                                 + "scale must be changed." );
 
         MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( TimeScale.of( Duration.ofSeconds( 1 ) ),
-                                                               TimeScale.of( Duration.ofHours( 6 ), TimeScaleFunction.TOTAL ),
+                                                               TimeScale.of( Duration.ofHours( 6 ),
+                                                                             TimeScaleFunction.TOTAL ),
                                                                Duration.ofHours( 6 ) );
 
-    }  
-    
+    }
+
     /**
      * Checks for an expected exception when calling 
      * {@link MetadataHelper#throwExceptionIfChangeOfScaleIsInvalid(TimeScale, TimeScale, java.time.Duration)} with
@@ -391,15 +420,15 @@ public final class MetadataHelperTest
     {
         exception.expect( RescalingException.class );
         exception.expectMessage( "Insufficient data for rescaling: the period associated with the desired time "
-                + "scale matches the time-step of the data (PT1H)." );
+                                 + "scale matches the time-step of the data (PT1H)." );
 
         MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( TimeScale.of( Duration.ofSeconds( 1 ) ),
                                                                TimeScale.of( Duration.ofHours( 1 ),
                                                                              TimeScaleFunction.MEAN ),
                                                                Duration.ofHours( 1 ) );
-    
+
     }
-    
+
     /**
      * Checks that no exception is thrown when calling 
      * {@link MetadataHelper#throwExceptionIfChangeOfScaleIsInvalid(TimeScale, TimeScale, java.time.Duration)} with
@@ -409,12 +438,14 @@ public final class MetadataHelperTest
     @Test( expected = Test.None.class )
     public void doNotThrowExceptionWhenNoRescalingRequested()
     {
-        MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( TimeScale.of( Duration.ofSeconds( 120 ) ),
-                                                               TimeScale.of( Duration.ofSeconds( 120 ) ),
+        MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( TimeScale.of( Duration.ofSeconds( 120 ),
+                                                                             TimeScaleFunction.MEAN ),
+                                                               TimeScale.of( Duration.ofSeconds( 120 ),
+                                                                             TimeScaleFunction.MEAN ),
                                                                Duration.ofMillis( 7 ) );
 
     }
-    
+
     /**
      * Tests that the {@link MetadataHelper#getLeastCommonScaleInSeconds(java.util.Set) throws an expected exception 
      * when the input is empty.
@@ -427,7 +458,7 @@ public final class MetadataHelperTest
 
         MetadataHelper.getLeastCommonScaleInSeconds( Collections.emptySet() );
     }
-    
+
     /**
      * Tests that the {@link MetadataHelper#getLeastCommonScaleInSeconds(java.util.Set) throws an expected exception 
      * when the input is null.
@@ -440,7 +471,7 @@ public final class MetadataHelperTest
 
         MetadataHelper.getLeastCommonScaleInSeconds( null );
     }
-    
+
     /**
      * Tests that the {@link MetadataHelper#getLeastCommonScaleInSeconds(java.util.Set) throws an expected exception 
      * when the input contains more than two different time scales.
@@ -492,7 +523,7 @@ public final class MetadataHelperTest
 
         MetadataHelper.getLeastCommonScaleInSeconds( scales );
     }
-    
+
     /**
      * Tests that the {@link MetadataHelper#getLeastCommonScaleInSeconds(java.util.Set) throws an expected exception 
      * when the input contains a time scale that is the {@link Long#MAX_VALUE} in seconds.
@@ -511,7 +542,7 @@ public final class MetadataHelperTest
 
         MetadataHelper.getLeastCommonScaleInSeconds( scales );
     }
-    
+
     /**
      * Tests that the {@link MetadataHelper#getLeastCommonScaleInSeconds(java.util.Set) returns the single time scale
      * from an input with one time scale.
@@ -520,10 +551,10 @@ public final class MetadataHelperTest
     public void testGetLCSReturnsInputWhenInputHasOne()
     {
         TimeScale one = TimeScale.of( Duration.ofSeconds( 1 ) );
-        
+
         assertEquals( one, MetadataHelper.getLeastCommonScaleInSeconds( Collections.singleton( one ) ) );
     }
-    
+
     /**
      * Tests that the {@link MetadataHelper#getLeastCommonScaleInSeconds(java.util.Set) returns the single 
      * non-instantaneous time scale from the input that contains one non-instantaneous time scale.
@@ -535,10 +566,10 @@ public final class MetadataHelperTest
         TimeScale expected = TimeScale.of( Duration.ofSeconds( 61 ) );
         scales.add( TimeScale.of( Duration.ofSeconds( 1 ) ) );
         scales.add( expected );
-        
+
         assertEquals( expected, MetadataHelper.getLeastCommonScaleInSeconds( scales ) );
     }
-    
+
     /**
      * <p>Tests that the {@link MetadataHelper#getLeastCommonScaleInSeconds(java.util.Set) returns the expected
      * LCS from an input containing three different time scales. Takes the example of (8,9,21) from:</p>
@@ -555,10 +586,10 @@ public final class MetadataHelperTest
         scales.add( TimeScale.of( Duration.ofHours( 21 ) ) );
 
         TimeScale expected = TimeScale.of( Duration.ofHours( 504 ) );
-        
+
         assertEquals( expected, MetadataHelper.getLeastCommonScaleInSeconds( scales ) );
     }
-    
+
     /**
      * <p>Tests that the {@link MetadataHelper#getLeastCommonScaleInSeconds(java.util.Set) returns the expected
      * LCS from an input containing three different time scales. Takes the example of (8,9,21) from:</p>
@@ -574,8 +605,8 @@ public final class MetadataHelperTest
         scales.add( TimeScale.of( Duration.ofHours( 9 ) ) );
 
         TimeScale expected = TimeScale.of( Duration.ofHours( 72 ) );
-        
+
         assertEquals( expected, MetadataHelper.getLeastCommonScaleInSeconds( scales ) );
     }
-    
+
 }

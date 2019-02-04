@@ -12,7 +12,6 @@ import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -27,7 +26,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -419,10 +420,10 @@ public class Project
     {
         // Validate the time-scale information in the declaration as it applies to ingested sources
         // Remove the feature toggle when ready for production
-        /*if( isValidateDesiredTimeScaleAgainstEachIngestedSourceInProduction() )
-        {*/
-            this.validateDesiredTimeScaleAgainstEachIngestedSource();
-        //}
+        if( isValidateDesiredTimeScaleAgainstEachIngestedSourceInProduction() )
+        {
+            this.validateDesiredTimeScaleForEachProjectSource();
+        }
         
         if (!ConfigHelper.isSimulation( this.getRight() ) &&
             !ProjectConfigs.hasTimeSeriesMetrics( this.getProjectConfig() ) &&
@@ -453,7 +454,10 @@ public class Project
     }
     
     /**
-     * Feature toggle that filters {@link #validateDesiredTimeScaleAgainstEachIngestedSource()}.
+     * Feature toggle that indicates whether {@link #validateDesiredTimeScaleForEachProjectSource()} should be called.
+     *
+     * TODO: remove when resolving #58715.
+     * @deprecated
      */
 
     @Deprecated
@@ -461,7 +465,7 @@ public class Project
     {
         return false;
     }
-    
+
     /**
      * <p>Validates the "desired time scale" information in the project declaration as it applies to ingested sources. 
      * The "desired time scale" is either declared explicitly (once instance per declaration) as the 
@@ -490,8 +494,8 @@ public class Project
      * @throws CalculationException Thrown if no time scale or time step information is discovered
      * @throws RescalingException Thrown if the desired time scale is not deliverable from the existing sources
      */
-    
-    private void validateDesiredTimeScaleAgainstEachIngestedSource() throws SQLException, CalculationException
+
+    private void validateDesiredTimeScaleForEachProjectSource() throws SQLException, CalculationException
     {
         // The desired time scale
         TimeScale desiredScale = null;
@@ -504,7 +508,7 @@ public class Project
         }
 
         // Obtain the existing time scale and corresponding time step for each ingested source
-        Map<TimeScale,Duration> existingScales = this.getTimeScaleAndTimeStepForEachProjectSource();
+        Set<Pair<TimeScale, Duration>> existingScalesAndSteps = this.getTimeScaleAndTimeStepForEachProjectSource();
 
         // Determine the Least Common Scale if required and available
         if ( Objects.isNull( desiredScale ) )
@@ -512,36 +516,38 @@ public class Project
             LOGGER.debug( "No desired time scale declared. Attempting to substitute the Least Common Scale based on "
                           + "the ingested sources." );
 
+            // The unique existing times scales from which to determined the Least Common Scale
+            Set<TimeScale> existingScales =
+                    existingScalesAndSteps.stream().map( Pair::getLeft ).collect( Collectors.toSet() );
+
             desiredScale =
-                    MetadataHelper.getLeastCommonScaleInSeconds( java.util.Collections.unmodifiableSet( existingScales.keySet() ) );
+                    MetadataHelper.getLeastCommonScaleInSeconds( java.util.Collections.unmodifiableSet( existingScales ) );
         }
 
         // Validate the desired time scale against each existing one
         LOGGER.debug( "Found {} distinct time scales across all ingested sources. "
                       + "Validating each against the desired time scale of {}.",
-                      existingScales.size(),
+                      existingScalesAndSteps.size(),
                       desiredScale );
 
         final TimeScale finalDesiredScale = desiredScale;
-        existingScales.forEach( ( existingScale,
-                                  timeStep ) -> MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( existingScale,
+        existingScalesAndSteps.forEach( pair -> MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( pair.getLeft(),
                                                                                                        finalDesiredScale,
-                                                                                                       timeStep ) );
-        LOGGER.debug( "Finished validating the existing time scales against the desired time scale.",
-                      existingScales.size() );
-        
+                                                                                                       pair.getRight() ) );
+        LOGGER.debug( "Finished validating the {} existing time scales against the desired time scale.",
+                      existingScalesAndSteps.size() );
+
     }
-    
+
     /**
      * Returns the {@link TimeScale} and time-step information for each source associated with the project. The
      * time-step is represented as a {@link Duration}.
      * 
      * @return the time scale and time-step information for each source
      * @throws SQLException Thrown on failing to obtain the time scale or time step information from the database
-     * @throws CalculationException Thrown if no time scale or time step information is discovered
      */
 
-    private Map<TimeScale, Duration> getTimeScaleAndTimeStepForEachProjectSource()
+    private Set<Pair<TimeScale, Duration>> getTimeScaleAndTimeStepForEachProjectSource()
             throws SQLException, CalculationException
     {
         // Obtain the existing time scale and corresponding time step for each ingested source
@@ -556,51 +562,220 @@ public class Project
         
         Map<TimeScale, Duration> existingTimeScales = new HashMap<>( observed );
         existingTimeScales.putAll( forecast );      
+        Set<Pair<TimeScale, Duration>> observed = this.getTimeScaleAndTimeStepForEachObservedProjectSource();
+        Set<Pair<TimeScale, Duration>> forecast = this.getTimeScaleAndTimeStepForEachForecastProjectSource();
 
-        // No time scales: probably should not be tolerant of this
+        Set<Pair<TimeScale, Duration>> existingTimeScales = new HashSet<>( observed );
+        existingTimeScales.addAll( forecast );
+
+        // No time scales: warn about this
         if ( existingTimeScales.isEmpty() )
         {
-            throw new CalculationException( "Could not find the time-scale information for any ingested source." );
+            LOGGER.warn( "Could not find the time-scale information for any ingested source." );
         }
 
         return java.util.Collections.unmodifiableMap( existingTimeScales );
     }
     
+        return java.util.Collections.unmodifiableSet( existingTimeScales );
+    }
+
     /**
-     * Returns the time step and time scale information from a {@link DataScripter}.
-     * 
-     * @param scripter the script that provides the time step and time scale information
-     * @param source a helper to distinguish the source of the data for logging purposes
-     * @throws SQLException Thrown on failing to obtain the time scale or time step information from the database 
+     * Returns the {@link TimeScale} and time-step information for each forecast source associated with the project.
+     * The time-step is represented as a {@link Duration}.
+     *
+     * @return the time scale and time-step information for each source
+     * @throws SQLException Thrown on failing to obtain the time scale or time step information from the database
      */
 
-    private Map<TimeScale, Duration> consumeTimeScaleAndTimeStep( DataScripter scripter, String source )
-            throws SQLException
+    private Set<Pair<TimeScale, Duration>> getTimeScaleAndTimeStepForEachForecastProjectSource()
+            throws SQLException, CalculationException
     {
-        Map<TimeScale, Duration> existingTimeScales = new HashMap<>();
+        // Ask the wres.timeseries
+        DataScripter scripter = new DataScripter();
+        scripter.addLine( "SELECT DISTINCT TS.scale_period," );
+        scripter.addTab( 2 ).addLine( "TS.scale_function," );
+        scripter.addTab( 2 ).addLine( "TS.time_step" );
+        scripter.addLine( "FROM wres.timeseries TS " );
+        scripter.addTab( 1 ).addLine( "INNER JOIN wres.timeseriessource AS TSS" );
+        scripter.addTab( 2 ).addLine( "ON TS.timeseries_id = TSS.timeseries_id" );
+        scripter.addTab( 1 ).addLine( "INNER JOIN wres.projectsource PS" );
+        scripter.addTab( 2 ).addLine( "ON TSS.source_id = PS.source_id" );
+        scripter.addLine( "WHERE PS.project_id = " + this.getId() );
+
+        // Obtain the existing time scale and corresponding time step for each ingested source
+        return java.util.Collections.unmodifiableSet( this.getTimeScaleAndTimeStep( scripter,
+                                                                                    this.getProjectConfig()
+                                                                                        .getInputs()
+                                                                                        .getRight(),
+                                                                                    false ) );
+    }
+
+    /**
+     * Returns the {@link TimeScale} and time-step information for each observed source associated with the project.
+     * The time-step is represented as a {@link Duration}.
+     *
+     * @return the time scale and time-step information for each source
+     * @throws SQLException Thrown on failing to obtain the time scale or time step information from the database
+     */
+
+    private Set<Pair<TimeScale, Duration>> getTimeScaleAndTimeStepForEachObservedProjectSource()
+            throws SQLException, CalculationException
+    {
+        // Ask the wres.timeseries
+        DataScripter scripter = new DataScripter();
+        scripter.addLine( "SELECT DISTINCT O.scale_period," );
+        scripter.addTab( 2 ).addLine( "O.scale_function," );
+        scripter.addTab( 2 ).addLine( "O.time_step" );
+        scripter.addLine( "FROM wres.observation O " );
+        scripter.addTab( 1 ).addLine( "INNER JOIN wres.projectsource AS PS" );
+        scripter.addTab( 2 ).addLine( "ON O.source_id = PS.source_id" );
+        scripter.addTab( 1 ).addLine( "INNER JOIN wres.project P" );
+        scripter.addTab( 2 ).addLine( "ON PS.project_id = P.project_id" );
+        scripter.addLine( "WHERE PS.project_id = " + this.getId() );
+
+        // Obtain the existing time scale and corresponding time step for each ingested source
+        return java.util.Collections.unmodifiableSet( this.getTimeScaleAndTimeStep( scripter,
+                                                                                    this.getProjectConfig()
+                                                                                        .getInputs()
+                                                                                        .getLeft(),
+                                                                                    true ) );
+    }
+
+    /**
+     * <p>Returns the time step and time scale information from a {@link DataScripter}, which provides an interface to
+     * the data in the database, and a {@link DataSourceConfig}, which provides an interface to the declaration of
+     * the data in the project.
+     * 
+     * <p/>When attempting to find the time scale, the database is canonical, but the declaration can augment the
+     * database when the time scale information is missing for the data source. If they are both present and they
+     * disagree, an exception is thrown.
+     *
+     * <p>The time step information is not available within the project declaration. If this cannot be determined
+     * from the <code>time_step</code> attached to the time-series data, it is evaluated from the raw time-series
+     * data using {@link #getValueInterval(DataSourceConfig)}.
+     *
+     * TODO: consider either removing the <code>time_step</code> from the database or populating it consistently on
+     * ingest. See posts #58715-30 #58715-40 for more information.
+     *
+     * @param data the script that provides the time step and time scale information
+     * @param dataSourceConfig the data source configuration
+     * @param isLeftSource is true for a left source, false for a right source. Clarifies messaging
+     * @return the pairs of time scale and time step
+     * @throws SQLException Thrown on failing to obtain the time scale or time step information from the database
+     * @throws CalculationException if the time step could not be determined from the data
+     * @throws RescalingException if the time scale information associated with the data and the declaration disagree
+     * @throws NullPointerException if either input is null
+     */
+
+    private Set<Pair<TimeScale, Duration>>
+            getTimeScaleAndTimeStep( DataScripter data, DataSourceConfig dataSourceConfig, boolean isLeftSource )
+                    throws SQLException, CalculationException
+    {
+        Objects.requireNonNull( data );
+
+        Objects.requireNonNull( dataSourceConfig );
+
+        Set<Pair<TimeScale, Duration>> existingTimeScales = new HashSet<>();
+
+        final String sourceType = isLeftSource ? "left" : "right";
+
+        // Declared existing time scale to use when the source has no information
+        TimeScale declaredExistingTimeScale = null;
+
+        if ( Objects.nonNull( dataSourceConfig.getExistingTimeScale() ) )
+        {
+            declaredExistingTimeScale = TimeScale.of( dataSourceConfig.getExistingTimeScale() );
+        }
 
         // Consume each result from the wres.timeseries and create a time scale and a time-step for each
         try
         {
             AtomicBoolean warn = new AtomicBoolean();
+            final TimeScale finalDeclaredExistingTimeScale = declaredExistingTimeScale;
 
-            scripter.consume( scaleAndStepConsumer -> {
+            data.consume( scaleAndStepConsumer -> {
 
                 // Time scale and step information
                 Duration period = scaleAndStepConsumer.getDuration( "scale_period" );
                 String functionString = scaleAndStepConsumer.getString( "scale_function" );
                 Duration timeStep = scaleAndStepConsumer.getDuration( "time_step" );
 
+                // Default to the existingTimeScale in the declaration
+                if ( Objects.nonNull( finalDeclaredExistingTimeScale ) )
+                {
+                    if ( Objects.isNull( period ) )
+                    {
+                        period = finalDeclaredExistingTimeScale.getPeriod();
+                    }
+                    // Allow the declaration to augment the functionString
+                    if ( Objects.isNull( functionString ) )
+                    {
+                        functionString = finalDeclaredExistingTimeScale.getFunction().toString();
+                    }
+                    // Allow the declaration to override the function ONLY if it is 'UNKNOWN' and differs.
+                    else if ( functionString.equalsIgnoreCase( "UNKNOWN" )
+                              && !functionString.equalsIgnoreCase( finalDeclaredExistingTimeScale.getFunction()
+                                                                                                 .toString() ) )
+                    {
+                        functionString = finalDeclaredExistingTimeScale.getFunction().toString();
+                        LOGGER.warn( "The time scale function in the "
+                                     + sourceType
+                                     + " source is 'UNKNOWN' and the time scale function "
+                                     + "in the declaration is '"
+                                     + functionString
+                                     + "'. Using the declared function as representative of the source." );
+                    }
+                }
+
                 // Record or log as null
-                if ( Objects.nonNull( period ) && Objects.nonNull( functionString ) && Objects.nonNull( timeStep ) )
+                if ( Objects.nonNull( period ) && Objects.nonNull( functionString ) )
                 {
                     TimeScale.TimeScaleFunction function =
                             TimeScale.TimeScaleFunction.valueOf( functionString.toUpperCase() );
 
                     TimeScale timeScale = TimeScale.of( period, function );
 
+                    // Validate if declaration is present too
+                    if ( Objects.nonNull( finalDeclaredExistingTimeScale )
+                         && !finalDeclaredExistingTimeScale.equals( timeScale ) )
+                    {
+                        // Report the original time scale function in case the database said UNKNOWN and this was
+                        // augmented above
+                        TimeScale timeScaleToReport = timeScale;
+                        if ( "UNKNOWN".equalsIgnoreCase( scaleAndStepConsumer.getString( "scale_function" ) ) )
+                        {
+                            timeScaleToReport = TimeScale.of( period );
+                        }
+
+                        if ( timeScale.isInstantaneous() && finalDeclaredExistingTimeScale.isInstantaneous() )
+                        {
+                            LOGGER.warn( "The existing time scale information in the project declaration is "
+                                         + "inconsistent with the time scale information obtained from one or more "
+                                         + sourceType
+                                         + " sources, but both are recognized as \"instantaneous\" and, "
+                                         + "therefore, "
+                                         + "allowed. Source says: "
+                                         + timeScaleToReport
+                                         + ". Declaration says: "
+                                         + finalDeclaredExistingTimeScale );
+                        }
+                        else
+                        {
+                            throw new RescalingException( "The existing time scale information in the project "
+                                                          + "declaration is inconsistent with the time scale "
+                                                          + "information obtained from one or more "
+                                                          + sourceType
+                                                          + " sources. Source "
+                                                          + "says: "
+                                                          + timeScaleToReport
+                                                          + ". Declaration says: "
+                                                          + finalDeclaredExistingTimeScale );
+                        }
+                    }
+
                     // Store
-                    existingTimeScales.put( timeScale, timeStep );
+                    existingTimeScales.add( Pair.of( timeScale, timeStep ) );
                 }
                 else
                 {
@@ -611,25 +786,147 @@ public class Project
             // Warn when potentially important information is missing, but take a lenient approach
             if ( warn.get() )
             {
-                LOGGER.warn( "Could not retrieve valid time scale or time step information for one or more ingested "
-                             + "sources from the "
-                             + source
-                             + ". Assuming that the desired time scale is consistent with "
-                             + "the time scales of the existing sources for which information is missing." );
+                LOGGER.warn( "Could not determine valid time scale information for one or more {}"
+                             + " sources. Assuming that the desired time scale is consistent with the time scales "
+                             + "of the existing sources for which information is missing.",
+                             sourceType );
             }
+
         }
         // Decorate and propagate
         catch ( SQLException e )
         {
             throw new SQLException( "While attempting to retrieve the "
                                     + "time scale and time step information "
-                                    + "for one or more ingested sources from the "
-                                    + source
-                                    + ":",
+                                    + "for one or more "
+                                    + sourceType
+                                    + " sources:",
                                     e );
         }
 
-        return java.util.Collections.unmodifiableMap( existingTimeScales );
+        return finalizeExistingTimeScalesForSources( dataSourceConfig,
+                                                     java.util.Collections.unmodifiableSet( existingTimeScales ),
+                                                     isLeftSource );
+    }
+
+    /**
+     * <p>Finalizes a map of existing time scales for ingested sources. Each <code>null</code> entry indicates a source
+     * without a time-step and this is replaced with the global time-step from
+     * {@link #getValueInterval(DataSourceConfig)}. If the map is empty, i.e. no sources have any time scale
+     * information, and the declaration contains an <code>existingTimeScale</code>, that is added.
+     *
+     * <p>TODO: the {@link #getValueInterval(DataSourceConfig)} currently returns only one time-step for the first
+     * available feature. This method will need to be updated to obtain the time-steps for all features. However, if
+     * it does so without returning the time scale information too, then this method will need to add every possible
+     * combination of time-step and time scale for each time scale with a <code>null</code> entry. This is overkill,
+     * but may be preferable to a more complex implementation of {@link #getValueInterval(DataSourceConfig)} that
+     * seeks to retain the pairing with the time scale too, especially since the overhead with checking the different
+     * combinations of scale and step should be small. The debug log messages should then be updated too. See #58715-71.
+     *
+     * @param dataSourceConfig the declared data source
+     * @param existingScalesAndSteps the map of existing time scales to augment
+     * @param isLeftSource is true for a left source, false for a right source. Clarifies messaging
+     * @return the finalized pairs of time scale and time step for each source
+     * @throws CalculationException if the global time-step is required and cannot be determined
+     */
+
+    private Set<Pair<TimeScale, Duration>> finalizeExistingTimeScalesForSources( DataSourceConfig dataSourceConfig,
+                                                                                 Set<Pair<TimeScale, Duration>> existingScalesAndSteps,
+                                                                                 boolean isLeftSource )
+            throws CalculationException
+    {
+        Set<Pair<TimeScale, Duration>> mutableCopy = new HashSet<>();
+
+        final String sourceType = isLeftSource ? "left" : "right";
+
+        // Declared existing time scale to use when the source has no information
+        TimeScale declaredExistingTimeScale = null;
+
+        if ( Objects.nonNull( dataSourceConfig.getExistingTimeScale() ) )
+        {
+            declaredExistingTimeScale = TimeScale.of( dataSourceConfig.getExistingTimeScale() );
+        }
+
+        // If the time-step information was missing, analyze the raw data instead
+        // TODO: as noted in the method description, the getValueInterval will need to account
+        // for time-steps that vary across locations, at which point this will need to be updated to include
+        // every possible pair of time-scale and time-step for each pair with a null time-step
+        Duration globalTimeStepToReUse = null;
+        boolean warn = false;
+        for ( Pair<TimeScale, Duration> nextScaleAndStep : existingScalesAndSteps )
+        {
+            if ( Objects.isNull( nextScaleAndStep.getRight() ) )
+            {
+                // Compute the global time-step only where required
+                if ( Objects.isNull( globalTimeStepToReUse ) )
+                {
+                    globalTimeStepToReUse = this.getValueIntervalWithLocking( dataSourceConfig, isLeftSource );
+                }
+
+                warn = true;
+                mutableCopy.add( Pair.of( nextScaleAndStep.getLeft(), globalTimeStepToReUse ) );
+            }
+            else
+            {
+                mutableCopy.add( nextScaleAndStep );
+            }
+        }
+
+        // In some cases, the global time-step was used because there was no time_step associated with the source
+        if ( warn )
+        {
+            LOGGER.debug( "The time_step was missing for one or more {} sources in the database. "
+                          + "Using an analyzed time-step instead, which is not source-specific.",
+                          sourceType );
+        }
+
+        // If no scale information was recorded in the database, i.e. nothing returned to consume, then add
+        // the existing time scale as a minimum, where provided
+        if ( mutableCopy.isEmpty() && Objects.nonNull( declaredExistingTimeScale ) )
+        {
+            if ( Objects.isNull( globalTimeStepToReUse ) )
+            {
+                globalTimeStepToReUse = this.getValueIntervalWithLocking( dataSourceConfig, isLeftSource );
+            }
+
+            LOGGER.debug( "The time_step was missing for all {} sources in the database. "
+                          + "Using an analyzed time-step instead, which is not source-specific.",
+                          sourceType );
+
+            mutableCopy.add( Pair.of( declaredExistingTimeScale, globalTimeStepToReUse ) );
+        }
+
+        return java.util.Collections.unmodifiableSet( mutableCopy );
+    }
+
+    /**
+     * Wraps the {@link {@link #getValueInterval(DataSourceConfig)}} and performs locking because this method involves
+     * mutation. TODO: it would be cleaner if the helper itself handled the locking.
+     *
+     * @return the global time-step
+     * @throws CalculationException if the global time-step could not be calculated
+     * @throws NullPointerException if the dataSourceConfig is null
+     */
+
+    private Duration getValueIntervalWithLocking( DataSourceConfig dataSourceConfig, boolean isLeftSource )
+            throws CalculationException
+    {
+        Objects.requireNonNull( dataSourceConfig );
+
+        if ( isLeftSource )
+        {
+            synchronized ( LEFT_LEAD_LOCK )
+            {
+                return this.getValueInterval( dataSourceConfig );
+            }
+        }
+        else
+        {
+            synchronized ( RIGHT_LEAD_LOCK )
+            {
+                return this.getValueInterval( dataSourceConfig );
+            }
+        }
     }
     
     /**

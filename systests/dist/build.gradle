@@ -42,7 +42,6 @@ compileTestJava.dependsOn( unzipArtifactToTest )
 
 dependencies
 {
-    testCompile 'org.slf4j:slf4j-api:1.8.0-beta2'
     testCompile 'commons-io:commons-io:2.6'
     testCompile 'com.google.guava:guava-testlib:21.0'
     testCompile 'com.google.guava:guava:22.0'
@@ -52,9 +51,41 @@ dependencies
     // Expose all wres contents here, using unzipArtifactToTest task.
     // Use of fileTree is important, lazily evaluated, meaning that the contents
     // from the unzipArtifactToTest task will be here by now
-    compile fileTree( unzipArtifactToTest.destinationDir )
+    testCompile fileTree( dir: "${unzipArtifactToTest.destinationDir}/wres-${versionToTest}",
+                          include: '**/*.jar' )
+
+    // Add the lib/conf directory to testRuntime classpath like actual WRES does
+    testRuntime files( "${unzipArtifactToTest.destinationDir}/wres-${versionToTest}/lib/conf" )
 
     println( "buildDir: ${buildDir}" )
     println( "versionToTest: ${versionToTest}" )
     println( "unzipArtifactToTest.destinationDir: " + unzipArtifactToTest.destinationDir )
+}
+
+test
+{
+    // Jump through some hoops to allow caller to set test JVM system properties
+    // in one variable, like this:
+    // -PtestJvmSystemProperties="-Dwres.useSSL=false -Dwres.blah=true"
+    // or like this:
+    // -PtestJvmSystemProperties="wres.useSSL=false wres.blah=true"
+
+    def testJvmPropertiesRaw = project.properties['testJvmSystemProperties']
+    def splittedTestJvmProperties = testJvmPropertiesRaw.trim().split( " " )
+    println( "Test JVM System Properties split: ${splittedTestJvmProperties}" )
+    def furtherSplittedTestJvmProperties = [:]
+
+    // Without the findall, a seemingly empty array still evaluates the "each"
+    splittedTestJvmProperties.findAll().each{ s ->
+        def noDashD = s
+        if ( s.startsWith( "-D" ) )
+        {
+            noDashD = s.substring( 2 )
+        }
+        def pair = noDashD.split( "=" )
+        furtherSplittedTestJvmProperties[pair[0]] = pair[1]
+    }
+
+    println( "Test JVM System Properties: ${furtherSplittedTestJvmProperties}" )
+    systemProperties = furtherSplittedTestJvmProperties
 }
