@@ -29,7 +29,7 @@ import wres.io.utilities.DataProvider;
 import wres.util.TimeHelper;
 
 @RunWith(PowerMockRunner.class)
-@PowerMockIgnore("javax.management.*")
+@PowerMockIgnore( { "javax.management.*", "javax.xml.*", "com.sun.*", "ch.qos.*", "org.slf4j.*" } )
 public class PivottedValuesTest
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( PivottedValues.class );

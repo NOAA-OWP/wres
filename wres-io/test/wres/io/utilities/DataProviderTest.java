@@ -29,7 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @RunWith(PowerMockRunner.class)
-@PowerMockIgnore("javax.management.*") // thanks https://stackoverflow.com/questions/16520699/mockito-powermock-linkageerror-while-mocking-system-class#21268013
+@PowerMockIgnore( { "javax.management.*", "javax.xml.*", "com.sun.*", "ch.qos.*", "org.slf4j.*" } ) // thanks https://stackoverflow.com/questions/16520699/mockito-powermock-linkageerror-while-mocking-system-class#21268013
 public class DataProviderTest
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( DataProviderTest.class);

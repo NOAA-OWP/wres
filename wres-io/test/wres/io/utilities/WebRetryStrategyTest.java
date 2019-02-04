@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 import wres.util.functional.ExceptionalFunction;
 
 @RunWith(PowerMockRunner.class)
-@PowerMockIgnore("javax.management.*") // thanks https://stackoverflow.com/questions/16520699/mockito-powermock-linkageerror-while-mocking-system-class#21268013
+@PowerMockIgnore( { "javax.management.*", "javax.xml.*", "com.sun.*", "ch.qos.*", "org.slf4j.*" } ) // thanks https://stackoverflow.com/questions/16520699/mockito-powermock-linkageerror-while-mocking-system-class#21268013
 public class WebRetryStrategyTest
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( WebRetryStrategyTest.class);

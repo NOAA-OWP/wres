@@ -51,7 +51,8 @@ import wres.io.utilities.DatabaseConnectionSupplier;
 @RunWith( PowerMockRunner.class )
 @PrepareForTest( { DataSources.class, Ensembles.class, MeasurementUnits.class,
                          Database.class, Variables.class, Features.class } )
-@PowerMockIgnore( "javax.management.*")
+// See https://github.com/powermock/powermock/issues/864
+@PowerMockIgnore( {"javax.management.*", "com.sun.org.apache.xerces.*", "javax.xml.*", "org.xml.*"} )
 public class WRDSSourceTest
 {
     private static ClientAndServer mockServer;
