@@ -108,7 +108,6 @@ public final class NetCDF {
         /**
          * Create an instance with the default buffer size
          * @param variable The variable to iterate over
-         * @param <T> The type of value to get back from the iterator
          * @return A new VectorVariableIterator instance
          */
         public static VectorVariableIterator from(final Variable variable)
@@ -120,7 +119,6 @@ public final class NetCDF {
          * Create an instance
          * @param variable The variable to iterate over
          * @param bufferSize The number of values to load at a time when iterating
-         * @param <T> The type of value to get back from the iterator
          * @return A new VectorVariableIterator instance
          */
         public static VectorVariableIterator from(final Variable variable, final int bufferSize)
