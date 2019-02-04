@@ -2,6 +2,8 @@ package wres.system;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.SQLException;
 import javax.xml.stream.XMLStreamConstants;
@@ -58,6 +60,7 @@ public final class SystemSettings extends XMLReader
 	private String netcdfStorePath = "systests/data/";
 	private Integer maximumArchiveThreads = null;
 	private int maximumWebClientThreads = 3;
+	private Path dataDirectory = Paths.get( System.getProperty( "user.dir" ) );
 
 	/**
 	 * The Default constructor
@@ -145,6 +148,8 @@ public final class SystemSettings extends XMLReader
                     case "hard_netcdf_cache_limit":
                         this.setHardNetcdfCacheLimit( reader );
                         break;
+                    case "data_directory":
+                        this.setDataDirectory( reader );
                     default:
                         LOGGER.debug( "The tag '{}' was skipped because it's "
                                       + "not used in configuration.", tagName );
@@ -308,6 +313,17 @@ public final class SystemSettings extends XMLReader
         }
     }
 
+    private void setDataDirectory( XMLStreamReader reader )
+            throws XMLStreamException
+    {
+        String dir = XMLHelper.getXMLText( reader );
+
+        if ( dir != null && !dir.isEmpty() && Strings.isValidPathFormat( dir ) )
+        {
+            this.dataDirectory = Paths.get( dir );
+        }
+    }
+
     /**
      * @return The path where the system should store NetCDF files internally
      */
@@ -413,6 +429,15 @@ public final class SystemSettings extends XMLReader
     public static int getMaximumCachedNetcdf()
     {
         return instance.maximumCachedNetcdf;
+    }
+
+    /**
+     * @return The (file) source directory prefix to use when loading source
+     * files that are not absolute
+     */
+    public static Path getDataDirectory()
+    {
+        return instance.dataDirectory;
     }
 
 	/**
@@ -559,6 +584,21 @@ public final class SystemSettings extends XMLReader
         if (storePath != null)
         {
             this.netcdfStorePath = storePath;
+        }
+
+        String directory = System.getProperty( "wres.dataDirectory" );
+
+        if ( directory != null && !directory.isEmpty() )
+        {
+             if ( Strings.isValidPathFormat( directory ) )
+             {
+                 this.dataDirectory = Paths.get( directory );
+             }
+             else
+             {
+                 LOGGER.warn( "'{}' is not a valid path for wres.dataDirectory. Falling back to {}",
+                              directory, this.dataDirectory );
+             }
         }
     }
 

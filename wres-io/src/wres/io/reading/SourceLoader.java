@@ -102,7 +102,23 @@ public class SourceLoader
             }
 
             // Because above did not short-circuit, local file system is assumed
-            Path sourcePath = Paths.get( source.getValue().getPath() );
+            Path rawSourcePath = Paths.get( source.getValue().getPath() );
+
+            LOGGER.debug( "Found source path {} from source {}",
+                          rawSourcePath,
+                          source.getValue() );
+
+            // In the straightforward case, use the source path found.
+            Path sourcePath = rawSourcePath;
+
+            // Construct a path using the SystemSetting wres.dataDirectory when
+            // the specified source is not absolute.
+            if ( !rawSourcePath.isAbsolute() )
+            {
+                sourcePath = SystemSettings.getDataDirectory()
+                                           .resolve( rawSourcePath );
+            }
+
             File sourceFile = sourcePath.toFile();
 
             if ( !sourceFile.exists() )
