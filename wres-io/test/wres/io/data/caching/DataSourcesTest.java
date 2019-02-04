@@ -31,7 +31,7 @@ import wres.system.SystemSettings;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({SystemSettings.class, Database.class})
-@PowerMockIgnore("javax.management.*") // thanks https://stackoverflow.com/questions/16520699/mockito-powermock-linkageerror-while-mocking-system-class#21268013
+@PowerMockIgnore( {"javax.management.*", "java.io.*", "javax.xml.*", "com.sun.*", "org.xml.*" } ) // thanks https://stackoverflow.com/questions/16520699/mockito-powermock-linkageerror-while-mocking-system-class#21268013
 public class DataSourcesTest
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(DataSourcesTest.class);

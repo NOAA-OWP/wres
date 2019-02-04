@@ -71,6 +71,11 @@
         <level value="error" />
     </logger>
 
+    <!-- Quiet liquibase with level "warn" or "error" -->
+    <logger name="liquibase">
+        <level value="warn" />
+    </logger>
+
     <!-- Allow -Dwres.logLevel to set logging level, otherwise info. -->
     <root level="${wres.logLevel:-info}">
         <appender-ref ref="STDOUT" />

@@ -1,0 +1,49 @@
+<configuration>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+          <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSSZ} %X{pid} [%thread] %level %logger - %msg%n%exception{full}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Quiet the connection pooling library with level "warn" or "error" -->
+    <logger name="com.mchange.v2">
+        <level value="warn" />
+    </logger>
+
+    <!-- Quiet the cdm hdf5 library until it is quieter by default -->
+    <logger name="ucar.nc2.iosp.hdf5">
+      <level value="error" />
+    </logger>
+
+    <!-- Quiet the logger used for ucar.nc2.util.cache; it will spit out a
+    warning for every acquire/release above the configured limit, resulting in
+    thousands of unneccessary messages -->
+    <logger name="cacheLogger">
+        <level value="error" />
+    </logger>
+
+    <!-- Quiet the remote Netcdf messages where bytes will be dumped to the log -->
+    <logger name="org.apache.http">
+        <level value="error" />
+    </logger>
+
+    <!-- Quiet liquibase with level "warn" or "error" -->
+    <logger name="liquibase">
+        <level value="warn" />
+    </logger>
+
+    <!-- To quiet mock server it seems we must set level on specific class. -->
+    <logger name="org.mockserver.mock.HttpStateHandler">
+        <level value="warn" />
+    </logger>
+
+    <!-- Quiet test database server with level "warn" or "error" -->
+    <logger name="ru.yandex.qatools">
+        <level value="warn" />
+    </logger>
+
+    <!-- Allow -Dwres.logLevel to set logging level, otherwise info. -->
+    <root level="${wres.logLevel:-info}">
+        <appender-ref ref="STDOUT" />
+    </root>
+</configuration>
