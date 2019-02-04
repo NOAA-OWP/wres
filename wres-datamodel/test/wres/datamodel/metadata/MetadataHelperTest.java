@@ -1,6 +1,8 @@
 package wres.datamodel.metadata;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -127,13 +129,48 @@ public final class MetadataHelperTest
     }
 
     /**
+     * Tests the {@link MetadataHelper#isChangeOfScaleRequired(TimeScale, TimeScale)}.
+     */
+
+    @Test
+    public void testIsChangeOfScaleRequired()
+    {
+        // Different periods: true
+        assertTrue( MetadataHelper.isChangeOfScaleRequired( TimeScale.of( Duration.ofHours( 1 ) ),
+                                                            TimeScale.of( Duration.ofHours( 2 ) ) ) );
+
+        // Different periods: true
+        assertTrue( MetadataHelper.isChangeOfScaleRequired( TimeScale.of( Duration.ofHours( 1 ),
+                                                                          TimeScaleFunction.UNKNOWN ),
+                                                            TimeScale.of( Duration.ofHours( 2 ),
+                                                                          TimeScaleFunction.MEAN ) ) );
+        
+        // Different functions: true
+        assertTrue( MetadataHelper.isChangeOfScaleRequired( TimeScale.of( Duration.ofHours( 1 ),
+                                                                          TimeScaleFunction.MEAN ),
+                                                            TimeScale.of( Duration.ofHours( 1 ),
+                                                                          TimeScaleFunction.TOTAL ) ) );
+
+        // Different functions, but left function is UNKNOWN: false 
+        assertFalse( MetadataHelper.isChangeOfScaleRequired( TimeScale.of( Duration.ofHours( 1 ),
+                                                                           TimeScaleFunction.UNKNOWN ),
+                                                             TimeScale.of( Duration.ofHours( 1 ),
+                                                                           TimeScaleFunction.TOTAL ) ) );
+
+        // Both instantaneous: false
+        assertFalse( MetadataHelper.isChangeOfScaleRequired( TimeScale.of( Duration.ofMillis( 1 ) ),
+                                                             TimeScale.of( Duration.ofSeconds( 1 ) ) ) );
+
+    }
+    
+    /**
      * Checks for an expected exception when calling 
      * {@link MetadataHelper#throwExceptionIfChangeOfScaleIsInvalid(TimeScale, TimeScale, java.time.Duration)} with
      * an existing time scale that is null.
      */
 
     @Test
-    public void throwExceptionIfExistingTimeScaleIsNull()
+    public void testThrowExceptionIfExistingTimeScaleIsNull()
     {
         exception.expect( NullPointerException.class );
         exception.expectMessage( "The existing time scale cannot be null." );
@@ -148,7 +185,7 @@ public final class MetadataHelperTest
      */
 
     @Test
-    public void throwExceptionIfDesiredTimeScaleIsNull()
+    public void testThrowExceptionIfDesiredTimeScaleIsNull()
     {
         exception.expect( NullPointerException.class );
         exception.expectMessage( "The desired time scale cannot be null." );
@@ -163,7 +200,7 @@ public final class MetadataHelperTest
      */
 
     @Test
-    public void throwExceptionIfTimeStepIsNull()
+    public void testThrowExceptionIfTimeStepIsNull()
     {
         exception.expect( NullPointerException.class );
         exception.expectMessage( "The time-step duration cannot be null." );
@@ -180,7 +217,7 @@ public final class MetadataHelperTest
      */
 
     @Test
-    public void throwExceptionIfTimeStepIsZero()
+    public void testThrowExceptionIfTimeStepIsZero()
     {
         exception.expect( RescalingException.class );
         exception.expectMessage( "The time-step duration cannot be zero for rescaling purposes." );
@@ -197,7 +234,7 @@ public final class MetadataHelperTest
      */
 
     @Test
-    public void throwExceptionIfTimeStepIsNegative()
+    public void testThrowExceptionIfTimeStepIsNegative()
     {
         exception.expect( RescalingException.class );
         exception.expectMessage( "The time-step duration cannot be negative for rescaling purposes." );
@@ -214,7 +251,7 @@ public final class MetadataHelperTest
      */
 
     @Test
-    public void throwExceptionIfDownscalingRequested()
+    public void testThrowExceptionIfDownscalingRequested()
     {
         exception.expect( RescalingException.class );
         exception.expectMessage( "Downscaling is not supported: the desired time scale cannot be smaller than "
@@ -234,7 +271,7 @@ public final class MetadataHelperTest
      */
 
     @Test( expected = Test.None.class /* no exception expected */ )
-    public void doNotThrowExceptionIfDesiredPeriodCommutesFromExistingPeriod()
+    public void testDoNotThrowExceptionIfDesiredPeriodCommutesFromExistingPeriod()
     {
         MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( TimeScale.of( Duration.ofSeconds( 1 ),
                                                                              TimeScaleFunction.MEAN ),
@@ -250,7 +287,7 @@ public final class MetadataHelperTest
      * scale.
      */
 
-    public void throwExceptionIfDesiredPeriodDoesNotCommuteFromExistingPeriod()
+    public void testThrowExceptionIfDesiredPeriodDoesNotCommuteFromExistingPeriod()
     {
         exception.expect( RescalingException.class );
         exception.expectMessage( "The desired period must be an integer multiple of the existing period." );
@@ -269,7 +306,7 @@ public final class MetadataHelperTest
      */
 
     @Test
-    public void throwExceptionIfPeriodsMatchAndFunctionsDiffer()
+    public void testThrowExceptionIfPeriodsMatchAndFunctionsDiffer()
     {
         exception.expect( RescalingException.class );
         exception.expectMessage( "The periods associated with the existing and desired time scales are the same, "
@@ -291,7 +328,7 @@ public final class MetadataHelperTest
      */
 
     @Test
-    public void throwExceptionIfAccumulatingNonAccumulations()
+    public void testThrowExceptionIfAccumulatingNonAccumulations()
     {
         exception.expect( RescalingException.class );
         exception.expectMessage( "Cannot accumulate values that are not already accumulations. The "
@@ -315,7 +352,7 @@ public final class MetadataHelperTest
      */
 
     @Test
-    public void throwExceptionIfDataTimeStepExceedsDesiredPeriod()
+    public void testThrowExceptionIfDataTimeStepExceedsDesiredPeriod()
     {
         exception.expect( RescalingException.class );
         exception.expectMessage( "Insufficient data for rescaling: the time-step of the data cannot be "
@@ -335,7 +372,7 @@ public final class MetadataHelperTest
      */
 
     @Test
-    public void throwExceptionIfDataTimeStepMatchesDesiredPeriodAndRescalingIsRequired()
+    public void testThrowExceptionIfDataTimeStepMatchesDesiredPeriodAndRescalingIsRequired()
     {
         exception.expect( RescalingException.class );
         exception.expectMessage( "Insufficient data for rescaling: the period associated with the desired "
@@ -355,7 +392,7 @@ public final class MetadataHelperTest
      */
 
     @Test
-    public void throwExceptionIfDesiredPeriodDoesNotCommuteFromDataTimeStep()
+    public void testThrowExceptionIfDesiredPeriodDoesNotCommuteFromDataTimeStep()
     {
         exception.expect( RescalingException.class );
         exception.expectMessage( "The desired period must be an integer multiple of the data time-step." );
@@ -374,12 +411,12 @@ public final class MetadataHelperTest
      * a desired time scale whose function is unknown.
      */
     @Test
-    public void throwExceptionIfDesiredFunctionIsUnknown()
+    public void testThrowExceptionIfDesiredFunctionIsUnknown()
     {
         exception.expect( RescalingException.class );
         exception.expectMessage( "The desired time scale function is '" + TimeScaleFunction.UNKNOWN
                                  + "': the "
-                                 + "function must be a known function." );
+                                 + "function must be known to conduct rescaling." );
 
         MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( TimeScale.of( Duration.ofHours( 60 ) ),
                                                                TimeScale.of( Duration.ofHours( 120 ) ),
@@ -394,7 +431,7 @@ public final class MetadataHelperTest
      */
 
     @Test
-    public void throwExceptionWhenForming6HAccumulationFrom6HInst()
+    public void testThrowExceptionWhenForming6HAccumulationFrom6HInst()
     {
         exception.expect( RescalingException.class );
         exception.expectMessage( "Cannot accumulate values that are not already accumulations. The function associated "
@@ -416,7 +453,7 @@ public final class MetadataHelperTest
      */
 
     @Test
-    public void throwExceptionWhenForming1HMeanFrom1HInst()
+    public void testThrowExceptionWhenForming1HMeanFrom1HInst()
     {
         exception.expect( RescalingException.class );
         exception.expectMessage( "Insufficient data for rescaling: the period associated with the desired time "
@@ -436,7 +473,7 @@ public final class MetadataHelperTest
      */
 
     @Test( expected = Test.None.class )
-    public void doNotThrowExceptionWhenNoRescalingRequested()
+    public void testDoNotThrowExceptionWhenNoRescalingRequested()
     {
         MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( TimeScale.of( Duration.ofSeconds( 120 ),
                                                                              TimeScaleFunction.MEAN ),

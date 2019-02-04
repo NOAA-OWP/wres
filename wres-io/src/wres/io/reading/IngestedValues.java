@@ -6,6 +6,7 @@ import java.time.Duration;
 import java.time.temporal.TemporalAccessor;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
@@ -16,7 +17,6 @@ import org.slf4j.LoggerFactory;
 
 import wres.datamodel.metadata.TimeScale;
 import wres.io.data.details.TimeSeries;
-import wres.io.reading.nwm.NWMSource;
 import wres.io.utilities.DataBuilder;
 import wres.io.utilities.Database;
 import wres.system.SystemSettings;
@@ -62,13 +62,25 @@ public final class IngestedValues
             "scale_function"
     );
 
+    /**
+     * Add an observation with possibly missing time scale information.
+     *
+     * @param variableFeatureID the variableFeature identifier
+     * @param observationTime the observation time
+     * @param observedValue the observed value
+     * @param measurementUnitID the measurement unit identifier
+     * @param sourceID the source identifier
+     * @param scalePeriod the optional period associated with the time scale (may be null)
+     * @param scaleFunction the optional function associated with the time scale (may be null)
+     */
+
     static void addObservation(
             final int variableFeatureID,
             final TemporalAccessor observationTime,
             final Double observedValue,
             final int measurementUnitID,
             final int sourceID,
-            final int scalePeriod,
+            final Duration scalePeriod,
             final TimeScale.TimeScaleFunction scaleFunction)
     {
         synchronized ( OBSERVATIONS_LOCK )
@@ -83,9 +95,19 @@ public final class IngestedValues
             IngestedValues.OBSERVATIONS.set("scale_period", scalePeriod);
             IngestedValues.OBSERVATIONS.set("scale_function", scaleFunction);
 
+            // Only apply the time scale information where defined
+            // See #59536
+            if ( Objects.nonNull( scalePeriod ) )
+            {
+                int scalePeriodAsInt = (int) TimeHelper.durationToLongUnits( scalePeriod, TimeHelper.LEAD_RESOLUTION );
+                IngestedValues.OBSERVATIONS.set( "scale_period", scalePeriodAsInt );
+            }
+
+            IngestedValues.OBSERVATIONS.set( "scale_function", scaleFunction );
+
             if (IngestedValues.OBSERVATIONS.getRowCount() > SystemSettings.getMaximumCopies())
             {
-                Future copy = IngestedValues.OBSERVATIONS.build().copy( "wres.Observation", true );
+                Future<?> copy = IngestedValues.OBSERVATIONS.build().copy( "wres.Observation", true );
                 Database.storeIngestTask(copy);
             }
         }
@@ -234,7 +256,7 @@ public final class IngestedValues
                     this.value,
                     this.measurementUnitId,
                     this.sourceId,
-                    (int)TimeHelper.durationToLongUnits( this.scalePeriod, TimeHelper.LEAD_RESOLUTION ),
+                    this.scalePeriod,
                     this.scaleFunction
             );
         }
@@ -244,7 +266,7 @@ public final class IngestedValues
         private Double value;
         private Integer measurementUnitId;
         private Integer sourceId;
-        private Duration scalePeriod = Duration.of( 1, TimeHelper.LEAD_RESOLUTION);
-        private TimeScale.TimeScaleFunction scaleFunction = TimeScale.TimeScaleFunction.UNKNOWN;
+        private Duration scalePeriod;
+        private TimeScale.TimeScaleFunction scaleFunction;
     }
 }
