@@ -550,32 +550,45 @@ public class Project
     private Set<Pair<TimeScale, Duration>> getTimeScaleAndTimeStepForEachProjectSource()
             throws SQLException, CalculationException
     {
-        // Obtain the existing time scale and corresponding time step for each ingested source
-        Map<TimeScale, Duration> observed = this.consumeTimeScaleAndTimeStep(
-                ProjectScriptGenerator.createObservedTimeScaleStepRetrieval(this),
-                "wres.Observation"
-        );
-        Map<TimeScale, Duration> forecast = this.consumeTimeScaleAndTimeStep(
-                ProjectScriptGenerator.createForecastTimeScaleStepRetrieval(this),
-                "wres.TimeSeries"
-        );
-        
-        Map<TimeScale, Duration> existingTimeScales = new HashMap<>( observed );
-        existingTimeScales.putAll( forecast );      
-        Set<Pair<TimeScale, Duration>> observed = this.getTimeScaleAndTimeStepForEachObservedProjectSource();
-        Set<Pair<TimeScale, Duration>> forecast = this.getTimeScaleAndTimeStepForEachForecastProjectSource();
+        Set<Pair<TimeScale,Duration>> existingTimeScales = new HashSet<>(  );
 
-        Set<Pair<TimeScale, Duration>> existingTimeScales = new HashSet<>( observed );
-        existingTimeScales.addAll( forecast );
+        if (this.usesGriddedData( this.getLeft() ) || this.usesGriddedData( this.getRight() ))
+        {
+            existingTimeScales.addAll(
+                    this.getTimeScaleAndTimeStep(
+                            ProjectScriptGenerator.createGriddedTimeRetriever( this, this.getLeft() ),
+                            this.getLeft(),
+                            true
+                    )
+            );
+            existingTimeScales.addAll(
+                    this.getTimeScaleAndTimeStep(
+                            ProjectScriptGenerator.createGriddedTimeRetriever( this, this.getRight() ),
+                            this.getRight(),
+                            false
+                    )
+            );
+        }
+        else
+        {
+            // Obtain the existing time scale and corresponding time step for each ingested source
+            existingTimeScales.addAll( this.getTimeScaleAndTimeStep(
+                    ProjectScriptGenerator.createObservedTimeScaleStepRetrieval( this ),
+                    this.getLeft(),
+                    true
+            ));
+            existingTimeScales.addAll(this.getTimeScaleAndTimeStep(
+                    ProjectScriptGenerator.createForecastTimeScaleStepRetrieval( this ),
+                    this.getRight(),
+                    false
+            ));
+        }
 
         // No time scales: warn about this
         if ( existingTimeScales.isEmpty() )
         {
             LOGGER.warn( "Could not find the time-scale information for any ingested source." );
         }
-
-        return java.util.Collections.unmodifiableMap( existingTimeScales );
-    }
     
         return java.util.Collections.unmodifiableSet( existingTimeScales );
     }

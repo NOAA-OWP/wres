@@ -12,6 +12,7 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
 import wres.config.generated.Polygon;
 import wres.io.config.ConfigHelper;
+import wres.io.config.LeftOrRightOrBaseline;
 import wres.io.data.caching.Variables;
 import wres.io.data.details.FeatureDetails;
 import wres.io.utilities.DataScripter;
@@ -1028,6 +1029,61 @@ final class ProjectScriptGenerator
         scripter.addTab().addLine("AND D.timeseries_id = D.previous_timeseries_id");
         scripter.add("GROUP BY D.difference, D.scale_period, D.scale_function;");
         
+        return scripter;
+    }
+
+    static DataScripter createGriddedTimeRetriever(final Project project, final DataSourceConfig dataSourceConfig)
+    {
+        DataScripter scripter = new DataScripter(  );
+
+        LeftOrRightOrBaseline side = ConfigHelper.getLeftOrRightOrBaseline( project.getProjectConfig(), dataSourceConfig );
+
+        if (ConfigHelper.isForecast( dataSourceConfig ))
+        {
+            scripter.addLine("SELECT D.difference AS time_step,");
+            scripter.addTab().addLine("1 AS scale_period, -- We don't currently store gridded scaling information");
+            scripter.addTab().addLine("'UNKNOWN' AS scale_function");
+            scripter.addLine("FROM (");
+            scripter.addTab().addLine("SELECT lead - lag(lead) OVER (ORDER BY output_time, lead) AS difference,");
+            scripter.addTab(  2  ).addLine("output_time,");
+            scripter.addTab(  2  ).addLine("lag(output_time) OVER (ORDER BY output_time, lead) AS previous_output_time");
+            scripter.addTab().addLine("FROM wres.Source S");
+            scripter.addTab().addLine("WHERE EXISTS (");
+            scripter.addTab(  2  ).addLine("SELECT 1");
+            scripter.addTab(  2  ).addLine("FROM wres.ProjectSource PS");
+            scripter.addTab(  2  ).addLine("WHERE PS.project_id = ", project.getId());
+            scripter.addTab(   3   ).addLine("AND PS.member = '", String.valueOf(side).toLowerCase(), "'");
+            scripter.addTab(   3   ).addLine("AND PS.source_id = S.source_id");
+            scripter.addTab().addLine(")");
+            scripter.addTab(  2  ).addLine("AND NOT is_point_data");
+            scripter.addLine(") AS D");
+            scripter.addLine("WHERE D.output_time = D.previous_output_time");
+            scripter.add("GROUP BY D.difference;");
+        }
+        else
+        {
+            scripter.addLine("SELECT EXTRACT(epoch FROM AGE(D.valid_time, D.previous_valid_time)) / 60 AS time_step,");
+            scripter.addTab().addLine("1 AS scale_period, -- We don't currently store gridded scaling information");
+            scripter.addTab().addLine("'UNKNOWN' AS scale_function");
+            scripter.addLine("FROM (");
+            scripter.addTab().addLine("SELECT S.output_time + INTERVAL '1 MINUTE' * S.lead AS valid_time,");
+            scripter.addTab(  2  ).addLine("lag(output_time) OVER (ORDER BY output_time, lead) + ");
+            scripter.addTab(    3   ).addLine("INTERVAL '1 MINUTE' * lag(lead) OVER (ORDER BY OUTPUT_TIME, lead)");
+            scripter.addTab(     4    ).addLine("AS previous_valid_time");
+            scripter.addTab().addLine("FROM wres.Source S");
+            scripter.addTab().addLine("WHERE EXISTS (");
+            scripter.addTab(  2  ).addLine("SELECT 1");
+            scripter.addTab(  2  ).addLine("FROM wres.ProjectSource PS");
+            scripter.addTab(  2  ).addLine("WHERE PS.project_id = ", project.getId());
+            scripter.addTab(   3   ).addLine("AND PS.member = '", String.valueOf(side).toLowerCase(), "'" );
+            scripter.addTab(   3   ).addLine("AND PS.source_id = S.source_id");
+            scripter.addTab().addLine(")");
+            scripter.addTab(  2  ).addLine("AND NOT is_point_data");
+            scripter.addLine(") AS D");
+            scripter.addLine("WHERE D.previous_valid_time IS NOT NULL");
+            scripter.add("GROUP BY AGE(D.valid_time, D.previous_valid_time);");
+        }
+
         return scripter;
     }
 
