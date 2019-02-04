@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
 import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.metadata.TimeScale;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Features;
@@ -39,7 +38,6 @@ import wres.io.reading.IngestedValues;
 import wres.io.reading.InvalidInputDataException;
 import wres.io.utilities.DataBuilder;
 import wres.util.Strings;
-import wres.util.TimeHelper;
 
 /**
  * @author Qing Zhu
@@ -311,16 +309,15 @@ public class DatacardSource extends BasicSource
 
                         utcDateTime = utcDateTime.plusHours( timeInterval );
 
-                        IngestedValues.observed(actualValue)
+                        IngestedValues.observed( actualValue )
                                       .at( utcDateTime )
                                       .measuredIn( this.getMeasurementID() )
-                                      .scaledBy( TimeScale.TimeScaleFunction.UNKNOWN )
-                                      .scaleOf( Duration.of(1, TimeHelper.LEAD_RESOLUTION) )
+                                      // Default is missing time scale: see #59536
                                       .inSource( this.getSourceID() )
                                       .forVariableAndFeatureID( this.getVariableFeatureID() )
                                       .add();
-					}
-					else
+                    }
+                    else
 					{
 						//This line has less values. The last value of the line has been processed.
 						break;

@@ -13,9 +13,6 @@ import java.util.Set;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.powermock.core.classloader.annotations.PowerMockIgnore;
-import org.powermock.modules.junit4.PowerMockRunner;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DateCondition;
@@ -29,8 +26,6 @@ import wres.config.generated.TimeSeriesMetricConfig;
 import wres.config.generated.TimeSeriesMetricConfigName;
 import wres.datamodel.metadata.TimeWindow;
 
-@RunWith( PowerMockRunner.class )
-@PowerMockIgnore( "javax.management.*" )
 public class ConfigHelperTest
 {
     @Test

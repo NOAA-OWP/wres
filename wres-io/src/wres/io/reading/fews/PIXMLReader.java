@@ -14,6 +14,7 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
+import java.util.Objects;
 
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
@@ -35,8 +36,8 @@ import wres.io.data.caching.Variables;
 import wres.io.data.details.SourceDetails;
 import wres.io.data.details.TimeSeries;
 import wres.io.reading.IngestException;
-import wres.io.reading.InvalidInputDataException;
 import wres.io.reading.IngestedValues;
+import wres.io.reading.InvalidInputDataException;
 import wres.system.xml.XMLHelper;
 import wres.system.xml.XMLReader;
 import wres.util.Strings;
@@ -473,11 +474,8 @@ public final class PIXMLReader extends XMLReader
 				}
 				else if ( localName.equalsIgnoreCase( "type" ))
                 {
-                    if (XMLHelper.getXMLText( reader ).equalsIgnoreCase( "accumulative" ))
-                    {
-                        this.scaleFunction = TimeScale.TimeScaleFunction.TOTAL;
-                    }
-                    else
+                    // See #59438
+				    if (XMLHelper.getXMLText( reader ).equalsIgnoreCase( "instantaneous" ))
                     {
                         this.scalePeriod = 1;
                     }
@@ -494,6 +492,14 @@ public final class PIXMLReader extends XMLReader
 
 			}
 			reader.next();
+		}
+		
+		// See #59438
+		// For accumulative data, the scalePeriod has not been set, and this is equal
+		// to the timeStep
+		if( Objects.isNull( this.scalePeriod ) )
+		{
+		    this.scalePeriod = this.timeStep;
 		}
 	}
 
