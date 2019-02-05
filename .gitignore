@@ -43,6 +43,9 @@ out
 output
 wres_evaluation_output*
 
+# Local zulu openjdk 11 installation
+zulu11*
+
 # sundry
 /*.xml
 /resources
