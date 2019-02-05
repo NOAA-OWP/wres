@@ -915,3 +915,5 @@ jar
                    "Implementation-Version": version)
     }
 }
+
+defaultTasks 'installDist', 'test', 'javadoc', 'jacocorootreport'
