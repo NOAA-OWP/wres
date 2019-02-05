@@ -277,7 +277,7 @@ public class LRUContainerTest
         private final int value;
         private final List<String> mutableList = new ArrayList<>();
 
-        private LRUTestObject(final String key, final int value)
+        LRUTestObject(final String key, final int value)
         {
             this.key = key;
             this.value = value;
