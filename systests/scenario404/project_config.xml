@@ -8,12 +8,6 @@
             <type>observations</type>
             <source format="datacard" zoneOffset="CST" unit="CFS" >data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard</source>
             <variable>QINE</variable>
-<!--        <existingTimeScale>
-            <function>mean</function>
-            <period>6</period>
-            <unit>hours</unit>
-        </existingTimeScale>
--->
         </left>
         <right label="Operational Single-Valued Forecasts" >
             <type>single valued forecasts</type>
@@ -31,14 +25,7 @@
     <pair label="Pairs by location and lead time">
         <unit>CMS</unit>
         <feature locationId="GLOO2" />
-        <leadHours minimum="1" maximum="24" />
-
-        <!--<desiredTimeScale>
-            <function>mean</function>
-            <period>6</period>
-            <unit>hours</unit>
-        </desiredTimeScale>-->
-        
+        <leadHours minimum="1" maximum="24" />       
         <!-- Eventually, 400 will use lead times pooling instead of desiredTimeScale "none".  So I'm doing it now in this test.-->
         <leadTimesPoolingWindow>
             <period>6</period>

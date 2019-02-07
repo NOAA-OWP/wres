@@ -65,6 +65,7 @@ import wres.util.Collections;
 import wres.util.FormattedStopwatch;
 import wres.util.LRUMap;
 import wres.util.TimeHelper;
+import wres.util.functional.ExceptionalConsumer;
 
 /**
  * Encapsulates operations involved with interpreting unpredictable data within the
@@ -73,6 +74,13 @@ import wres.util.TimeHelper;
  *
  * TODO: refactor this class and make it immutable, ideally, but otherwise thread-safe. It's also
  * far too large (JBr). See #49511.
+ * 
+ * TODO: reconcile {@link #getScale()} with {@link #getAndValidateDesiredTimeScale()}
+ * The former currently mixes up two different things: time scale and time-step. 
+ * Ultimately, we want one pathway to obtain the desired time scale for data 
+ * retrieval, validation and metadata propagation. Currently, there are two pathways, 
+ * which means that the the validation and metadata may not reflect the data retrieval 
+ * reality. See #58715 and #44539-45. (JBr).
  */
 public class Project
 {
@@ -249,13 +257,26 @@ public class Project
     private Duration rightInterval = Duration.ZERO;
 
     /**
+     * The desired time scale. See {@link #getAndValidateDesiredTimeScale()}.
+     * 
+     * TODO: reconcile this with {@link #getScale()}, which currently mixes up 
+     * two different things: time scale and time-step. Ultimately, we want one pathway
+     * to obtain the desired time scale for data retrieval, validation and 
+     * metadata propagation. Currently, there are two pathways, which means that the
+     * the validation and metadata may not reflect the data retrieval reality. 
+     * See #58715 and #44539-45. 
+     */
+    
+    private TimeScale desiredTimeScale;
+    
+    /**
      * The desired scale for the project
      *<p>
      * If the configuration doesn't specify the desired scale, the system
      * will determine that data itself
      * </p>
      */
-    private TimeScaleConfig desiredTimeScale;
+    private TimeScaleConfig desiredTimeScaleConfig;
 
     private Boolean leftUsesGriddedData = null;
     private Boolean rightUsesGriddedData = null;
@@ -418,12 +439,9 @@ public class Project
      */
     public void prepareForExecution() throws SQLException, IOException, CalculationException
     {
-        // Validate the time-scale information in the declaration as it applies to ingested sources
+        // Get and validate the time-scale information in the declaration as it applies to ingested sources
         // Remove the feature toggle when ready for production
-        if( isValidateDesiredTimeScaleAgainstEachIngestedSourceInProduction() )
-        {
-            this.validateDesiredTimeScaleForEachProjectSource();
-        }
+        this.desiredTimeScale = this.getAndValidateDesiredTimeScale();
         
         if (!ConfigHelper.isSimulation( this.getRight() ) &&
             !ProjectConfigs.hasTimeSeriesMetrics( this.getProjectConfig() ) &&
@@ -454,14 +472,35 @@ public class Project
     }
     
     /**
-     * Feature toggle that indicates whether {@link #validateDesiredTimeScaleForEachProjectSource()} should be called.
+     * Returns the desired time scale associated with the project, which 
+     * is either the user-declared time scale (canonically) or the Least 
+     * Common Scale determined from the source data. Returns null if the
+     * time-scale has not yet been determined. The time-scale is actually
+     * computed by {@link #getAndValidateDesiredTimeScale()}.
+     * 
+     * TODO: reconcile with {@link #getScale()}, which currently mixes up 
+     * two different things: time scale and time-step. Ultimately, we want 
+     * one pathway to obtain the desired time scale for data retrieval, 
+     * validation and metadata propagation. Currently, there are two 
+     * pathways, which means that the the validation and metadata may not 
+     * reflect the data retrieval reality. See #58715 and #44539-45. (JBr). 
+     * 
+     * @return the desired time scale or null
+     */
+    
+    public TimeScale getDesiredTimeScale()
+    {
+        return this.desiredTimeScale;
+    }
+    
+    /**
+     * Feature toggle that indicates whether time-scale validation should be conducted.
      *
-     * TODO: remove when resolving #58715.
-     * @deprecated
+     * @deprecated (for removal when #58715 is resolved)
      */
 
-    @Deprecated
-    private boolean isValidateDesiredTimeScaleAgainstEachIngestedSourceInProduction()
+    @Deprecated( forRemoval = true )
+    private static boolean isValidateDesiredTimeScaleAgainstEachIngestedSourceInProduction()
     {
         return false;
     }
@@ -495,7 +534,7 @@ public class Project
      * @throws RescalingException Thrown if the desired time scale is not deliverable from the existing sources
      */
 
-    private void validateDesiredTimeScaleForEachProjectSource() throws SQLException, CalculationException
+    private TimeScale getAndValidateDesiredTimeScale() throws SQLException, CalculationException
     {
         // The desired time scale
         TimeScale desiredScale = null;
@@ -530,13 +569,19 @@ public class Project
                       existingScalesAndSteps.size(),
                       desiredScale );
 
-        final TimeScale finalDesiredScale = desiredScale;
-        existingScalesAndSteps.forEach( pair -> MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( pair.getLeft(),
-                                                                                                       finalDesiredScale,
-                                                                                                       pair.getRight() ) );
+        // TODO: only validate when in production - remove on resolving #58715
+        if ( Project.isValidateDesiredTimeScaleAgainstEachIngestedSourceInProduction() )
+        {
+            final TimeScale finalDesiredScale = desiredScale;
+            existingScalesAndSteps.forEach( pair -> MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( pair.getLeft(),
+                                                                                                           finalDesiredScale,
+                                                                                                           pair.getRight() ) );
+        }
+        
         LOGGER.debug( "Finished validating the {} existing time scales against the desired time scale.",
                       existingScalesAndSteps.size() );
-
+        
+        return desiredScale;
     }
 
     /**
@@ -595,70 +640,6 @@ public class Project
     }
 
     /**
-     * Returns the {@link TimeScale} and time-step information for each forecast source associated with the project.
-     * The time-step is represented as a {@link Duration}.
-     *
-     * @return the time scale and time-step information for each source
-     * @throws SQLException Thrown on failing to obtain the time scale or time step information from the database
-     * @throws CalculationException if time step could not be determined from the data
-     */
-
-    private Set<Pair<TimeScale, Duration>> getTimeScaleAndTimeStepForEachForecastProjectSource()
-            throws SQLException, CalculationException
-    {
-        // Ask the wres.timeseries
-        DataScripter scripter = new DataScripter();
-        scripter.addLine( "SELECT DISTINCT TS.scale_period," );
-        scripter.addTab( 2 ).addLine( "TS.scale_function," );
-        scripter.addTab( 2 ).addLine( "TS.time_step" );
-        scripter.addLine( "FROM wres.timeseries TS " );
-        scripter.addTab( 1 ).addLine( "INNER JOIN wres.timeseriessource AS TSS" );
-        scripter.addTab( 2 ).addLine( "ON TS.timeseries_id = TSS.timeseries_id" );
-        scripter.addTab( 1 ).addLine( "INNER JOIN wres.projectsource PS" );
-        scripter.addTab( 2 ).addLine( "ON TSS.source_id = PS.source_id" );
-        scripter.addLine( "WHERE PS.project_id = " + this.getId() );
-
-        // Obtain the existing time scale and corresponding time step for each ingested source
-        return java.util.Collections.unmodifiableSet( this.getTimeScaleAndTimeStep( scripter,
-                                                                                    this.getProjectConfig()
-                                                                                        .getInputs()
-                                                                                        .getRight(),
-                                                                                    false ) );
-    }
-
-    /**
-     * Returns the {@link TimeScale} and time-step information for each observed source associated with the project.
-     * The time-step is represented as a {@link Duration}.
-     *
-     * @return the time scale and time-step information for each source
-     * @throws SQLException Thrown on failing to obtain the time scale or time step information from the database
-     * @throws CalculationException if time step could not be determined from the data
-     */
-
-    private Set<Pair<TimeScale, Duration>> getTimeScaleAndTimeStepForEachObservedProjectSource()
-            throws SQLException, CalculationException
-    {
-        // Ask the wres.timeseries
-        DataScripter scripter = new DataScripter();
-        scripter.addLine( "SELECT DISTINCT O.scale_period," );
-        scripter.addTab( 2 ).addLine( "O.scale_function," );
-        scripter.addTab( 2 ).addLine( "O.time_step" );
-        scripter.addLine( "FROM wres.observation O " );
-        scripter.addTab( 1 ).addLine( "INNER JOIN wres.projectsource AS PS" );
-        scripter.addTab( 2 ).addLine( "ON O.source_id = PS.source_id" );
-        scripter.addTab( 1 ).addLine( "INNER JOIN wres.project P" );
-        scripter.addTab( 2 ).addLine( "ON PS.project_id = P.project_id" );
-        scripter.addLine( "WHERE PS.project_id = " + this.getId() );
-
-        // Obtain the existing time scale and corresponding time step for each ingested source
-        return java.util.Collections.unmodifiableSet( this.getTimeScaleAndTimeStep( scripter,
-                                                                                    this.getProjectConfig()
-                                                                                        .getInputs()
-                                                                                        .getLeft(),
-                                                                                    true ) );
-    }
-
-    /**
      * <p>Returns the time step and time scale information from a {@link DataScripter}, which provides an interface to
      * the data in the database, and a {@link DataSourceConfig}, which provides an interface to the declaration of
      * the data in the project.
@@ -692,7 +673,7 @@ public class Project
 
         Objects.requireNonNull( dataSourceConfig );
 
-        Set<Pair<TimeScale, Duration>> existingTimeScales = new HashSet<>();
+        Set<Pair<TimeScale, Duration>> existingTimeScales;
 
         final String sourceType = isLeftSource ? "left" : "right";
 
@@ -707,107 +688,17 @@ public class Project
         // Consume each result from the wres.timeseries and create a time scale and a time-step for each
         try
         {
-            AtomicBoolean warn = new AtomicBoolean();
-            final TimeScale finalDeclaredExistingTimeScale = declaredExistingTimeScale;
+            TimeScaleAndTimeStepConsumer consumer =
+                    new TimeScaleAndTimeStepConsumer( declaredExistingTimeScale, sourceType );
 
-            data.consume( scaleAndStepConsumer -> {
+            // Consume
+            data.consume( consumer );
 
-                // Time scale and step information
-                Duration period = scaleAndStepConsumer.getDuration( "scale_period" );
-                String functionString = scaleAndStepConsumer.getString( "scale_function" );
-                Duration timeStep = scaleAndStepConsumer.getDuration( "time_step" );
+            // Retrieve
+            existingTimeScales = consumer.getTimeScalesAndSteps();
 
-                // Default to the existingTimeScale in the declaration
-                if ( Objects.nonNull( finalDeclaredExistingTimeScale ) )
-                {
-                    if ( Objects.isNull( period ) )
-                    {
-                        period = finalDeclaredExistingTimeScale.getPeriod();
-                    }
-                    // Allow the declaration to augment the functionString
-                    if ( Objects.isNull( functionString ) )
-                    {
-                        functionString = finalDeclaredExistingTimeScale.getFunction().toString();
-                    }
-                    // Allow the declaration to override the function ONLY if it is 'UNKNOWN' and differs.
-                    else if ( functionString.equalsIgnoreCase( "UNKNOWN" )
-                              && !functionString.equalsIgnoreCase( finalDeclaredExistingTimeScale.getFunction()
-                                                                                                 .toString() ) )
-                    {
-                        functionString = finalDeclaredExistingTimeScale.getFunction().toString();
-                        LOGGER.warn( "The time scale function in the "
-                                     + sourceType
-                                     + " source is 'UNKNOWN' and the time scale function "
-                                     + "in the declaration is '"
-                                     + functionString
-                                     + "'. Using the declared function as representative of the source." );
-                    }
-                }
-
-                // Record or log as null
-                if ( Objects.nonNull( period ) && Objects.nonNull( functionString ) )
-                {
-                    TimeScale.TimeScaleFunction function =
-                            TimeScale.TimeScaleFunction.valueOf( functionString.toUpperCase() );
-
-                    TimeScale timeScale = TimeScale.of( period, function );
-
-                    // Validate if declaration is present too
-                    if ( Objects.nonNull( finalDeclaredExistingTimeScale )
-                         && !finalDeclaredExistingTimeScale.equals( timeScale ) )
-                    {
-                        // Report the original time scale function in case the database said UNKNOWN and this was
-                        // augmented above
-                        TimeScale timeScaleToReport = timeScale;
-                        if ( "UNKNOWN".equalsIgnoreCase( scaleAndStepConsumer.getString( "scale_function" ) ) )
-                        {
-                            timeScaleToReport = TimeScale.of( period );
-                        }
-
-                        if ( timeScale.isInstantaneous() && finalDeclaredExistingTimeScale.isInstantaneous() )
-                        {
-                            LOGGER.warn( "The existing time scale information in the project declaration is "
-                                         + "inconsistent with the time scale information obtained from one or more "
-                                         + sourceType
-                                         + " sources, but both are recognized as \"instantaneous\" and, "
-                                         + "therefore, "
-                                         + "allowed. Source says: "
-                                         + timeScaleToReport
-                                         + ". Declaration says: "
-                                         + finalDeclaredExistingTimeScale );
-                        }
-                        else
-                        {
-                            throw new RescalingException( "The existing time scale information in the project "
-                                                          + "declaration is inconsistent with the time scale "
-                                                          + "information obtained from one or more "
-                                                          + sourceType
-                                                          + " sources. Source "
-                                                          + "says: "
-                                                          + timeScaleToReport
-                                                          + ". Declaration says: "
-                                                          + finalDeclaredExistingTimeScale );
-                        }
-                    }
-
-                    // Store
-                    existingTimeScales.add( Pair.of( timeScale, timeStep ) );
-                }
-                else
-                {
-                    warn.set( true );
-                }
-            } );
-
-            // Warn when potentially important information is missing, but take a lenient approach
-            if ( warn.get() )
-            {
-                LOGGER.warn( "Could not determine valid time scale information for one or more {}"
-                             + " sources. Assuming that the desired time scale is consistent with the time scales "
-                             + "of the existing sources for which information is missing.",
-                             sourceType );
-            }
-
+            // Log any warnings
+            consumer.logAllWarningsOnCompletion();
         }
         // Decorate and propagate
         catch ( SQLException e )
@@ -1633,28 +1524,28 @@ public class Project
     public TimeScaleConfig getScale() throws CalculationException
     {
         // TODO: Convert this to a function to determine time step; this doesn't actually have anything to do with scale
-        if (this.desiredTimeScale == null)
+        if (this.desiredTimeScaleConfig == null)
         {
-            this.desiredTimeScale = this.projectConfig.getPair().getDesiredTimeScale();
+            this.desiredTimeScaleConfig = this.projectConfig.getPair().getDesiredTimeScale();
 
             // If there is an explicit desired time scale but the frequency
             // wasn't set, we need to set the default
-            if (this.desiredTimeScale != null &&
-                this.desiredTimeScale.getFrequency() == null)
+            if (this.desiredTimeScaleConfig != null &&
+                this.desiredTimeScaleConfig.getFrequency() == null)
             {
-                this.desiredTimeScale = new TimeScaleConfig(
-                        this.desiredTimeScale.getFunction(),
-                        this.desiredTimeScale.getPeriod(),
-                        this.desiredTimeScale.getPeriod(),
-                        this.desiredTimeScale.getUnit(),
+                this.desiredTimeScaleConfig = new TimeScaleConfig(
+                        this.desiredTimeScaleConfig.getFunction(),
+                        this.desiredTimeScaleConfig.getPeriod(),
+                        this.desiredTimeScaleConfig.getPeriod(),
+                        this.desiredTimeScaleConfig.getUnit(),
                         null);
             }
         }
 
-        if (this.desiredTimeScale == null && ConfigHelper.isForecast( this.getRight() ))
+        if (this.desiredTimeScaleConfig == null && ConfigHelper.isForecast( this.getRight() ))
         {
             Duration commonInterval = this.getCommonInterval();
-            this.desiredTimeScale = new TimeScaleConfig(
+            this.desiredTimeScaleConfig = new TimeScaleConfig(
                     TimeScaleFunction.MEAN,
                     (int)commonInterval.toMinutes(),
                     (int)commonInterval.toMinutes(),
@@ -1662,9 +1553,9 @@ public class Project
                     "Dynamic Scale"
             );
         }
-        else if(this.desiredTimeScale == null)
+        else if(this.desiredTimeScaleConfig == null)
         {
-            this.desiredTimeScale = new TimeScaleConfig(
+            this.desiredTimeScaleConfig = new TimeScaleConfig(
                     TimeScaleFunction.MEAN,
                     60,
                     60,
@@ -1673,7 +1564,7 @@ public class Project
             );
         }
 
-        return this.desiredTimeScale;
+        return this.desiredTimeScaleConfig;
     }
 
     /**
@@ -2981,5 +2872,286 @@ public class Project
         return this.getInputCode();
     }
 
+    /**
+     * Consumes time-scale and time-step information and logs any warnings generated by the process.
+     */
+
+    private static class TimeScaleAndTimeStepConsumer implements ExceptionalConsumer<DataProvider, SQLException>
+    {
+        /**
+         * The time scale and time step information consumed.
+         */
+
+        private final Set<Pair<TimeScale, Duration>> existingTimeScales = new HashSet<>();
+
+        /**
+         * Is <code>true</code> if one or more consumptions generated a warning for a null period.
+         */
+
+        private final AtomicBoolean warnOnNullPeriod = new AtomicBoolean();
+
+        /**
+         * Is <code>true</code> if one or more consumptions generated a warning for a null function.
+         */
+
+        private final AtomicBoolean warnOnNullFunction = new AtomicBoolean();
+
+        /**
+         * Is <code>true</code> if one or more consumptions generated a warning for an 
+         * {@link TimeScale.TimeScaleFunction#UNKNOWN} function.
+         */
+
+        private final AtomicBoolean warnOnUnknownFunction = new AtomicBoolean();
+
+        /**
+         * Is <code>true</code> if one or more consumptions generated a warning for an instantaneous
+         * time scale according to {@link TimeScale#isInstantaneous()}.
+         */
+
+        private final AtomicBoolean warnOnInstantaneous = new AtomicBoolean();
+
+        /**
+         * Is <code>true</code> if one or more consumptions generated a warning for null/missing
+         * time scale.
+         */
+
+        private final AtomicBoolean warnOnNullScale = new AtomicBoolean();
+
+        /**
+         * A source type string to help with warnings.
+         */
+
+        private String sourceType;
+
+        /**
+         * The declared <code>existingTimeScale</code> for the source being consumed.
+         */
+
+        private TimeScale declaredExistingTimeScale;
+
+        /**
+         * A period to help with warnings.
+         */
+
+        private Duration warnPeriod;
+
+        /**
+         * A function string to help with warnings.
+         */
+
+        private String warnFunctionString;
+
+        /**
+         * A time scale to help with warnings.
+         */
+
+        private TimeScale warnTimeScale;
+
+        /**
+         * Construct with the existing time scale from the declaration and source type.
+         * 
+         * @param declaredExistingTimeScale the declared existingTimeScale, which may be null
+         * @param sourceType a source type string to help with warnings
+         */
+        private TimeScaleAndTimeStepConsumer( TimeScale declaredExistingTimeScale, String sourceType )
+        {
+            this.declaredExistingTimeScale = declaredExistingTimeScale;
+            this.sourceType = sourceType;
+        }
+
+        /**
+         * Consumer from the provider.
+         * 
+         * @param value the data provider
+         * @throws SQLException if consumption fails
+         * @throws NullPointerException if the input is null
+         */
+
+        @Override
+        public void accept( DataProvider value ) throws SQLException
+        {
+            Objects.requireNonNull( value );
+
+            // Time scale and step information
+            Duration period = value.getDuration( "scale_period" );
+            String functionString = value.getString( "scale_function" );
+            Duration timeStep = value.getDuration( "time_step" );
+
+            // Default to the existingTimeScale in the declaration
+            if ( Objects.nonNull( declaredExistingTimeScale ) )
+            {
+                if ( Objects.isNull( period ) )
+                {
+                    period = declaredExistingTimeScale.getPeriod();
+                    this.warnOnNullPeriod.set( true );
+                    this.warnPeriod = period;
+                }
+                // Allow the declaration to augment the functionString
+                if ( Objects.isNull( functionString ) )
+                {
+                    functionString = declaredExistingTimeScale.getFunction().toString();
+                    this.warnOnNullFunction.set( true );
+                    this.warnFunctionString = functionString;
+
+                }
+                // Allow the declaration to override the function ONLY if it is 'UNKNOWN' and differs.
+                else if ( functionString.equalsIgnoreCase( "UNKNOWN" )
+                          && !functionString.equalsIgnoreCase( declaredExistingTimeScale.getFunction()
+                                                                                        .toString() ) )
+                {
+                    functionString = declaredExistingTimeScale.getFunction().toString();
+                    this.warnOnUnknownFunction.set( true );
+                    this.warnFunctionString = functionString;
+                }
+            }
+
+            // Record or log as null
+            if ( Objects.nonNull( period ) && Objects.nonNull( functionString ) )
+            {
+                // Create the scale and step information
+                this.createTimeStepInformation( period, functionString, timeStep, value );
+            }
+
+            else
+            {
+                this.warnOnNullScale.set( true );
+            }
+        }
+
+        /**
+        * Uses the input to create the time scale and time step information.
+        * 
+        * @param period the time scale period
+        * @param functionString the time scale function string
+        * @param timeStep the time step
+        * @param value the time scale and step provider
+        */
+
+        private void createTimeStepInformation( Duration period,
+                                                String functionString,
+                                                Duration timeStep,
+                                                DataProvider value )
+        {
+            TimeScale.TimeScaleFunction function =
+                    TimeScale.TimeScaleFunction.valueOf( functionString.toUpperCase() );
+
+            TimeScale timeScale = TimeScale.of( period, function );
+
+            // Validate if declaration is present too
+            if ( Objects.nonNull( declaredExistingTimeScale )
+                 && !declaredExistingTimeScale.equals( timeScale ) )
+            {
+                // Report the original time scale function in case the database said UNKNOWN and this was
+                // augmented above
+                TimeScale timeScaleToReport = timeScale;
+                if ( "UNKNOWN".equalsIgnoreCase( value.getString( "scale_function" ) ) )
+                {
+                    timeScaleToReport = TimeScale.of( period );
+                }
+
+                if ( timeScale.isInstantaneous() && declaredExistingTimeScale.isInstantaneous() )
+                {
+                    this.warnOnInstantaneous.set( true );
+                    this.warnTimeScale = timeScaleToReport;
+                }
+                else
+                {
+                    if ( Project.isValidateDesiredTimeScaleAgainstEachIngestedSourceInProduction() )
+                    {
+                        throw new RescalingException( "The existing time scale information in the project "
+                                                      + "declaration is inconsistent with the time scale "
+                                                      + "information obtained from one or more "
+                                                      + sourceType
+                                                      + " sources. Source "
+                                                      + "says: "
+                                                      + timeScaleToReport
+                                                      + ". Declaration says: "
+                                                      + declaredExistingTimeScale );
+                    }
+                }
+            }
+
+            // Store
+            existingTimeScales.add( Pair.of( timeScale, timeStep ) );
+
+        }
+
+        /**
+         * Returns all time scale and time step information consumed.
+         * 
+         * @return all time scale and time step information
+         */
+
+        private Set<Pair<TimeScale, Duration>> getTimeScalesAndSteps()
+        {
+            return java.util.Collections.unmodifiableSet( this.existingTimeScales );
+        }
+
+        /**
+         * Logs all warning messages when consumption is complete.
+         */
+
+        private void logAllWarningsOnCompletion()
+        {
+            // Warn when one or more instances had a null period             
+            if ( this.warnOnNullPeriod.get() )
+            {
+                LOGGER.warn( "The time scale period in the "
+                             + sourceType
+                             + " source is 'NULL' and the time scale period "
+                             + "in the declaration is '{}'. Using the declared "
+                             + "period as representative of the source.",
+                             this.warnPeriod );
+            }
+
+            // Warn when one or more instances had a null function
+            if ( this.warnOnNullFunction.get() )
+            {
+                LOGGER.warn( "The time scale function in the "
+                             + sourceType
+                             + " source is 'NULL' and the time scale function "
+                             + "in the declaration is '{}'. Using the declared "
+                             + "function as representative of the source.",
+                             this.warnFunctionString );
+            }
+
+            // Warn when one or more instances had an unknown function
+            if ( this.warnOnUnknownFunction.get() )
+            {
+                LOGGER.warn( "The time scale function in the "
+                             + sourceType
+                             + " source is 'UNKNOWN' and the time scale function "
+                             + "in the declaration is '{}'. Using the declared "
+                             + "function as representative of the source.",
+                             this.warnFunctionString );
+            }
+
+            // Warn when one or more instances differed in time scale, but both 
+            // were recognized as instantaneous by TimeScale::isInstantaneous
+            if ( this.warnOnInstantaneous.get() )
+            {
+                LOGGER.warn( "The existing time scale information in the project declaration is "
+                             + "inconsistent with the time scale information obtained from one or more "
+                             + sourceType
+                             + " sources, but both are recognized as 'INSTANTANEOUS' and, "
+                             + "therefore, "
+                             + "allowed. Source says: {}. Declaration says: {}.",
+                             this.warnTimeScale,
+                             this.declaredExistingTimeScale );
+            }
+
+            // Warn when one or more instances had no time scale information
+            if ( this.warnOnNullScale.get() )
+            {
+                LOGGER.warn( "Could not determine valid time scale information for one or more {}"
+                             + " sources. Assuming that the desired time scale is consistent with the time scales "
+                             + "of the existing sources for which information is missing.",
+                             this.sourceType );
+            }
+        }
+
+    }
+    
+    
 }
 

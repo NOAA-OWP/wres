@@ -150,6 +150,8 @@ public final class TimeScaleTest
     public void testToString()
     {
         assertEquals( "[PT24H,MEAN]", timeScale.toString() );
+
+        assertEquals( "[INSTANTANEOUS]", TimeScale.of( Duration.ofSeconds( 1 ) ).toString() );
     }
     
     /**
