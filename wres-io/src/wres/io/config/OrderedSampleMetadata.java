@@ -281,13 +281,8 @@ public class OrderedSampleMetadata
                 );
             }
 
-            if ( this.project.getProjectConfig().getPair() != null &&
-                project.getProjectConfig().getPair().getDesiredTimeScale() != null)
-            {
-                this.sampleMetadataBuilder.setTimeScale(
-                        TimeScale.of(project.getProjectConfig().getPair().getDesiredTimeScale())
-                );
-            }
+            // Set the desired time scale: see #44539
+            this.sampleMetadataBuilder.setTimeScale( project.getDesiredTimeScale() );
 
             return this;
         }

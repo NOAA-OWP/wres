@@ -37,9 +37,6 @@
     </metrics>
     <outputs>
         <destination type="pairs" decimalFormat="0.000000" />
-<!--
-        <destination type="numeric" decimalFormat="0.000000" />
--->
         <destination type="netcdf">
             <netcdf vectorVariable="feature_id">
             </netcdf>

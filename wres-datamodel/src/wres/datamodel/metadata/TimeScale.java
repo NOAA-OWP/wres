@@ -194,6 +194,10 @@ public final class TimeScale implements Comparable<TimeScale>
     @Override
     public String toString()
     {
+        if( this.isInstantaneous() )
+        {
+            return "[INSTANTANEOUS]";
+        }
         return "[" + period + "," + function + "]";
     }
 

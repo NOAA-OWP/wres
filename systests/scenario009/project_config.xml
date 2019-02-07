@@ -19,12 +19,6 @@
         <unit>CMS</unit>
         <feature locationId="DRRC2" />
         <leadHours minimum="1" maximum="24" />
-<!--        <desiredTimeScale>
-            <function>mean</function>
-            <period>1</period>
-            <unit>hours</unit>
-        </desiredTimeScale>
--->
     </pair>
 
     <metrics>
@@ -39,28 +33,7 @@
     <outputs>
         <destination type="pairs" decimalFormat="0.000000" />
         <destination type="numeric" decimalFormat="0.000000" />
-<!--        <destination type="graphic">
-            <outputType>lead threshold</outputType>
-            <graphical width="800" height="600" />
-        </destination>
--->
     </outputs>
 
 </project>
 
-<!-- Other Metric Options: -->
-<!-- <metric><name>all valid</name></metric> -->
-<!-- <metric><name>correlation pearsons</name></metric> -->
-<!-- <metric><name>mean absolute error</name></metric> -->
-<!-- <metric><name>bias fraction</name></metric> -->
-<!-- <metric><name>coefficient of determination</name></metric> -->
-<!-- <metric><name>root mean square error</name></metric> -->
-<!-- <metric><name>mean square error</name></metric> -->
-<!-- <metric><name>mean square error skill score</name></metric> -->
-<!-- <metric><name>brier skill score</name></metric> -->
-<!-- <metric><name>rank histogram</name></metric> -->
-<!-- <metric><name>relative operating characteristic diagram</name></metric> -->
-<!-- <metric><name>relative operating characteristic score</name></metric> -->
-<!-- <metric><name>continuous ranked probability score</name></metric> -->
-<!-- <metric><name>continuous ranked probability skill score</name></metric> -->
-<!-- <metric><name>sample size</name></metric> -->

@@ -85,24 +85,31 @@ public class CommaSeparatedUtilities
 
         String timeScale = "";
 
-        // Set the time scale string
+        // Set the time scale string, unless instantaneous
         if ( sampleMetadata.hasTimeScale() )
         {
             TimeScale s = sampleMetadata.getTimeScale();
 
-            timeScale = HEADER_DELIMITER
-                        + "["
-                        + s.getFunction()
-                        + HEADER_DELIMITER
-                        + "OVER"
-                        + HEADER_DELIMITER
-                        + "PAST"
-                        + HEADER_DELIMITER
-                        + TimeHelper.durationToLongUnits( s.getPeriod(),
-                                                          durationUnits )
-                        + HEADER_DELIMITER
-                        + durationUnits.name()
-                        + "]";
+            if( s.isInstantaneous() )
+            {
+                timeScale = HEADER_DELIMITER+ s.toString();
+            }
+            else
+            {
+                timeScale = HEADER_DELIMITER
+                            + "["
+                            + s.getFunction()
+                            + HEADER_DELIMITER
+                            + "OVER"
+                            + HEADER_DELIMITER
+                            + "PAST"
+                            + HEADER_DELIMITER
+                            + TimeHelper.durationToLongUnits( s.getPeriod(),
+                                                              durationUnits )
+                            + HEADER_DELIMITER
+                            + durationUnits.name()
+                            + "]";
+            }
         }
 
         joiner.add( "EARLIEST ISSUE TIME" )

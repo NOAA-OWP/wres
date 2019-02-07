@@ -21,12 +21,6 @@
         <feature locationId="LGNN5" />
         <leadHours minimum="1" maximum="48" />
         <values minimum="1.00" default_minimum="0.0"/>
-<!--        <desiredTimeScale>
-            <function>none</function>
-            <period>6</period>
-            <unit>hours</unit>
-        </desiredTimeScale>
--->
     </pair>
 
     <metrics>

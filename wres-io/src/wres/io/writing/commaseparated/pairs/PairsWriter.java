@@ -139,28 +139,37 @@ public abstract class PairsWriter<S extends Pair<?,?>, T extends Pairs<S> & Time
             joiner.merge( CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( pairs.getMetadata(),
                                                                                          this.getTimeResolution() ) );
         }
-        
+
         // Valid time of pair
         joiner.add( "VALID TIME OF PAIR" );
 
-        // Time scale?
+        // Lead duration
+        String leadDurationString = "LEAD DURATION OF PAIR IN " + this.getTimeResolution().toString().toUpperCase();
+
+        // Time scale for lead duration?
         if ( pairs.getMetadata().hasTimeScale() )
         {
-            TimeScale timeScale = pairs.getMetadata().getTimeScale();
 
-            joiner.add( "LEAD DURATION OF PAIR IN " + this.getTimeResolution().toString().toUpperCase()
-                        + " ["
-                        + timeScale.getFunction()
-                        + " OVER PAST "
-                        + timeScale.getPeriod().get( this.getTimeResolution() )
-                        + " "
-                        + this.getTimeResolution().toString().toUpperCase()
-                        + "]" );
+            if ( pairs.getMetadata().getTimeScale().isInstantaneous() )
+            {
+                leadDurationString = leadDurationString
+                                     + " "
+                                     + pairs.getMetadata().getTimeScale().toString();
+            }
+            else
+            {
+                TimeScale s = pairs.getMetadata().getTimeScale();
+                leadDurationString = leadDurationString + " ["
+                                     + s.getFunction()
+                                     + " OVER PAST "
+                                     + s.getPeriod().get( this.getTimeResolution() )
+                                     + " "
+                                     + this.getTimeResolution().toString().toUpperCase()
+                                     + "]";
+            }
         }
-        else
-        {
-            joiner.add( "LEAD DURATION OF PAIR IN " + this.getTimeResolution().toString().toUpperCase() );
-        }
+
+        joiner.add( leadDurationString );
 
         return joiner;
     }

@@ -301,7 +301,8 @@ project(':wres-io')
         testCompile 'ru.yandex.qatools.embed:postgresql-embedded:2.10'
         // Above depends on flapdoodle, but we need an upgrade to flapdoodle
         // for Java 11 to work.
-        testCompile 'de.flapdoodle.embed:de.flapdoodle.embed.process:2.1.2'
+        // Doesn't play nicely on Windows: see #59706-21 and posts thereafter
+        // testCompile 'de.flapdoodle.embed:de.flapdoodle.embed.process:2.1.2'
 
         // Use mockserver as a mock server for mock API responses
         testCompile 'org.mock-server:mockserver-netty:5.5.1'
