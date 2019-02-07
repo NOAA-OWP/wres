@@ -1,7 +1,10 @@
 package wres.engine.statistics.metric.timeseries;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -78,24 +81,42 @@ public class TimeToPeakRelativeError extends TimingError
 
             // Compute the denominator
             Duration denominator = Duration.between( next.getEarliestBasisTime(), peak.getLeft() );
-            long denominatorHours = denominator.toHours();
-
+            
             // Add the relative time-to-peak error against the basis time
             // If the horizon is zero, the relative error is undefined
             // TODO: consider how to represent a NaN outcome within the framework of Duration, rather
             // than swallowing the outcome here
-            if ( denominatorHours != 0 )
+            
+            if ( !denominator.isZero() )
             {
-                returnMe.add( Pair.of( next.getEarliestBasisTime(), error.dividedBy( denominatorHours ) ) );
+                // Numerator seconds as a big decimal w/ nanos
+                BigDecimal errorSeconds = BigDecimal.valueOf( error.toSeconds() )
+                                                    .add( BigDecimal.valueOf( error.get( ChronoUnit.NANOS ), 9 ) );
+                // Denominator seconds as a big decimal w/ nanos
+                BigDecimal denominatorSeconds =
+                        BigDecimal.valueOf( denominator.toSeconds() )
+                                  .add( BigDecimal.valueOf( denominator.get( ChronoUnit.NANOS ), 9 ) );
+
+                // Fraction
+                BigDecimal fraction = errorSeconds.divide( denominatorSeconds, RoundingMode.HALF_UP );
+
+                // Fractional seconds
+                BigDecimal seconds = fraction.multiply( BigDecimal.valueOf( 60.0 * 60.0 ) );
+                
+                // Nearest whole second
+                seconds = seconds.setScale(0, RoundingMode.HALF_UP);
+                
+                returnMe.add( Pair.of( next.getEarliestBasisTime(),
+                                       Duration.ofSeconds( seconds.longValue() ) ) );
             }
         }
 
         // Create output metadata with the identifier of the statistic as the component identifier
         StatisticMetadata meta = StatisticMetadata.of( s.getMetadata(),
-                                                             s.getBasisTimes().size(),
-                                                             MeasurementUnit.of( "DURATION IN RELATIVE HOURS" ),
-                                                             this.getID(),
-                                                             MetricConstants.MAIN );
+                                                       s.getBasisTimes().size(),
+                                                       MeasurementUnit.of( "DURATION IN RELATIVE HOURS" ),
+                                                       this.getID(),
+                                                       MetricConstants.MAIN );
 
         return PairedStatistic.of( returnMe, meta );
     }
