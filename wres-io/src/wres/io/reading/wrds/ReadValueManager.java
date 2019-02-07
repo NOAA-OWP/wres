@@ -1,7 +1,11 @@
 package wres.io.reading.wrds;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
@@ -33,6 +37,8 @@ public class ReadValueManager
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( ReadValueManager.class );
 
+    private final HttpClient httpClient;
+
     ReadValueManager( final ProjectConfig projectConfig,
                       final DataSourceConfig datasourceConfig,
                       final URI location )
@@ -40,6 +46,7 @@ public class ReadValueManager
         this.location = location;
         this.projectConfig = projectConfig;
         this.dataSourceConfig = datasourceConfig;
+        this.httpClient = HttpClient.newHttpClient();
     }
 
     public List<IngestResult> save() throws IOException
@@ -67,19 +74,45 @@ public class ReadValueManager
         // this needs to perform the ingest
         if (!foundAlready)
         {
+
             try
             {
-                ForecastResponse response = mapper.readValue( this.location.toURL(), ForecastResponse.class );
+                HttpRequest request = HttpRequest.newBuilder()
+                                                 .uri( this.location )
+                                                 .build();
+                HttpResponse<InputStream> httpResponse =
+                        this.httpClient.send( request,
+                                              HttpResponse.BodyHandlers.ofInputStream() );
 
-                if (response.getStatusCode() >= 400)
+                int httpStatus = httpResponse.statusCode();
+
+                if ( httpStatus >= 400 && httpStatus < 500 )
                 {
-                    throw new IngestException( response.getMesssage() );
+                    LOGGER.warn( "Could not retrieve data from {} due to status code {}",
+                                 this.location,
+                                 httpResponse.statusCode() );
+                    return List.of();
                 }
+                else if ( httpStatus >= 500 )
+                {
+                    throw new IngestException( "Failed to get data from "
+                                               + this.location
+                                               + " due to status code "
+                                               + httpStatus );
+                }
+
+                ForecastResponse response = mapper.readValue( httpResponse.body(),
+                                                              ForecastResponse.class );
 
                 for ( Forecast forecast : response.getForecasts() )
                 {
                     this.read( forecast, source.getId() );
                 }
+            }
+            catch ( InterruptedException ie )
+            {
+                LOGGER.warn( "Interrupted while getting data from {}", this.location, ie );
+                Thread.currentThread().interrupt();
             }
             catch(SQLException e)
             {
