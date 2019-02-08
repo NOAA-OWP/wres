@@ -15,12 +15,6 @@
     <pair label="Pairs by location and lead time"> <!-- required for unit -->
         <unit>CMS</unit>
         <feature locationId="DRRC2" />
-
-        <desiredTimeScale>
-            <function>mean</function>
-            <period>1</period>
-            <unit>hours</unit>
-        </desiredTimeScale>
     </pair>
     <metrics>
         <metric> <name>mean error</name> </metric>
