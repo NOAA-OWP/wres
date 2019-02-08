@@ -20,12 +20,6 @@
         <feature locationId="DRRC2" />
         <leadHours minimum="1" maximum="24" />
         <values minimum="0.0" maximum="8.0"/>  <!--Restricts the data, both obs and fcst, to range. -->
-
-        <desiredTimeScale>
-            <function>mean</function>
-            <period>1</period>
-            <unit>hours</unit>
-        </desiredTimeScale>
     </pair>
 
     <metrics>
