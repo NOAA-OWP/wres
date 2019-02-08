@@ -20,12 +20,6 @@
         <feature locationId="DRRC2" />
         <leadHours minimum="1" maximum="24" />
         <issuedDates earliest="1985-01-01T00:00:00Z" latest="1985-06-15T00:00:00Z"/>
-
-        <desiredTimeScale>
-            <function>mean</function>
-            <period>1</period>
-            <unit>hours</unit>
-        </desiredTimeScale>
     </pair>
 
     <metrics>
