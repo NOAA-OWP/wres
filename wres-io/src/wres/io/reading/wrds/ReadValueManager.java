@@ -77,26 +77,26 @@ public class ReadValueManager
 
         // If this was the application that performed the insert into the source records,
         // this needs to perform the ingest
-        if (!foundAlready)
+        if ( !foundAlready )
         {
-	    try
-	    {
+            try
+            {
                 InputStream forecastData;
 
-		if ( this.location.getScheme().equals( "file" ) )
-		{
+                if ( this.location.getScheme().equals( "file" ) )
+                {
                     forecastData = this.getFromFile( this.location );
                 }
                 else if ( this.location.getScheme().startsWith( "http" ) )
                 {
                     forecastData = this.getFromWeb( this.location );
                 }
-		else
+                else
                 {
-		    throw new UnsupportedOperationException( "Only file and http(s) "
-							     + "are supported. Got: "
-							     + this.location );
-		}
+                    throw new UnsupportedOperationException("Only file and http(s) "
+                            + "are supported. Got: "
+                            + this.location );
+                }
 
                 ForecastResponse response = mapper.readValue( forecastData,
                                                               ForecastResponse.class );
@@ -106,9 +106,11 @@ public class ReadValueManager
                     this.read( forecast, source.getId() );
                 }
             }
-            catch(SQLException e)
+            catch ( SQLException e )
             {
-                throw new IngestException( "Values from WRDS could not be ingested.", e );
+                throw new IngestException(
+                        "Values from WRDS could not be ingested.",
+                        e );
             }
         }
 
@@ -213,54 +215,57 @@ public class ReadValueManager
     {
         if ( !uri.getScheme().equals( "file" ) )
         {
-	    throw new IllegalArgumentException( "Must pass a file uri, got " + uri );
-	}
-	
-	Path forecastPath = Paths.get( uri );
-	File forecastFile = forecastPath.toFile();
-	return new FileInputStream( forecastFile );
+            throw new IllegalArgumentException(
+                    "Must pass a file uri, got " + uri );
+        }
+
+        Path forecastPath = Paths.get( uri );
+        File forecastFile = forecastPath.toFile();
+        return new FileInputStream( forecastFile );
     }
 
     private InputStream getFromWeb( URI uri ) throws IOException
     {
-	if ( !uri.getScheme().startsWith( "http" ) )
+        if ( !uri.getScheme().startsWith( "http" ) )
         {
-	    throw new IllegalArgumentException( "Must pass an http uri, got " + uri );
-	}
+            throw new IllegalArgumentException(
+                    "Must pass an http uri, got " + uri );
+        }
 
-	try
+        try
         {
-	    HttpRequest request = HttpRequest.newBuilder()
+            HttpRequest request = HttpRequest.newBuilder()
                                              .uri( uri )
                                              .build();
-	    HttpResponse<InputStream> httpResponse =
-		this.httpClient.send( request,
-				      HttpResponse.BodyHandlers.ofInputStream() );
+            HttpResponse<InputStream> httpResponse =
+                    this.httpClient.send( request,
+                                          HttpResponse.BodyHandlers.ofInputStream() );
 
-	    int httpStatus = httpResponse.statusCode();
+            int httpStatus = httpResponse.statusCode();
 
-	    if ( httpStatus >= 400 && httpStatus < 500 )
+            if ( httpStatus >= 400 && httpStatus < 500 )
             {
-		LOGGER.warn( "Could not retrieve data from {} due to status code {}",
-                             uri,
-                             httpResponse.statusCode() );
-		InputStream.nullInputStream();
-	    }
-	    else if ( httpStatus >= 500 )
-	    {
-		throw new IngestException( "Failed to get data from "
-					   + uri
-					   + " due to status code "
-					   + httpStatus );
-	    }
+                LOGGER.warn(
+                        "Could not retrieve data from {} due to status code {}",
+                        uri,
+                        httpResponse.statusCode() );
+                return  InputStream.nullInputStream();
+            }
+            else if ( httpStatus >= 500 )
+            {
+                throw new IngestException( "Failed to get data from "
+                                           + uri
+                                           + " due to status code "
+                                           + httpStatus );
+            }
 
-	    return httpResponse.body();
-	}
-	catch ( InterruptedException ie )
+            return httpResponse.body();
+        }
+        catch ( InterruptedException ie )
         {
-	    LOGGER.warn( "Interrupted while getting data from {}", uri, ie );
-	    Thread.currentThread().interrupt();
-	    return InputStream.nullInputStream();
+            LOGGER.warn( "Interrupted while getting data from {}", uri, ie );
+            Thread.currentThread().interrupt();
+            return InputStream.nullInputStream();
         }
     }
 
