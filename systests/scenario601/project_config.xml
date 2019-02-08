@@ -16,12 +16,6 @@
     <pair label="Pairs by location and lead time"> <!-- required for unit -->
         <unit>CMS</unit>
         <feature locationId="SMAF1" />
-
-        <desiredTimeScale>
-            <function>mean</function>
-            <period>1</period>
-            <unit>hours</unit>
-        </desiredTimeScale>
     </pair>
 
     <metrics>

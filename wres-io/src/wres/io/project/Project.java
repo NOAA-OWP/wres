@@ -532,6 +532,7 @@ public class Project
      * @throws SQLException Thrown on failing to obtain the time scale or time step information from the database
      * @throws CalculationException Thrown if no time scale or time step information is discovered
      * @throws RescalingException Thrown if the desired time scale is not deliverable from the existing sources
+     * @return the validated desired time scale or null if insufficient information was available to determine this
      */
 
     private TimeScale getAndValidateDesiredTimeScale() throws SQLException, CalculationException
@@ -559,8 +560,16 @@ public class Project
             Set<TimeScale> existingScales =
                     existingScalesAndSteps.stream().map( Pair::getLeft ).collect( Collectors.toSet() );
 
-            desiredScale =
-                    MetadataHelper.getLeastCommonScaleInSeconds( java.util.Collections.unmodifiableSet( existingScales ) );
+            if ( !existingScales.isEmpty() )
+            {
+                desiredScale =
+                        MetadataHelper.getLeastCommonScaleInSeconds( java.util.Collections.unmodifiableSet( existingScales ) );
+            }
+            else
+            {
+                LOGGER.warn( "Could not determine the desired time scale of the data by analyzing the ingested sources. "
+                             + "Assuming that the paired values have matching time scales." );
+            }
         }
 
         // Validate the desired time scale against each existing one
@@ -569,8 +578,9 @@ public class Project
                       existingScalesAndSteps.size(),
                       desiredScale );
 
-        // TODO: only validate when in production - remove on resolving #58715
-        if ( Project.isValidateDesiredTimeScaleAgainstEachIngestedSourceInProduction() )
+        // TODO: only validate when in production - remove the first check on resolving #58715
+        if ( Project.isValidateDesiredTimeScaleAgainstEachIngestedSourceInProduction()
+             && Objects.nonNull( desiredScale ) )
         {
             final TimeScale finalDesiredScale = desiredScale;
             existingScalesAndSteps.forEach( pair -> MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( pair.getLeft(),
