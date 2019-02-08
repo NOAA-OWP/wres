@@ -7,19 +7,13 @@ import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Future;
 
 import javax.validation.constraints.NotNull;
 
@@ -41,10 +35,8 @@ import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
 import wres.io.data.details.SourceDetails;
-import wres.io.reading.IngestException;
 import wres.io.reading.IngestedValues;
 import wres.io.utilities.DataScripter;
-import wres.system.SystemSettings;
 import wres.util.NetCDF;
 import wres.util.Strings;
 import wres.util.TimeHelper;
@@ -81,11 +73,6 @@ class VectorNWMValueSaver extends WRESRunnable
         public boolean equals( Object obj )
         {
             return obj instanceof TimeSeriesIndexKey && this.hashCode() == obj.hashCode();
-        }
-
-        boolean isForecast()
-        {
-            return this.ensembleID >= 1;
         }
 
         @Override
@@ -182,14 +169,20 @@ class VectorNWMValueSaver extends WRESRunnable
     private static final double EPSILON = 0.0000001;
 
     /**
-     * Since the NWM uses instantaneous values, the scale period is 1
+     * The time scale of the NWM data is currently unknown. When the NWM
+     * data is properly defined, the defaults of missing for both the 
+     * {@link #SCALE_PERIOD} and {@link #SCALE_FUNCTION} should be overridden.
+     * See discussion in #55216.
      */
-    private static final int SCALE_PERIOD = 1;
+    private static final Duration SCALE_PERIOD = null;
 
     /**
-     * Since the NWM uses instantaneous values, there isn't a function associated with the scale
+     * The time scale of the NWM data is currently unknown. When the NWM
+     * data is properly defined, the defaults of missing for both the 
+     * {@link #SCALE_PERIOD} and {@link #SCALE_FUNCTION} should be overridden.
+     * See discussion in #55216.
      */
-    private static final String SCALE_FUNCTION = TimeScale.TimeScaleFunction.UNKNOWN.toString();
+    private static final TimeScale.TimeScaleFunction SCALE_FUNCTION = TimeScale.TimeScaleFunction.UNKNOWN;
 
     /**
      * Gets a object to lock on based on the key for a time series
@@ -256,7 +249,35 @@ class VectorNWMValueSaver extends WRESRunnable
         }
         return measurementUnitID;
     }
-
+    
+    /**
+     * Returns the period associated with the time scale of the data.
+     * 
+     * TODO: return something other than the static default, once the time scale
+     * of the NWM data can be properly determined from the source.
+     * 
+     * @return the period associated with the time scale, which may be null
+     */
+    
+    private Duration getTimeScalePeriod()
+    {
+        return VectorNWMValueSaver.SCALE_PERIOD;
+    }
+    
+    /**
+     * Returns the function associated with the time scale of the data.
+     * 
+     * TODO: return something other than the static default, once the time scale
+     * of the NWM data can be properly determined from the source.
+     * 
+     * @return the function associated with the time scale, which may be null
+     */
+    
+    private TimeScale.TimeScaleFunction getTimeScaleFunction()
+    {
+        return VectorNWMValueSaver.SCALE_FUNCTION;
+    }
+    
     /**
      * Side effect: sets inChargeOfIngest, a flag to say whether to save values
      * @return The id for the source file in the database
@@ -417,8 +438,8 @@ class VectorNWMValueSaver extends WRESRunnable
                           .at(NetCDF.getTime(this.getSource()))
                           .inSource( this.getSourceID() )
                           .forVariableAndFeatureID( spatioVariableID )
-                          .scaleOf( Duration.ofMinutes( 1 ) )
-                          .scaledBy( TimeScale.TimeScaleFunction.UNKNOWN )
+                          .scaleOf( this.getTimeScalePeriod() )
+                          .scaledBy( this.getTimeScaleFunction() )
                           .add();
         }
     }
@@ -564,6 +585,12 @@ class VectorNWMValueSaver extends WRESRunnable
      */
     private void addTimeSeries() throws IOException, SQLException
     {
+        // TODO: when the scale_period is known for NWM data, 
+        // adapt this script to convert the non-null value to 
+        // an appropriate type for ingest. The scale_function
+        // is non-null but UNKNOWN, so that is already handled.
+        // See #55216
+        
         // Build a script that creates a new time series for each valid vector
         // position that doesn't already exist
         DataScripter script = new DataScripter(  );
@@ -579,8 +606,8 @@ class VectorNWMValueSaver extends WRESRunnable
         script.addTab().addLine(this.getEnsembleID(), ",");
         script.addTab().addLine(this.getMeasurementUnitID(), "," );
         script.addTab().addLine("'", NetCDF.getReferenceTime( this.getSource() ), "',");
-        script.addTab().addLine(VectorNWMValueSaver.SCALE_PERIOD, ",");
-        script.addTab().addLine("'", VectorNWMValueSaver.SCALE_FUNCTION, "'");
+        script.addTab().addLine(this.getTimeScalePeriod(), ",");
+        script.addTab().addLine("'", this.getTimeScaleFunction(), "'");
         script.addLine("FROM wres.VariableFeature VF");
         script.addLine("INNER JOIN wres.Feature F");
         script.addTab().addLine("ON F.feature_id = VF.feature_id");
