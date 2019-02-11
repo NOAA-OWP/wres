@@ -1041,7 +1041,7 @@ final class ProjectScriptGenerator
         if (ConfigHelper.isForecast( dataSourceConfig ))
         {
             scripter.addLine("SELECT D.difference AS time_step,");
-            scripter.addTab().addLine("1 AS scale_period, -- We don't currently store gridded scaling information");
+            scripter.addTab().addLine("NULL AS scale_period, -- We don't currently store gridded scaling information");
             scripter.addTab().addLine("'UNKNOWN' AS scale_function");
             scripter.addLine("FROM (");
             scripter.addTab().addLine("SELECT lead - lag(lead) OVER (ORDER BY output_time, lead) AS difference,");

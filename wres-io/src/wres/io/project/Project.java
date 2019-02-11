@@ -75,7 +75,8 @@ import wres.util.functional.ExceptionalConsumer;
  * TODO: refactor this class and make it immutable, ideally, but otherwise thread-safe. It's also
  * far too large (JBr). See #49511.
  * 
- * TODO: reconcile {@link #getScale()} with {@link #getAndValidateDesiredTimeScale()}
+ * TODO: reconcile {@link #getScale()} with {@link #getDesiredTimeScale()}
+ * and {@link #getDesiredTimeStep()}
  * The former currently mixes up two different things: time scale and time-step. 
  * Ultimately, we want one pathway to obtain the desired time scale for data 
  * retrieval, validation and metadata propagation. Currently, there are two pathways, 
@@ -270,6 +271,15 @@ public class Project
     private TimeScale desiredTimeScale;
     
     /**
+     * The least common time step associated with all ingested sources.
+     * 
+     * TODO: reconcile this with {@link #getScale()}, which currently mixes up 
+     * two different things: time scale and time-step. 
+     */
+    
+    private Duration leastCommonTimeStep;
+    
+    /**
      * The desired scale for the project
      *<p>
      * If the configuration doesn't specify the desired scale, the system
@@ -439,10 +449,10 @@ public class Project
      */
     public void prepareForExecution() throws SQLException, IOException, CalculationException
     {
-        // Get and validate the time-scale information in the declaration as it applies to ingested sources
-        // Remove the feature toggle when ready for production
-        this.desiredTimeScale = this.getAndValidateDesiredTimeScale();
-        
+        // Sets and validates the time-scale information from the declaration and ingested sources
+        // Also sets the desired time step of the output
+        this.setDesiredTimeScaleAndTimeStep();
+
         if (!ConfigHelper.isSimulation( this.getRight() ) &&
             !ProjectConfigs.hasTimeSeriesMetrics( this.getProjectConfig() ) &&
             !this.usesGriddedData( this.getRight() ))
@@ -476,7 +486,7 @@ public class Project
      * is either the user-declared time scale (canonically) or the Least 
      * Common Scale determined from the source data. Returns null if the
      * time-scale has not yet been determined. The time-scale is actually
-     * computed by {@link #getAndValidateDesiredTimeScale()}.
+     * computed by {@link #setDesiredTimeScaleAndTimeStep()}.
      * 
      * TODO: reconcile with {@link #getScale()}, which currently mixes up 
      * two different things: time scale and time-step. Ultimately, we want 
@@ -494,6 +504,52 @@ public class Project
     }
     
     /**
+     * Returns the desired time-step associated with the project. Currently,
+     * this is the larger of the following two sources of information:
+     * <ol>
+     * <li>The least common timestep from all ingested 
+     * sources and;</li>
+     * <li>The <code>period</code> associated with the <code>desiredTimeScale</code> 
+     * from the project declaration, where applicable</li>
+     * </ol>
+     * 
+     * TODO: if, and when, we support a desired time scale that is not
+     * equal to the desired time step of the data (e.g. a 24h accumulation 
+     * every 6h), refactor this method to return the least common timestep 
+     * and refactor any dependencies on this method accordingly. Currently, 
+     * we do not allow this and, hence, the returned {@link Duration} is 
+     * always the larger of the least common timestep and the period 
+     * associated with the <code>desiredTimeScale</code>. 
+     * 
+     * TODO: eliminate the <code>frequency</code> associated with the 
+     * declared time scale information, because this is confusing and is 
+     * unrelated to time scale.
+     * 
+     * TODO: reconcile this method with {@link #getScale()}, which should be
+     * deprecated and removed.
+     */
+
+    public Duration getDesiredTimeStep()
+    {
+        // A desired time scale is declared
+        if ( Objects.nonNull( this.getProjectConfig().getPair().getDesiredTimeScale() ) )
+        {
+            TimeScale timeScale = TimeScale.of( this.getProjectConfig().getPair().getDesiredTimeScale() );
+
+            // The desired time scale is larger than the least common time step of
+            // all ingested sources, so return that as the desired time step
+            if ( timeScale.getPeriod().compareTo( this.leastCommonTimeStep ) > 0 )
+            {
+                return timeScale.getPeriod();
+            }
+        }
+
+        // return the last common time-step of all 
+        // ingested sources
+        return this.leastCommonTimeStep;
+    }
+    
+    /**
      * Feature toggle that indicates whether time-scale validation should be conducted.
      *
      * @deprecated (for removal when #58715 is resolved)
@@ -506,16 +562,17 @@ public class Project
     }
 
     /**
-     * <p>Validates the "desired time scale" information in the project declaration as it applies to ingested sources. 
-     * The "desired time scale" is either declared explicitly (once instance per declaration) as the 
-     * <code>desiredTimeScale</code> or it is determined by the system (see below).
+     * <p> Sets and validates the time scale and time step at which evaluation should be conducted.
      * 
-     * <p>This method is concerned with post-ingest validation, when the existing time scale is maximally described,
+     * <p>Determines the "desired time scale" information from the intersection of the declaration and
+     * all ingested sources. The "desired time scale" is either declared explicitly (once per declaration) in 
+     * the <code>desiredTimeScale</code> or it is determined by the system (see below).
+     * 
+     * <p>This method must be called post-ingest, when the existing time scale is maximally described,
      * either from the <code>existingTimeScale</code> in the project declaration or the information within the source 
      * (which is canonical). For the same reason, the <code>existingTimeScale</code> is *not* validated separately, but 
      * this method will validate the <code>existingTimeScale</code> insofar as it was used to describe the source in 
-     * the database. Post-ingest, the database provides a canonical description of the scale information associated 
-     * with each source.
+     * the database.
      * 
      * <p>When the declaration does not include a <code>desiredTimeScale</code>, an attempt is made to determine 
      * the Least Common Scale (LCS). The LCS is the smallest common multiple of the time scales associated with every 
@@ -527,7 +584,11 @@ public class Project
      * <p> Uses the {@link MetadataHelper#throwExceptionIfChangeOfScaleIsInvalid(TimeScale, TimeScale, Duration)} for
      * validation.
      * 
-     * <p> Uses the {@link MetadataHelper#getLeastCommonScaleInSeconds(Set)} to determine the LCS.
+     * <p> Uses the {@link TimeScale#getLeastCommonTimeScale(Set)} to determine the LCS.
+     * 
+     * <p> In addition, it sets the time step for evaluation. Specifically, it sets the {@link #leastCommonTimeStep}
+     * associated with all ingested sources using the {@link TimeScale#getLeastCommonDuration(Set)}. See also
+     * the {@link #getDesiredTimeStep()}.
      * 
      * @throws SQLException Thrown on failing to obtain the time scale or time step information from the database
      * @throws CalculationException Thrown if no time scale or time step information is discovered
@@ -535,35 +596,39 @@ public class Project
      * @return the validated desired time scale or null if insufficient information was available to determine this
      */
 
-    private TimeScale getAndValidateDesiredTimeScale() throws SQLException, CalculationException
+    private void setDesiredTimeScaleAndTimeStep() throws SQLException, CalculationException
     {
         // The desired time scale
-        TimeScale desiredScale = null;
+        TimeScale desiredTimeScale = null;
 
         // Obtain from the declaration if available
         if ( Objects.nonNull( this.getProjectConfig().getPair() )
              && Objects.nonNull( this.getProjectConfig().getPair().getDesiredTimeScale() ) )
         {
-            desiredScale = TimeScale.of( this.getProjectConfig().getPair().getDesiredTimeScale() );
+            desiredTimeScale = TimeScale.of( this.getProjectConfig().getPair().getDesiredTimeScale() );
         }
 
         // Obtain the existing time scale and corresponding time step for each ingested source
         Set<Pair<TimeScale, Duration>> existingScalesAndSteps = this.getTimeScaleAndTimeStepForEachProjectSource();
 
         // Determine the Least Common Scale if required and available
-        if ( Objects.isNull( desiredScale ) )
+        if ( Objects.isNull( desiredTimeScale ) )
         {
             LOGGER.debug( "No desired time scale declared. Attempting to substitute the Least Common Scale based on "
                           + "the ingested sources." );
 
             // The unique existing times scales from which to determined the Least Common Scale
+            // Only include non-null time scales
             Set<TimeScale> existingScales =
-                    existingScalesAndSteps.stream().map( Pair::getLeft ).collect( Collectors.toSet() );
+                    existingScalesAndSteps.stream()
+                                          .map( Pair::getLeft )
+                                          .filter( Objects::nonNull )
+                                          .collect( Collectors.toSet() );
 
             if ( !existingScales.isEmpty() )
             {
-                desiredScale =
-                        MetadataHelper.getLeastCommonScaleInSeconds( java.util.Collections.unmodifiableSet( existingScales ) );
+                desiredTimeScale =
+                        TimeScale.getLeastCommonTimeScale( java.util.Collections.unmodifiableSet( existingScales ) );
             }
             else
             {
@@ -576,22 +641,31 @@ public class Project
         LOGGER.debug( "Found {} distinct time scales across all ingested sources. "
                       + "Validating each against the desired time scale of {}.",
                       existingScalesAndSteps.size(),
-                      desiredScale );
+                      desiredTimeScale );
 
         // TODO: only validate when in production - remove the first check on resolving #58715
         if ( Project.isValidateDesiredTimeScaleAgainstEachIngestedSourceInProduction()
-             && Objects.nonNull( desiredScale ) )
+             && Objects.nonNull( desiredTimeScale ) )
         {
-            final TimeScale finalDesiredScale = desiredScale;
+            final TimeScale finalDesiredScale = desiredTimeScale;
             existingScalesAndSteps.forEach( pair -> MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( pair.getLeft(),
                                                                                                            finalDesiredScale,
                                                                                                            pair.getRight() ) );
         }
         
+        // Compute the desired time-step for the pairs, which is the least common duration of 
+        // the existing time steps across all ingested sources
+        Duration leastCommonTimeStep =
+                TimeScale.getLeastCommonDuration( existingScalesAndSteps.stream()
+                                                                        .map( Pair::getRight )
+                                                                        .collect( Collectors.toSet() ) );
+
         LOGGER.debug( "Finished validating the {} existing time scales against the desired time scale.",
                       existingScalesAndSteps.size() );
         
-        return desiredScale;
+        // Set the desired scale and least common time step
+        this.desiredTimeScale = desiredTimeScale;
+        this.leastCommonTimeStep = leastCommonTimeStep;
     }
 
     /**
@@ -1465,6 +1539,7 @@ public class Project
      */
     private Duration getCommonInterval() throws CalculationException
     {
+        
         Duration commonInterval;
 
         try
@@ -3016,16 +3091,13 @@ public class Project
             }
 
             // Record or log as null
-            if ( Objects.nonNull( period ) && Objects.nonNull( functionString ) )
-            {
-                // Create the scale and step information
-                this.createTimeStepInformation( period, functionString, timeStep, value );
-            }
-
-            else
+            if ( Objects.isNull( period ) || Objects.isNull( functionString ) )
             {
                 this.warnOnNullScale.set( true );
             }
+            
+            // Create the scale and/or time step information
+            this.createTimeStepInformation( period, functionString, timeStep, value );
         }
 
         /**
@@ -3042,14 +3114,21 @@ public class Project
                                                 Duration timeStep,
                                                 DataProvider value )
         {
-            TimeScale.TimeScaleFunction function =
-                    TimeScale.TimeScaleFunction.valueOf( functionString.toUpperCase() );
+            TimeScale timeScale = null;
+            
+            // Time scale information available
+            if ( Objects.nonNull( period ) && Objects.nonNull( functionString ) )
+            {
+                TimeScale.TimeScaleFunction function =
+                        TimeScale.TimeScaleFunction.valueOf( functionString.toUpperCase() );
 
-            TimeScale timeScale = TimeScale.of( period, function );
-
-            // Validate if declaration is present too
-            if ( Objects.nonNull( declaredExistingTimeScale )
-                 && !declaredExistingTimeScale.equals( timeScale ) )
+                timeScale = TimeScale.of( period, function );
+            }
+            
+            // Validate time scale if both input and declaration are present
+            if ( Objects.nonNull( this.declaredExistingTimeScale )
+                 && Objects.nonNull( timeScale )   
+                 && ! this.declaredExistingTimeScale.equals( timeScale ) )
             {
                 // Report the original time scale function in case the database said UNKNOWN and this was
                 // augmented above
@@ -3059,7 +3138,7 @@ public class Project
                     timeScaleToReport = TimeScale.of( period );
                 }
 
-                if ( timeScale.isInstantaneous() && declaredExistingTimeScale.isInstantaneous() )
+                if ( timeScale.isInstantaneous() && this.declaredExistingTimeScale.isInstantaneous() )
                 {
                     this.warnOnInstantaneous.set( true );
                     this.warnTimeScale = timeScaleToReport;
@@ -3076,13 +3155,13 @@ public class Project
                                                       + "says: "
                                                       + timeScaleToReport
                                                       + ". Declaration says: "
-                                                      + declaredExistingTimeScale );
+                                                      + this.declaredExistingTimeScale );
                     }
                 }
             }
 
-            // Store
-            existingTimeScales.add( Pair.of( timeScale, timeStep ) );
+            // Store, with possibly null time scale information
+            this.existingTimeScales.add( Pair.of( timeScale, timeStep ) );
 
         }
 
