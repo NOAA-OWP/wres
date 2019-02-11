@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.metadata.TimeScale;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Features;
@@ -313,6 +314,8 @@ public class DatacardSource extends BasicSource
                                       .at( utcDateTime )
                                       .measuredIn( this.getMeasurementID() )
                                       // Default is missing time scale: see #59536
+                                      .scaleOf( null )
+                                      .scaledBy( TimeScale.TimeScaleFunction.UNKNOWN )
                                       .inSource( this.getSourceID() )
                                       .forVariableAndFeatureID( this.getVariableFeatureID() )
                                       .add();

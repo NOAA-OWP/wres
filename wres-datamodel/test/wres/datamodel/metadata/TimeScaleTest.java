@@ -8,7 +8,13 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.time.Duration;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.TreeSet;
 
+import org.apache.commons.math3.exception.MathArithmeticException;
+import org.hamcrest.CoreMatchers;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -225,6 +231,227 @@ public final class TimeScaleTest
         assertFalse( TimeScale.of( Duration.ofSeconds( 61 ) ).isInstantaneous() );
         
         assertFalse( TimeScale.of( Duration.ofSeconds( 60 ).plusNanos( 1 ) ).isInstantaneous() );
+    }
+ 
+
+    /**
+     * Tests that the {@link TimeScale#getLeastCommonTimeScale(java.util.Set) throws an expected exception 
+     * when the input is empty.
+     */
+    @Test
+    public void testGetLCSThrowsExceptionWithEmptyInput()
+    {
+        exception.expect( IllegalArgumentException.class );
+        exception.expectMessage( "Cannot compute the Least Common Scale from empty input." );
+
+        TimeScale.getLeastCommonTimeScale( Collections.emptySet() );
+    }
+
+    /**
+     * Tests that the {@link TimeScale#getLeastCommonTimeScale(java.util.Set) throws an expected exception 
+     * when the input is null.
+     */
+    @Test
+    public void testGetLCSThrowsExceptionWithNullInput()
+    {
+        exception.expect( NullPointerException.class );
+        exception.expectMessage( "Cannot compute the Least Common Scale from null input." );
+
+        TimeScale.getLeastCommonTimeScale( null );
+    }
+
+    /**
+     * Tests that the {@link TimeScale#getLeastCommonTimeScale(java.util.Set) throws an expected exception 
+     * when the input contains more than two different time scales.
+     */
+    @Test
+    public void testGetLCSThrowsExceptionWithMoreThanTwoTimeScales()
+    {
+        exception.expect( RescalingException.class );
+        exception.expectMessage( "Could not determine the Least Common Scale from the input. Expected input "
+                                 + "with only one scale function that does not correspond to an instantaneous "
+                                 + "time scale. Instead found ["
+                                 + TimeScaleFunction.MEAN
+                                 + ", "
+                                 + TimeScaleFunction.MAXIMUM
+                                 + ", "
+                                 + TimeScaleFunction.TOTAL
+                                 + "]." );
+
+        // Insertion ordered set to reflect declaration order of enum type
+        Set<TimeScale> scales = new TreeSet<>();
+
+        scales.add( TimeScale.of( Duration.ofHours( 1 ), TimeScaleFunction.MEAN ) );
+        scales.add( TimeScale.of( Duration.ofHours( 1 ), TimeScaleFunction.MAXIMUM ) );
+        scales.add( TimeScale.of( Duration.ofHours( 1 ), TimeScaleFunction.TOTAL ) );
+
+        TimeScale.getLeastCommonTimeScale( scales );
+    }
+
+    /**
+     * Tests that the {@link TimeScale#getLeastCommonTimeScale(java.util.Set) throws an expected exception 
+     * when the input contains two different time scales and none are instantaneous.
+     */
+    @Test
+    public void testGetLCSThrowsExceptionWithTwoTimeScalesOfWhichNoneAreInstantaneous()
+    {
+        exception.expect( RescalingException.class );
+        exception.expectMessage( "Could not determine the Least Common Scale from the input. Expected input "
+                                 + "with only one scale function that does not correspond to an instantaneous "
+                                 + "time scale. Instead found ["
+                                 + TimeScaleFunction.MEAN
+                                 + ", "
+                                 + TimeScaleFunction.MAXIMUM
+                                 + "]." );
+
+        Set<TimeScale> scales = new TreeSet<>();
+
+        scales.add( TimeScale.of( Duration.ofHours( 1 ), TimeScaleFunction.MEAN ) );
+        scales.add( TimeScale.of( Duration.ofHours( 1 ), TimeScaleFunction.MAXIMUM ) );
+
+        TimeScale.getLeastCommonTimeScale( scales );
+    }
+
+    /**
+     * Tests that the {@link TimeScale#getLeastCommonTimeScale(java.util.Set) throws an expected exception 
+     * when the input contains a time scale that is the {@link Long#MAX_VALUE} in seconds.
+     */
+    @Test
+    public void testGetLCSThrowsExceptionWhenTimeScaleOverflowsLongSeconds()
+    {
+        exception.expect( RescalingException.class );
+        exception.expectMessage( "While attempting to compute the Least Common Duration from the input:" );
+        exception.expectCause( CoreMatchers.isA( MathArithmeticException.class ) );
+
+        Set<TimeScale> scales = new TreeSet<>();
+
+        scales.add( TimeScale.of( Duration.ofSeconds( Long.MAX_VALUE ) ) );
+        scales.add( TimeScale.of( Duration.ofHours( 1 ) ) );
+
+        TimeScale.getLeastCommonTimeScale( scales );
+    }
+
+    /**
+     * Tests that the {@link TimeScale#getLeastCommonTimeScale(java.util.Set) returns the single time scale
+     * from an input with one time scale.
+     */
+    @Test
+    public void testGetLCSReturnsInputWhenInputHasOne()
+    {
+        TimeScale one = TimeScale.of( Duration.ofSeconds( 1 ) );
+
+        assertEquals( one, TimeScale.getLeastCommonTimeScale( Collections.singleton( one ) ) );
+    }
+
+    /**
+     * Tests that the {@link TimeScale#getLeastCommonTimeScale(java.util.Set) returns the single 
+     * non-instantaneous time scale from the input that contains one non-instantaneous time scale.
+     */
+    @Test
+    public void testGetLCSReturnsNonInstantaneousInputWhenInputHasTwoAndOneIsInstantaneous()
+    {
+        Set<TimeScale> scales = new HashSet<>( 2 );
+        TimeScale expected = TimeScale.of( Duration.ofSeconds( 61 ) );
+        scales.add( TimeScale.of( Duration.ofSeconds( 1 ) ) );
+        scales.add( expected );
+
+        assertEquals( expected, TimeScale.getLeastCommonTimeScale( scales ) );
+    }
+
+    /**
+     * <p>Tests that the {@link TimeScale#getLeastCommonTimeScale(java.util.Set) returns the expected
+     * LCS from an input containing three different time scales. Takes the example of (8,9,21) from:</p>
+     * 
+     * <p>https://en.wikipedia.org/wiki/Least_common_multiple
+     */
+    @Test
+    public void testGetLCSReturnsExpectedResultFromThreeInputs()
+    {
+        Set<TimeScale> scales = new HashSet<>( 3 );
+
+        scales.add( TimeScale.of( Duration.ofHours( 8 ) ) );
+        scales.add( TimeScale.of( Duration.ofHours( 9 ) ) );
+        scales.add( TimeScale.of( Duration.ofHours( 21 ) ) );
+
+        TimeScale expected = TimeScale.of( Duration.ofHours( 504 ) );
+
+        assertEquals( expected, TimeScale.getLeastCommonTimeScale( scales ) );
+    }
+
+    /**
+     * <p>Tests that the {@link TimeScale#getLeastCommonTimeScale(java.util.Set) returns the expected
+     * LCS from an input containing three different time scales. Takes the example of (8,9,21) from:</p>
+     * 
+     * <p>https://en.wikipedia.org/wiki/Least_common_multiple
+     */
+    @Test
+    public void testGetLCSReturnsExpectedResultFromTwoInputs()
+    {
+        Set<TimeScale> scales = new HashSet<>( 3 );
+
+        scales.add( TimeScale.of( Duration.ofHours( 8 ) ) );
+        scales.add( TimeScale.of( Duration.ofHours( 9 ) ) );
+
+        TimeScale expected = TimeScale.of( Duration.ofHours( 72 ) );
+
+        assertEquals( expected, TimeScale.getLeastCommonTimeScale( scales ) );
+    }
+    
+    /**
+     * Tests that the {@link TimeScale#getLeastCommonDuration(java.util.Set) throws an expected exception 
+     * when the input is empty.
+     */
+    @Test
+    public void testGetLCDThrowsExceptionWithEmptyInput()
+    {
+        exception.expect( IllegalArgumentException.class );
+        exception.expectMessage( "Cannot compute the Least Common Duration from empty input." );
+
+        TimeScale.getLeastCommonDuration( Collections.emptySet() );
+    }
+
+    /**
+     * Tests that the {@link TimeScale#getLeastCommonDuration(java.util.Set) throws an expected exception 
+     * when the input is null.
+     */
+    @Test
+    public void testGetLCDThrowsExceptionWithNullInput()
+    {
+        exception.expect( NullPointerException.class );
+        exception.expectMessage( "Cannot compute the Least Common Duration from null input." );
+
+        TimeScale.getLeastCommonDuration( null );
+    }
+    
+    /**
+     * Tests that the {@link TimeScale#getLeastCommonDuration(java.util.Set) returns the single duration
+     * from an input with one time duration.
+     */
+    @Test
+    public void testGetLCDReturnsInputWhenInputHasOne()
+    {
+        Duration one = Duration.ofSeconds( 1 );
+        assertEquals( one, TimeScale.getLeastCommonDuration( Collections.singleton( one ) ) );
+    }
+    
+    /**
+     * <p>Tests that the {@link TimeScale#getLeastCommonDuration(java.util.Set) returns the expected
+     * LCM from an input containing three different time durations. Takes the example of (8,9,21) from:</p>
+     * 
+     * <p>https://en.wikipedia.org/wiki/Least_common_multiple
+     */
+    @Test
+    public void testGetLCDReturnsExpectedResultFromThreeInputs()
+    {
+        Set<Duration> durations = new HashSet<>( 3 );
+
+        durations.add( Duration.ofHours( 8 ) );
+        durations.add( Duration.ofHours( 9 ) );
+        durations.add( Duration.ofHours( 21 ) );
+
+        Duration expected = Duration.ofHours( 504 );
+
+        assertEquals( expected, TimeScale.getLeastCommonDuration( durations ) );
     }
     
 }

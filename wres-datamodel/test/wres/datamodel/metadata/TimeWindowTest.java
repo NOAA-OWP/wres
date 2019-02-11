@@ -57,6 +57,7 @@ public final class TimeWindowTest
      * Constructs a {@link TimeWindow} and tests {@link TimeWindow#equals(Object)} against other instances.
      */
 
+    @SuppressWarnings( "unlikely-arg-type" )
     @Test
     public void testEquals()
     {
@@ -69,7 +70,7 @@ public final class TimeWindowTest
         assertTrue( "Unexpected inequality between time windows.",
                     window.equals( equalWindow ) );
         assertTrue( "Unexpected equality between time windows on input type.",
-                    !window.equals( new Double( 1.0 ) ) );
+                    !window.equals( Double.valueOf( 1.0 ) ) );
         assertTrue( "Unexpected equality between time windows on earliest time.",
                     !window.equals( TimeWindow.of( Instant.parse( "1985-01-01T00:00:01Z" ),
                                                    Instant.parse( "2010-12-31T11:59:59Z" ) ) ) );
