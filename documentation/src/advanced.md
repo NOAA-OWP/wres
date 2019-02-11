@@ -1,4 +1,4 @@
-# Advanced Alterations of System Behavior
+# Advanced Alterations of WRES System Behavior
 
 This section is intended to have additional information for users who wish to
 change behaviors of the system that do not affect the functionality of inputs
@@ -7,7 +7,7 @@ used in order to operate the system correctly.
 
 ## Logging behavior
 
-As of 2017-09-05, the system uses the logback logging library implementation.
+As of 2019-02-11, the system uses the logback logging library implementation.
 
 By default, the logback configuration file is:
 
