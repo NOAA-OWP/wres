@@ -658,7 +658,10 @@ public class Project
              && Objects.nonNull( desiredScale ) )
         {
             final TimeScale finalDesiredScale = desiredScale;
-            existingScalesAndSteps.forEach( pair -> MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( pair.getLeft(),
+            // Only check where the existing scale is known
+            existingScalesAndSteps.stream()
+                                  .filter( p -> Objects.nonNull( p.getLeft() ) && Objects.nonNull( p.getRight() ) )
+                                  .forEach( pair -> MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( pair.getLeft(),
                                                                                                            finalDesiredScale,
                                                                                                            pair.getRight() ) );
         }
