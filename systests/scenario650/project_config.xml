@@ -5,22 +5,12 @@
             <type>simulations</type>
             <source format="netCDF" pattern="**/*tm02*">data/griddedExamples/precip_ellicott_city/analysis_assim/</source>
             <variable>RAINRATE</variable>
-            <existingTimeScale>
-                <function>mean</function>
-                <period>1</period>
-                <unit>hours</unit>
-            </existingTimeScale>
         </left>
         <right label="NWM Short Range">
             <type>single valued forecasts</type>
             <!--<source format="netCDF">data/griddedExamples/precip_ellicott_city/short_range/</source> -->
             <source format="netCDF" pattern="**/*nwm.t*0[0-9]z*">data/griddedExamples/precip_ellicott_city/short_range/nwm.20180526/</source>
             <variable>RAINRATE</variable>
-            <existingTimeScale>
-                <function>mean</function>
-                <period>1</period>
-                <unit>hours</unit>
-            </existingTimeScale>
         </right>
     </inputs>
     <pair label="Pairs by location and lead time"> <!-- required for unit -->

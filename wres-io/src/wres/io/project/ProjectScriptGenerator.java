@@ -1084,7 +1084,7 @@ final class ProjectScriptGenerator
         DataScripter scripter = new DataScripter();
 
         scripter.addLine( "SELECT EXTRACT(epoch FROM AGE(D.valid_time, D.previous_valid_time)) / 60 AS time_step," );
-        scripter.addTab().addLine( "1 AS scale_period, -- We don't currently store gridded scaling information" );
+        scripter.addTab().addLine( "NULL AS scale_period, -- We don't currently store gridded scaling information" );
         scripter.addTab().addLine( "'UNKNOWN' AS scale_function" );
         scripter.addLine( "FROM (" );
         scripter.addTab().addLine( "SELECT S.output_time + INTERVAL '1 MINUTE' * S.lead AS valid_time," );
@@ -1123,7 +1123,7 @@ final class ProjectScriptGenerator
         DataScripter scripter = new DataScripter();
 
         scripter.addLine( "SELECT D.difference AS time_step," );
-        scripter.addTab().addLine( "1 AS scale_period, -- We don't currently store gridded scaling information" );
+        scripter.addTab().addLine( "NULL AS scale_period, -- We don't currently store gridded scaling information" );
         scripter.addTab().addLine( "'UNKNOWN' AS scale_function" );
         scripter.addLine( "FROM (" );
         scripter.addTab().addLine( "SELECT lead - lag(lead) OVER (ORDER BY output_time, lead) AS difference," );
