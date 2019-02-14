@@ -539,17 +539,29 @@ public final class NetCDF {
         return new Ensemble( name, qualifier, member );
     }
 
-    public static String getUniqueIdentifier( final URI filepath ) throws IOException
+    /**
+     * Evaluates a unique identifier for the source of NetCDF data
+     * @param filepath The path to the NetCDF data
+     * @param variableName The variable of interest for the NetCDF data
+     * @return An Unique Identifier for specific data
+     * @throws IOException Thrown if the file could not be found
+     * @throws IOException Thrown if the file could not be opened
+     * @throws IOException Thrown if the file could not be read in order to produce a hash
+     */
+    public static String getUniqueIdentifier( final URI filepath, final String variableName ) throws IOException
     {
         String uniqueIdentifier;
 
+        // With gridded data, we just care about the file itself; variable info will be dealt with later
         if (NetCDF.isGridded( filepath.toURL().getFile() ))
         {
             uniqueIdentifier = NetCDF.getGriddedUniqueIdentifier( filepath );
         }
         else
         {
+            // With vector data, we need to know a) what data it is and b) what variable we're looking to ingest
             uniqueIdentifier = Strings.getMD5Checksum( filepath );
+            uniqueIdentifier += "::" + variableName;
         }
 
         return uniqueIdentifier;
