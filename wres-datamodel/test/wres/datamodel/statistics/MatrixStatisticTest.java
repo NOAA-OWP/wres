@@ -30,6 +30,7 @@ public final class MatrixStatisticTest
      * Constructs a {@link MatrixStatistic} and tests for equality with another {@link MatrixStatistic}.
      */
 
+    @SuppressWarnings( "unlikely-arg-type" )
     @Test
     public void test1Equals()
     {
@@ -65,7 +66,7 @@ public final class MatrixStatisticTest
         final MatrixStatistic t = MatrixStatistic.of( new double[][] { { 1.0 }, { 1.0 } }, m1 );
         assertTrue( "Expected equal outputs.", s.equals( t ) );
         assertFalse( "Expected unequal outputs.", s.equals( null ) );
-        assertFalse( "Expected unequal outputs.", s.equals( new Double( 1.0 ) ) );
+        assertFalse( "Expected unequal outputs.", s.equals( Double.valueOf( 1.0 ) ) );
         assertFalse( "Expected unequal outputs.",
                      s.equals( MatrixStatistic.of( new double[][] { { 2.0 }, { 1.0 } }, m1 ) ) );
         assertFalse( "Expected unequal outputs.",

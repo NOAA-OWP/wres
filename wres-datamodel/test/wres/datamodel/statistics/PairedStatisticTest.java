@@ -30,6 +30,7 @@ public final class PairedStatisticTest
      * Constructs a {@link PairedStatistic} and tests for equality with another {@link PairedStatistic}.
      */
 
+    @SuppressWarnings( "unlikely-arg-type" )
     @Test
     public void test1Equals()
     {
@@ -72,7 +73,7 @@ public final class PairedStatisticTest
         }
         assertTrue( "Expected equal outputs.", s.equals( t ) );
         assertTrue( "Expected non-equal outputs.", !s.equals( null ) );
-        assertTrue( "Expected non-equal outputs.", !s.equals( new Double( 1.0 ) ) );
+        assertTrue( "Expected non-equal outputs.", !s.equals( Double.valueOf( 1.0 ) ) );
         List<Pair<Instant, Duration>> inputSecond = new ArrayList<>();
         inputSecond.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( 2 ) ) );
         assertTrue( "Expected non-equal outputs.", !s.equals( PairedStatistic.of( inputSecond, m1 ) ) );

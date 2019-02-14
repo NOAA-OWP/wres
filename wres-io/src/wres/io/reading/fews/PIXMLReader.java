@@ -13,13 +13,13 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.Locale;
 import java.util.Objects;
 
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
-import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.math3.util.Precision;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -367,12 +367,7 @@ public final class PIXMLReader extends XMLReader
                       .forVariableAndFeatureID( this.getVariableFeatureID() )
                       .measuredIn( this.getMeasurementID() )
                       .inSource( this.getSourceID() )
-                      .scaleOf(
-                              Duration.of(
-                                      ObjectUtils.firstNonNull( this.scalePeriod, this.timeStep ),
-                                      TimeHelper.LEAD_RESOLUTION
-                              )
-                      )
+                      .scaleOf( this.scalePeriod )
                       .scaledBy( this.scaleFunction )
                       .add();
 	}
@@ -477,7 +472,7 @@ public final class PIXMLReader extends XMLReader
                     // See #59438
 				    if (XMLHelper.getXMLText( reader ).equalsIgnoreCase( "instantaneous" ))
                     {
-                        this.scalePeriod = 1;
+                        this.scalePeriod = Duration.ofMinutes( 1 );
                     }
                 }
                 else if ( localName.equalsIgnoreCase( "timeStep" ))
@@ -487,7 +482,7 @@ public final class PIXMLReader extends XMLReader
 
                     Integer amount = Integer.parseInt( XMLHelper.getAttributeValue( reader, "multiplier" ) );
 
-                    this.timeStep = (int)TimeHelper.unitsToLeadUnits( unit, amount );
+                    this.timeStep = Duration.of( amount, ChronoUnit.valueOf( unit ) );
                 }
 
 			}
@@ -657,19 +652,10 @@ public final class PIXMLReader extends XMLReader
                     new TimeSeries( this.getSourceID(),
                                     forecastFullDateTime.format( FORMATTER ) );
 
-            this.currentTimeSeries.setScaleFunction( this.scaleFunction );
-
-            if (this.scalePeriod != null)
+            // Set the time scale information
+            if( this.scalePeriod != null && this.scaleFunction != null )
             {
-                this.currentTimeSeries.setScalePeriod( this.scalePeriod );
-            }
-            else if ( this.scaleFunction == TimeScale.TimeScaleFunction.TOTAL)
-            {
-                this.currentTimeSeries.setScalePeriod( this.timeStep );
-            }
-            else
-            {
-                this.currentTimeSeries.setScalePeriod( 1 );
+                this.currentTimeSeries.setTimeScale( TimeScale.of( this.scalePeriod, this.scaleFunction ) );
             }
 
             LOGGER.trace( "Created time series {} in reader of {} because currentTimeSeries was null.",
@@ -931,8 +917,8 @@ public final class PIXMLReader extends XMLReader
 	 */
 	private String currentVariableName = null;
 
-	private Integer timeStep;
-	private Integer scalePeriod;
+	private Duration timeStep;
+	private Duration scalePeriod;
 	private TimeScale.TimeScaleFunction scaleFunction;
 
     /**
