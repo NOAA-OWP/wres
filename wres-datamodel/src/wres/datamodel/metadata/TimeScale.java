@@ -106,6 +106,18 @@ public final class TimeScale implements Comparable<TimeScale>
      */
 
     private final TimeScaleFunction function;
+    
+    /**
+     * Constructs a {@link TimeScale} whose {@link TimeScale#isInstantaneous()} returns 
+     * <code>true</code>.
+     * 
+     * @return an instantaneous time scale
+     */
+
+    public static TimeScale of()
+    {
+        return TimeScale.of( Duration.ofMinutes( 1 ) );
+    }    
 
     /**
      * Constructs a {@link TimeScale} from a period and a function that is {@link TimeScaleFunction#UNKNOWN}.

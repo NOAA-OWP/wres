@@ -58,7 +58,7 @@ public final class ScoreStatisticTest
         final ScoreStatistic<Double, DoubleScoreStatistic> t = DoubleScoreStatistic.of( 1.0, m1 );
         assertTrue( "Expected equal outputs.", s.equals( t ) );
         assertTrue( "Expected non-equal outputs.", !s.equals( null ) );
-        assertTrue( "Expected non-equal outputs.", !s.equals( new Double( 1.0 ) ) );
+        assertTrue( "Expected non-equal outputs.", !s.equals( Double.valueOf( 1.0 ) ) );
         assertTrue( "Expected non-equal outputs.", !s.equals( DoubleScoreStatistic.of( 2.0, m1 ) ) );
         assertTrue( "Expected non-equal outputs.", !s.equals( DoubleScoreStatistic.of( 1.0, m2 ) ) );
         final ScoreStatistic<Double, DoubleScoreStatistic> q = DoubleScoreStatistic.of( 1.0, m2 );

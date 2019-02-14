@@ -20,6 +20,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -1005,41 +1006,69 @@ public class Project
         
         Objects.requireNonNull( baselineScalesAndSteps );
         
-        Optional<Duration> leastLeft =
-                leftScalesAndSteps.stream().map( Pair::getRight ).filter( Objects::nonNull ).sorted().findFirst();
-        Optional<Duration> leastRight =
-                rightScalesAndSteps.stream().map( Pair::getRight ).filter( Objects::nonNull ).sorted().findFirst();
-        Optional<Duration> leastBaseline =
-                baselineScalesAndSteps.stream().map( Pair::getRight ).filter( Objects::nonNull ).sorted().findFirst();
+        TreeSet<Duration> leastLeft = leftScalesAndSteps.stream()
+                                                        .map( Pair::getRight )
+                                                        .filter( Objects::nonNull )
+                                                        .collect( Collectors.toCollection( TreeSet::new ) );
+        TreeSet<Duration> leastRight = rightScalesAndSteps.stream()
+                                                          .map( Pair::getRight )
+                                                          .filter( Objects::nonNull )
+                                                          .collect( Collectors.toCollection( TreeSet::new ) );
+        TreeSet<Duration> leastBaseline = baselineScalesAndSteps.stream()
+                                                                .map( Pair::getRight )
+                                                                .filter( Objects::nonNull )
+                                                                .collect( Collectors.toCollection( TreeSet::new ) );
 
         Set<Duration> leastValues = new HashSet<>();
-        
+
         // Check the left: required
-        if( leastLeft.isPresent() )
+        if ( !leastLeft.isEmpty() )
         {
-            leastValues.add( leastLeft.get() );
+            leastValues.add( leastLeft.first() );
+
+            if ( leastLeft.size() > 1 )
+            {
+                LOGGER.warn( "The left sources do not have a consistent time step. "
+                             + "Found {} different time steps across all left sources, namely: {}.",
+                             leastLeft.size(),
+                             leastLeft );
+            }
         }
         else
         {
             throw new CalculationException( "Could not find the least time step of any left source." );
         }
-        
+
         // Check the right: required
-        if( leastRight.isPresent() )
+        if ( !leastRight.isEmpty() )
         {
-            leastValues.add( leastRight.get() );
+            leastValues.add( leastRight.first() );
+            if ( leastRight.size() > 1 )
+            {
+                LOGGER.warn( "The right sources do not have a consistent time step. "
+                             + "Found {} different time steps across all right sources, namely: {}.",
+                             leastRight.size(),
+                             leastRight );
+            }
         }
         else
         {
             throw new CalculationException( "Could not find the least time step of any right source." );
         }
-        
+
         // Check the baseline: optional
-        if( leastBaseline.isPresent() )
+        if ( !leastBaseline.isEmpty() )
         {
-            leastValues.add( leastBaseline.get() );
+            leastValues.add( leastBaseline.first() );
+            if ( leastBaseline.size() > 1 )
+            {
+                LOGGER.warn( "The right sources do not have a consistent time step. "
+                             + "Found {} different time steps across all right sources, namely: {}.",
+                             leastBaseline.size(),
+                             leastBaseline );
+            }
         }
-        
+
         return TimeScale.getLeastCommonDuration( java.util.Collections.unmodifiableSet( leastValues ) );
     }
     
@@ -3365,7 +3394,7 @@ public class Project
             {
                 LOGGER.warn( "Could not determine valid time scale information for one or more {}"
                              + " sources. Assuming that the desired time scale is consistent with the "
-                             + "time scales of the existing sources for which information is missing.",
+                             + "time scales of the sources for which information is missing.",
                              this.sourceType );
             }
         }

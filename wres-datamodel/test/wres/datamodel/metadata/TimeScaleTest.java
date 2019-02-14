@@ -70,6 +70,16 @@ public final class TimeScaleTest
     }
 
     /**
+     * Confirms that {@link TimeScale#of()} produces an expected instance.
+     */
+
+    @Test
+    public void testConstructionProducesExpectedTimeScale()
+    {
+        assertEquals( TimeScale.of(), TimeScale.of( Duration.ofMinutes( 1 ), TimeScaleFunction.UNKNOWN ) );
+    }
+    
+    /**
      * Confirms that {@link TimeScale#of(wres.config.generated.TimeScaleConfig)} produces expected instances.
      */
 

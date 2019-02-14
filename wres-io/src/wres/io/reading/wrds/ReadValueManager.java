@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.metadata.TimeScale;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
@@ -73,7 +74,6 @@ public class ReadValueManager
             throw new IngestException( "Source metadata about '" + this.location +
                                        "' could not be stored or retrieved from the database." );
         }
-
 
         // If this was the application that performed the insert into the source records,
         // this needs to perform the ingest
@@ -149,12 +149,12 @@ public class ReadValueManager
         Duration timeDuration = Duration.between( dataPointsList.get( 0 ).getTime(),
                                                   dataPointsList.get( 1 ).getTime() );
 
-        long timeStep = TimeHelper.durationToLongUnits(
-                timeDuration, TimeHelper.LEAD_RESOLUTION
-        );
-
         OffsetDateTime startTime = this.getStartTime( forecast, timeDuration );
-        TimeSeries timeSeries = this.getTimeSeries( forecast, sourceId, startTime );
+        
+        // Get the time scale information, if available
+        TimeScale timeScale = TimeScaleFromParameterCodes.getTimeScale( forecast.getParameterCodes() );
+        
+        TimeSeries timeSeries = this.getTimeSeries( forecast, sourceId, startTime, timeScale );
 
         for (DataPoint dataPoint : dataPointsList)
         {
@@ -183,7 +183,8 @@ public class ReadValueManager
     private TimeSeries getTimeSeries(
             final Forecast forecast,
             final int sourceId,
-            final OffsetDateTime startDate
+            final OffsetDateTime startDate,
+            final TimeScale timeScale
     ) throws SQLException
     {
         String startTime = TimeHelper.convertDateToString( startDate );
@@ -192,7 +193,7 @@ public class ReadValueManager
         timeSeries.setEnsembleID( Ensembles.getDefaultEnsembleID() );
         timeSeries.setMeasurementUnitID( this.getMeasurementUnitId( forecast ) );
         timeSeries.setVariableFeatureID( this.getVariableFeatureId( forecast ) );
-
+        timeSeries.setTimeScale( timeScale );
         return timeSeries;
     }
 

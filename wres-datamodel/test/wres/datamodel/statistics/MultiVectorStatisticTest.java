@@ -29,6 +29,7 @@ public final class MultiVectorStatisticTest
      * Constructs a {@link MultiVectorStatistic} and tests for equality with another {@link MultiVectorStatistic}.
      */
 
+    @SuppressWarnings( "unlikely-arg-type" )
     @Test
     public void test1Equals()
     {
@@ -72,7 +73,7 @@ public final class MultiVectorStatisticTest
         final MultiVectorStatistic t = MultiVectorStatistic.ofMultiVectorOutput( mvb, m1 );
         assertTrue( "Expected equal outputs.", s.equals( t ) );
         assertTrue( "Expected non-equal outputs.", !s.equals( null ) );
-        assertTrue( "Expected non-equal outputs.", !s.equals( new Double( 1.0 ) ) );
+        assertTrue( "Expected non-equal outputs.", !s.equals( Double.valueOf( 1.0 ) ) );
         assertTrue( "Expected non-equal outputs.", !s.equals( MultiVectorStatistic.ofMultiVectorOutput( mvc, m1 ) ) );
         assertTrue( "Expected non-equal outputs.", !s.equals( MultiVectorStatistic.ofMultiVectorOutput( mvc, m2 ) ) );
         final MultiVectorStatistic q = MultiVectorStatistic.ofMultiVectorOutput( mva, m2 );
