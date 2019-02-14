@@ -340,7 +340,8 @@ public class SourceLoader
         Future<List<IngestResult>> task;
 
         FileEvaluation checkIngest = shouldIngest( filePath.toUri(),
-                                                   source );
+                                                   source,
+                                                   dataSourceConfig.getVariable().getValue());
 
         if ( checkIngest.shouldIngest() )
         {
@@ -402,8 +403,9 @@ public class SourceLoader
      * @return Whether or not data within the file should be ingested (and hash)
      * @throws PreIngestException when hashing or id lookup cause some exception
      */
-    private static FileEvaluation shouldIngest( URI filePath,
-                                                DataSourceConfig.Source source )
+    private static FileEvaluation shouldIngest( final URI filePath,
+                                                final DataSourceConfig.Source source,
+                                                final String variableName)
     {
         Format specifiedFormat = source.getFormat();
         Format pathFormat = ReaderFactory.getFiletype( filePath );
@@ -430,7 +432,7 @@ public class SourceLoader
                 // If the format is Netcdf, we want to possibly bypass traditional hashing
                 if (pathFormat == Format.NET_CDF)
                 {
-                    hash = NetCDF.getUniqueIdentifier(filePath);
+                    hash = NetCDF.getUniqueIdentifier(filePath, variableName);
                 }
                 else
                 {
