@@ -6,6 +6,8 @@ package wres.io.project;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.Collection;
+import java.util.Objects;
 import java.util.StringJoiner;
 
 import wres.config.generated.DataSourceConfig;
@@ -916,13 +918,29 @@ final class ProjectScriptGenerator
     }
 
     /**
-     * Creates a script that will gather all unique time scales and time steps for all observations for the project
-     * @param project The project whose observed time scales and steps will be found
-     * @return A script that will gather all unique time scales and time steps for all observations
+     * Creates a script that will gather all unique time scales and time steps for all observed values for the project
+     * 
+     * TODO: use {@link Duration} for the lead durations
+     * 
+     * @param projectId The identifier of the project whose forecast time scales and steps will be found
+     * @param features The features to evaluate
+     * @param minimumLead the earliest lead duration
+     * @param maximumLead the latest lead duration
+     * @return A script that will gather all unique time scales and time steps for all forecasted values
      * @throws SQLException Thrown if a list of ids for all features for a project could not be formed
+     * @throws NullPointerException if the collection of features is null
      */
-    static DataScripter createObservedTimeScaleStepRetrieval(final Project project) throws SQLException
+    static DataScripter createObservedTimeRetriever( final int projectId,
+                                                     final Collection<FeatureDetails> features,
+                                                     final int minimumLead,
+                                                     final int maximumLead,
+                                                     final LeftOrRightOrBaseline sourceType )
+            throws SQLException
     {
+        Objects.requireNonNull( features );
+        
+        Objects.requireNonNull( sourceType );
+        
         DataScripter scripter = new DataScripter();
 
         scripter.addLine("WITH differences AS");
@@ -936,14 +954,15 @@ final class ProjectScriptGenerator
         scripter.addTab().addLine("WHERE EXISTS (");
         scripter.addTab(   3   ).addLine("SELECT 1");
         scripter.addTab(   3   ).addLine("FROM wres.ProjectSource PS");
-        scripter.addTab(   3   ).addLine("WHERE PS.project_id = ", project.getId());
+        scripter.addTab(   3   ).addLine("WHERE PS.project_id = ", projectId );
         scripter.addTab(    4    ).addLine("AND O.source_id = PS.source_id");
+        scripter.addTab(    4    ).addLine("AND PS.member = '", sourceType.value(), "'" );
         scripter.addTab(  2  ).addLine(")");
         scripter.addTab(  2  ).addLine("AND EXISTS (");
         scripter.addTab(   3   ).addLine("SELECT 1");
         scripter.addTab(   3   ).addLine("FROM wres.VariableByFeature VBF");
         scripter.addTab(   3   ).addLine("WHERE VBF.variablefeature_id = O.variablefeature_id");
-        scripter.addTab(    4    ).addLine("AND VBF.feature_id = ", createAnyFeatureStatement( project,6 ));
+        scripter.addTab(    4    ).addLine("AND VBF.feature_id = ", createAnyFeatureStatement( features ,6 ));
         scripter.addTab(  2  ).addLine(")");
         scripter.addLine(")");
         scripter.addLine("SELECT EXTRACT(EPOCH FROM difference) / 60 AS time_step,");
@@ -953,18 +972,34 @@ final class ProjectScriptGenerator
         scripter.addLine("WHERE D.difference IS NOT NULL");
         scripter.addTab().addLine("AND D.variablefeature_id = D.previous_variable_feature");
         scripter.add("GROUP BY difference, scale_period, scale_function;");
-        
+
         return scripter;
     }
 
     /**
      * Creates a script that will gather all unique time scales and time steps for all forecasted values for the project
-     * @param project The project whose forecast time scales and steps will be found
+     * 
+     * TODO: use {@link Duration} for the lead durations
+     * 
+     * @param projectId The identifier of the project whose forecast time scales and steps will be found
+     * @param features The features to evaluate
+     * @param minimumLead the earliest lead duration
+     * @param maximumLead the latest lead duration
      * @return A script that will gather all unique time scales and time steps for all forecasted values
      * @throws SQLException Thrown if a list of ids for all features for a project could not be formed
+     * @throws NullPointerException if the collection of features is null or the sourceType is null
      */
-    static DataScripter createForecastTimeScaleStepRetrieval(final Project project) throws SQLException
+    static DataScripter createForecastTimeRetriever( final int projectId,
+                                                     final Collection<FeatureDetails> features,
+                                                     final int minimumLead,
+                                                     final int maximumLead,
+                                                     final LeftOrRightOrBaseline sourceType )
+            throws SQLException
     {
+        Objects.requireNonNull( features );
+        
+        Objects.requireNonNull( sourceType );
+        
         DataScripter scripter = new DataScripter();
 
         scripter.addLine("WITH differences AS");
@@ -983,30 +1018,31 @@ final class ProjectScriptGenerator
         scripter.addTab(    4    ).addLine("FROM wres.TimeSeriesSource TSS");
         scripter.addTab(    4    ).addLine("INNER JOIN wres.ProjectSource PS");
         scripter.addTab(     5     ).addLine("ON PS.source_id = TSS.source_id");
-        scripter.addTab(    4    ).addLine("WHERE PS.project_id = ", project.getId());
+        scripter.addTab(    4    ).addLine("WHERE PS.project_id = ", projectId );
         scripter.addTab(     5     ).addLine("AND TSS.timeseries_id = TS.timeseries_id");
+        scripter.addTab(     5     ).addLine("AND PS.member = '", sourceType.value(), "'" );
         scripter.addTab(   3   ).addLine(")");
         scripter.addTab(   3   ).addLine("AND EXISTS (");
         scripter.addTab(    4    ).addLine("SELECT 1");
         scripter.addTab(    4    ).addLine("FROM wres.VariableFeature VBF");
         scripter.addTab(    4    ).addLine("WHERE VBF.variablefeature_id = TS.variablefeature_id");
-        scripter.addTab(     5     ).addLine("AND VBF.feature_id = ", createAnyFeatureStatement( project, 6 ));
+        scripter.addTab(     5     ).addLine("AND VBF.feature_id = ", createAnyFeatureStatement( features, 6 ));
         scripter.addTab(   3   ).addLine(")");
         scripter.addTab().addLine(") AS TS");
         scripter.addTab(  2  ).addLine("ON TS.timeseries_id = TSV.timeseries_id");
 
-        if (project.getMinimumLead() != Integer.MIN_VALUE)
+        if (minimumLead != Integer.MIN_VALUE)
         {
-            scripter.addTab().addLine("WHERE lead > ", project.getMinimumLead());
+            scripter.addTab().addLine("WHERE lead > ", minimumLead );
         }
         else
         {
             scripter.addTab().addLine("WHERE lead > 0");
         }
 
-        if (project.getMaximumLead() != Integer.MAX_VALUE)
+        if (maximumLead != Integer.MAX_VALUE)
         {
-            scripter.addTab(  2  ).addLine("AND lead <= ", project.getMaximumLead());
+            scripter.addTab(  2  ).addLine("AND lead <= ", maximumLead );
         }
         else
         {
@@ -1031,85 +1067,109 @@ final class ProjectScriptGenerator
         
         return scripter;
     }
+    
+    /**
+     * Returns the time scale and time step information for a gridded source of observations
+     * 
+     * @param projectId the project identifier
+     * @param sourceType the source type
+     * @return the script to retrieve the time step and time scale information
+     */
 
-    static DataScripter createGriddedTimeRetriever(final Project project, final DataSourceConfig dataSourceConfig)
+    static DataScripter createGriddedObservedTimeRetriever( final int projectId,
+                                                            final LeftOrRightOrBaseline sourceType )
     {
-        DataScripter scripter = new DataScripter(  );
+        Objects.requireNonNull( sourceType );
 
-        LeftOrRightOrBaseline side = ConfigHelper.getLeftOrRightOrBaseline( project.getProjectConfig(), dataSourceConfig );
+        DataScripter scripter = new DataScripter();
 
-        if (ConfigHelper.isForecast( dataSourceConfig ))
-        {
-            scripter.addLine("SELECT D.difference AS time_step,");
-            scripter.addTab().addLine("1 AS scale_period, -- We don't currently store gridded scaling information");
-            scripter.addTab().addLine("'UNKNOWN' AS scale_function");
-            scripter.addLine("FROM (");
-            scripter.addTab().addLine("SELECT lead - lag(lead) OVER (ORDER BY output_time, lead) AS difference,");
-            scripter.addTab(  2  ).addLine("output_time,");
-            scripter.addTab(  2  ).addLine("lag(output_time) OVER (ORDER BY output_time, lead) AS previous_output_time");
-            scripter.addTab().addLine("FROM wres.Source S");
-            scripter.addTab().addLine("WHERE EXISTS (");
-            scripter.addTab(  2  ).addLine("SELECT 1");
-            scripter.addTab(  2  ).addLine("FROM wres.ProjectSource PS");
-            scripter.addTab(  2  ).addLine("WHERE PS.project_id = ", project.getId());
-            scripter.addTab(   3   ).addLine("AND PS.member = '", String.valueOf(side).toLowerCase(), "'");
-            scripter.addTab(   3   ).addLine("AND PS.source_id = S.source_id");
-            scripter.addTab().addLine(")");
-            scripter.addTab(  2  ).addLine("AND NOT is_point_data");
-            scripter.addLine(") AS D");
-            scripter.addLine("WHERE D.output_time = D.previous_output_time");
-            scripter.add("GROUP BY D.difference;");
-        }
-        else
-        {
-            scripter.addLine("SELECT EXTRACT(epoch FROM AGE(D.valid_time, D.previous_valid_time)) / 60 AS time_step,");
-            scripter.addTab().addLine("1 AS scale_period, -- We don't currently store gridded scaling information");
-            scripter.addTab().addLine("'UNKNOWN' AS scale_function");
-            scripter.addLine("FROM (");
-            scripter.addTab().addLine("SELECT S.output_time + INTERVAL '1 MINUTE' * S.lead AS valid_time,");
-            scripter.addTab(  2  ).addLine("lag(output_time) OVER (ORDER BY output_time, lead) + ");
-            scripter.addTab(    3   ).addLine("INTERVAL '1 MINUTE' * lag(lead) OVER (ORDER BY OUTPUT_TIME, lead)");
-            scripter.addTab(     4    ).addLine("AS previous_valid_time");
-            scripter.addTab().addLine("FROM wres.Source S");
-            scripter.addTab().addLine("WHERE EXISTS (");
-            scripter.addTab(  2  ).addLine("SELECT 1");
-            scripter.addTab(  2  ).addLine("FROM wres.ProjectSource PS");
-            scripter.addTab(  2  ).addLine("WHERE PS.project_id = ", project.getId());
-            scripter.addTab(   3   ).addLine("AND PS.member = '", String.valueOf(side).toLowerCase(), "'" );
-            scripter.addTab(   3   ).addLine("AND PS.source_id = S.source_id");
-            scripter.addTab().addLine(")");
-            scripter.addTab(  2  ).addLine("AND NOT is_point_data");
-            scripter.addLine(") AS D");
-            scripter.addLine("WHERE D.previous_valid_time IS NOT NULL");
-            scripter.add("GROUP BY AGE(D.valid_time, D.previous_valid_time);");
-        }
+        scripter.addLine( "SELECT EXTRACT(epoch FROM AGE(D.valid_time, D.previous_valid_time)) / 60 AS time_step," );
+        scripter.addTab().addLine( "NULL AS scale_period, -- We don't currently store gridded scaling information" );
+        scripter.addTab().addLine( "'UNKNOWN' AS scale_function" );
+        scripter.addLine( "FROM (" );
+        scripter.addTab().addLine( "SELECT S.output_time + INTERVAL '1 MINUTE' * S.lead AS valid_time," );
+        scripter.addTab( 2 ).addLine( "lag(output_time) OVER (ORDER BY output_time, lead) + " );
+        scripter.addTab( 3 ).addLine( "INTERVAL '1 MINUTE' * lag(lead) OVER (ORDER BY OUTPUT_TIME, lead)" );
+        scripter.addTab( 4 ).addLine( "AS previous_valid_time" );
+        scripter.addTab().addLine( "FROM wres.Source S" );
+        scripter.addTab().addLine( "WHERE EXISTS (" );
+        scripter.addTab( 2 ).addLine( "SELECT 1" );
+        scripter.addTab( 2 ).addLine( "FROM wres.ProjectSource PS" );
+        scripter.addTab( 2 ).addLine( "WHERE PS.project_id = ", projectId );
+        scripter.addTab( 3 ).addLine( "AND PS.member = '", sourceType.value(), "'" );
+        scripter.addTab( 3 ).addLine( "AND PS.source_id = S.source_id" );
+        scripter.addTab().addLine( ")" );
+        scripter.addTab( 2 ).addLine( "AND NOT is_point_data" );
+        scripter.addLine( ") AS D" );
+        scripter.addLine( "WHERE D.previous_valid_time IS NOT NULL" );
+        scripter.add( "GROUP BY AGE(D.valid_time, D.previous_valid_time);" );
 
         return scripter;
     }
+    
+    /**
+     * Returns the time scale and time step information for a gridded source of forecasts
+     * 
+     * @param projectId the project identifier
+     * @param sourceType the source type
+     * @return the script to retrieve the time step and time scale information
+     */
+
+    static DataScripter createGriddedForecastTimeRetriever( final int projectId,
+                                                            final LeftOrRightOrBaseline sourceType )
+    {
+        Objects.requireNonNull( sourceType );
+
+        DataScripter scripter = new DataScripter();
+
+        scripter.addLine( "SELECT D.difference AS time_step," );
+        scripter.addTab().addLine( "NULL AS scale_period, -- We don't currently store gridded scaling information" );
+        scripter.addTab().addLine( "'UNKNOWN' AS scale_function" );
+        scripter.addLine( "FROM (" );
+        scripter.addTab().addLine( "SELECT lead - lag(lead) OVER (ORDER BY output_time, lead) AS difference," );
+        scripter.addTab( 2 ).addLine( "output_time," );
+        scripter.addTab( 2 ).addLine( "lag(output_time) OVER (ORDER BY output_time, lead) AS previous_output_time" );
+        scripter.addTab().addLine( "FROM wres.Source S" );
+        scripter.addTab().addLine( "WHERE EXISTS (" );
+        scripter.addTab( 2 ).addLine( "SELECT 1" );
+        scripter.addTab( 2 ).addLine( "FROM wres.ProjectSource PS" );
+        scripter.addTab( 2 ).addLine( "WHERE PS.project_id = ", projectId );
+        scripter.addTab( 3 ).addLine( "AND PS.member = '", sourceType.value(), "'" );
+        scripter.addTab( 3 ).addLine( "AND PS.source_id = S.source_id" );
+        scripter.addTab().addLine( ")" );
+        scripter.addTab( 2 ).addLine( "AND NOT is_point_data" );
+        scripter.addLine( ") AS D" );
+        scripter.addLine( "WHERE D.output_time = D.previous_output_time" );
+        scripter.add( "GROUP BY D.difference;" );
+
+        return scripter;
+    }  
 
     /**
      * Creates a SQL 'any' statement containing a list of all ids for features evaluated in a project
-     * @param project The project whose features to list
+     * @param features The features to consider
      * @param tabOver The number of tabs to use to indent the list items
      * @return A SQL 'any' statement containing a list of all feature ids used in a project
      * @throws SQLException Thrown if all feature ids for the project could not be loaded
+     * @throws NullPointerException if the collection of features is null
      */
-    private static String createAnyFeatureStatement(final Project project, final int tabOver) throws SQLException
+    private static String createAnyFeatureStatement( final Collection<FeatureDetails> features, final int tabOver )
+            throws SQLException
     {
-        StringBuilder seperator = new StringBuilder(  );
-        seperator.append(",");
-        seperator.append(System.lineSeparator());
+        StringBuilder seperator = new StringBuilder();
+        seperator.append( "," );
+        seperator.append( System.lineSeparator() );
 
-        for (int tabIndex = 0; tabIndex < tabOver; ++ tabIndex)
+        for ( int tabIndex = 0; tabIndex < tabOver; ++tabIndex )
         {
             seperator.append( "    " );
         }
 
         StringJoiner anyJoiner = new StringJoiner( seperator.toString(), "ANY('{", "}')" );
 
-        for ( FeatureDetails featureDetails : project.getFeatures())
+        for ( FeatureDetails featureDetails : features )
         {
-            anyJoiner.add(String.valueOf( featureDetails.getId() ));
+            anyJoiner.add( String.valueOf( featureDetails.getId() ) );
         }
 
         return anyJoiner.toString();

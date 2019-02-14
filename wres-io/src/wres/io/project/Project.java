@@ -52,6 +52,7 @@ import wres.datamodel.metadata.TimeScale;
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.OffsetEvaluator;
 import wres.io.config.ConfigHelper;
+import wres.io.config.LeftOrRightOrBaseline;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.Variables;
@@ -527,6 +528,8 @@ public class Project
      * 
      * TODO: reconcile this method with {@link #getScale()}, which should be
      * deprecated and removed.
+     * 
+     * @return the desired time step
      */
 
     public Duration getDesiredTimeStep()
@@ -599,20 +602,27 @@ public class Project
     private void setDesiredTimeScaleAndTimeStep() throws SQLException, CalculationException
     {
         // The desired time scale
-        TimeScale desiredTimeScale = null;
+        TimeScale desiredScale = null;
 
         // Obtain from the declaration if available
         if ( Objects.nonNull( this.getProjectConfig().getPair() )
              && Objects.nonNull( this.getProjectConfig().getPair().getDesiredTimeScale() ) )
         {
-            desiredTimeScale = TimeScale.of( this.getProjectConfig().getPair().getDesiredTimeScale() );
+            desiredScale = TimeScale.of( this.getProjectConfig().getPair().getDesiredTimeScale() );
         }
 
-        // Obtain the existing time scale and corresponding time step for each ingested source
-        Set<Pair<TimeScale, Duration>> existingScalesAndSteps = this.getTimeScaleAndTimeStepForEachProjectSource();
-
+        // Obtain the existing time scale and corresponding time step for each ingested source and source type
+        Set<Pair<TimeScale, Duration>> leftScalesAndSteps = this.getTimeScaleAndTimeStepForEachProjectSource( this.getLeft() );
+        Set<Pair<TimeScale, Duration>> rightScalesAndSteps = this.getTimeScaleAndTimeStepForEachProjectSource( this.getRight() );
+        Set<Pair<TimeScale, Duration>> baselineScalesAndSteps = this.getTimeScaleAndTimeStepForEachProjectSource( this.getBaseline() );
+        
+        // Union of scales and steps
+        Set<Pair<TimeScale, Duration>> existingScalesAndSteps = new HashSet<>( leftScalesAndSteps );
+        existingScalesAndSteps.addAll( rightScalesAndSteps );
+        existingScalesAndSteps.addAll( baselineScalesAndSteps );
+        
         // Determine the Least Common Scale if required and available
-        if ( Objects.isNull( desiredTimeScale ) )
+        if ( Objects.isNull( desiredScale ) )
         {
             LOGGER.debug( "No desired time scale declared. Attempting to substitute the Least Common Scale based on "
                           + "the ingested sources." );
@@ -627,7 +637,7 @@ public class Project
 
             if ( !existingScales.isEmpty() )
             {
-                desiredTimeScale =
+                desiredScale =
                         TimeScale.getLeastCommonTimeScale( java.util.Collections.unmodifiableSet( existingScales ) );
             }
             else
@@ -641,77 +651,122 @@ public class Project
         LOGGER.debug( "Found {} distinct time scales across all ingested sources. "
                       + "Validating each against the desired time scale of {}.",
                       existingScalesAndSteps.size(),
-                      desiredTimeScale );
+                      desiredScale );
 
         // TODO: only validate when in production - remove the first check on resolving #58715
         if ( Project.isValidateDesiredTimeScaleAgainstEachIngestedSourceInProduction()
-             && Objects.nonNull( desiredTimeScale ) )
+             && Objects.nonNull( desiredScale ) )
         {
-            final TimeScale finalDesiredScale = desiredTimeScale;
-            existingScalesAndSteps.forEach( pair -> MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( pair.getLeft(),
+            final TimeScale finalDesiredScale = desiredScale;
+            // Only check where the existing scale is known
+            existingScalesAndSteps.stream()
+                                  .filter( p -> Objects.nonNull( p.getLeft() ) && Objects.nonNull( p.getRight() ) )
+                                  .forEach( pair -> MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( pair.getLeft(),
                                                                                                            finalDesiredScale,
                                                                                                            pair.getRight() ) );
         }
         
-        // Compute the desired time-step for the pairs, which is the least common duration of 
-        // the existing time steps across all ingested sources
-        Duration leastCommonTimeStep =
-                TimeScale.getLeastCommonDuration( existingScalesAndSteps.stream()
-                                                                        .map( Pair::getRight )
-                                                                        .collect( Collectors.toSet() ) );
-
         LOGGER.debug( "Finished validating the {} existing time scales against the desired time scale.",
                       existingScalesAndSteps.size() );
-        
+
+        // Compute the desired time-step for the pairs, which is the least common duration of 
+        // the existing time steps across all ingested sources
+        Duration leastCommonStep =
+                this.getLeastCommonTimeStepFromSources( leftScalesAndSteps, rightScalesAndSteps, baselineScalesAndSteps );
+
+        LOGGER.debug( "Identified the least common time step associated with all ingested sources: {}.",
+                      leastCommonStep );
+
         // Set the desired scale and least common time step
-        this.desiredTimeScale = desiredTimeScale;
-        this.leastCommonTimeStep = leastCommonTimeStep;
+        this.desiredTimeScale = desiredScale;
+        this.leastCommonTimeStep = leastCommonStep;
     }
 
     /**
-     * Returns the {@link TimeScale} and time-step information for each source associated with the project. The
-     * time-step is represented as a {@link Duration}.
+     * Returns the {@link TimeScale} and time-step information for each source associated with the
+     * input declaration. The time-step is represented as a {@link Duration}.
      * 
+     * @param dataSourceConfig the data source declaration for which time information is required
      * @return the time scale and time-step information for each source
      * @throws SQLException Thrown on failing to obtain the time scale or time step information from the database
      * @throws CalculationException if time step could not be determined from the data
      */
 
-    private Set<Pair<TimeScale, Duration>> getTimeScaleAndTimeStepForEachProjectSource()
+    private Set<Pair<TimeScale, Duration>> getTimeScaleAndTimeStepForEachProjectSource( DataSourceConfig dataSourceConfig )
             throws SQLException, CalculationException
     {
-        Set<Pair<TimeScale,Duration>> existingTimeScales = new HashSet<>(  );
-
-        if (this.usesGriddedData( this.getLeft() ) || this.usesGriddedData( this.getRight() ))
+        // Nothing to discover (e.g. if the input is a baseline source and there is no baseline)
+        if( Objects.isNull( dataSourceConfig ) )
         {
-            existingTimeScales.addAll(
-                    this.getTimeScaleAndTimeStep(
-                            ProjectScriptGenerator.createGriddedTimeRetriever( this, this.getLeft() ),
-                            this.getLeft(),
-                            true
-                    )
-            );
-            existingTimeScales.addAll(
-                    this.getTimeScaleAndTimeStep(
-                            ProjectScriptGenerator.createGriddedTimeRetriever( this, this.getRight() ),
-                            this.getRight(),
-                            false
-                    )
-            );
+            return java.util.Collections.emptySet();
         }
+        
+        Set<Pair<TimeScale,Duration>> existingTimeScales = new HashSet<>(  );
+        
+        LeftOrRightOrBaseline sourceType =
+                ConfigHelper.getLeftOrRightOrBaseline( this.getProjectConfig(), dataSourceConfig );
+
+        // Obtain the existing time scale and corresponding time step for each ingested source
+        if ( this.usesGriddedData( dataSourceConfig ) )
+        {
+            DataScripter scripter = null;
+
+            // Forecast type
+            if ( ConfigHelper.isForecast( dataSourceConfig ) )
+            {
+                scripter = ProjectScriptGenerator.createGriddedForecastTimeRetriever( this.getId(),
+                                                                                      sourceType );
+
+            }
+            
+            // Observed type
+            else
+            {
+                scripter = ProjectScriptGenerator.createGriddedObservedTimeRetriever( this.getId(),
+                                                                                      sourceType );
+            }
+
+            existingTimeScales.addAll( this.getTimeScaleAndTimeStep( scripter,
+                                                                     dataSourceConfig,
+                                                                     sourceType ) );
+        }
+        // Non-gridded types
         else
         {
-            // Obtain the existing time scale and corresponding time step for each ingested source
-            existingTimeScales.addAll( this.getTimeScaleAndTimeStep(
-                    ProjectScriptGenerator.createObservedTimeScaleStepRetrieval( this ),
-                    this.getLeft(),
-                    true
-            ));
-            existingTimeScales.addAll(this.getTimeScaleAndTimeStep(
-                    ProjectScriptGenerator.createForecastTimeScaleStepRetrieval( this ),
-                    this.getRight(),
-                    false
-            ));
+            // If right or baseline, check the wres.TimeSeries first, then wres.Observation
+            if ( sourceType == LeftOrRightOrBaseline.RIGHT
+                 || sourceType == LeftOrRightOrBaseline.BASELINE )
+            {
+                DataScripter forecast = ProjectScriptGenerator.createForecastTimeRetriever( this.getId(),
+                                                                                            this.getFeatures(),
+                                                                                            this.getMinimumLead(),
+                                                                                            this.getMaximumLead(),
+                                                                                            sourceType );
+                existingTimeScales.addAll( this.getTimeScaleAndTimeStep( forecast, dataSourceConfig, sourceType ) );
+
+                // Check the wres.Observation instead
+                if ( existingTimeScales.isEmpty() )
+                {
+                    DataScripter observed = ProjectScriptGenerator.createObservedTimeRetriever( this.getId(),
+                                                                                                this.getFeatures(),
+                                                                                                this.getMinimumLead(),
+                                                                                                this.getMaximumLead(),
+                                                                                                sourceType );
+                    existingTimeScales.addAll( this.getTimeScaleAndTimeStep( observed, dataSourceConfig, sourceType ) );
+                }
+            }
+            // Currently, left sources are always in wres.Observation
+            else
+            {
+                DataScripter observed = ProjectScriptGenerator.createObservedTimeRetriever( this.getId(),
+                                                                                            this.getFeatures(),
+                                                                                            this.getMinimumLead(),
+                                                                                            this.getMaximumLead(),
+                                                                                            sourceType );
+
+                existingTimeScales.addAll( this.getTimeScaleAndTimeStep( observed, dataSourceConfig, sourceType ) );
+            }
+
         }
 
         // No time scales: warn about this
@@ -741,7 +796,7 @@ public class Project
      *
      * @param data the script that provides the time step and time scale information
      * @param dataSourceConfig the data source configuration
-     * @param isLeftSource is true for a left source, false for a right source. Clarifies messaging
+     * @param sourceType the source type to clarify logging
      * @return the pairs of time scale and time step
      * @throws SQLException Thrown on failing to obtain the time scale or time step information from the database
      * @throws CalculationException if the time step could not be determined from the data
@@ -750,7 +805,9 @@ public class Project
      */
 
     private Set<Pair<TimeScale, Duration>>
-            getTimeScaleAndTimeStep( DataScripter data, DataSourceConfig dataSourceConfig, boolean isLeftSource )
+            getTimeScaleAndTimeStep( DataScripter data,
+                                     DataSourceConfig dataSourceConfig,
+                                     LeftOrRightOrBaseline sourceType )
                     throws SQLException, CalculationException
     {
         Objects.requireNonNull( data );
@@ -758,8 +815,6 @@ public class Project
         Objects.requireNonNull( dataSourceConfig );
 
         Set<Pair<TimeScale, Duration>> existingTimeScales;
-
-        final String sourceType = isLeftSource ? "left" : "right";
 
         // Declared existing time scale to use when the source has no information
         TimeScale declaredExistingTimeScale = null;
@@ -797,7 +852,7 @@ public class Project
 
         return finalizeExistingTimeScalesForSources( dataSourceConfig,
                                                      java.util.Collections.unmodifiableSet( existingTimeScales ),
-                                                     isLeftSource );
+                                                     sourceType );
     }
 
     /**
@@ -816,19 +871,17 @@ public class Project
      *
      * @param dataSourceConfig the declared data source
      * @param existingScalesAndSteps the map of existing time scales to augment
-     * @param isLeftSource is true for a left source, false for a right source. Clarifies messaging
+     * @param sourceType the source type to clarrify logging
      * @return the finalized pairs of time scale and time step for each source
      * @throws CalculationException if the global time-step is required and cannot be determined
      */
 
     private Set<Pair<TimeScale, Duration>> finalizeExistingTimeScalesForSources( DataSourceConfig dataSourceConfig,
                                                                                  Set<Pair<TimeScale, Duration>> existingScalesAndSteps,
-                                                                                 boolean isLeftSource )
+                                                                                 LeftOrRightOrBaseline sourceType )
             throws CalculationException
     {
         Set<Pair<TimeScale, Duration>> mutableCopy = new HashSet<>();
-
-        final String sourceType = isLeftSource ? "left" : "right";
 
         // Declared existing time scale to use when the source has no information
         TimeScale declaredExistingTimeScale = null;
@@ -851,7 +904,7 @@ public class Project
                 // Compute the global time-step only where required
                 if ( Objects.isNull( globalTimeStepToReUse ) )
                 {
-                    globalTimeStepToReUse = this.getValueIntervalWithLocking( dataSourceConfig, isLeftSource );
+                    globalTimeStepToReUse = this.getValueIntervalWithLocking( dataSourceConfig );
                 }
 
                 warn = true;
@@ -877,7 +930,7 @@ public class Project
         {
             if ( Objects.isNull( globalTimeStepToReUse ) )
             {
-                globalTimeStepToReUse = this.getValueIntervalWithLocking( dataSourceConfig, isLeftSource );
+                globalTimeStepToReUse = this.getValueIntervalWithLocking( dataSourceConfig );
             }
 
             LOGGER.debug( "The time_step was missing for all {} sources in the database. "
@@ -894,17 +947,21 @@ public class Project
      * Wraps the {@link {@link #getValueInterval(DataSourceConfig)}} and performs locking because this method involves
      * mutation. TODO: it would be cleaner if the helper itself handled the locking.
      *
+     * @param dataSourceConfig the data source declaration
      * @return the global time-step
      * @throws CalculationException if the global time-step could not be calculated
-     * @throws NullPointerException if the dataSourceConfig is null
+     * @throws NullPointerException if the input is null
      */
 
-    private Duration getValueIntervalWithLocking( DataSourceConfig dataSourceConfig, boolean isLeftSource )
+    private Duration getValueIntervalWithLocking( DataSourceConfig dataSourceConfig )
             throws CalculationException
     {
         Objects.requireNonNull( dataSourceConfig );
+        
+        LeftOrRightOrBaseline sourceType =
+                ConfigHelper.getLeftOrRightOrBaseline( this.getProjectConfig(), dataSourceConfig );
 
-        if ( isLeftSource )
+        if ( sourceType == LeftOrRightOrBaseline.LEFT )
         {
             synchronized ( LEFT_LEAD_LOCK )
             {
@@ -919,6 +976,73 @@ public class Project
             }
         }
     }
+    
+    /**
+     * Returns the least common time step from the input. Currently, this finds the least
+     * value in each source type separately, and then determines the least common value from 
+     * these. This avoids problems with missing sources or missing elements within sources,
+     * which can lead to irregular time steps. 
+     * 
+     * TODO: Other approaches may be considered in future, such as the least common 
+     * timestep of the modal timestep for each source type. See the discussion in #60032.
+     * 
+     * @param leftSources steps and scales for the left sources
+     * @param rightSources steps and scales for the right sources
+     * @param baselineSources steps and scales for the baseline sources
+     * @return the least common time step of the least time step in each source
+     * @throws NullPointerException if any input is null
+     * @throws CalculationException if the least time-step cannot be determined for the left or right sources
+     */
+
+    private Duration getLeastCommonTimeStepFromSources( Set<Pair<TimeScale, Duration>> leftScalesAndSteps,
+                                                        Set<Pair<TimeScale, Duration>> rightScalesAndSteps,
+                                                        Set<Pair<TimeScale, Duration>> baselineScalesAndSteps )
+            throws CalculationException
+    {
+        Objects.requireNonNull( leftScalesAndSteps );
+        
+        Objects.requireNonNull( rightScalesAndSteps );
+        
+        Objects.requireNonNull( baselineScalesAndSteps );
+        
+        Optional<Duration> leastLeft =
+                leftScalesAndSteps.stream().map( Pair::getRight ).filter( Objects::nonNull ).sorted().findFirst();
+        Optional<Duration> leastRight =
+                rightScalesAndSteps.stream().map( Pair::getRight ).filter( Objects::nonNull ).sorted().findFirst();
+        Optional<Duration> leastBaseline =
+                baselineScalesAndSteps.stream().map( Pair::getRight ).filter( Objects::nonNull ).sorted().findFirst();
+
+        Set<Duration> leastValues = new HashSet<>();
+        
+        // Check the left: required
+        if( leastLeft.isPresent() )
+        {
+            leastValues.add( leastLeft.get() );
+        }
+        else
+        {
+            throw new CalculationException( "Could not find the least time step of any left source." );
+        }
+        
+        // Check the right: required
+        if( leastRight.isPresent() )
+        {
+            leastValues.add( leastRight.get() );
+        }
+        else
+        {
+            throw new CalculationException( "Could not find the least time step of any right source." );
+        }
+        
+        // Check the baseline: optional
+        if( leastBaseline.isPresent() )
+        {
+            leastValues.add( leastBaseline.get() );
+        }
+        
+        return TimeScale.getLeastCommonDuration( java.util.Collections.unmodifiableSet( leastValues ) );
+    }
+    
     
     /**
      * Loads metadata about all features that the project needs to use
@@ -1536,7 +1660,9 @@ public class Project
      * could not be calculated
      * @throws CalculationException Thrown if a interval that was compatible with
      * left and right hand data could not be calculated
+     * @deprecated in favor of {@link #getDesiredTimeStep()}
      */
+    @Deprecated(since="1.5", forRemoval=true)
     private Duration getCommonInterval() throws CalculationException
     {
         
@@ -1597,6 +1723,9 @@ public class Project
      *     If no desired scale has been configured, one is dynamically generated
      * </p>
      *
+     * TODO: replace with references to {@link #getDesiredTimeScale()} and {@link #getDesiredTimeStep()}
+     * as appropriate.
+     *
      * TODO: A unified common time step is not guaranteed; Left hand data from USGS can range
      * from a couple minutes between values to a single value per day, while AHPS data
      * could be all over the place.
@@ -1605,7 +1734,9 @@ public class Project
      * @return The expected scale of the data
      * @throws CalculationException Thrown if a common scale between the left and
      * right hand data could not be calculated
+     * @deprecated to be replaced with {@link #getDesiredTimeStep()} or {@link #getDesiredTimeScale()} as needed
      */
+    @Deprecated(since="1.5", forRemoval=true)
     public TimeScaleConfig getScale() throws CalculationException
     {
         // TODO: Convert this to a function to determine time step; this doesn't actually have anything to do with scale
@@ -1629,7 +1760,7 @@ public class Project
 
         if (this.desiredTimeScaleConfig == null && ConfigHelper.isForecast( this.getRight() ))
         {
-            Duration commonInterval = this.getCommonInterval();
+            Duration commonInterval = this.getDesiredTimeStep();
             this.desiredTimeScaleConfig = new TimeScaleConfig(
                     TimeScaleFunction.MEAN,
                     (int)commonInterval.toMinutes(),
@@ -2963,6 +3094,7 @@ public class Project
 
     private static class TimeScaleAndTimeStepConsumer implements ExceptionalConsumer<DataProvider, SQLException>
     {
+
         /**
          * The time scale and time step information consumed.
          */
@@ -3006,7 +3138,7 @@ public class Project
          * A source type string to help with warnings.
          */
 
-        private String sourceType;
+        private LeftOrRightOrBaseline sourceType;
 
         /**
          * The declared <code>existingTimeScale</code> for the source being consumed.
@@ -3038,7 +3170,7 @@ public class Project
          * @param declaredExistingTimeScale the declared existingTimeScale, which may be null
          * @param sourceType a source type string to help with warnings
          */
-        private TimeScaleAndTimeStepConsumer( TimeScale declaredExistingTimeScale, String sourceType )
+        private TimeScaleAndTimeStepConsumer( TimeScale declaredExistingTimeScale, LeftOrRightOrBaseline sourceType )
         {
             this.declaredExistingTimeScale = declaredExistingTimeScale;
             this.sourceType = sourceType;
@@ -3185,33 +3317,33 @@ public class Project
             // Warn when one or more instances had a null period             
             if ( this.warnOnNullPeriod.get() )
             {
-                LOGGER.warn( "The time scale period in the "
-                             + sourceType
-                             + " source is 'NULL' and the time scale period "
-                             + "in the declaration is '{}'. Using the declared "
-                             + "period as representative of the source.",
+                LOGGER.warn( "The time scale period in the {} source is 'NULL' "
+                             + "and the time scale period in the declaration is "
+                             + "'{}'. Using the declared period as representative of "
+                             + "the source.",
+                             this.sourceType,
                              this.warnPeriod );
             }
 
             // Warn when one or more instances had a null function
             if ( this.warnOnNullFunction.get() )
             {
-                LOGGER.warn( "The time scale function in the "
-                             + sourceType
-                             + " source is 'NULL' and the time scale function "
-                             + "in the declaration is '{}'. Using the declared "
-                             + "function as representative of the source.",
+                LOGGER.warn( "The time scale function in the {} is 'NULL' "
+                             + "and the time scale function in the declaration "
+                             + "is '{}'. Using the declared function as "
+                             + "representative of the source.",
+                             this.sourceType,
                              this.warnFunctionString );
             }
 
             // Warn when one or more instances had an unknown function
             if ( this.warnOnUnknownFunction.get() )
             {
-                LOGGER.warn( "The time scale function in the "
-                             + sourceType
-                             + " source is 'UNKNOWN' and the time scale function "
-                             + "in the declaration is '{}'. Using the declared "
-                             + "function as representative of the source.",
+                LOGGER.warn( "The time scale function in the {} source is 'UNKNOWN' "
+                             + "and the time scale function in the declaration "
+                             + "is '{}'. Using the declared function as "
+                             + "representative of the source.",
+                             this.sourceType,
                              this.warnFunctionString );
             }
 
@@ -3220,11 +3352,10 @@ public class Project
             if ( this.warnOnInstantaneous.get() )
             {
                 LOGGER.warn( "The existing time scale information in the project declaration is "
-                             + "inconsistent with the time scale information obtained from one or more "
-                             + sourceType
-                             + " sources, but both are recognized as 'INSTANTANEOUS' and, "
-                             + "therefore, "
-                             + "allowed. Source says: {}. Declaration says: {}.",
+                             + "inconsistent with the time scale information obtained from one "
+                             + "or more {} sources, but both are recognized as 'INSTANTANEOUS' "
+                             + "and, therefore, allowed. Source says: {}. Declaration says: {}.",
+                             this.sourceType,
                              this.warnTimeScale,
                              this.declaredExistingTimeScale );
             }
@@ -3233,8 +3364,8 @@ public class Project
             if ( this.warnOnNullScale.get() )
             {
                 LOGGER.warn( "Could not determine valid time scale information for one or more {}"
-                             + " sources. Assuming that the desired time scale is consistent with the time scales "
-                             + "of the existing sources for which information is missing.",
+                             + " sources. Assuming that the desired time scale is consistent with the "
+                             + "time scales of the existing sources for which information is missing.",
                              this.sourceType );
             }
         }
