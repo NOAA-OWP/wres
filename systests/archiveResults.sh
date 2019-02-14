@@ -11,7 +11,9 @@ mkdir -pv SystemTestsOutputs
 # rm -v SystemTestsOutputs/*
 
 tar -czvf SystemTestsOutputs/systests.$LATEST.tar.gz $dirs
-
+# archive a copy
+mkdir -pv /wres_share/releases/SystemTestsOutputsArchive 
+cp -pv SystemTestsOutputs/systests.$LATEST.tar.gz /wres_share/releases/SystemTestsOutputsArchive
 
 #for dir in $dirs
 #do
