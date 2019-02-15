@@ -15,8 +15,10 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.util.Collections;
 import java.util.List;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,7 +91,18 @@ public class ReadValueManager
                 }
                 else if ( this.location.getScheme().startsWith( "http" ) )
                 {
-                    forecastData = this.getFromWeb( this.location );
+                    Pair<Integer,InputStream> response = this.getFromWeb( this.location );
+                    int httpStatus = response.getLeft();
+
+                    if ( httpStatus >= 400 && httpStatus < 500 )
+                    {
+                        LOGGER.warn( "Treating HTTP response code {} as no data found from URI {}",
+                                     httpStatus,
+                                     this.location );
+                        return Collections.emptyList();
+                    }
+
+                    forecastData = response.getRight();
                 }
                 else
                 {
@@ -170,7 +183,13 @@ public class ReadValueManager
 
         FeatureDetails details = new FeatureDetails(  );
         details.setFeatureName( locationDescription.getNwsName() );
-        details.setComid( Integer.parseInt(locationDescription.getComId()) );
+
+        // Tolerate missing comid
+        if ( !locationDescription.getComId().isBlank() )
+        {
+            details.setComid( Integer.parseInt( locationDescription.getComId() ) );
+        }
+
         details.setGageID( locationDescription.getUsgsSiteCode() );
         details.setLid( locationDescription.getNwsLid() );
         details.save();
@@ -225,7 +244,7 @@ public class ReadValueManager
         return new FileInputStream( forecastFile );
     }
 
-    private InputStream getFromWeb( URI uri ) throws IOException
+    private Pair<Integer,InputStream> getFromWeb( URI uri ) throws IOException
     {
         if ( !uri.getScheme().startsWith( "http" ) )
         {
@@ -248,11 +267,7 @@ public class ReadValueManager
 
             if ( httpStatus >= 400 && httpStatus < 500 )
             {
-                LOGGER.warn(
-                        "Could not retrieve data from {} due to status code {}",
-                        uri,
-                        httpResponse.statusCode() );
-                return  InputStream.nullInputStream();
+                return Pair.of( httpStatus, InputStream.nullInputStream() );
             }
             else if ( httpStatus >= 500 )
             {
@@ -263,13 +278,13 @@ public class ReadValueManager
             }
 
             LOGGER.debug( "Successfully retrieved data from {}", uri );
-            return httpResponse.body();
+            return Pair.of( httpStatus, httpResponse.body() );
         }
         catch ( InterruptedException ie )
         {
             LOGGER.warn( "Interrupted while getting data from {}", uri, ie );
             Thread.currentThread().interrupt();
-            return InputStream.nullInputStream();
+            return Pair.of( -1, InputStream.nullInputStream() );
         }
     }
 
