@@ -17,6 +17,7 @@ import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
@@ -64,7 +65,9 @@ class WebSource implements Callable<List<IngestResult>>
     private final URI baseUri;
     private final OffsetDateTime now;
 
-    private final ThreadPoolExecutor executor;
+    private final ThreadPoolExecutor ingestSaverExecutor;
+    private final BlockingQueue<Future<List<IngestResult>>> ingests;
+    private final CountDownLatch startGettingResults;
 
     static WebSource of( ProjectConfig projectConfig,
                          DataSourceConfig dataSourceConfig,
@@ -97,15 +100,25 @@ class WebSource implements Callable<List<IngestResult>>
                 .namingPattern( "WebSource Ingest Executor" )
                 .build();
 
-        BlockingQueue<Runnable> webClientQueue = new ArrayBlockingQueue<>( 10
-                                                                           * SystemSettings.getMaximumWebClientThreads() );
-        this.executor = new ThreadPoolExecutor( SystemSettings.getMaximumWebClientThreads(),
-                                                SystemSettings.getMaximumWebClientThreads(),
-                                                SystemSettings.poolObjectLifespan(),
-                                                TimeUnit.MILLISECONDS,
-                                                webClientQueue,
-                                                webClientFactory );
-        this.executor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
+        // Because we use a latch and queue below, no need to make this queue
+        // any larger than that queue and latch.
+        BlockingQueue<Runnable> webClientQueue = new ArrayBlockingQueue<>( SystemSettings.getMaximumWebClientThreads() );
+        this.ingestSaverExecutor = new ThreadPoolExecutor( SystemSettings.getMaximumWebClientThreads(),
+                                                           SystemSettings.getMaximumWebClientThreads(),
+                                                           SystemSettings.poolObjectLifespan(),
+                                                           TimeUnit.MILLISECONDS,
+                                                           webClientQueue,
+                                                           webClientFactory );
+        // Because of use of latch and queue below, rejection should not happen.
+        this.ingestSaverExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.AbortPolicy() );
+
+        // The size of this queue is equal to the setting for simultaneous web
+        // client threads so that we can 1. get quick feedback on exception
+        // (which requires a small queue) and 2. allow some requests to go out
+        // prior to get-one-response-per-submission-of-one-ingest-task
+        this.ingests = new ArrayBlockingQueue<>( SystemSettings.getMaximumWebClientThreads() );
+        // The size of this latch is for reason (2) above
+        this.startGettingResults = new CountDownLatch( SystemSettings.getMaximumWebClientThreads() );
         this.now = now;
     }
 
@@ -129,9 +142,9 @@ class WebSource implements Callable<List<IngestResult>>
         return this.baseUri;
     }
 
-    private ThreadPoolExecutor getExecutor()
+    private ThreadPoolExecutor getIngestSaverExecutor()
     {
-        return this.executor;
+        return this.ingestSaverExecutor;
     }
 
     private OffsetDateTime getNow()
@@ -158,40 +171,55 @@ class WebSource implements Callable<List<IngestResult>>
         Set<Pair<Instant,Instant>> issuedRanges = createWeekRanges( this.getProjectConfig(),
                                                                     this.getNow() );
 
-        List<Future<List<IngestResult>>> ingests = new ArrayList<>( features.size()
-                                                                    * issuedRanges.size() );
-
-        for ( FeatureDetails featureDetails : features )
-        {
-            for ( Pair<Instant,Instant> issuedRange : issuedRanges )
-            {
-                URI wrdsUri = createWrdsUri( this.getBaseUri(),
-                                             issuedRange,
-                                             featureDetails );
-
-                // TODO: hash contents, not the URL
-                String hash = Strings.getMD5Checksum( wrdsUri.toString().getBytes() );
-                IngestSaver ingestSaver = IngestSaver.createTask()
-                                                     .withFilePath( wrdsUri )
-                                                     .withProject( this.getProjectConfig() )
-                                                     .withDataSourceConfig( this.getDataSourceConfig() )
-                                                     .withSourceConfig( this.getSourceConfig() )
-                                                     .withHash( hash )
-                                                     .isRemote()
-                                                     .build();
-
-                Future<List<IngestResult>> future = this.getExecutor()
-                                                        .submit( ingestSaver );
-                ingests.add( future );
-            }
-        }
-
         try
         {
-            for ( Future<List<IngestResult>> ingestTask : ingests )
+            for ( FeatureDetails featureDetails : features )
             {
-                List<IngestResult> ingested = ingestTask.get();
-                ingestResults.addAll( ingested );
+                for ( Pair<Instant, Instant> issuedRange : issuedRanges )
+                {
+                    URI wrdsUri = createWrdsUri( this.getBaseUri(),
+                                                 issuedRange,
+                                                 featureDetails );
+
+                    // TODO: hash contents, not the URL
+                    String hash = Strings.getMD5Checksum( wrdsUri.toString()
+                                                                 .getBytes() );
+                    IngestSaver ingestSaver =
+                            IngestSaver.createTask()
+                                       .withFilePath( wrdsUri )
+                                       .withProject( this.getProjectConfig() )
+                                       .withDataSourceConfig( this.getDataSourceConfig() )
+                                       .withSourceConfig( this.getSourceConfig() )
+                                       .withHash( hash )
+                                       .isRemote()
+                                       .build();
+
+                    Future<List<IngestResult>> future =
+                            this.getIngestSaverExecutor()
+                                .submit( ingestSaver );
+                    this.ingests.add( future );
+
+                    // Check that all is well with previously submitted tasks, but
+                    // only after a handful have been submitted. This means that
+                    // an exception should propagate relatively shortly after it
+                    // occurs with the ingest task. It also means after creation
+                    // of a handful of tasks, we only create one after a
+                    // previously created one has been completed, fifo/lockstep.
+                    this.startGettingResults.countDown();
+
+                    if ( this.startGettingResults.getCount() <= 0 )
+                    {
+                        List<IngestResult> ingested = this.ingests.take()
+                                                                  .get();
+                        ingestResults.addAll( ingested );
+                    }
+                }
+            }
+
+            // Finish getting the remainder of ingest results.
+            for ( Future<List<IngestResult>> ingested : this.ingests )
+            {
+                ingestResults.addAll( ingested.get() );
             }
         }
         catch ( InterruptedException ie )
