@@ -99,6 +99,9 @@ public class ReadValueManager
                         LOGGER.warn( "Treating HTTP response code {} as no data found from URI {}",
                                      httpStatus,
                                      this.location );
+
+                        // TODO see #60289, this is empty, no timeseries exists,
+                        // yet the source row exists at this point.
                         return Collections.emptyList();
                     }
 
