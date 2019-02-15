@@ -43,7 +43,8 @@ public class ReadValueManager
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( ReadValueManager.class );
 
-    private final HttpClient httpClient;
+    // TODO: inject http client in constructor without changing much else #60281
+    private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
 
     ReadValueManager( final ProjectConfig projectConfig,
                       final DataSourceConfig datasourceConfig,
@@ -52,7 +53,6 @@ public class ReadValueManager
         this.location = location;
         this.projectConfig = projectConfig;
         this.dataSourceConfig = datasourceConfig;
-        this.httpClient = HttpClient.newHttpClient();
     }
 
     public List<IngestResult> save() throws IOException
@@ -233,14 +233,16 @@ public class ReadValueManager
                     "Must pass an http uri, got " + uri );
         }
 
+        LOGGER.debug( "getFromWeb {}", uri );
+
         try
         {
             HttpRequest request = HttpRequest.newBuilder()
                                              .uri( uri )
                                              .build();
             HttpResponse<InputStream> httpResponse =
-                    this.httpClient.send( request,
-                                          HttpResponse.BodyHandlers.ofInputStream() );
+                    HTTP_CLIENT.send( request,
+                                      HttpResponse.BodyHandlers.ofInputStream() );
 
             int httpStatus = httpResponse.statusCode();
 
@@ -260,6 +262,7 @@ public class ReadValueManager
                                            + httpStatus );
             }
 
+            LOGGER.debug( "Successfully retrieved data from {}", uri );
             return httpResponse.body();
         }
         catch ( InterruptedException ie )
