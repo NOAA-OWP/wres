@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.ProjectConfigs;
 import wres.config.generated.DataSourceConfig;
+import wres.config.generated.DesiredTimeScaleConfig;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.DurationUnit;
@@ -288,7 +289,7 @@ public class Project
      * will determine that data itself
      * </p>
      */
-    private TimeScaleConfig desiredTimeScaleConfig;
+    private DesiredTimeScaleConfig desiredTimeScaleConfig;
 
     private Boolean leftUsesGriddedData = null;
     private Boolean rightUsesGriddedData = null;
@@ -1766,7 +1767,7 @@ public class Project
      * @deprecated to be replaced with {@link #getDesiredTimeStep()} or {@link #getDesiredTimeScale()} as needed
      */
     @Deprecated(since="1.5", forRemoval=true)
-    public TimeScaleConfig getScale() throws CalculationException
+    public DesiredTimeScaleConfig getScale() throws CalculationException
     {
         // TODO: Convert this to a function to determine time step; this doesn't actually have anything to do with scale
         if (this.desiredTimeScaleConfig == null)
@@ -1778,34 +1779,34 @@ public class Project
             if (this.desiredTimeScaleConfig != null &&
                 this.desiredTimeScaleConfig.getFrequency() == null)
             {
-                this.desiredTimeScaleConfig = new TimeScaleConfig(
+                this.desiredTimeScaleConfig = new DesiredTimeScaleConfig(
                         this.desiredTimeScaleConfig.getFunction(),
                         this.desiredTimeScaleConfig.getPeriod(),
-                        this.desiredTimeScaleConfig.getPeriod(),
                         this.desiredTimeScaleConfig.getUnit(),
-                        null);
+                        null,
+                        this.desiredTimeScaleConfig.getPeriod());
             }
         }
 
         if (this.desiredTimeScaleConfig == null && ConfigHelper.isForecast( this.getRight() ))
         {
             Duration commonInterval = this.getDesiredTimeStep();
-            this.desiredTimeScaleConfig = new TimeScaleConfig(
+            this.desiredTimeScaleConfig = new DesiredTimeScaleConfig(
                     TimeScaleFunction.MEAN,
                     (int)commonInterval.toMinutes(),
-                    (int)commonInterval.toMinutes(),
                     DurationUnit.MINUTES,
-                    "Dynamic Scale"
+                    "Dynamic Scale",
+                    (int)commonInterval.toMinutes()
             );
         }
         else if(this.desiredTimeScaleConfig == null)
         {
-            this.desiredTimeScaleConfig = new TimeScaleConfig(
+            this.desiredTimeScaleConfig = new DesiredTimeScaleConfig(
                     TimeScaleFunction.MEAN,
                     60,
-                    60,
                     DurationUnit.fromValue(TimeHelper.LEAD_RESOLUTION.toString().toLowerCase() ),
-                    null
+                    null,
+                    60
             );
         }
 

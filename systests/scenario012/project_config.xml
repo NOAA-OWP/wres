@@ -25,8 +25,8 @@
         <desiredTimeScale>
             <function>mean</function>
             <period>4</period>
-            <frequency>1</frequency>
             <unit>hours</unit>
+            <frequency>1</frequency>
         </desiredTimeScale>
         <issuedDatesPoolingWindow>
             <period>48</period>

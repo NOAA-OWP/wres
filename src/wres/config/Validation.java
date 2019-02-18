@@ -27,6 +27,7 @@ import com.sun.xml.bind.Locatable;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DateCondition;
+import wres.config.generated.DesiredTimeScaleConfig;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.DurationUnit;
@@ -1031,7 +1032,7 @@ public class Validation
     private static boolean isDesiredTimeScaleValid( ProjectConfigPlus projectConfigPlus,
                                                           PairConfig pairConfig )
     {
-        TimeScaleConfig aggregationConfig = pairConfig.getDesiredTimeScale();
+        DesiredTimeScaleConfig aggregationConfig = pairConfig.getDesiredTimeScale();
 
         // No configuration, must be valid
         if ( aggregationConfig == null )
@@ -1466,12 +1467,6 @@ public class Validation
             boolean instantMakesSense = true;
 
             if ( timeAggregation.getPeriod() != 1 )
-            {
-                instantMakesSense = false;
-            }
-
-            if ( timeAggregation.getFrequency() != null
-                 && timeAggregation.getFrequency() != 1 )
             {
                 instantMakesSense = false;
             }
