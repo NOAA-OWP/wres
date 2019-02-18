@@ -178,11 +178,10 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
         Duration beginning;
         Duration end;
 
-        Duration offset;
+        Long offset;
         try
         {
-            offset = Duration.of( this.getProject().getLeadOffset( this.getFeature() ).longValue(),
-                                  TimeHelper.LEAD_RESOLUTION );
+            offset = this.getProject().getLeadOffset( this.getFeature() ).longValue();
         }
         catch ( IOException | SQLException e )
         {
@@ -192,25 +191,9 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
                                             + "not be loaded.",
                                             e );
         }
-        
-        Duration leadFrequency = this.getProject().getLeadFrequency();
-        Duration leadPeriod = this.getProject().getLeadPeriod();
-        
-        // If the lead offset is positive, forecasts at this offset value
-        // need to be captured in the first lead bounds, so start at the offset 
-        // minus the lead period and iterate forwards from there in multiples of
-        // lead frequency, otherwise iterate forwards from the zero lower-bound. 
-        // See #60307
-        if( !offset.isZero() )
-        {
-            beginning = offset.minus( leadPeriod ).plus( leadFrequency.multipliedBy( sampleNumber ) );
-        }
-        else
-        {
-            beginning = leadFrequency.multipliedBy( sampleNumber );          
-        }
-        
-        end = beginning.plus( leadPeriod ); 
+
+        beginning = this.getProject().getLeadFrequency().multipliedBy( sampleNumber ).plus( offset, TimeHelper.LEAD_RESOLUTION );
+        end = beginning.plus( this.getProject().getLeadPeriod() );
 
         return Pair.of(beginning, end);
     }
