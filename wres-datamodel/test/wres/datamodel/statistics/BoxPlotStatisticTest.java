@@ -31,6 +31,7 @@ public final class BoxPlotStatisticTest
      * Constructs a {@link BoxPlotStatistic} and tests for equality with another {@link BoxPlotStatistic}.
      */
 
+    @SuppressWarnings( "unlikely-arg-type" )
     @Test
     public void test1Equals()
     {
@@ -111,7 +112,7 @@ public final class BoxPlotStatisticTest
         //Conduct comparisons
         assertTrue( "Expected equal outputs.", s.equals( t ) );
         assertTrue( "Expected non-equal outputs.", !s.equals( null ) );
-        assertTrue( "Expected non-equal outputs.", !s.equals( new Double( 1.0 ) ) );
+        assertTrue( "Expected non-equal outputs.", !s.equals( Double.valueOf( 1.0 ) ) );
         assertTrue( "Expected non-equal outputs.", !s.equals( u ) );
         assertTrue( "Expected non-equal outputs.", !s.equals( v ) );
         assertTrue( "Expected non-equal outputs.", !v.equals( w ) );

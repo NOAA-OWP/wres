@@ -178,10 +178,11 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
         Duration beginning;
         Duration end;
 
-        Long offset;
+        Duration offset;
         try
         {
-            offset = this.getProject().getLeadOffset( this.getFeature() ).longValue();
+            offset = Duration.of( this.getProject().getLeadOffset( this.getFeature() ).longValue(),
+                                  TimeHelper.LEAD_RESOLUTION );
         }
         catch ( IOException | SQLException e )
         {
@@ -191,9 +192,26 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
                                             + "not be loaded.",
                                             e );
         }
+        
+        Duration leadFrequency = this.getProject().getLeadFrequency();
+        Duration leadPeriod = this.getProject().getLeadPeriod();
 
-        beginning = this.getProject().getLeadFrequency().multipliedBy( sampleNumber ).plus( offset, TimeHelper.LEAD_RESOLUTION );
-        end = beginning.plus( this.getProject().getLeadPeriod() );
+        // If the lead offset is positive, forecasts at this offset value
+        // need to be captured in the first lead bounds, so start at the offset 
+        // minus the lead period and iterate forwards from there in multiples of
+        // lead frequency, otherwise iterate forwards from the zero lower-bound. 
+        // However, skip this interval if it is smaller than the desired time scale
+        // See #60307
+        if ( !offset.isZero() && !offset.minus( this.getProject().getDesiredTimeScale().getPeriod() ).isNegative() )
+        {
+            beginning = offset.minus( leadPeriod ).plus( leadFrequency.multipliedBy( sampleNumber ) );
+        }
+        else
+        {
+            beginning = offset.plus( leadFrequency.multipliedBy( sampleNumber ) );
+        }
+        
+        end = beginning.plus( leadPeriod ); 
 
         return Pair.of(beginning, end);
     }

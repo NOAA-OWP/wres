@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import wres.config.generated.DataSourceConfig;
+import wres.config.generated.DesiredTimeScaleConfig;
 import wres.config.generated.Feature;
 import wres.config.generated.TimeScaleConfig;
 import wres.datamodel.VectorOfDoubles;
@@ -41,7 +42,7 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
     private long firstLead = Long.MAX_VALUE;
 
     private Boolean shouldThisScale;
-    private TimeScaleConfig commonScale;
+    private DesiredTimeScaleConfig commonScale;
 
     private final Path outputDirectoryForPairs;
 
@@ -393,7 +394,7 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
         return shouldThisScale;
     }
 
-    final TimeScaleConfig getCommonScale() throws RetrievalFailedException
+    final DesiredTimeScaleConfig getCommonScale() throws RetrievalFailedException
     {
         if (this.commonScale == null)
         {

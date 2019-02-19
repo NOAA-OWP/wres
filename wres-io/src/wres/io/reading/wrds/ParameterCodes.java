@@ -1,6 +1,8 @@
 package wres.io.reading.wrds;
 
 
+import java.util.StringJoiner;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties( ignoreUnknown = true )
@@ -56,6 +58,20 @@ public class ParameterCodes
         this.probability = probability;
     }
 
+    @Override
+    public String toString()
+    {
+        StringJoiner joiner = new StringJoiner( ",", "[", "]" );
+
+        joiner.add( "physicalElement: " + physicalElement )
+              .add( "duration: " + duration )
+              .add( "typeSource: " + typeSource )
+              .add( "extremum: " + extremum )
+              .add( "probability: " + probability );
+
+        return joiner.toString();
+    }
+    
     String physicalElement;
     String duration;
     String typeSource;

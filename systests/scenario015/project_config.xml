@@ -25,8 +25,8 @@
         <desiredTimeScale>
             <function>mean</function>
             <period>6</period>
-            <frequency>3</frequency>
             <unit>hours</unit>
+            <frequency>3</frequency>
         </desiredTimeScale>
     </pair>
 

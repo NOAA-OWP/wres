@@ -528,6 +528,7 @@ A unit of time
         </xs:restriction>
     </xs:simpleType>
 
+    <!-- Base type for time scale information-->
     <xs:complexType name="timeScale">
 
         <!-- for class naming using xjc-->
@@ -536,19 +537,44 @@ A unit of time
                 <jaxb:class name="TimeScaleConfig" />
             </xs:appinfo>
             <xs:documentation>
-Details the period and frequency and by what function values are temporally scaled. If no frequency is specified
-the frequency becomes equivalent to the period.
+Describes the time scale of a measurement within a time-series. The time scale includes a function that integrates the measurement
+over a prescribed period, in prescribed time units.
             </xs:documentation>
         </xs:annotation>
 
         <xs:sequence>
             <xs:element name="function" type="timeScaleFunction" default="mean" minOccurs="1" maxOccurs="1"/>
             <xs:element name="period" type="duration" minOccurs="1" maxOccurs="1"/>
-            <xs:element name="frequency" type="duration" minOccurs="0" maxOccurs="1"/>
             <xs:element name="unit" type="durationUnit" />
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
+
     </xs:complexType>
+
+    <!-- Declared time scale, which allows for a frequency -->
+    <xs:complexType name="desiredTimeScale">
+
+        <!-- for class naming using xjc-->
+        <xs:annotation>
+            <xs:appinfo>
+                <jaxb:class name="DesiredTimeScaleConfig" />
+            </xs:appinfo>
+            <xs:documentation>
+Additionally declares the frequency with which measurements may repeat at the desired time scale, in the same units
+declared for the period. TODO: allow the frequency to be declared separately from the time scale and then model the
+time scale within a single class, rather than two classes.
+            </xs:documentation>
+        </xs:annotation>
+
+        <xs:complexContent>
+            <xs:extension base="timeScale">
+                <xs:sequence>
+                    <xs:element name="frequency" type="duration" minOccurs="0" maxOccurs="1"/>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
 
     <xs:complexType name="dateCondition">
         <!-- xs:dateTime ends up being yucky XMLGregorianCalendar. Use string, let app deal with it. -->
@@ -603,7 +629,7 @@ the frequency becomes equivalent to the period.
             <!-- values min and max should be in the unit above -->
             <xs:element name="values" type="doubleBoundsType" minOccurs="0" />
 
-            <xs:element name="desiredTimeScale" type="timeScale" minOccurs="0" />
+            <xs:element name="desiredTimeScale" type="desiredTimeScale" minOccurs="0" />
 
             <xs:element name="issuedDatesPoolingWindow" type="poolingWindow" minOccurs="0"/>
             <xs:element name="leadTimesPoolingWindow" type="poolingWindow" minOccurs="0"/>

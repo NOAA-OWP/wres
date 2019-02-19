@@ -439,7 +439,9 @@ public class CSVSource extends BasicSource
         );
 
         timeSeries.setVariableFeatureID( variableFeatureId );
-        timeSeries.setScalePeriod( 1 );
+        
+        // Time scale information is missing by default        
+        //timeSeries.setScalePeriod( 1 );
 
         this.encounteredTimeSeries.add(timeSeries);
 

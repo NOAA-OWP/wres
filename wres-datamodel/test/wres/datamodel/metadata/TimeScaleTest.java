@@ -70,6 +70,16 @@ public final class TimeScaleTest
     }
 
     /**
+     * Confirms that {@link TimeScale#of()} produces an expected instance.
+     */
+
+    @Test
+    public void testConstructionProducesExpectedTimeScale()
+    {
+        assertEquals( TimeScale.of(), TimeScale.of( Duration.ofMinutes( 1 ), TimeScaleFunction.UNKNOWN ) );
+    }
+    
+    /**
      * Confirms that {@link TimeScale#of(wres.config.generated.TimeScaleConfig)} produces expected instances.
      */
 
@@ -77,18 +87,18 @@ public final class TimeScaleTest
     public void testConstructionWithConfigProducesExpectedTimeScale()
     {
         TimeScaleConfig first =
-                new TimeScaleConfig( wres.config.generated.TimeScaleFunction.MEAN, 1, null, DurationUnit.DAYS, null );
+                new TimeScaleConfig( wres.config.generated.TimeScaleFunction.MEAN, 1, DurationUnit.DAYS, null );
 
         assertEquals( TimeScale.of( first ), TimeScale.of( Duration.ofDays( 1 ), TimeScaleFunction.MEAN ) );
 
         TimeScaleConfig second =
-                new TimeScaleConfig( wres.config.generated.TimeScaleFunction.MAXIMUM, 1, null, DurationUnit.HOURS, null );
+                new TimeScaleConfig( wres.config.generated.TimeScaleFunction.MAXIMUM, 1, DurationUnit.HOURS, null );
 
         assertEquals( TimeScale.of( second ), TimeScale.of( Duration.ofHours( 1 ), TimeScaleFunction.MAXIMUM ) );
 
         // Null function produces TimeScaleFunction.UNKNOWN
         TimeScaleConfig third =
-                new TimeScaleConfig( null, 1, null, DurationUnit.SECONDS, null );
+                new TimeScaleConfig( null, 1, DurationUnit.SECONDS, null );
 
         assertEquals( TimeScale.of( third ), TimeScale.of( Duration.ofSeconds( 1 ), TimeScaleFunction.UNKNOWN ) );
     }
