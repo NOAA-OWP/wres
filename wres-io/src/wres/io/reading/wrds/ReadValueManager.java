@@ -15,8 +15,10 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.util.Collections;
 import java.util.List;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,6 +26,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.metadata.TimeScale;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
@@ -42,7 +45,8 @@ public class ReadValueManager
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( ReadValueManager.class );
 
-    private final HttpClient httpClient;
+    // TODO: inject http client in constructor without changing much else #60281
+    private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
 
     ReadValueManager( final ProjectConfig projectConfig,
                       final DataSourceConfig datasourceConfig,
@@ -51,7 +55,6 @@ public class ReadValueManager
         this.location = location;
         this.projectConfig = projectConfig;
         this.dataSourceConfig = datasourceConfig;
-        this.httpClient = HttpClient.newHttpClient();
     }
 
     public List<IngestResult> save() throws IOException
@@ -74,7 +77,6 @@ public class ReadValueManager
                                        "' could not be stored or retrieved from the database." );
         }
 
-
         // If this was the application that performed the insert into the source records,
         // this needs to perform the ingest
         if ( !foundAlready )
@@ -89,7 +91,21 @@ public class ReadValueManager
                 }
                 else if ( this.location.getScheme().startsWith( "http" ) )
                 {
-                    forecastData = this.getFromWeb( this.location );
+                    Pair<Integer,InputStream> response = this.getFromWeb( this.location );
+                    int httpStatus = response.getLeft();
+
+                    if ( httpStatus >= 400 && httpStatus < 500 )
+                    {
+                        LOGGER.warn( "Treating HTTP response code {} as no data found from URI {}",
+                                     httpStatus,
+                                     this.location );
+
+                        // TODO see #60289, this is empty, no timeseries exists,
+                        // yet the source row exists at this point.
+                        return Collections.emptyList();
+                    }
+
+                    forecastData = response.getRight();
                 }
                 else
                 {
@@ -149,12 +165,12 @@ public class ReadValueManager
         Duration timeDuration = Duration.between( dataPointsList.get( 0 ).getTime(),
                                                   dataPointsList.get( 1 ).getTime() );
 
-        long timeStep = TimeHelper.durationToLongUnits(
-                timeDuration, TimeHelper.LEAD_RESOLUTION
-        );
-
         OffsetDateTime startTime = this.getStartTime( forecast, timeDuration );
-        TimeSeries timeSeries = this.getTimeSeries( forecast, sourceId, startTime );
+        
+        // Get the time scale information, if available
+        TimeScale timeScale = TimeScaleFromParameterCodes.getTimeScale( forecast.getParameterCodes() );
+        
+        TimeSeries timeSeries = this.getTimeSeries( forecast, sourceId, startTime, timeScale );
 
         for (DataPoint dataPoint : dataPointsList)
         {
@@ -170,7 +186,13 @@ public class ReadValueManager
 
         FeatureDetails details = new FeatureDetails(  );
         details.setFeatureName( locationDescription.getNwsName() );
-        details.setComid( Integer.parseInt(locationDescription.getComId()) );
+
+        // Tolerate missing comid
+        if ( !locationDescription.getComId().isBlank() )
+        {
+            details.setComid( Integer.parseInt( locationDescription.getComId() ) );
+        }
+
         details.setGageID( locationDescription.getUsgsSiteCode() );
         details.setLid( locationDescription.getNwsLid() );
         details.save();
@@ -183,7 +205,8 @@ public class ReadValueManager
     private TimeSeries getTimeSeries(
             final Forecast forecast,
             final int sourceId,
-            final OffsetDateTime startDate
+            final OffsetDateTime startDate,
+            final TimeScale timeScale
     ) throws SQLException
     {
         String startTime = TimeHelper.convertDateToString( startDate );
@@ -192,7 +215,7 @@ public class ReadValueManager
         timeSeries.setEnsembleID( Ensembles.getDefaultEnsembleID() );
         timeSeries.setMeasurementUnitID( this.getMeasurementUnitId( forecast ) );
         timeSeries.setVariableFeatureID( this.getVariableFeatureId( forecast ) );
-
+        timeSeries.setTimeScale( timeScale );
         return timeSeries;
     }
 
@@ -224,7 +247,7 @@ public class ReadValueManager
         return new FileInputStream( forecastFile );
     }
 
-    private InputStream getFromWeb( URI uri ) throws IOException
+    private Pair<Integer,InputStream> getFromWeb( URI uri ) throws IOException
     {
         if ( !uri.getScheme().startsWith( "http" ) )
         {
@@ -232,24 +255,22 @@ public class ReadValueManager
                     "Must pass an http uri, got " + uri );
         }
 
+        LOGGER.debug( "getFromWeb {}", uri );
+
         try
         {
             HttpRequest request = HttpRequest.newBuilder()
                                              .uri( uri )
                                              .build();
             HttpResponse<InputStream> httpResponse =
-                    this.httpClient.send( request,
-                                          HttpResponse.BodyHandlers.ofInputStream() );
+                    HTTP_CLIENT.send( request,
+                                      HttpResponse.BodyHandlers.ofInputStream() );
 
             int httpStatus = httpResponse.statusCode();
 
             if ( httpStatus >= 400 && httpStatus < 500 )
             {
-                LOGGER.warn(
-                        "Could not retrieve data from {} due to status code {}",
-                        uri,
-                        httpResponse.statusCode() );
-                return  InputStream.nullInputStream();
+                return Pair.of( httpStatus, InputStream.nullInputStream() );
             }
             else if ( httpStatus >= 500 )
             {
@@ -259,13 +280,14 @@ public class ReadValueManager
                                            + httpStatus );
             }
 
-            return httpResponse.body();
+            LOGGER.debug( "Successfully retrieved data from {}", uri );
+            return Pair.of( httpStatus, httpResponse.body() );
         }
         catch ( InterruptedException ie )
         {
             LOGGER.warn( "Interrupted while getting data from {}", uri, ie );
             Thread.currentThread().interrupt();
-            return InputStream.nullInputStream();
+            return Pair.of( -1, InputStream.nullInputStream() );
         }
     }
 
