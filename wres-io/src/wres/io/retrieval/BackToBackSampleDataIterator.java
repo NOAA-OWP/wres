@@ -42,10 +42,10 @@ final class BackToBackSampleDataIterator extends SampleDataIterator
     }
 
 
-    @Override
     /**
      * Generates a list of TimeWindows that will generate SampleData objects
      */
+    @Override
     protected void calculateSamples() throws CalculationException
     {
         LOGGER.trace( "{} Calculating the sample metadata...");

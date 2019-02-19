@@ -141,7 +141,7 @@ public class SQLDataProvider implements DataProvider
     @Override
     public int getColumnIndex( String columnName )
     {
-        Integer columnIndex = -1;
+        int columnIndex = -1;
 
         try
         {
