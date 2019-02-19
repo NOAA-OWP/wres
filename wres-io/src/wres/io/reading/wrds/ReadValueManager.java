@@ -100,9 +100,15 @@ public class ReadValueManager
                                      httpStatus,
                                      this.location );
 
-                        // TODO see #60289, this is empty, no timeseries exists,
-                        // yet the source row exists at this point.
-                        return Collections.emptyList();
+                        // Mark this data as already having been ingested even
+                        // if it is no data found. See #60289 for why.
+                        return IngestResult.singleItemListFrom(
+                                this.projectConfig,
+                                this.dataSourceConfig,
+                                hash,
+                                this.location,
+                                false
+                        );
                     }
 
                     forecastData = response.getRight();
