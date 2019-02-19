@@ -143,6 +143,7 @@ public class Project
      *  Stores the last possible lead time for each feature.
      *
      *  TODO: refector this class to make it thread-safe,
+     *  TODO: #60331 - This can be removed; this is only hit once per feature.
      *  ideally immutable. Synchronizing access and setting the cache to 100 features avoids earlier problems 
      *  with reads and writes both occurring in the same code block with a check-then-act, but this is not a long-term
      *  Solution (JBr). See #49511. 
@@ -986,9 +987,9 @@ public class Project
      * TODO: Other approaches may be considered in future, such as the least common 
      * timestep of the modal timestep for each source type. See the discussion in #60032.
      * 
-     * @param leftSources steps and scales for the left sources
-     * @param rightSources steps and scales for the right sources
-     * @param baselineSources steps and scales for the baseline sources
+     * @param leftScalesAndSteps steps and scales for the left sources
+     * @param rightScalesAndSteps steps and scales for the right sources
+     * @param baselineScalesAndSteps steps and scales for the baseline sources
      * @return the least common time step of the least time step in each source
      * @throws NullPointerException if any input is null
      * @throws CalculationException if the least time-step cannot be determined for the left or right sources
@@ -2817,6 +2818,7 @@ public class Project
     }
 
     /**
+     * TODO: #60331 - Remove from Project
      * @param feature The feature to investigate
      * @return The last lead time for the feature available for evaluation
      * @throws CalculationException thrown if the calculation used to determine
