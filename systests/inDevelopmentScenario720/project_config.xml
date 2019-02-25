@@ -1,3 +1,5 @@
+<!--Needs to be refactored to match #60307, but that is blocked by #60330-->
+
 <?xml version="1.0" encoding="UTF-8"?>
 <project label="ExampleProject" name="AHPS">
     <inputs>
