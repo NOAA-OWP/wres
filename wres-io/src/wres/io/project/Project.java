@@ -457,7 +457,7 @@ public class Project
             }
         }
 
-        // return the last common time-step of all 
+        // Return the least common time-step of all 
         // ingested sources
         return this.leastCommonTimeStep;
     }
@@ -682,7 +682,7 @@ public class Project
         // No time scales: warn about this
         if ( existingTimeScales.isEmpty() )
         {
-            LOGGER.warn( "Could not find the time-scale information for any ingested source." );
+            LOGGER.warn( "Could not find the time-scale information for any {} source.", sourceType );
         }
     
         return java.util.Collections.unmodifiableSet( existingTimeScales );
