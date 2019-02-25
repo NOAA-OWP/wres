@@ -18,6 +18,7 @@
         <certificate_file_to_trust>classpath:***REMOVED***ca_expires_2020-06.pem</certificate_file_to_trust>
     </database>
     <maximum_thread_count>7</maximum_thread_count>
+    <maximum_archive_threads>5</maximum_archive_threads>
     <fetch_size>50000</fetch_size>
     <maximum_copies>10000</maximum_copies>
     <update_frequency>1</update_frequency>

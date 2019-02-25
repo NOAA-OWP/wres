@@ -61,7 +61,7 @@ public class ZippedSource extends BasicSource {
                                                              SystemSettings.maximumArchiveThreads(),
                                                              SystemSettings.poolObjectLifespan(),
                                                              TimeUnit.MILLISECONDS,
-                                                             new ArrayBlockingQueue<>(SystemSettings.poolObjectLifespan()));
+                                                             new ArrayBlockingQueue<>( SystemSettings.maximumArchiveThreads() * 2 ) );
 
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
 
