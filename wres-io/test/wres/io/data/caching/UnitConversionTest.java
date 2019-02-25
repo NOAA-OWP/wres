@@ -1,11 +1,14 @@
 package wres.io.data.caching;
 
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.modules.junit4.PowerMockRunner;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.io.utilities.TestDatabaseGenerator;
 
@@ -16,11 +19,29 @@ public class UnitConversionTest
 {
     private static final double EPSILON = 0.000001;
 
+    private static final Logger LOGGER = LoggerFactory.getLogger( UnitConversionTest.class );
+
     private static TestDatabaseGenerator.DatabaseAndConnections databaseAndConnections;
+
+    /** 
+     * Precondition for not running this test class because embedded postgres does not
+     * play nicely on Windows.
+     * 
+     * TODO: back this out when the dependency on embedded postgres is removed
+     * See #60309
+     */
+
+    private static final boolean IS_WINDOWS = System.getProperty( "os.name" ).toLowerCase().contains( "windows" );
 
     @Before
     public void setup() throws Exception
     {
+        // TODO: back this out when the dependency on embedded postgres is removed
+        // See #60309
+        Assume.assumeFalse( UnitConversionTest.IS_WINDOWS );
+        
+        LOGGER.info( "Windows OS not detected: executing wres.io.data.caching.UnitConversionTest." );
+
         UnitConversionTest.databaseAndConnections = TestDatabaseGenerator.createDatabase();
     }
 

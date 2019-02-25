@@ -592,7 +592,11 @@ public class ConfigHelper
             String messageId = "no_earliest_date";
             if ( LOGGER.isInfoEnabled() && ConfigHelper.messageSendPutIfAbsent( config, messageId ) )
             {
-                LOGGER.info( "No \"earliest\" date found in project. Use <dates earliest=\"2017-06-27T16:14:00Z\" latest=\"2017-07-06T11:35:00Z\" /> under <pair> (near line {} column {} of project file) to specify an earliest date.",
+                LOGGER.info( "No \"earliest\" date found in project. "
+                             + "Use <dates earliest=\"yyyy-mm-ddThh:mm:ssZ\" "
+                             + "latest=\"yyyy-mm-ddThh:mm:ssZ\" /> "
+                             + "under <pair> (near line {} column {} of "
+                             + "project file) to specify an earliest date.",
                              config.getPair()
                                    .sourceLocation()
                                    .getLineNumber(),
@@ -869,6 +873,7 @@ public class ConfigHelper
      * @throws DateTimeParseException if the configuration contains dates that cannot be parsed
      * @deprecated
      */
+    @Deprecated( forRemoval = true )
     public static TimeWindow getTimeWindow( Project project,
                                             Duration firstLead,
                                             Duration lastLead,

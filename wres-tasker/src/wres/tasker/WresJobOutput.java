@@ -3,6 +3,7 @@ package wres.tasker;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.URI;
@@ -22,6 +23,12 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
+
+import org.apache.tika.config.TikaConfig;
+import org.apache.tika.detect.Detector;
+import org.apache.tika.exception.TikaException;
+import org.apache.tika.io.TikaInputStream;
+import org.apache.tika.metadata.Metadata;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -164,20 +171,29 @@ public class WresJobOutput
                                    .build();
                 }
 
+                String probedType;
+                Metadata metadata = new Metadata();
+                metadata.set( Metadata.RESOURCE_NAME_KEY,
+                              actualFile.toString() );
+
                 try
                 {
-                    // Successfully translates .nc to application/x-netcdf
-                    // Successfully translates .csv to text/csv
-                    String probedType = Files.probeContentType( path );
+                    TikaConfig tikaConfig = new TikaConfig();
+                    Detector detector = tikaConfig.getDetector();
+                    InputStream inputStream = TikaInputStream.get( path );
+                    org.apache.tika.mime.MediaType mediaType =
+                            detector.detect( inputStream,
+                                             metadata );
+                    probedType = mediaType.toString();
 
                     if ( probedType != null )
                     {
                         type = probedType;
                     }
                 }
-                catch ( IOException ioe )
+                catch ( IOException | TikaException e )
                 {
-                    LOGGER.warn( "Could not probe content type of {}", path, ioe );
+                    LOGGER.warn( "Could not probe content type of {}", path, e );
                 }
 
                 return Response.ok( actualFile )

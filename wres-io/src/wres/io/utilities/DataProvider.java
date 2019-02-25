@@ -162,7 +162,7 @@ public interface DataProvider extends AutoCloseable
      * <ul>
      *     <li>
      *         DRRC2
-     *         <table><caption></caption>
+     *         <table><caption>DRRC2</caption>
      *     <tr>
      *         <th>lead</th>
      *         <th>location</th>
@@ -188,7 +188,7 @@ public interface DataProvider extends AutoCloseable
      *     </li>
      *     <li>
      *         LGNN5
-     *         <table><caption></caption>
+     *         <table><caption>LGNN5</caption>
      *     <tr>
      *         <th>lead</th>
      *         <th>location</th>
