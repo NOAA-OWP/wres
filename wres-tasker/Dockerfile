@@ -1,7 +1,7 @@
 FROM centos:7.6.1810
 
 RUN yum install -y \
-    java-1.8.0-openjdk-headless-1.8.0.191.b12-1.el7_6 \
+    java-11-openjdk-headless-11.0.1.13-3.el7_6 \
     unzip-6.0-19.el7 \
     which-2.20-7.el7
 
