@@ -167,6 +167,7 @@ public final class Database {
 	/**
 	 * Loads the metadata for each saved index and reinstates them within the
 	 * database
+     * TODO: It might be appropriate to move this out into another class
      * @throws SQLException when script execution or gets from resultsets fail
      * @throws InterruptedException when an underlying task is interrupted
      * @throws ExecutionException when an underlying task throws an exception
@@ -201,6 +202,7 @@ public final class Database {
         Connection connection = null;
         DataProvider indexes = null;
 
+        // If we're tracing, we want to have a stopwatch we can start and stop
         FormattedStopwatch watch = null;
 
         if (LOGGER.isTraceEnabled())
@@ -212,8 +214,11 @@ public final class Database {
         try
         {
             connection = Database.getConnection();
+
+            // Get all of the definitions of indexes that need to be created
             indexes = Database.getResults( connection, "SELECT * FROM wres.IndexQueue;" );
 
+            // For each index definition, create a query to add it to the database
             while ( indexes.next())
             {
                 builder = new StringBuilder(  );
@@ -236,6 +241,7 @@ public final class Database {
                 restore.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
                 indexTasks.add(Database.execute(restore));
 
+                // Next, we want to delete the record that told us to create it
                 builder = new StringBuilder(  );
                 builder.append("DELETE FROM wres.IndexQueue").append(NEWLINE);
                 builder.append("WHERE indexqueue_id = ")
@@ -252,17 +258,20 @@ public final class Database {
         }
         finally
         {
+            // If the index result set exists, make sure it gets closed
             if (indexes != null)
             {
                 indexes.close();
             }
 
+            // If the connection exists, make sure it gets returned to the pool
             if (connection != null)
             {
                 Database.returnConnection( connection );
             }
         }
 
+        // If there's at least one command to add an index, tell the client
         if (indexTasks.peek() != null)
         {
             LOGGER.info("Restoring Indices...");
@@ -270,12 +279,15 @@ public final class Database {
         }
 
 		Future<?> task;
+
+        // Complete each index creation task
 		while ((task = indexTasks.poll()) != null)
         {
             task.get();
             ProgressMonitor.completeStep();
         }
 
+		// If we're tracing and a stopwatch was created express the amount of time that has elapsed
         if (LOGGER.isTraceEnabled() && watch != null)
         {
             watch.stop();
@@ -285,7 +297,7 @@ public final class Database {
 	}
 
     /**
-     * Saves metadata about an index to instate into the database
+     * Saves metadata about an index that needs to be added to the database
      * @param tableName The name of the table that the index will belong to
      * @param indexName The name of the index to instate
      * @param indexDefinition The definition of the index
@@ -296,6 +308,7 @@ public final class Database {
                                   String indexDefinition)
             throws SQLException
     {
+        // Index definitions are wrapped in parenthesis, so ensure it has both a front and a back
 		if (!indexDefinition.startsWith("("))
 		{
 			indexDefinition = "(" + indexDefinition;
@@ -306,6 +319,7 @@ public final class Database {
             indexDefinition += ")";
         }
 
+		// Create the insert script
 		StringBuilder script = new StringBuilder(  );
 		script.append("INSERT INTO wres.IndexQueue (table_name, index_name, column_definition, method)").append(NEWLINE);
 		script.append("VALUES('")
@@ -318,6 +332,7 @@ public final class Database {
 
 		try
         {
+            // Run the script in the database
 			Database.execute( script.toString() );
 		}
 		catch ( SQLException e )
@@ -367,18 +382,28 @@ public final class Database {
 
 		try
 		{
+		    // Make sure that feedback gets displayed
 		    ProgressMonitor.setShouldUpdate( true );
+
+		    // Grab the first task
             task = getStoredIngestTask();
 
+            // While there are tasks to execute,
             while ( task != null )
             {
+                // Tell the client that we're moving on to the next part of work
                 ProgressMonitor.increment();
 
+                // If the task hasn't completed, we want to get the results and propagate them
                 if (!task.isDone())
                 {
+                    // Get the task
                     List<IngestResult> singleResult = task.get();
+
+                    // Update the monitor, saying that a task has completed
                     ProgressMonitor.completeStep();
 
+                    // If there was a result, add it to the list
                     if ( singleResult != null )
                     {
                         result.addAll( singleResult );
@@ -390,6 +415,7 @@ public final class Database {
                     }
                 }
 
+                // Get the next task
                 task = getStoredIngestTask();
             }
         }
@@ -452,9 +478,12 @@ public final class Database {
 		if (!SQL_TASKS.isShutdown())
 		{
 			SQL_TASKS.shutdown();
+
+			// The wait functions for the executor aren't 100% reliable, so we spin until it's done
 			while (!SQL_TASKS.isTerminated());
         }
 
+		// Close out our database connection pools
         CONNECTION_POOL.close();
         HIGH_PRIORITY_CONNECTION_POOL.close();
 	}
@@ -580,6 +609,7 @@ public final class Database {
      */
 	public static void execute(final String query) throws SQLException
 	{
+	    // Call the other execute, telling it that it doesn't need to run in a transaction
 	    Database.execute( query, false );
 	}
 
@@ -600,21 +630,33 @@ public final class Database {
 
         try
         {
+            // If we can log debug messages, create a timer for the script.
+            // If the script lasts longer than the timer, the timer will log the script that took too long
             if (LOGGER.isDebugEnabled())
             {
                 timer = Database.createScriptTimer( query );
             }
+
+            // Grab a basic connection
             connection = getConnection();
+
+            // If this needs to run in a transaction, make sure that it doesn't automatically commit
             connection.setAutoCommit( !forceTransaction );
+
+            // Create the statement, add a timeout as a safety measure, then send the query to the database
             statement = connection.createStatement();
             statement.setQueryTimeout( SystemSettings.getQueryTimeout() );
             statement.execute(query);
 
+            // If all went well and we needed to make sure that we ran in a transaction, go ahead and make
+            // the changes official
             if (forceTransaction)
             {
                 connection.commit();
             }
 
+            // If we had a timer running, go ahead and cancel it. If it hasn't
+            // printed the query yet, we don't want it to
             if (LOGGER.isDebugEnabled() && timer != null)
             {
                 timer.cancel();
@@ -622,12 +664,14 @@ public final class Database {
         }
         catch (SQLException error)
         {
+            // We want to print the query if it failed, but if it was really long, we don't want to print all of it
             String message = query;
             if (query.length() > 1000)
             {
                 message = query.substring( 0, 1000 );
             }
 
+            // If we were trying to run in a transaction, we want to undo our changes
             if (forceTransaction && connection != null)
             {
                 connection.rollback();
@@ -641,11 +685,13 @@ public final class Database {
         }
         finally
         {
+            // If the statement was actually created, make sure it's closed
             if (statement != null)
             {
                 statement.close();
             }
 
+            // If a connection was made, make sure automatic commits are enabled before returnining it
             if (connection != null)
             {
                 connection.setAutoCommit( true );
@@ -759,25 +805,38 @@ public final class Database {
 			connection = getConnection();
 			C3P0ProxyConnection proxy = (C3P0ProxyConnection)connection;
 			Object[] arg = new Object[]{};
+
+			// We need specialized functionality to copy, so we need to create a manager object that will
+            // handle the copy operation from the postgresql driver
 			CopyManager manager = (CopyManager)proxy.rawConnectionOperation(getCopyAPI(),
 																			C3P0ProxyConnection.RAW_CONNECTION, arg);
-			
+
+			// The format of the copy statement needs to be of the format
+            // "COPY wres.Observation FROM STDIN WITH DELIMITER '|'"
 			String copy_definition = "COPY " + table_definition + " FROM STDIN WITH DELIMITER ";
-			if (!delimiter.startsWith("'")){
+
+			// Make sure that the delimiter starts with a single quote
+			if (!delimiter.startsWith("'"))
+			{
 				delimiter = "'" + delimiter;
 			}
-			
+
+			// Make sure the delimiter ends with a single quote
 			if (!delimiter.endsWith("'"))
 			{
 				delimiter += "'";
 			}
-			
+
+			// Add the delimiter to finish the definition
 			copy_definition += delimiter;
 
 
+			// Create the reader that we'll feed the data through; make sure there is plenty of space to help
+            // ensure that all of the data makes it through
 			reader = new PushbackReader(new StringReader(""), values.length() + 1000);
 			reader.unread(values.toCharArray());
 
+			// Use the manager to stream the data through to the database
 			manager.copyIn(copy_definition, reader);
 
 		}

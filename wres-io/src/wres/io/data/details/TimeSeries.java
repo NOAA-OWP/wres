@@ -271,13 +271,13 @@ public final class TimeSeries
         DataScripter script = new DataScripter(  );
 
         // Scale information, missing by default
-        Integer scaleP = null;
-        TimeScaleFunction scaleF = TimeScaleFunction.UNKNOWN;
+        Integer scalePeriod = null;
+        TimeScaleFunction scaleFunction = TimeScaleFunction.UNKNOWN;
         
         if( Objects.nonNull( this.getTimeScale() ) )
         {
-            scaleP = (int) this.getTimeScale().getPeriod().toMinutes();
-            scaleF = this.getTimeScale().getFunction();
+            scalePeriod = (int) this.getTimeScale().getPeriod().toMinutes();
+            scaleFunction = this.getTimeScale().getFunction();
         }
         
 		script.addLine("WITH new_timeseries AS");
@@ -294,8 +294,8 @@ public final class TimeSeries
         script.addTab(  2  ).addLine(this.ensembleID, ",");
 		script.addTab(  2  ).addLine(this.measurementUnitID, ",");
 		script.addTab(  2  ).addLine("'", this.initializationDate, "',");
-		script.addTab(  2  ).addLine( scaleP, ",");
-		script.addTab(  2  ).addLine("'", scaleF.name(), "'");
+		script.addTab(  2  ).addLine( scalePeriod, ",");
+		script.addTab(  2  ).addLine("'", scaleFunction.name(), "'");
 		script.addTab().addLine("WHERE NOT EXISTS (");
 		script.addTab(  2  ).addLine("SELECT 1");
 		script.addTab(  2  ).addLine("FROM wres.TimeSeries TS");
@@ -306,8 +306,8 @@ public final class TimeSeries
 		script.addTab(   3   ).addLine("AND TS.initialization_date = '", this.initializationDate, "'");
         script.addTab(   3   ).addLine("AND TS.measurementunit_id = ", this.measurementUnitID);
         script.addTab(   3   ).addLine("AND TSS.source_id = ", this.sourceID);
-        script.addTab(   3   ).addLine("AND TS.scale_period = ", scaleP);
-        script.addTab(   3   ).addLine("AND TS.scale_function = '", scaleF.name(), "'");
+        script.addTab(   3   ).addLine("AND TS.scale_period = ", scalePeriod);
+        script.addTab(   3   ).addLine("AND TS.scale_function = '", scaleFunction.name(), "'");
         script.addTab().addLine(")");
 		script.addTab().addLine("RETURNING timeseries_id");
         script.addLine("),");
@@ -335,8 +335,8 @@ public final class TimeSeries
 		script.addTab().addLine("AND TS.ensemble_id = ", this.ensembleID);
 		script.addTab().addLine("AND TS.initialization_date = '", this.initializationDate, "'");
         script.addTab().addLine("AND TS.measurementunit_id = ", this.measurementUnitID);
-        script.addTab().addLine("AND TS.scale_period = ", scaleP);
-        script.addTab().addLine("AND TS.scale_function = '", scaleF.name(), "'");
+        script.addTab().addLine("AND TS.scale_period = ", scalePeriod);
+        script.addTab().addLine("AND TS.scale_function = '", scaleFunction.name(), "'");
         script.addTab().addLine("AND EXISTS (");
         script.addTab(  2  ).addLine("SELECT 1");
         script.addTab(  2  ).addLine("FROM wres.TimeSeriesSource TSS");
