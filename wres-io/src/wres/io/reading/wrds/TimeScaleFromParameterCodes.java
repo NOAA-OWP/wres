@@ -1,5 +1,6 @@
 package wres.io.reading.wrds;
 
+import java.net.URI;
 import java.util.Objects;
 
 import org.slf4j.Logger;
@@ -38,25 +39,28 @@ class TimeScaleFromParameterCodes
      * Returns a {@link TimeScale} from the input parameter codes.
      * 
      * @param parameterCodes the parameter codes
+     * @param source a source URI, which is used to help with logging
      * @return a time scale or null if one could not be interpreted
      * @throws NullPointerException if the inputs is null
      */
 
-    static TimeScale getTimeScale( ParameterCodes parameterCodes )
+    static TimeScale getTimeScale( ParameterCodes parameterCodes, URI source )
     {
         Objects.requireNonNull( parameterCodes,
-                                "Specify non-null parameter codes for a WRDS source." );
+                                "Specify non-null parameter codes alongside the WRDS source '" + source + "'." );
 
         TimeScale returnMe = null;
-        
+
         if ( "I".equalsIgnoreCase( parameterCodes.getDuration() ) )
         {
             returnMe = TimeScale.of();
         }
         else
         {
-            LOGGER.warn( "Cannot determine the time scale of the WRDS source "
-                    + "from the input parameter codes '{}'.", parameterCodes );
+            LOGGER.warn( "Cannot determine the time scale of the WRDS source '{}' "
+                         + "from the input parameter codes '{}'.",
+                         source,
+                         parameterCodes );
         }
 
         return returnMe;

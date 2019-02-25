@@ -1,0 +1,89 @@
+{
+  "header": {
+    "request": {
+      "url": " http://fake.url",
+      "path": "/fake_bucket"
+    }
+  },
+  "status_code": 200,
+  "messsage": "",
+  "forecasts": [
+    {
+      "location": {
+        "names": {
+          "nwsLid": "FAKE2",
+          "usgsSiteCode": "-123456789",
+          "comId": "-987654321",
+          "nwsName": "FAKE2 - FAKETY, FAKE"
+        }
+      },
+      "producer": "FAKE_PRODUCER",
+      "issuer": "FAKE_ISSUER",
+      "distributor": "FAKE_DISTRIBUTOR",
+      "type": "deterministic",
+      "basisTime": "",
+      "issuedTime": "2551-03-18T00:00:00+00:00",
+      "parameterCodes": {
+        "physicalElement": "QR",
+        "duration": "T",
+        "typeSource": "FE",
+        "extremum": "Z",
+        "probability": "Z"
+      },
+      "units": {
+        "flow": "CMS"
+      },
+      "members": [
+        {
+          "identifier": "1",
+          "dataPointsList": [[
+            {
+              "time": "2551-03-18T03:00:00+00:00",
+              "flow": "131.0"
+            },
+            {
+              "time": "2551-03-18T06:00:00+00:00",
+              "flow": "137.0"
+            },
+            {
+              "time": "2551-03-18T09:00:00+00:00",
+              "flow": "139.0"
+            },
+            {
+              "time": "2551-03-18T12:00:00+00:00",
+              "flow": "149.0"
+            },
+            {
+              "time": "2551-03-18T15:00:00+00:00",
+              "flow": "151.0"
+            },
+            {
+              "time": "2551-03-18T18:00:00+00:00",
+              "flow": "157.0"
+            },
+            {
+              "time": "2551-03-18T21:00:00+00:00",
+              "flow": "163.0"
+            },
+            {
+              "time": "2551-03-19T00:00:00+00:00",
+              "flow": "167.0"
+            },
+            {
+              "time": "2551-03-19T03:00:00+00:00",
+              "flow": "173.0"
+            },
+            {
+              "time": "2551-03-19T06:00:00+00:00",
+              "flow": "179.0"
+            },
+            {
+              "time": "2551-03-19T09:00:00+00:00",
+              "flow": "181.0"
+            }
+          ]]
+        }
+      ]
+    }
+  ]
+}
