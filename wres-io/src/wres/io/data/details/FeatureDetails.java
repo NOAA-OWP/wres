@@ -388,7 +388,6 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
 
     @Override
     protected DataScripter getInsertSelect()
-            throws SQLException
     {
         DataScripter script = new DataScripter(  );
         this.addInsert( script );
@@ -777,7 +776,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
         // Determines if an OR operator needs to be added to separate clauses
         boolean clauseAdded = false;
 
-        if (this.getComid() != null)
+        if (this.getComid() != null && this.getComid() > 0)
         {
             script.add("comid = ?");
             script.addArgument(this.getComid());

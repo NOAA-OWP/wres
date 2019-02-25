@@ -30,19 +30,61 @@ import wres.util.CalculationException;
 import wres.util.IterationFailedException;
 import wres.util.TimeHelper;
 
+/**
+ * Creates and launches thread tasks used to create {@link wres.datamodel.sampledata.SampleData} on demand.
+ * Used to throttle the creation and execution of {@link wres.datamodel.sampledata.SampleData} retrieval operations
+ */
 abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
 {
+    /**
+     * Shortcut term used to create a new line in generated text
+     */
     protected static final String NEWLINE = System.lineSeparator();
 
+    /**
+     * The feature whose {@link wres.datamodel.sampledata.SampleData} will be generated for
+     */
     private final Feature feature;
 
+    /**
+     * The collection of relevant data used to determine how to form a series of threads used to load
+     * {@link wres.datamodel.sampledata.SampleData} collections
+     */
     private final Project project;
+
+    /**
+     * Object used to determine what left handed data to load for evaluations
+     */
     LeftHandCache leftCache;
+
+    /**
+     * Lazy generated collection of values to use for metrics requiring a set of climatological values
+     */
     private VectorOfDoubles climatology;
+
+    /**
+     * A numeric id used to identify when the last collection of values over issue pool will occur
+     * TODO: Detemine if this should be moved to {@link wres.io.retrieval.PoolingSampleDataIterator}
+     */
     private Integer finalPoolingStep;
+
+    /**
+     * Determines where pairing output for the threads generating {@link wres.datamodel.sampledata.SampleData}
+     * should be created
+     */
     private Path outputPathForPairs;
+
+    /**
+     * A queue containing the parameters used to create each task that will generate sets of
+     * {@link wres.datamodel.sampledata.SampleData}
+     */
     private final Queue<OrderedSampleMetadata> sampleMetadata = new LinkedList<>(  );
 
+    /**
+     * Adds parameters to the sampleMetadata queue to later iterate over
+     * @param orderedSampleMetadata Parameters describing how to form a single instance of
+     * {@link wres.datamodel.sampledata.SampleData}
+     */
     void addSample( final OrderedSampleMetadata orderedSampleMetadata)
     {
         this.sampleMetadata.add( orderedSampleMetadata );
@@ -53,23 +95,39 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
         );
     }
 
-    int amountOfSamplesLeft()
+    /**
+     * @return The name of {@link wres.datamodel.sampledata.SampleData} instances to generate
+     */
+    int getSampleCount()
     {
         return this.sampleMetadata.size();
     }
 
+    /**
+     * @return The feature to generate {@link wres.datamodel.sampledata.SampleData} for
+     */
     protected Feature getFeature()
     {
         return this.feature;
     }
 
+    /**
+     * @return The project that determines how to generate {@link wres.datamodel.sampledata.SampleData} retrieval tasks
+     */
     protected Project getProject()
     {
         return this.project;
     }
 
+    /**
+     * Lazy getter for climatological metric data
+     * <p>Only generates data for probability thresholding</p>
+     * @return A collection of climatological values to use for probability threshold metrics
+     * @throws IOException Thrown if the climatology could not be generated.
+     */
     VectorOfDoubles getClimatology() throws IOException
     {
+        // We only want to generate the climatology if we need one
         if ( this.getProject().usesProbabilityThresholds() && this.climatology == null)
         {
             ClimatologyBuilder climatologyBuilder = new ClimatologyBuilder( this.getProject(),
@@ -88,10 +146,17 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
         return this.climatology;
     }
 
+    /**
+     * The constructor
+     * @param feature The feature to generate {@link wres.datamodel.sampledata.SampleData} for
+     * @param project The project that determines how to generate {@link wres.datamodel.sampledata.SampleData}
+     * @param outputPathForPairs The path to where to store paired {@link wres.datamodel.sampledata.SampleData} values
+     * {@link wres.datamodel.sampledata.SampleData} generation task
+     * @throws IOException
+     */
     SampleDataIterator( Feature feature,
                         Project project,
-                        Path outputPathForPairs,
-                        final Collection<OrderedSampleMetadata> sampleMetadata)
+                        Path outputPathForPairs)
             throws IOException
     {
         if (this.getLogger().isTraceEnabled())
@@ -141,23 +206,16 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
             throw new IOException( "The last pool to be evaluated could not be calculated.", e );
         }
 
-        if (sampleMetadata == null || sampleMetadata.size() == 0)
+        try
         {
-            try
-            {
-                this.calculateSamples();
-            }
-            catch ( CalculationException e )
-            {
-                throw new IOException( "The time windows to evaluate could not be calculated.", e );
-            }
+            this.calculateSamples();
         }
-        else
+        catch ( CalculationException e )
         {
-            this.sampleMetadata.addAll( sampleMetadata );
+            throw new IOException( "The time windows to evaluate could not be calculated.", e );
         }
 
-        ProgressMonitor.setSteps( (long)this.amountOfSamplesLeft() );
+        ProgressMonitor.setSteps( (long)this.getSampleCount() );
     }
 
     /**

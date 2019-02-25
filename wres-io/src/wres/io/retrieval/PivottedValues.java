@@ -149,7 +149,8 @@ class PivottedValues
                 }
             }
 
-            Objects.requireNonNull(correspondingMemberValue, "The value for the ensemble member '" + member + "' could not be found.");
+            Objects.requireNonNull(correspondingMemberValue,
+                                   "The value for the ensemble member '" + member + "' could not be found.");
 
             // Remove the found value pair from the passed in list so that the value isn't retrieved again
             aggregatedValues.remove( correspondingMemberValue );

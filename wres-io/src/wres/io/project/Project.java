@@ -46,7 +46,6 @@ import wres.config.generated.PairConfig;
 import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ThresholdType;
-import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.TimeScaleFunction;
 import wres.datamodel.metadata.MetadataHelper;
 import wres.datamodel.metadata.RescalingException;
@@ -64,7 +63,6 @@ import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.util.CalculationException;
-import wres.util.Collections;
 import wres.util.FormattedStopwatch;
 import wres.util.LRUMap;
 import wres.util.TimeHelper;
@@ -91,17 +89,26 @@ public class Project
     /**
      * Controls the type of pair retrieval for the project
      *
-     * ROLLING: Used when collecting values based on issuance
-     * BACK_TO_BACK: Used for simplest case pairing
-     * TIME_SERIES: Used when pairing every single time series. Each grouping of pairs in this mode
-     *              is essentially a page of the entire data set
-     * BY_TIMESERIES: Used when all pairs in a window belong exclusively to a single time series
+     * <ul>
+     *     <li>
+     *         BASIC: Used for simplest case pairing
+     *     </li>
+     *     <li>
+     *          ROLLING: Used when collecting values based on issuance
+     *     </li>
+     *     <li>
+     *         TIME_SERIES: Used when pairing every single time series. Each grouping of pairs in this mode
+     *                    is essentially a page of the entire data set
+     *     </li>
+     *     <li>
+     *         BY_TIMESERIES: Used when all pairs in a window belong exclusively to a single time series
+     *     </li>
+     * </ul>
      */
     public enum PairingMode
     {
+        BASIC,
         ROLLING,
-        @Deprecated
-        BACK_TO_BACK,
         TIME_SERIES,
         BY_TIMESERIES
     }
@@ -1725,12 +1732,12 @@ public class Project
     /**
      * Dictates the pooling mode for the project. If an issue times pooling
      * window is established, the pooling mode is "TimeWindowMode.ROLLING",
-     * "TimeWindowMode.BACK_TO_BACK" otherwise.
+     * "TimeWindowMode.BASIC" otherwise.
      * @return The pooling mode of the project. Defa
      */
     public PairingMode getPairingMode()
     {
-        PairingMode mode = PairingMode.BACK_TO_BACK;
+        PairingMode mode = PairingMode.BASIC;
 
         if ( this.getIssuePoolingWindow() != null )
         {

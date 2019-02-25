@@ -28,16 +28,10 @@ public class ByForecastSampleDataIterator extends SampleDataIterator
 
     private Queue<Integer> timeSeries;
 
-    ByForecastSampleDataIterator( Feature feature,
-                                  Project project,
-                                  Path outputDirectoryForPairs,
-                                  final Collection<OrderedSampleMetadata> sampleMetadataCollection)
+    ByForecastSampleDataIterator( Feature feature, Project project, Path outputDirectoryForPairs)
             throws IOException
     {
-        super( feature,
-               project,
-               outputDirectoryForPairs,
-               sampleMetadataCollection);
+        super( feature, project, outputDirectoryForPairs);
     }
 
     @Override

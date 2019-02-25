@@ -3,7 +3,6 @@ package wres.io.retrieval;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.Collection;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -18,27 +17,21 @@ import wres.util.CalculationException;
 import wres.util.IterationFailedException;
 import wres.util.TimeHelper;
 
-final class BackToBackSampleDataIterator extends SampleDataIterator
+final class BasicSampleDataIterator extends SampleDataIterator
 {
     private static final Logger
-            LOGGER = LoggerFactory.getLogger( BackToBackSampleDataIterator.class );
+            LOGGER = LoggerFactory.getLogger( BasicSampleDataIterator.class );
 
     @Override
     Logger getLogger()
     {
-        return BackToBackSampleDataIterator.LOGGER;
+        return BasicSampleDataIterator.LOGGER;
     }
 
-    BackToBackSampleDataIterator( Feature feature,
-                                  Project project,
-                                  Path outputDirectoryForPairs,
-                                  final Collection<OrderedSampleMetadata> sampleMetadataCollection)
+    BasicSampleDataIterator( Feature feature, Project project, Path outputDirectoryForPairs)
             throws IOException
     {
-        super( feature,
-               project,
-               outputDirectoryForPairs,
-               sampleMetadataCollection);
+        super( feature, project, outputDirectoryForPairs);
     }
 
 
@@ -108,7 +101,7 @@ final class BackToBackSampleDataIterator extends SampleDataIterator
         }
 
         // We need to throw an exception if no samples to evaluate could be determined
-        if (this.amountOfSamplesLeft() == 0)
+        if ( this.getSampleCount() == 0)
         {
             throw new IterationFailedException( "No windows could be generated for evaluation." );
         }

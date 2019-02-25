@@ -34,14 +34,10 @@ public class TimeSeriesSampleDataIterator extends SampleDataIterator
 
     TimeSeriesSampleDataIterator( Feature feature,
                                   Project project,
-                                  Path outputDirectoryForPairs,
-                                  final Collection<OrderedSampleMetadata> sampleMetadataCollection)
+                                  Path outputDirectoryForPairs)
             throws IOException
     {
-        super( feature,
-               project,
-               outputDirectoryForPairs,
-               sampleMetadataCollection);
+        super( feature, project, outputDirectoryForPairs);
     }
 
     @Override
