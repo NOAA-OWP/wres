@@ -15,8 +15,14 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -44,6 +50,8 @@ import wres.util.TimeHelper;
 public class ReadValueManager
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( ReadValueManager.class );
+    private static final Set<Integer> foundTimeSeries = new HashSet<>();
+    private static final Map<Integer, List<Duration>> foundLeads = new HashMap<>(  );
 
     // TODO: inject http client in constructor without changing much else #60281
     private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
@@ -125,6 +133,7 @@ public class ReadValueManager
 
                 for ( Forecast forecast : response.getForecasts() )
                 {
+                    LOGGER.debug("Parsing {}", forecast);
                     this.read( forecast, source.getId() );
                 }
             }
@@ -178,11 +187,52 @@ public class ReadValueManager
         
         TimeSeries timeSeries = this.getTimeSeries( forecast, sourceId, startTime, timeScale );
 
+        Integer foundTimeSeriesHash = null;
+
+        // If we're debugging, we want to have an easily identifiable code for a time series that
+        // might have repetitive data
+        if (LOGGER.isDebugEnabled())
+        {
+            foundTimeSeriesHash = Objects.hash( timeSeries );
+        }
+
+        int index = 0;
+        int foundAtIndex = -1;
+
         for (DataPoint dataPoint : dataPointsList)
         {
             Duration between = Duration.between( startTime, dataPoint.getTime());
+
+            // If we're debugging, we want to check to see if repetitive leads for forecasts are being added
+            if (LOGGER.isDebugEnabled())
+            {
+                // If we haven't seen a repetitive value yet...
+                if ( foundAtIndex == -1 )
+                {
+
+                    synchronized ( foundLeads )
+                    {
+                        if ( !foundLeads.containsKey( foundTimeSeriesHash ) )
+                        {
+                            foundLeads.put( foundTimeSeriesHash, new ArrayList<>() );
+                        }
+
+                        if ( foundLeads.get( foundTimeSeriesHash ).contains( between ) )
+                        {
+                            foundAtIndex = index;
+                            LOGGER.warn( "Found {} in {} again at index {}!", between, forecast, foundAtIndex );
+                        }
+                        else
+                        {
+                            foundLeads.get( foundTimeSeriesHash ).add( between );
+                        }
+                    }
+                }
+            }
+
             int lead = ( int ) TimeHelper.durationToLongUnits( between, TimeHelper.LEAD_RESOLUTION );
             IngestedValues.addTimeSeriesValue( timeSeries.getTimeSeriesID(), lead, dataPoint.getValue() );
+            index++;
         }
     }
 

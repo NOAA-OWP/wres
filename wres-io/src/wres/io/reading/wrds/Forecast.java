@@ -128,4 +128,29 @@ public class Forecast
     ForecastUnits units;
     ParameterCodes parameterCodes;
     Member[] members;
+
+
+    @Override
+    public String toString()
+    {
+        String name = "";
+        String locationName = "Unknown Location";
+
+        if (this.getLocation() != null)
+        {
+            locationName = this.getLocation().toString();
+        }
+
+        String releaseDate = "released at unknown time.";
+
+        if (this.getBasisTime() != null)
+        {
+            releaseDate = "with a basis time of " + this.getBasisTime().toString();
+        }
+        else if (this.getIssuedTime() != null)
+        {
+            releaseDate = "issued at " + this.getIssuedTime().toString();
+        }
+        return "Forecast for " + locationName + ", " + releaseDate;
+    }
 }

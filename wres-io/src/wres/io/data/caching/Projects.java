@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.ProjectConfig;
+import wres.io.config.ConfigHelper;
 import wres.io.config.LeftOrRightOrBaseline;
 import wres.io.project.Project;
 import wres.io.reading.IngestResult;
@@ -27,7 +28,7 @@ import wres.util.LRUMap;
  * Cache of available types of forecast
  */
 // TODO: Find a way to remove the projects cache
-@Deprecated // We shouldn't cache; there will only ever be one project
+@Deprecated(forRemoval = true) // We shouldn't cache; there will only ever be one project
 public class Projects
 {
     private static final String NEWLINE = System.lineSeparator();
@@ -161,10 +162,12 @@ public class Projects
     {
         Project details = null;
         boolean thisCallCausedInsert = false;
-        Integer inputCode = Project.hash( projectConfig,
-                                          leftHashes,
-                                          rightHashes,
-                                          baselineHashes );
+        Integer inputCode = ConfigHelper.hashProject(
+                projectConfig,
+                leftHashes,
+                rightHashes,
+                baselineHashes
+        );
 
         if (Projects.getCache().hasID( inputCode ))
         {

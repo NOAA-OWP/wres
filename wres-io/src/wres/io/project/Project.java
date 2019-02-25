@@ -301,106 +301,6 @@ public class Project
      */
     private static final Object POOL_LOCK = new Object();
 
-    /**
-     * Creates a hash for the indicated project configuration based on its
-     * specifications and the data it has ingested
-     * @param projectConfig The configuration for the project
-     * @param leftHashesIngested A collection of the hashes for the left sided
-     *                           source data
-     * @param rightHashesIngested A collection of the hashes for the right sided
-     *                            source data
-     * @param baselineHashesIngested A collection of hashes representing the baseline
-     *                               source data
-     * @return A unique hash code for the project's circumstances
-     */
-    public static Integer hash( final ProjectConfig projectConfig,
-                                final List<String> leftHashesIngested,
-                                final List<String> rightHashesIngested,
-                                final List<String> baselineHashesIngested )
-    {
-        StringBuilder hashBuilder = new StringBuilder(  );
-
-        DataSourceConfig left = projectConfig.getInputs().getLeft();
-        DataSourceConfig right = projectConfig.getInputs().getRight();
-        DataSourceConfig baseline = projectConfig.getInputs().getBaseline();
-
-        hashBuilder.append(left.getType().value());
-
-        for ( EnsembleCondition ensembleCondition : left.getEnsemble())
-        {
-            hashBuilder.append(ensembleCondition.getName());
-            hashBuilder.append(ensembleCondition.getMemberId());
-            hashBuilder.append(ensembleCondition.getQualifier());
-        }
-
-        // Sort for deterministic hash result for same list of ingested
-        Collection<String> sortedLeftHashes =
-                Collections.copyAndSort( leftHashesIngested );
-
-        for ( String leftHash : sortedLeftHashes )
-        {
-            hashBuilder.append( leftHash );
-        }
-
-        hashBuilder.append(left.getVariable().getValue());
-        hashBuilder.append(left.getVariable().getUnit());
-
-        hashBuilder.append(right.getType().value());
-
-        for ( EnsembleCondition ensembleCondition : right.getEnsemble())
-        {
-            hashBuilder.append(ensembleCondition.getName());
-            hashBuilder.append(ensembleCondition.getMemberId());
-            hashBuilder.append(ensembleCondition.getQualifier());
-        }
-
-        // Sort for deterministic hash result for same list of ingested
-        Collection<String> sortedRightHashes =
-                Collections.copyAndSort( rightHashesIngested );
-
-        for ( String rightHash : sortedRightHashes )
-        {
-            hashBuilder.append( rightHash );
-        }
-
-        hashBuilder.append(right.getVariable().getValue());
-        hashBuilder.append(right.getVariable().getUnit());
-
-        if (baseline != null)
-        {
-
-            hashBuilder.append(baseline.getType().value());
-
-            for ( EnsembleCondition ensembleCondition : baseline.getEnsemble())
-            {
-                hashBuilder.append(ensembleCondition.getName());
-                hashBuilder.append(ensembleCondition.getMemberId());
-                hashBuilder.append(ensembleCondition.getQualifier());
-            }
-
-
-            // Sort for deterministic hash result for same list of ingested
-            Collection<String> sortedBaselineHashes =
-                    Collections.copyAndSort( baselineHashesIngested );
-
-            for ( String baselineHash : sortedBaselineHashes )
-            {
-                hashBuilder.append( baselineHash );
-            }
-
-            hashBuilder.append(baseline.getVariable().getValue());
-            hashBuilder.append(baseline.getVariable().getUnit());
-        }
-
-        for ( Feature feature : projectConfig.getPair()
-                                             .getFeature() )
-        {
-            hashBuilder.append( ConfigHelper.getFeatureDescription( feature ) );
-        }
-
-        return hashBuilder.toString().hashCode();
-    }
-
     public Project( ProjectConfig projectConfig,
                     Integer inputCode )
     {
@@ -2886,10 +2786,12 @@ public class Project
 
             if (Objects.isNull( lastLead ))
             {
-                throw new CalculationException( "The calculation used to determine when to "
-                                                + "stop evaluating data for " +
-                                                ConfigHelper.getFeatureDescription( feature ) +
-                                                " returned nothing.");
+                String message = "The calculation used to determine when to stop evaluating data for %s returned nothing";
+                message = String.format( message, ConfigHelper.getFeatureDescription( feature ) );
+                message += System.lineSeparator();
+                message += "The offending query was:" + System.lineSeparator();
+                message += script.toString();
+                throw new CalculationException( message);
             }
 
             this.lastLeads.put(feature, lastLead);
