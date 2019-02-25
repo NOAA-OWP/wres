@@ -23,16 +23,10 @@ class PoolingSampleDataIterator extends SampleDataIterator
     private static final Logger LOGGER =
             LoggerFactory.getLogger(PoolingSampleDataIterator.class);
 
-    PoolingSampleDataIterator( Feature feature,
-                               Project project,
-                               Path outputDirectoryForPairs,
-                               final Collection<OrderedSampleMetadata> sampleMetadataCollection)
+    PoolingSampleDataIterator( Feature feature, Project project, Path outputDirectoryForPairs)
             throws IOException
     {
-        super( feature,
-               project,
-               outputDirectoryForPairs,
-               sampleMetadataCollection);
+        super( feature, project, outputDirectoryForPairs);
     }
 
     @Override
@@ -80,7 +74,7 @@ class PoolingSampleDataIterator extends SampleDataIterator
         }
         
         // We need to throw an exception if no samples to evaluate could be determined
-        if (this.amountOfSamplesLeft() == 0)
+        if ( this.getSampleCount() == 0)
         {
             throw new IterationFailedException( "No windows could be generated for evaluation." );
         }

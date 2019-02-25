@@ -796,6 +796,9 @@ public final class Database {
                             String delimiter)
             throws CopyException
 	{
+	    // TODO: This is Postgres specific; this needs to either come from a different source or switch
+        //  to an insert statement if the database is non-postgresql (i.e. H2)
+
 		Connection connection = null;
 		PushbackReader reader = null;
 		final String copyAPIMethodName = "getCopyAPI";
@@ -842,14 +845,23 @@ public final class Database {
 		}
 		catch (NoSuchMethodException noMethod)
 		{
+		    // We want to make sure we record the incorrect API name so that we can cross-reference it for debugging
 		    String message = "The method used to create the copy manager ('" +
                     copyAPIMethodName +
                     "') could not be retrieved from the PostgreSQL connection class.";
-			LOGGER.error(message);
 			throw new CopyException(message, noMethod);
 		}
+        catch (InvocationTargetException e)
+        {
+            // While similar to the above, we want to know for sure that we were at least able to access the method
+            String message = "The dynamically retrieved method '" + copyAPIMethodName +
+                             "' threw an exception upon execution.";
+            throw new CopyException(message, e);
+        }
 		catch (SQLException | IOException | IllegalAccessException error)
 		{
+		    // If we are in a non-production environment, it would help to see the format of the data
+            // that couldn't be added
 		    if ( LOGGER.isDebugEnabled() )
             {
                 LOGGER.debug( "Data could not be copied to the database:{}{}",
@@ -858,12 +870,9 @@ public final class Database {
 			throw new CopyException( "Data could not be copied to the database.",
                                      error);
 		}
-        catch (InvocationTargetException e) {
-		    String message = "The dynamically retrieved method '" + copyAPIMethodName + "' threw an exception upon execution.";
-            throw new CopyException(message, e);
-        }
         finally
 		{
+		    // If we managed to create the reader, we need to close it so we don't have a memory leak
 			if (reader != null)
 			{
 				try
@@ -872,13 +881,15 @@ public final class Database {
 				}
 				catch (IOException e)
                 {
+                    // While it isn't optimal that we couldn't close the reader, it's not necessarily a showstopper
 					LOGGER.warn("The reader for copy values could not be properly closed.");
 				}
 			}
 
+			// If we did indeed get a connection, we need to make sure it ends up returning to the pool
 			if (connection != null)
 			{
-				returnConnection(connection);
+				Database.returnConnection(connection);
 			}
 		}
 

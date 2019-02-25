@@ -374,7 +374,7 @@ public class DataScripter extends ScriptBuilder
 
                 for (Object parameter : statementParameters)
                 {
-                    LOGGER.error("    " + String.valueOf( parameter ));
+                    LOGGER.error("    " + parameter );
                 }
 
                 throw e;

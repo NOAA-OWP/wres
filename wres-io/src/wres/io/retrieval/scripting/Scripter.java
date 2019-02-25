@@ -40,7 +40,7 @@ public abstract class Scripter extends ScriptBuilder
             case BY_TIMESERIES:
                 loadScripter = new SingleTimeSeriesScripter( sampleMetadata, dataSourceConfig );
                 break;
-            case BACK_TO_BACK:
+            case BASIC:
                 if (isForecast)
                 {
                     loadScripter = new BackToBackForecastScripter(
