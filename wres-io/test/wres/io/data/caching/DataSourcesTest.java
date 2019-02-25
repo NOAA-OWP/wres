@@ -12,6 +12,7 @@ import java.sql.Statement;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -38,9 +39,25 @@ public class DataSourcesTest
 
     private static TestDatabaseGenerator.DatabaseAndConnections databaseAndConnections;
 
+    /** 
+     * Precondition for not running this test class because embedded postgres does not
+     * play nicely on Windows.
+     * 
+     * TODO: back this out when the dependency on embedded postgres is removed
+     * See #60309
+     */
+
+    private static final boolean IS_WINDOWS = System.getProperty( "os.name" ).toLowerCase().contains( "windows" );
+    
     @BeforeClass
     public static void setup() throws Exception
     {
+        // TODO: back this out when the dependency on embedded postgres is removed
+        // See #60309
+        Assume.assumeFalse( DataSourcesTest.IS_WINDOWS );
+        
+        LOGGER.info( "Windows OS not detected: executing wres.io.data.caching.DataSourcesTest." );
+
         DataSourcesTest.databaseAndConnections = TestDatabaseGenerator.createDatabase();
         DataSourcesTest.initializeDataSources();
 
@@ -215,10 +232,15 @@ public class DataSourcesTest
     @AfterClass
     public static void tearDown()
     {
-        LOGGER.trace("tearDown began");
+        // TODO: back this out when the dependency on embedded postgres is removed
+        // See #60309
+        if ( ! DataSourcesTest.IS_WINDOWS )
+        {
+            LOGGER.trace( "tearDown began" );
 
-        DataSourcesTest.databaseAndConnections.close();
+            DataSourcesTest.databaseAndConnections.close();
 
-        LOGGER.trace("tearDown ended");
+            LOGGER.trace( "tearDown ended" );
+        }
     }
 }
