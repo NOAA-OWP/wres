@@ -33,4 +33,4 @@ See doc/index.html for more information (either inside build/install/wres or
 inside an unzipped version of WRES).
 
 For additional information regarding WRES in other modes such as cluster mode or running under
-docker, visit https://***REMOVED***/redmine/project/wres/wiki#Resources-for-Developers
+docker, visit https://***REMOVED***/redmine/projects/wres/wiki#Resources-for-Developers
