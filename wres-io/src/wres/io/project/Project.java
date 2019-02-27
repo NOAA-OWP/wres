@@ -713,8 +713,6 @@ public class Project
                 {
                     DataScripter observed = ProjectScriptGenerator.createObservedTimeRetriever( this.getId(),
                                                                                                 this.getFeatures(),
-                                                                                                this.getMinimumLead(),
-                                                                                                this.getMaximumLead(),
                                                                                                 sourceType );
                     existingTimeScales.addAll( this.getTimeScaleAndTimeStep( observed, dataSourceConfig, sourceType ) );
                 }
@@ -724,8 +722,6 @@ public class Project
             {
                 DataScripter observed = ProjectScriptGenerator.createObservedTimeRetriever( this.getId(),
                                                                                             this.getFeatures(),
-                                                                                            this.getMinimumLead(),
-                                                                                            this.getMaximumLead(),
                                                                                             sourceType );
 
                 existingTimeScales.addAll( this.getTimeScaleAndTimeStep( observed, dataSourceConfig, sourceType ) );
