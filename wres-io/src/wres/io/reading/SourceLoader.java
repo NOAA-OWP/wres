@@ -440,6 +440,14 @@ public class SourceLoader
                 }
 
                 ingest = !dataExists( hash );
+
+                // Added in debugging #58715-116
+                LOGGER.trace( "Determined that a source with URI {} and hash {} has the "
+                              + "following status of existing within the database: {}.",
+                              filePath,
+                              hash,
+                              !ingest );
+                
             }
             catch ( IOException | SQLException e )
             {

@@ -924,16 +924,12 @@ final class ProjectScriptGenerator
      * 
      * @param projectId The identifier of the project whose forecast time scales and steps will be found
      * @param features The features to evaluate
-     * @param minimumLead the earliest lead duration
-     * @param maximumLead the latest lead duration
      * @return A script that will gather all unique time scales and time steps for all forecasted values
      * @throws SQLException Thrown if a list of ids for all features for a project could not be formed
      * @throws NullPointerException if the collection of features is null
      */
     static DataScripter createObservedTimeRetriever( final int projectId,
                                                      final Collection<FeatureDetails> features,
-                                                     final int minimumLead,
-                                                     final int maximumLead,
                                                      final LeftOrRightOrBaseline sourceType )
             throws SQLException
     {
