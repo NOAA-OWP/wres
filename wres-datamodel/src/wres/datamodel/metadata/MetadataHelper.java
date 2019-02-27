@@ -6,6 +6,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import wres.datamodel.metadata.TimeScale.TimeScaleFunction;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 
@@ -17,6 +20,12 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
 
 public final class MetadataHelper
 {
+
+    /**
+     * Logger.
+     */
+
+    private static final Logger LOGGER = LoggerFactory.getLogger( MetadataHelper.class );
 
     /**
      * Finds the union of the input, based on the {@link TimeWindow}. All components of the input must be equal, 
@@ -108,13 +117,13 @@ public final class MetadataHelper
         // Timestep cannot be zero
         if ( timeStep.isZero() )
         {
-            throw new RescalingException( "The time-step duration cannot be zero for rescaling purposes." );
+            throw new RescalingException( "The period associated with the time-step cannot be zero when rescaling." );
         }
 
         // Timestep cannot be negative
         if ( timeStep.isNegative() )
         {
-            throw new RescalingException( "The time-step duration cannot be negative for rescaling purposes." );
+            throw new RescalingException( "The period associated with the time-step cannot be negative when rescaling." );
         }
 
         // Change of scale required, i.e. not absolutely equal and not instantaneous
@@ -136,6 +145,10 @@ public final class MetadataHelper
 
             // If the existing and desired periods are the same, the function cannot differ
             MetadataHelper.throwExceptionIfPeriodsMatchAndFunctionsDiffer( existingTimeScale, desiredTimeScale );
+
+            // If the existing time scale is instantaneous, do not allow accumulations (for now)
+            MetadataHelper.throwExceptionIfAccumulatingInstantaneous( existingTimeScale,
+                                                                      desiredTimeScale.getFunction() );
 
             // If the desired function is a total, then the existing function must also be a total
             MetadataHelper.throwExceptionIfAccumulatingNonAccumulations( existingTimeScale.getFunction(),
@@ -276,12 +289,38 @@ public final class MetadataHelper
     }
 
     /**
+     * Throws an exception when attempting to accumulate something an instantaneous value. 
+     * TODO: in principle, this might be supported in future, but involves both an integral
+     * estimate and a change in units. For example, if the input is precipitation in mm/s
+     * then the total might be estimated as the average over the interval, multiplied by 
+     * the number of seconds.
+     * 
+     * @param existingFunction the existing function
+     * @param desiredFunction the desired function
+     * @throws RescalingException if the desiredFunction is a {@link TimeScaleFunction#TOTAL} and 
+     *            the existingFunction {@link TimeScale#isInstantaneous()} returns <code>true</code> 
+     */
+
+    private static void throwExceptionIfAccumulatingInstantaneous( TimeScale existingScale,
+                                                                   TimeScaleFunction desiredFunction )
+    {
+        if ( existingScale.isInstantaneous() && desiredFunction == TimeScaleFunction.TOTAL )
+        {
+            throw new RescalingException( "Cannot accumulate instantaneous values. Change the existing "
+                                          + "time scale or change the function associated with the desired "
+                                          + "time scale to something other than a '"
+                                          + TimeScaleFunction.TOTAL
+                                          + "'." );
+        }
+    }
+
+    /**
      * Throws an exception when attempting to accumulate something that is not already an accumulation.
      * 
      * @param existingFunction the existing function
      * @param desiredFunction the desired function
-     * @throws RescalingException if the desiredFnction is a {@link TimeScaleFunction#TOTAL} and the existingFunction
-     *            is not a {@link TimeScaleFunction#TOTAL}
+     * @throws RescalingException if the desiredFunction is a {@link TimeScaleFunction#TOTAL} and the 
+     *            existingFunction is not a {@link TimeScaleFunction#TOTAL} or a {@link TimeScaleFunction#UNKNOWN}
      */
 
     private static void throwExceptionIfAccumulatingNonAccumulations( TimeScaleFunction existingFunction,
@@ -289,11 +328,25 @@ public final class MetadataHelper
     {
         if ( desiredFunction == TimeScaleFunction.TOTAL && existingFunction != TimeScaleFunction.TOTAL )
         {
-            throw new RescalingException( "Cannot accumulate values that are not already accumulations. The "
-                                          + "function associated with the existing time scale must be a '"
-                                          + TimeScaleFunction.TOTAL
-                                          + "' or the function associated with the desired time scale must "
-                                          + "be changed." );
+            if ( existingFunction == TimeScaleFunction.UNKNOWN )
+            {
+                LOGGER.warn( "The function associated with the desired time scale is a {}, but "
+                             + "the function associated with the existing time scale is {}. Assuming "
+                             + "that the existing function is a {}.",
+                             TimeScaleFunction.TOTAL,
+                             TimeScaleFunction.UNKNOWN,
+                             TimeScaleFunction.TOTAL );
+            }
+            else
+            {
+                throw new RescalingException( "Cannot accumulate values that are not already accumulations. The "
+                                              + "function associated with the existing time scale must be a '"
+                                              + TimeScaleFunction.TOTAL
+                                              + "', rather than a '"
+                                              + existingFunction
+                                              + "', or the function associated with the desired time scale must "
+                                              + "be changed." );
+            }
         }
     }
 

@@ -1223,22 +1223,6 @@ public class ConfigHelper
     }
 
     /**
-     * Returns true if the input contains instantaneous data, false otherwise. A {@link TimeScaleConfig} is
-     * considered instantaneous if the {@link TimeScaleConfig#getPeriod()} is 1 and the
-     * {@link TimeScaleConfig#getUnit()} is {@link DurationUnit#NANOS}.
-     * 
-     * @param input the input to test
-     * @return true if the input aggregation denotes instantaneous data, false otherwise
-     * @throws NullPointerException if the input is null
-     */
-
-    public static boolean isInstantaneous( TimeScaleConfig input )
-    {
-        Objects.requireNonNull( input, "Specify non-null input to check for instantanous data." );
-        return input.getUnit().equals( DurationUnit.NANOS ) && input.getPeriod() == 1;
-    }
-
-    /**
      * Returns the first instance of the named metric configuration or null if no such configuration exists.
      * 
      * @param projectConfig the project configuration
