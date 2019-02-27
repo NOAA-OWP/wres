@@ -2859,6 +2859,8 @@ public class Project
 
 
     /**
+     * TODO: return a {@link Duration}
+     * 
      * @return the minimum value specified or a default of Integer.MIN_VALUE
      */
     public int getMinimumLead()
@@ -2882,6 +2884,8 @@ public class Project
     }
 
     /**
+     * TODO: return a {@link Duration}
+     * 
      * @return the maximum value specified or a default of Integer.MAX_VALUE
      */
     public int getMaximumLead()

@@ -979,8 +979,8 @@ final class ProjectScriptGenerator
      * 
      * @param projectId The identifier of the project whose forecast time scales and steps will be found
      * @param features The features to evaluate
-     * @param minimumLead the earliest lead duration
-     * @param maximumLead the latest lead duration
+     * @param minimumLead the earliest lead duration in units of {@link TimeHelper#LEAD_RESOLUTION}
+     * @param maximumLead the latest lead duration in units of {@link TimeHelper#LEAD_RESOLUTION}
      * @return A script that will gather all unique time scales and time steps for all forecasted values
      * @throws SQLException Thrown if a list of ids for all features for a project could not be formed
      * @throws NullPointerException if the collection of features is null or the sourceType is null
@@ -1027,7 +1027,7 @@ final class ProjectScriptGenerator
         scripter.addTab().addLine(") AS TS");
         scripter.addTab(  2  ).addLine("ON TS.timeseries_id = TSV.timeseries_id");
 
-        if (minimumLead != Integer.MIN_VALUE)
+        if (minimumLead != Integer.MIN_VALUE )
         {
             scripter.addTab().addLine("WHERE lead > ", minimumLead );
         }
@@ -1036,7 +1036,8 @@ final class ProjectScriptGenerator
             scripter.addTab().addLine("WHERE lead > 0");
         }
 
-        if (maximumLead != Integer.MAX_VALUE)
+        // Additionally check that the bookends are different: see #60732 
+        if ( maximumLead != Integer.MAX_VALUE  && minimumLead != maximumLead )
         {
             scripter.addTab(  2  ).addLine("AND lead <= ", maximumLead );
         }
