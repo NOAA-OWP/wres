@@ -46,6 +46,7 @@ import wres.config.generated.TimeScaleFunction;
 import wres.config.generated.TimeSeriesMetricConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.StatisticGroup;
+import wres.datamodel.metadata.TimeScale;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
 import wres.io.config.ConfigHelper;
 import wres.util.Collections;
@@ -663,7 +664,7 @@ public class Validation
                 pairConfig.getDesiredTimeScale();
 
         if ( aggregationConfig != null
-             && ConfigHelper.isInstantaneous( aggregationConfig ) )
+             && TimeScale.of( aggregationConfig ).isInstantaneous()  )
         {
             if ( LOGGER.isWarnEnabled() )
             {
@@ -1177,7 +1178,7 @@ public class Validation
     {
         boolean returnMe = true;
         // Existing aggregation cannot be an instant
-        if ( ConfigHelper.isInstantaneous( inputConfig ) )
+        if ( TimeScale.of( inputConfig ).isInstantaneous()  )
         {
             returnMe = false;
             String message = " When using a desired time aggregation of "
@@ -1260,13 +1261,13 @@ public class Validation
 
         Duration desired = Duration.of( timeAgg.getPeriod(),
                                         ChronoUnit.valueOf( timeAgg.getUnit().toString().toUpperCase() ) );
-        if ( left != null && !ConfigHelper.isInstantaneous( left ) )
+        if ( left != null && !TimeScale.of( left ).isInstantaneous() )
         {
             Duration leftExists = Duration.of( left.getPeriod(),
                                                ChronoUnit.valueOf( left.getUnit().toString().toUpperCase() ) );
             returnMe = isDesiredTimeScalePeriodConsistent( projectConfigPlus, desired, leftExists, left, "left" );
         }
-        if ( right != null && !ConfigHelper.isInstantaneous( right) )
+        if ( right != null && !TimeScale.of( right ).isInstantaneous()  )
         {
             Duration rightExists = Duration.of( right.getPeriod(),
                                                 ChronoUnit.valueOf( right.getUnit().toString().toUpperCase() ) );
@@ -1277,7 +1278,7 @@ public class Validation
                                                                  "right" )
                        && returnMe;
         }
-        if ( baseline != null && !ConfigHelper.isInstantaneous( baseline ) )
+        if ( baseline != null && !TimeScale.of( baseline ).isInstantaneous()  )
         {
             Duration baselineExists = Duration.of( baseline.getPeriod(),
                                                    ChronoUnit.valueOf( baseline.getUnit().toString().toUpperCase() ) );

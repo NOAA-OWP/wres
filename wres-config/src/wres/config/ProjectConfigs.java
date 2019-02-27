@@ -57,19 +57,25 @@ public class ProjectConfigs
         // Null friendly natural order on project name
         return Objects.compare( first.getName(), second.getName(), Comparator.nullsFirst( Comparator.naturalOrder() ) );
     }
-    
+
     /**
      * Get a duration of a period from a timescale config
      * 
      * @param timeScaleConfig the config
      * @return the duration
-     * @throws NullPointerException if the input is null
+     * @throws NullPointerException if the input is null or expected contents is null
      */
-    
+
     public static Duration getDurationFromTimeScale( TimeScaleConfig timeScaleConfig )
     {
         Objects.requireNonNull( timeScaleConfig, "Specify non-null input configuration " );
-        
+
+        Objects.requireNonNull( timeScaleConfig.getUnit(),
+                                "The unit associated with the time scale declaration was null, which is not allowed." );
+
+        Objects.requireNonNull( timeScaleConfig.getPeriod(),
+                                "The period associated with the time scale declaration was null, which is not allowed." );
+
         ChronoUnit unit = ChronoUnit.valueOf( timeScaleConfig.getUnit()
                                                              .value()
                                                              .toUpperCase() );
