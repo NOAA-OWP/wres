@@ -66,28 +66,6 @@ public class SystestsScenarioRunner
      */
     private Control wresControl = null;
 
-    /**
-    * Wrapper on {@link Operations#cleanDatabase()}.
-     * @throws SQLException
-     * @throws IOException
-    */
-    public static void assertCleanDatabase()
-    {
-        try
-        {
-            Operations.cleanDatabase();
-        }
-        catch ( IOException e )
-        {
-            e.printStackTrace();
-            fail( "IOException occurred while cleaning the database: " + e.getMessage() );
-        }
-        catch ( SQLException e )
-        {
-            e.printStackTrace();
-            fail( "IOException occurred while cleaning the database: " + e.getMessage() );
-        }
-    }
 
     /**
      * @param systemTestsDir  A {@link Path} specifying the system testing directory.
@@ -95,6 +73,7 @@ public class SystestsScenarioRunner
      */
     public SystestsScenarioRunner( String scenarioName )
     {
+	
         this.systemTestsDirPath = Paths.get( System.getenv( "TESTS_DIR" ) );
         this.scenarioName = scenarioName;
         this.scenarioDir = new File( this.systemTestsDirPath.toFile(), this.scenarioName );
@@ -112,17 +91,42 @@ public class SystestsScenarioRunner
         //execution of the system tests, which would not be done via the suite.  For that reason, I'm
         //leaving it here.
 
-        Properties props = System.getProperties();
-        props.setProperty( "wres.hostname", System.getenv( "WRES_DB_HOSTNAME" ) );
-        props.setProperty( "wres.url", System.getenv( "WRES_DB_HOSTNAME" ) );
-        props.setProperty( "wres.databaseName", System.getenv( "WRES_DB_NAME" ) );
-        props.setProperty( "wres.username", System.getenv( "WRES_DB_USERNAME" ) );
-        props.setProperty( "wres.logLevel", System.getenv( "WRES_LOG_LEVEL" ) );
-        props.setProperty( "wres.password", System.getenv( "WRES_DB_PASSWORD" ) );
-
+	/*
         //TODO Modify this later if we ever change how the outputs are directed to a different
         //tmp directory.
-        props.setProperty( "java.io.tmpdir", System.getenv( "TESTS_DIR" ) + "/" + scenarioName );
+	*/
+
+	String dbHostFromEnvVar = System.getenv( "WRES_DB_HOSTNAME" );
+	String dbHostFromSysProp = System.getProperty( "wres.url" );
+
+	if ( dbHostFromSysProp == null && dbHostFromEnvVar != null
+	     && !dbHostFromEnvVar.isEmpty() )
+	{
+	    System.setProperty( "wres.url", dbHostFromEnvVar );
+	}
+
+	String dbNameFromEnvVar = System.getenv( "WRES_DB_NAME" );
+	String dbNameFromSysProp = System.getProperty( "wres.databaseName" );
+
+	if ( dbNameFromSysProp == null && dbNameFromEnvVar != null
+	     && !dbNameFromEnvVar.isEmpty() )
+        {
+	    System.setProperty( "wres.databaseName", dbNameFromEnvVar );
+	}
+
+	String dbUserFromEnvVar = System.getenv( "WRES_DB_USERNAME" );
+	String dbUserFromSysProp = System.getProperty( "wres.username" );
+
+	if ( dbUserFromSysProp == null && dbUserFromEnvVar != null
+	     && !dbUserFromEnvVar.isEmpty() )
+	{
+	    System.setProperty( "wres.username", dbUserFromEnvVar );
+	}
+
+	// Passphrase should be got from postgres passphrase file. -Jesse
+	// I thinks it's too late to attempt to set log level here. -Jesse
+
+        System.getProperty( "java.io.tmpdir", System.getenv( "TESTS_DIR" ) + "/" + scenarioName );
 
         System.out.println( "Properties used to run test:" );
         System.out.println( "    wres.hostname = " + System.getProperty( "wres.hostname" ) );
@@ -138,13 +142,13 @@ public class SystestsScenarioRunner
 
     /**
     * Delete wres_evaluation_output_* from previous run.
-    * @param testScenarioDir The directory in which to look for evaluation output subdirectories.
+    * @param directoryToLookIn The directory in which to look for evaluation output subdirectories.
     * @return True if anything is deleted, false otherwise.
     * @throws IOException
     */
-    public void assertDeletionOfOldOutputDirectories()
+    public static void deleteOldOutputDirectories( Path directoryToLookIn )
     {
-        String[] files = scenarioDir.list();
+        String[] files = directoryToLookIn.toFile().list();
 
         //Search the files for anything that appears to be wres evaluation output and remove the entire directory.
         try
@@ -153,8 +157,7 @@ public class SystestsScenarioRunner
             {
                 if ( files[i].startsWith( "wres_evaluation_output" ) )
                 {
-                    Path outputPath =
-                            FileSystems.getDefault().getPath( scenarioDir.getCanonicalPath() + "/" + files[i] );
+                    Path outputPath = directoryToLookIn.resolve( files[i] );
                     System.out.println( "Deleting old system testing output directory, "
                                         + outputPath.toFile().getAbsolutePath() );
                     FileUtils.deleteDirectory( outputPath.toFile() );
