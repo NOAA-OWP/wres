@@ -10,7 +10,7 @@ import org.junit.runners.Suite;
                        SystemTestScenario003.class
 } )
 /**
- * Specify the suite of JUnit tests above.  The suite is executed in order. 
+ * Specify the suite of JUnit tests above.  The suite is executed in order.
  * @author Hank.Herr
  *
  */

@@ -36,9 +36,9 @@ import wres.io.Operations;
 /**
  * A class to be used to run system testing scenarios of the WRES.  The class makes use of environment variables
  * to identify the system tests directory (which will be the working directory for executions), WRES database
- * information, and the logging level.  It then sets up appropriate Java system properties before running the 
+ * information, and the logging level.  It then sets up appropriate Java system properties before running the
  * WRES.  After construction, the methods to call are then controlled from the external caller.  The choices
- * are provided as public methods below.  
+ * are provided as public methods below.
  * @author Raymond.Chui
  * @author Hank.Herr
  *
@@ -68,8 +68,8 @@ public class SystestsScenarioRunner
 
     /**
     * Wrapper on {@link Operations#cleanDatabase()}.
-     * @throws SQLException 
-     * @throws IOException 
+     * @throws SQLException
+     * @throws IOException
     */
     public static void assertCleanDatabase()
     {
@@ -119,10 +119,10 @@ public class SystestsScenarioRunner
         props.setProperty( "wres.username", System.getenv( "WRES_DB_USERNAME" ) );
         props.setProperty( "wres.logLevel", System.getenv( "WRES_LOG_LEVEL" ) );
         props.setProperty( "wres.password", System.getenv( "WRES_DB_PASSWORD" ) );
-        
+
         //TODO Modify this later if we ever change how the outputs are directed to a different
         //tmp directory.
-        props.setProperty( "java.io.tmpdir", System.getenv( "TESTS_DIR" ) + "/" + scenarioName ); 
+        props.setProperty( "java.io.tmpdir", System.getenv( "TESTS_DIR" ) + "/" + scenarioName );
 
         System.out.println( "Properties used to run test:" );
         System.out.println( "    wres.hostname = " + System.getProperty( "wres.hostname" ) );
@@ -140,7 +140,7 @@ public class SystestsScenarioRunner
     * Delete wres_evaluation_output_* from previous run.
     * @param testScenarioDir The directory in which to look for evaluation output subdirectories.
     * @return True if anything is deleted, false otherwise.
-    * @throws IOException 
+    * @throws IOException
     */
     public void assertDeletionOfOldOutputDirectories()
     {
@@ -170,11 +170,11 @@ public class SystestsScenarioRunner
 
     /**
      * Execute the named project configuration file and assert a successful execution with valid
-     * output. 
-     * 
-     * @param projectConfigFileName 
+     * output.
+     *
+     * @param projectConfigFileName
      * @return The exit code returned by the call to method {@link Control#apply(String[])}.
-     * @throws IOException If the project configuration file cannot be read.  This likely indicates that the 
+     * @throws IOException If the project configuration file cannot be read.  This likely indicates that the
      * system test was not setup properly; hence the exception instead of a result code.
      */
     public void assertProjectExecution()
@@ -217,7 +217,7 @@ public class SystestsScenarioRunner
     {
         //Obtain the complete list of outputs generated.
         Set<Path> initialOutputSet = wresControl.get();
-        
+
         //Confirm all outputs were written to the same directory.
         if ( !initialOutputSet.isEmpty() )
         {
@@ -238,14 +238,14 @@ public class SystestsScenarioRunner
     }
 
     /**
-     * This builds the dirListing.txt file for that directory and then compares all of the 
+     * This builds the dirListing.txt file for that directory and then compares all of the
      * outputs.  Anything in the output directory that has a corresponding benchmark will be diffed.  If anything
-     * in the benchmarks is not found in the outputs, then a difference is reported; this should be equivalent to 
+     * in the benchmarks is not found in the outputs, then a difference is reported; this should be equivalent to
      * check dirListing.txt, in that something in the benchmarks but not in the output should result in a dirListing.txt
      * difference, but I wanted to be certain nothing fell through the cracks.  <br>
      * <br>
-     * If exceptions are thrown when calling this method, it indicates something basic went wrong that is not 
-     * covered by the result code return.  Typically, that will be due to a system test setup poorly for 
+     * If exceptions are thrown when calling this method, it indicates something basic went wrong that is not
+     * covered by the result code return.  Typically, that will be due to a system test setup poorly for
      * any one of various reasons, so it excepts out.
      * @return The comparison result code.
      * @throws IllegalStateException Indicates that the outputs were written to different directories.  Its expected that all
@@ -279,7 +279,7 @@ public class SystestsScenarioRunner
     }
 
     /**
-     * Constructs the dirListing.txt file for the outputs generated.  
+     * Constructs the dirListing.txt file for the outputs generated.
      * @param generatedOutputs It is assumed that all outputs are generated in the same directory.
      * @return The {@link Path} to the directory listing file created.
      * @throws IOException
@@ -393,7 +393,7 @@ public class SystestsScenarioRunner
 
 
     /**
-     * 
+     *
      * @param outputFilePath Output file for which to identify the benchmark.
      * @param benchmarkDirPath The directory for benchmarks.
      * @return The file identified or null if none if no appropriate file is found.
@@ -428,12 +428,12 @@ public class SystestsScenarioRunner
     }
 
     /**
-     * Asserts that the provided file matches that found in the benchmarks, if one exists.  This method will 
+     * Asserts that the provided file matches that found in the benchmarks, if one exists.  This method will
      * only work with text files.  However, as long as binary files are benchmarked, you can pass binary files
-     * into this method and it won't do anything with them because the benchmark won't exist.  
+     * into this method and it won't do anything with them because the benchmark won't exist.
      * @param outputFile
      * @param benchmarkFile
-     * @throws IOException 
+     * @throws IOException
      */
     private void assertOutputTextFileMatchesExpected( File outputFile, File benchmarkFile ) throws IOException
     {
@@ -448,10 +448,10 @@ public class SystestsScenarioRunner
         assertTrue( actualRows.size() > 0 && expectedRows.size() > 0 );
         assertEquals( actualRows.size(), expectedRows.size() );
 
-        // Verify by row, rather than all at once        
+        // Verify by row, rather than all at once
         for ( int i = 0; i < actualRows.size(); i++ )
         {
-            //TODO Added trimming below to handle white space at the ends, but should I? 
+            //TODO Added trimming below to handle white space at the ends, but should I?
             //Mainly worried about the Window's carriage return popping up some day.
             assertEquals( "For output file, " + outputFile.getName()
                           + ", row "
@@ -463,7 +463,7 @@ public class SystestsScenarioRunner
     }
 
     /**
-     * Asserts that the output pairs are equal to a benchmark file, if one exists.  
+     * Asserts that the output pairs are equal to a benchmark file, if one exists.
      * @param pairsFile
      * @param benchmarkDirPath
      * @throws IOException
@@ -485,7 +485,7 @@ public class SystestsScenarioRunner
         Collections.sort( actualRows );
         Collections.sort( expectedRows );
 
-        // Verify by row, rather than all at once        
+        // Verify by row, rather than all at once
         for ( int i = 0; i < actualRows.size(); i++ )
         {
             assertEquals( "For pairs file file, " + pairsFile.getName()
@@ -503,7 +503,7 @@ public class SystestsScenarioRunner
     //===================================================================================================================
 
     /**
-    * if there is a after script, do it now 
+    * if there is a after script, do it now
     * @param files -- a list of files
     * @return -- false if there is no after script; Otherwise, true
     */
@@ -554,9 +554,9 @@ public class SystestsScenarioRunner
         File file = Paths.get( System.getProperty( "user.dir" ) + "/" + fileName ).toFile();
         /*
         System.out.println(file.toString() + '\n' +
-        	searchFor + '\n' +
-        	replace + '\n' +
-        	line);
+                searchFor + '\n' +
+		replace + '\n' +
+		line);
         */
         if ( file.exists() )
         {

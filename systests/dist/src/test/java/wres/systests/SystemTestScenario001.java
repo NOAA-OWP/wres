@@ -11,7 +11,7 @@ public class SystemTestScenario001
         System.out.println( );
         System.out.println("########################################################## EXECUTION " + scenarioName);
         System.out.println( );
-        
+
         SystestsScenarioRunner classUnderTest = new SystestsScenarioRunner( scenarioName );
 
         SystestsScenarioRunner.assertCleanDatabase();
