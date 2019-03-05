@@ -16,7 +16,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -183,7 +182,7 @@ public class ReadValueManager
         OffsetDateTime startTime = this.getStartTime( forecast, timeDuration );
         
         // Get the time scale information, if available
-        TimeScale timeScale = TimeScaleFromParameterCodes.getTimeScale( forecast.getParameterCodes() );
+        TimeScale timeScale = TimeScaleFromParameterCodes.getTimeScale( forecast.getParameterCodes(), this.location );
         
         TimeSeries timeSeries = this.getTimeSeries( forecast, sourceId, startTime, timeScale );
 

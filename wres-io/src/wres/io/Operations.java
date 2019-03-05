@@ -307,7 +307,7 @@ public final class Operations {
             {
                 List<String> availableVariables;
 
-                if (ConfigHelper.isForecast( project.getRight() ))
+                if (ConfigHelper.isForecast( project.getBaseline() ))
                 {
                     availableVariables = Variables.getAvailableForecastVariables(
                             project.getId(),
@@ -324,7 +324,7 @@ public final class Operations {
 
                 String message = "There is no '"
                                  + project.getBaseline().getVariable().getValue()
-                                 + "' data available for the right hand data "
+                                 + "' data available for the baseline "
                                  + "evaluation dataset.";
 
                 if (availableVariables.size() > 0)

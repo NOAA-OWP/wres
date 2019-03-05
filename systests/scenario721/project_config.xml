@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="scenario721">
+
+    <inputs>
+        <left>
+            <type>observations</type>
+            <source>smalldata/25510317T00_FAKE2_observations.xml</source>
+            <variable>DISCHARGE</variable>
+        </left>
+        <right>
+            <type>single valued forecasts</type>
+            <source>smalldata/wrds_json/25510317T12_FAKE2_forecast.json</source>
+            <source>smalldata/wrds_json/25510318T00_FAKE2_forecast.json</source>
+            <source>smalldata/wrds_json/25510318T12_FAKE2_forecast.json</source>
+            <source>smalldata/wrds_json/25510319T00_FAKE2_forecast.json</source>
+            <variable>STREAMFLOW</variable>
+        </right>
+    </inputs>
+
+    <pair>
+        <unit>CMS</unit>
+        <feature locationId="FAKE2" />
+        <desiredTimeScale>
+            <function>mean</function>
+            <period>3</period>
+            <unit>hours</unit>
+        </desiredTimeScale>
+    </pair>
+
+    <metrics>
+        <metric><name>mean error</name></metric>
+        <metric><name>sample size</name></metric>
+    </metrics>
+
+    <outputs>
+        <destination type="pairs" decimalFormat="0.000000" />
+        <destination type="numeric" decimalFormat="0.000000" />
+    </outputs>
+
+</project>

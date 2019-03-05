@@ -5,11 +5,6 @@
             <type>simulations</type>
             <source format="usgs"></source>
             <variable unit="ft3/s">streamflow</variable>
-            <existingTimeScale>
-                <function>none</function>
-                <period>1</period>
-                <unit>hours</unit>
-            </existingTimeScale>
         </left>
         <right label="NWM v2.0 Medium Range Ensemble">
             <type>ensemble forecasts</type>
