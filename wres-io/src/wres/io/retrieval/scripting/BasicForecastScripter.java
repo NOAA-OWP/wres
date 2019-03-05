@@ -8,10 +8,10 @@ import wres.io.config.ConfigHelper;
 import wres.io.config.OrderedSampleMetadata;
 import wres.util.TimeHelper;
 
-class BackToBackForecastScripter extends Scripter
+class BasicForecastScripter extends Scripter
 {
-    BackToBackForecastScripter( OrderedSampleMetadata sampleMetadata,
-                                DataSourceConfig dataSourceConfig)
+    BasicForecastScripter( OrderedSampleMetadata sampleMetadata,
+                           DataSourceConfig dataSourceConfig)
     {
         super( sampleMetadata, dataSourceConfig );
     }

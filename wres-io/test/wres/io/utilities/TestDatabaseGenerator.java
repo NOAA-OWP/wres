@@ -59,6 +59,7 @@ public abstract class TestDatabaseGenerator
             LOGGER.trace( "Closing the database named {}.", this.name );
             this.dataSource.close();
             this.database.stop();
+            this.database.close();
             LOGGER.trace("The database named {} has been closed.", this.name);
         }
 

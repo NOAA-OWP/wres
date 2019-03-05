@@ -3,7 +3,9 @@ package wres.io.utilities;
 import java.beans.PropertyVetoException;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.net.URI;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -34,6 +36,13 @@ public class DataProviderTest
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( DataProviderTest.class);
 
+    // TODO: Add test for URL -> URI conversion tests
+    // TODO: Add test for String -> URI conversion tests
+    // TODO: Add number -> Duration conversion tests
+    // TODO: Add string -> Duration conversion tests
+    // TODO: Add date conversion tests
+    // TODO: Add tests for the SQLDataProvider
+
     @Test
     /*
     Tests typed retrieval
@@ -54,6 +63,8 @@ public class DataProviderTest
         LocalDateTime testLocalDateTime = LocalDateTime.now();
         OffsetDateTime testOffsetDateTime = OffsetDateTime.now();
         Instant testInstant = Instant.now();
+        URI testUri = URI.create( "here/is/an/example" );
+        Duration testDuration = Duration.ofHours( 10 );
 
         DataProvider provider = DataBuilder
                 .with(
@@ -70,7 +81,9 @@ public class DataProviderTest
                         "localtime",
                         "localdatetime",
                         "offsetdatetime",
-                        "instant" )
+                        "instant",
+                        "uri",
+                        "duration")
                 .set( "string", testString )
                 .set( "short", testShort )
                 .set("int", testInt)
@@ -85,6 +98,8 @@ public class DataProviderTest
                 .set("localdatetime", testLocalDateTime)
                 .set("offsetdatetime", testOffsetDateTime)
                 .set("instant", testInstant)
+                .set("uri", testUri)
+                .set("duration", testDuration)
                 .build();
         Assert.assertEquals( provider.getString("string"), testString );
         Assert.assertEquals( provider.getShort( "short" ), testShort );
@@ -100,6 +115,8 @@ public class DataProviderTest
         Assert.assertEquals( provider.getLocalDateTime( "localdatetime" ), testLocalDateTime);
         Assert.assertEquals( provider.getOffsetDateTime( "offsetdatetime" ), testOffsetDateTime);
         Assert.assertEquals( provider.getInstant( "instant" ), testInstant );
+        Assert.assertEquals( provider.getURI( "uri" ), testUri );
+        Assert.assertEquals( provider.getDuration( "duration" ), testDuration );
     }
 
     @Test

@@ -179,8 +179,12 @@ public final class Strings
 
     /**
      * Generates a stack trace from the current thread
-     * <br>
-     * Useful for debugging and tracing asynchronous processes
+     * <br><br>
+     * <p>
+     *     Getting the stack trace from the current thread can be a pain because it
+     *     a) returns an array instead of a string and b) includes unhelpful elements. This
+     *     makes the process easier for cases where the trace needs to be logged without an exception to draw from.
+     * </p>
      * @return A multiline string representation of the stack trace
      */
 	public static String getStackTrace()

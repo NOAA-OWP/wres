@@ -98,7 +98,6 @@ public class TimeSeriesRetriever extends Retriever
 
     private void createPairs() throws RetrievalFailedException
     {
-        Connection connection = null;
 
         DataScripter script;
 
@@ -114,9 +113,8 @@ public class TimeSeriesRetriever extends Retriever
 
         try
         {
-            connection = Database.getConnection();
 
-            try (DataProvider data = script.getData( connection ))
+            try (DataProvider data = script.buffer())
             {
                 while (data.next())
                 {
@@ -171,13 +169,6 @@ public class TimeSeriesRetriever extends Retriever
         catch ( SQLException e )
         {
             throw new RetrievalFailedException( "Values needed for evaluation could not be loaded.", e );
-        }
-        finally
-        {
-            if (connection != null)
-            {
-                Database.returnConnection( connection );
-            }
         }
     }
 

@@ -90,14 +90,14 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 
 		if (!exists)
 		{
-			String script = "SELECT EXISTS (" + NEWLINE +
-							"		SELECT 1" + NEWLINE +
-							"		FROM wres.Feature" + NEWLINE +
-							"		WHERE lid = '" + lid + "'" + NEWLINE
-							+
-							");";
+		    DataScripter script = new DataScripter(  );
+		    script.addLine("SELECT EXISTS (");
+		    script.addTab().addLine("SELECT 1");
+		    script.addTab().addLine("FROM wres.Feature");
+		    script.addTab().addLine("WHERE lid = '", lid, "'");
+		    script.add(");");
 
-			exists = Database.getResult( script, "exists");
+			exists = script.retrieve( "exists" );
 		}
 
 		return exists;

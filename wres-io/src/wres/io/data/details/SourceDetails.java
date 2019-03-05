@@ -54,6 +54,16 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
 		this.setHash( key.getHash() );
 		this.setID(null);
 	}
+
+	public SourceDetails(final DataProvider data)
+    {
+        this.setSourcePath(  data.getURI("path") );
+        this.setOutputTime( data.getString( "output_time" ) );
+        this.setLead( data.getInt( "lead" ));
+        this.setHash( data.getString("hash") );
+        this.setIsPointData( data.getBoolean( "is_point_data" ) );
+        this.setID( data.getInt( this.getIDName() ) );
+    }
 	
 	/**
 	 * Sets the path to the source file
@@ -143,7 +153,6 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
 
 	@Override
 	protected DataScripter getInsertSelect()
-			throws SQLException
 	{
         DataScripter script = new DataScripter(  );
         script.setHighPriority( true );

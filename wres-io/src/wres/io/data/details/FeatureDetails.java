@@ -1,10 +1,6 @@
 package wres.io.data.details;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -17,8 +13,6 @@ import wres.config.generated.CoordinateSelection;
 import wres.config.generated.Feature;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
-import wres.io.utilities.Database;
-import wres.io.utilities.ScriptBuilder;
 import wres.util.Strings;
 
 /**

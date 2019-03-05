@@ -2,7 +2,6 @@ package wres.io.retrieval;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
@@ -40,6 +39,7 @@ import wres.io.data.caching.DataSources;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.retrieval.scripting.Scripter;
 import wres.io.utilities.DataProvider;
+import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.util.TimeHelper;
@@ -461,8 +461,6 @@ class SampleDataRetriever extends Retriever
             throw new RetrievalFailedException( "The logic used to retrieve data could not be formed.", e );
         }
 
-        Connection connection = null;
-
         IngestedValueCollection ingestedValues = new IngestedValueCollection(  );
         long reference = -1;
         int currentLead = Integer.MIN_VALUE;
@@ -497,81 +495,40 @@ class SampleDataRetriever extends Retriever
          * left value : [ agg(v1), agg(v2), agg(v3), agg(v4), agg(v5), agg(v6) ]
          */
 
-        try
+        int minimumLead = TimeHelper.durationToLead(this.getSampleMetadata().getMinimumLead());
+
+
+        int period = this.getCommonScale().getPeriod();
+        int frequency = this.getCommonScale().getFrequency();
+
+        period = ( int ) TimeHelper.unitsToLeadUnits(
+                this.getCommonScale().getUnit().value(),
+                period
+        );
+
+        frequency = ( int ) TimeHelper.unitsToLeadUnits(
+                this.getCommonScale().getUnit().value(),
+                frequency
+        );
+
+        try ( DataProvider data = new DataScripter( loadScript ).buffer())
         {
-            int minimumLead = TimeHelper.durationToLead(this.getSampleMetadata().getMinimumLead());
-
-
-            int period = this.getCommonScale().getPeriod();
-            int frequency = this.getCommonScale().getFrequency();
-
-            period = ( int ) TimeHelper.unitsToLeadUnits(
-                    this.getCommonScale().getUnit().value(),
-                    period
-            );
-
-            frequency = ( int ) TimeHelper.unitsToLeadUnits(
-                    this.getCommonScale().getUnit().value(),
-                    frequency
-            );
-
-            connection = Database.getConnection();
-            try (DataProvider data = Database.getResults(connection, loadScript))
+            while ( data.next() )
             {
-
-                while ( data.next() )
+                // TODO: Convert the if logic into its own function
+                // Results need to be ordered by the ascending basis times
+                // first, then ascending lead times. If we have already
+                // gathered at least one value and either encounter a issue
+                // time that differs from the one we just gathered or we
+                // encounter a value for the same issue time but a
+                // non-incremented lead, we want to pivot our gathered
+                // values for processing and continue
+                if ( ingestedValues.size() > 0 &&
+                     ( data.getLong( "basis_epoch_time" ) != reference ||
+                       data.getInt( "lead" ) <= currentLead ) )
                 {
-                    // TODO: Convert the if logic into its own function
-                    // Results need to be ordered by the ascending basis times
-                    // first, then ascending lead times. If we have already
-                    // gathered at least one value and either encounter a issue
-                    // time that differs from the one we just gathered or we
-                    // encounter a value for the same issue time but a
-                    // non-incremented lead, we want to pivot our gathered
-                    // values for processing and continue
-                    if ( ingestedValues.size() > 0 &&
-                         ( data.getLong( "basis_epoch_time" ) != reference ||
-                           data.getInt( "lead" ) <= currentLead ) )
-                    {
-                        // TODO: Convert this logic into a function
-                        Integer aggregationStep = ingestedValues.getFirstPivotStep(
-                                period,
-                                frequency,
-                                minimumLead
-                        );
-
-                        PivottedValues condensedValue = ingestedValues.pivot(
-                                aggregationStep,
-                                period,
-                                frequency,
-                                minimumLead
-                        );
-
-                        while ( condensedValue != null )
-                        {
-                            this.addPair(condensedValue, dataSourceConfig );
-                            aggregationStep++;
-                            condensedValue = ingestedValues.pivot(
-                                    aggregationStep,
-                                    period,
-                                    frequency,
-                                    minimumLead
-                            );
-                        }
-
-                        ingestedValues = new IngestedValueCollection();
-                    }
-
-                    reference = data.getLong( "basis_epoch_time" );
-                    currentLead = data.getInt( "lead" );
-
-                    ingestedValues.add( data, this.getProjectDetails() );
-                }
-
-                // TODO: Create some sort of "Has Data" function for IngestedValueCollection
-                if ( ingestedValues.size() > 0 )
-                {
-                    Integer aggregationStep = ingestedValues.getFirstPivotStep(
+                    // TODO: Convert this logic into a function
+                    int aggregationStep = ingestedValues.getFirstPivotStep(
                             period,
                             frequency,
                             minimumLead
@@ -586,7 +543,7 @@ class SampleDataRetriever extends Retriever
 
                     while ( condensedValue != null )
                     {
-                        this.addPair( condensedValue, dataSourceConfig );
+                        this.addPair(condensedValue, dataSourceConfig );
                         aggregationStep++;
                         condensedValue = ingestedValues.pivot(
                                 aggregationStep,
@@ -595,7 +552,14 @@ class SampleDataRetriever extends Retriever
                                 minimumLead
                         );
                     }
+
+                    ingestedValues = new IngestedValueCollection();
                 }
+
+                reference = data.getLong( "basis_epoch_time" );
+                currentLead = data.getInt( "lead" );
+
+                ingestedValues.add( data, this.getProjectDetails() );
             }
         }
         catch(NoDataException e)
@@ -606,11 +570,33 @@ class SampleDataRetriever extends Retriever
         {
             throw new RetrievalFailedException( "An error occured while trying to retrieve data.", e );
         }
-        finally
+
+        // TODO: Create some sort of "Has Data" function for IngestedValueCollection
+        if ( ingestedValues.size() > 0 )
         {
-            if (connection != null)
+            int aggregationStep = ingestedValues.getFirstPivotStep(
+                    period,
+                    frequency,
+                    minimumLead
+            );
+
+            PivottedValues condensedValue = ingestedValues.pivot(
+                    aggregationStep,
+                    period,
+                    frequency,
+                    minimumLead
+            );
+
+            while ( condensedValue != null )
             {
-                Database.returnConnection(connection);
+                this.addPair( condensedValue, dataSourceConfig );
+                aggregationStep++;
+                condensedValue = ingestedValues.pivot(
+                        aggregationStep,
+                        period,
+                        frequency,
+                        minimumLead
+                );
             }
         }
     }
@@ -641,36 +627,25 @@ class SampleDataRetriever extends Retriever
         final String RESULT_VALUE_COLUMN = "observed_value";
         final String MEASUREMENT_ID_COLUMN = "measurementunit_id";
 
-        Connection connection = null;
-
         // First, store the raw results in descending order based on valid time
         Collection<RawPersistenceRow> rawRawPersistenceValues;
 
+        DataScripter persistenceScript = new DataScripter( loadScript );
+
         try
         {
-            connection = Database.getConnection();
-            try (DataProvider data = Database.getResults( connection, loadScript ))
-            {
-                rawRawPersistenceValues = data.interpret(
-                        row -> new RawPersistenceRow(
-                                row.getInstant(VALID_DATETIME_COLUMN),
-                                row.getInstant( "earliest_time" ),
-                                row.getDouble( RESULT_VALUE_COLUMN ),
-                                row.getInt( MEASUREMENT_ID_COLUMN )
-                        )
-                );
-            }
+            rawRawPersistenceValues = persistenceScript.interpret(
+                    row -> new RawPersistenceRow(
+                            row.getInstant(VALID_DATETIME_COLUMN),
+                            row.getInstant( "earliest_time" ),
+                            row.getDouble( RESULT_VALUE_COLUMN ),
+                            row.getInt( MEASUREMENT_ID_COLUMN )
+                    )
+            );
         }
         catch ( SQLException e )
         {
             throw new RetrievalFailedException( "Persistence pairs could not be loaded.", e );
-        }
-        finally
-        {
-            if ( connection != null )
-            {
-                Database.returnConnection( connection );
-            }
         }
 
         // We don't want to be able to modify the number of elements within the collection,

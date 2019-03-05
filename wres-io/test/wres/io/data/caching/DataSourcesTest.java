@@ -90,8 +90,7 @@ public class DataSourcesTest
     }
 
     @Test
-    public void getTwiceFromDataSources()
-            throws Exception // TODO: update when DataSources throws checked exceptions
+    public void getTwiceFromDataSources() throws SQLException, URISyntaxException
     {
         LOGGER.trace("getTwiceFromDataSources began");
 
@@ -124,8 +123,7 @@ public class DataSourcesTest
     }
 
     @Test
-    public void initializeCacheWithExistingData()
-            throws Exception // TODO: update when DataSources throws checked exceptions
+    public void initializeCacheWithExistingData() throws URISyntaxException, SQLException
     {
         LOGGER.trace("initializeCacheWithExistingData began");
 
@@ -161,7 +159,7 @@ public class DataSourcesTest
 
         SourceDetails.SourceKey firstKey = firstDetails.getKey();
         Assert.assertEquals( new URI( "/somewhere/somewhere/1.ext" ), firstKey.getSourcePath() );
-        Assert.assertEquals( firstKey.getLead(), null );
+        Assert.assertNull( firstKey.getLead() );
         Assert.assertEquals( firstKey.getSourceTime(), "2018-08-08T00:00:00Z");
         Assert.assertEquals( firstKey.getHash(), firstDetails.getHash() );
 
@@ -210,7 +208,7 @@ public class DataSourcesTest
 
         SourceDetails.SourceKey thirdKey = thirdDetails.getKey();
         Assert.assertEquals( new URI ("/somewhere/somewhere/3.ext" ), thirdKey.getSourcePath() );
-        Assert.assertEquals( thirdKey.getLead(), null );
+        Assert.assertNull( thirdKey.getLead() );
         Assert.assertEquals( thirdKey.getSourceTime(), "2018-08-08T02:00:00Z");
         Assert.assertEquals( thirdKey.getHash(), thirdDetails.getHash() );
 
@@ -234,7 +232,7 @@ public class DataSourcesTest
     {
         // TODO: back this out when the dependency on embedded postgres is removed
         // See #60309
-        if ( ! DataSourcesTest.IS_WINDOWS )
+        if ( ! DataSourcesTest.IS_WINDOWS && DataSourcesTest.databaseAndConnections != null )
         {
             LOGGER.trace( "tearDown began" );
 

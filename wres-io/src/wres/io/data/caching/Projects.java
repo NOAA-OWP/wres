@@ -21,6 +21,7 @@ import wres.io.config.LeftOrRightOrBaseline;
 import wres.io.project.Project;
 import wres.io.reading.IngestResult;
 import wres.io.utilities.DataProvider;
+import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 import wres.util.LRUMap;
 
@@ -214,9 +215,8 @@ public class Projects
         try
         {
             connection = Database.getHighPriorityConnection();
-            String loadScript = "SELECT * FROM wres.project;";
 
-            try (DataProvider data = Database.getResults( connection, loadScript ))
+            try (DataProvider data = new DataScripter( "SELECT * FROM wres.Project").getData())
             {
                 data.consume(
                         dataset -> {

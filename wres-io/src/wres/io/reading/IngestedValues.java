@@ -138,6 +138,7 @@ public final class IngestedValues
             // values
             if ( VALUES_TO_SAVE.get( partitionName ).getRowCount() >= SystemSettings.getMaximumCopies())
             {
+
                 IngestedValues.copy( partitionName );
             }
         }

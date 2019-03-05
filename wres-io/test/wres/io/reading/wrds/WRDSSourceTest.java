@@ -42,6 +42,7 @@ import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
 import wres.io.data.details.SourceDetails;
+import wres.io.data.details.TimeSeries;
 import wres.io.reading.IngestResult;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.Database;
@@ -50,7 +51,7 @@ import wres.io.utilities.DatabaseConnectionSupplier;
 
 @RunWith( PowerMockRunner.class )
 @PrepareForTest( { DataSources.class, Ensembles.class, MeasurementUnits.class,
-                         Database.class, Variables.class, Features.class } )
+                         Database.class, Variables.class, Features.class, TimeSeries.class } )
 // See https://github.com/powermock/powermock/issues/864
 @PowerMockIgnore( {"javax.management.*", "com.sun.org.apache.xerces.*", "javax.xml.*", "org.xml.*"} )
 public class WRDSSourceTest
@@ -2035,16 +2036,18 @@ public class WRDSSourceTest
         Mockito.when( mockDataProvider.isEmpty() )
                .thenReturn( false );
         PowerMockito.mockStatic( Database.class );
-        Mockito.when( Database.getResults( anyString(), any(), anyBoolean() ) )
-               .thenReturn( mockDataProvider );
 
-        PowerMockito.when( Database.class,
-                           "getResult",
-                           anyString(),
-                           eq( "timeseries_id" ),
-                           any(),
-                           anyBoolean() )
-               .thenReturn( FAKE_TIMESERIES_ID );
+        PowerMockito.when(
+                Database.class,
+                "getData",
+                any(),
+                anyBoolean()
+        ).thenReturn( mockDataProvider );
+
+        PowerMockito.mock( TimeSeries.class );
+        PowerMockito.stub(
+                PowerMockito.method( TimeSeries.class, "getTimeSeriesID" )
+        ).toReturn( FAKE_TIMESERIES_ID );
 
         PowerMockito.mockStatic( Variables.class );
         Mockito.when( Variables.getVariableID( anyString() ) )

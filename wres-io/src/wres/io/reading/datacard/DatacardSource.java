@@ -485,23 +485,6 @@ public class DatacardSource extends BasicSource
 		return VariableFeatureID  ;
 	}
 
-    @Override
-    protected String getValueToSave( final Double value )
-    {
-        String save;
-
-        if (value == null || this.valueIsIgnorable( value ) || this.valueIsMissing( value ))
-        {
-            save = "\\N";
-        }
-        else
-        {
-            save = String.valueOf(value);
-        }
-
-        return save;
-    }
-
 	@Override
 	protected Logger getLogger()
 	{
@@ -559,11 +542,6 @@ public class DatacardSource extends BasicSource
 	/* The date/time that the source was created
 	*/
 	private String creationDateTime = null;
-	
-	/**
-	/* The number of values in datacard file
-	*/
-	private int entryCount = 0;
 
 	private Integer VariableFeatureID = null;
 	

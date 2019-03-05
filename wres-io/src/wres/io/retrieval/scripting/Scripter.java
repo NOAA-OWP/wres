@@ -43,14 +43,14 @@ public abstract class Scripter extends ScriptBuilder
             case BASIC:
                 if (isForecast)
                 {
-                    loadScripter = new BackToBackForecastScripter(
+                    loadScripter = new BasicForecastScripter(
                             sampleMetadata,
                             dataSourceConfig
                     );
                 }
                 else
                 {
-                    loadScripter = new BackToBackObservationScripter(
+                    loadScripter = new BasicObservationScripter(
                             sampleMetadata,
                             dataSourceConfig
                     );

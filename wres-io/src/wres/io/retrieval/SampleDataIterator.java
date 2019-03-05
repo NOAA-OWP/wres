@@ -356,6 +356,7 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
      */
     protected Future<SampleData<?>> submitForRetrieval(final OrderedSampleMetadata sampleMetadata) throws IOException
     {
+        // TODO: Find a way to submit this task without directly calling the database class
         return Database.submit( this.createRetriever(sampleMetadata) );
     }
 

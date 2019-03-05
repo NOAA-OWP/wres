@@ -168,6 +168,7 @@ final class MainFunctions
         catch ( IOException | SQLException e )
         {
             LOGGER.error( "While cleaning the database", e );
+            MainFunctions.addException( e );
             result = FAILURE;
         }
         return result;
@@ -201,6 +202,7 @@ final class MainFunctions
         catch ( IOException e )
         {
             LOGGER.error( "The file at {} is not a valid Netcdf Grid Dataset.", path );
+            MainFunctions.addException( e );
         }
 
         return result;
@@ -272,6 +274,7 @@ final class MainFunctions
             {
                 LOGGER.error("Failed to unmarshal the project configuration at '" + fullPath + "'");
                 LOGGER.error(Strings.getStackTrace( ioe ));
+                MainFunctions.addException( ioe );
                 return result; // Or return 400 - Bad Request (see #41467)
             }
 

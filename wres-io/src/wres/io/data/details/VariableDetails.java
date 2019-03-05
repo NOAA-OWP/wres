@@ -1,19 +1,12 @@
 package wres.io.data.details;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
-import wres.io.utilities.Database;
-import wres.io.utilities.ScriptBuilder;
 
 /**
  * Details about a variable as defined in the Database
@@ -66,17 +59,13 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 	protected void update( DataProvider databaseResults ) throws SQLException
 	{
 		super.update( databaseResults );
-		String partition = "";
-		partition += "CREATE TABLE IF NOT EXISTS ";
-		partition += this.getVariableFeaturePartitionName();
-		partition += " ( " + NEWLINE;
-		partition += "	CHECK (variable_id = ";
-		partition += this.getId().toString();
-		partition += ")" + NEWLINE;
-		partition += ") INHERITS (wres.VariableFeature);" + NEWLINE;
-		partition += "ALTER TABLE " + this.getVariableFeaturePartitionName() + " OWNER TO wres;";
+		DataScripter script = new DataScripter(  );
+		script.addLine("CREATE TABLE IF NOT EXISTS ", this.getVariableFeaturePartitionName(), "(");
+		script.addTab().addLine("CHECK (variable_id = ", this.getId(), ")");
+		script.addLine(") INHERITS (wres.VariableFeature);");
+		script.addLine("ALTER TABLE ", this.getVariableFeaturePartitionName(), " OWNER TO wres;");
 
-		Database.execute(partition);
+		script.execute();
 	}
 
     @Override

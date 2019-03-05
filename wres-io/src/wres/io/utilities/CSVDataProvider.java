@@ -6,6 +6,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -27,7 +29,7 @@ import wres.util.Strings;
 import wres.util.TimeHelper;
 
 /**
- * A fully in-memory tabular dataset that doesn't require an
+ * A streaming tabular dataset that doesn't require an
  * active connection to a database. Mimics the behavior of
  * the <code>ResultSet</code> data structure used for
  * sql queries.
@@ -44,7 +46,6 @@ class CSVDataProvider implements DataProvider
     private String[] line = null;
     private final String delimiter;
 
-    // TODO: Construct with an InputStream rather than a file.
     private CSVDataProvider( final File filePath, final String delimiter, final Map<String, Integer> columns) throws IOException
     {
         this.columnNames = new TreeMap<>( String.CASE_INSENSITIVE_ORDER );
@@ -224,14 +225,7 @@ class CSVDataProvider implements DataProvider
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
-        try
-        {
-            return this.getObject( this.getColumnIndex( columnName ) ) == null;
-        }
-        catch (IOException e)
-        {
-            throw new IllegalStateException( "Data for the field '" + columnName + "' could not be accessed.", e );
-        }
+        return this.getObject( this.getColumnIndex( columnName ) ) == null;
     }
 
     @Override
@@ -257,7 +251,7 @@ class CSVDataProvider implements DataProvider
      * @param index The index for the column containing the value
      * @return The value stored in the row and column
      */
-    private Object getObject(int index) throws IOException
+    private Object getObject(int index)
     {
         if (this.isClosed())
         {
@@ -340,14 +334,7 @@ class CSVDataProvider implements DataProvider
             return null;
         }
 
-        try
-        {
-            return this.getObject(this.getColumnIndex( columnName ));
-        }
-        catch ( IOException e )
-        {
-            throw new IllegalStateException( "Data cannot be retrieved from the '" + columnName + "' field." );
-        }
+        return this.getObject(this.getColumnIndex( columnName ));
     }
 
     @Override
@@ -820,6 +807,24 @@ class CSVDataProvider implements DataProvider
         }
 
         return String.valueOf(value);
+    }
+
+    @Override
+    public URI getURI( String columnName)
+    {
+        if (this.isClosed())
+        {
+            throw new IllegalStateException( "The data set is inaccessible." );
+        }
+
+        String uri = this.getString( columnName );
+
+        if (uri == null)
+        {
+            return null;
+        }
+
+        return URI.create( uri );
     }
 
     @Override

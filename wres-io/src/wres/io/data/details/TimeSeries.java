@@ -7,7 +7,6 @@ import java.util.Objects;
 
 import wres.datamodel.metadata.TimeScale;
 import wres.datamodel.metadata.TimeScale.TimeScaleFunction;
-import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 
@@ -15,7 +14,7 @@ import wres.io.utilities.Database;
  * Defines details about a forecasted time series
  * @author Christopher Tubbs
  */
-public final class TimeSeries
+public class TimeSeries
 {
     /**
      * The number of unique lead times contained within a partition within
@@ -34,62 +33,6 @@ public final class TimeSeries
      * names
      */
     private static final Object PARTITION_LOCK = new Object();
-
-    public static TimeSeries getByID(final int timeSeriesID) throws SQLException
-    {
-        DataScripter script = new DataScripter(  );
-
-        script.addLine("SELECT TS.timeseries_id,");
-        script.addTab().addLine("TS.variablefeature_id,");
-        script.addTab().addLine("TS.ensemble_id,");
-        script.addTab().addLine("TS.measurementunit_id,");
-        script.addTab().addLine("TS.initialization_date::text,");
-        script.addTab().addLine("TSS.source_id,");
-        script.addTab().addLine("TSV.highest_lead,");
-        script.addTab().addLine("TSV.lowest_lead,");
-        script.addTab().addLine("TS.scale_period,");
-        script.addTab().addLine("TS.scale_function");
-        script.addLine("FROM wres.TimeSeries TS");
-        script.addLine("INNER JOIN wres.TimeSeriesSource TSS");
-        script.addTab().addLine("ON TSS.timeseries_id = TS.timeseries_id");
-        script.addLine("INNER JOIN (");
-        script.addTab().addLine("SELECT MAX(lead) AS highest_lead,");
-        script.addTab(  2  ).addLine("MIN(lead) AS lowest_lead,");
-        script.addTab(  2  ).addLine("TSV.timeseries_id");
-        script.addTab().addLine("FROM wres.TimeSeriesValue TSV");
-        script.addTab().addLine("WHERE TSV.timeseries_id = ", timeSeriesID);
-        script.addTab().addLine("GROUP BY TSV.timeseries_id");
-        script.addLine(") AS TSV");
-        script.addTab().addLine("ON TSV.timeseries_id = TS.timeseries_id");
-        script.addLine("WHERE TS.timeseries_id = ", timeSeriesID);
-        script.addLine("LIMIT 1");
-
-        try ( DataProvider data = script.getData())
-        {
-            if (data.isEmpty())
-            {
-                return null;
-            }
-
-            TimeSeries timeSeries = new TimeSeries( data.getInt( "source_id" ),
-                                                    data.getString( "initialization_date" ) );
-            timeSeries.setVariableFeatureID( data.getInt( "variablefeature_id" ) );
-            timeSeries.setMeasurementUnitID( data.getInt( "measurementunit_id" ) );
-            timeSeries.setEnsembleID( data.getInt( "ensemble_id" ) );
-            timeSeries.setHighestLead( data.getInt("highest_lead") );
-            timeSeries.setLowestLead( data.getInt("lowest_lead") );
-
-            if ( !data.isNull( "scale_period" ) && !data.isNull( "scale_function" ) )
-            {
-                timeSeries.setTimeScale( data.getInt( "scale_period" ),
-                                         data.getString( "scale_function" ) );
-            }
-
-            timeSeries.timeSeriesID = timeSeriesID;
-
-            return timeSeries;
-        }
-    }
 
     /**
      * The ID of the ensemble for the time series. A time series without
@@ -193,26 +136,6 @@ public final class TimeSeries
 		}
         this.measurementUnitID = measurementUnitID;
 	}
-
-	private void setHighestLead(int lead)
-    {
-        this.highestLead = lead;
-    }
-
-    private void setLowestLead(int lead)
-    {
-        this.lowestLead = lead;
-    }
-
-    public int getHighestLead()
-    {
-        return this.highestLead;
-    }
-
-    public int getLowestLead()
-    {
-        return this.lowestLead;
-    }
 
     public String getInitializationDate()
     {

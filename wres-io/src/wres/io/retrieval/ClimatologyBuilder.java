@@ -470,31 +470,33 @@ class ClimatologyBuilder
 
     private void addValues() throws IOException
     {
-        // TODO: Convert to using a ScriptBuilder
-        StringBuilder script = new StringBuilder();
+        DataScripter script = new DataScripter(  );
 
-        script.append("SELECT O.observed_value,").append(NEWLINE);
-        script.append("    O.measurementunit_id,").append(NEWLINE);
-        script.append("    (O.observation_time");
+        script.addLine("SELECT O.observed_value,");
+        script.addLine("    O.measurementunit_id,");
+        script.addLine("    (O.observation_time");
 
         if (this.dataSourceConfig.getTimeShift() != null)
         {
-            script.append(" + '")
-                  .append(this.dataSourceConfig.getTimeShift().getWidth())
-                  .append(" ")
-                  .append(this.dataSourceConfig.getTimeShift().getUnit())
-                  .append("'");
+            script.addLine(
+                    " + '",
+                    this.dataSourceConfig.getTimeShift().getWidth(), " ",
+                    this.dataSourceConfig.getTimeShift().getUnit(),
+                    "'"
+            );
         }
 
-        script.append(")::text AS observation_time").append(NEWLINE);
-        script.append("FROM wres.Observation O").append(NEWLINE);
+        script.addLine(")::text AS observation_time");
+        script.addLine("FROM wres.Observation O");
         try
         {
-            script.append("WHERE ")
-                  .append(ConfigHelper.getVariableFeatureClause( this.feature,
-                                                                 Variables.getVariableID( this.dataSourceConfig ),
-                                                                 "O"))
-                  .append(NEWLINE);
+            script.addLine(
+                    "WHERE ", ConfigHelper.getVariableFeatureClause(
+                            this.feature,
+                            Variables.getVariableID( this.dataSourceConfig ),
+                            "O"
+                    )
+            );
         }
         catch ( SQLException e )
         {
@@ -540,102 +542,86 @@ class ClimatologyBuilder
 
             latest += "'";
 
-            script.append("    AND O.observation_time");
+            script.addLine("    AND O.observation_time");
 
             if (this.dataSourceConfig.getTimeShift() != null)
             {
-                script.append(" + '")
-                      .append(this.dataSourceConfig.getTimeShift().getWidth())
-                      .append(" ")
-                      .append(this.dataSourceConfig.getTimeShift().getUnit())
-                      .append("'")
-                      .append(NEWLINE);
+                script.addLine(
+                        " + '",
+                        this.dataSourceConfig.getTimeShift().getWidth(), " ",
+                        this.dataSourceConfig.getTimeShift().getUnit(),
+                        "'"
+                );
             }
 
-            script.append(" >= ").append(earliest).append(NEWLINE);
-            script.append("    AND O.observation_time");
+            script.addLine(" >= ", earliest);
+            script.addLine("    AND O.observation_time");
 
             if (this.dataSourceConfig.getTimeShift() != null)
             {
-                script.append(" + '")
-                      .append(this.dataSourceConfig.getTimeShift().getWidth())
-                      .append(" ")
-                      .append(this.dataSourceConfig.getTimeShift().getUnit())
-                      .append("'")
-                      .append(NEWLINE);
+                script.addLine(
+                        " + '",
+                        this.dataSourceConfig.getTimeShift().getWidth(), " ",
+                        this.dataSourceConfig.getTimeShift().getUnit(),
+                        "'"
+                );
             }
 
-            script.append(" <= ").append(latest).append(NEWLINE);
+            script.addLine(" <= ", latest);
         }
 
-        script.append("    AND EXISTS (").append(NEWLINE);
-        script.append("        SELECT 1").append(NEWLINE);
-        script.append("        FROM wres.ProjectSource PS").append(NEWLINE);
-        script.append("        WHERE PS.project_id = ").append(this.project.getId()).append( NEWLINE);
-        script.append("            AND PS.member = ")
-              .append(this.project.getInputName( this.dataSourceConfig ))
-              .append(NEWLINE);
-        script.append("        AND PS.source_id = O.source_id").append(NEWLINE);
-        script.append(");");
+        script.addLine("    AND EXISTS (");
+        script.addLine("        SELECT 1");
+        script.addLine("        FROM wres.ProjectSource PS");
+        script.addLine("        WHERE PS.project_id = ", this.project.getId());
+        script.addLine("            AND PS.member = ", this.project.getInputName( this.dataSourceConfig ));
+        script.addLine("        AND PS.source_id = O.source_id");
+        script.add(");");
 
-        Connection connection = null;
-
-        try
+        try (DataProvider data = script.buffer())
         {
-            connection = Database.getConnection();
-            try (DataProvider data = Database.getResults( connection, script.toString() ))
+            // Add and convert all retrieved values
+            while ( data.next() )
             {
-
-                // Add and convert all retrieved values
-                while ( data.next() )
+                Double value = data.getValue( "observed_value" );
+                if ( value == null )
                 {
-                    Double value = data.getValue( "observed_value" );
-                    if ( value == null )
-                    {
-                        continue;
-                    }
+                    continue;
+                }
 
-                    value = this.getConversion( data.getInt(
-                            "measurementunit_id" ) ).convert( value );
+                value = this.getConversion( data.getInt(
+                        "measurementunit_id" ) ).convert( value );
 
-                    if ( value < this.project.getMinimumValue() &&
-                         this.project.getDefaultMinimumValue() != null )
-                    {
+                if ( value < this.project.getMinimumValue() &&
+                     this.project.getDefaultMinimumValue() != null )
+                {
 
-                        this.addValue( data.getString( "observation_time" ),
-                                       this.project.getDefaultMinimumValue() );
-                    }
-                    else if ( value > this.project.getMaximumValue() &&
-                              this.project.getDefaultMaximumValue() != null )
-                    {
-                        this.addValue( data.getString( "observation_time" ),
-                                       this.project.getDefaultMaximumValue() );
-                    }
-                    else if ( value >= this.project.getMinimumValue()
-                              && value <= this.project.getMaximumValue() )
-                    {
-                        this.addValue( data.getString( "observation_time" ),
-                                       value );
-                    }
-                    else
-                    {
-                        LOGGER.debug( "The value {} was not added for the date '{}'",
-                                      value,
-                                      data.getString( "observation_time" ) );
-                    }
+                    this.addValue( data.getString( "observation_time" ),
+                                   this.project.getDefaultMinimumValue() );
+                }
+                else if ( value > this.project.getMaximumValue() &&
+                          this.project.getDefaultMaximumValue() != null )
+                {
+                    this.addValue( data.getString( "observation_time" ),
+                                   this.project.getDefaultMaximumValue() );
+                }
+                else if ( value >= this.project.getMinimumValue()
+                          && value <= this.project.getMaximumValue() )
+                {
+                    this.addValue( data.getString( "observation_time" ),
+                                   value );
+                }
+                else
+                {
+                    LOGGER.debug( "The value {} was not added for the date '{}'",
+                                  value,
+                                  data.getString( "observation_time" ) );
                 }
             }
         }
         catch ( SQLException e )
         {
             throw new IOException( "Values could not be retrieved to add to the climatology data.", e );
-        }
-        finally
-        {
-            if (connection != null)
-            {
-                Database.returnConnection( connection );
-            }
         }
 
         // Determine how many entries in a time slot indicates a full range of values

@@ -5,9 +5,9 @@ import java.sql.SQLException;
 import wres.config.generated.DataSourceConfig;
 import wres.io.config.OrderedSampleMetadata;
 
-class BackToBackObservationScripter extends Scripter
+class BasicObservationScripter extends Scripter
 {
-    BackToBackObservationScripter( OrderedSampleMetadata sampleMetadata, DataSourceConfig dataSourceConfig)
+    BasicObservationScripter( OrderedSampleMetadata sampleMetadata, DataSourceConfig dataSourceConfig)
     {
         super( sampleMetadata, dataSourceConfig);
     }

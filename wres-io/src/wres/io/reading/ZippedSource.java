@@ -10,10 +10,12 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
@@ -37,9 +39,11 @@ import wres.io.concurrency.IngestSaver;
 import wres.io.concurrency.WRESCallable;
 import wres.io.concurrency.ZippedPIXMLIngest;
 import wres.io.config.ConfigHelper;
+import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
+import wres.util.Strings;
 
 /**
  * @author Christopher Tubbs
@@ -160,6 +164,7 @@ public class ZippedSource extends BasicSource {
                 ingestTask = this.getIngestTask();
             }
 
+            // TODO: This class should NEVER be trying to perform work from the database queue.
             ingestTask = Database.getStoredIngestTask();
 
             while (ingestTask != null)
@@ -324,5 +329,102 @@ public class ZippedSource extends BasicSource {
         }
 
         return bytesRead;
+    }
+
+    /**
+     * Determines whether or not the data at the given location or with the
+     * given contents from the given configuration should be ingested into
+     * the database.
+     * @param filePath The path to the file on the file system
+     * @param source The configuration indicating the location of the file
+     * @param contents optional read contents from the source file. Used when
+     *                 the source originates from an archive.
+     * @return Whether or not to ingest the file and the resulting hash
+     * @throws IngestException when an exception prevents determining status
+     */
+    private Pair<Boolean,String> shouldIngest( URI filePath,
+                                       DataSourceConfig.Source source,
+                                       byte[] contents )
+            throws IngestException
+    {
+        Format specifiedFormat = source.getFormat();
+        Format pathFormat = ReaderFactory.getFiletype( filePath );
+
+        boolean ingest = specifiedFormat == null
+                         || specifiedFormat.equals( pathFormat );
+
+        String contentHash = null;
+
+        if (ingest)
+        {
+            try
+            {
+                if ( contents != null )
+                {
+                    contentHash = Strings.getMD5Checksum( contents );
+                }
+                else
+                {
+                    contentHash = this.getHash();
+                }
+
+                ingest = !dataExists( contentHash );
+            }
+            catch ( SQLException e )
+            {
+                String message = "Failed to determine whether to ingest file "
+                                 + filePath;
+                throw new IngestException( message, e );
+            }
+        }
+
+        return Pair.of( ingest, contentHash );
+    }
+
+    /**
+     * Determines if the source was already ingested into the database
+     * TODO: Is this really necessary?
+     * @param contentHash The hash of the contents to look for
+     * @return Whether or not the indicated data lies within the database
+     * @throws SQLException Thrown if an error occurs while communicating with
+     * the database
+     * @throws NullPointerException when any arg is null
+     */
+    private boolean dataExists( String contentHash )
+            throws SQLException
+    {
+        Objects.requireNonNull( contentHash );
+
+        DataScripter script = new DataScripter();
+
+        script.addLine("SELECT EXISTS (");
+        script.addLine("     SELECT 1");
+
+        if (ConfigHelper.isForecast(dataSourceConfig))
+        {
+            script.addLine("     FROM wres.TimeSeries TS");
+            script.addLine("     INNER JOIN wres.TimeSeriesSource SL");
+            script.addLine("         ON SL.timeseries_id = TS.timeseries_id");
+            script.addLine("     INNER JOIN wres.VariableFeature VF");
+            script.addLine("         ON VF.variablefeature_id = TS.variablefeature_id");
+        }
+        else
+        {
+            script.addLine("     FROM wres.Observation SL");
+            script.addLine("     INNER JOIN wres.VariableFeature VF");
+            script.addLine("         ON VF.variablefeature_id = SL.variablefeature_id");
+        }
+
+        script.addLine("     INNER JOIN wres.Source S");
+        script.addLine("         ON S.source_id = SL.source_id");
+        script.addLine("     INNER JOIN wres.Variable V");
+        script.addLine("         ON VF.variable_id = V.variable_id");
+
+        script.addLine("     WHERE S.hash = '", contentHash, "'" );
+
+        script.addLine("         AND V.variable_name = '", this.dataSourceConfig.getVariable().getValue(), "'");
+        script.addLine(");");
+
+        return script.retrieve( "exists" );
     }
 }

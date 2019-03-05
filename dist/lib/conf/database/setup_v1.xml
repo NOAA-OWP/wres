@@ -5,15 +5,22 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
         objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
-    <changeSet id="Setup WRES Role v1.0" author="Christopher Tubbs" dbms="PostgreSQL" failOnError="false">
+    <changeSet id="Setup WRES Role v1.1" author="Christopher Tubbs" dbms="PostgreSQL" failOnError="false">
         <preConditions onFail="MARK_RAN">
-            <sqlCheck expectedResult="f">
-                SELECT EXISTS (
-                    SELECT 1
+            <and>
+                <sqlCheck expectedResult="f">
+                    SELECT EXISTS (
+                        SELECT 1
+                        FROM pg_roles
+                        WHERE rolname = 'wres'
+                    );
+                </sqlCheck>
+                <sqlCheck expectedResult="t">
+                    SELECT rolcreaterole
                     FROM pg_roles
-                    WHERE rolname = 'wres'
-                );
-            </sqlCheck>
+                    WHERE rolname = CURRENT_USER;
+                </sqlCheck>
+            </and>
         </preConditions>
         <sql>
             CREATE ROLE wres
@@ -38,7 +45,7 @@
             GRANT wres TO CURRENT_USER;
         </sql>
     </changeSet>
-    <changeSet id="Setup WRES Schema v1.0" author="Christopher Tubbs" dbms="PostgreSQL" failOnError="true">
+    <changeSet id="Setup WRES Schema v1.1" author="Christopher Tubbs" failOnError="true">
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="f">
                 SELECT EXISTS (
