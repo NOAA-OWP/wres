@@ -12,9 +12,9 @@ import org.slf4j.LoggerFactory;
 
 import wres.io.Operations;
 
-public class SystemTestScenario001
+public class Scenario001
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( SystemTestScenario001.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( Scenario001.class );
     private static final String SCENARIO_NAME = "scenario001";
     private static final String NEWLINE = System.lineSeparator();
 

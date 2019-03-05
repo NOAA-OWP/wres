@@ -8,9 +8,9 @@ import org.slf4j.LoggerFactory;
 import org.junit.Before;
 import org.junit.Test;
 
-public class SystemTestScenario003
+public class Scenario003
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( SystemTestScenario003.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( Scenario003.class );
     private static final String SCENARIO_NAME = "scenario003";
     private static final String NEWLINE = System.lineSeparator();
 
