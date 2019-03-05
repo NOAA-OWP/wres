@@ -1,6 +1,5 @@
 package wres.io.utilities;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import javax.ws.rs.WebApplicationException;

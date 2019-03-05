@@ -1,24 +1,7 @@
 package wres.io.utilities;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.Future;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import wres.io.concurrency.SQLExecutor;
-import wres.io.concurrency.ValueRetriever;
-import wres.util.functional.ExceptionalConsumer;
-import wres.util.functional.ExceptionalFunction;
-
 public class ScriptBuilder
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( ScriptBuilder.class );
     protected static final String NEWLINE = System.lineSeparator();
     private final StringBuilder script;
 

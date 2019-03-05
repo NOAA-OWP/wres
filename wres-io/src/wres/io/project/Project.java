@@ -2088,7 +2088,7 @@ public class Project
 
         Map<FeatureDetails.FeatureKey, Future<Integer>> futureOffsets = new LinkedHashMap<>(  );
 
-        try (DataProvider data = script.getData())
+        try (DataProvider data = script.buffer())
         {
             LOGGER.trace("Variable feature metadata loaded...");
 
@@ -2625,10 +2625,8 @@ public class Project
         this.projectID = id;
     }
 
-    private PreparedStatement getInsertSelectStatement( Connection connection )
-            throws SQLException
+    private DataScripter getInsertSelectStatement()
     {
-        List<Object> args = new ArrayList<>();
         DataScripter script = new DataScripter(  );
 
         script.addLine("WITH new_project AS");
@@ -2636,15 +2634,15 @@ public class Project
         script.addTab().addLine("INSERT INTO wres.Project (project_name, input_code)");
         script.addTab().addLine("SELECT ?, ?");
 
-        args.add(this.getProjectName());
-        args.add(this.getInputCode());
+        script.addArgument( this.getProjectName() );
+        script.addArgument( this.getInputCode() );
 
         script.addTab().addLine("WHERE NOT EXISTS (");
         script.addTab(  2  ).addLine("SELECT 1");
         script.addTab(  2  ).addLine("FROM wres.Project P");
         script.addTab(  2  ).addLine("WHERE P.input_code = ?");
 
-        args.add(this.getInputCode());
+        script.addArgument( this.getInputCode() );
 
         script.addTab().addLine(")");
         script.addTab().addLine("RETURNING project_id");
@@ -2658,87 +2656,28 @@ public class Project
         script.addLine("FROM wres.Project P");
         script.addLine("WHERE P.input_code = ?;");
 
-        args.add(this.getInputCode());
+        script.addArgument( this.getInputCode() );
 
-        return script.getPreparedStatement( connection, args );
+        return script;
     }
 
     public void save() throws SQLException
     {
-        Connection connection = null;
-        ResultSet results = null;
-        PreparedStatement statement = null;
+        DataScripter saveScript = this.getInsertSelectStatement();
+        saveScript.setUseTransaction( true );
+        saveScript.addTablesToLock( "wres.Project" );
 
-        try
+        try (DataProvider data = saveScript.getData())
         {
-            connection = Database.getConnection();
-            connection.setAutoCommit( false );
-
-            Database.lockTable( connection, "wres.Project" );
-            statement = this.getInsertSelectStatement( connection );
-            results = statement.executeQuery();
-
-            this.setID( Database.getValue( results, this.getIDName() ) );
-            this.performedInsert = Database.getValue( results, "wasInserted" );
-
-            connection.commit();
-
-            if ( LOGGER.isTraceEnabled() )
-            {
-                LOGGER.trace( "Did I create Project ID {}? {}",
-                              this.getId(),
-                              this.performedInsert );
-            }
+            this.setID( data.getInt( this.getIDName() ) );
+            this.performedInsert = data.getBoolean( "wasInserted" );
         }
-        catch (SQLException e)
+
+        if ( LOGGER.isTraceEnabled() )
         {
-            if (connection != null)
-            {
-                try
-                {
-                    connection.rollback();
-                }
-                catch ( SQLException se )
-                {
-                    LOGGER.warn( "Failed to rollback.", se );
-                }
-            }
-
-            throw e;
-        }
-        finally
-        {
-            if (results != null)
-            {
-                try
-                {
-                    results.close();
-                }
-                catch ( SQLException se )
-                {
-                    // Failure to close resource shouldn't affect primary output
-                    LOGGER.warn( "Failed to close result set {}.", results, se );
-                }
-            }
-
-            if (statement != null)
-            {
-                try
-                {
-                    statement.close();
-                }
-                catch (SQLException e)
-                {
-                    // Failure to close resource shouldn't affect primary output
-                    LOGGER.warn( "Failed to close statement {}.", statement, e );
-                }
-            }
-
-            if (connection != null)
-            {
-                connection.setAutoCommit( true );
-                Database.returnConnection( connection );
-            }
+            LOGGER.trace( "Did I create Project ID {}? {}",
+                          this.getId(),
+                          this.performedInsert );
         }
     }
 

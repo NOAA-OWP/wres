@@ -83,6 +83,7 @@ import wres.grid.client.Request;
 import wres.io.data.caching.Features;
 import wres.io.project.Project;
 import wres.io.reading.commaseparated.CommaSeparatedReader;
+import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.io.utilities.ScriptBuilder;
@@ -379,38 +380,39 @@ public class ConfigHelper
 
         String variableFeatureClause = ConfigHelper.getVariableFeatureClause( feature, variableId, "" );
 
-        StringBuilder script = new StringBuilder( "SELECT COUNT(*)::int" ).append( NEWLINE );
+        DataScripter script = new DataScripter();
 
+        script.addLine("SELECT COUNT(*)::int");
         if ( ConfigHelper.isForecast( dataSourceConfig ) )
         {
-            script.append( "FROM wres.TimeSeries TS" ).append( NEWLINE );
-            script.append( "INNER JOIN wres.TimeSeriesValue TSV" ).append( NEWLINE );
-            script.append( "    ON TS.timeseries_id = TSV.timeseries_id" ).append( NEWLINE );
-            script.append( "WHERE " ).append( variableFeatureClause ).append( NEWLINE );
-            script.append( "    EXISTS (" ).append( NEWLINE );
-            script.append( "        SELECT 1" ).append( NEWLINE );
-            script.append( "        FROM wres.TimeSeriesSource TSS" ).append( NEWLINE );
-            script.append( "        INNER JOIN wres.ProjectSource PS" ).append( NEWLINE );
-            script.append( "            ON TSS.source_id = PS.source_id" ).append( NEWLINE );
-            script.append( "        WHERE PS.project_id = " ).append( project.getId() ).append( NEWLINE );
-            script.append( "            AND PS.member = " ).append( member ).append( NEWLINE );
-            script.append( "            AND TSS.timeseries_id = TS.timeseries_id" ).append( NEWLINE );
-            script.append( "    );" );
+            script.addLine( "FROM wres.TimeSeries TS" );
+            script.addLine( "INNER JOIN wres.TimeSeriesValue TSV" );
+            script.addTab().addLine("ON TS.timeseries_id = TSV.timeseries_id" );
+            script.addLine( "WHERE ", variableFeatureClause );
+            script.addTab().addLine( "AND EXISTS (" );
+            script.addTab(  2  ).addLine( "SELECT 1" );
+            script.addTab(  2  ).addLine( "FROM wres.TimeSeriesSource TSS" );
+            script.addTab(  2  ).addLine( "INNER JOIN wres.ProjectSource PS" );
+            script.addTab(   3   ).addLine( "ON TSS.source_id = PS.source_id" );
+            script.addTab(  2  ).addLine( "WHERE PS.project_id = ", project.getId() );
+            script.addTab(   3   ).addLine( "AND PS.member = ", member );
+            script.addTab(   3   ).addLine( "AND TSS.timeseries_id = TS.timeseries_id" );
+            script.addTab(  2  ).addLine( ");" );
         }
         else
         {
-            script.append( "FROM wres.Observation O" ).append( NEWLINE );
-            script.append( "WHERE " ).append( variableFeatureClause ).append( NEWLINE );
-            script.append( "    AND EXISTS (" ).append( NEWLINE );
-            script.append( "        SELECT 1" ).append( NEWLINE );
-            script.append( "        FROM wres.ProjectSource PS" ).append( NEWLINE );
-            script.append( "        WHERE PS.project_id = " ).append( project.getId() ).append( NEWLINE );
-            script.append( "            AND PS.member = " ).append( member ).append( NEWLINE );
-            script.append( "            AND PS.source_id = O.source_id" ).append( NEWLINE );
-            script.append( "    );" );
+            script.addLine( "FROM wres.Observation O" );
+            script.addLine( "WHERE ", variableFeatureClause );
+            script.addLine( "    AND EXISTS (" );
+            script.addLine( "        SELECT 1" );
+            script.addLine( "        FROM wres.ProjectSource PS" );
+            script.addLine( "        WHERE PS.project_id = ", project.getId() );
+            script.addLine( "            AND PS.member = ", member );
+            script.addLine( "            AND PS.source_id = O.source_id" );
+            script.addLine( "    );" );
         }
 
-        return Database.getResult( script.toString(), "count" );
+        return script.retrieve( "count" );
     }
 
     /**
@@ -1965,7 +1967,7 @@ public class ConfigHelper
      * @param pairConfig the pairs configuration
      * @return the set of lead duration time windows 
      * @throws NullPointerException if the pairConfig is null
-     * @throws an UnsupportedOperationException if the time windows cannot be determined
+     * @throws UnsupportedOperationException if the time windows cannot be determined
      */
 
     private static Set<TimeWindow> getLeadDurationTimeWindowsFromPairConfig( PairConfig pairConfig )
@@ -2062,7 +2064,7 @@ public class ConfigHelper
      * @param pairConfig the pairs configuration
      * @return the set of issued dates time windows 
      * @throws NullPointerException if the pairConfig is null
-     * @throws an UnsupportedOperationException if the time windows cannot be determined
+     * @throws UnsupportedOperationException if the time windows cannot be determined
      */
 
     private static Set<TimeWindow> getIssuedDatesTimeWindowsFromPairConfig( PairConfig pairConfig )
@@ -2165,7 +2167,7 @@ public class ConfigHelper
      * @param pairConfig the pairs configuration
      * @return the set of lead duration and issued dates time windows 
      * @throws NullPointerException if the pairConfig is null
-     * @throws an UnsupportedOperationException if the time windows cannot be determined
+     * @throws UnsupportedOperationException if the time windows cannot be determined
      */
 
     private static Set<TimeWindow> getIssuedDatesAndLeadDurationTimeWindowsFromPairConfig( PairConfig pairConfig )
@@ -2205,7 +2207,7 @@ public class ConfigHelper
      * @return the set of lead duration and issued dates time windows 
      * @throws NullPointerException if the pairConfig is null
      * @throws IllegalArgumentException if the projectConfig contains a leadTimesPoolingWindow
-     * @throws an UnsupportedOperationException if the time windows cannot be determined
+     * @throws UnsupportedOperationException if the time windows cannot be determined
      */
 
     private static Set<TimeWindow>
@@ -2270,7 +2272,7 @@ public class ConfigHelper
      * respectively. If any of these variables are missing from the input, defaults 
      * are used.
      * 
-     * @param parConfig the pair configuration
+     * @param pairConfig the pair configuration
      * @return a time window
      * @throws NullPointerException if the input is null
      */

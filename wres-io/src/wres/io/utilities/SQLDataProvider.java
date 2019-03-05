@@ -1,10 +1,15 @@
 package wres.io.utilities;
 
 import java.math.BigDecimal;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.sql.Array;
+import java.sql.Connection;
 import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.Duration;
@@ -19,32 +24,75 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import javax.validation.constraints.NotNull;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.util.TimeHelper;
 
+/**
+ * A {@link DataProvider} that provides buffered access to the results of a database call
+ */
 public class SQLDataProvider implements DataProvider
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( SQLDataProvider.class );
+
+    /**
+     * The connection to the database that returned this data. Must be kept open for the
+     * duration of the DataProvider to keep open access to the underlying {@link ResultSet} that
+     * provides all of the data
+     */
+    private final Connection connection;
+
+    /**
+     * The database statement that ran the query that retrieved these results. Must be kept
+     * open for the duration of the DataProvider to keep open access to the underlying
+     * {@link ResultSet} that provides all of the data
+     */
+    private final Statement statement;
+
+    /**
+     * The raw results from a database call
+     */
     private final ResultSet resultSet;
+
+    /**
+     * The list of the column names in the results
+     */
     private final List<String> columnNames;
+
+    /**
+     * Helpful flag for detecting whether or not all resources have been closed
+     */
     private boolean closed = false;
 
-    SQLDataProvider( final ResultSet resultSet)
+    /**
+     * Constructor
+     * @param connection The connection to where this data came from
+     * @param resultSet The data streaming through the connection
+     */
+    SQLDataProvider(final Connection connection, final ResultSet resultSet)
     {
+        Objects.requireNonNull( connection );
         Objects.requireNonNull( resultSet );
 
         try
         {
+            // Go ahead and throw an error if we can't access the data
             if (resultSet.isClosed())
             {
                 throw new IllegalStateException( "The given resultset has already been closed." );
             }
+
+            // Store the objects that helped retrieve the data so that the connection isn't closed
+            // when the instances are destroyed
+            this.connection = connection;
+            this.statement = resultSet.getStatement();
             this.resultSet = resultSet;
 
+            // Record the column names to support metadata operations without digging through the result set
             this.columnNames = new ArrayList<>();
-
             int columnCount = this.resultSet.getMetaData().getColumnCount();
 
             // ResultSets are 1's indexed
@@ -62,6 +110,8 @@ public class SQLDataProvider implements DataProvider
     @Override
     public boolean isClosed()
     {
+        // If we've already acknowledged that the connection is closed, we don't have to do anything,
+        // otherwise we need to consult the result set to be sure
         if (!this.closed)
         {
             try
@@ -141,28 +191,7 @@ public class SQLDataProvider implements DataProvider
     @Override
     public int getColumnIndex( String columnName )
     {
-        int columnIndex = -1;
-
-        try
-        {
-            int columnCount = this.resultSet.getMetaData().getColumnCount();
-            for ( int index = 1; index <= columnCount; ++index )
-            {
-                if ( this.resultSet.getMetaData().getColumnLabel( index ).equals( columnName ) )
-                {
-                    // Subtract by 1 to compensate for 1's indexing;
-                    // The first column should be index 0, not 1
-                    columnIndex = index - 1;
-                    break;
-                }
-            }
-        }
-        catch (SQLException e)
-        {
-            throw new IllegalStateException( "The dataset is not accessible.", e );
-        }
-
-        return columnIndex;
+        return this.columnNames.indexOf( columnName );
     }
 
     @Override
@@ -247,10 +276,20 @@ public class SQLDataProvider implements DataProvider
         return values.toArray( new Object[values.size()] );
     }
 
+    /**
+     * Converts the value of a ResultSet Array into a usable object
+     * <br><br>
+     *     <p>
+     *         An array in a {@link ResultSet} is just a wrapper for the actual array data. This gets the inner data.
+     *     </p>
+     * @param columnName The name of the column that should contain array data
+     * @return An object that may be used as a Java (vs. JDBC) array
+     */
     private Object getArray(final String columnName)
     {
         try
         {
+            // getArray nets a JDBC Array object, so we go one step further to get the actual data
             return this.resultSet.getArray( columnName ).getArray();
         }
         catch ( SQLException e )
@@ -306,6 +345,35 @@ public class SQLDataProvider implements DataProvider
                 this.resultSet.next();
             }
             return this.resultSet.getString( columnName );
+        }
+        catch ( SQLException e )
+        {
+            throw new IllegalStateException( "The data is not accessible.", e );
+        }
+    }
+
+    @Override
+    public URI getURI( String columnName)
+    {
+        String possibleURI = null;
+        try
+        {
+            // Jump to the first row if the jump hasn't already been made
+            if (this.resultSet.isBeforeFirst())
+            {
+                this.resultSet.next();
+            }
+
+            possibleURI = this.resultSet.getString( columnName );
+
+            if (possibleURI == null)
+            {
+                return null;
+            }
+            else
+            {
+                return URI.create( possibleURI );
+            }
         }
         catch ( SQLException e )
         {
@@ -545,7 +613,7 @@ public class SQLDataProvider implements DataProvider
                 resultSet.next();
             }
 
-            // Timestamps are interpretted as strings in order to avoid the 'help'
+            // Timestamps are interpreted as strings in order to avoid the 'help'
             // that JDBC provides by converting timestamps to local times and
             // applying daylight savings changes
             if ( resultSet.getObject( columnName ) instanceof String ||
@@ -591,6 +659,7 @@ public class SQLDataProvider implements DataProvider
         return result;
     }
 
+    @Override
     public Duration getDuration(String columnName)
     {
         Duration result;
@@ -603,6 +672,9 @@ public class SQLDataProvider implements DataProvider
         }
         else if (value instanceof Number)
         {
+            // If the returned number was somewhat numerical, we're going to treat it as the number of
+            // units in our resolution. Since there's no other information to go by, we just need to
+            // assume the lead resolution of the application
             result = Duration.of( this.getLong( columnName ), TimeHelper.LEAD_RESOLUTION );
         }
         else if (value instanceof String)
@@ -646,7 +718,16 @@ public class SQLDataProvider implements DataProvider
         {
             try
             {
-                this.resultSet.getStatement().close();
+                this.resultSet.close();
+            }
+            catch ( SQLException e )
+            {
+                LOGGER.warn( "A ResultSet could not be properly closed.", e );
+            }
+
+            try
+            {
+                this.statement.close();
             }
             catch ( SQLException e )
             {
@@ -656,11 +737,11 @@ public class SQLDataProvider implements DataProvider
 
             try
             {
-                this.resultSet.close();
+                this.connection.close();
             }
             catch ( SQLException e )
             {
-                LOGGER.warn( "A ResultSet could not be properly closed.", e );
+                LOGGER.warn("The connection for a ResultSet could not be closed.");
             }
         }
         else

@@ -3,25 +3,13 @@ package wres.io.reading;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Paths;
-import java.sql.SQLException;
 import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.math3.util.Precision;
 import org.slf4j.Logger;
 
 import wres.config.generated.DataSourceConfig;
-import wres.config.generated.Format;
 import wres.config.generated.ProjectConfig;
-import wres.io.concurrency.Executor;
-import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
-import wres.io.data.caching.Variables;
-import wres.io.utilities.Database;
-import wres.util.Strings;
 
 /**
  * @author Christopher Tubbs
@@ -149,11 +137,6 @@ public abstract class BasicSource
         this.isRemote = isRemote;
     }
 
-    protected boolean getIsRemote()
-    {
-        return this.isRemote;
-    }
-
     /**
      * The name of the file containing the given source data
      */
@@ -257,93 +240,12 @@ public abstract class BasicSource
     }
 
     /**
-     * Conditions the passed in value and transforms it into a form suitable to
-     * save into the database.
-     * <p>
-     *     If the passed in value is found to be within {@value EPSILON} of the
-     *     specified missing value, the value 'null' is returned.
-     * </p>
-     * @param value The original value
-     * @return The conditioned value that is safe to save to the database.
-     */
-    protected String getValueToSave(Double value)
-    {
-        if (value != null && getSpecifiedMissingValue() != null)
-        {
-            Double missing = Double.parseDouble( this.getSpecifiedMissingValue() );
-            if ( Precision.equals( value, missing, EPSILON ))
-            {
-                value = null;
-            }
-        }
-
-        if (value == null)
-        {
-            return "\\N";
-        }
-        else
-        {
-            return String.valueOf(value);
-        }
-    }
-
-    /**
-     * Determines whether or not the data at the given location or with the
-     * given contents from the given configuration should be ingested into
-     * the database.
-     * @param filePath The path to the file on the file system
-     * @param source The configuration indicating the location of the file
-     * @param contents optional read contents from the source file. Used when
-     *                 the source originates from an archive.
-     * @return Whether or not to ingest the file and the resulting hash
-     * @throws IngestException when an exception prevents determining status
-     */
-    Pair<Boolean,String> shouldIngest( URI filePath,
-                                                 DataSourceConfig.Source source,
-                                                 byte[] contents )
-            throws IngestException
-    {
-        Format specifiedFormat = source.getFormat();
-        Format pathFormat = ReaderFactory.getFiletype( filePath );
-
-        boolean ingest = specifiedFormat == null
-                         || specifiedFormat.equals( pathFormat );
-
-        String contentHash = null;
-
-        if (ingest)
-        {
-            try
-            {
-                if ( contents != null )
-                {
-                    contentHash = Strings.getMD5Checksum( contents );
-                }
-                else
-                {
-                    contentHash = this.getHash();
-                }
-
-                ingest = !dataExists( contentHash );
-            }
-            catch ( IOException | SQLException e )
-            {
-                String message = "Failed to determine whether to ingest file "
-                                 + filePath;
-                throw new IngestException( message, e );
-            }
-        }
-
-        return Pair.of( ingest, contentHash );
-    }
-
-    /**
      * Retrieves the results of the asynchrous hashing operation for the file
      * @return The MD5 hash of the contents of the current source file
      * @throws IOException when anything goes wrong while getting the hash
      * @throws UnsupportedOperationException when hash was not previously requested?
      */
-    protected String getHash() throws IOException
+    protected String getHash()
     {
         return this.hash;
     }
@@ -351,60 +253,6 @@ public abstract class BasicSource
     public void setHash(String hash)
     {
         this.hash = hash;
-    }
-
-    /**
-     * Determines if the source was already ingested into the database
-     * TODO: Is this really necessary?
-     * @param contentHash The hash of the contents to look for
-     * @return Whether or not the indicated data lies within the database
-     * @throws SQLException Thrown if an error occurs while communicating with
-     * the database
-     * @throws NullPointerException when any arg is null
-     */
-    private boolean dataExists( String contentHash )
-            throws SQLException
-    {
-        Objects.requireNonNull( contentHash );
-
-        // TODO: Convert to ScriptBuilder
-        StringBuilder script = new StringBuilder();
-
-        script.append("SELECT EXISTS (").append(NEWLINE);
-        script.append("     SELECT 1").append(NEWLINE);
-
-        if (ConfigHelper.isForecast(dataSourceConfig))
-        {
-            script.append("     FROM wres.TimeSeries TS").append(NEWLINE);
-            script.append("     INNER JOIN wres.TimeSeriesSource SL").append(NEWLINE);
-            script.append("         ON SL.timeseries_id = TS.timeseries_id").append(NEWLINE);
-            script.append("     INNER JOIN wres.VariableFeature VF").append(NEWLINE);
-            script.append("         ON VF.variablefeature_id = TS.variablefeature_id").append(NEWLINE);
-        }
-        else
-        {
-            script.append("     FROM wres.Observation SL").append(NEWLINE);
-            script.append("     INNER JOIN wres.VariableFeature VF").append(NEWLINE);
-            script.append("         ON VF.variablefeature_id = SL.variablefeature_id").append(NEWLINE);
-        }
-
-        script.append("     INNER JOIN wres.Source S").append(NEWLINE);
-        script.append("         ON S.source_id = SL.source_id").append(NEWLINE);
-        script.append("     INNER JOIN wres.Variable V").append(NEWLINE);
-        script.append("         ON VF.variable_id = V.variable_id").append(NEWLINE);
-
-        script.append("     WHERE S.hash = '")
-              .append( contentHash )
-              .append( "'" )
-              .append( NEWLINE );
-
-        script.append("         AND V.variable_name = '")
-              .append(this.dataSourceConfig.getVariable().getValue())
-              .append("'")
-              .append(NEWLINE);
-        script.append(");");
-
-        return Database.getResult( script.toString(), "exists");
     }
 
     /**
@@ -420,19 +268,9 @@ public abstract class BasicSource
     private DataSourceConfig.Source sourceConfig;
 
     /**
-     * The ID of the variable being ingested
-     */
-	private int variableId;
-
-    /**
      * Whether or not the data is held remotely
      */
 	private boolean isRemote;
-
-    /**
-     * The ID of the unit that the variable is measured in
-     */
-	private int measurementunitId;
 
 	protected abstract Logger getLogger();
 }

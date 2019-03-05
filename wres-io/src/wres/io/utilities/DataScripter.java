@@ -4,16 +4,16 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.io.concurrency.SQLExecutor;
-import wres.io.concurrency.ValueRetriever;
-import wres.util.NotImplementedException;
 import wres.util.functional.ExceptionalConsumer;
 import wres.util.functional.ExceptionalFunction;
 
@@ -22,6 +22,8 @@ public class DataScripter extends ScriptBuilder
     private static final Logger LOGGER = LoggerFactory.getLogger( DataScripter.class );
     private boolean isHighPriority = false;
     private final List<Object> arguments = new ArrayList<>(  );
+    private final Set<String> lockTables = new HashSet<>();
+    private boolean useTransaction;
 
     public DataScripter()
     {
@@ -42,9 +44,19 @@ public class DataScripter extends ScriptBuilder
         this.isHighPriority = highPriority;
     }
 
+    public void setUseTransaction(boolean useTransaction)
+    {
+        this.useTransaction = useTransaction;
+    }
+
     public void addArgument(final Object argument)
     {
         this.arguments.add(argument);
+    }
+
+    public void addTablesToLock(String... tableNames)
+    {
+        this.lockTables.addAll( Arrays.asList( tableNames ) );
     }
 
     public void execute(Collection<Object> parameters) throws SQLException
@@ -59,10 +71,7 @@ public class DataScripter extends ScriptBuilder
      */
     public void execute(Object... parameters) throws SQLException
     {
-        List<Object[]> parameterList = new ArrayList<>(  );
-        parameterList.add( parameters );
-
-        this.execute(parameterList );
+        Database.execute( this.formQuery().setParameters( parameters ), this.isHighPriority );
     }
 
     /**
@@ -73,44 +82,7 @@ public class DataScripter extends ScriptBuilder
      */
     public void execute(List<Object[]> parameters) throws SQLException
     {
-        Connection connection = null;
-        PreparedStatement statement = null;
-
-        try
-        {
-            if (this.isHighPriority)
-            {
-                connection = Database.getHighPriorityConnection();
-            }
-            else
-            {
-                connection = Database.getConnection();
-            }
-
-            statement = this.getPreparedStatement( connection, parameters );
-            statement.execute();
-        }
-        finally
-        {
-            if (statement != null)
-            {
-                try
-                {
-                    statement.close();
-                }
-                catch (SQLException exception)
-                {
-                    LOGGER.debug("Failed to close the prepared statement with the script:{}{}",
-                                 NEWLINE,
-                                 this.toString());
-                }
-            }
-
-            if (connection != null)
-            {
-                Database.returnConnection( connection );
-            }
-        }
+        Database.execute( this.formQuery().setBatchParameters( parameters ), this.isHighPriority );
     }
 
     /**
@@ -119,87 +91,7 @@ public class DataScripter extends ScriptBuilder
      */
     public void execute() throws SQLException
     {
-        // TODO: Add support for high priority connections
-        if (this.arguments.isEmpty())
-        {
-            Database.execute( this.toString() );
-        }
-        else
-        {
-            List<Object[]> batchArguments = new ArrayList<>(  );
-            batchArguments.add( this.arguments.toArray() );
-            Database.execute( this.toString(), batchArguments );
-        }
-    }
-
-    /**
-     * Forces the built query to execute within an explicit transaction
-     * @throws SQLException Thrown if the query fails
-     */
-    public void executeInTransaction() throws SQLException
-    {
-        // TODO: Add support for high priority connections
-        Database.execute( this.toString(), true );
-    }
-
-    /**
-     * Runs the script asynchronously
-     * @return The task that is running the script
-     */
-    public Future issue()
-    {
-        // TODO: Add support for high priority connections
-        SQLExecutor executor = new SQLExecutor( this.toString() );
-        return Database.execute( executor );
-    }
-
-    /**
-     * Runs the script asynchronously in an explicit transaction
-     * @return The task that is running the script
-     */
-    public Future issueTransaction()
-    {
-        // TODO: Add support for high priority connections
-        SQLExecutor executor = new SQLExecutor( this.toString(), true );
-        return Database.execute( executor );
-    }
-
-    /**
-     * Runs the script with the given parameters asynchronously
-     * @param parameters A collection of objects to use as parameters
-     * @return The task that runs the script with the given parameters
-     */
-    public Future issue(Collection<Object> parameters)
-    {
-        return this.issue(parameters.toArray());
-    }
-
-    /**
-     * Runs the script with the given parameters asynchronously
-     * @param parameters A collection of objects to use as parameters
-     * @return The task that runs the script with the
-     * given parameters
-     */
-    public Future issue(Object... parameters)
-    {
-        List<Object[]> parameterList = new ArrayList<>(  );
-        parameterList.add( parameters );
-
-        return this.issue(parameterList);
-    }
-
-    /**
-     * Runs the script in batch with the given parameters asynchronously
-     * @param parameters A collection of sets of objects to use as parameters
-     *                   for one or more executions of the script
-     * @return The task that runs the script with the given parameters
-     */
-    public Future issue(List<Object[]> parameters)
-    {
-        // SQLExecutor needs support for high priority connections, although it isn't being used
-        SQLExecutor executor = new SQLExecutor( this.toString() );
-        executor.addBatchArguments( parameters );
-        return Database.execute( executor );
+        Database.execute( this.formQuery(), this.isHighPriority );
     }
 
     /**
@@ -211,41 +103,12 @@ public class DataScripter extends ScriptBuilder
      */
     public <V> V retrieve(String label) throws SQLException
     {
-        return Database.getResult( this.toString(), label, this.arguments.toArray(), this.isHighPriority );
-    }
-
-    /**
-     * Retrieves the described data through a streaming data provider
-     * @param connection The connection that will facilitate the result streaming
-     * @return The DataProvider containing the query results
-     * @throws SQLException Thrown if the query cannot be executed
-     */
-    public DataProvider getData( Connection connection) throws SQLException
-    {
-        if (this.arguments.isEmpty())
-        {
-            return Database.getResults( connection, this.toString() );
-        }
-
-        return Database.getResults( connection, this.toString(), this.arguments.toArray() );
-    }
-
-    public DataProvider getData(Collection<Object> parameters) throws SQLException
-    {
-        return Database.getResults(
-                this.toString(),
-                parameters.toArray(),
-                this.isHighPriority
-        );
+        return Database.retrieve( this.formQuery(), label, this.isHighPriority );
     }
 
     public DataProvider getData(Object... parameters) throws SQLException
     {
-        return Database.getResults(
-                this.toString(),
-                parameters,
-                this.isHighPriority
-        );
+        return Database.getData( this.formQuery().setParameters( parameters ), this.isHighPriority );
     }
 
     /**
@@ -255,11 +118,9 @@ public class DataScripter extends ScriptBuilder
      * @param <V> The type of the value to retrieve
      * @return The task that retrieves the value
      */
-    public <V> Future<V> submit(String label)
+    public <V> Future<V> submit(final String label)
     {
-        // ValueRetriever needs support for high priority connections
-        ValueRetriever<V> retriever = new ValueRetriever<>( this.toString(), label );
-        return Database.submit( retriever );
+        return Database.submit( this.formQuery(), label, this.isHighPriority );
     }
 
     /**
@@ -269,14 +130,12 @@ public class DataScripter extends ScriptBuilder
      */
     public DataProvider getData() throws SQLException
     {
-        if (this.arguments.isEmpty())
-        {
-            return Database.getData( this.toString(), this.isHighPriority );
-        }
-        else
-        {
-            return Database.getResults(this.toString(), this.arguments.toArray(), this.isHighPriority);
-        }
+        return Database.getData( this.formQuery(), this.isHighPriority );
+    }
+
+    public DataProvider buffer() throws SQLException
+    {
+        return Database.buffer( this.formQuery(), this.isHighPriority );
     }
 
     /**
@@ -389,26 +248,14 @@ public class DataScripter extends ScriptBuilder
      * <p>
      *     <b>Arguments are not used.</b>
      * </p>
-     * TODO: Implement the usage of arguments
+     *
      * @param consumer A function that will use each row of the result set
      * @throws SQLException Thrown if the consumer threw an error
      * @throws SQLException Thrown if the script failed to run properly
      */
     public void consume(ExceptionalConsumer<DataProvider, SQLException> consumer) throws SQLException
     {
-        if (!this.arguments.isEmpty())
-        {
-            throw new NotImplementedException( "DataScripter.consume doesn't use arguments yet." );
-        }
-
-        if (this.isHighPriority)
-        {
-            Database.highPriorityConsume( this.toString(), consumer );
-        }
-        else
-        {
-            Database.consume( this.toString(), consumer );
-        }
+        Database.consume( this.formQuery( ), consumer, this.isHighPriority );
     }
 
     /**
@@ -416,7 +263,7 @@ public class DataScripter extends ScriptBuilder
      * <p>
      *     <b>Arguments are not used</b>
      * </p>
-     * TODO: Implement the usage of arguments
+     *
      * @param interpretor The function that will convert a row into an object
      * @param <U> The type of object that will be returned
      * @return A list of transformed objects
@@ -425,11 +272,20 @@ public class DataScripter extends ScriptBuilder
      */
     public <U> List<U> interpret( ExceptionalFunction<DataProvider, U, SQLException> interpretor) throws SQLException
     {
-        if (!this.arguments.isEmpty())
-        {
-            throw new NotImplementedException( "DataScripter.consume doesn't use arguments yet." );
-        }
-        return Database.interpret( this.toString(), interpretor, this.isHighPriority );
+        return Database.interpret( this.formQuery(), interpretor, this.isHighPriority );
     }
 
+    private Query formQuery()
+    {
+        Query query = Query.withScript( this.toString() )
+                           .inTransaction( this.useTransaction )
+                           .lockTables( this.lockTables );
+
+        if (!this.arguments.isEmpty())
+        {
+            query.setParameters( this.arguments.toArray() );
+        }
+
+        return query;
+    }
 }

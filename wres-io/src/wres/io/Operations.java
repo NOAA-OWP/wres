@@ -39,8 +39,10 @@ import wres.io.retrieval.DataGenerator;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
+import wres.io.utilities.Query;
 import wres.io.writing.netcdf.NetCDFCopier;
 import wres.system.ProgressMonitor;
+import wres.system.SystemSettings;
 import wres.util.CalculationException;
 
 public final class Operations {
@@ -585,13 +587,13 @@ public final class Operations {
     {
         try
         {
-            final String version = Database.getResult("Select version() "
-                                                      + "AS version_detail",
-                                                      "version_detail");
+            final DataScripter script = new DataScripter( "SELECT version() as version_detail" );
+            final String version = script.retrieve( "version_detail" );
             LOGGER.info(version);
             LOGGER.info("Successfully connected to the database");
         }
-        catch (final SQLException e) {
+        catch (final SQLException e)
+        {
             throw new SQLException( "Could not connect to the database.", e );
         }
     }

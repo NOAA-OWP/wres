@@ -13,7 +13,7 @@ import wres.io.utilities.DataProvider;
 
 /**
  * TODO: replace all references to integer leads with {@link Duration}. This will unravel the integer arithmetic in 
- * {@link IngestedValuesCollection}, but that needs to be unraveled.
+ * {@link wres.io.retrieval.IngestedValueCollection}, but that needs to be unraveled.
  */
 
 class IngestedValue implements Comparable<IngestedValue>

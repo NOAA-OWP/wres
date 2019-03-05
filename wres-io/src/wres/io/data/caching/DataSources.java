@@ -127,10 +127,9 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
                           .hasID( key );
     }
 
-	public static boolean hasSource(String hash)
-            throws SQLException
+	public static boolean hasSource(String hash) throws SQLException
     {
-        return DataSources.getActiveSourceID( hash ) != null;
+        return DataSources.getExistingSource( hash ) != null;
     }
 
     public static String getHash(int sourceId)
@@ -149,7 +148,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
 
     public static SourceDetails getExistingSource(final String hash) throws SQLException
     {
-        Objects.requireNonNull(hash, "A nonexistent hash was passed to DataSources#getActiveSourceID");
+        Objects.requireNonNull(hash, "A nonexistent hash was passed to DataSources#getExistingSource");
 
         SourceDetails sourceDetails = null;
 
@@ -209,43 +208,22 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
 
         if (id == null)
         {
-            Connection connection = null;
+            DataScripter script = new DataScripter(  );
+            script.addLine("SELECT source_id, path, output_time::text, lead, hash, is_point_data");
+            script.addLine("FROM wres.Source");
+            script.addLine("WHERE hash = '", hash, "';");
 
-            String script = "";
-
-            script += "SELECT source_id, path, output_time::text, lead, hash, is_point_data" + NEWLINE;
-            script += "FROM wres.Source" + NEWLINE;
-            script += "WHERE hash = '" + hash + "';";
-
-            try
+            try (DataProvider data = script.getData())
             {
-                connection = Database.getConnection();
-                try (DataProvider data = Database.getResults( connection, script ))
+                SourceDetails details;
+
+                if ( data.next() )
                 {
-                    SourceDetails details;
+                    details = new SourceDetails(data);
 
-                    if ( data.next() )
-                    {
-                        // TODO: Create a DataProvider constructor for SourceDetails
-                        details = new SourceDetails();
-                        details.setHash( hash );
-                        details.setLead( data.getInt( "lead" ) );
-                        details.setOutputTime( data.getString( "output_time" ) );
-                        details.setSourcePath( URI.create( data.getString( "path" ) ) );
-                        details.setID( data.getInt( "source_id" ) );
-                        details.setIsPointData( data.getBoolean( "is_point_data" ) );
+                    DataSources.getCache().addElement( details );
 
-                        DataSources.getCache().addElement( details );
-
-                        id = data.getInt( "source_id" );
-                    }
-                }
-            }
-            finally
-            {
-                if (connection != null)
-                {
-                    Database.returnConnection( connection );
+                    id = data.getInt( "source_id" );
                 }
             }
         }

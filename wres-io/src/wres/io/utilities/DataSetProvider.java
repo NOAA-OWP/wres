@@ -1,6 +1,9 @@
 package wres.io.utilities;
 
 import java.math.BigDecimal;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -861,6 +864,10 @@ public class DataSetProvider implements DataProvider
         {
             return null;
         }
+        else if (value instanceof Duration)
+        {
+            result = (Duration)value;
+        }
         else if (value instanceof Number)
         {
             result = Duration.of( this.getLong( columnName ), TimeHelper.LEAD_RESOLUTION );
@@ -906,6 +913,44 @@ public class DataSetProvider implements DataProvider
         }
 
         return String.valueOf(value);
+    }
+
+    @Override
+    public URI getURI( String columnName)
+    {
+        if (this.isClosed())
+        {
+            throw new IllegalStateException( "The data set is inaccessible." );
+        }
+
+        Object value = this.getObject(columnName);
+        URI uri = null;
+
+        if (value == null)
+        {
+            return null;
+        }
+        else if (value instanceof URI)
+        {
+            uri = (URI)value;
+        }
+        else if (value instanceof URL )
+        {
+            try
+            {
+                uri = ((URL)value).toURI();
+            }
+            catch ( URISyntaxException e )
+            {
+                throw new IllegalArgumentException( "The value '" + value + "' cannot be converted into a URI", e );
+            }
+        }
+        else
+        {
+            uri = URI.create( String.valueOf( value ) );
+        }
+
+        return uri;
     }
 
     @Override

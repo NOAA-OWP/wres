@@ -128,7 +128,7 @@ class VectorCache implements LeftHandCache
                          ConfigHelper.getFeatureDescription( this.feature ) );
         }
 
-        try (DataProvider data = script.getData())
+        try (DataProvider data = script.buffer())
         {
             while ( data.next() )
             {

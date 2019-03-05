@@ -6,18 +6,12 @@ import java.io.StringReader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.StringJoiner;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -35,7 +29,6 @@ import org.slf4j.LoggerFactory;
 import com.mchange.v2.c3p0.C3P0ProxyConnection;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 
-import wres.io.concurrency.SQLExecutor;
 import wres.io.concurrency.WRESCallable;
 import wres.io.concurrency.WRESRunnable;
 import wres.io.reading.IngestException;
@@ -176,6 +169,8 @@ public final class Database {
 	public static void addNewIndexes() throws SQLException,
             InterruptedException, ExecutionException
 	{
+	    final boolean isHighPriority = false;
+
 	    try
         {
             // Remove queued indexes for tables that don't exist
@@ -187,7 +182,7 @@ public final class Database {
             script.addTab().addLine("WHERE LOWER(T.table_schema || '.' || T.table_name) = LOWER(IQ.table_name)");
             script.addLine(");");
 
-            Database.execute( script.toString() );
+            Database.execute( Query.withScript( script.toString() ), isHighPriority );
         }
         catch ( SQLException e )
         {
@@ -196,11 +191,8 @@ public final class Database {
             LOGGER.warn( "Invalid dynamic indexes could not be removed from the queue." );
         }
 
-        StringBuilder builder;
+	    // TODO: See if a FutureQueue would work
         LinkedList<Future<?>> indexTasks = new LinkedList<>();
-
-        Connection connection = null;
-        DataProvider indexes = null;
 
         // If we're tracing, we want to have a stopwatch we can start and stop
         FormattedStopwatch watch = null;
@@ -211,63 +203,23 @@ public final class Database {
 			watch.start();
 		}
 
-        try
+        try(DataProvider data = Database.getData( Query.withScript( "SELECT * FROM wres.IndexQueue;" ), isHighPriority ))
         {
-            connection = Database.getConnection();
-
-            // Get all of the definitions of indexes that need to be created
-            indexes = Database.getResults( connection, "SELECT * FROM wres.IndexQueue;" );
-
-            // For each index definition, create a query to add it to the database
-            while ( indexes.next())
+            while ( data.next() )
             {
-                builder = new StringBuilder(  );
-                builder.append( "CREATE INDEX IF NOT EXISTS " )
-                       .append( indexes.getString( "index_name" ) )
-                       .append( NEWLINE );
-                builder.append("    ON ")
-                       .append(indexes.getString( "table_name" ))
-                       .append(NEWLINE);
-                builder.append("    USING ")
-                       .append(indexes.getString( "method" ))
-                       .append(NEWLINE);
-                builder.append("    ")
-                       .append(indexes.getString( "column_definition" ))
-                       .append(";").append(NEWLINE);
+                ScriptBuilder script = new ScriptBuilder(  );
+                script.addLine("CREATE INDEX IF NOT EXISTS ", data.getString( "index_name" ));
+                script.addTab().addLine("ON ", data.getString( "table_name" ));
+                script.addTab().addLine("USING ", data.getString( "method" ));
+                script.addTab().addLine(data.getString("column_definition"), ";");
 
-                // Creates an asynchronous task to reinstate the index
-                WRESRunnable restore = new SQLExecutor( builder.toString(), false);
-                restore.setOnRun(ProgressMonitor.onThreadStartHandler());
-                restore.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
-                indexTasks.add(Database.execute(restore));
+                indexTasks.add(Database.issue( Query.withScript( script.toString() ), isHighPriority ));
 
-                // Next, we want to delete the record that told us to create it
-                builder = new StringBuilder(  );
-                builder.append("DELETE FROM wres.IndexQueue").append(NEWLINE);
-                builder.append("WHERE indexqueue_id = ")
-                       .append(indexes.getInt( "indexqueue_id" ))
-                       .append(";");
+                script = new ScriptBuilder(  );
+                script.addLine("DELETE FROM wres.IndexQueue");
+                script.add("WHERE indexqueue_id = ", data.getInt( "indexqueue_id" ), ";");
 
-                // Creates an asynchronous task to remove the record indicating
-                // that the index needs to be reinstated from the database
-                restore = new SQLExecutor( builder.toString());
-                restore.setOnRun(ProgressMonitor.onThreadStartHandler());
-                restore.setOnComplete( ProgressMonitor.onThreadCompleteHandler());
-                indexTasks.add(Database.execute(restore));
-            }
-        }
-        finally
-        {
-            // If the index result set exists, make sure it gets closed
-            if (indexes != null)
-            {
-                indexes.close();
-            }
-
-            // If the connection exists, make sure it gets returned to the pool
-            if (connection != null)
-            {
-                Database.returnConnection( connection );
+                indexTasks.add(Database.issue( Query.withScript( script.toString() ), isHighPriority ));
             }
         }
 
@@ -303,9 +255,7 @@ public final class Database {
      * @param indexDefinition The definition of the index
      * @throws SQLException when query fails
      */
-	public static void saveIndex(String tableName,
-                                  String indexName,
-                                  String indexDefinition)
+	public static void saveIndex(String tableName, String indexName, String indexDefinition)
             throws SQLException
     {
         // Index definitions are wrapped in parenthesis, so ensure it has both a front and a back
@@ -320,20 +270,18 @@ public final class Database {
         }
 
 		// Create the insert script
-		StringBuilder script = new StringBuilder(  );
-		script.append("INSERT INTO wres.IndexQueue (table_name, index_name, column_definition, method)").append(NEWLINE);
-		script.append("VALUES('")
-			  .append(tableName)
-			  .append("', '")
-			  .append(indexName)
-			  .append("', '")
-			  .append(indexDefinition)
-			  .append("', 'btree');");
+        ScriptBuilder script = new ScriptBuilder(  );
+		script.addLine("INSERT INTO wres.IndexQueue (table_name, index_name, column_definition, method)");
+		script.addLine("VALUES (");
+		script.addTab().addLine("'", tableName, "',");
+		script.addTab().addLine("'", indexName, "',");
+		script.addTab().addLine("'", indexDefinition, "',");
+		script.addTab().addLine("'btree'");
+		script.add(");");
 
 		try
         {
-            // Run the script in the database
-			Database.execute( script.toString() );
+            Database.execute( Query.withScript( script.toString() ), false);
 		}
 		catch ( SQLException e )
 		{
@@ -445,7 +393,7 @@ public final class Database {
 	 * @param task The thread whose task to execute
 	 * @return the result of the execution wrapped in a {@link Future}
 	 */
-	public static Future<?> execute(Runnable task)
+	public static Future<?> execute(final Runnable task)
 	{
 		if (SQL_TASKS == null || SQL_TASKS.isShutdown())
 		{
@@ -599,186 +547,6 @@ public final class Database {
         }
     }
 
-    // TODO: Write a query builder object that can handle all of the parameter permutations rather than just overloading
-
-    /**
-     * Executes the passed in query in the current thread
-     * @param query The query to execute
-     * @throws SQLException Thrown if an error occurred while attempting to
-     * communicate with the database
-     */
-	public static void execute(final String query) throws SQLException
-	{
-	    // Call the other execute, telling it that it doesn't need to run in a transaction
-	    Database.execute( query, false );
-	}
-
-    /**
-     * Executes the passed in query in the current thread
-     * @param query The query to execute
-     * @param forceTransaction The force transaction state
-     * @throws SQLException Thrown if an error occurred while attempting to
-     * communicate with the database
-     */
-    public static void execute(final String query, final boolean forceTransaction) throws SQLException
-    {
-        Connection connection = null;
-        Statement statement = null;
-        Timer timer = null;
-
-        LOGGER.trace( "{}{}{}", NEWLINE, query, NEWLINE );
-
-        try
-        {
-            // If we can log debug messages, create a timer for the script.
-            // If the script lasts longer than the timer, the timer will log the script that took too long
-            if (LOGGER.isDebugEnabled())
-            {
-                timer = Database.createScriptTimer( query );
-            }
-
-            // Grab a basic connection
-            connection = getConnection();
-
-            // If this needs to run in a transaction, make sure that it doesn't automatically commit
-            connection.setAutoCommit( !forceTransaction );
-
-            // Create the statement, add a timeout as a safety measure, then send the query to the database
-            statement = connection.createStatement();
-            statement.setQueryTimeout( SystemSettings.getQueryTimeout() );
-            statement.execute(query);
-
-            // If all went well and we needed to make sure that we ran in a transaction, go ahead and make
-            // the changes official
-            if (forceTransaction)
-            {
-                connection.commit();
-            }
-
-            // If we had a timer running, go ahead and cancel it. If it hasn't
-            // printed the query yet, we don't want it to
-            if (LOGGER.isDebugEnabled() && timer != null)
-            {
-                timer.cancel();
-            }
-        }
-        catch (SQLException error)
-        {
-            // We want to print the query if it failed, but if it was really long, we don't want to print all of it
-            String message = query;
-            if (query.length() > 1000)
-            {
-                message = query.substring( 0, 1000 );
-            }
-
-            // If we were trying to run in a transaction, we want to undo our changes
-            if (forceTransaction && connection != null)
-            {
-                connection.rollback();
-            }
-
-            LOGGER.error( "The following SQL call failed:{}{}",
-                          NEWLINE,
-                          message,
-                          error );
-            throw error;
-        }
-        finally
-        {
-            // If the statement was actually created, make sure it's closed
-            if (statement != null)
-            {
-                statement.close();
-            }
-
-            // If a connection was made, make sure automatic commits are enabled before returnining it
-            if (connection != null)
-            {
-                connection.setAutoCommit( true );
-                returnConnection(connection);
-            }
-        }
-    }
-
-    /**
-     * Executes the passed in query in the current thread
-     * @param query The query to execute
-     * @param parameters The query parameters
-     * @throws SQLException Thrown if an error occurred while attempting to
-     * communicate with the database
-     */
-    public static void execute(final String query, Collection<Object[]> parameters) throws SQLException
-    {
-        Connection connection = null;
-        PreparedStatement statement = null;
-        Timer timer = null;
-
-        LOGGER.trace( "{}{}{}", NEWLINE, query, NEWLINE );
-
-        try
-        {
-            if (LOGGER.isDebugEnabled())
-            {
-                timer = Database.createScriptTimer( query );
-            }
-
-            connection = getConnection();
-            statement = connection.prepareStatement(query);
-            statement.setQueryTimeout( SystemSettings.getQueryTimeout() );
-
-            for (Object[] statementValues : parameters)
-            {
-                int addedParameters = 0;
-                for (; addedParameters < statementValues.length; ++addedParameters)
-                {
-                    statement.setObject(addedParameters + 1, statementValues[addedParameters]);
-                }
-
-                while (addedParameters < statement.getParameterMetaData().getParameterCount())
-                {
-                    statement.setObject(addedParameters + 1, null);
-                    addedParameters++;
-                }
-
-                statement.addBatch();
-            }
-
-            statement.executeBatch();
-
-            if (LOGGER.isDebugEnabled() && timer != null)
-            {
-                timer.cancel();
-            }
-        }
-        catch (SQLException error)
-        {
-            String message = query;
-            if (query.length() > 1000)
-            {
-                message = query.substring( 0, 1000 );
-            }
-
-            LOGGER.error( "The following SQL call failed:{}{}",
-                          NEWLINE,
-                          message,
-                          error );
-            throw error;
-        }
-        finally
-        {
-            if (statement != null)
-            {
-                statement.close();
-            }
-
-            if (connection != null)
-            {
-                connection.setAutoCommit( true );
-                returnConnection(connection);
-            }
-        }
-    }
-
     /**
      * Sends a copy statement to the indicated table within the database
      * @param table_definition The definition of a table and its columns (i.e.
@@ -892,368 +660,6 @@ public final class Database {
 				Database.returnConnection(connection);
 			}
 		}
-
-	}
-
-    /**
-     * Returns the first value in the labeled column from the query
-     * @param query The query used to select the value
-     * @param label The name of the column containing the data to retrieve
-     * @param <T> The type of data that should exist within the indicated column
-     * @return The value in the indicated column from the first row of data.
-     * Null is returned if no data was found.
-     * @throws SQLException Thrown if communication with the database was
-     * unsuccessful.
-     */
-    @SuppressWarnings("unchecked")
-    public static <T> T getResult( final String query, final String label )
-            throws SQLException
-	{
-	    return Database.getResult( query, label, false );
-	}
-
-    /**
-     * Returns the first value in the labeled column from the query
-     * @param query The query used to select the value
-     * @param label The name of the column containing the data to retrieve
-     * @param isHighPriority Whether or not to use a high priority connection
-     * @param <T> The type of data that should exist within the indicated column
-     * @return The value in the indicated column from the first row of data.
-     * Null is returned if no data was found.
-     * @throws SQLException Thrown if communication with the database was
-     * unsuccessful.
-     */
-    @SuppressWarnings("unchecked")
-    static <T> T getResult( final String query, final String label, final boolean isHighPriority )
-            throws SQLException
-    {
-        Connection connection = null;
-        T result;
-
-        try
-        {
-            if (isHighPriority)
-            {
-                connection = Database.getHighPriorityConnection();
-            }
-            else
-            {
-                connection = Database.getConnection();
-            }
-
-            result = Database.getResult( connection, query, label, null );
-        }
-        finally
-        {
-            if (connection != null)
-            {
-                if (isHighPriority)
-                {
-                    Database.returnHighPriorityConnection( connection );
-                }
-                else
-                {
-                    Database.returnConnection( connection );
-                }
-            }
-        }
-
-        return result;
-    }
-
-    @SuppressWarnings( "unchecked" )
-    static <T> T getResult(final String query, final String label, final Object[] parameters, final boolean isHighPriority) throws SQLException
-    {
-        Connection connection = null;
-        T result;
-
-        try
-        {
-            if (isHighPriority)
-            {
-                connection = Database.getHighPriorityConnection();
-            }
-            else
-            {
-                connection = Database.getConnection();
-            }
-
-            result = Database.getResult( connection, query, label, parameters );
-        }
-        finally
-        {
-            if (connection != null)
-            {
-                if (isHighPriority)
-                {
-                    Database.returnHighPriorityConnection( connection );
-                }
-                else
-                {
-                    Database.returnConnection( connection );
-                }
-            }
-        }
-
-        return result;
-    }
-
-
-	@SuppressWarnings("unchecked")
-	private static <T> T getResult(final Connection connection,
-								   final String query,
-								   final String label,
-                                   final Object[] parameters
-    ) throws SQLException
-	{
-        PreparedStatement statement = null;
-		ResultSet results = null;
-		T result = null;
-
-		try
-		{
-
-			if ( LOGGER.isTraceEnabled() )
-			{
-				LOGGER.trace( query );
-			}
-
-			//statement = connection.createStatement();
-            statement = connection.prepareStatement( query );
-
-			if (parameters != null && parameters.length > 0)
-            {
-                for (int i = 0; i < parameters.length; ++i)
-                {
-                    statement.setObject( i + 1, parameters[i] );
-                }
-            }
-			statement.setQueryTimeout( SystemSettings.getQueryTimeout() );
-			statement.setFetchSize(1);
-
-			Timer scriptTimer = null;
-
-			if (LOGGER.isDebugEnabled())
-			{
-				scriptTimer = createScriptTimer( query );
-			}
-
-			results = statement.executeQuery();
-
-			if (LOGGER.isDebugEnabled() && scriptTimer != null)
-			{
-				scriptTimer.cancel();
-			}
-
-			if ( results.isBeforeFirst() )
-			{
-				results.next();
-				result = Database.getValue (results, label);
-			}
-		}
-		catch ( SQLException error )
-		{
-			String message = "The following SQL query failed:" + NEWLINE + query;
-			// Decorate SQLException with additional information
-			throw new SQLException( message, error );
-		}
-		finally
-		{
-			if (results != null)
-			{
-			    try
-                {
-                    results.close();
-                }
-                catch ( SQLException se )
-                {
-                    // Exception on close should not affect primary outputs.
-                    LOGGER.warn( "Could not close results {}.", results, se );
-                }
-			}
-
-			if ( statement != null && !statement.isClosed() )
-			{
-				statement.close();
-			}
-		}
-
-		LOGGER.trace( "Result of query: {}", result );
-
-		return result;
-	}
-
-    /**
-     * Gets a value from the set of results with the given field name
-     * <p>
-     *     <b>Note:</b> If you attempt to pull a primitive value from the
-     *     result set and the value is null, then you will get the default
-     *     primitive value back. This will attempt to cast the non-existent value
-     * </p>
-     *
-     * @param resultSet The set to get the results from
-     * @param fieldName The name of the field for the value to get
-     * @param <U> The type of value to retrieve
-     * @return The value if it is in the result set, null otherwise
-     * @throws SQLException Thrown if the field is not in the result set
-     */
-    @SuppressWarnings( "unchecked" )
-	public static <U> U getValue(ResultSet resultSet, String fieldName)
-			throws SQLException
-	{
-	    // Jump to the first row if the jump hasn't already been made
-	    if (resultSet.isBeforeFirst())
-        {
-            resultSet.next();
-        }
-
-		return (U)resultSet.getObject( fieldName);
-	}
-
-    /**
-     * Retrieves results from the database over a high priority connection and
-     * consumes the results
-     * @param script The script used to retrieve the results
-     * @param rowConsumer A function used to consume each row
-     * @throws SQLException Thrown if the retrieval script fails
-     * @throws SQLException Thrown if the consumer function fails
-     */
-	static void highPriorityConsume(String script, ExceptionalConsumer<DataProvider, SQLException> rowConsumer)
-            throws SQLException
-    {
-        Connection connection = null;
-
-        try
-        {
-            connection = Database.getHighPriorityConnection();
-            try (DataProvider data = Database.getResults( connection, script ))
-            {
-                data.consume( rowConsumer );
-            }
-        }
-        finally
-        {
-            if (connection != null)
-            {
-                Database.returnHighPriorityConnection( connection );
-            }
-        }
-    }
-
-    public static void consume(String script, ExceptionalConsumer<DataProvider, SQLException> rowConsumer) throws SQLException
-    {
-        Connection connection = null;
-        try
-        {
-            connection = Database.getConnection();
-            try ( DataProvider data = Database.getResults( connection, script ) )
-            {
-                data.consume( rowConsumer );
-            }
-        }
-        finally
-        {
-            if (connection != null)
-            {
-                Database.returnConnection( connection );
-            }
-        }
-    }
-
-    static <U> List<U> interpret( String query,
-                                  ExceptionalFunction<DataProvider, U, SQLException> interpretor,
-                                  boolean priorityIsHigh)
-            throws SQLException
-    {
-        List<U> result = new ArrayList<>();
-
-        Connection connection = null;
-
-        try
-        {
-            if (priorityIsHigh)
-            {
-                connection = Database.getHighPriorityConnection();
-            }
-            else
-            {
-                connection = Database.getConnection();
-            }
-
-            try (DataProvider data = Database.getResults( connection, query ))
-            {
-                result.addAll( data.interpret( interpretor ) );
-            }
-        }
-        finally
-        {
-            if (connection != null && priorityIsHigh)
-            {
-                Database.returnHighPriorityConnection( connection );
-            }
-            else if (connection != null)
-            {
-                Database.returnConnection( connection );
-            }
-        }
-
-        return result;
-    }
-
-	public static DataProvider getData( String query ) throws SQLException
-    {
-        return Database.getData(query, false);
-    }
-
-    /**
-     * Stores all values from a query in a format divorced from any connections
-     * to the database
-     *
-     * <p>
-     *     A database result set is closed if the statement that creates it is
-     *     closed and that statement is closed if the connection is closed. If
-     *     a result set needs to exist outside the scope of its connection, it
-     *     needs to be stored in a different object
-     * </p>
-     * @param query The query which will create the resulting set of data
-     * @param highPriority is <code>true</code> to execute with a high priority connection
-     * @return All data resulting from the query
-     * @throws SQLException Thrown if the query fails
-     */
-	public static DataProvider getData( String query, boolean highPriority) throws SQLException
-	{
-		DataProvider dataSet;
-		Connection connection = null;
-
-		try
-        {
-            if (highPriority)
-            {
-                connection = Database.getHighPriorityConnection();
-            }
-            else
-            {
-                connection = Database.getConnection();
-            }
-
-            try ( DataProvider resultSet = Database.getResults( connection, query ) )
-            {
-                dataSet = DataSetProvider.from( resultSet );
-            }
-        }
-        finally
-        {
-            if (connection != null && highPriority)
-            {
-                Database.returnHighPriorityConnection( connection );
-            }
-            else
-            {
-                Database.returnConnection( connection );
-            }
-        }
-
-		return dataSet;
 	}
 
     /**
@@ -1268,6 +674,8 @@ public final class Database {
 	public static void refreshStatistics(boolean vacuum)
             throws SQLException
 	{
+	    // If we plan to reclaim dead tuples, we want to first make sure that all indexes planned
+        // for addition have been properly added
         if (vacuum)
         {
             try
@@ -1288,7 +696,6 @@ public final class Database {
             }
         }
 
-		Connection connection = null;
         List<String> sql = new ArrayList<>();
 
         final String optionalVacuum;
@@ -1304,32 +711,25 @@ public final class Database {
 
 		LOGGER.info("Analyzing data for efficient execution...");
 
-        try
-        {
-            connection = getConnection();
 
-            String script =
-                    "SELECT 'ANALYZE '||n.nspname ||'.'|| c.relname||';' AS alyze"
-                    + NEWLINE +
-                    "FROM pg_catalog.pg_class c" + NEWLINE +
-                    "INNER JOIN pg_catalog.pg_namespace n" + NEWLINE +
-                    "     ON N.oid = C.relnamespace" + NEWLINE +
-                    "WHERE relchecks > 0" + NEWLINE +
-                    "     AND (nspname = 'wres' OR nspname = 'partitions')"
-                    + NEWLINE +
-                    "     AND relkind = 'r';";
+        String script =
+                "SELECT 'ANALYZE '||n.nspname ||'.'|| c.relname||';' AS alyze"
+                + NEWLINE +
+                "FROM pg_catalog.pg_class c" + NEWLINE +
+                "INNER JOIN pg_catalog.pg_namespace n" + NEWLINE +
+                "     ON N.oid = C.relnamespace" + NEWLINE +
+                "WHERE relchecks > 0" + NEWLINE +
+                "     AND (nspname = 'wres' OR nspname = 'partitions')"
+                + NEWLINE +
+                "     AND relkind = 'r';";
 
-            Database.consume(
-                    script,
-                    provider -> sql.add(optionalVacuum + provider.getString( "alyze" ))
-            );
+        Database.consume(
+                Query.withScript(script),
+                provider -> sql.add(optionalVacuum + provider.getString( "alyze" )),
+                false
+        );
 
-        }
-        finally
-        {
-            Database.returnConnection(connection);
-        }
-
+        // TODO: We should probably just analyze/optional vacuum everything in the WRES schema rather than picking and choosing
         sql.add(optionalVacuum + "ANALYZE wres.Observation;");
         sql.add(optionalVacuum + "ANALYZE wres.TimeSeries;");
         sql.add(optionalVacuum + "ANALYZE wres.TimeSeriesSource;");
@@ -1341,9 +741,7 @@ public final class Database {
 
         for (String statement : sql)
         {
-            SQLExecutor query = new SQLExecutor( statement );
-            query.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
-            queries.add( Database.execute( query ) );
+            queries.add( Database.issue( Query.withScript( statement ), false ) );
         }
 
         boolean analyzeFailed = true;
@@ -1377,6 +775,13 @@ public final class Database {
         LOGGER.info("Database statistical analysis is now complete.");
 	}
 
+    /**
+     * Get all partition tables matching the given pattern
+     * TODO: Evaluate how strongly coupled this is to business logic and remove it if it isn't appropriate here
+     * @param tablePattern A pattern that will match the name of all partition tables of interest
+     * @return The names of all partition tables
+     * @throws SQLException Thrown if the query could not complete
+     */
 	private static Collection<String> getPartitionTables(final String tablePattern) throws SQLException
     {
         ScriptBuilder script = new ScriptBuilder(  );
@@ -1386,7 +791,7 @@ public final class Database {
         script.addLine( "INNER JOIN pg_catalog.pg_namespace N" );
         script.addTab().addLine( "ON N.oid = C.relnamespace" );
         script.addLine( "WHERE relchecks > 0" );
-        script.addTab().addLine( "AND (N.nspname = 'partitions' OR N.nspname = 'wres')" );
+        script.addTab().addLine( "AND (N.nspname = 'wres')" );
 
         if (tablePattern != null)
         {
@@ -1398,7 +803,7 @@ public final class Database {
         try
         {
             return Database.interpret(
-                    script.toString(),
+                    Query.withScript(script.toString()),
                     tableRow -> tableRow.getString( "table_name" ),
                     false
             );
@@ -1412,6 +817,12 @@ public final class Database {
         }
     }
 
+    /**
+     * Removes all data from the database that isn't properly linked to a project
+     * TODO: Remove the business logic from this class
+     * @return Whether or not values were removed
+     * @throws SQLException Thrown when one of the required scripts could not complete
+     */
     @SuppressWarnings( "unchecked" )
 	public static boolean removeOrphanedData() throws SQLException
     {
@@ -1447,7 +858,7 @@ public final class Database {
                 valueRemover.addTab(  2  ).addLine( "AND (TSS.lead IS NULL OR TSS.lead = P.lead)");
                 valueRemover.add(");");
 
-                removalQueue.add(Database.execute( new SQLExecutor( valueRemover.toString() ) ));
+                removalQueue.add(Database.issue( Query.withScript( valueRemover.toString() ), false));
 
                 LOGGER.debug("Started task to remove orphaned values in {}...", partition);
             }
@@ -1460,7 +871,7 @@ public final class Database {
             removalScript.addTab().addLine("WHERE PS.source_id = O.source_id");
             removalScript.add(");");
 
-            removalQueue.add(Database.execute( new SQLExecutor( removalScript.toString() ) ));
+            removalQueue.add(Database.issue( Query.withScript( removalScript.toString() ), false));
 
             LOGGER.debug("Started task to remove orphaned observations...");
 
@@ -1483,7 +894,7 @@ public final class Database {
             removalScript.addLine(");");
 
             LOGGER.debug("Removing orphaned TimeSeriesSource Links...");
-            Database.execute( removalScript.toString() );
+            Database.execute( Query.withScript( removalScript.toString() ), false);
 
             LOGGER.debug("Removed orphaned TimeSeriesSource Links");
 
@@ -1496,7 +907,7 @@ public final class Database {
             removalScript.addTab().addLine("WHERE TS.timeseries_id = TS.timeseries_id");
             removalScript.add(");");
 
-            removalQueue.add(Database.execute( new SQLExecutor( removalScript.toString() ) ));
+            removalQueue.add(Database.issue( Query.withScript( removalScript.toString() ), false));
 
             LOGGER.debug("Added Task to remove orphaned time series...");
 
@@ -1509,7 +920,7 @@ public final class Database {
             removalScript.addTab().addLine("WHERE PS.source_id = S.source_id");
             removalScript.add(");");
 
-            removalQueue.add(Database.execute( new SQLExecutor( removalScript.toString() ) ));
+            removalQueue.add(Database.issue( Query.withScript( removalScript.toString() ), false));
 
             LOGGER.debug("Added task to remove orphaned sources...");
 
@@ -1524,7 +935,7 @@ public final class Database {
 
             LOGGER.debug("Added task to remove orphaned projects...");
 
-            removalQueue.add(Database.execute( new SQLExecutor( removalScript.toString() ) ));
+            removalQueue.add(Database.issue( Query.withScript( removalScript.toString() ), false));
 
             try
             {
@@ -1545,6 +956,180 @@ public final class Database {
         return true;
     }
 
+    static void execute( final Query query, final boolean isHighPriority) throws SQLException
+    {
+        Connection connection = null;
+
+        try
+        {
+            if (isHighPriority)
+            {
+                connection = Database.getHighPriorityConnection();
+            }
+            else
+            {
+                connection = Database.getConnection();
+            }
+
+            query.execute( connection );
+        }
+        finally
+        {
+            if (connection != null)
+            {
+                if (isHighPriority)
+                {
+                    Database.returnHighPriorityConnection( connection );
+                }
+                else
+                {
+                    Database.returnConnection( connection );
+                }
+            }
+        }
+    }
+
+    /**
+     * Creates an in-memory record of the results from a database call
+     * @param query The query that holds the information needed to call the database
+     * @param isHighPriority Whether or not a high priority connection is required
+     * @return A record of the results of the database call
+     * @throws SQLException Thrown if there was an error when connecting to the database
+     */
+    static DataProvider getData( final Query query, final boolean isHighPriority) throws SQLException
+    {
+        // Since Database.buffer performs all the heavy lifting, we can just rely on that. Setting that
+        // call in the try statement ensures that it is closed once the in-memory results are created
+        try (DataProvider rawProvider = Database.buffer(query, isHighPriority))
+        {
+            return DataSetProvider.from(rawProvider);
+        }
+    }
+
+    /**
+     * Opens a streaming connection to the results of a database call
+     * <br><br>
+     *     <p>
+     *         Since the data contained within results will still be connected to the database, make sure
+     *         you close the results to ensure that the resources required to provide the data are freed.
+     *         Failure to do so will result in a leak.
+     *     </p>
+     * @param query The query that holds the information needed to call the database
+     * @param isHighPriority Whether or not a high priority connection is required
+     * @return A record of the results of the database call
+     * @throws SQLException Thrown if there was an error when connecting to the database
+     */
+    static DataProvider buffer(final Query query, final boolean isHighPriority) throws SQLException
+    {
+        Connection connection;
+
+        if (isHighPriority)
+        {
+            connection = Database.getHighPriorityConnection();
+        }
+        else
+        {
+            connection = Database.getConnection();
+        }
+
+        return new SQLDataProvider( connection, query.call( connection ) );
+    }
+
+    public static <V> V retrieve( final Query query, final String label, final boolean isHighPriority) throws SQLException
+    {
+        try(DataProvider data = Database.getData( query, isHighPriority ))
+        {
+            return data.getValue( label );
+        }
+    }
+
+    static void consume( final Query query, ExceptionalConsumer<DataProvider, SQLException> consumer, final boolean isHighPriority) throws SQLException
+    {
+
+        try (DataProvider data = Database.getData( query, isHighPriority))
+        {
+            data.consume( consumer );
+        }
+    }
+
+    static <U> List<U> interpret( final Query query, ExceptionalFunction<DataProvider, U, SQLException> interpretor, final boolean isHighPriority) throws SQLException
+    {
+        List<U> result;
+
+        try (DataProvider data = Database.getData( query, isHighPriority))
+        {
+            result = new ArrayList<>( data.interpret( interpretor ) );
+        }
+
+        return result;
+    }
+
+    static <V> Future<V> submit( final Query query, final String label, final boolean isHighPriority)
+    {
+        WRESCallable<V> queryToSubmit = new WRESCallable<V>() {
+            @Override
+            protected V execute() throws Exception
+            {
+                return Database.retrieve( this.query, this.label, this.isHighPriority );
+            }
+
+            @Override
+            protected Logger getLogger()
+            {
+                return LOGGER;
+            }
+
+            private WRESCallable<V> init(final Query query, final boolean isHighPriority, final String label)
+            {
+                this.query = query;
+                this.isHighPriority = isHighPriority;
+                this.label = label;
+                return this;
+            }
+
+            private Query query;
+            private boolean isHighPriority;
+            private String label;
+        }.init( query, isHighPriority, label );
+
+        return Database.submit( queryToSubmit );
+    }
+
+    public static Future issue( final Query query, final boolean isHighPriority)
+    {
+        WRESRunnable queryToIssue = new WRESRunnable() {
+            @Override
+            protected void execute() throws SQLException
+            {
+                Database.execute( this.query, this.isHighPriority );
+            }
+
+            @Override
+            protected Logger getLogger()
+            {
+                return LOGGER;
+            }
+
+            WRESRunnable init(final Query query, final boolean isHighPriority)
+            {
+                this.query = query;
+                this.isHighPriority = isHighPriority;
+                return this;
+            }
+
+            private Query query;
+            private boolean isHighPriority;
+        }.init(query, isHighPriority);
+
+        return Database.execute( queryToIssue );
+    }
+
+    /**
+     * Checks to see if the database contains orphaned data
+     * TODO: Remove business logic
+     * @return True if orphaned data exists within the database; false otherwise
+     * @throws SQLException Thrown if the query used to detect orphaned data failed
+     */
     private static boolean thereAreOrphanedValues() throws SQLException
     {
         ScriptBuilder scriptBuilder = new ScriptBuilder(  );
@@ -1559,229 +1144,12 @@ public final class Database {
         scriptBuilder.addTab().addLine(")");
         scriptBuilder.addLine(") AS orphans_exist;");
 
-        return Database.getResult(scriptBuilder.toString(), "orphans_exist");
+        return Database.retrieve( Query.withScript( scriptBuilder.toString() ), "orphans_exist", false );
     }
-    
-    /**
-     * Creates set of results from the given query through the given connection
-	 *
-     * @param connection The connection used to connect to the database
-     * @param query The text for the query to call
-     * @return The results of the query
-     * @throws SQLException Any issue caused by running the query in the database
-     */
-    public static DataProvider getResults(final Connection connection, final String query) throws SQLException
-    {
-        if (LOGGER.isTraceEnabled())
-        {
-            LOGGER.trace( "" );
-            LOGGER.trace(query);
-            LOGGER.trace("");
-        }
-
-        Statement fetcher = connection.createStatement();
-        fetcher.setQueryTimeout( SystemSettings.getQueryTimeout() );
-        fetcher.setFetchSize(SystemSettings.fetchSize());
-
-		return executeStatement(
-		        fetcher,
-                query,
-                statement -> statement.executeQuery( query )
-        );
-    }
-
-    /**
-     * Creates set of results from the given query through the given connection
-     *
-     * @param connection The connection used to connect to the database
-     * @param query The text for the query to call
-     * @param parameters The query parameters
-     * @return The results of the query
-     * @throws SQLException Any issue caused by running the query in the database
-     */
-    static DataProvider getResults(final Connection connection, String query, Object[] parameters) throws SQLException
-    {
-        if (LOGGER.isTraceEnabled())
-        {
-            LOGGER.trace( "" );
-            LOGGER.trace(query);
-            LOGGER.trace("");
-        }
-
-        // Don't close the statement; it will close the result set.
-        // Closing the data provider will also kill the statement
-        PreparedStatement preparedStatement = connection.prepareStatement( query );
-        preparedStatement.setQueryTimeout( SystemSettings.getQueryTimeout() );
-
-        int addedParameters = 0;
-        for (; addedParameters < parameters.length; ++addedParameters)
-        {
-            preparedStatement.setObject( addedParameters + 1, parameters[addedParameters] );
-        }
-
-        while (addedParameters < preparedStatement.getParameterMetaData().getParameterCount())
-        {
-            preparedStatement.setObject( addedParameters + 1, null );
-            addedParameters++;
-        }
-
-        return executeStatement(
-                preparedStatement,
-                query,
-                statement -> ((PreparedStatement)statement).executeQuery()
-        );
-    }
-
-    private static DataProvider executeStatement(
-            final Statement statement,
-            final String script,
-            final ExceptionalFunction<Statement, ResultSet, SQLException> query
-    ) throws SQLException
-    {
-        DataProvider results = null;
-        boolean retry = false;
-
-        do
-        {
-            try
-            {
-                Timer timer = null;
-
-                if ( LOGGER.isDebugEnabled() )
-                {
-                    timer = Database.createScriptTimer( script );
-                }
-
-                results = new SQLDataProvider( query.call( statement ) );
-
-                if ( LOGGER.isDebugEnabled() && timer != null )
-                {
-                    timer.cancel();
-                }
-
-                retry = false;
-            }
-            catch ( SQLException error )
-            {
-                // If we hit the error indicating a random cancel AND we haven't retried...
-                if ( error.getMessage().contains( "ERROR: canceling statement due to user request" ) &&
-                     !retry )
-                {
-                    LOGGER.debug( "A statement was randomly canceled. Trying again." );
-                    // Set retry to true in order to try again
-                    retry = true;
-                }
-                else
-                {
-                    // Shut down resources and throw an error
-                    if ( !statement.isClosed() )
-                    {
-                        try
-                        {
-                            statement.close();
-                        }
-                        catch ( SQLException se )
-                        {
-                            // Exception on close should not affect primary outputs.
-                            LOGGER.warn( "Failed to close statement {}.", statement, se );
-                        }
-                    }
-                    LOGGER.error( "The following SQL query failed:{}{}", NEWLINE, script, error );
-                    throw error;
-                }
-            }
-        } while (retry);
-
-        return results;
-    }
-
-    /**
-     * Creates set of results from the given query through the given connection
-     *
-     * @param query The text for the query to call
-     * @param parameters The query parameters
-     * @param highPriority is true to execute with a high priority connection
-     * @return The results of the query
-     * @throws SQLException Any issue caused by running the query in the database
-     */
-    public static DataProvider getResults(String query, Object[] parameters, boolean highPriority) throws SQLException
-    {
-        if (LOGGER.isTraceEnabled())
-        {
-            LOGGER.trace( "" );
-            LOGGER.trace(query);
-            LOGGER.trace("");
-        }
-
-        Connection connection = null;
-        DataProvider output;
-
-        try
-        {
-            if (highPriority)
-            {
-                connection = Database.getHighPriorityConnection();
-            }
-            else
-            {
-                connection = Database.getConnection();
-            }
-
-            try (DataProvider results = Database.getResults( connection, query, parameters ))
-            {
-                output = DataSetProvider.from( results );
-            }
-        }
-        finally
-        {
-            if (connection != null && highPriority)
-            {
-                Database.returnHighPriorityConnection( connection );
-            }
-            else
-            {
-                Database.returnConnection( connection );
-            }
-        }
-
-        return output;
-    }
-
-    /**
-     * Creates a timer object that will write a query to the log after a short
-     * amount of time
-     *
-     * <p>
-     *     If the caller calls "timer.cancel()" before the timer goes to store
-     *     the query, nothing is ever written. If this is used, only queries that
-     *     take longer than that short amount of time will be written to the log.
-     *     This can be used to spot long running queries.
-     * </p>
-     * @param query The query to log
-     * @return A timer that will log the given script after a short period of time
-     */
-    private static Timer createScriptTimer(final String query)
-	{
-		TimerTask task = new TimerTask() {
-			@Override
-			public void run()
-			{
-				LOGGER.debug( "A long running query has been encountered:{}{}",
-                              NEWLINE,
-                              query );
-				this.cancel();
-			}
-		};
-
-		Timer timer = new Timer( "Script Timer" );
-
-		// Sets the delay for 2 seconds; if a script takes this long, it will be written
-		timer.schedule( task, 2000L );
-		return timer;
-	}
 
     /**
      * Removes all user data from the database
+     * TODO: This should probably accept an object or list to allow for the removal of business logic
      * @throws SQLException Thrown if successful communication with the
      * database could not be established
      */
@@ -1817,7 +1185,7 @@ public final class Database {
 
 		try
         {
-			Database.execute(builder.toString());
+            Database.execute( Query.withScript( builder.toString() ), false );
 		}
 		catch (final SQLException e)
         {
@@ -1835,60 +1203,6 @@ public final class Database {
     static ComboPooledDataSource getPool()
     {
         return Database.CONNECTION_POOL;
-    }
-
-    public static void lockTable(Connection connection, String tableName) throws SQLException
-    {
-        // Locking a table is nonsensical if the connection is autocommiting;
-        // even if the database implementation driver allows it, the lock will
-        // only last until the commit, which is immediate
-        if (LOGGER.isDebugEnabled() && connection.getAutoCommit())
-        {
-            LOGGER.debug( "The application is seeking to lock a table with a "
-                          + "connection that will automatically commit. Nothing "
-                          + "will be achieved by this action." );
-
-            StringJoiner traceJoiner = new StringJoiner( NEWLINE );
-            for (StackTraceElement trace : Thread.currentThread().getStackTrace())
-            {
-                traceJoiner.add( trace.toString() );
-            }
-
-            LOGGER.debug( traceJoiner.toString() );
-        }
-
-
-        Statement statement = null;
-        final String query = "LOCK TABLE " + tableName + " IN ACCESS EXCLUSIVE MODE;";
-
-        try
-        {
-            statement = connection.createStatement();
-            statement.setQueryTimeout( SystemSettings.getQueryTimeout() );
-            statement.execute( query );
-        }
-        catch (SQLException e)
-        {
-            String message = "The table '" + tableName + "' could not be locked."
-                    + NEWLINE + "The query was: '" + query + "'";
-            // Decorate SQLException with contextual information
-            throw new SQLException( message,e );
-        }
-        finally
-        {
-            if ( statement != null )
-            {
-                try
-                {
-                    statement.close();
-                }
-                catch ( SQLException se )
-                {
-                    // Exception on close should not affect primary outputs.
-                    LOGGER.warn( "Failed to close a statement.", se );
-                }
-            }
-        }
     }
 
 

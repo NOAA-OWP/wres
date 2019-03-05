@@ -333,6 +333,14 @@ public interface DataProvider extends AutoCloseable
 
     /**
      * @param columnName The name of the column containing the desired value
+     * @return The value contained within the column as a URI
+     * @throws IllegalStateException Thrown if the data has been closed down or
+     * the column name doesn't exist
+     * @throws IndexOutOfBoundsException Thrown if the data is empty
+     */
+    URI getURI(final String columnName);
+    /**
+     * @param columnName The name of the column containing the desired value
      * @return The <code>byte</code> value contained within the desired column.
      * If the value is <code>null</code>, the returned value is <code>null</code>
      * @throws IllegalStateException Thrown if the data has been closed down

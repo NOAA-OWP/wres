@@ -127,6 +127,8 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
             );
         }
 
+        // The 'isRemote' indicator doesn't really drive behavior; other methods are used to determine this
+        @Deprecated(forRemoval = true)
         public IngestBuilder isRemote()
         {
             return new IngestBuilder(
