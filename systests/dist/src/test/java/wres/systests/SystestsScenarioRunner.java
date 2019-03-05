@@ -1,6 +1,5 @@
 package wres.systests;
 
-
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 import static junit.framework.TestCase.fail;
@@ -45,7 +44,6 @@ import wres.io.Operations;
  */
 public class SystestsScenarioRunner
 {
-
     /**
      * The path to the system tests directory.
      */
@@ -73,7 +71,6 @@ public class SystestsScenarioRunner
      */
     public SystestsScenarioRunner( String scenarioName )
     {
-	
         this.systemTestsDirPath = Paths.get( System.getenv( "TESTS_DIR" ) );
         this.scenarioName = scenarioName;
         this.scenarioDir = new File( this.systemTestsDirPath.toFile(), this.scenarioName );
@@ -148,6 +145,15 @@ public class SystestsScenarioRunner
     */
     public static void deleteOldOutputDirectories( Path directoryToLookIn )
     {
+	File directoryWithFiles = directoryToLookIn.toFile();
+
+	if ( !directoryWithFiles.exists() || !directoryWithFiles.canRead()
+	     || !directoryWithFiles.isDirectory() )
+        {
+	    throw new IllegalArgumentException( "Could not read a directory at "
+						+ directoryToLookIn );
+        }
+
         String[] files = directoryToLookIn.toFile().list();
 
         //Search the files for anything that appears to be wres evaluation output and remove the entire directory.
