@@ -22,8 +22,8 @@ public class Scenario003
         LOGGER.info( "{}{}",
                      "########################################################## EXECUTION ",
                      NEWLINE );
-        Path baseDirectory = SystestsScenarioRunner.getBaseDirectory();
-        SystestsScenarioRunner.deleteOldOutputDirectories(
+        Path baseDirectory = ScenarioHelper.getBaseDirectory();
+        ScenarioHelper.deleteOldOutputDirectories(
                 baseDirectory.resolve( this.getClass()
                                            .getSimpleName()
                                            .toLowerCase() ) );
@@ -32,6 +32,6 @@ public class Scenario003
     @Test
     public void testScenario()
     {
-        //SystestsScenarioRunner.assertOutputsMatchBenchmarks(  new Control() );
+        //ScenarioHelper.assertOutputsMatchBenchmarks(  new Control() );
     }
 }
