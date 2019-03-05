@@ -1,6 +1,7 @@
 package wres.systests;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 
@@ -15,21 +16,29 @@ import wres.io.Operations;
 public class Scenario001
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( Scenario001.class );
-    private static final String SCENARIO_NAME = "scenario001";
     private static final String NEWLINE = System.lineSeparator();
 
     @Before
-    public void beforeEachIndividualTest() throws IOException, SQLException
+    public void beforeIndividualTest() throws IOException, SQLException
     {
-        LOGGER.info( "{}{}{}{}", NEWLINE, "########################################################## EXECUTION ", SCENARIO_NAME, NEWLINE );
+        LOGGER.info( "{}{}",
+                     "########################################################## EXECUTION ",
+                     NEWLINE );
+        Path baseDirectory = SystestsScenarioRunner.getBaseDirectory();
         Operations.cleanDatabase();
-        SystestsScenarioRunner.deleteOldOutputDirectories( Paths.get( SCENARIO_NAME ) );
+        SystestsScenarioRunner.deleteOldOutputDirectories(
+                baseDirectory.resolve( this.getClass()
+                                           .getSimpleName()
+                                           .toLowerCase() ) );
     }
 
     @Test
     public void testScenario()
     {
-        SystestsScenarioRunner classUnderTest = new SystestsScenarioRunner( SCENARIO_NAME );
+        SystestsScenarioRunner classUnderTest =
+                new SystestsScenarioRunner( this.getClass()
+                                                .getSimpleName()
+                                                .toLowerCase() );
         classUnderTest.assertProjectExecution();
         classUnderTest.assertOutputsMatchBenchmarks();
     }

@@ -671,4 +671,20 @@ public class SystestsScenarioRunner
             System.err.println( "File " + file.getPath() + " doesn't existed." );
         }
     } // end method
+
+    /**
+     * Return the directory where system test project configs and data live.
+     */
+    static Path getBaseDirectory()
+    {
+	String baseDirectoryFromEnvVar = System.getenv( "TESTS_DIR" );
+
+	if ( baseDirectoryFromEnvVar == null || baseDirectoryFromEnvVar.isEmpty() )
+	{
+	    throw new IllegalStateException( "Expected an environment variable TESTS_DIR" );
+	}
+
+	return Paths.get( baseDirectoryFromEnvVar );
+    }
+
 } // end this class
