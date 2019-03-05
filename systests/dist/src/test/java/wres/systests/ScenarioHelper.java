@@ -46,11 +46,11 @@ import wres.io.Operations;
  * @author jesse.bickel
  */
 
-public class SystestsScenarioRunner
+public class ScenarioHelper
 {
     static final String USUAL_EVALUATION_FILE_NAME = "project_config.xml";
 
-    private SystestsScenarioRunner()
+    private ScenarioHelper()
     {
         // Static utility helper class, disallow construction.
     }
@@ -59,7 +59,7 @@ public class SystestsScenarioRunner
      * Sets the properties which drive the system testing.  These use system environment variables in order
      * to set Java system properties.
      */
-    static void setAllPropertiesFromEnvVars( String scenarioName )
+    static void setAllPropertiesFromEnvVars( Scenario scenarioInfo )
     {
         //I was thinking about moving these to the SystemTestSuiteRunner, since they will always result
         //in the same properties across all of the suite tests.  However, I want to allow for individual
@@ -102,8 +102,8 @@ public class SystestsScenarioRunner
         // I thinks it's too late to attempt to set log level here. -Jesse
 
         System.setProperty( "java.io.tmpdir",
-                            getBaseDirectory().resolve( scenarioName )
-                                              .toString() );
+                            scenarioInfo.getScenarioDirectory()
+                                        .toString() );
 
         System.out.println( "Properties used to run test:" );
         System.out.println( "    wres.hostname = " + System.getProperty( "wres.hostname" ) );
