@@ -33,15 +33,19 @@ import wres.control.Control;
 import wres.io.Operations;
 
 /**
- * A class to be used to run system testing scenarios of the WRES.  The class makes use of environment variables
- * to identify the system tests directory (which will be the working directory for executions), WRES database
- * information, and the logging level.  It then sets up appropriate Java system properties before running the
- * WRES.  After construction, the methods to call are then controlled from the external caller.  The choices
- * are provided as public methods below.
+ * A class to be used to when setting up system test scenarios of the WRES.
+ *
+ * The class makes optional use of environment variables to identify the system
+ * tests directory (which will typically be the working directory for
+ * executions), and WRES database information.
+ *
+ * It then passes through environment variables to  already-unset Java system
+ * properties before running the WRES.
  * @author Raymond.Chui
  * @author Hank.Herr
- *
+ * @author jesse.bickel
  */
+
 public class SystestsScenarioRunner
 {
     /**
@@ -88,40 +92,40 @@ public class SystestsScenarioRunner
         //execution of the system tests, which would not be done via the suite.  For that reason, I'm
         //leaving it here.
 
-	/*
-        //TODO Modify this later if we ever change how the outputs are directed to a different
-        //tmp directory.
-	*/
+        /*
+            //TODO Modify this later if we ever change how the outputs are directed to a different
+            //tmp directory.
+        */
 
-	String dbHostFromEnvVar = System.getenv( "WRES_DB_HOSTNAME" );
-	String dbHostFromSysProp = System.getProperty( "wres.url" );
+        String dbHostFromEnvVar = System.getenv( "WRES_DB_HOSTNAME" );
+        String dbHostFromSysProp = System.getProperty( "wres.url" );
 
-	if ( dbHostFromSysProp == null && dbHostFromEnvVar != null
-	     && !dbHostFromEnvVar.isEmpty() )
-	{
-	    System.setProperty( "wres.url", dbHostFromEnvVar );
-	}
-
-	String dbNameFromEnvVar = System.getenv( "WRES_DB_NAME" );
-	String dbNameFromSysProp = System.getProperty( "wres.databaseName" );
-
-	if ( dbNameFromSysProp == null && dbNameFromEnvVar != null
-	     && !dbNameFromEnvVar.isEmpty() )
+        if ( dbHostFromSysProp == null && dbHostFromEnvVar != null
+             && !dbHostFromEnvVar.isEmpty() )
         {
-	    System.setProperty( "wres.databaseName", dbNameFromEnvVar );
-	}
+            System.setProperty( "wres.url", dbHostFromEnvVar );
+        }
 
-	String dbUserFromEnvVar = System.getenv( "WRES_DB_USERNAME" );
-	String dbUserFromSysProp = System.getProperty( "wres.username" );
+        String dbNameFromEnvVar = System.getenv( "WRES_DB_NAME" );
+        String dbNameFromSysProp = System.getProperty( "wres.databaseName" );
 
-	if ( dbUserFromSysProp == null && dbUserFromEnvVar != null
-	     && !dbUserFromEnvVar.isEmpty() )
-	{
-	    System.setProperty( "wres.username", dbUserFromEnvVar );
-	}
+        if ( dbNameFromSysProp == null && dbNameFromEnvVar != null
+             && !dbNameFromEnvVar.isEmpty() )
+        {
+            System.setProperty( "wres.databaseName", dbNameFromEnvVar );
+        }
 
-	// Passphrase should be got from postgres passphrase file. -Jesse
-	// I thinks it's too late to attempt to set log level here. -Jesse
+        String dbUserFromEnvVar = System.getenv( "WRES_DB_USERNAME" );
+        String dbUserFromSysProp = System.getProperty( "wres.username" );
+
+        if ( dbUserFromSysProp == null && dbUserFromEnvVar != null
+             && !dbUserFromEnvVar.isEmpty() )
+        {
+            System.setProperty( "wres.username", dbUserFromEnvVar );
+        }
+
+        // Passphrase should be got from postgres passphrase file. -Jesse
+        // I thinks it's too late to attempt to set log level here. -Jesse
 
         System.getProperty( "java.io.tmpdir", System.getenv( "TESTS_DIR" ) + "/" + scenarioName );
 
@@ -145,13 +149,13 @@ public class SystestsScenarioRunner
     */
     public static void deleteOldOutputDirectories( Path directoryToLookIn )
     {
-	File directoryWithFiles = directoryToLookIn.toFile();
+        File directoryWithFiles = directoryToLookIn.toFile();
 
-	if ( !directoryWithFiles.exists() || !directoryWithFiles.canRead()
-	     || !directoryWithFiles.isDirectory() )
+        if ( !directoryWithFiles.exists() || !directoryWithFiles.canRead()
+             || !directoryWithFiles.isDirectory() )
         {
-	    throw new IllegalArgumentException( "Could not read a directory at "
-						+ directoryToLookIn );
+            throw new IllegalArgumentException( "Could not read a directory at "
+                                                + directoryToLookIn );
         }
 
         String[] files = directoryToLookIn.toFile().list();
@@ -564,8 +568,8 @@ public class SystestsScenarioRunner
         /*
         System.out.println(file.toString() + '\n' +
                 searchFor + '\n' +
-		replace + '\n' +
-		line);
+        replace + '\n' +
+        line);
         */
         if ( file.exists() )
         {
@@ -677,14 +681,16 @@ public class SystestsScenarioRunner
      */
     static Path getBaseDirectory()
     {
-	String baseDirectoryFromEnvVar = System.getenv( "TESTS_DIR" );
+        String baseDirectoryFromEnvVar = System.getenv( "TESTS_DIR" );
 
-	if ( baseDirectoryFromEnvVar == null || baseDirectoryFromEnvVar.isEmpty() )
-	{
-	    throw new IllegalStateException( "Expected an environment variable TESTS_DIR" );
-	}
+        if ( baseDirectoryFromEnvVar == null
+             || baseDirectoryFromEnvVar.isEmpty() )
+        {
+            throw new IllegalStateException(
+                    "Expected an environment variable TESTS_DIR" );
+        }
 
-	return Paths.get( baseDirectoryFromEnvVar );
+        return Paths.get( baseDirectoryFromEnvVar );
     }
 
 } // end this class
