@@ -152,7 +152,7 @@ public final class TimeScale implements Comparable<TimeScale>
      * 
      * @param config the configuration
      * @return a time scale
-     * @throws NullPointerException if either input is null
+     * @throws NullPointerException if either input is null or expected contents is null
      * @throws IllegalArgumentException if the enum that describes the function associated with the input is non-null 
      *            and its name does not match the name of a {@link TimeScaleFunction}
      */

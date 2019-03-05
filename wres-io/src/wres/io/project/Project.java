@@ -12,6 +12,7 @@ import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -457,7 +458,7 @@ public class Project
             }
         }
 
-        // return the last common time-step of all 
+        // Return the least common time-step of all 
         // ingested sources
         return this.leastCommonTimeStep;
     }
@@ -472,8 +473,8 @@ public class Project
     private static boolean isValidateDesiredTimeScaleAgainstEachIngestedSourceInProduction()
     {
         return false;
-    }
-
+    }    
+    
     /**
      * <p> Sets and validates the time scale and time step at which evaluation should be conducted.
      * 
@@ -557,16 +558,25 @@ public class Project
             }
         }
 
-        // Validate the desired time scale against each existing one
-        LOGGER.debug( "Found {} distinct time scales across all ingested sources. "
-                      + "Validating each against the desired time scale of {}.",
-                      existingScalesAndSteps.size(),
-                      desiredScale );
-
-        // TODO: only validate when in production - remove the first check on resolving #58715
+        // Validate the desired time scale against each existing one        
         if ( Project.isValidateDesiredTimeScaleAgainstEachIngestedSourceInProduction()
              && Objects.nonNull( desiredScale ) )
         {
+            LOGGER.debug( "Found {} distinct time scales across all ingested sources. "
+                          + "Validating each against the desired time scale of {}.",
+                          existingScalesAndSteps.size(),
+                          desiredScale );
+
+            Project.validateTimeScale( Collections.unmodifiableSet( leftScalesAndSteps ),
+                                       desiredScale,
+                                       LeftOrRightOrBaseline.LEFT );
+            Project.validateTimeScale( Collections.unmodifiableSet( rightScalesAndSteps ),
+                                       desiredScale,
+                                       LeftOrRightOrBaseline.RIGHT );
+            Project.validateTimeScale( Collections.unmodifiableSet( baselineScalesAndSteps ),
+                                       desiredScale,
+                                       LeftOrRightOrBaseline.BASELINE );
+
             final TimeScale finalDesiredScale = desiredScale;
             // Only check where the existing scale is known
             existingScalesAndSteps.stream()
@@ -592,6 +602,50 @@ public class Project
         this.leastCommonTimeStep = leastCommonStep;
     }
 
+    /**
+     * Validates each of the existing time scales and time steps in the input against the 
+     * desired time scale. 
+     * 
+     * @param existingScalesAndSteps the existing time scale and step information
+     * @param desiredTimeScale the desired time scale
+     * @param dataType the data type to validate, which helps with messaging
+     * @throws a RescalingException if a proposed change of time scale is invalid
+     * @throws NullPointerException if any input is null
+     */
+
+    private static void validateTimeScale( Set<Pair<TimeScale, Duration>> existingScalesAndSteps,
+                                           TimeScale desiredTimeScale,
+                                           LeftOrRightOrBaseline dataType )
+    {
+        Objects.requireNonNull( existingScalesAndSteps );
+        
+        Objects.requireNonNull( desiredTimeScale );
+        
+        Objects.requireNonNull( dataType );        
+        
+        final TimeScale finalDesiredScale = desiredTimeScale;
+        // Only check where the existing scale and the time step is known
+        existingScalesAndSteps.stream()
+                              .filter( p -> Objects.nonNull( p.getLeft() ) && Objects.nonNull( p.getRight() ) )
+                              .forEach( pair -> {
+                                  try
+                                  {
+                                      MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( pair.getLeft(),
+                                                                                             finalDesiredScale,
+                                                                                             pair.getRight() );
+                                  }
+                                  // Annotate and propagate
+                                  catch ( RescalingException e )
+                                  {
+                                      throw new RescalingException( "Failed to validate the time scale and time step "
+                                                                    + "information associated with one or more '"
+                                                                    + dataType
+                                                                    + "' sources.",
+                                                                    e );
+                                  }
+                              } );
+    }
+    
     /**
      * Returns the {@link TimeScale} and time-step information for each source associated with the
      * input declaration. The time-step is represented as a {@link Duration}.
@@ -659,8 +713,6 @@ public class Project
                 {
                     DataScripter observed = ProjectScriptGenerator.createObservedTimeRetriever( this.getId(),
                                                                                                 this.getFeatures(),
-                                                                                                this.getMinimumLead(),
-                                                                                                this.getMaximumLead(),
                                                                                                 sourceType );
                     existingTimeScales.addAll( this.getTimeScaleAndTimeStep( observed, dataSourceConfig, sourceType ) );
                 }
@@ -670,8 +722,6 @@ public class Project
             {
                 DataScripter observed = ProjectScriptGenerator.createObservedTimeRetriever( this.getId(),
                                                                                             this.getFeatures(),
-                                                                                            this.getMinimumLead(),
-                                                                                            this.getMaximumLead(),
                                                                                             sourceType );
 
                 existingTimeScales.addAll( this.getTimeScaleAndTimeStep( observed, dataSourceConfig, sourceType ) );
@@ -682,7 +732,7 @@ public class Project
         // No time scales: warn about this
         if ( existingTimeScales.isEmpty() )
         {
-            LOGGER.warn( "Could not find the time-scale information for any ingested source." );
+            LOGGER.warn( "Could not find the time-scale information for any {} source.", sourceType );
         }
     
         return java.util.Collections.unmodifiableSet( existingTimeScales );
@@ -2748,6 +2798,8 @@ public class Project
 
 
     /**
+     * TODO: return a {@link Duration}
+     * 
      * @return the minimum value specified or a default of Integer.MIN_VALUE
      */
     public int getMinimumLead()
@@ -2771,6 +2823,8 @@ public class Project
     }
 
     /**
+     * TODO: return a {@link Duration}
+     * 
      * @return the maximum value specified or a default of Integer.MAX_VALUE
      */
     public int getMaximumLead()
@@ -3231,13 +3285,25 @@ public class Project
             // were recognized as instantaneous by TimeScale::isInstantaneous
             if ( this.warnOnInstantaneous.get() )
             {
+                // Print the raw period and function for the two time scales
+                String warnScaleString = "[" + this.warnTimeScale.getPeriod()
+                                         + ","
+                                         +
+                                         this.warnTimeScale.getFunction()
+                                         + "]";
+                String declaredScaleString = "[" + this.declaredExistingTimeScale.getPeriod()
+                                             + ","
+                                             +
+                                             this.declaredExistingTimeScale.getFunction()
+                                             + "]";
+
                 LOGGER.warn( "The existing time scale information in the project declaration is "
                              + "inconsistent with the time scale information obtained from one "
                              + "or more {} sources, but both are recognized as 'INSTANTANEOUS' "
                              + "and, therefore, allowed. Source says: {}. Declaration says: {}.",
                              this.sourceType,
-                             this.warnTimeScale,
-                             this.declaredExistingTimeScale );
+                             warnScaleString,
+                             declaredScaleString );
             }
 
             // Warn when one or more instances had no time scale information

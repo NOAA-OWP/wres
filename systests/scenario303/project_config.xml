@@ -31,11 +31,6 @@
             <latestMonth>3</latestMonth>
             <latestDay>31</latestDay>
         </season>
-        <desiredTimeScale>
-            <function>none</function>
-            <period>6</period>
-            <unit>hours</unit>
-        </desiredTimeScale>
     </pair>
 
     <metrics>

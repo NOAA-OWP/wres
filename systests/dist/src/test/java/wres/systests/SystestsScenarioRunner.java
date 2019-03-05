@@ -1,6 +1,5 @@
 package wres.systests;
 
-
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 import static junit.framework.TestCase.fail;
@@ -34,95 +33,77 @@ import wres.control.Control;
 import wres.io.Operations;
 
 /**
- * A class to be used to run system testing scenarios of the WRES.  The class makes use of environment variables
- * to identify the system tests directory (which will be the working directory for executions), WRES database
- * information, and the logging level.  It then sets up appropriate Java system properties before running the 
- * WRES.  After construction, the methods to call are then controlled from the external caller.  The choices
- * are provided as public methods below.  
+ * A class to be used to when setting up system test scenarios of the WRES.
+ *
+ * The class makes optional use of environment variables to identify the system
+ * tests directory (which will typically be the working directory for
+ * executions), and WRES database information.
+ *
+ * It then passes through environment variables to  already-unset Java system
+ * properties before running the WRES.
  * @author Raymond.Chui
  * @author Hank.Herr
- *
+ * @author jesse.bickel
  */
+
 public class SystestsScenarioRunner
 {
+    static final String USUAL_EVALUATION_FILE_NAME = "project_config.xml";
 
-    /**
-     * The path to the system tests directory.
-     */
-    private Path systemTestsDirPath = null;
-
-    /**
-     * The name of the scenario.
-     */
-    private String scenarioName = null;
-
-    /**
-     * A {@link File} to specify the scenario directory.
-     */
-    private File scenarioDir = null;
-
-    /**
-     * The {@link Control} instance that is used to run WRES.
-     */
-    private Control wresControl = null;
-
-    /**
-    * Wrapper on {@link Operations#cleanDatabase()}.
-     * @throws SQLException 
-     * @throws IOException 
-    */
-    public static void assertCleanDatabase()
+    private SystestsScenarioRunner()
     {
-        try
-        {
-            Operations.cleanDatabase();
-        }
-        catch ( IOException e )
-        {
-            e.printStackTrace();
-            fail( "IOException occurred while cleaning the database: " + e.getMessage() );
-        }
-        catch ( SQLException e )
-        {
-            e.printStackTrace();
-            fail( "IOException occurred while cleaning the database: " + e.getMessage() );
-        }
-    }
-
-    /**
-     * @param systemTestsDir  A {@link Path} specifying the system testing directory.
-     * @param scenarioName The name of a scenario corresponding to a subdirectory within the system testing directory.
-     */
-    public SystestsScenarioRunner( String scenarioName )
-    {
-        this.systemTestsDirPath = Paths.get( System.getenv( "TESTS_DIR" ) );
-        this.scenarioName = scenarioName;
-        this.scenarioDir = new File( this.systemTestsDirPath.toFile(), this.scenarioName );
-        setAllPropertiesFromEnvVars();
+        // Static utility helper class, disallow construction.
     }
 
     /**
      * Sets the properties which drive the system testing.  These use system environment variables in order
      * to set Java system properties.
      */
-    private void setAllPropertiesFromEnvVars()
+    static void setAllPropertiesFromEnvVars( String scenarioName )
     {
         //I was thinking about moving these to the SystemTestSuiteRunner, since they will always result
         //in the same properties across all of the suite tests.  However, I want to allow for individual
         //execution of the system tests, which would not be done via the suite.  For that reason, I'm
         //leaving it here.
 
-        Properties props = System.getProperties();
-        props.setProperty( "wres.hostname", System.getenv( "WRES_DB_HOSTNAME" ) );
-        props.setProperty( "wres.url", System.getenv( "WRES_DB_HOSTNAME" ) );
-        props.setProperty( "wres.databaseName", System.getenv( "WRES_DB_NAME" ) );
-        props.setProperty( "wres.username", System.getenv( "WRES_DB_USERNAME" ) );
-        props.setProperty( "wres.logLevel", System.getenv( "WRES_LOG_LEVEL" ) );
-        props.setProperty( "wres.password", System.getenv( "WRES_DB_PASSWORD" ) );
-        
-        //TODO Modify this later if we ever change how the outputs are directed to a different
-        //tmp directory.
-        props.setProperty( "java.io.tmpdir", System.getenv( "TESTS_DIR" ) + "/" + scenarioName ); 
+        /*
+            //TODO Modify this later if we ever change how the outputs are directed to a different
+            //tmp directory.
+        */
+
+        String dbHostFromEnvVar = System.getenv( "WRES_DB_HOSTNAME" );
+        String dbHostFromSysProp = System.getProperty( "wres.url" );
+
+        if ( dbHostFromSysProp == null && dbHostFromEnvVar != null
+             && !dbHostFromEnvVar.isEmpty() )
+        {
+            System.setProperty( "wres.url", dbHostFromEnvVar );
+        }
+
+        String dbNameFromEnvVar = System.getenv( "WRES_DB_NAME" );
+        String dbNameFromSysProp = System.getProperty( "wres.databaseName" );
+
+        if ( dbNameFromSysProp == null && dbNameFromEnvVar != null
+             && !dbNameFromEnvVar.isEmpty() )
+        {
+            System.setProperty( "wres.databaseName", dbNameFromEnvVar );
+        }
+
+        String dbUserFromEnvVar = System.getenv( "WRES_DB_USERNAME" );
+        String dbUserFromSysProp = System.getProperty( "wres.username" );
+
+        if ( dbUserFromSysProp == null && dbUserFromEnvVar != null
+             && !dbUserFromEnvVar.isEmpty() )
+        {
+            System.setProperty( "wres.username", dbUserFromEnvVar );
+        }
+
+        // Passphrase should be got from postgres passphrase file. -Jesse
+        // I thinks it's too late to attempt to set log level here. -Jesse
+
+        System.setProperty( "java.io.tmpdir",
+                            getBaseDirectory().resolve( scenarioName )
+                                              .toString() );
 
         System.out.println( "Properties used to run test:" );
         System.out.println( "    wres.hostname = " + System.getProperty( "wres.hostname" ) );
@@ -138,13 +119,22 @@ public class SystestsScenarioRunner
 
     /**
     * Delete wres_evaluation_output_* from previous run.
-    * @param testScenarioDir The directory in which to look for evaluation output subdirectories.
+    * @param directoryToLookIn The directory in which to look for evaluation output subdirectories.
     * @return True if anything is deleted, false otherwise.
-    * @throws IOException 
+    * @throws IOException
     */
-    public void assertDeletionOfOldOutputDirectories()
+    public static void deleteOldOutputDirectories( Path directoryToLookIn )
     {
-        String[] files = scenarioDir.list();
+        File directoryWithFiles = directoryToLookIn.toFile();
+
+        if ( !directoryWithFiles.exists() || !directoryWithFiles.canRead()
+             || !directoryWithFiles.isDirectory() )
+        {
+            throw new IllegalArgumentException( "Could not read a directory at "
+                                                + directoryToLookIn );
+        }
+
+        String[] files = directoryToLookIn.toFile().list();
 
         //Search the files for anything that appears to be wres evaluation output and remove the entire directory.
         try
@@ -153,8 +143,7 @@ public class SystestsScenarioRunner
             {
                 if ( files[i].startsWith( "wres_evaluation_output" ) )
                 {
-                    Path outputPath =
-                            FileSystems.getDefault().getPath( scenarioDir.getCanonicalPath() + "/" + files[i] );
+                    Path outputPath = directoryToLookIn.resolve( files[i] );
                     System.out.println( "Deleting old system testing output directory, "
                                         + outputPath.toFile().getAbsolutePath() );
                     FileUtils.deleteDirectory( outputPath.toFile() );
@@ -168,56 +157,15 @@ public class SystestsScenarioRunner
         }
     }
 
-    /**
-     * Execute the named project configuration file and assert a successful execution with valid
-     * output. 
-     * 
-     * @param projectConfigFileName 
-     * @return The exit code returned by the call to method {@link Control#apply(String[])}.
-     * @throws IOException If the project configuration file cannot be read.  This likely indicates that the 
-     * system test was not setup properly; hence the exception instead of a result code.
-     */
-    public void assertProjectExecution()
-    {
-        //Dump the contents of the project configuration file to a String.
-        String xmlString = "";
-        try
-        {
-            byte[] encoded;
-            Path configFilePath = Paths.get( scenarioDir.getAbsolutePath(), "project_config.xml" );
-            encoded = Files.readAllBytes( configFilePath );
-            xmlString = new String( encoded );
-        }
-        catch ( IOException e )
-        {
-            e.printStackTrace();
-            fail( "Unable to read project configuration into String: " + e.getMessage() );
-        }
-
-        //Execute the control and return the exit code if its not zero.  No need to go further.
-        wresControl = new Control();
-
-        //Note that this command may error out essentially ending the JUnit execution.
-        //However, if it doesn't error out and, instead, the exit code indicates a problem,
-        //that will be caught in the assert that follows.
-        int exitCode = (int) wresControl.apply( new String[] { xmlString } );
-        assertEquals( "Execution of WRES failed with exit code " + exitCode
-                      + "; see log for more information!",
-                      0,
-                      exitCode );
-
-        //Assert valid output.
-        assertWRESOutputValid();
-    }
 
     /**
      * Checks for output validity from WRES and fails if not.
      */
-    private void assertWRESOutputValid()
+    static void assertWRESOutputValid( Control completedEvaluation )
     {
         //Obtain the complete list of outputs generated.
-        Set<Path> initialOutputSet = wresControl.get();
-        
+        Set<Path> initialOutputSet = completedEvaluation.get();
+
         //Confirm all outputs were written to the same directory.
         if ( !initialOutputSet.isEmpty() )
         {
@@ -238,23 +186,24 @@ public class SystestsScenarioRunner
     }
 
     /**
-     * This builds the dirListing.txt file for that directory and then compares all of the 
+     * This builds the dirListing.txt file for that directory and then compares all of the
      * outputs.  Anything in the output directory that has a corresponding benchmark will be diffed.  If anything
-     * in the benchmarks is not found in the outputs, then a difference is reported; this should be equivalent to 
+     * in the benchmarks is not found in the outputs, then a difference is reported; this should be equivalent to
      * check dirListing.txt, in that something in the benchmarks but not in the output should result in a dirListing.txt
      * difference, but I wanted to be certain nothing fell through the cracks.  <br>
      * <br>
-     * If exceptions are thrown when calling this method, it indicates something basic went wrong that is not 
-     * covered by the result code return.  Typically, that will be due to a system test setup poorly for 
+     * If exceptions are thrown when calling this method, it indicates something basic went wrong that is not
+     * covered by the result code return.  Typically, that will be due to a system test setup poorly for
      * any one of various reasons, so it excepts out.
      * @return The comparison result code.
      * @throws IllegalStateException Indicates that the outputs were written to different directories.  Its expected that all
      * system test output is written to the same directory.
      * @throws IOException If the directory listing file cannot be generated or the files cannot be compared.
      */
-    public void assertOutputsMatchBenchmarks()
+    static void assertOutputsMatchBenchmarks( Scenario scenarioInfo,
+                                              Control completedEvaluation )
     {
-        Set<Path> initialOutputSet = wresControl.get();
+        Set<Path> initialOutputSet = completedEvaluation.get();
         Path dirListingPath;
         try
         {
@@ -263,7 +212,8 @@ public class SystestsScenarioRunner
             finalOutputSet.add( dirListingPath );
 
             int resultCode;
-            resultCode = compareOutputAgainstBenchmarks( finalOutputSet );
+            resultCode = compareOutputAgainstBenchmarks( scenarioInfo,
+                                                         finalOutputSet );
             assertEquals( "Camparison with benchmarks failed with code " + resultCode + ".", 0, resultCode );
         }
         catch ( IllegalStateException e )
@@ -279,12 +229,13 @@ public class SystestsScenarioRunner
     }
 
     /**
-     * Constructs the dirListing.txt file for the outputs generated.  
+     * Constructs the dirListing.txt file for the outputs generated.
      * @param generatedOutputs It is assumed that all outputs are generated in the same directory.
      * @return The {@link Path} to the directory listing file created.
      * @throws IOException
      */
-    private Path constructDirListingFile( Set<Path> generatedOutputs ) throws IOException
+    private static Path constructDirListingFile( Set<Path> generatedOutputs )
+            throws IOException
     {
         //Gather the list of file names.
         List<String> sortedOutputsGenerated = new ArrayList<>();
@@ -312,10 +263,13 @@ public class SystestsScenarioRunner
      * @param evaluationPath -- evaluation directory path
      * @return 0 no errors; 2 output not found; 4 sort failed; 8 found diff in txt files; 16 found diff in sorted_pairs; 32 found diff in csv files
      */
-    private int compareOutputAgainstBenchmarks( Set<Path> generatedOutputs ) throws IOException, IllegalStateException
+    private static int compareOutputAgainstBenchmarks( Scenario scenarioInfo,
+                                                       Set<Path> generatedOutputs )
+            throws IOException, IllegalStateException
     {
         //Establish the benchmarks directory and obtain a listing of all benchmarked files.
-        Path benchmarksPath = Paths.get( scenarioDir.getAbsolutePath(), "benchmarks" );
+        Path benchmarksPath = scenarioInfo.getScenarioDirectory()
+                                          .resolve( "benchmarks" );
         File benchmarksDir = benchmarksPath.toFile();
         List<String> benchmarkedFiles = new ArrayList<>();
         if ( benchmarksDir.exists() && benchmarksDir.isDirectory() )
@@ -393,12 +347,12 @@ public class SystestsScenarioRunner
 
 
     /**
-     * 
+     *
      * @param outputFilePath Output file for which to identify the benchmark.
      * @param benchmarkDirPath The directory for benchmarks.
      * @return The file identified or null if none if no appropriate file is found.
      */
-    private File identifyBenchmarkFile( Path outputFilePath, Path benchmarkDirPath )
+    private static File identifyBenchmarkFile( Path outputFilePath, Path benchmarkDirPath )
     {
         File benchmarkFile = null;
         File outputFile = outputFilePath.toFile();
@@ -428,14 +382,14 @@ public class SystestsScenarioRunner
     }
 
     /**
-     * Asserts that the provided file matches that found in the benchmarks, if one exists.  This method will 
+     * Asserts that the provided file matches that found in the benchmarks, if one exists.  This method will
      * only work with text files.  However, as long as binary files are benchmarked, you can pass binary files
-     * into this method and it won't do anything with them because the benchmark won't exist.  
+     * into this method and it won't do anything with them because the benchmark won't exist.
      * @param outputFile
      * @param benchmarkFile
-     * @throws IOException 
+     * @throws IOException
      */
-    private void assertOutputTextFileMatchesExpected( File outputFile, File benchmarkFile ) throws IOException
+    private static void assertOutputTextFileMatchesExpected( File outputFile, File benchmarkFile ) throws IOException
     {
         //Ensure that the output is a readable file.  The benchmark file has already been established as such.
         assertTrue( outputFile.isFile() && outputFile.canRead() );
@@ -448,10 +402,10 @@ public class SystestsScenarioRunner
         assertTrue( actualRows.size() > 0 && expectedRows.size() > 0 );
         assertEquals( actualRows.size(), expectedRows.size() );
 
-        // Verify by row, rather than all at once        
+        // Verify by row, rather than all at once
         for ( int i = 0; i < actualRows.size(); i++ )
         {
-            //TODO Added trimming below to handle white space at the ends, but should I? 
+            //TODO Added trimming below to handle white space at the ends, but should I?
             //Mainly worried about the Window's carriage return popping up some day.
             assertEquals( "For output file, " + outputFile.getName()
                           + ", row "
@@ -463,12 +417,12 @@ public class SystestsScenarioRunner
     }
 
     /**
-     * Asserts that the output pairs are equal to a benchmark file, if one exists.  
+     * Asserts that the output pairs are equal to a benchmark file, if one exists.
      * @param pairsFile
      * @param benchmarkDirPath
      * @throws IOException
      */
-    private void assertOutputPairsEqualExpectedPairs( File pairsFile, File benchmarkFile ) throws IOException
+    private static void assertOutputPairsEqualExpectedPairs( File pairsFile, File benchmarkFile ) throws IOException
     {
         //Ensure that the output is a readable file.  The benchmark file has already been established as such.
         assertTrue( pairsFile.isFile() && pairsFile.canRead() );
@@ -485,7 +439,7 @@ public class SystestsScenarioRunner
         Collections.sort( actualRows );
         Collections.sort( expectedRows );
 
-        // Verify by row, rather than all at once        
+        // Verify by row, rather than all at once
         for ( int i = 0; i < actualRows.size(); i++ )
         {
             assertEquals( "For pairs file file, " + pairsFile.getName()
@@ -503,11 +457,11 @@ public class SystestsScenarioRunner
     //===================================================================================================================
 
     /**
-    * if there is a after script, do it now 
+    * if there is a after script, do it now
     * @param files -- a list of files
     * @return -- false if there is no after script; Otherwise, true
     */
-    public boolean doAfter( String[] files )
+    static boolean doAfter( String[] files )
     {
         boolean isABeforeScript = false;
         for ( int i = 0; i < files.length; i++ )
@@ -527,7 +481,7 @@ public class SystestsScenarioRunner
     * @param files -- a list of files
     * @return -- false if there is no before script; Otherwise, true
     */
-    public boolean doBefore( String[] files )
+    static boolean doBefore( String[] files )
     {
         boolean isABeforeScript = false;
         for ( int i = 0; i < files.length; i++ )
@@ -549,14 +503,14 @@ public class SystestsScenarioRunner
     * @param replace -- a string to replace
     * @param line -- a specify line number search/replace, or 'g' for global
     */
-    public void searchAndReplace( String fileName, String searchFor, String replace, String line )
+    static void searchAndReplace( String fileName, String searchFor, String replace, String line )
     {
         File file = Paths.get( System.getProperty( "user.dir" ) + "/" + fileName ).toFile();
         /*
         System.out.println(file.toString() + '\n' +
-        	searchFor + '\n' +
-        	replace + '\n' +
-        	line);
+                searchFor + '\n' +
+        replace + '\n' +
+        line);
         */
         if ( file.exists() )
         {
@@ -608,7 +562,7 @@ public class SystestsScenarioRunner
     * Search for token File=, Search=, Replace=, and Line= from a file
     * @param fileName -- a before.sh or after.sh shell script
     */
-    public void searchAndReplace( String fileName )
+    static void searchAndReplace( String fileName )
     {
         File file = Paths.get( fileName ).toFile();
         if ( file.exists() )
@@ -662,4 +616,22 @@ public class SystestsScenarioRunner
             System.err.println( "File " + file.getPath() + " doesn't existed." );
         }
     } // end method
+
+    /**
+     * Return the directory where system test project configs and data live.
+     */
+    static Path getBaseDirectory()
+    {
+        String baseDirectoryFromEnvVar = System.getenv( "TESTS_DIR" );
+
+        if ( baseDirectoryFromEnvVar == null
+             || baseDirectoryFromEnvVar.isEmpty() )
+        {
+            throw new IllegalStateException(
+                    "Expected an environment variable TESTS_DIR" );
+        }
+
+        return Paths.get( baseDirectoryFromEnvVar );
+    }
+
 } // end this class

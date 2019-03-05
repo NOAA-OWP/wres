@@ -139,7 +139,7 @@ public final class MetadataHelperTest
                                                                           TimeScaleFunction.UNKNOWN ),
                                                             TimeScale.of( Duration.ofHours( 2 ),
                                                                           TimeScaleFunction.MEAN ) ) );
-        
+
         // Different functions: true
         assertTrue( MetadataHelper.isChangeOfScaleRequired( TimeScale.of( Duration.ofHours( 1 ),
                                                                           TimeScaleFunction.MEAN ),
@@ -157,7 +157,7 @@ public final class MetadataHelperTest
                                                              TimeScale.of( Duration.ofSeconds( 1 ) ) ) );
 
     }
-    
+
     /**
      * Checks for an expected exception when calling 
      * {@link MetadataHelper#throwExceptionIfChangeOfScaleIsInvalid(TimeScale, TimeScale, java.time.Duration)} with
@@ -215,7 +215,7 @@ public final class MetadataHelperTest
     public void testThrowExceptionIfTimeStepIsZero()
     {
         exception.expect( RescalingException.class );
-        exception.expectMessage( "The time-step duration cannot be zero for rescaling purposes." );
+        exception.expectMessage( "The period associated with the time-step cannot be zero when rescaling." );
 
         MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( TimeScale.of( Duration.ofMillis( 1 ) ),
                                                                TimeScale.of( Duration.ofMillis( 1 ) ),
@@ -232,7 +232,7 @@ public final class MetadataHelperTest
     public void testThrowExceptionIfTimeStepIsNegative()
     {
         exception.expect( RescalingException.class );
-        exception.expectMessage( "The time-step duration cannot be negative for rescaling purposes." );
+        exception.expectMessage( "The period associated with the time-step cannot be negative when rescaling." );
 
         MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( TimeScale.of( Duration.ofMillis( 1 ) ),
                                                                TimeScale.of( Duration.ofMillis( 1 ) ),
@@ -318,31 +318,6 @@ public final class MetadataHelperTest
     /**
      * Checks for an expected exception when calling 
      * {@link MetadataHelper#throwExceptionIfChangeOfScaleIsInvalid(TimeScale, TimeScale, java.time.Duration)} with
-     * a desired time scale whose function is a {@link TimeScaleFunction#TOTAL} and the existing time scale has a 
-     * function that is not a {@link TimeScaleFunction#TOTAL}.
-     */
-
-    @Test
-    public void testThrowExceptionIfAccumulatingNonAccumulations()
-    {
-        exception.expect( RescalingException.class );
-        exception.expectMessage( "Cannot accumulate values that are not already accumulations. The "
-                                 + "function associated with the existing time scale must be a '"
-                                 + TimeScaleFunction.TOTAL
-                                 + "' or the function associated with the desired time scale must "
-                                 + "be changed." );
-
-        MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( TimeScale.of( Duration.ofHours( 1 ),
-                                                                             TimeScaleFunction.MAXIMUM ),
-                                                               TimeScale.of( Duration.ofHours( 10 ),
-                                                                             TimeScaleFunction.TOTAL ),
-                                                               Duration.ofMillis( 1 ) );
-    }
-
-
-    /**
-     * Checks for an expected exception when calling 
-     * {@link MetadataHelper#throwExceptionIfChangeOfScaleIsInvalid(TimeScale, TimeScale, java.time.Duration)} with
      * a data time-step that exceeds the period associated with the desired time scale.
      */
 
@@ -421,23 +396,61 @@ public final class MetadataHelperTest
     /**
      * Checks for an expected exception when calling 
      * {@link MetadataHelper#throwExceptionIfChangeOfScaleIsInvalid(TimeScale, TimeScale, java.time.Duration)} with
-     * an existing time scale that represents instantaneous data, an expected time-scale is a 6h accumulation and a 
-     * time-step that is 6h. This represents issue #45113.
+     * an existing time scale that represents a 1 hour mean, an expected time-scale that is a 6h accumulation and a 
+     * time-step that is 6h.
      */
 
     @Test
-    public void testThrowExceptionWhenForming6HAccumulationFrom6HInst()
+    public void testThrowExceptionWhenForming6HAccumulationFrom1HMean()
     {
         exception.expect( RescalingException.class );
         exception.expectMessage( "Cannot accumulate values that are not already accumulations. The function associated "
-                                 + "with the existing time scale must be a 'TOTAL' or the function associated with the desired time "
-                                 + "scale must be changed." );
+                                 + "with the existing time scale must be a 'TOTAL', rather than a 'MEAN', or the "
+                                 + "function associated with the desired time scale must be changed." );
+
+        MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( TimeScale.of( Duration.ofHours( 1 ),
+                                                                             TimeScaleFunction.MEAN ),
+                                                               TimeScale.of( Duration.ofHours( 6 ),
+                                                                             TimeScaleFunction.TOTAL ),
+                                                               Duration.ofHours( 6 ) );
+
+    }
+
+    /**
+     * Checks for an expected exception when calling 
+     * {@link MetadataHelper#throwExceptionIfChangeOfScaleIsInvalid(TimeScale, TimeScale, java.time.Duration)} with
+     * an existing time scale that represents instantaneous data, an expected time-scale that is a 6h accumulation 
+     * and a time-step that is 6h. This represents issue #45113.
+     */
+
+    @Test
+    public void testThrowExceptionWhenAccumulatingInst()
+    {
+        exception.expect( RescalingException.class );
+        exception.expectMessage( "Cannot accumulate instantaneous values. Change the existing time scale or "
+                                 + "change the function associated with the desired time scale to "
+                                 + "something other than a 'TOTAL'" );
 
         MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( TimeScale.of( Duration.ofSeconds( 1 ) ),
                                                                TimeScale.of( Duration.ofHours( 6 ),
                                                                              TimeScaleFunction.TOTAL ),
                                                                Duration.ofHours( 6 ) );
 
+    }
+
+    /**
+     * Checks for the absence of an exception when calling
+     * {@link MetadataHelper#throwExceptionIfChangeOfScaleIsInvalid(TimeScale, TimeScale, java.time.Duration)} with
+     * a desired time scale whose function is a total and an existing time scale whose function is unknown.
+     */
+
+    @Test( expected = Test.None.class /* no exception expected */ )
+    public void testDoNotThrowExceptionIfAccumulatingUnknown()
+    {
+        MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( TimeScale.of( Duration.ofHours( 1 ) ),
+                                                               TimeScale.of( Duration.ofHours( 60 ),
+                                                                             TimeScaleFunction.TOTAL ),
+                                                               Duration.ofHours( 1 ) );
     }
 
     /**
