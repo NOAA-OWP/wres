@@ -551,14 +551,6 @@ public class Project
             Project.validateTimeScale( Collections.unmodifiableSet( baselineScalesAndSteps ),
                                        desiredScale,
                                        LeftOrRightOrBaseline.BASELINE );
-
-            final TimeScale finalDesiredScale = desiredScale;
-            // Only check where the existing scale is known
-            existingScalesAndSteps.stream()
-                                  .filter( p -> Objects.nonNull( p.getLeft() ) && Objects.nonNull( p.getRight() ) )
-                                  .forEach( pair -> MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( pair.getLeft(),
-                                                                                                           finalDesiredScale,
-                                                                                                           pair.getRight() ) );
         }
         
         LOGGER.debug( "Finished validating the {} existing time scales against the desired time scale.",
@@ -607,7 +599,8 @@ public class Project
                                   {
                                       MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( pair.getLeft(),
                                                                                              finalDesiredScale,
-                                                                                             pair.getRight() );
+                                                                                             pair.getRight(),
+                                                                                             dataType.toString() );
                                   }
                                   // Annotate and propagate
                                   catch ( RescalingException e )
