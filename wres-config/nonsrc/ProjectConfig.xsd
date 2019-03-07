@@ -498,7 +498,6 @@ The function that was applied to values over time to determine what was recorded
             </xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:string">
-            <xs:enumeration value="none" />
             <xs:enumeration value="total" />
             <xs:enumeration value="mean" />
             <xs:enumeration value="maximum" />
