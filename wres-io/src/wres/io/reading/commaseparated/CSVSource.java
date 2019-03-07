@@ -159,7 +159,7 @@ public class CSVSource extends BasicSource
 
     private void parseTimeSeries(final DataProvider data) throws IOException
     {
-        TimeSeries currentTimeSeries = null;
+        TimeSeries currentTimeSeries;
 
         while (data.next())
         {
@@ -174,7 +174,7 @@ public class CSVSource extends BasicSource
                 int lead = (int) TimeHelper.durationToLongUnits( Duration.between( start, valueDate ),
                                                                  TimeHelper.LEAD_RESOLUTION );
 
-                currentTimeSeries = formTimeSeries( data, ensembleId, lead );
+                currentTimeSeries = formTimeSeries( data, ensembleId);
 
                 IngestedValues.addTimeSeriesValue( currentTimeSeries.getTimeSeriesID(), lead, value );
             }
@@ -403,9 +403,8 @@ public class CSVSource extends BasicSource
         }
     }
 
-    private TimeSeries formTimeSeries(final DataProvider data, final int ensembleId, final int timeStep) throws SQLException
+    private TimeSeries formTimeSeries(final DataProvider data, final int ensembleId) throws SQLException
     {
-
         final String variable = data.getString( "variable_name" );
         final String location = data.getString( "location" );
         final String measurementUnit = data.getString( "measurement_unit" );
@@ -419,7 +418,7 @@ public class CSVSource extends BasicSource
         TimeSeries timeSeries = this.encounteredTimeSeries.get(
                 series -> series.getEnsembleId() == ensembleId &&
                           series.getInitializationDate().equals( startDate ) &&
-                          series.getVariableFeatureID() == variableFeatureId
+                          series.getVariableFeatureID().equals( variableFeatureId )
         );
 
         if (timeSeries != null)

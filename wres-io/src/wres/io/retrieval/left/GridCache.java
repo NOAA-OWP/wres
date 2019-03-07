@@ -46,22 +46,13 @@ class GridCache implements LeftHandCache
                                              LocalDateTime latestDateTime )
             throws IOException
     {
-        Request gridRequest;
-
         List<Double> leftValues = new ArrayList<>();
 
-        try
-        {
-            gridRequest = ConfigHelper.getGridDataRequest(
-                    this.project,
-                    this.project.getLeft(),
-                    feature
-            );
-        }
-        catch ( SQLException e )
-        {
-            throw new IOException( "File paths to investigate could not be determined.", e );
-        }
+        Request gridRequest = ConfigHelper.getGridDataRequest(
+                this.project,
+                this.project.getLeft(),
+                feature
+        );
 
         gridRequest.setEarliestValidTime( earliestDate.toInstant( ZoneOffset.UTC ) );
         gridRequest.setLatestValidTime( latestDateTime.toInstant( ZoneOffset.UTC ) );

@@ -3,7 +3,6 @@ package wres.io.retrieval;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.sql.SQLException;
-import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.Callable;
@@ -26,7 +25,6 @@ public class ByForecastSampleDataIterator extends SampleDataIterator
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( ByForecastSampleDataIterator.class );
 
-    private Queue<Integer> timeSeries;
 
     ByForecastSampleDataIterator( Feature feature, Project project, Path outputDirectoryForPairs)
             throws IOException
@@ -44,11 +42,6 @@ public class ByForecastSampleDataIterator extends SampleDataIterator
     protected void calculateSamples() throws CalculationException
     {
         DataScripter script;
-
-        if (this.timeSeries == null)
-        {
-            this.timeSeries = new LinkedList<>(  );
-        }
 
         if ( ConfigHelper.usesNetCDFData( this.getProject().getProjectConfig() ) ||
              ConfigHelper.usesS3Data( this.getProject().getProjectConfig() ))
@@ -79,7 +72,6 @@ public class ByForecastSampleDataIterator extends SampleDataIterator
                                              .setTimeWindow( window )
                                              .build()
                 );
-                this.timeSeries.add(provider.getInt( "timeseries_id" ));
             }
         }
         catch ( SQLException e )

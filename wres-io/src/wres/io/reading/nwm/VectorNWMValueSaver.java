@@ -150,7 +150,7 @@ class VectorNWMValueSaver extends WRESRunnable
      * should have variable positions generated for them.
      **/
     private static final Set<Integer> addedVariables =
-            Collections.synchronizedSet( new HashSet<Integer>() );
+            Collections.synchronizedSet( new HashSet<>() );
 
     /**
      * A collection of locks to use based on a series of values' context

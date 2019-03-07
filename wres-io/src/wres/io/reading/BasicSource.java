@@ -242,7 +242,6 @@ public abstract class BasicSource
     /**
      * Retrieves the results of the asynchrous hashing operation for the file
      * @return The MD5 hash of the contents of the current source file
-     * @throws IOException when anything goes wrong while getting the hash
      * @throws UnsupportedOperationException when hash was not previously requested?
      */
     protected String getHash()

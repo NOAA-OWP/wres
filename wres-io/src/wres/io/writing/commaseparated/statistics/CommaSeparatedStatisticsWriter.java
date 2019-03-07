@@ -373,7 +373,7 @@ abstract class CommaSeparatedStatisticsWriter
     /**
      * Constructor.
      *
-     * @param outputDirectory the output directory
+     * @param projectConfig the project configuration that will drive the writer logic
      * @param durationUnits the time units for lead durations
      * @param outputDirectory the directory into which to write
      * @throws ProjectConfigException if the project configuration is not valid for writing

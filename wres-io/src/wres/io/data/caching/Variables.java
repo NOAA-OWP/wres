@@ -10,7 +10,6 @@ import wres.config.generated.DataSourceConfig;
 import wres.io.data.details.VariableDetails;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
-import wres.io.utilities.ScriptBuilder;
 
 /**
  * @author Christopher Tubbs

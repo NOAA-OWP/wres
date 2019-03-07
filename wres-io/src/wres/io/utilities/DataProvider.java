@@ -240,7 +240,7 @@ public interface DataProvider extends AutoCloseable
             {
                 builders.put(
                         key,
-                        DataBuilder.with( columnNames.toArray(new String[columnNames.size()]) )
+                        DataBuilder.with( columnNames.toArray( new String[0] ) )
                 );
             }
 

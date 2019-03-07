@@ -39,10 +39,8 @@ import wres.io.retrieval.DataGenerator;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
-import wres.io.utilities.Query;
 import wres.io.writing.netcdf.NetCDFCopier;
 import wres.system.ProgressMonitor;
-import wres.system.SystemSettings;
 import wres.util.CalculationException;
 
 public final class Operations {
@@ -181,23 +179,24 @@ public final class Operations {
                 );
 
                 StringBuilder message = new StringBuilder(  );
-                message = message.append( "There is no '")
-                                 .append( project.getLeft().getVariable().getValue())
-                                 .append("' data available for the left hand data ")
-                                 .append("evaluation dataset.");
+                message.append( "There is no '")
+                       .append( project.getLeft().getVariable().getValue())
+                       .append("' data available for the left hand data ")
+                       .append("evaluation dataset.");
 
                 if (!availableVariables.isEmpty())
                 {
-                    message = message.append(" Available variable(s):");
+
+                    message.append(" Available variable(s):");
                     for (String variable : availableVariables)
                     {
-                        message = message.append(System.lineSeparator())
-                                         .append("    ").append(variable);
+                        message.append(System.lineSeparator())
+                               .append("    ").append(variable);
                     }
                 }
                 else
                 {
-                    message = message.append(" There are no other variables available for use.");
+                    message.append(" There are no other variables available for use.");
                 }
 
                 throw new NoDataException( message.toString() );

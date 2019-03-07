@@ -181,8 +181,7 @@ public final class Executor {
 
     public static int getHiPriIoExecutorQueueTaskCount()
     {
-        if ( Executor.HIGH_PRIORITY_TASKS != null
-             && Executor.HIGH_PRIORITY_TASKS.getQueue() != null )
+        if ( Executor.HIGH_PRIORITY_TASKS.getQueue() != null )
         {
             return Executor.HIGH_PRIORITY_TASKS.getQueue().size();
         }

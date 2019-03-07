@@ -21,7 +21,7 @@ class MetricVariable
     /**
      * Returns a {@link MetricVariable} for each metric result in the input, with times formatted according to the
      * specified time units.
-     * @param metricResults
+     * @param metricResults The metric output that will be written to the Netcdf
      * @param durationUnits the time units for durations
      * @return a collection of metric variables
      * @throws NullPointerException if either input is null

@@ -18,7 +18,6 @@ import wres.io.config.ConfigHelper;
 import wres.io.data.details.FeatureDetails;
 import wres.io.project.Project;
 import wres.io.utilities.DataScripter;
-import wres.io.utilities.Database;
 import wres.util.NotImplementedException;
 import wres.util.Strings;
 
@@ -291,15 +290,11 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         {
             return true;
         }
+
         // If we are using USGS data, we need a gageID or we won't be
         // able to retrieve data. Gages must have at least 8 digits
-        else if (usesUSGS && Strings.hasValue( feature.getGageID() ) &&
-                 feature.getGageID().length() >= 8 && !usesNetCDF)
-        {
-            return true;
-        }
-
-        return false;
+        return usesUSGS && Strings.hasValue( feature.getGageID() ) &&
+               feature.getGageID().length() >= 8 && !usesNetCDF;
     }
 
     private static Set<FeatureDetails> getAllDetails(Feature feature)
@@ -395,9 +390,9 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
      *     Retrieving data is currently reliant on a WKT. RFCs and bounding
      *     boxes should be implemented later.
      * </p>
-     * @param projectConfig
-     * @return
-     * @throws SQLException
+     * @param projectConfig The project configuration that holds the specifications for what gridded features to use
+     * @return The list of feature details to use for evaluation
+     * @throws SQLException Thrown if an issue is encountered while running the script in the database
      */
     private static List<FeatureDetails> getSpecifiedGriddedFeatures(ProjectConfig projectConfig) throws SQLException
     {

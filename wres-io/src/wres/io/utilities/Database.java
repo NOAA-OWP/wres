@@ -1035,10 +1035,14 @@ public final class Database {
         return new SQLDataProvider( connection, query.call( connection ) );
     }
 
-    public static <V> V retrieve( final Query query, final String label, final boolean isHighPriority) throws SQLException
+    static <V> V retrieve( final Query query, final String label, final boolean isHighPriority) throws SQLException
     {
         try(DataProvider data = Database.getData( query, isHighPriority ))
         {
+            if (data.isEmpty())
+            {
+                return null;
+            }
             return data.getValue( label );
         }
     }
@@ -1095,7 +1099,7 @@ public final class Database {
         return Database.submit( queryToSubmit );
     }
 
-    public static Future issue( final Query query, final boolean isHighPriority)
+    static Future issue( final Query query, final boolean isHighPriority)
     {
         WRESRunnable queryToIssue = new WRESRunnable() {
             @Override
@@ -1144,7 +1148,11 @@ public final class Database {
         scriptBuilder.addTab().addLine(")");
         scriptBuilder.addLine(") AS orphans_exist;");
 
-        return Database.retrieve( Query.withScript( scriptBuilder.toString() ), "orphans_exist", false );
+        Boolean thereAreOrphans = Database.retrieve(
+                Query.withScript( scriptBuilder.toString() ), "orphans_exist", false
+        );
+
+        return thereAreOrphans != null && thereAreOrphans;
     }
 
     /**

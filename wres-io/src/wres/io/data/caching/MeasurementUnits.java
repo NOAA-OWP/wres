@@ -8,8 +8,6 @@ import org.slf4j.LoggerFactory;
 import wres.io.data.details.MeasurementDetails;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
-import wres.io.utilities.Database;
-import wres.io.utilities.ScriptBuilder;
 import wres.util.Collections;
 
 /**

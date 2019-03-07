@@ -19,7 +19,6 @@ import ucar.nc2.NetcdfFileWriter;
 import wres.config.generated.DestinationConfig;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.statistics.DoubleScoreStatistic;
-import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.io.config.ConfigHelper;
 
 class NetcdfOutputFileCreator

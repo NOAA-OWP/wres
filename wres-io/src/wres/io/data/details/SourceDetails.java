@@ -279,9 +279,7 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
 
 		@Override
 		public boolean equals(Object obj) {
-	        return obj != null &&
-				   obj instanceof SourceKey &&
-				   obj.hashCode() == this.hashCode();
+	        return obj instanceof SourceKey && obj.hashCode() == this.hashCode();
 		}
 
 		@Override

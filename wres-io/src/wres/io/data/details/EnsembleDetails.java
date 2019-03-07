@@ -118,11 +118,7 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 	{
 	    int comparison = 0;
 
-        if (this.ensembleName == null && other.ensembleName == null)
-        {
-            comparison = 0;
-        }
-        else if (this.ensembleName != null && other.ensembleName != null)
+        if (this.ensembleName != null && other.ensembleName != null)
         {
             comparison = this.ensembleName.compareTo( other.ensembleName );
         }
@@ -130,7 +126,7 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
         {
             comparison = 1;
         }
-        else
+        else if (other.ensembleName != null)
         {
             comparison = -1;
         }
@@ -330,32 +326,9 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 
 	    EnsembleKey(String ensembleName, String qualifierID, Integer memberIndex)
 	    {
-	    	if (ensembleName == null)
-			{
-				this.ensembleName = "default";
-			}
-			else
-			{
-				this.ensembleName = ensembleName;
-			}
-
-			if (qualifierID == null)
-            {
-                this.qualifierID = "";
-            }
-            else
-            {
-                this.qualifierID = qualifierID;
-            }
-
-	    	if (memberIndex == null)
-            {
-                this.memberIndex = 0;
-            }
-            else
-            {
-                this.memberIndex = memberIndex;
-            }
+            this.ensembleName = Objects.requireNonNullElse( ensembleName, "default" );
+            this.qualifierID = Objects.requireNonNullElse( qualifierID, "" );
+            this.memberIndex = Objects.requireNonNullElse( memberIndex, 0 );
 	    }
 
         @Override

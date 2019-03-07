@@ -1,7 +1,6 @@
 package wres.io.data.caching;
 
 import java.net.URI;
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -19,7 +18,6 @@ import wres.io.data.details.SourceDetails;
 import wres.io.data.details.SourceDetails.SourceKey;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
-import wres.io.utilities.Database;
 import wres.util.Collections;
 import wres.util.TimeHelper;
 

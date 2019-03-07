@@ -6,8 +6,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -170,14 +168,7 @@ class CSVDataProvider implements DataProvider
         else
         {
             this.line = new String[this.columnNames.size()];
-
-            // Theoretically, we could use "System.arraycopy", but both arrays aren't
-            // guaranteed to have the same length. We want to copy over the minimum number of
-            // columns. If there aren't enough columns in the source, the rest should be null.
-            for (int i = 0; i < Math.min( this.line.length, futureLine.length ); ++i)
-            {
-                this.line[i] = futureLine[i];
-            }
+            System.arraycopy( futureLine, 0, this.line, 0, Math.min( this.line.length, futureLine.length ) );
         }
 
         this.currentRow++;
