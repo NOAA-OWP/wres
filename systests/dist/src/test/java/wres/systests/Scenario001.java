@@ -29,20 +29,21 @@ public class Scenario001
         LOGGER.info( "{}{}",
                      "########################################################## EXECUTION ",
                      NEWLINE );
-        Path baseDirectory = SystestsScenarioRunner.getBaseDirectory();
+        Path baseDirectory = ScenarioHelper.getBaseDirectory();
         this.scenarioInfo = new Scenario( this.getClass()
                                               .getSimpleName()
                                               .toLowerCase(),
                                           baseDirectory );
         Operations.cleanDatabase();
-        SystestsScenarioRunner.deleteOldOutputDirectories( scenarioInfo.getScenarioDirectory() );
+        ScenarioHelper.deleteOldOutputDirectories( scenarioInfo.getScenarioDirectory() );
+        ScenarioHelper.setAllPropertiesFromEnvVars( scenarioInfo );
     }
 
     @Test
     public void testScenario()
     {
         Path config = this.scenarioInfo.getScenarioDirectory()
-                                       .resolve( SystestsScenarioRunner.USUAL_EVALUATION_FILE_NAME );
+                                       .resolve( ScenarioHelper.USUAL_EVALUATION_FILE_NAME );
 
         //Execute the control and return the exit code if its not zero.  No need to go further.
         String args[] = { config.toString() };
@@ -52,8 +53,8 @@ public class Scenario001
                       + "; see log for more information!",
                       0,
                       exitCode );
-        SystestsScenarioRunner.assertWRESOutputValid( wresEvaluation );
-        SystestsScenarioRunner.assertOutputsMatchBenchmarks( this.scenarioInfo,
-                                                             wresEvaluation );
+        ScenarioHelper.assertWRESOutputValid( wresEvaluation );
+        ScenarioHelper.assertOutputsMatchBenchmarks( this.scenarioInfo,
+                                                     wresEvaluation );
     }
 }

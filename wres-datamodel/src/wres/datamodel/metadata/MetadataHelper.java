@@ -3,8 +3,10 @@ package wres.datamodel.metadata;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.StringJoiner;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -99,6 +101,7 @@ public final class MetadataHelper
      * @param existingTimeScale the existing time scale
      * @param desiredTimeScale the desired time scale 
      * @param timeStep the time-step of the data
+     * @param context optional context information to help clarify warnings
      * @throws RescalingException when the desiredTimeScale cannot be obtained from the 
      *            existingTimeScale and the timeStep, either in principle or in practice
      * @throws NullPointerException if any input is null
@@ -106,7 +109,8 @@ public final class MetadataHelper
 
     public static void throwExceptionIfChangeOfScaleIsInvalid( TimeScale existingTimeScale,
                                                                TimeScale desiredTimeScale,
-                                                               Duration timeStep )
+                                                               Duration timeStep,
+                                                               String... context )
     {
         Objects.requireNonNull( existingTimeScale, "The existing time scale cannot be null." );
 
@@ -128,7 +132,7 @@ public final class MetadataHelper
 
         // Change of scale required, i.e. not absolutely equal and not instantaneous
         // (which has a more lenient interpretation)
-        if ( MetadataHelper.isChangeOfScaleRequired( existingTimeScale, desiredTimeScale ) )
+        if ( MetadataHelper.isChangeOfScaleRequired( existingTimeScale, desiredTimeScale, context ) )
         {
 
             // The desired time scale must be a sensible function in the context of rescaling
@@ -144,7 +148,7 @@ public final class MetadataHelper
                                                                         "existing period" );
 
             // If the existing and desired periods are the same, the function cannot differ
-            MetadataHelper.throwExceptionIfPeriodsMatchAndFunctionsDiffer( existingTimeScale, desiredTimeScale );
+            MetadataHelper.throwExceptionIfPeriodsMatchAndFunctionsDiffer( existingTimeScale, desiredTimeScale, context );
 
             // If the existing time scale is instantaneous, do not allow accumulations (for now)
             MetadataHelper.throwExceptionIfAccumulatingInstantaneous( existingTimeScale,
@@ -152,7 +156,8 @@ public final class MetadataHelper
 
             // If the desired function is a total, then the existing function must also be a total
             MetadataHelper.throwExceptionIfAccumulatingNonAccumulations( existingTimeScale.getFunction(),
-                                                                         desiredTimeScale.getFunction() );
+                                                                         desiredTimeScale.getFunction(),
+                                                                         context );
 
             // The time-step of the data must be less than or equal to the period associated with the desired time scale
             // if rescaling is required
@@ -185,11 +190,12 @@ public final class MetadataHelper
      *
      * @param existingTimeScale the existing time scale
      * @param desiredTimeScale the desired time scale
+     * @param context optional context to clarify any warnings
      * @return true if a change of time scale is required, otherwise false
      * @throws NullPointerException if either input is null
      */
 
-    public static boolean isChangeOfScaleRequired( TimeScale existingTimeScale, TimeScale desiredTimeScale )
+    public static boolean isChangeOfScaleRequired( TimeScale existingTimeScale, TimeScale desiredTimeScale, String...context )
     {
         Objects.requireNonNull( existingTimeScale, "Specify a non-null existing time scale." );
 
@@ -199,6 +205,20 @@ public final class MetadataHelper
         boolean exceptionOne = existingTimeScale.isInstantaneous() && desiredTimeScale.isInstantaneous();
         boolean exceptionTwo = existingTimeScale.getPeriod().equals( desiredTimeScale.getPeriod() )
                                && existingTimeScale.getFunction() == TimeScaleFunction.UNKNOWN;
+        
+        // Log the second case if the desired time scale has a different function
+        if ( exceptionTwo && desiredTimeScale.getFunction() != TimeScaleFunction.UNKNOWN )
+        {
+            String clarify = MetadataHelper.clarifyWarning( context );
+
+            LOGGER.warn( "The function associated with the desired time scale is a {}, but "
+                         + "the function associated with the existing time scale{}is {}. Assuming "
+                         + "that the latter is also a {}.",
+                         desiredTimeScale.getFunction(),
+                         clarify,
+                         TimeScaleFunction.UNKNOWN,
+                         desiredTimeScale.getFunction() );
+        }
 
         return different && !exceptionOne && !exceptionTwo;
     }
@@ -267,24 +287,46 @@ public final class MetadataHelper
      * changing the period.
      * 
      * @param existingTimeScale the existing time scale
-     * @param desiredTimeScale the desired time scale 
+     * @param desiredTimeScale the desired time scale
+     * @param context some optional context information to clarify warnings 
      * @throws RescalingException if the periods match and the functions differ
      */
 
     private static void throwExceptionIfPeriodsMatchAndFunctionsDiffer( TimeScale existingTimeScale,
-                                                                        TimeScale desiredTimeScale )
+                                                                        TimeScale desiredTimeScale,
+                                                                        String... context)
     {
-        if ( existingTimeScale.getFunction() != TimeScaleFunction.UNKNOWN
-             && existingTimeScale.getPeriod().equals( desiredTimeScale.getPeriod() )
+        if ( existingTimeScale.getPeriod().equals( desiredTimeScale.getPeriod() )
              && existingTimeScale.getFunction() != desiredTimeScale.getFunction() )
         {
-            throw new RescalingException( "The periods associated with the existing and desired time scales are the "
-                                          + "same, but the time scale functions are different ["
-                                          + existingTimeScale.getFunction()
-                                          + ", "
-                                          + desiredTimeScale.getFunction()
-                                          + "]. The function cannot be "
-                                          + "changed without changing the period." );
+            // If the existing time scale has an unknown function, potentially warn
+            if ( existingTimeScale.getFunction() == TimeScaleFunction.UNKNOWN )
+            {
+                // Warn if the desired time scale has a different function
+                if ( desiredTimeScale.getFunction() != TimeScaleFunction.UNKNOWN )
+                {
+                    String clarify = MetadataHelper.clarifyWarning( context );
+
+                    LOGGER.warn( "The function associated with the desired time scale is "
+                                 + "a {}, but the function associated with the existing time "
+                                 + "scale{}is {}. Assuming that the latter is also a {}.",
+                                 desiredTimeScale.getFunction(),
+                                 clarify,
+                                 TimeScaleFunction.UNKNOWN,
+                                 desiredTimeScale.getFunction() );
+                }
+            }
+            else
+            {
+                throw new RescalingException( "The periods associated with the existing and desired "
+                                              + "time scales are the same, but the time scale functions "
+                                              + "are different ["
+                                              + existingTimeScale.getFunction()
+                                              + ", "
+                                              + desiredTimeScale.getFunction()
+                                              + "]. The function cannot be "
+                                              + "changed without changing the period." );
+            }
         }
     }
 
@@ -319,21 +361,26 @@ public final class MetadataHelper
      * 
      * @param existingFunction the existing function
      * @param desiredFunction the desired function
+     * @param context some optional context information to clarify warnings 
      * @throws RescalingException if the desiredFunction is a {@link TimeScaleFunction#TOTAL} and the 
      *            existingFunction is not a {@link TimeScaleFunction#TOTAL} or a {@link TimeScaleFunction#UNKNOWN}
      */
 
     private static void throwExceptionIfAccumulatingNonAccumulations( TimeScaleFunction existingFunction,
-                                                                      TimeScaleFunction desiredFunction )
+                                                                      TimeScaleFunction desiredFunction,
+                                                                      String... context )
     {
         if ( desiredFunction == TimeScaleFunction.TOTAL && existingFunction != TimeScaleFunction.TOTAL )
         {
             if ( existingFunction == TimeScaleFunction.UNKNOWN )
             {
+                String clarify = MetadataHelper.clarifyWarning( context );
+
                 LOGGER.warn( "The function associated with the desired time scale is a {}, but "
-                             + "the function associated with the existing time scale is {}. Assuming "
+                             + "the function associated with the existing time scale{}is {}. Assuming "
                              + "that the existing function is a {}.",
                              TimeScaleFunction.TOTAL,
+                             clarify,
                              TimeScaleFunction.UNKNOWN,
                              TimeScaleFunction.TOTAL );
             }
@@ -393,6 +440,29 @@ public final class MetadataHelper
                                           + timeStep
                                           + ")." );
         }
+    }
+    
+    /**
+     * Clarifies a warning message with some context information, otherwise returns a single-space string.
+     * 
+     * @param context the optional context
+     * @return the clarifying message
+     */
+
+    private static String clarifyWarning( String... context )
+    {
+        String returnMe = " ";
+        
+        if ( Objects.nonNull( context ) && context.length > 0 )
+        {
+            StringJoiner joiner = new StringJoiner( " " );
+            joiner.add( " of the" );
+            Arrays.stream( context ).forEach( joiner::add );
+            joiner.add( "data " );
+            returnMe = joiner.toString();
+        }
+
+        return returnMe;
     }
 
     /**

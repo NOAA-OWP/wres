@@ -1,7 +1,6 @@
 package wres.io.project;
 
 import java.io.IOException;
-import java.math.BigInteger;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -62,7 +61,6 @@ import wres.io.data.details.FeatureDetails;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
-import wres.io.utilities.NoDataException;
 import wres.util.CalculationException;
 import wres.util.FormattedStopwatch;
 import wres.util.LRUMap;
@@ -260,16 +258,6 @@ public class Project
     private final int inputCode;
 
     /**
-     * The interval between values for the left hand data
-     */
-    private Duration leftInterval = Duration.ZERO;
-
-    /**
-     * The interval between values for the right hand data
-     */
-    private Duration rightInterval = Duration.ZERO;
-
-    /**
      * The desired time scale. See {@link #getAndValidateDesiredTimeScale()}.
      * 
      * TODO: reconcile this with {@link #getScale()}, which currently mixes up 
@@ -461,19 +449,7 @@ public class Project
         // Return the least common time-step of all 
         // ingested sources
         return this.leastCommonTimeStep;
-    }
-    
-    /**
-     * Feature toggle that indicates whether time-scale validation should be conducted.
-     *
-     * @deprecated (for removal when #58715 is resolved)
-     */
-
-    @Deprecated( forRemoval = true )
-    private static boolean isValidateDesiredTimeScaleAgainstEachIngestedSourceInProduction()
-    {
-        return false;
-    }    
+    }  
     
     /**
      * <p> Sets and validates the time scale and time step at which evaluation should be conducted.
@@ -559,8 +535,7 @@ public class Project
         }
 
         // Validate the desired time scale against each existing one        
-        if ( Project.isValidateDesiredTimeScaleAgainstEachIngestedSourceInProduction()
-             && Objects.nonNull( desiredScale ) )
+        if ( Objects.nonNull( desiredScale ) )
         {
             LOGGER.debug( "Found {} distinct time scales across all ingested sources. "
                           + "Validating each against the desired time scale of {}.",
@@ -576,14 +551,6 @@ public class Project
             Project.validateTimeScale( Collections.unmodifiableSet( baselineScalesAndSteps ),
                                        desiredScale,
                                        LeftOrRightOrBaseline.BASELINE );
-
-            final TimeScale finalDesiredScale = desiredScale;
-            // Only check where the existing scale is known
-            existingScalesAndSteps.stream()
-                                  .filter( p -> Objects.nonNull( p.getLeft() ) && Objects.nonNull( p.getRight() ) )
-                                  .forEach( pair -> MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( pair.getLeft(),
-                                                                                                           finalDesiredScale,
-                                                                                                           pair.getRight() ) );
         }
         
         LOGGER.debug( "Finished validating the {} existing time scales against the desired time scale.",
@@ -632,7 +599,8 @@ public class Project
                                   {
                                       MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( pair.getLeft(),
                                                                                              finalDesiredScale,
-                                                                                             pair.getRight() );
+                                                                                             pair.getRight(),
+                                                                                             dataType.toString() );
                                   }
                                   // Annotate and propagate
                                   catch ( RescalingException e )
@@ -1632,80 +1600,6 @@ public class Project
     }
 
     /**
-     * Finds a common interval based on both left and right data in the database
-     *
-     * <p>
-     * The least common interval is used. If the left handed data has an interval of
-     * 6 hours, but the right has 9 hours, the common interval is determined to be 18
-     * hours.
-     * </p>
-     * <br><br>
-     *
-     * @return A common interval between the left and right side of the data
-     * @throws CalculationException Thrown if the interval of the left hand data
-     * could not be calculated
-     * @throws CalculationException Thrown if the interval of the right hand data
-     * could not be calculated
-     * @throws CalculationException Thrown if a interval that was compatible with
-     * left and right hand data could not be calculated
-     * @deprecated in favor of {@link #getDesiredTimeStep()}
-     */
-    @Deprecated(since="1.5", forRemoval=true)
-    private Duration getCommonInterval() throws CalculationException
-    {
-        
-        Duration commonInterval;
-
-        try
-        {
-            Duration leftStep = this.getLeftInterval();
-            Duration rightStep = this.getRightInterval();
-
-            long highestStep = Math.max(leftStep.getSeconds(), rightStep.getSeconds());
-            long lowestStep = Math.min(leftStep.getSeconds(), rightStep.getSeconds());
-
-            if (highestStep == lowestStep)
-            {
-                commonInterval = leftStep;
-            }
-            // This logic will attempt to reconcile the two to find a possible
-            // desired scale; i.e. if the left is in a scale of 4 hours and the
-            // right in 3, the needed scale would be 12 hours.
-            else if (lowestStep != 0 && highestStep % lowestStep == 0)
-            {
-                commonInterval = Duration.of(highestStep, ChronoUnit.SECONDS);
-            }
-            else if (!(lowestStep == 0 || highestStep == 0))
-            {
-                // If a proper interval could be found from both, find the least common interval
-                BigInteger bigLeft = BigInteger.valueOf( leftStep.getSeconds() );
-
-                Integer greatestCommonFactor =
-                        bigLeft.gcd( BigInteger.valueOf( rightStep.getSeconds() ) )
-                               .intValue();
-
-                long commonStep = leftStep.getSeconds() * rightStep.getSeconds()
-                                  / greatestCommonFactor;
-                commonInterval = Duration.of(commonStep, ChronoUnit.SECONDS);
-            }
-            else
-            {
-                throw new NoDataException( "Not enough data was supplied to "
-                                           + "evaluate a correct scale between "
-                                           + "data sources." );
-            }
-        }
-        catch ( NoDataException e )
-        {
-            throw new CalculationException( "The common scale between left and "
-                                            + "right inputs could not be evaluated.",
-                                            e );
-        }
-
-        return commonInterval;
-    }
-
-    /**
      * Determines the time step of the data
      * <p>
      *     If no desired scale has been configured, one is dynamically generated
@@ -2339,72 +2233,6 @@ public class Project
     public Integer getInputCode()
     {
         return this.inputCode;
-    }
-
-    /**
-     * Evaluates the interval of the left side of the data
-     * <p>
-     *     If no existing time scale has been dictated, it is evaluated from the
-     *     database
-     * </p>
-     * @return The interval between each value on the left side of the data
-     * @throws CalculationException thrown if the interval of the left hand data could not be calculated
-     */
-    private Duration getLeftInterval() throws CalculationException
-    {
-        synchronized ( LEFT_LEAD_LOCK )
-        {
-            if ( this.leftInterval == Duration.ZERO )
-            {
-                if ( this.getLeft().getExistingTimeScale() == null )
-                {
-                    this.leftInterval = this.getValueInterval( this.getLeft() );
-                }
-                else
-                {
-                    this.leftInterval = Duration.of(
-                            this.getLeft().getExistingTimeScale().getPeriod(),
-                            ChronoUnit.valueOf( this.getLeft().getExistingTimeScale().getUnit().toString() )
-                    );
-                }
-            }
-        }
-
-        return leftInterval;
-    }
-
-    /**
-     * Evaluates the interval of the right side of the data
-     * <p>
-     *     If no existing time scale has been dictated, it is evaluated from the
-     *     database
-     * </p>
-     *
-     * @return The duration between each value on the right side of the data
-     * @throws CalculationException thrown if the scale of the right hand data
-     * could not be calculated
-     */
-    private Duration getRightInterval() throws CalculationException
-    {
-        synchronized ( RIGHT_LEAD_LOCK )
-        {
-            if ( this.rightInterval == Duration.ZERO )
-            {
-                if ( this.getRight().getExistingTimeScale() == null )
-                {
-                    this.rightInterval = this.getValueInterval( this.getRight() );
-                }
-                else
-                {
-                    this.rightInterval = Duration.of(
-                            this.getRight().getExistingTimeScale().getPeriod(),
-                            ChronoUnit.valueOf( this.getRight().getExistingTimeScale().getUnit().toString() )
-                    );
-                }
-            }
-        }
-
-        return this.rightInterval;
     }
 
     /**
@@ -3211,18 +3039,15 @@ public class Project
                 }
                 else
                 {
-                    if ( Project.isValidateDesiredTimeScaleAgainstEachIngestedSourceInProduction() )
-                    {
-                        throw new RescalingException( "The existing time scale information in the project "
-                                                      + "declaration is inconsistent with the time scale "
-                                                      + "information obtained from one or more "
-                                                      + sourceType
-                                                      + " sources. Source "
-                                                      + "says: "
-                                                      + timeScaleToReport
-                                                      + ". Declaration says: "
-                                                      + this.declaredExistingTimeScale );
-                    }
+                    throw new RescalingException( "The existing time scale information in the project "
+                                                  + "declaration is inconsistent with the time scale "
+                                                  + "information obtained from one or more "
+                                                  + sourceType
+                                                  + " sources. Source "
+                                                  + "says: "
+                                                  + timeScaleToReport
+                                                  + ". Declaration says: "
+                                                  + this.declaredExistingTimeScale );
                 }
             }
 
