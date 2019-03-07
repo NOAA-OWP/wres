@@ -165,9 +165,7 @@ public final class TimeScale implements Comparable<TimeScale>
 
         TimeScaleFunction function = null;
 
-        // TODO: NONE will be removed by #48232
-        if ( Objects.isNull( config.getFunction() ) ||
-             config.getFunction() == wres.config.generated.TimeScaleFunction.NONE )
+        if ( Objects.isNull( config.getFunction() ) )
         {
             function = TimeScaleFunction.UNKNOWN;
         }

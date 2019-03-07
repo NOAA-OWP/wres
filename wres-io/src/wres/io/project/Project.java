@@ -1589,9 +1589,7 @@ public class Project
     public boolean shouldScale() throws CalculationException
     {
         return this.getProjectConfig().getPair().getDesiredTimeScale() != null &&
-               this.getScale() != null &&
-               !TimeScaleFunction.NONE
-                       .value().equalsIgnoreCase(this.getScale().getFunction().value());
+               this.getScale() != null;
     }
 
     /**
