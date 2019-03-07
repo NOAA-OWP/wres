@@ -3,7 +3,6 @@ package wres.io.retrieval;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.Collection;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;

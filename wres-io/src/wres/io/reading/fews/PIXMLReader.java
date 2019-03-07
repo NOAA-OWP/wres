@@ -41,7 +41,6 @@ import wres.io.reading.InvalidInputDataException;
 import wres.system.xml.XMLHelper;
 import wres.system.xml.XMLReader;
 import wres.util.Strings;
-import wres.util.TimeHelper;
 
 /**
  * @author Christopher Tubbs

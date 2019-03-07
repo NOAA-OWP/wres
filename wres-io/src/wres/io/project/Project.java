@@ -1,15 +1,11 @@
 package wres.io.project;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.MonthDay;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -60,7 +56,6 @@ import wres.io.data.caching.Variables;
 import wres.io.data.details.FeatureDetails;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
-import wres.io.utilities.Database;
 import wres.util.CalculationException;
 import wres.util.FormattedStopwatch;
 import wres.util.LRUMap;
@@ -483,9 +478,7 @@ public class Project
      * @throws SQLException Thrown on failing to obtain the time scale or time step information from the database
      * @throws CalculationException Thrown if no time scale or time step information is discovered
      * @throws RescalingException Thrown if the desired time scale is not deliverable from the existing sources
-     * @return the validated desired time scale or null if insufficient information was available to determine this
      */
-
     private void setDesiredTimeScaleAndTimeStep() throws SQLException, CalculationException
     {
         // The desired time scale
@@ -641,7 +634,7 @@ public class Project
         // Obtain the existing time scale and corresponding time step for each ingested source
         if ( this.usesGriddedData( dataSourceConfig ) )
         {
-            DataScripter scripter = null;
+            DataScripter scripter;
 
             // Forecast type
             if ( ConfigHelper.isForecast( dataSourceConfig ) )
@@ -1530,9 +1523,11 @@ public class Project
             {
                 unit += "S";
             }
+
+            return ChronoUnit.valueOf( unit );
         }
 
-        return ChronoUnit.valueOf( unit.toUpperCase() );
+        return null;
     }
 
     /**
@@ -2839,9 +2834,7 @@ public class Project
     @Override
     public boolean equals( Object obj )
     {
-        return obj != null &&
-               obj instanceof Project &&
-               this.hashCode() == obj.hashCode();
+        return obj instanceof Project && this.hashCode() == obj.hashCode();
     }
 
     @Override

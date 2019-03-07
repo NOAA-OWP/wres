@@ -17,7 +17,6 @@ import java.util.TreeMap;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DesiredTimeScaleConfig;
 import wres.config.generated.Feature;
-import wres.config.generated.TimeScaleConfig;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.pairs.EnsemblePair;

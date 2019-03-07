@@ -1,6 +1,5 @@
 package wres.io.data.caching;
 
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Objects;
@@ -11,7 +10,6 @@ import org.apache.commons.lang3.StringUtils;
 
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
-import wres.io.utilities.ScriptBuilder;
 
 public class USGSParameters
 {
@@ -33,18 +31,18 @@ public class USGSParameters
         @Override
         public boolean equals( Object obj )
         {
-            if (obj == null || !(obj instanceof ParameterKey))
+            if (obj instanceof ParameterKey)
             {
-                return false;
+                ParameterKey otherKey = ( ParameterKey ) obj;
+
+                boolean equal = StringUtils.equalsIgnoreCase( this.name, otherKey.name );
+                equal = equal || StringUtils.equalsIgnoreCase( this.measurementUnit, otherKey.measurementUnit );
+                equal = equal || StringUtils.equalsIgnoreCase( this.aggregation, otherKey.aggregation );
+
+                return equal;
             }
 
-            ParameterKey otherKey = (ParameterKey)obj;
-
-            boolean equal = StringUtils.equalsIgnoreCase( this.name, otherKey.name );
-            equal = equal || StringUtils.equalsIgnoreCase( this.measurementUnit, otherKey.measurementUnit );
-            equal = equal || StringUtils.equalsIgnoreCase( this.aggregation, otherKey.aggregation );
-
-            return equal;
+            return false;
         }
 
         @Override
@@ -93,13 +91,11 @@ public class USGSParameters
         @Override
         public String toString()
         {
-            String parameter = "Name: '" + this.name + "', " +
-                               "Description: '" + this.description + "', " +
-                               "Code: " + this.parameterCode + ", " +
-                               "Aggregated as: " + this.aggregation + ", " +
-                               "Measurement Unit: " + this.measurementUnit;
-
-            return parameter;
+            return "Name: '" + this.name + "', " +
+                   "Description: '" + this.description + "', " +
+                   "Code: " + this.parameterCode + ", " +
+                   "Aggregated as: " + this.aggregation + ", " +
+                   "Measurement Unit: " + this.measurementUnit;
         }
 
         public String getName()
@@ -206,7 +202,7 @@ public class USGSParameters
     public static USGSParameter getParameter(String parameterName, String measurementUnit, String aggregationMethod)
             throws SQLException
     {
-        USGSParameter parameter = null;
+        USGSParameter parameter;
 
         ParameterKey key = new ParameterKey( parameterName, measurementUnit, aggregationMethod );
 

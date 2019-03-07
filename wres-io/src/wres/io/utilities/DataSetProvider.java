@@ -13,13 +13,11 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
 import wres.util.TimeHelper;
-import wres.util.functional.ExceptionalFunction;
 
 /**
  * A fully in-memory tabular dataset that doesn't require an
@@ -924,7 +922,7 @@ public class DataSetProvider implements DataProvider
         }
 
         Object value = this.getObject(columnName);
-        URI uri = null;
+        URI uri;
 
         if (value == null)
         {

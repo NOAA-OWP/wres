@@ -15,7 +15,6 @@ import wres.io.utilities.Database;
 import wres.util.CalculationException;
 
 import java.io.IOException;
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -138,7 +137,7 @@ class ClimatologyBuilder
                 // Either this is a subset of dateRange or dateRange is a subset of this
                 comparison = 0;
             }
-            else if (thisToOtherStart > 0 && thisToOtherEnd > 0)
+            else if (thisToOtherStart > 0)
             {
                 // This encompasses an later range than dateRange, even if there is overlap
                 comparison = 1;
@@ -176,7 +175,7 @@ class ClimatologyBuilder
         @Override
         public String toString()
         {
-            String description = "";
+            String description;
 
             if (this.endDate.equals( this.startDate ))
             {
@@ -436,7 +435,7 @@ class ClimatologyBuilder
                              ConfigHelper.getFeatureDescription( this.feature ) );
             }
 
-            this.climatology = VectorOfDoubles.of( aggregatedValues.toArray( new Double[aggregatedValues.size()] ) );
+            this.climatology = VectorOfDoubles.of( aggregatedValues.toArray( new Double[0] ) );
         }
         return this.climatology;
     }

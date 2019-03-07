@@ -5,7 +5,6 @@ import java.nio.file.Path;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.NoSuchElementException;
@@ -152,12 +151,11 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
      * @param project The project that determines how to generate {@link wres.datamodel.sampledata.SampleData}
      * @param outputPathForPairs The path to where to store paired {@link wres.datamodel.sampledata.SampleData} values
      * {@link wres.datamodel.sampledata.SampleData} generation task
-     * @throws IOException
+     * @throws IOException Thrown if left handed data could not be loaded
+     * @throws IOException Thrown if the limit for pooling could not be calculated
+     * @throws IOException Thrown if the sample data to iterate over could not be calculated
      */
-    SampleDataIterator( Feature feature,
-                        Project project,
-                        Path outputPathForPairs)
-            throws IOException
+    SampleDataIterator( Feature feature, Project project, Path outputPathForPairs) throws IOException
     {
         if (this.getLogger().isTraceEnabled())
         {

@@ -1,15 +1,11 @@
 package wres.io.data.details;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
-import wres.io.utilities.ScriptBuilder;
 import wres.util.Strings;
 
 /**

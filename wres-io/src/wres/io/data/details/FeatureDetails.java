@@ -941,7 +941,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
         {
             Boolean equal = null;
 
-            if (obj != null && obj instanceof FeatureKey)
+            if (obj instanceof FeatureKey)
             {
                 FeatureKey other = (FeatureKey)obj;
 

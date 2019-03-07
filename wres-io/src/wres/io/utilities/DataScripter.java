@@ -1,7 +1,5 @@
 package wres.io.utilities;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -136,111 +134,6 @@ public class DataScripter extends ScriptBuilder
     public DataProvider buffer() throws SQLException
     {
         return Database.buffer( this.formQuery(), this.isHighPriority );
-    }
-
-    /**
-     * Creates a prepared statement using the script
-     * @param connection The connection that the prepared statement will be run on
-     * @return A prepared statement that will execute the script
-     * @throws SQLException Thrown if the script could not be used to create
-     * the statement
-     */
-    public PreparedStatement getPreparedStatement(final Connection connection)
-            throws SQLException
-    {
-        if (this.arguments.isEmpty())
-        {
-            return connection.prepareStatement( this.toString() );
-        }
-        else
-        {
-            return this.getPreparedStatement( connection, this.arguments );
-        }
-    }
-
-    /**
-     * Creates a prepared statement using the script and loads values from the
-     * collection of parameters into it
-     * @param connection The connection that the prepared statement will be run
-     * @param parameters A collection of objects to use as parameters
-     * @return A prepared statement that will execute the script with the given
-     * parameters
-     * @throws SQLException Thrown if the script and parameters could not be
-     * used to create a statement
-     */
-    public PreparedStatement getPreparedStatement(final Connection connection, Collection<Object> parameters)
-            throws SQLException
-    {
-        return this.getPreparedStatement( connection, parameters.toArray() );
-    }
-
-    /**
-     * Creates a prepared statement using the script and loads the given
-     * parameters into it
-     * @param connection The connection that the prepared statement will be run on
-     * @param parameters A collection of objects to use as parameters
-     * @return A prepared statement that will execute the script with the given
-     * parameters
-     * @throws SQLException Thrown if the script and parameters could not be
-     * used to create a statement
-     */
-    public PreparedStatement getPreparedStatement(final Connection connection, Object... parameters)
-            throws SQLException
-    {
-        List<Object[]> parameterList = new ArrayList<>(  );
-        parameterList.add( parameters );
-
-        return this.getPreparedStatement( connection, parameterList );
-    }
-
-    /**
-     * Creates a prepared statement to run in batch using the script and loads
-     * the given parameters
-     * @param connection The connection that will run the script
-     * @param parameters A collection of sets of parameters that will be used to
-     *                   run the script one or more times
-     * @return The prepared statement that will run the script with the given parameters
-     * @throws SQLException Thrown if the script and parameters could not be
-     * used to create a statement
-     */
-    public PreparedStatement getPreparedStatement(final Connection connection, List<Object[]> parameters)
-            throws SQLException
-    {
-        PreparedStatement statement = this.getPreparedStatement( connection );
-
-        for ( Object[] statementParameters : parameters )
-        {
-            int addedParameters = 0;
-            try
-            {
-                for ( ; addedParameters < statementParameters.length; ++addedParameters )
-                {
-                    statement.setObject( addedParameters + 1, statementParameters[addedParameters] );
-                }
-
-                while ( addedParameters < statement.getParameterMetaData().getParameterCount() )
-                {
-                    statement.setObject( addedParameters + 1, null );
-                }
-
-                statement.addBatch();
-            }
-            catch ( SQLException e )
-            {
-                LOGGER.error("Prepared Statement could not be created.");
-                LOGGER.error(this.toString());
-                LOGGER.error( "Parameters:" );
-
-                for (Object parameter : statementParameters)
-                {
-                    LOGGER.error("    " + parameter );
-                }
-
-                throw e;
-            }
-        }
-
-        return statement;
     }
 
     /**

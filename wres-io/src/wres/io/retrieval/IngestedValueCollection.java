@@ -386,8 +386,7 @@ class IngestedValueCollection
             this.reference = value.getReferenceEpoch();
             canAdd = true;
         }
-        else if ( this.reference == null ||
-                  (this.reference != null && this.reference.equals(value.getReferenceEpoch())))
+        else if ( this.reference == null || this.reference.equals(value.getReferenceEpoch()))
         {
             canAdd = true;
         }

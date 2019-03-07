@@ -40,7 +40,6 @@ import wres.io.data.caching.MeasurementUnits;
 import wres.io.retrieval.scripting.Scripter;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
-import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.util.TimeHelper;
 
@@ -242,19 +241,16 @@ class SampleDataRetriever extends Retriever
     private static List<Instant>
     extractBasisTimes( List<Event<EnsemblePair>> pairs )
     {
-        List<Instant> result = pairs.stream().map( Event::getReferenceTime ).collect( Collectors.toList() );
-
-        return Collections.unmodifiableList( result );
+        return pairs.stream().map( Event::getReferenceTime ).collect( Collectors.toUnmodifiableList() );
     }
 
     /**
      * @param dataSourceConfig The configuration for the side of data to retrieve
      * @return A script used to load pair data
-     * @throws SQLException
-     * @throws IOException
+     * @throws SQLException Thrown if the data needed to form the script needed to create load scripts could not be formed
+     * @throws IOException Thrown if the data needed to form the script needed to create load scripts could not be formed
      */
-    protected String getLoadScript(DataSourceConfig dataSourceConfig)
-            throws SQLException, IOException
+    protected String getLoadScript(DataSourceConfig dataSourceConfig) throws IOException, SQLException
     {
         String loadScript;
 
@@ -364,18 +360,11 @@ class SampleDataRetriever extends Retriever
 
     private Response getGriddedData(final DataSourceConfig dataSourceConfig)
     {
-        Request griddedRequest;
-        try
-        {
-            griddedRequest = ConfigHelper.getGridDataRequest(
-                    this.getProjectDetails(),
-                    dataSourceConfig,
-                    this.getFeature() );
-        }
-        catch ( SQLException e )
-        {
-            throw new RetrievalFailedException( "The request used to retrieve gridded data could not be formed.", e );
-        }
+        Request griddedRequest = ConfigHelper.getGridDataRequest(
+                this.getProjectDetails(),
+                dataSourceConfig,
+                this.getFeature()
+        );
 
         griddedRequest.setEarliestLead( this.getSampleMetadata()
                                             .getMetadata()
@@ -606,10 +595,9 @@ class SampleDataRetriever extends Retriever
      * Packages pairs based on persistence forecasting logic
      * @param dataSourceConfig The specification for the baseline
      * @param primaryPairs The set of primary pairs that have already been packaged
-     * @throws RetrievalFailedException
+     * @throws RetrievalFailedException Thrown if pairs could not be formed
      */
-    private void createPersistencePairs( DataSourceConfig dataSourceConfig,
-                                                         List<Event<EnsemblePair>> primaryPairs )
+    private void createPersistencePairs( DataSourceConfig dataSourceConfig, List<Event<EnsemblePair>> primaryPairs )
             throws RetrievalFailedException
     {
         String loadScript;

@@ -50,7 +50,6 @@ import wres.config.generated.DatasourceType;
 import wres.config.generated.DateCondition;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
-import wres.config.generated.DurationUnit;
 import wres.config.generated.EnsembleCondition;
 import wres.config.generated.Feature;
 import wres.config.generated.Format;
@@ -65,7 +64,6 @@ import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Outputs;
 import wres.config.generated.ThresholdFormat;
 import wres.config.generated.ThresholdsConfig;
-import wres.config.generated.TimeScaleConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.metadata.MeasurementUnit;
@@ -84,7 +82,6 @@ import wres.io.data.caching.Features;
 import wres.io.project.Project;
 import wres.io.reading.commaseparated.CommaSeparatedReader;
 import wres.io.utilities.DataScripter;
-import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.io.utilities.ScriptBuilder;
 import wres.util.Strings;
@@ -141,7 +138,7 @@ public class ConfigHelper
     public static Request getGridDataRequest(
             final Project project,
             final DataSourceConfig dataSourceConfig,
-            final Feature feature) throws SQLException
+            final Feature feature)
     {
         Request griddedRequest = Fetcher.prepareRequest();
         griddedRequest.addFeature( feature );
@@ -1844,40 +1841,11 @@ public class ConfigHelper
         if ( Objects.nonNull( output )
              && output.getDestination().stream().anyMatch( type -> type.getType() == DestinationType.NETCDF ) )
         {
-            return Collections.unmodifiableSet( new HashSet<>( Arrays.asList( DestinationType.NETCDF ) ) );
+            return Set.of( DestinationType.NETCDF );
         }
 
         // Return empty set
         return Collections.emptySet();
-    }
-
-    /**
-     * Returns the lead time units associated with the input configuration. Returns {@link ChronoUnit#HOURS} if no
-     * desired time scale is defined in the input configuration, otherwise the units of the desired time scale.
-     * 
-     * @param projectConfig the project configuration
-     * @return the units associated with the forecast lead times
-     * @throws NullPointerException if the input is null or the lead time units are null in the configuration
-     * @throws IllegalArgumentException if the lead time units are not recognized
-     */
-
-    public static ChronoUnit getLeadTimeUnitsFromProjectConfig( ProjectConfig projectConfig )
-    {
-        Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
-
-        ChronoUnit returnMe = ChronoUnit.HOURS;
-
-        if ( Objects.nonNull( projectConfig.getPair() )
-             && Objects.nonNull( projectConfig.getPair().getDesiredTimeScale() ) )
-        {
-            returnMe = ChronoUnit.valueOf( projectConfig.getPair()
-                                                        .getDesiredTimeScale()
-                                                        .getUnit()
-                                                        .toString()
-                                                        .toUpperCase() );
-        }
-
-        return returnMe;
     }
     
     
@@ -1890,8 +1858,7 @@ public class ConfigHelper
      * @throws NullPointerException if the projectConfig is null
      * @throws UnsupportedOperationException if the time windows cannot be determined
      */
-
-    public static Set<TimeWindow> getTimeWindowsFromProjectConfig( ProjectConfig projectConfig )
+    static Set<TimeWindow> getTimeWindowsFromProjectConfig( ProjectConfig projectConfig )
     {
         Objects.requireNonNull( projectConfig, "Expected a non-null project declaration." );
 

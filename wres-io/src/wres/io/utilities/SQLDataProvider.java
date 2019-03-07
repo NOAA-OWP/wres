@@ -2,8 +2,6 @@ package wres.io.utilities;
 
 import java.math.BigDecimal;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.sql.Array;
 import java.sql.Connection;
 import java.sql.Date;
@@ -23,8 +21,6 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
-import javax.validation.constraints.NotNull;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -273,7 +269,7 @@ public class SQLDataProvider implements DataProvider
             }
         }
 
-        return values.toArray( new Object[values.size()] );
+        return values.toArray( new Object[0] );
     }
 
     /**
@@ -355,7 +351,7 @@ public class SQLDataProvider implements DataProvider
     @Override
     public URI getURI( String columnName)
     {
-        String possibleURI = null;
+        String possibleURI;
         try
         {
             // Jump to the first row if the jump hasn't already been made

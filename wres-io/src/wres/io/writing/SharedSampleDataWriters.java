@@ -164,10 +164,8 @@ public class SharedSampleDataWriters implements Consumer<SampleData<?>>, Supplie
      * @param outputPath the required output path
      * @param timeResolution the required time resolution for writing pairs
      * @param decimalFormatter the optional decimal formatter
-     * @return the container of shared writers
      * @throws NullPointerException if the outputPath or timeResolution is null
      */
-
     private SharedSampleDataWriters( Path outputPath, ChronoUnit timeResolution, DecimalFormat decimalFormatter )
     {
         this.singleValuedWriter = SingleValuedPairsWriter.of( outputPath, timeResolution, decimalFormatter );

@@ -1,10 +1,8 @@
 package wres.io.data.caching;
 
-import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.Objects;
-import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
@@ -12,8 +10,6 @@ import org.slf4j.LoggerFactory;
 
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
-import wres.io.utilities.ScriptBuilder;
-import wres.util.NotImplementedException;
 
 public final class UnitConversions
 {

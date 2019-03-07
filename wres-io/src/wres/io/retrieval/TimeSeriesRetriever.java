@@ -2,7 +2,6 @@ package wres.io.retrieval;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
@@ -25,7 +24,6 @@ import wres.io.config.OrderedSampleMetadata;
 import wres.io.retrieval.scripting.Scripter;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
-import wres.io.utilities.Database;
 import wres.util.TimeHelper;
 
 // TODO: Come up with handling for gridded data

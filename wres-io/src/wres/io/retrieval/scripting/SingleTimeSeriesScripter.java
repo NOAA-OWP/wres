@@ -86,7 +86,6 @@ class SingleTimeSeriesScripter extends Scripter
             }
             else
             {
-                whereAdded = true;
                 this.add("WHERE ");
             }
 

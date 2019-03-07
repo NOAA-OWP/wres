@@ -122,7 +122,7 @@ class PivottedValues
 
         // Sort the values in member label order
         Collection<Double> sortedValues = this.sortAggregatedValues( aggregatedValues );
-        return sortedValues.toArray( new Double[sortedValues.size()] );
+        return sortedValues.toArray( new Double[0] );
     }
 
     /**
@@ -199,7 +199,7 @@ class PivottedValues
         @Override
         public boolean equals( Object obj )
         {
-            if (obj != null && obj instanceof EnsemblePosition)
+            if (obj instanceof EnsemblePosition)
             {
                 EnsemblePosition other = (EnsemblePosition)obj;
                 return this.positionId == other.positionId && this.ensembleId == other.positionId;

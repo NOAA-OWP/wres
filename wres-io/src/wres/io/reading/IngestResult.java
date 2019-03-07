@@ -162,9 +162,7 @@ public class IngestResult
 
         private FakeFutureListOfIngestResults( IngestResult result )
         {
-            List<IngestResult> theResults = new ArrayList<>( 1 );
-            theResults.add( result );
-            this.results = Collections.unmodifiableList( theResults );
+            this.results = List.of( result );
         }
 
         public static FakeFutureListOfIngestResults from( ProjectConfig projectConfig,

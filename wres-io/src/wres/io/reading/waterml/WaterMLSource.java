@@ -3,6 +3,7 @@ package wres.io.reading.waterml;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -23,7 +24,6 @@ import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
 import wres.util.functional.ExceptionalConsumer;
 import wres.io.utilities.ScriptBuilder;
-import wres.util.NotImplementedException;
 
 /**
  * Saves WaterML Response objects to the database
@@ -189,14 +189,7 @@ public class WaterMLSource
         this.copyScript.add(this.getVariableFeatureID( gageID )).add(DELIMITER)
                        .add("'" + observationTime + "'").add(DELIMITER);
 
-        if (value == null)
-        {
-            this.copyScript.add(COPY_NULL).add(DELIMITER);
-        }
-        else
-        {
-            this.copyScript.add( value ).add( DELIMITER );
-        }
+        this.copyScript.add( Objects.requireNonNullElse( value, COPY_NULL ) ).add( DELIMITER );
 
         this.copyScript.add(this.waterMLMeasurementId).add(DELIMITER)
                        .addLine(this.sourceId);

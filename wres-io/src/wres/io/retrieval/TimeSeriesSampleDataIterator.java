@@ -5,7 +5,6 @@ import java.nio.file.Path;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
@@ -230,7 +229,7 @@ public class TimeSeriesSampleDataIterator extends SampleDataIterator
 
         LOGGER.debug(script.toString());
 
-        Double steps = null;
+        Double steps;
         try
         {
             steps = script.retrieve( "total_steps" );

@@ -553,10 +553,9 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
         /**
          * Finds the origin index(es) of the location in the netcdf variables
          * @param location The location specification detailing where to place a value
-         * @return
+         * @return The coordinates for the location within the Netcdf variable describing where to place data
          */
-        private int[] getOrigin( String name, Location location )
-                throws IOException, InvalidRangeException
+        private int[] getOrigin( String name, Location location ) throws IOException
         {
             int[] origin;
 
