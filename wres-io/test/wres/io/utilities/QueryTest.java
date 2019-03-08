@@ -138,7 +138,10 @@ public class QueryTest
         {
             // Since execute does all of the interior closing, we don't need to do anything special to
             // make sure that there isn't an open statement anywhere (nor can we)
-            testQuery.execute( connection );
+            int insertedRows = testQuery.execute( connection );
+
+            // One row should have been inserted
+            Assert.assertEquals( 1, insertedRows );
 
             // To check to see if we've added anything, we can go ahead and do that by removing everything.
             // This will remove everything and select it all at the same time
@@ -194,7 +197,10 @@ public class QueryTest
         {
             // Since execute does all of the interior closing, we don't need to do anything special to
             // make sure that there isn't an open statement anywhere (nor can we)
-            testQuery.execute( connection );
+            int insertedRows = testQuery.execute( connection );
+
+            // There were six sets of parameters, so there should have been six inserted rows
+            Assert.assertEquals( 6, insertedRows );
 
             // To check to see if we've added anything, we can go ahead and do that by removing everything.
             // This will remove everything and select it all at the same time
@@ -241,7 +247,10 @@ public class QueryTest
         {
             // Since execute does all of the interior closing, we don't need to do anything special to
             // make sure that there isn't an open statement anywhere (nor can we)
-            testQuery.execute( connection );
+            int insertedRows = testQuery.execute( connection );
+
+            // Since the script is set to insert one value, it should have inserted one value in the database
+            Assert.assertEquals( 1, insertedRows );
 
             // To check to see if we've added anything, we can go ahead and do that by removing everything.
             // This will remove everything and select it all at the same time

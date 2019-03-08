@@ -283,7 +283,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                 {
                     for ( TimeWindowWriter writer : NetcdfOutputWriter.WRITERS.values() )
                     {
-                        Callable<?> closeTask = new Callable<Object>()
+                        Callable<?> closeTask = new Callable()
                         {
                             @Override
                             public Object call() throws IOException
@@ -303,7 +303,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                                 return null;
                             }
 
-                            Callable<Object> initialize( TimeWindowWriter writer )
+                            Callable initialize( TimeWindowWriter writer )
                             {
                                 this.writer = writer;
                                 return this;

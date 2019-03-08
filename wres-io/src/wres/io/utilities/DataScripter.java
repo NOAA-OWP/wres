@@ -42,54 +42,64 @@ public class DataScripter extends ScriptBuilder
         this.isHighPriority = highPriority;
     }
 
+    /**
+     * Sets whether or not to run the query within a single transaction
+     * @param useTransaction Whethr or not to run the query within a transaction
+     */
     public void setUseTransaction(boolean useTransaction)
     {
         this.useTransaction = useTransaction;
     }
 
+    /**
+     * Adds an argument to insert into the script while running the query in the database
+     * @param argument The argument to run in the database
+     */
     public void addArgument(final Object argument)
     {
         this.arguments.add(argument);
     }
 
+    /**
+     * Adds the name(s) of a table to lock prior to running the query
+     * @param tableNames A set of table names to lock
+     */
     public void addTablesToLock(String... tableNames)
     {
         this.lockTables.addAll( Arrays.asList( tableNames ) );
     }
 
-    public void execute(Collection<Object> parameters) throws SQLException
-    {
-        this.execute(parameters.toArray());
-    }
-
     /**
      * Executes the built script with the given parameters
      * @param parameters The values to use as parameters to the built script
+     * @return The number of modified rows
      * @throws SQLException Thrown if execution of the script fails
      */
-    public void execute(Object... parameters) throws SQLException
+    public int execute(Object... parameters) throws SQLException
     {
-        Database.execute( this.formQuery().setParameters( parameters ), this.isHighPriority );
+        return Database.execute( this.formQuery().setParameters( parameters ), this.isHighPriority );
     }
 
     /**
      * Executes the script in batch with the given parameters
      * @param parameters A collection of sets of objects to use as parameters
      *                   for one or more executions of the script
+     * @return the total number of rows modified by the batch operation
      * @throws SQLException Thrown if the script cannot execute in full
      */
-    public void execute(List<Object[]> parameters) throws SQLException
+    public int execute(List<Object[]> parameters) throws SQLException
     {
-        Database.execute( this.formQuery().setBatchParameters( parameters ), this.isHighPriority );
+        return Database.execute( this.formQuery().setBatchParameters( parameters ), this.isHighPriority );
     }
 
     /**
      * Runs the script in the database
+     * @return The number of updated or returned rows
      * @throws SQLException Thrown if execution fails
      */
-    public void execute() throws SQLException
+    public int execute() throws SQLException
     {
-        Database.execute( this.formQuery(), this.isHighPriority );
+        return Database.execute( this.formQuery(), this.isHighPriority );
     }
 
     /**
@@ -104,6 +114,12 @@ public class DataScripter extends ScriptBuilder
         return Database.retrieve( this.formQuery(), label, this.isHighPriority );
     }
 
+    /**
+     * Retrieves data from the database based on the formed query, in memory
+     * @param parameters A collection of parameters to pass into the formed query
+     * @return The collection of data loaded from the database
+     * @throws SQLException Thrown if an issue was encountered while communicating with the database
+     */
     public DataProvider getData(Object... parameters) throws SQLException
     {
         return Database.getData( this.formQuery().setParameters( parameters ), this.isHighPriority );
@@ -122,7 +138,16 @@ public class DataScripter extends ScriptBuilder
     }
 
     /**
-     * Retrieves the described data in a fully populated data provider
+     * Schedules the query to run in the database asynchronously
+     * @return The scheduled task
+     */
+    public Future issue()
+    {
+        return Database.issue( this.formQuery(), this.isHighPriority );
+    }
+
+    /**
+     * Retrieves the described data in a fully populated data provider, in memory
      * @return A DataSet containing all returned values
      * @throws SQLException Thrown if the DataSet could not be created
      */
@@ -131,6 +156,11 @@ public class DataScripter extends ScriptBuilder
         return Database.getData( this.formQuery(), this.isHighPriority );
     }
 
+    /**
+     * Retrieves the described data in a streaming data provider
+     * @return A DataSet containing all returned values
+     * @throws SQLException Thrown if the DataSet could not be created
+     */
     public DataProvider buffer() throws SQLException
     {
         return Database.buffer( this.formQuery(), this.isHighPriority );
@@ -168,6 +198,10 @@ public class DataScripter extends ScriptBuilder
         return Database.interpret( this.formQuery(), interpretor, this.isHighPriority );
     }
 
+    /**
+     * Creates the query to run in the database based on the configured settings
+     * @return The query to run
+     */
     private Query formQuery()
     {
         Query query = Query.withScript( this.toString() )
