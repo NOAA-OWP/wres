@@ -665,6 +665,10 @@ class NWCALReader extends S3Reader
     {
         AmazonS3 connection = this.getConnection();
         List<ETagKey> ingestableObjects = new ArrayList<>(  );
+
+        // We want to iterate through each generated pattern like "short_range/20180808/nwm.t0",
+        // then "short_range/20180809/nwm.t0". Based on how the object listings work, this is what will
+        // help us sort out the items in the sub-buckets that we need to look at
         for (PrefixPattern prefixPattern : this.getPrefixPatterns())
         {
             ListObjectsRequest request = new ListObjectsRequest(  );
@@ -679,7 +683,8 @@ class NWCALReader extends S3Reader
 
             int listAttempt = 0;
 
-            do
+            // Try to get the listing an acceptable amount of times
+            while (s3Objects == null)
             {
                 try
                 {
@@ -699,21 +704,27 @@ class NWCALReader extends S3Reader
                                             + "trying to get a list of objects to download. "
                                             + "Trying again...", clientException );
                 }
-            } while (s3Objects == null);
+            }
 
-            do
+            // Once we are able to read a listing of objects that match our prefix, we need to create keys
+            // for each object so that they may be read later
+            s3Objects.getObjectSummaries().forEach( summary -> {
+                // If the object's key matches the indicated pattern (think "*.channel_rt.*"), we want to
+                // add it to our list of objects to ingest
+                if (matcher.matches( Paths.get( summary.getKey()) ))
+                {
+                    ingestableObjects.add( new ETagKey( summary.getETag(),
+                                                        URI.create( summary.getKey() ) ) );
+                }
+            } );
+
+            // The S3 Object listings can support paging, so we want to grab the next sets of
+            // listings as long as the S3 responses tell us that some more lie in wait
+            while (!s3Objects.getObjectSummaries().isEmpty())
             {
-                s3Objects.getObjectSummaries().forEach( summary -> {
-                    if (matcher.matches( Paths.get( summary.getKey()) ))
-                    {
-                        ingestableObjects.add( new ETagKey( summary.getETag(),
-                                                            URI.create( summary.getKey() ) ) );
-                    }
-                } );
-
+                // Like before, there is an acceptable amount of times that the request may fail
                 listAttempt = 0;
-
-                do
+                while (true)
                 {
                     try
                     {
@@ -732,8 +743,20 @@ class NWCALReader extends S3Reader
                         this.getLogger().debug( "S3 exception encountered while retrieving the next "
                                                 + "set of results. Trying again...", clientException );
                     }
-                } while (true);
-            } while ( !s3Objects.getObjectSummaries().isEmpty() );
+                }
+
+                // Once we are able to read a listing of objects that match our prefix, we need to create keys
+                // for each object so that they may be read later
+                s3Objects.getObjectSummaries().forEach( summary -> {
+                    // If the object's key matches the indicated pattern (think "*.channel_rt.*"), we want to
+                    // add it to our list of objects to ingest
+                    if (matcher.matches( Paths.get( summary.getKey()) ))
+                    {
+                        ingestableObjects.add( new ETagKey( summary.getETag(),
+                                                            URI.create( summary.getKey() ) ) );
+                    }
+                } );
+            }
         }
 
         return ingestableObjects;
