@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.SortedSet;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.xml.bind.ValidationEvent;
 
@@ -33,6 +34,7 @@ import wres.config.generated.DestinationType;
 import wres.config.generated.DurationUnit;
 import wres.config.generated.Feature;
 import wres.config.generated.Format;
+import wres.config.generated.IntBoundsType;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
@@ -384,63 +386,58 @@ public class Validation
         Objects.requireNonNull( projectConfigPlus, NON_NULL );
 
         // Assume valid
-        boolean result = true;
+        AtomicBoolean result = new AtomicBoolean( true );
 
         ProjectConfig config = projectConfigPlus.getProjectConfig();
-        List<MetricConfig> metricConfig = metrics.getMetric();
-        for ( MetricConfig next : metricConfig )
-        {
-            // Named metric
-            if ( Objects.nonNull( next.getName() ) && MetricConfigName.ALL_VALID != next.getName() )
-            {
-                try
-                {
-                    MetricConstants checkMe = MetricConfigHelper.from( next.getName() );
+        
+        // Filter for non-null and not all valid
+        metrics.getMetric()
+               .stream()
+               .filter( next -> Objects.nonNull( next ) && next.getName() != MetricConfigName.ALL_VALID )
+               .forEach( nextMetric -> {
 
-                    // Check that the named metric is consistent with any pooling window configuration
-                    if ( projectConfigPlus.getProjectConfig().getPair().getIssuedDatesPoolingWindow() != null
-                         && checkMe != null
-                         && ! ( checkMe.isInGroup( StatisticGroup.DOUBLE_SCORE )
-                                || checkMe.isInGroup( StatisticGroup.DURATION_SCORE ) ) )
-                    {
-                        result = false;
-                        if ( LOGGER.isWarnEnabled() )
-                        {
-                            LOGGER.warn( "In file {}, a metric named {} was requested, but is not allowed. "
-                                         + "Only verification scores are allowed in "
-                                         + "combination with a poolingWindow configuration.",
-                                         projectConfigPlus.getOrigin(),
-                                         next.getName() );
-                        }
-                    }
-                    
-                    // Check that the CRPS has an explicit baseline
-                    if ( checkMe.equals( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE )
-                         && config.getInputs().getBaseline() == null )
-                    {
-                        result = false;
-                        if ( LOGGER.isWarnEnabled() )
-                        {
-                            LOGGER.warn( "In file {}, a metric named {} was requested, which requires an explicit "
-                                    + "baseline. Remove this metric or add the required baseline configuration.",
-                                         projectConfigPlus.getOrigin(),
-                                         next.getName() );
-                        }
-                    }
+                   try
+                   {
+                       MetricConstants checkMe = MetricConfigHelper.from( nextMetric.getName() );
 
-                }
-                // Handle the situation where a metric is recognized by the xsd but not by the ConfigMapper. This is
-                // unlikely and implies an incomplete implementation of a metric by the system  
-                catch ( MetricConfigException e )
-                {
-                    LOGGER.warn( "In file {}, a metric named {} was requested, but is not recognized by the system.",
-                                  projectConfigPlus.getOrigin(),
-                                  next.getName() );
-                    result = false;
-                }
-            }
-        }
-        return result;
+                       // Check that the named metric is consistent with any pooling window configuration
+                       if ( projectConfigPlus.getProjectConfig().getPair().getIssuedDatesPoolingWindow() != null
+                            && checkMe != null
+                            && ! ( checkMe.isInGroup( StatisticGroup.DOUBLE_SCORE )
+                                   || checkMe.isInGroup( StatisticGroup.DURATION_SCORE ) ) )
+                       {
+                           result.set( false );
+                           LOGGER.warn( "In file {}, a metric named {} was requested, but is not allowed. "
+                                        + "Only verification scores are allowed in "
+                                        + "combination with a poolingWindow configuration.",
+                                        projectConfigPlus.getOrigin(),
+                                        nextMetric.getName() );
+                       }
+
+                       // Check that the CRPS has an explicit baseline
+                       if ( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE.equals( checkMe )
+                            && config.getInputs().getBaseline() == null )
+                       {
+                           result.set( false );
+                           LOGGER.warn( "In file {}, a metric named {} was requested, which requires an explicit "
+                                        + "baseline. Remove this metric or add the required baseline configuration.",
+                                        projectConfigPlus.getOrigin(),
+                                        nextMetric.getName() );
+                       }
+
+                   }
+                   // Handle the situation where a metric is recognized by the xsd but not by the ConfigMapper. This is
+                   // unlikely and implies an incomplete implementation of a metric by the system  
+                   catch ( MetricConfigException e )
+                   {
+                       LOGGER.warn( "In file {}, a metric named {} was requested, but is not recognized by the system.",
+                                    projectConfigPlus.getOrigin(),
+                                    nextMetric.getName() );
+                       result.set( false );
+                   }
+               } );
+
+        return result.get();
     }
     
     /**
@@ -484,17 +481,15 @@ public class Validation
                     }
                     catch ( InvalidPathException ipe )
                     {
-                        if ( LOGGER.isWarnEnabled() )
-                        {
-                            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                         + " The path {} could not be found. "
-                                         + PLEASE_UPDATE,
-                                         projectConfigPlus.getOrigin(),
-                                         nextThreshold.sourceLocation().getLineNumber(),
-                                         nextThreshold.sourceLocation().getColumnNumber(),
-                                         thresholdData );
-                        }
-
+                        LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                                     + " The path {} could not be found. "
+                                     + " {}",
+                                     projectConfigPlus.getOrigin(),
+                                     nextThreshold.sourceLocation().getLineNumber(),
+                                     nextThreshold.sourceLocation().getColumnNumber(),
+                                     thresholdData,
+                                     PLEASE_UPDATE );
+                            
                         result = false;
                         continue;
                     }
@@ -503,17 +498,14 @@ public class Validation
 
                     if ( !destinationFile.canRead() || destinationFile.isDirectory() )
                     {
-                        if ( LOGGER.isWarnEnabled() )
-                        {
-                            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                         + " The path {} is not a readable file."
-                                         + " "
-                                         + PLEASE_UPDATE,
-                                         projectConfigPlus.getOrigin(),
-                                         nextThreshold.sourceLocation().getLineNumber(),
-                                         nextThreshold.sourceLocation().getColumnNumber(),
-                                         thresholdData );
-                        }
+                        LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                                     + " The path {} is not a readable file."
+                                     + " {}",
+                                     projectConfigPlus.getOrigin(),
+                                     nextThreshold.sourceLocation().getLineNumber(),
+                                     nextThreshold.sourceLocation().getColumnNumber(),
+                                     thresholdData,
+                                     PLEASE_UPDATE );
 
                         result = false;
                     }
@@ -688,12 +680,16 @@ public class Validation
                                                     pairConfig )
                  && result;
 
-        result = Validation.areDatesValid ( projectConfigPlus,
-                                            pairConfig.getDates() )
+        result = Validation.areDatesValid( projectConfigPlus,
+                                           pairConfig.getDates() )
                  && result;
 
-        result = Validation.areDatesValid ( projectConfigPlus,
-                                            pairConfig.getIssuedDates() )
+        result = Validation.areDatesValid( projectConfigPlus,
+                                           pairConfig.getIssuedDates() )
+                 && result;
+
+        result = Validation.areLeadTimesValid( projectConfigPlus,
+                                               pairConfig.getLeadHours() )
                  && result;
 
         result = Validation.isSeasonValid( projectConfigPlus,
@@ -701,12 +697,12 @@ public class Validation
                  && result;
 
         result = Validation.isDesiredTimeScaleValid( projectConfigPlus,
-                                                           pairConfig)
+                                                     pairConfig )
                  && result;
 
-        result = Validation.isPoolingWindowValid( pairConfig)
-                && result;
-        
+        result = Validation.areTimeWindowsValid( projectConfigPlus, pairConfig )
+                 && result;
+
         return result;
     }
 
@@ -835,6 +831,42 @@ public class Validation
         return result;
     }
 
+    /**
+     * Validates the lead times. The left bound must be less than or equal to the right bound.
+     * 
+     * @param projectConfigPlus the project declaration to help with messaging
+     * @param leadTimes the lead times to validate
+     * @return true if the lead times are null or one-sided or the right is greater than 
+     *            the left, otherwise false
+     */
+    
+    private static boolean areLeadTimesValid( ProjectConfigPlus projectConfigPlus,
+                                          IntBoundsType leadTimes )
+    {
+        Objects.requireNonNull( projectConfigPlus, NON_NULL );
+
+        boolean isValid = true;
+
+        if ( Objects.nonNull( leadTimes ) && Objects.nonNull( leadTimes.getMinimum() )
+             && Objects.nonNull( leadTimes.getMaximum() )
+             && leadTimes.getMinimum() > leadTimes.getMaximum() )
+        {
+            isValid = false;
+            
+            String msg = FILE_LINE_COLUMN_BOILERPLATE
+                         + " The maximum lead time '{}' cannot be greater "
+                         + "than the minimum lead time '{}'.";
+
+            LOGGER.warn( msg,
+                         projectConfigPlus.getOrigin(),
+                         leadTimes.sourceLocation().getLineNumber(),
+                         leadTimes.sourceLocation().getColumnNumber(),
+                         leadTimes.getMaximum(),
+                         leadTimes.getMinimum() );
+        }
+
+        return isValid;
+    }    
 
     /**
      * Validates a given feature's aliases from a projectconfig.
@@ -980,51 +1012,66 @@ public class Validation
 
         if ( season != null )
         {
+
+            MonthDay start = null;
+            MonthDay end = null;
+            
             try
             {
-                MonthDay.of( season.getEarliestMonth(),
-                             season.getEarliestDay() );
+                start = MonthDay.of( season.getEarliestMonth(),
+                                     season.getEarliestDay() );
             }
             catch ( DateTimeException dte )
             {
-                if ( LOGGER.isWarnEnabled() )
-                {
-                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                 + " The month {} and day {} combination does "
-                                 + "not appear to be valid. Please use numeric "
-                                 + "month and numeric day, such as 4 for April "
-                                 + "and 20 for 20th.",
-                                 projectConfigPlus.getOrigin(),
-                                 season.sourceLocation().getLineNumber(),
-                                 season.sourceLocation().getColumnNumber(),
-                                 season.getEarliestMonth(),
-                                 season.getEarliestDay() );
-                }
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + " The month {} and day {} combination does "
+                             + "not appear to be valid. Please use numeric "
+                             + "month and numeric day, such as 4 for April "
+                             + "and 20 for 20th.",
+                             projectConfigPlus.getOrigin(),
+                             season.sourceLocation().getLineNumber(),
+                             season.sourceLocation().getColumnNumber(),
+                             season.getEarliestMonth(),
+                             season.getEarliestDay() );
                 result = false;
             }
 
             try
             {
-                MonthDay.of( season.getLatestMonth(),
-                             season.getLatestDay() );
+                end = MonthDay.of( season.getLatestMonth(),
+                                   season.getLatestDay() );
             }
             catch ( DateTimeException dte )
             {
-                if ( LOGGER.isWarnEnabled() )
-                {
-                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                 + " The month {} and day {} combination does "
-                                 + "not appear to be valid. Please use numeric "
-                                 + "month and numeric day, such as 8 for August"
-                                 + " and 30 for 30th.",
-                                 projectConfigPlus.getOrigin(),
-                                 season.sourceLocation().getLineNumber(),
-                                 season.sourceLocation().getColumnNumber(),
-                                 season.getLatestMonth(),
-                                 season.getLatestDay() );
-                }
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + " The month {} and day {} combination does "
+                             + "not appear to be valid. Please use numeric "
+                             + "month and numeric day, such as 8 for August"
+                             + " and 30 for 30th.",
+                             projectConfigPlus.getOrigin(),
+                             season.sourceLocation().getLineNumber(),
+                             season.sourceLocation().getColumnNumber(),
+                             season.getLatestMonth(),
+                             season.getLatestDay() );
                 result = false;
             }
+            
+            // Is valid, but deserves a warning, 
+            if ( Objects.nonNull( start ) && Objects.nonNull( end ) && start.isAfter( end ) )
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + " The minimum month '{}' and day '{}' is later"
+                             + " than the maximum month '{}' and day '{}': wrapping is"
+                             + " allowed, but unusual.",
+                             projectConfigPlus.getOrigin(),
+                             season.sourceLocation().getLineNumber(),
+                             season.sourceLocation().getColumnNumber(),
+                             season.getEarliestMonth(),
+                             season.getEarliestDay(),
+                             season.getLatestMonth(),
+                             season.getLatestDay() );
+            }
+
         }
 
         return result;
@@ -1178,42 +1225,38 @@ public class Validation
     {
         boolean returnMe = true;
         // Existing aggregation cannot be an instant
-        if ( TimeScale.of( inputConfig ).isInstantaneous()  )
+        if ( TimeScale.of( inputConfig ).isInstantaneous() )
         {
             returnMe = false;
             String message = " When using a desired time aggregation of "
                              + TimeScaleFunction.TOTAL
                              + ", the existing time aggregation on the {} cannot be instantaneous.";
-            if ( LOGGER.isWarnEnabled() )
-            {
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + message,
-                             projectConfigPlus.getOrigin(),
-                             inputConfig.sourceLocation().getLineNumber(),
-                             inputConfig.sourceLocation().getColumnNumber(),
-                             helper );
-            }
+
+            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                         + message,
+                         projectConfigPlus.getOrigin(),
+                         inputConfig.sourceLocation().getLineNumber(),
+                         inputConfig.sourceLocation().getColumnNumber(),
+                         helper );
         }
-        
+
         // Existing function must be a sum
         if ( !inputConfig.getFunction()
-                            .equals( TimeScaleFunction.TOTAL ) )
+                         .equals( TimeScaleFunction.TOTAL ) )
         {
             returnMe = false;
             String message = " When using a desired time aggregation of "
-                    + TimeScaleFunction.TOTAL
-                    + ", the existing time aggregation on the {} must also be a "
-                    + TimeScaleFunction.TOTAL
-                    + ".";
-            if ( LOGGER.isWarnEnabled() )
-            {
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + message,
-                             projectConfigPlus.getOrigin(),
-                             inputConfig.sourceLocation().getLineNumber(),
-                             inputConfig.sourceLocation().getColumnNumber(),
-                             helper );
-            }
+                             + TimeScaleFunction.TOTAL
+                             + ", the existing time aggregation on the {} must also be a "
+                             + TimeScaleFunction.TOTAL
+                             + ".";
+
+            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                         + message,
+                         projectConfigPlus.getOrigin(),
+                         inputConfig.sourceLocation().getLineNumber(),
+                         inputConfig.sourceLocation().getColumnNumber(),
+                         helper );
         }
         return returnMe;
     }    
@@ -1315,104 +1358,241 @@ public class Validation
         if ( desired.compareTo( existing ) < 0 )
         {
             returnMe = false;
-            if ( LOGGER.isWarnEnabled() )
-            {
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + " The desired time aggregation of the pairs is smaller than the existing time "
-                             + "aggregation of the {}: disaggregation is not supported.",
-                             projectConfigPlus.getOrigin(),
-                             helper.sourceLocation().getLineNumber(),
-                             helper.sourceLocation().getColumnNumber(),
-                             helperString );
-            }
+            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                         + " The desired time aggregation of the pairs is smaller than the existing time "
+                         + "aggregation of the {}: disaggregation is not supported.",
+                         projectConfigPlus.getOrigin(),
+                         helper.sourceLocation().getLineNumber(),
+                         helper.sourceLocation().getColumnNumber(),
+                         helperString );
         }
         // Desired is not an integer multiple of existing
         if ( desired.toMillis() % existing.toMillis() != 0 )
         {
             returnMe = false;
-            if ( LOGGER.isWarnEnabled() )
-            {
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + " The desired time aggregation of the pairs is not an integer multiple of the "
-                             + "existing time aggregation of the {}.",
-                             projectConfigPlus.getOrigin(),
-                             helper.sourceLocation().getLineNumber(),
-                             helper.sourceLocation().getColumnNumber(),
-                             helperString );
-            }
+            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                         + " The desired time aggregation of the pairs is not an integer multiple of the "
+                         + "existing time aggregation of the {}.",
+                         projectConfigPlus.getOrigin(),
+                         helper.sourceLocation().getLineNumber(),
+                         helper.sourceLocation().getColumnNumber(),
+                         helperString );
         }
         return returnMe;
     }
 
-    private static boolean isPoolingWindowValid( PairConfig pairConfig )
+    /**
+     * Validates the time windows. 
+     * 
+     * @param projectConfigPlus the project declaration, which helps with messaging
+     * @param pairConfig the pair configuration
+     * @return true if the time windows are valid, otherwise false
+     */
+
+    private static boolean areTimeWindowsValid( ProjectConfigPlus projectConfigPlus, PairConfig pairConfig )
     {
-        
-        //No pooling config
-        if( pairConfig.getIssuedDatesPoolingWindow() == null )
-        {
-            return true;
-        }
-        
         boolean valid = true;
 
-        PoolingWindowConfig poolingConfig = pairConfig.getIssuedDatesPoolingWindow();
-        StringBuilder warning = new StringBuilder();
+        valid = Validation.isIssuedDatesPoolingWindowValid( projectConfigPlus, pairConfig );
 
-        if (pairConfig.getIssuedDates() == null || pairConfig.getIssuedDates().getLatest() == null || pairConfig.getIssuedDates().getEarliest() == null)
+        valid = valid && Validation.isLeadTimesPoolingWindowValid( projectConfigPlus, pairConfig );
+
+        return valid;
+    }
+    
+    /**
+     * Checks for issued dates pooling windows and validates for consistency with other
+     * declaration, as well as internal consistency.
+     * 
+     * @param projectConfigPlus the project declaration, which helps with messaging
+     * @param pairConfig the pair configuration
+     * @return true if the issued dates pooling windows are undefined or valid, otherwise false
+     */
+
+    private static boolean isIssuedDatesPoolingWindowValid( ProjectConfigPlus projectConfigPlus, PairConfig pairConfig )
+    {
+        boolean valid = true;
+
+        // Validate any issuedDatesPoolingWindow
+        if ( Objects.nonNull( pairConfig.getIssuedDatesPoolingWindow() ) )
         {
-            valid = false;
+            PoolingWindowConfig issuedDatesPoolingConfig = pairConfig.getIssuedDatesPoolingWindow();
 
-            if (warning.length() > 0 )
-            {
-                warning.append( System.lineSeparator() );
-            }
-
-            warning.append("Both an earliest and latest date are required if "
-                           + "data pooling is to be used. Please set the "
-                           + "earliest and latest issue dates.");
-        }
-
-        // Non-null frequency must be >= 1. Otherwise there'd be an infinite loop
-        if ( poolingConfig.getFrequency() != null && poolingConfig.getFrequency() < 1 )
-        {
-            valid = false;
+            String issuedBoiler = " Error when evaluating the declaration for issued dates "
+                                  + "pooling windows:";
             
-            if ( warning.length() > 0 )
+            // Check that the issued dates are defined
+            if ( Objects.isNull( pairConfig.getIssuedDates() ) )
             {
-                warning.append( System.lineSeparator() );
+                valid = false;
+
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + "{} the minimum and maximum issued dates "
+                             + "are required, but were not found.",
+                             projectConfigPlus.getOrigin(),
+                             pairConfig.sourceLocation().getLineNumber(),
+                             pairConfig.sourceLocation().getColumnNumber(),
+                             issuedBoiler );
+            }
+            else
+            {
+                // Check for the minimum
+                if ( Objects.isNull( pairConfig.getIssuedDates().getEarliest() ) )
+                {
+                    valid = false;
+
+                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                                 + "{} the minimum issued date was not found but is required.",
+                                 projectConfigPlus.getOrigin(),
+                                 pairConfig.getIssuedDates().sourceLocation().getLineNumber(),
+                                 pairConfig.getIssuedDates().sourceLocation().getColumnNumber(),
+                                 issuedBoiler );
+                }
+
+                // Check for the maximum
+                if ( Objects.isNull( pairConfig.getIssuedDates().getLatest() ) )
+                {
+                    valid = false;
+
+                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                                 + "{} the maximum issued date was not found but is required.",
+                                 projectConfigPlus.getOrigin(),
+                                 pairConfig.getIssuedDates().sourceLocation().getLineNumber(),
+                                 pairConfig.getIssuedDates().sourceLocation().getColumnNumber(),
+                                 issuedBoiler );
+                }
             }
 
-            warning.append( "A time pooling frequency of " +
-                            poolingConfig.getFrequency()
-                            +
-                            " is not valid; it must be at least 1 in order to "
-                            +
-                            "move on to the next window." );
-        }
+            // Validate the contents
+            valid = valid
+                    && Validation.isPoolingWindowValid( projectConfigPlus, issuedDatesPoolingConfig, "issued dates" );
 
-        if ( poolingConfig.getPeriod() != null && poolingConfig.getPeriod() < 0 )
-        {
-            valid = false;
-
-            if ( warning.length() > 0 )
-            {
-                warning.append( System.lineSeparator() );
-            }
-
-            warning.append( "The period of a window for time pooling " +
-                            "must be at least 0." );
-        }
-        
-        // TODO: validate time units
-
-        if ( !valid && LOGGER.isWarnEnabled() )
-        {
-            LOGGER.warn( warning.toString() );
         }
 
         return valid;
-    }    
-        
+    }          
+    
+    /**
+     * Checks for lead times pooling windows and validates for consistency with other
+     * declaration, as well as internal consistency.
+     * 
+     * @param projectConfigPlus the project declaration, which helps with messaging
+     * @param pairConfig the pair configuration
+     * @return true if the lead time pooling windows are undefined or valid, otherwise false
+     */
+
+    private static boolean isLeadTimesPoolingWindowValid( ProjectConfigPlus projectConfigPlus, PairConfig pairConfig )
+    {
+        boolean valid = true;
+
+        // Validate any leadTimesPoolingWindow
+        if ( Objects.nonNull( pairConfig.getLeadTimesPoolingWindow() ) )
+        {
+            PoolingWindowConfig leadTimesPoolingConfig = pairConfig.getLeadTimesPoolingWindow();
+
+//            String leadBoiler = " Error when evaluating the declaration for lead times " +
+//                                "pooling windows:";
+//            
+//            // Check that the lead times are defined
+//            if ( Objects.isNull( pairConfig.getLeadHours() ) )
+//            {
+//                valid = false;
+//
+//                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+//                             + "{} the minimum and maximum lead times "
+//                             + "are required but were not found.",
+//                             projectConfigPlus.getOrigin(),
+//                             pairConfig.sourceLocation().getLineNumber(),
+//                             pairConfig.sourceLocation().getColumnNumber(),
+//                             leadBoiler );
+//            }
+//            else
+//            {
+//                // Check for the minimum
+//                if ( Objects.isNull( pairConfig.getLeadHours().getMinimum() ) )
+//                {
+//                    valid = false;
+//
+//                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+//                                 + "{} the minimum lead time was not found but is required.",
+//                                 projectConfigPlus.getOrigin(),
+//                                 pairConfig.getLeadHours().sourceLocation().getLineNumber(),
+//                                 pairConfig.getLeadHours().sourceLocation().getColumnNumber(),
+//                                 leadBoiler );
+//                }
+//
+//                // Check for the maximum
+//                if ( Objects.isNull( pairConfig.getLeadHours().getMaximum() ) )
+//                {
+//                    valid = false;
+//
+//                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+//                                 + "{} the maximum lead time was not found but is required.",
+//                                 projectConfigPlus.getOrigin(),
+//                                 pairConfig.getLeadHours().sourceLocation().getLineNumber(),
+//                                 pairConfig.getLeadHours().sourceLocation().getColumnNumber(),
+//                                 leadBoiler );
+//                }
+//            }
+
+            // Validate the contents
+            valid = valid && Validation.isPoolingWindowValid( projectConfigPlus, leadTimesPoolingConfig, "lead times" );
+
+        }
+
+        return valid;
+    }
+
+    /**
+     * Validates the specified time windows. 
+     * 
+     * @param projectConfigPlus the project declaration, which helps with messaging
+     * @param windowConfig the time window configuration
+     * @param windowType a string that identifies the window type for messaging 
+     * @return true if the time windows are valid, otherwise false
+     */
+
+    private static boolean isPoolingWindowValid( ProjectConfigPlus projectConfigPlus,
+                                                 PoolingWindowConfig windowConfig,
+                                                 String windowType )
+    {
+        boolean valid = true;
+
+        // Frequency must be >= 1
+        if ( Objects.nonNull( windowConfig.getFrequency() ) && windowConfig.getFrequency() < 1 )
+        {
+            valid = false;
+
+            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                         + " Error when evaluating the declaration for {} "
+                         + "pooling windows: the frequency must be at least 1 "
+                         + "but was '{}', which is not valid.",
+                         projectConfigPlus.getOrigin(),
+                         windowConfig.sourceLocation().getLineNumber(),
+                         windowConfig.sourceLocation().getColumnNumber(),
+                         windowType,
+                         windowConfig.getFrequency() );
+        }
+
+        // Period must be >= 1
+        if ( Objects.nonNull( windowConfig.getPeriod() ) && windowConfig.getPeriod() < 1 )
+        {
+            valid = false;
+
+            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                         + " Error when evaluating the declaration for {} "
+                         + "pooling windows: the period must be at least 1 "
+                         + "but was '{}', which is not valid.",
+                         projectConfigPlus.getOrigin(),
+                         windowConfig.sourceLocation().getLineNumber(),
+                         windowConfig.sourceLocation().getColumnNumber(),
+                         windowType,
+                         windowConfig.getPeriod() );
+        }
+
+        return valid;
+    }
+    
     private static boolean areDataSourceConfigsValid( ProjectConfigPlus projectConfigPlus )
     {
         boolean result = true;
@@ -1427,14 +1607,11 @@ public class Validation
              left.getType() == DatasourceType.ENSEMBLE_FORECASTS)
         {
             // The message is the same whether for period or duration
-            if (LOGGER.isWarnEnabled() )
-            {
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + " The left data source cannot be any type of forecast.",
-                             projectConfigPlus,
-                             left.sourceLocation().getLineNumber(),
-                             left.sourceLocation().getColumnNumber() );
-            }
+            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                         + " The left data source cannot be any type of forecast.",
+                         projectConfigPlus,
+                         left.sourceLocation().getLineNumber(),
+                         left.sourceLocation().getColumnNumber() );
         }
 
         result = Validation.isDataSourceConfigValid( projectConfigPlus,
