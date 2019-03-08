@@ -237,13 +237,14 @@ public class Query
      * @param connection The connection to run the script on
      * @throws SQLException Thrown if an error was encountered when interacting with the database
      */
-    public void execute(final Connection connection) throws SQLException
+    public int execute(final Connection connection) throws SQLException
     {
         // Record the initial auto commit state. If we change this state, we want to
         // ensure that it returns to it after we're done. If a transactional connection is passed in
         // through multiple queries, we want to make sure the transaction doesn't close
         final boolean initialAutoCommit = connection.getAutoCommit();
         Timer timer = null;
+        int rowsModified;
 
         // If we're in debug mode, we want to add any scripts that take longer than TIMER_DELAY ms to complete
         if (LOGGER.isDebugEnabled())
@@ -271,18 +272,18 @@ public class Query
             // them to the statement that is run in the database
             if ( this.batchParameters != null )
             {
-                this.batchExecute( connection );
+                rowsModified = this.batchExecute( connection );
             }
             else if ( this.parameters != null )
             {
                 // If we have parameters for just a single call, we need to call a separate function to attach
                 // them to the statement that is run in the database
-                this.executeWithParameters( connection );
+                rowsModified = this.executeWithParameters( connection );
             }
             else
             {
                 // Otherwise the script may be run in the database without any extra handling
-                this.executeQuery( connection );
+                rowsModified = this.executeQuery( connection );
             }
 
             // If the connection can't commit without prompting, we need to go ahead and do so manually
@@ -322,6 +323,8 @@ public class Query
                 timer.cancel();
             }
         }
+
+        return rowsModified;
     }
 
     /**
@@ -330,13 +333,21 @@ public class Query
      * @throws SQLException Thrown if the prepared statement required to run the script could not be created
      * @throws SQLException Thrown if an error was encountered when running the script in the database
      */
-    private void batchExecute(final Connection connection) throws SQLException
+    private int batchExecute(final Connection connection) throws SQLException
     {
+        int rowsModified = 0;
         // We need to make sure that the statement is cleaned up after execution
         try(PreparedStatement statement = this.prepareStatement( connection ))
         {
-            statement.executeBatch();
+            int[] updates = statement.executeBatch();
+
+            for (int update : updates)
+            {
+                rowsModified += update;
+            }
         }
+
+        return rowsModified;
     }
 
     /**
@@ -345,13 +356,31 @@ public class Query
      * @throws SQLException Thrown if the prepared statement required to run the script could not be created
      * @throws SQLException Thrown if an error was encountered when running the script in the database
      */
-    private void executeWithParameters(final Connection connection) throws SQLException
+    private int executeWithParameters(final Connection connection) throws SQLException
     {
+        int rowsModified = 0;
+
         // We need to make sure that the statement is cleaned up after execution
         try(PreparedStatement preparedStatement = this.prepareStatement( connection ))
         {
-            preparedStatement.execute();
+            boolean generatedResultSet = preparedStatement.execute();
+
+            if (generatedResultSet)
+            {
+                ResultSet executionResults = preparedStatement.getResultSet();
+
+                while (executionResults.next())
+                {
+                    rowsModified++;
+                }
+            }
+            else
+            {
+                rowsModified = preparedStatement.getUpdateCount();
+            }
         }
+
+        return rowsModified;
     }
 
     /**
@@ -360,13 +389,30 @@ public class Query
      * @throws SQLException Thrown if the statement required to run the script could not be created
      * @throws SQLException Thrown if an error was encountered when running the script in the database
      */
-    private void executeQuery(final Connection connection) throws SQLException
+    private int executeQuery(final Connection connection) throws SQLException
     {
+        int modifiedRows = 0;
         // We need to make sure that the statement is cleaned up after execution
         try (Statement statement = this.createStatement( connection ))
         {
-            statement.execute( this.script );
+            boolean generatedResultSet = statement.execute( this.script );
+
+            if (generatedResultSet)
+            {
+                ResultSet executionResults = statement.getResultSet();
+
+                while (executionResults.next())
+                {
+                    modifiedRows++;
+                }
+            }
+            else
+            {
+                modifiedRows = statement.getUpdateCount();
+            }
         }
+
+        return modifiedRows;
     }
 
     /**

@@ -956,8 +956,16 @@ public final class Database {
         return true;
     }
 
-    static void execute( final Query query, final boolean isHighPriority) throws SQLException
+    /**
+     * Runs a single query in the database
+     * @param query The query to run
+     * @param isHighPriority Whether or not to run the query on a high priority connection
+     * @return The number of rows modified or returned by the query
+     * @throws SQLException Thrown if an issue was encountered while communicating with the database
+     */
+    static int execute( final Query query, final boolean isHighPriority) throws SQLException
     {
+        int modifiedRows = 0;
         Connection connection = null;
 
         try
@@ -971,7 +979,7 @@ public final class Database {
                 connection = Database.getConnection();
             }
 
-            query.execute( connection );
+            modifiedRows = query.execute( connection );
         }
         finally
         {
@@ -987,6 +995,8 @@ public final class Database {
                 }
             }
         }
+
+        return modifiedRows;
     }
 
     /**
@@ -1035,9 +1045,18 @@ public final class Database {
         return new SQLDataProvider( connection, query.call( connection ) );
     }
 
+    /**
+     * Retrieves a single value from a field from a query
+     * @param query The query to run that will retrieve a value from the database
+     * @param label The name of the field that will contain the requested value
+     * @param isHighPriority Whether or not to run the query on a high priority connection
+     * @param <V> The type of value to retrieve from the query
+     * @return null if no data could be loaded, the value of the retrieved field otherwise
+     * @throws SQLException Thrown if an issue was encountered while communicating with the database
+     */
     static <V> V retrieve( final Query query, final String label, final boolean isHighPriority) throws SQLException
     {
-        try(DataProvider data = Database.getData( query, isHighPriority ))
+        try(DataProvider data = Database.buffer( query, isHighPriority ))
         {
             if (data.isEmpty())
             {
@@ -1047,20 +1066,39 @@ public final class Database {
         }
     }
 
-    static void consume( final Query query, ExceptionalConsumer<DataProvider, SQLException> consumer, final boolean isHighPriority) throws SQLException
+    /**
+     * Runs the passed in method on every entry within a generated {@link DataProvider}
+     * @param query The query that will collect data to feed into the passed method
+     * @param consumer The method that will consume the query results
+     * @param isHighPriority Whether or not to run the query on a high priority connection
+     * @throws SQLException Thrown if an error was encountered while communicating with the database
+     */
+    static void consume(
+            final Query query,
+            ExceptionalConsumer<DataProvider, SQLException> consumer,
+            final boolean isHighPriority)
+            throws SQLException
     {
-
-        try (DataProvider data = Database.getData( query, isHighPriority))
+        try (DataProvider data = Database.buffer( query, isHighPriority))
         {
             data.consume( consumer );
         }
     }
 
+    /**
+     * Transforms the results of a query into a list of objects
+     * @param query The query to will return data
+     * @param interpretor A function that will transform values from a {@link DataProvider} into the desired object
+     * @param isHighPriority Whether or not to run the query on a high priority connection
+     * @param <U> The type of object that the {@link DataProvider} entry will be transformed into
+     * @return A list of the transformed items
+     * @throws SQLException Thrown if the query encounters an error while communicating with the database
+     */
     static <U> List<U> interpret( final Query query, ExceptionalFunction<DataProvider, U, SQLException> interpretor, final boolean isHighPriority) throws SQLException
     {
         List<U> result;
 
-        try (DataProvider data = Database.getData( query, isHighPriority))
+        try (DataProvider data = Database.buffer( query, isHighPriority))
         {
             result = new ArrayList<>( data.interpret( interpretor ) );
         }
@@ -1068,6 +1106,14 @@ public final class Database {
         return result;
     }
 
+    /**
+     * Schedules a query to run asynchronously and return a single value
+     * @param query The query to run
+     * @param label The name of the field containing the value to return
+     * @param isHighPriority Whether or not to run the query on a high priority connection
+     * @param <V> The type of value to return
+     * @return A scheduled task that will return the value from the named field
+     */
     static <V> Future<V> submit( final Query query, final String label, final boolean isHighPriority)
     {
         WRESCallable<V> queryToSubmit = new WRESCallable<V>() {
@@ -1099,7 +1145,13 @@ public final class Database {
         return Database.submit( queryToSubmit );
     }
 
-    static Future issue( final Query query, final boolean isHighPriority)
+    /**
+     * Schedules a query to run asynchronously with no regard to an result
+     * @param query The query to schedule
+     * @param isHighPriority Whether or not the query should be run on a high priority connection
+     * @return The record for the scheduled task
+     */
+    static Future issue(final Query query, final boolean isHighPriority)
     {
         WRESRunnable queryToIssue = new WRESRunnable() {
             @Override
