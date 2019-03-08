@@ -1490,50 +1490,50 @@ public class Validation
         {
             PoolingWindowConfig leadTimesPoolingConfig = pairConfig.getLeadTimesPoolingWindow();
 
-//            String leadBoiler = " Error when evaluating the declaration for lead times " +
-//                                "pooling windows:";
-//            
-//            // Check that the lead times are defined
-//            if ( Objects.isNull( pairConfig.getLeadHours() ) )
-//            {
-//                valid = false;
-//
-//                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-//                             + "{} the minimum and maximum lead times "
-//                             + "are required but were not found.",
-//                             projectConfigPlus.getOrigin(),
-//                             pairConfig.sourceLocation().getLineNumber(),
-//                             pairConfig.sourceLocation().getColumnNumber(),
-//                             leadBoiler );
-//            }
-//            else
-//            {
-//                // Check for the minimum
-//                if ( Objects.isNull( pairConfig.getLeadHours().getMinimum() ) )
-//                {
-//                    valid = false;
-//
-//                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-//                                 + "{} the minimum lead time was not found but is required.",
-//                                 projectConfigPlus.getOrigin(),
-//                                 pairConfig.getLeadHours().sourceLocation().getLineNumber(),
-//                                 pairConfig.getLeadHours().sourceLocation().getColumnNumber(),
-//                                 leadBoiler );
-//                }
-//
-//                // Check for the maximum
-//                if ( Objects.isNull( pairConfig.getLeadHours().getMaximum() ) )
-//                {
-//                    valid = false;
-//
-//                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-//                                 + "{} the maximum lead time was not found but is required.",
-//                                 projectConfigPlus.getOrigin(),
-//                                 pairConfig.getLeadHours().sourceLocation().getLineNumber(),
-//                                 pairConfig.getLeadHours().sourceLocation().getColumnNumber(),
-//                                 leadBoiler );
-//                }
-//            }
+            String leadBoiler = " Error when evaluating the declaration for lead times " +
+                                "pooling windows:";
+            
+            // Check that the lead times are defined
+            if ( Objects.isNull( pairConfig.getLeadHours() ) )
+            {
+                valid = false;
+
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + "{} the minimum and maximum lead times "
+                             + "are required but were not found.",
+                             projectConfigPlus.getOrigin(),
+                             pairConfig.sourceLocation().getLineNumber(),
+                             pairConfig.sourceLocation().getColumnNumber(),
+                             leadBoiler );
+            }
+            else
+            {
+                // Check for the minimum
+                if ( Objects.isNull( pairConfig.getLeadHours().getMinimum() ) )
+                {
+                    valid = false;
+
+                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                                 + "{} the minimum lead time was not found but is required.",
+                                 projectConfigPlus.getOrigin(),
+                                 pairConfig.getLeadHours().sourceLocation().getLineNumber(),
+                                 pairConfig.getLeadHours().sourceLocation().getColumnNumber(),
+                                 leadBoiler );
+                }
+
+                // Check for the maximum
+                if ( Objects.isNull( pairConfig.getLeadHours().getMaximum() ) )
+                {
+                    valid = false;
+
+                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                                 + "{} the maximum lead time was not found but is required.",
+                                 projectConfigPlus.getOrigin(),
+                                 pairConfig.getLeadHours().sourceLocation().getLineNumber(),
+                                 pairConfig.getLeadHours().sourceLocation().getColumnNumber(),
+                                 leadBoiler );
+                }
+            }
 
             // Validate the contents
             valid = valid && Validation.isPoolingWindowValid( projectConfigPlus, leadTimesPoolingConfig, "lead times" );
