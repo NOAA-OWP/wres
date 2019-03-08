@@ -226,7 +226,10 @@ public class SQLDataProvider implements DataProvider
     {
         try
         {
-            return this.resultSet.isAfterLast();
+            // If `getRow` is 1 or more, that means that there is at least one value, and `isBeforeFirst`
+            // is only true if it is before the first value. The combination means that it hasn't moved on
+            // to a row of data AND nothing lies after the first value
+            return this.resultSet.getRow() == 0 && !this.resultSet.isBeforeFirst();
         }
         catch ( SQLException e )
         {
