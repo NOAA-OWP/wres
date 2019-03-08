@@ -15,6 +15,7 @@
     <pair label="Pairs by location and lead time"> <!-- required for unit -->
         <unit>CMS</unit>
         <feature state="OK" />
+        <leadHours minimum="0" maximum="18" />
         <dates earliest="2017-08-08T00:00:00Z" latest="2017-08-09T17:00:00Z" />
         <issuedDates earliest="2017-08-08T00:00:00Z" latest="2017-08-08T23:00:00Z" />
         <issuedDatesPoolingWindow>
