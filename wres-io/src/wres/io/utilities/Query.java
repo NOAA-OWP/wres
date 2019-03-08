@@ -286,6 +286,10 @@ public class Query
                 rowsModified = this.executeQuery( connection );
             }
 
+            // If no rows were modified, the returning value will be -1, so set the number of modified rows
+            // to 0 if that were the case
+            rowsModified = Math.max( rowsModified, 0 );
+
             // If the connection can't commit without prompting, we need to go ahead and do so manually
             if (!connection.getAutoCommit())
             {
