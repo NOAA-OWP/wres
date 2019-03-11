@@ -2,18 +2,13 @@ package wres.systests;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.sql.SQLException;
 
-import static org.junit.Assert.assertEquals;
 import org.junit.Before;
 import org.junit.Test;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.ProjectConfigPlus;
-import wres.control.Control;
 import wres.io.Operations;
 
 public class Scenario001
@@ -26,35 +21,37 @@ public class Scenario001
     @Before
     public void beforeIndividualTest() throws IOException, SQLException
     {
-        LOGGER.info( "{}{}",
-                     "########################################################## EXECUTION ",
-                     NEWLINE );
+        LOGGER.info( "########################################################## EXECUTING "
+                     + this.getClass().getSimpleName().toLowerCase()
+                     + NEWLINE );
         Path baseDirectory = ScenarioHelper.getBaseDirectory();
         this.scenarioInfo = new Scenario( this.getClass()
                                               .getSimpleName()
                                               .toLowerCase(),
                                           baseDirectory );
+        LOGGER.info( "####>> Cleaning the database..." );
         Operations.cleanDatabase();
+        
+        LOGGER.info( "####>> Removing any existing old output directories..." );
         ScenarioHelper.deleteOldOutputDirectories( scenarioInfo.getScenarioDirectory() );
+        
+        LOGGER.info( "####>> Setting properties for run based on user settings..." );
         ScenarioHelper.setAllPropertiesFromEnvVars( scenarioInfo );
     }
 
     @Test
     public void testScenario()
     {
-        Path config = this.scenarioInfo.getScenarioDirectory()
-                                       .resolve( ScenarioHelper.USUAL_EVALUATION_FILE_NAME );
-
-        //Execute the control and return the exit code if its not zero.  No need to go further.
-        String args[] = { config.toString() };
-        Control wresEvaluation = new Control();
-        int exitCode = wresEvaluation.apply( args );
-        assertEquals( "Execution of WRES failed with exit code " + exitCode
-                      + "; see log for more information!",
-                      0,
-                      exitCode );
-        ScenarioHelper.assertWRESOutputValid( wresEvaluation );
-        ScenarioHelper.assertOutputsMatchBenchmarks( this.scenarioInfo,
-                                                     wresEvaluation );
+        LOGGER.info( "####>> Beginning test execution..." );
+        ScenarioHelper.assertExecuteScenario( scenarioInfo );
+        
+        //This method does it based on a file listing of the output directory.
+        //The other choice can work if you have a Control available, in which case
+        //you can get the output paths from the Control via its get method.
+        LOGGER.info( "####>> Assert outputs match benchmarks..." );
+        ScenarioHelper.assertOutputsMatchBenchmarks( scenarioInfo );
+        LOGGER.info( "########################################################## COMPLETED "
+                + this.getClass().getSimpleName().toLowerCase() + NEWLINE);
     }
 }
+
