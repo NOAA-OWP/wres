@@ -161,14 +161,13 @@ public class ProjectConfigPlus
 
         ProjValidationEventHandler validationEventCollector = new ProjValidationEventHandler();
 
-        try
+        try ( Reader reader = new StringReader( rawConfig );
+              InputStream schemaStream = ClassLoader.getSystemResourceAsStream( XSD_NAME ) )
         {
-            Reader reader = new StringReader( rawConfig );
             Source xmlSource = new StreamSource( reader );
             JAXBContext jaxbContext = JAXBContext.newInstance(ObjectFactory.class);
 
             // Validate against schema during unmarshaling
-            InputStream schemaStream = ClassLoader.getSystemResourceAsStream( XSD_NAME );
             Source schemaSource = new StreamSource( schemaStream );
             SchemaFactory schemaFactory =
                     SchemaFactory.newInstance( XMLConstants.W3C_XML_SCHEMA_NS_URI );

@@ -434,6 +434,7 @@ public final class Database {
 		// Close out our database connection pools
         CONNECTION_POOL.close();
         HIGH_PRIORITY_CONNECTION_POOL.close();
+        DATABASE_LOCK_MANAGER.shutdown();
 	}
 
 
@@ -469,6 +470,7 @@ public final class Database {
         abandoned.addAll( abandonedMore );
         CONNECTION_POOL.close();
         HIGH_PRIORITY_CONNECTION_POOL.close();
+        DATABASE_LOCK_MANAGER.shutdown();
         return abandoned;
     }
 
