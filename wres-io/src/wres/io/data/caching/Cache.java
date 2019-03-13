@@ -147,14 +147,6 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
             }
         }
     }
-	
-	void add( U key, Integer id )
-	{
-	    synchronized (this.getKeyLock())
-        {
-	        this.getKeyIndex().put(key, id);
-	    }
-	}
 
 	public boolean isEmpty()
     {

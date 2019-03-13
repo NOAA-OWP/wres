@@ -235,6 +235,7 @@ public class Query
     /**
      * Runs the script on the database without regard for results
      * @param connection The connection to run the script on
+     * @return The number of modified rows
      * @throws SQLException Thrown if an error was encountered when interacting with the database
      */
     public int execute(final Connection connection) throws SQLException
@@ -334,6 +335,7 @@ public class Query
     /**
      * Runs the script with each set of parameters
      * @param connection The connection to run the script on
+     * @return The number of modified rows
      * @throws SQLException Thrown if the prepared statement required to run the script could not be created
      * @throws SQLException Thrown if an error was encountered when running the script in the database
      */
@@ -357,6 +359,7 @@ public class Query
     /**
      * Run the script once with the given parameters
      * @param connection The connection to run the script on
+     * @return The number of modified rows
      * @throws SQLException Thrown if the prepared statement required to run the script could not be created
      * @throws SQLException Thrown if an error was encountered when running the script in the database
      */
@@ -371,12 +374,9 @@ public class Query
 
             if (generatedResultSet)
             {
-                ResultSet executionResults = preparedStatement.getResultSet();
-
-                while (executionResults.next())
-                {
-                    rowsModified++;
-                }
+                throw new UnsupportedOperationException(
+                        "Results from queries may not be formed through execute statements. Use call instead."
+                );
             }
             else
             {
@@ -390,6 +390,7 @@ public class Query
     /**
      * Run the script with no extra handling
      * @param connection The connection to run the script on
+     * @return The number of modified rows
      * @throws SQLException Thrown if the statement required to run the script could not be created
      * @throws SQLException Thrown if an error was encountered when running the script in the database
      */
@@ -403,12 +404,9 @@ public class Query
 
             if (generatedResultSet)
             {
-                ResultSet executionResults = statement.getResultSet();
-
-                while (executionResults.next())
-                {
-                    modifiedRows++;
-                }
+                throw new UnsupportedOperationException(
+                        "Results from queries may not be formed through execute statements. Use call instead."
+                );
             }
             else
             {
