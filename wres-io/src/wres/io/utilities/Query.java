@@ -243,6 +243,8 @@ public class Query
         // ensure that it returns to it after we're done. If a transactional connection is passed in
         // through multiple queries, we want to make sure the transaction doesn't close
         final boolean initialAutoCommit = connection.getAutoCommit();
+        //final int initialTransactionIsolation = connection.getTransactionIsolation();
+
         Timer timer = null;
         int rowsModified;
 
@@ -260,6 +262,7 @@ public class Query
             if (this.forceTransaction)
             {
                 connection.setAutoCommit( false );
+                //connection.setTransactionIsolation( Connection.TRANSACTION_SERIALIZABLE );
             }
 
             // If we have tables we need to lock, we need to go ahead and do that here before we run the query
@@ -314,6 +317,12 @@ public class Query
         }
         finally
         {
+            // Reset the transaction isolation level to its previous state
+            //if ( connection.getTransactionIsolation() != initialTransactionIsolation )
+            //{
+            //    connection.setTransactionIsolation( initialTransactionIsolation );
+            //}
+
             // If the connection is in a transaction, we probably modified it, so we want to return it to
             // the previous state
             if (!connection.getAutoCommit())
