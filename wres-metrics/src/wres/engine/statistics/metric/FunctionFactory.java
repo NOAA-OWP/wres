@@ -1,6 +1,7 @@
 package wres.engine.statistics.metric;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -118,7 +119,7 @@ public class FunctionFactory
     {
         return ( input, digits ) -> {
             BigDecimal bd = new BigDecimal( Double.toString( input ) ); //Always use String constructor
-            bd = bd.setScale( digits, BigDecimal.ROUND_HALF_UP );
+            bd = bd.setScale( digits, RoundingMode.HALF_UP );
             return bd.doubleValue();
         };
     }

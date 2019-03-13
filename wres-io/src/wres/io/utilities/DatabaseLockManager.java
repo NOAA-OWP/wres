@@ -9,7 +9,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
@@ -83,7 +83,8 @@ class DatabaseLockManager
         this.lockOne = new ReentrantLock();
         this.lockTwo = new ReentrantLock();
 
-        this.connectionMonitorService = Executors.newScheduledThreadPool( 1 );
+        ThreadFactory monitorService = runnable -> new Thread( runnable, "Database connection monitoring service" );
+        this.connectionMonitorService = Executors.newScheduledThreadPool( 1, monitorService );
         Runnable recurringTask = new RefreshConnectionsTask( this );
         this.connectionMonitorService.scheduleAtFixedRate( recurringTask,
                                                            REFRESH_FREQUENCY.getSeconds(),
@@ -93,7 +94,19 @@ class DatabaseLockManager
         LOGGER.debug( "Finished construction of lock manager {}.", this );
     }
 
-
+    /**
+     * Shutdown the lock manager.
+     * 
+     * @throws SecurityException in the absence of permission
+     */
+    
+    void shutdown()
+    {
+        LOGGER.debug( "Shutting down lock manager {}", this );
+        
+        this.connectionMonitorService.shutdown();
+    }
+    
     /**
      * Lock the back-end database using lockName
      * @param lockName the lock name to use, must be non-zero and positive, less
