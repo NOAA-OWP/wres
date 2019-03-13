@@ -154,40 +154,28 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
 	@Override
 	protected DataScripter getInsertSelect()
 	{
-        DataScripter script = new DataScripter(  );
+        DataScripter script = new DataScripter();
+        script.setUseTransaction( true );
         script.setHighPriority( true );
 
-	    script.addLine("WITH new_source AS");
-	    script.addLine("(");
-	    script.addTab().addLine("INSERT INTO wres.Source (path, output_time, lead, hash, is_point_data)");
-	    script.addTab().addLine("SELECT ?, (?)::timestamp without time zone, ?, ?, ?");
+        script.addLine( "INSERT INTO wres.Source ( path, output_time, lead, hash, is_point_data )" );
+        script.addTab().addLine( "SELECT ?, (?)::timestamp without time zone, ?, ?, ?" );
 
         script.addArgument( this.sourcePath.toString() );
         script.addArgument( this.outputTime );
-	    script.addArgument( this.lead );
-	    script.addArgument( this.hash );
-	    script.addArgument( this.isPointData );
+        script.addArgument( this.lead );
+        script.addArgument( this.hash );
+        script.addArgument( this.isPointData );
 
-	    script.addTab().addLine("WHERE NOT EXISTS (");
-	    script.addTab(  2  ).addLine("SELECT 1");
-	    script.addTab(  2  ).addLine("FROM wres.Source");
-	    script.addTab(  2  ).addLine("WHERE hash = ?");
+        script.addTab().addLine( "WHERE NOT EXISTS" );
+        script.addTab().addLine( "(" );
+        script.addTab( 2 ).addLine( "SELECT 1" );
+        script.addTab( 2 ).addLine( "FROM wres.Source" );
+        script.addTab( 2 ).addLine( "WHERE hash = ?" );
 
-	    script.addArgument( this.hash );
+        script.addArgument( this.hash );
 
-	    script.addTab().addLine(")");
-	    script.addTab().addLine("RETURNING source_id");
-	    script.addLine(")");
-	    script.addLine("SELECT source_id, TRUE as wasInserted");
-	    script.addLine("FROM new_source");
-	    script.addLine();
-	    script.addLine("UNION");
-	    script.addLine();
-	    script.addLine("SELECT source_id, FALSE AS wasInserted");
-	    script.addLine("FROM wres.Source");
-	    script.addLine("WHERE hash = ?;");
-
-	    script.addArgument( this.hash );
+        script.addTab().addLine( ");" );
 
 	    return script;
 	}
@@ -202,19 +190,21 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
     public void save() throws SQLException
     {
         DataScripter script = this.getInsertSelect();
+        this.performedInsert = script.execute() > 0;
 
-        try (DataProvider resultSet = script.getData())
-        {
-            this.setID( resultSet.getValue( this.getIDName() ) );
-            this.performedInsert = resultSet.getValue( "wasInserted" );
-        }
+        DataScripter scriptWithId = new DataScripter();
+        scriptWithId.setHighPriority( true );
+        scriptWithId.setUseTransaction( false );
+        scriptWithId.add( "SELECT " ).addLine( this.getIDName() );
+        scriptWithId.addLine( "FROM wres.Source" );
+        scriptWithId.addLine( "WHERE hash = ? " );
+        scriptWithId.addArgument( this.hash );
+        this.sourceID = scriptWithId.getData()
+                                    .getInt( this.getIDName() );
 
-        if ( LOGGER.isTraceEnabled() )
-        {
-            LOGGER.trace( "Did I create Source ID {}? {}",
-                          this.getId(),
-                          this.performedInsert );
-        }
+        LOGGER.trace( "Did I create Source ID {}? {}",
+                      this.sourceID,
+                      this.performedInsert );
     }
 
     @Override

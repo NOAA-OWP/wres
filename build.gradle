@@ -234,6 +234,12 @@ project(':wres-datamodel')
 
 project(':wres-io')
 {
+    //configurations
+    //{
+    //    testCompile.exclude group: 'org.postgresql',  module: 'postgresql'
+    //    testRuntime.exclude group: 'org.postgresql', module: 'postgresql'
+    //}
+
     dependencies
     {
         compile project(':wres-util')
@@ -306,6 +312,9 @@ project(':wres-io')
 
         // Use mockserver as a mock server for mock API responses
         testCompile 'org.mock-server:mockserver-netty:5.5.1'
+
+        // Use H2 for truly embedded SQL db
+        //testCompile 'com.h2database:h2:1.4.198'
     }
 
     test
