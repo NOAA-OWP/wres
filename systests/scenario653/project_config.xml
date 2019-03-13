@@ -34,7 +34,7 @@
                 </point>
             </polygon>
         </feature>
-        <leadHours maximum="4" />
+        <leadHours minimum="1" maximum="4" />
         <leadTimesPoolingWindow>
             <period>4</period>
             <unit>hours</unit>

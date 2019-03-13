@@ -11,9 +11,9 @@ import org.slf4j.LoggerFactory;
 
 import wres.io.Operations;
 
-public class Scenario003
+public class Scenario009
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( Scenario003.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( Scenario009.class );
     private static final String NEWLINE = System.lineSeparator();
 
     private Scenario scenarioInfo;

@@ -47,6 +47,7 @@ dependencies
     testCompile 'com.google.guava:guava:22.0'
     testCompile 'junit:junit:4.12'
     testCompile 'org.mockito:mockito-core:2.8.47'
+    testCompile 'org.slf4j:slf4j-api:1.8.0-beta2'
 
     // Expose all wres contents here, using unzipArtifactToTest task.
     // Use of fileTree is important, lazily evaluated, meaning that the contents
@@ -70,6 +71,7 @@ test
     // or like this:
     // -PtestJvmSystemProperties="wres.useSSL=false wres.blah=true"
 
+    forkEvery=1
     def testJvmPropertiesRaw = project.properties['testJvmSystemProperties']
     def splittedTestJvmProperties = testJvmPropertiesRaw.trim().split( " " )
     println( "Test JVM System Properties split: ${splittedTestJvmProperties}" )
