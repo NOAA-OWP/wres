@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
@@ -18,6 +19,7 @@ import org.slf4j.Logger;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.metadata.TimeScale;
 import wres.datamodel.sampledata.SampleData;
 import wres.io.config.ConfigHelper;
 import wres.io.config.OrderedSampleMetadata;
@@ -258,7 +260,10 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
         // lead frequency, otherwise iterate forwards from the zero lower-bound. 
         // However, skip this interval if it is smaller than the desired time scale
         // See #60307
-        if ( !offset.isZero() && !offset.minus( this.getProject().getDesiredTimeScale().getPeriod() ).isNegative() )
+        TimeScale desiredTimeScale = this.getProject().getDesiredTimeScale();
+        if ( !offset.isZero()
+             && Objects.nonNull( desiredTimeScale )
+             && !offset.minus( desiredTimeScale.getPeriod() ).isNegative() )
         {
             beginning = offset.minus( leadPeriod ).plus( leadFrequency.multipliedBy( sampleNumber ) );
         }

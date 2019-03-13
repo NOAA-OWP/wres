@@ -1,7 +1,6 @@
 package wres.systests;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 /**
  * Scenario assocates data regarding a single scenario. Immutable value class.
