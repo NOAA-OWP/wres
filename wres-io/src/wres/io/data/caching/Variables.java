@@ -27,7 +27,7 @@ public final class Variables extends Cache<VariableDetails, String>
 	private static final Object KEY_LOCK = new Object();
 
     /**
-     * The global cache of variables whose details may be accessed through static methods
+     * The cache of variables whose details may be accessed through static methods
      */
     private static Variables instance = new Variables();
 
@@ -60,6 +60,10 @@ public final class Variables extends Cache<VariableDetails, String>
         this.initializeDetails();
     }
 
+    /**
+     * Converts all entries in the data provider into variables and adds them to the cache
+     * @param data A DataProvider containing information that may be added to the cache
+     */
     private void populate(DataProvider data)
     {
         if (data == null)
@@ -71,6 +75,13 @@ public final class Variables extends Cache<VariableDetails, String>
         data.consume( variable -> this.add( VariableDetails.from( variable ) ) );
     }
 
+    /**
+     * Retrieves the names of all variables that may be addressed as forecasts for the project
+     * @param projectID The id of the project we're interested in
+     * @param projectMember The data source member for the data (generally 'right')
+     * @return A list of all of the names of variables in forecasts that may be evaluated for the project
+     * @throws SQLException Thrown if an error was encountered while communicating with the database
+     */
 	public static List<String> getAvailableForecastVariables(final Integer projectID,
                                                              final String projectMember)
             throws SQLException
@@ -118,6 +129,13 @@ public final class Variables extends Cache<VariableDetails, String>
         return script.interpret( resultSet -> resultSet.getString("variable_name") );
     }
 
+    /**
+     * Retrieves the names of all variables that may be addressed as observations for the project
+     * @param projectID The id of the project we're interested in
+     * @param projectMember The data source member for the data (generally 'left' or 'baseline')
+     * @return A list of all of the names of variables in observations that may be evaluated for the project
+     * @throws SQLException Thrown if an error was encountered while communicating with the database
+     */
     public static List<String> getAvailableObservationVariables(
             final Integer projectID,
             final String projectMember)
@@ -270,7 +288,7 @@ public final class Variables extends Cache<VariableDetails, String>
 	}
 	
 	/**
-	 * Returns the ID of a variable from the global cache
+	 * Returns the ID of a variable from the cache
 	 * @param variableName The short name of the variable
 	 * @return The ID of the variable
 	 * @throws SQLException if the ID could not be retrieved
@@ -279,13 +297,19 @@ public final class Variables extends Cache<VariableDetails, String>
 		return getCache().getID(variableName);
 	}
 
+    /**
+     * Returns the ID of a variable from the cache
+     * @param dataSourceConfig The configuration stating what variable to use for the evaluation
+     * @return The ID of the variable
+     * @throws SQLException if the ID could not be retrieved
+     */
 	public static Integer getVariableID( DataSourceConfig dataSourceConfig) throws SQLException
 	{
 		return Variables.getVariableID(dataSourceConfig.getVariable().getValue());
 	}
 	
 	/**
-	 * Returns the ID of the variable from the instance cache
+	 * Returns the ID of the variable from the cache
 	 * @param variableName The short name of the variable
 	 * @return The ID of the variable
 	 * @throws SQLException Thrown if an error was encountered while interacting with the database or storing
@@ -301,11 +325,21 @@ public final class Variables extends Cache<VariableDetails, String>
 		return this.getKeyIndex().get(variableName);
 	}
 
+    /**
+     * Gets the name of the variable associated with the ID
+     * @param variableId The id for the variable of interest
+     * @return The name of the variable, like 'streamflow' or 'QINE'
+     */
 	public static String getName(Integer variableId)
 	{
 		return getCache().getKey(variableId);
 	}
 
+    /**
+     * Gets the name of the variable associated with the ID
+     * @param variableId The id for the variable of interest
+     * @return The name of the variable, like 'streamflow' or 'QINE'
+     */
 	public String getKey(Integer variableId)
 	{
 		String name = null;
@@ -323,6 +357,9 @@ public final class Variables extends Cache<VariableDetails, String>
 		return MAX_DETAILS;
 	}
 
+    /**
+     * Loads all variables into the cache
+     */
 	private static void initialize()
     {
         try

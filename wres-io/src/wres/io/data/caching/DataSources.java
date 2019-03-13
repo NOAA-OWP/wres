@@ -47,7 +47,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
     }
 
     /**
-     * Global Cache of basic source data
+     * Cache of basic source data
      */
 	private static final DataSources instance = new DataSources();
 

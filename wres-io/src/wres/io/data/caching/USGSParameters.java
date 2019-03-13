@@ -1,7 +1,9 @@
 package wres.io.data.caching;
 
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -11,12 +13,29 @@ import org.apache.commons.lang3.StringUtils;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 
+/**
+ * A cache for USGS parameter metadata
+ * <br><br>
+ * Since interaction with this cache is so simple, there is no need to inherit capabilities from  {@link Cache}
+ */
 public class USGSParameters
 {
     private USGSParameters() {}
 
+    /**
+     * A three-tuple key used to index USGS Parameter details
+     * <br><br>
+     * The three tuple is used because parameters are unique along those lines;
+     * there will be several that have the same name and measurement unit, but different aggregations
+     */
     private static class ParameterKey implements Comparable<ParameterKey>
     {
+        /**
+         * Constructor
+         * @param name USGS' name for the parameter
+         * @param measurementUnit The WRES measurement unit ID for the unit that USGS measures the parameter in
+         * @param aggregation An optional aggregation identifier for the parameter ('mean', 'sum', etc)
+         */
         ParameterKey(String name, String measurementUnit, String aggregation)
         {
             this.name = name;
@@ -24,8 +43,19 @@ public class USGSParameters
             this.aggregation = aggregation;
         }
 
+        /**
+         * USGS' name for the parameter
+         */
         private final String name;
+
+        /**
+         * The WRES measurement unit ID for the unit that USGS measures the parameter in
+         */
         private final String measurementUnit;
+
+        /**
+         * An optional aggregation identifier for the parameter ('mean', 'sum', etc)
+         */
         private final String aggregation;
 
         @Override
@@ -35,6 +65,7 @@ public class USGSParameters
             {
                 ParameterKey otherKey = ( ParameterKey ) obj;
 
+                // TODO: This isn't valid - this will give us '00060' if we indicate '00061' because they both have the name streamflow
                 boolean equal = StringUtils.equalsIgnoreCase( this.name, otherKey.name );
                 equal = equal || StringUtils.equalsIgnoreCase( this.measurementUnit, otherKey.measurementUnit );
                 equal = equal || StringUtils.equalsIgnoreCase( this.aggregation, otherKey.aggregation );
@@ -65,8 +96,18 @@ public class USGSParameters
         }
     }
 
+    /**
+     * The parameter that gets cached
+     * <br><br>
+     * The parameter doesn't need all of the logic of a {@link wres.io.data.details.CachedDetail},
+     * so it is defined here instead
+     */
     public static class USGSParameter
     {
+        /**
+         * Creates a parameter from a line in a '|' delimited CSV file
+         * @param line a line from a '|' delimited CSV file
+         */
         public USGSParameter( String line)
         {
             String[] lineParts = line.split("\\|");
@@ -78,6 +119,10 @@ public class USGSParameters
             this.aggregation = lineParts[4].replaceAll("\"", "");
         }
 
+        /**
+         * Creates a parameter from an entry in a DataProvider
+         * @param data A DataProvider that supposedly holds information about USGS Parameters
+         */
         public USGSParameter (DataProvider data)
         {
             this.name = data.getString("name");
@@ -98,31 +143,51 @@ public class USGSParameters
                    "Measurement Unit: " + this.measurementUnit;
         }
 
+        /**
+         * Gets the human and configuration friendly name specified for and by the WRES
+         */
         public String getName()
         {
             return name;
         }
 
+        /**
+         * Gets the USGS description for the parameter
+         */
         public String getDescription()
         {
             return description;
         }
 
+        /**
+         * Gets the five digit parameter code
+         */
         public String getParameterCode()
         {
             return parameterCode;
         }
 
+        /**
+         * Gets some description for how the data was accumulated
+         */
         public String getAggregation()
         {
             return aggregation;
         }
 
+        /**
+         * Gets the name of the unit of measurement that USGS says the data is measured in
+         * <br><br>
+         * There's a chance that the unit that USGS uses isn't mapped to a unit utilized by the WRES
+         */
         public String getMeasurementUnit()
         {
             return measurementUnit;
         }
 
+        /**
+         * Gets the WRES ID for the unit of measurement that USGS measures the data in
+         */
         public Integer getMeasurementUnitID()
         {
             return measurementUnitID;
@@ -135,19 +200,55 @@ public class USGSParameters
                                      this.getAggregation() );
         }
 
+        /**
+         * The human and configuration friendly name specified for and by the WRES
+         */
         private String name;
+
+        /**
+         * The USGS description for the parameter
+         */
         private String description;
+
+        /**
+         * The five digit parameter code
+         */
         private String parameterCode;
+
+        /**
+         * Some description for how the data was accumulated
+         */
         private String aggregation;
+
+        /**
+         * The name of the unit of measurement that USGS says the data is measured in
+         * <br><br>
+         * There's a chance that the unit that USGS uses isn't mapped to a unit utilized by the WRES
+         */
         private String measurementUnit;
+
+        /**
+         * The WRES ID for the unit of measurement that USGS measures the data in
+         */
         private Integer measurementUnitID;
     }
 
+    /**
+     * Locks modification access to the cache
+     */
     private static final Object PARAMETER_LOCK = new Object();
 
+    /**
+     * The cache used to access USGS parameter data
+     */
     private static final ConcurrentMap<ParameterKey, USGSParameter> parameterStore = new ConcurrentSkipListMap<>(  );
 
-    private static ConcurrentMap<ParameterKey, USGSParameter> getParameterStore()
+    /**
+     * Accessor and lazy initializer for the USGS Parameter cache
+     * @return A map containing USGS Parameter data
+     * @throws SQLException Thrown if the cache could not be populated
+     */
+    private static Map<ParameterKey, USGSParameter> getParameterStore()
             throws SQLException
     {
         synchronized ( PARAMETER_LOCK )
@@ -161,9 +262,15 @@ public class USGSParameters
         }
     }
 
+    /**
+     * Loads USGS Parameter to WRES Mapping data into the cache
+     * @throws SQLException Thrown if an exception was encountered while communicating with the database
+     */
     private static void populate() throws SQLException
     {
         DataScripter script = new DataScripter( "SELECT * FROM wres.USGSParameter;" );
+
+        // Use a high priority connection so that this isn't blocked by another query
         script.setHighPriority( true );
 
         try (DataProvider data = script.getData())
@@ -176,6 +283,12 @@ public class USGSParameters
         }
     }
 
+    /**
+     * Gets USGS parameter metadata based on the USGS parameter code
+     * @param code The five digit USGS parameter code to get the metadata for (such as '00060')
+     * @return USGS Parameter metadata
+     * @throws SQLException Thrown if the needed data could not be loaded and read from the cache
+     */
     public static USGSParameter getParameterByCode(final String code)
             throws SQLException
     {
@@ -193,6 +306,14 @@ public class USGSParameters
         return foundParameter;
     }
 
+    /**
+     * Gets USGS parameter metadata based on its name and what it was measured in. Assumes that there
+     * shouldn't be a defined data accumulation method (i.e. nothing like 'mean' or 'sum')
+     * @param parameterName The name of the parameter to use (like 'streamflow')
+     * @param measurementUnit The unit that USGS measures the parameter in
+     * @return USGS Parameter metadata
+     * @throws SQLException Thrown if the needed data could not be loaded and read from the cache
+     */
     public static USGSParameter getParameter(String parameterName, String measurementUnit)
             throws SQLException
     {
@@ -250,6 +371,18 @@ public class USGSParameters
         return matchingParameter;
     }
 
+    /**
+     * Adds USGS parameter metadata received via ingest to the database
+     * <br><br>
+     * If a user states that they want '74072' and we don't have that entry, this is what stores
+     * the metadata that will be used
+     * @param name The USGS name for the parameter
+     * @param code The USGS parameter code for the parameter
+     * @param description USGS' description of the parameter
+     * @param measurementUnit The unit of measurement that USGS uses for the parameter
+     * @return USGS Parameter metadata for the new parameter
+     * @throws SQLException
+     */
     public static USGSParameter addRequestedParameter(
             final String name,
             final String code,
@@ -259,7 +392,10 @@ public class USGSParameters
     {
         synchronized ( USGSParameters.PARAMETER_LOCK )
         {
-            String usgsName = name.split( "," )[0];
+            // USGS often gives complex names to their parameters, often of the name: "Simple name, some description"
+            // This takes that name and shortens it down to a reasonable parameter to reference. In this case,
+            // it will be "Simple name"
+            String usgsName = name.split( "," )[0].strip();
             int measurementUnitId =
                     MeasurementUnits.getMeasurementUnitID( measurementUnit );
 
