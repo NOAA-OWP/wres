@@ -6,8 +6,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -15,7 +13,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.system.SystemSettings;
-import wres.util.Strings;
 
 /**
  * Facilitates the execution of Database Queries upon connections
@@ -50,11 +47,6 @@ public class Query
      * A set of parameters to use for batch execution
      */
     private Collection<Object[]> batchParameters;
-
-    /**
-     * A set of tables that should be locked prior to execution
-     */
-    private Set<String> locKTables = new HashSet<>();
 
     /**
      * Constructor
@@ -125,17 +117,6 @@ public class Query
     }
 
     /**
-     * Add a collection of table names that should be locked prior to running the script
-     * @param tableNames A list of table names that should be locked prior to running the script
-     * @return The updated {@link Query}
-     */
-    Query lockTables(final Collection<String> tableNames)
-    {
-        this.locKTables.addAll( tableNames );
-        return this;
-    }
-
-    /**
      * Runs the query on the passed in connection and gathers the results
      * <br><br>
      * <p>
@@ -143,8 +124,8 @@ public class Query
      *     sure to close them when done to prevent a resource leak
      * </p>
      * @param connection The database connection to run the query on
-     * @return The results of the query
-     * @throws SQLException Thrown if an interaction with the database produced an error
+     * @return The ResultSet of the query
+     * @throws SQLException Thrown if an interaction with the database produced an unrecoverable error
      */
     ResultSet call(final Connection connection) throws SQLException
     {
@@ -152,6 +133,10 @@ public class Query
         // ensure that it returns to it after we're done. If a transactional connection is passed in
         // through multiple queries, we want to make sure the transaction doesn't close
         final boolean initialAutoCommit = connection.getAutoCommit();
+        final int initialTransactionIsolation = connection.getTransactionIsolation();
+
+        // In the case of transactions that conflict, retries are needed.
+        boolean completed = false;
 
         Timer timer = null;
 
@@ -162,70 +147,92 @@ public class Query
             timer.schedule( this.getTimerTask(), TIMER_DELAY );
         }
 
-        final ResultSet results;
+        ResultSet results = null;
 
-        try
+        while ( !completed )
         {
-            // If we're forcing a transation, we need to be absolutely sure we enter a transaction,
-            // even if it's already in one
-            if (this.forceTransaction)
+            try
             {
-                connection.setAutoCommit( false );
-            }
+                // If we're forcing a transation, we need to be absolutely sure we enter a transaction,
+                // even if it's already in one
+                if ( this.forceTransaction )
+                {
+                    connection.setAutoCommit( false );
+                    connection.setTransactionIsolation( Connection.TRANSACTION_SERIALIZABLE );
+                }
 
-            // If we have tables we need to lock, we need to go ahead and do that here before we run the query
-            for ( String tableName : this.locKTables )
-            {
-                this.lockTable( connection, tableName );
-            }
+                // If we don't need to add parameters, we can just call the script and get the results
+                if ( this.parameters == null )
+                {
+                    results = this.simpleCall( connection );
+                }
+                else
+                {
+                    // Otherwise we need to call a different function so that all parameters are added before
+                    // the script is called
+                    results = this.callWithParameters( connection );
+                }
 
-            // If we don't need to add parameters, we can just call the script and get the results
-            if ( this.parameters == null)
-            {
-                results = this.simpleCall( connection );
-            }
-            else
-            {
-                // Otherwise we need to call a different function so that all parameters are added before
-                // the script is called
-                results = this.callWithParameters( connection );
-            }
+                // If the connection can't commit without prompting, we need to go ahead and do so manually
+                if ( !connection.getAutoCommit() )
+                {
+                    connection.commit();
+                }
 
-            // If the connection can't commit without prompting, we need to go ahead and do so manually
-            if (!connection.getAutoCommit())
-            {
-                connection.commit();
+                completed = true;
             }
-        }
-        catch( SQLException exception )
-        {
-            // If the connection doesn't automatically rollback any changes, do so manually before
-            // rethrowing the error
-            if (!connection.getAutoCommit())
+            catch ( SQLException exception )
             {
-                connection.rollback();
+                // If the connection doesn't automatically rollback any changes, do so manually before
+                // rethrowing the error
+                if ( !connection.getAutoCommit() )
+                {
+                    connection.rollback();
+                }
+
+                if ( LOGGER.isDebugEnabled() )
+                {
+                    LOGGER.debug( "SQLState: {}; ErrorCode: {}",
+                                  exception.getSQLState(),
+                                  exception.getErrorCode() );
+                }
+
+                // In the case of serialization failure, retry the query.
+                if ( this.forceTransaction &&
+                     exception.getSQLState()
+                              .equalsIgnoreCase( "40001" ) )
+                {
+                    LOGGER.debug( "Got SQLState 40001, retrying {}", this );
+                    continue;
+                }
+
+                String message = "The script:" + NEWLINE;
+                message += this.script + NEWLINE + NEWLINE;
+                message += "Failed.";
+
+                // Throw a new version of the exception with the script attached to it for easier debugging
+                throw new SQLException( message, exception );
             }
-
-            String message = "The script:" + NEWLINE;
-            message += this.script + NEWLINE + NEWLINE;
-            message += "Failed.";
-
-            // Throw a new version of the exception with the script attached to it for easier debugging
-            throw new SQLException(message, exception);
-        }
-        finally
-        {
-            // If the connection is in a transaction, we probably modified it, so we want to return it to
-            // the previous state
-            if (!connection.getAutoCommit())
+            finally
             {
-                connection.setAutoCommit( initialAutoCommit );
-            }
+                // If the connection is in a transaction, we probably modified it, so we want to return it to
+                // the previous state
+                if ( !connection.getAutoCommit() )
+                {
+                    connection.setAutoCommit( initialAutoCommit );
+                }
 
-            // If execution completed prior to the timer going off, we want to cancel it
-            if ( timer != null )
-            {
-                timer.cancel();
+                // Reset the transaction isolation level to its previous state
+                if ( connection.getTransactionIsolation() != initialTransactionIsolation )
+                {
+                    connection.setTransactionIsolation( initialTransactionIsolation );
+                }
+
+                // If execution completed prior to the timer going off, we want to cancel it
+                if ( timer != null )
+                {
+                    timer.cancel();
+                }
             }
         }
 
@@ -235,7 +242,8 @@ public class Query
     /**
      * Runs the script on the database without regard for results
      * @param connection The connection to run the script on
-     * @throws SQLException Thrown if an error was encountered when interacting with the database
+     * @throws SQLException Thrown if an unrecoverable error was encountered when interacting with the database
+     * @return the count of rows modified by this query's execution
      */
     public int execute(final Connection connection) throws SQLException
     {
@@ -243,97 +251,115 @@ public class Query
         // ensure that it returns to it after we're done. If a transactional connection is passed in
         // through multiple queries, we want to make sure the transaction doesn't close
         final boolean initialAutoCommit = connection.getAutoCommit();
-        //final int initialTransactionIsolation = connection.getTransactionIsolation();
+        final int initialTransactionIsolation = connection.getTransactionIsolation();
+
+        // In the case of transactions that conflict, retries are needed.
+        boolean completed = false;
 
         Timer timer = null;
-        int rowsModified;
+        int rowsModified = 0;
 
-        // If we're in debug mode, we want to add any scripts that take longer than TIMER_DELAY ms to complete
-        if (LOGGER.isDebugEnabled())
+        while ( !completed )
         {
-            timer = new Timer( "Query Timer" );
-            timer.schedule( this.getTimerTask(), TIMER_DELAY );
-        }
-
-        try
-        {
-            // If we're forcing a transation, we need to be absolutely sure we enter a transaction,
-            // even if it's already in one
-            if (this.forceTransaction)
+            // If we're in debug mode, we want to add any scripts that take longer than TIMER_DELAY ms to complete
+            if ( LOGGER.isDebugEnabled() )
             {
-                connection.setAutoCommit( false );
-                //connection.setTransactionIsolation( Connection.TRANSACTION_SERIALIZABLE );
+                timer = new Timer( "Query Timer" );
+                timer.schedule( this.getTimerTask(), TIMER_DELAY );
             }
 
-            // If we have tables we need to lock, we need to go ahead and do that here before we run the query
-            for ( String tableName : this.locKTables )
+            try
             {
-                this.lockTable( connection, tableName );
-            }
+                // If we're forcing a transation, we need to be absolutely sure we enter a transaction,
+                // even if it's already in one
+                if ( this.forceTransaction )
+                {
+                    connection.setAutoCommit( false );
+                    connection.setTransactionIsolation( Connection.TRANSACTION_SERIALIZABLE );
+                }
 
-            // If we have batch parameters, we need to call a specialized function that will form and attach
-            // them to the statement that is run in the database
-            if ( this.batchParameters != null )
-            {
-                rowsModified = this.batchExecute( connection );
-            }
-            else if ( this.parameters != null )
-            {
-                // If we have parameters for just a single call, we need to call a separate function to attach
+                // If we have batch parameters, we need to call a specialized function that will form and attach
                 // them to the statement that is run in the database
-                rowsModified = this.executeWithParameters( connection );
+                if ( this.batchParameters != null )
+                {
+                    rowsModified = this.batchExecute( connection );
+                }
+                else if ( this.parameters != null )
+                {
+                    // If we have parameters for just a single call, we need to call a separate function to attach
+                    // them to the statement that is run in the database
+                    rowsModified = this.executeWithParameters( connection );
+                }
+                else
+                {
+                    // Otherwise the script may be run in the database without any extra handling
+                    rowsModified = this.executeQuery( connection );
+                }
+
+                // If no rows were modified, the returning value will be -1, so set the number of modified rows
+                // to 0 if that were the case
+                rowsModified = Math.max( rowsModified, 0 );
+
+                // If the connection can't commit without prompting, we need to go ahead and do so manually
+                if ( !connection.getAutoCommit() )
+                {
+                    connection.commit();
+                }
+
+                completed = true;
             }
-            else
+            catch ( SQLException exception )
             {
-                // Otherwise the script may be run in the database without any extra handling
-                rowsModified = this.executeQuery( connection );
+                // If the connection doesn't automatically rollback any changes, do so manually before
+                // rethrowing the error
+                if ( !connection.getAutoCommit() )
+                {
+                    connection.rollback();
+                }
+
+                if ( LOGGER.isDebugEnabled() )
+                {
+                    LOGGER.debug( "SQLState: {}; ErrorCode: {}",
+                                  exception.getSQLState(),
+                                  exception.getErrorCode() );
+                }
+
+                // In the case of serialization failure, retry the query.
+                if ( this.forceTransaction &&
+                     exception.getSQLState()
+                              .equalsIgnoreCase( "40001" ) )
+                {
+                    LOGGER.debug( "Got SQLState 40001, retrying {}", this );
+                    continue;
+                }
+
+                String message = "The script:" + NEWLINE;
+                message += this.script + NEWLINE + NEWLINE;
+                message += "Failed.";
+
+                // Throw a new version of the exception with the script attached to it for easier debugging
+                throw new SQLException( message, exception );
             }
-
-            // If no rows were modified, the returning value will be -1, so set the number of modified rows
-            // to 0 if that were the case
-            rowsModified = Math.max( rowsModified, 0 );
-
-            // If the connection can't commit without prompting, we need to go ahead and do so manually
-            if (!connection.getAutoCommit())
+            finally
             {
-                connection.commit();
-            }
-        }
-        catch (SQLException exception)
-        {
-            // If the connection doesn't automatically rollback any changes, do so manually before
-            // rethrowing the error
-            if (!connection.getAutoCommit())
-            {
-                connection.rollback();
-            }
+                // If the connection is in a transaction, we probably modified it, so we want to return it to
+                // the previous state
+                if ( !connection.getAutoCommit() )
+                {
+                    connection.setAutoCommit( initialAutoCommit );
+                }
 
-            String message = "The script:" + NEWLINE;
-            message += this.script + NEWLINE + NEWLINE;
-            message += "Failed.";
+                // Reset the transaction isolation level to its previous state
+                if ( connection.getTransactionIsolation() != initialTransactionIsolation )
+                {
+                    connection.setTransactionIsolation( initialTransactionIsolation );
+                }
 
-            // Throw a new version of the exception with the script attached to it for easier debugging
-            throw new SQLException(message, exception);
-        }
-        finally
-        {
-            // Reset the transaction isolation level to its previous state
-            //if ( connection.getTransactionIsolation() != initialTransactionIsolation )
-            //{
-            //    connection.setTransactionIsolation( initialTransactionIsolation );
-            //}
-
-            // If the connection is in a transaction, we probably modified it, so we want to return it to
-            // the previous state
-            if (!connection.getAutoCommit())
-            {
-                connection.setAutoCommit( initialAutoCommit );
-            }
-
-            // If execution completed prior to the timer going off, we want to cancel it
-            if ( timer != null )
-            {
-                timer.cancel();
+                // If execution completed prior to the timer going off, we want to cancel it
+                if ( timer != null )
+                {
+                    timer.cancel();
+                }
             }
         }
 
@@ -345,6 +371,7 @@ public class Query
      * @param connection The connection to run the script on
      * @throws SQLException Thrown if the prepared statement required to run the script could not be created
      * @throws SQLException Thrown if an error was encountered when running the script in the database
+     * @return the count of rows modified by this query's execution
      */
     private int batchExecute(final Connection connection) throws SQLException
     {
@@ -368,32 +395,23 @@ public class Query
      * @param connection The connection to run the script on
      * @throws SQLException Thrown if the prepared statement required to run the script could not be created
      * @throws SQLException Thrown if an error was encountered when running the script in the database
+     * @throws UnsupportedOperationException when a ResultSet is generated
+     * @return the count of rows modified by this query's execution
      */
     private int executeWithParameters(final Connection connection) throws SQLException
     {
-        int rowsModified = 0;
-
         // We need to make sure that the statement is cleaned up after execution
         try(PreparedStatement preparedStatement = this.prepareStatement( connection ))
         {
             boolean generatedResultSet = preparedStatement.execute();
 
-            if (generatedResultSet)
+            if ( generatedResultSet )
             {
-                ResultSet executionResults = preparedStatement.getResultSet();
+                throw new UnsupportedOperationException( "Use callWithParameters when you expect a ResultSet." );
+            }
 
-                while (executionResults.next())
-                {
-                    rowsModified++;
-                }
-            }
-            else
-            {
-                rowsModified = preparedStatement.getUpdateCount();
-            }
+            return preparedStatement.getUpdateCount();
         }
-
-        return rowsModified;
     }
 
     /**
@@ -401,6 +419,8 @@ public class Query
      * @param connection The connection to run the script on
      * @throws SQLException Thrown if the statement required to run the script could not be created
      * @throws SQLException Thrown if an error was encountered when running the script in the database
+     * @throws UnsupportedOperationException when a ResultSet is generated
+     * @return the count of rows modified by this query's execution
      */
     private int executeQuery(final Connection connection) throws SQLException
     {
@@ -410,14 +430,9 @@ public class Query
         {
             boolean generatedResultSet = statement.execute( this.script );
 
-            if (generatedResultSet)
+            if ( generatedResultSet )
             {
-                ResultSet executionResults = statement.getResultSet();
-
-                while (executionResults.next())
-                {
-                    modifiedRows++;
-                }
+                throw new UnsupportedOperationException( "Use simpleCall when you expect a ResultSet." );
             }
             else
             {
@@ -459,51 +474,6 @@ public class Query
         return this.createStatement( connection ).executeQuery( this.script );
     }
 
-    /**
-     * Locks the given table to prevent modification while the Query runs
-     * @param connection The connection that will own the lock
-     * @param tableName The name of the table to lock ('schema.Table')
-     * @throws SQLException Thrown if the statement required to run the lock instruction could not be created
-     * @throws SQLException Thrown if an error was encountered when running the lock instruction in the database
-     */
-    private void lockTable(final Connection connection, final String tableName) throws SQLException
-    {
-        // Until we have a better process, this is the best way to tell if we have a postresql connection
-        String connectionName = (String)connection.getClientInfo().getOrDefault( "ApplicationName", "Unknown" );
-
-        if (!connectionName.equalsIgnoreCase( "postgresql jdbc driver" ))
-        {
-            LOGGER.warn( "Explicit table lock operations are only valid in Postgresql databases. "
-                         + "The {} table could not be locked.", tableName );
-            return;
-        }
-        // If autocommit is turned off, we want to lock the table in question. Otherwise,
-        // the operation is pointless and we'll want to skip it
-        if (!connection.getAutoCommit())
-        {
-            String lockQuery = "LOCK TABLE " + tableName + " IN ACCESS EXCLUSIVE MODE;";
-            try (Statement statement = this.createStatement( connection ))
-            {
-                statement.execute( lockQuery );
-            }
-            catch ( SQLException exception )
-            {
-                String message = "The table '" + tableName + "' could not be locked."
-                                 + NEWLINE + "The query was: '" + lockQuery + "'";
-                // Decorate SQLException with contextual information
-                throw new SQLException( message, exception );
-            }
-        }
-        else
-        {
-            LOGGER.debug( "The application is seeking to lock a table with a "
-                          + "connection that will automatically commit. Nothing "
-                          + "will be achieved by this action." );
-            // We need to know how we got here, but, since the stack trace from the immediate thread
-            // isn't exactly helpful, we use the helper function to make it readable in the logs
-            LOGGER.debug( Strings.getStackTrace() );
-        }
-    }
 
     /**
      * Creates a standard statement that doesn't need to consider parameters

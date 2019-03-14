@@ -2536,7 +2536,6 @@ public class Project
     {
         DataScripter saveScript = this.getInsertSelectStatement();
         saveScript.setUseTransaction( true );
-        saveScript.addTablesToLock( "wres.Project" );
 
         try (DataProvider data = saveScript.getData())
         {
