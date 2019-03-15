@@ -199,8 +199,11 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
         scriptWithId.addLine( "FROM wres.Source" );
         scriptWithId.addLine( "WHERE hash = ? " );
         scriptWithId.addArgument( this.hash );
-        this.sourceID = scriptWithId.getData()
-                                    .getInt( this.getIDName() );
+
+        try ( DataProvider data = scriptWithId.getData() )
+        {
+            this.sourceID = data.getInt( this.getIDName() );
+        }
 
         LOGGER.trace( "Did I create Source ID {}? {}",
                       this.sourceID,

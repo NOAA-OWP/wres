@@ -2532,8 +2532,11 @@ public class Project
         scriptWithId.addLine( "FROM wres.Project P" );
         scriptWithId.addLine( "WHERE P.input_code = ?;" );
         scriptWithId.addArgument( this.getInputCode() );
-        this.projectID = scriptWithId.getData()
-                                     .getInt( this.getIDName() );
+
+        try ( DataProvider data = scriptWithId.getData() )
+        {
+            this.projectID = data.getInt( this.getIDName() );
+        }
 
         if ( LOGGER.isTraceEnabled() )
         {
