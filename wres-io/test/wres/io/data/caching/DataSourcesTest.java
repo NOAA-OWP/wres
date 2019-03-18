@@ -86,7 +86,7 @@ public class DataSourcesTest
         DataSources dataSources = new DataSources();
         Whitebox.invokeMethod( dataSources, "populate", data );
 
-        Whitebox.setInternalState( DataSources.class, "instance", dataSources );
+        Whitebox.setInternalState( DataSources.class, "INSTANCE", dataSources );
     }
 
     @Test

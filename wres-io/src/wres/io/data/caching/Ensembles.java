@@ -46,9 +46,20 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 	}
 
     /**
+     * <p>Invalidates the global cache of the singleton associated with this class, {@link #INSTANCE}.
+     * 
+     * <p>See #61206.
+     */
+	
+    public static void invalidateGlobalCache()
+    {
+        Ensembles.INSTANCE.invalidate();
+    }
+	
+    /**
      *  Internal cache that will store a global collection of details whose details may be accessed through static methods
      */
-	private static Ensembles instance = new Ensembles();
+	private static final Ensembles INSTANCE = new Ensembles();
 
     public static Collection<EnsembleDetails> getEnsembleDetails(final Collection<Integer> ensembleIDs)
     {
@@ -83,11 +94,11 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 	{
 		synchronized (CACHE_LOCK)
 		{
-			if ( instance.isEmpty())
+			if ( INSTANCE.isEmpty() )
 			{
 			    Ensembles.initialize();
 			}
-			return instance;
+			return INSTANCE;
 		}
 	}
 
@@ -163,6 +174,7 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 	public static Integer getSingleEnsembleID(Integer projectId, Integer variableFeatureId)
             throws SQLException
     {
+
         DataScripter script = new DataScripter(  );
         script.setHighPriority( true );
 
@@ -231,7 +243,7 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 	{
         try
         {
-            instance.initializeDetails();
+            INSTANCE.initializeDetails();
 
             DataScripter script = new DataScripter(  );
             script.setHighPriority( true );
@@ -242,8 +254,9 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 
             try (DataProvider data = script.getData())
             {
-                instance.populate( data );
+                INSTANCE.populate( data );
             }
+            LOGGER.debug( "Finished populating the Ensembles details." );
         }
         catch (SQLException error)
         {

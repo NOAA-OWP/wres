@@ -171,6 +171,9 @@ public final class IngestedValues
 
             LOGGER.trace("Adding {} observation values", IngestedValues.OBSERVATIONS.getRowCount());
             tasks.add(IngestedValues.OBSERVATIONS.build().copy( "wres.Observation" ));
+            
+            // Invalidate the cache of observed values
+            OBSERVATIONS.reset();
 
             for (String partitionName : VALUES_TO_SAVE.keySet())
             {
@@ -193,6 +196,9 @@ public final class IngestedValues
                     throw new IOException( "Error occurred while attempting to save ingested values.", e );
                 }
             }
+            
+            // Invalidate the cache of forecast values
+            IngestedValues.VALUES_TO_SAVE.clear();
         }
     }
 
