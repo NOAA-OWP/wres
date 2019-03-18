@@ -16,6 +16,7 @@ import wres.io.utilities.Database;
  */
 public class TimeSeries
 {
+
     /**
      * The number of unique lead times contained within a partition within
      * the database for values linked to a forecasted time series
@@ -25,7 +26,7 @@ public class TimeSeries
     /**
      * Mapping between the number of a forecast value partition and its name
      */
-    private static final HashMap<Integer, String> TIMESERIESVALUE_PARITION_NAMES =
+    private static final HashMap<Integer, String> TIMESERIESVALUE_PARTITION_NAMES =
             new HashMap<>();
 
     /**
@@ -184,6 +185,18 @@ public class TimeSeries
 	}
 	
 	/**
+	 * Invalidate the cache of partition names. See #61206.
+	 */
+	
+	public static void invalidateGlobalCache()
+	{
+	    synchronized ( TIMESERIESVALUE_PARTITION_NAMES )
+	    {
+	        TimeSeries.TIMESERIESVALUE_PARTITION_NAMES.clear();
+	    }
+	}
+	
+	/**
 	 * Creates or returns the entry in the database representing this time
      * series
 	 * @throws SQLException Thrown if successful communication with the database
@@ -286,10 +299,11 @@ public class TimeSeries
 
         String name;
 
-        synchronized ( TIMESERIESVALUE_PARITION_NAMES )
+        synchronized ( TIMESERIESVALUE_PARTITION_NAMES )
         {
-            if (!TIMESERIESVALUE_PARITION_NAMES.containsKey( partitionNumber))
+            if (!TIMESERIESVALUE_PARTITION_NAMES.containsKey( partitionNumber))
             {
+
                 String partitionNumberWord = partitionNumber.toString();
 
                 String highCheck;
@@ -342,11 +356,11 @@ public class TimeSeries
 								   + partitionNumberWord + "_TimeSeries_idx",
                                    "timeseries_id");
 
-                TimeSeries.TIMESERIESVALUE_PARITION_NAMES.put( partitionNumber, name);
+                TimeSeries.TIMESERIESVALUE_PARTITION_NAMES.put( partitionNumber, name);
             }
             else
             {
-                name = TimeSeries.TIMESERIESVALUE_PARITION_NAMES.get( partitionNumber);
+                name = TimeSeries.TIMESERIESVALUE_PARTITION_NAMES.get( partitionNumber);
             }
         }
 
