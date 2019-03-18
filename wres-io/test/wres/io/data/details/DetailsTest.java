@@ -33,7 +33,7 @@ import wres.system.SystemSettings;
 @RunWith( PowerMockRunner.class)
 @PrepareForTest( { SystemSettings.class } )
 @PowerMockIgnore( { "javax.management.*", "java.io.*", "javax.xml.*", "com.sun.*", "org.xml.*" } )
-public class SourceDetailsTest
+public class DetailsTest
 {
     private static ComboPooledDataSource connectionPoolDataSource;
     private static String connectionString;
@@ -87,9 +87,9 @@ public class SourceDetailsTest
 
         // Substitute our H2 connection pool for both pools:
         PowerMockito.when( SystemSettings.class, "getConnectionPool" )
-                    .thenReturn( SourceDetailsTest.connectionPoolDataSource );
+                    .thenReturn( DetailsTest.connectionPoolDataSource );
         PowerMockito.when( SystemSettings.class, "getHighPriorityConnectionPool" )
-                    .thenReturn( SourceDetailsTest.connectionPoolDataSource );
+                    .thenReturn( DetailsTest.connectionPoolDataSource );
     }
 
     @Test
