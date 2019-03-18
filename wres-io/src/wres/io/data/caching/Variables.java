@@ -29,7 +29,18 @@ public final class Variables extends Cache<VariableDetails, String>
     /**
      * The global cache of variables whose details may be accessed through static methods
      */
-    private static Variables instance = new Variables();
+    private static final Variables INSTANCE = new Variables();
+    
+    /**
+     * <p>Invalidates the global cache of the singleton associated with this class, {@link #INSTANCE}.
+     * 
+     * <p>See #61206.
+     */
+    
+    public static void invalidateGlobalCache()
+    {
+        Variables.INSTANCE.invalidate();
+    }
 
 	@Override
 	protected Object getDetailLock()
@@ -45,13 +56,13 @@ public final class Variables extends Cache<VariableDetails, String>
 
 	private static Variables getCache()
 	{
-		synchronized (CACHE_LOCK)
+	    synchronized (CACHE_LOCK)
 		{
-			if ( instance.isEmpty())
+		    if ( INSTANCE.isEmpty())
 			{
 			    Variables.initialize();
 			}
-			return instance;
+			return INSTANCE;
 		}
 	}
 
@@ -335,8 +346,10 @@ public final class Variables extends Cache<VariableDetails, String>
 
             try (DataProvider data = script.getData())
             {
-                instance.populate( data );
+                INSTANCE.populate( data );
             }
+            
+            LOGGER.debug( "Finished populating the Variables details." );
         }
         catch ( SQLException sqlException )
         {
