@@ -7,12 +7,17 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 
 public class USGSParameters
 {
+    
+    private static final Logger LOGGER = LoggerFactory.getLogger( USGSParameters.class );
+    
     private USGSParameters() {}
 
     private static class ParameterKey implements Comparable<ParameterKey>
@@ -145,19 +150,36 @@ public class USGSParameters
 
     private static final Object PARAMETER_LOCK = new Object();
 
-    private static final ConcurrentMap<ParameterKey, USGSParameter> parameterStore = new ConcurrentSkipListMap<>(  );
+    private static final ConcurrentMap<ParameterKey, USGSParameter> PARAMETER_STORE = new ConcurrentSkipListMap<>(  );
 
+    /**
+     * <p>Invalidates the global cache of the singleton associated with this class, {@link #PARAMETER_STORE}.
+     * 
+     * <p>See #61206.
+     */
+    
+    public static void invalidateGlobalCache()
+    {
+        synchronized ( PARAMETER_LOCK )
+        {
+            if( Objects.nonNull( PARAMETER_STORE ) )
+            {
+                USGSParameters.PARAMETER_STORE.clear();
+            }
+        }
+    }
+    
     private static ConcurrentMap<ParameterKey, USGSParameter> getParameterStore()
             throws SQLException
     {
         synchronized ( PARAMETER_LOCK )
         {
-            if (USGSParameters.parameterStore.isEmpty())
+            if (USGSParameters.PARAMETER_STORE.isEmpty())
             {
                 USGSParameters.populate();
             }
 
-            return USGSParameters.parameterStore;
+            return USGSParameters.PARAMETER_STORE;
         }
     }
 
@@ -171,9 +193,11 @@ public class USGSParameters
             while ( data.next() )
             {
                 USGSParameter parameter = new USGSParameter( data );
-                USGSParameters.parameterStore.putIfAbsent( parameter.getKey(), parameter );
+                USGSParameters.PARAMETER_STORE.putIfAbsent( parameter.getKey(), parameter );
             }
         }
+        
+        LOGGER.debug( "Finished populating the USGSParameters details." );
     }
 
     public static USGSParameter getParameterByCode(final String code)

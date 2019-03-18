@@ -69,17 +69,34 @@ public final class UnitConversions
     private static final Object CACHE_LOCK = new Object();
     private final Map<ConversionKey, Conversion> conversionMap;
 
-    private static UnitConversions instance = new UnitConversions();
+    private static final UnitConversions INSTANCE = new UnitConversions();
+    
+    /**
+     * <p>Invalidates the global cache of the singleton associated with this class, {@link #INSTANCE}.
+     * 
+     * <p>See #61206.
+     */
+    
+    public static void invalidateGlobalCache()
+    {
+        synchronized ( CACHE_LOCK )
+        {
+            if( Objects.nonNull( INSTANCE.conversionMap ) )
+            {
+                UnitConversions.INSTANCE.conversionMap.clear();
+            }
+        }
+    }
 
     private static UnitConversions getCache ()
     {
         synchronized (CACHE_LOCK)
         {
-            if ( instance.conversionMap.isEmpty())
+            if ( INSTANCE.conversionMap.isEmpty())
             {
                 UnitConversions.initialize();
             }
-            return instance;
+            return INSTANCE;
         }
     }
 
@@ -111,13 +128,15 @@ public final class UnitConversions
 
         try(DataProvider data = script.getData())
         {
-            instance.populate( data );
+            INSTANCE.populate( data );
         }
         catch ( SQLException e )
         {
             // Failure to pre-populate cache should not affect primary outputs.
             LOGGER.warn( "Failed to pre-populate unit conversions cache.", e );
         }
+        
+        LOGGER.debug( "Finished populating the UnitConversion details." );
     }
 
     public static double convert(final double value, final String fromMeasurementUnit, final String toMeasurementUnit)

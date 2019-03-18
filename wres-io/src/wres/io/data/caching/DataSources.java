@@ -49,8 +49,19 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
     /**
      * Global Cache of basic source data
      */
-	private static final DataSources instance = new DataSources();
+	private static final DataSources INSTANCE = new DataSources();
 
+	/**
+	 * <p>Invalidates the global cache of the singleton associated with this class, {@link #INSTANCE}.
+	 * 
+	 * <p>See #61206.
+	 */
+	   
+    public static void invalidateGlobalCache()
+    {
+        DataSources.INSTANCE.invalidate();
+    }
+	
 	public DataSources()
     {
         this.initializeDetails();
@@ -84,11 +95,11 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
     {
         synchronized (CACHE_LOCK)
         {
-            if ( instance.isEmpty())
+            if ( INSTANCE.isEmpty())
             {
                 DataSources.initialize();
             }
-            return instance;
+            return INSTANCE;
         }
     }
 	
@@ -410,8 +421,10 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
 
             try (DataProvider sources = script.getData())
             {
-                instance.populate( sources );
+                INSTANCE.populate( sources );
             }
+            
+            LOGGER.debug( "Finished populating the DataSource details." );
         }
         catch (SQLException error)
         {
