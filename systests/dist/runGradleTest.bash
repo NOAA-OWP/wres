@@ -3,10 +3,11 @@
 # Run the scenario tests by used gradle
 # must provide the 1st argument for the built version number as yyyymmdd-hhhhhh, where hhhhhh is hexadecimal 
 #
-# the 2nd argument is the test series, it can be either 0 (default), 700, or 900
+# the -r option argument is the test series, it can be either 0 (default), 700, or 900
 # 0 is test series from 000, to 600, and 800
 # 700 is test series for 700 only
 # 900 is test series for 900 only
+# -d is debuggig, argument can be Scenario### or Scenario#*
 #
 # Author: Raymond.Chui@***REMOVED***
 # Created: March, 2019
