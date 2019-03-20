@@ -163,12 +163,15 @@ public class USGSReader extends BasicSource
 
             for (FeatureDetails featureDetails : details)
             {
-                if (!StringUtils.isNumeric( featureDetails.getGageID() ))
+                if ( StringUtils.isNumeric( featureDetails.getGageID() ) )
+                {
+                    block.add( featureDetails );
+                }
+                else
                 {
                     LOGGER.warn( "{} has an invalid gage id", featureDetails );
+                    continue;
                 }
-
-                block.add(featureDetails);
 
                 if (block.size() > USGSReader.FEATURE_REQUEST_LIMIT)
                 {
