@@ -11,7 +11,7 @@
             <type>ensemble forecasts</type>
             <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
             <source>smalldata/1985043013_DRRC2FAKE1_forecast.xml</source>
-            <source>smalldata_test/1985043014_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043014_DRRC2FAKE1_forecast.xml</source>
             <variable>SQIN</variable>
         </right>
     </inputs>
