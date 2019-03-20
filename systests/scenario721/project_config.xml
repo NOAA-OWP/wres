@@ -13,7 +13,7 @@
             <source>smalldata/wrds_json/25510318T00_FAKE2_forecast.json</source>
             <source>smalldata/wrds_json/25510318T12_FAKE2_forecast.json</source>
             <source>smalldata/wrds_json/25510319T00_FAKE2_forecast.json</source>
-            <variable>STREAMFLOW</variable>
+            <variable>QR</variable>
         </right>
     </inputs>
 
