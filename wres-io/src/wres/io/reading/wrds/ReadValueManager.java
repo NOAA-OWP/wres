@@ -253,7 +253,11 @@ public class ReadValueManager
         details.setLid( locationDescription.getNwsLid() );
         details.save();
 
-        int variableId = Variables.getVariableID(this.dataSourceConfig);
+        // Use the Physical Element code as the variable name because AHPS
+        // forecasts have QR vs QI vs HG which represent different variables.
+        // See redmine issue #61535 for details.
+        int variableId = Variables.getVariableID( forecast.getParameterCodes()
+                                                          .getPhysicalElement() );
 
         return Features.getVariableFeatureByFeature( details, variableId );
     }
