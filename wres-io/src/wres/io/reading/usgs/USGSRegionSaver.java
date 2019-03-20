@@ -384,7 +384,8 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
 
             if ( !StringUtils.isNumeric( gageID ) )
             {
-                LOGGER.warn( "Invalid USGS gageID {} will not be used.", gageID );
+                LOGGER.warn( "Invalid USGS gageID {} will not be used from feature {}.",
+                             gageID, feature );
                 continue;
             }
 
