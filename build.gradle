@@ -42,6 +42,10 @@ plugins
     // (Not working: not friendly to our directory structure nor submodules)
     //id 'de.chkpnt.truststorebuilder' version '0.2.57'
 
+    // To print junit test reports to the console in addition to html, so that
+    // remote developers can see detailed test feedback without launching a
+    // browser. See #61601
+    id 'com.github.ksoichiro.console.reporter' version '0.6.2'
 }
 
 repositories
