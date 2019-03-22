@@ -19,6 +19,7 @@ import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.math3.util.Precision;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -379,13 +380,22 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
 
         for (FeatureDetails feature : features)
         {
-            if ( Strings.hasValue( feature.getGageID()) && !Strings.hasValue( parameter ))
+            String gageID = feature.getGageID();
+
+            if ( !StringUtils.isNumeric( gageID ) )
             {
-                parameter = feature.getGageID();
+                LOGGER.warn( "Invalid USGS gageID {} will not be used from feature {}.",
+                             gageID, feature );
+                continue;
             }
-            else if (Strings.hasValue( feature.getGageID() ))
+
+            if ( Strings.hasValue( gageID ) && !Strings.hasValue( parameter ))
             {
-                parameter += "," + feature.getGageID();
+                parameter = gageID;
+            }
+            else if (Strings.hasValue( gageID ))
+            {
+                parameter += "," + gageID;
             }
         }
 

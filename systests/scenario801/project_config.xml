@@ -30,7 +30,7 @@
     <metrics>
         <thresholds>
             <type>value</type>
-            <source missingValue = "-999" format = "csv">scenario801/thresholds.csv</source>
+            <source missingValue = "-999" format = "csv">thresholds/scenario801/thresholds.csv</source>
         </thresholds>
         <thresholds>
             <type>probability classifier</type>

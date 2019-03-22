@@ -42,6 +42,10 @@ plugins
     // (Not working: not friendly to our directory structure nor submodules)
     //id 'de.chkpnt.truststorebuilder' version '0.2.57'
 
+    // To print junit test reports to the console in addition to html, so that
+    // remote developers can see detailed test feedback without launching a
+    // browser. See #61601
+    id 'com.github.ksoichiro.console.reporter' version '0.6.2'
 }
 
 repositories
@@ -234,6 +238,12 @@ project(':wres-datamodel')
 
 project(':wres-io')
 {
+    //configurations
+    //{
+    //    testCompile.exclude group: 'org.postgresql',  module: 'postgresql'
+    //    testRuntime.exclude group: 'org.postgresql', module: 'postgresql'
+    //}
+
     dependencies
     {
         compile project(':wres-util')
@@ -306,6 +316,9 @@ project(':wres-io')
 
         // Use mockserver as a mock server for mock API responses
         testCompile 'org.mock-server:mockserver-netty:5.5.1'
+
+        // Use H2 for truly embedded SQL db
+        //testCompile 'com.h2database:h2:1.4.198'
     }
 
     test

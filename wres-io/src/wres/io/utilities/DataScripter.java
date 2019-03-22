@@ -2,25 +2,16 @@ package wres.io.utilities;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.Future;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import wres.util.functional.ExceptionalConsumer;
 import wres.util.functional.ExceptionalFunction;
 
 public class DataScripter extends ScriptBuilder
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( DataScripter.class );
     private boolean isHighPriority = false;
     private final List<Object> arguments = new ArrayList<>(  );
-    private final Set<String> lockTables = new HashSet<>();
     private boolean useTransaction;
 
     public DataScripter()
@@ -58,15 +49,6 @@ public class DataScripter extends ScriptBuilder
     public void addArgument(final Object argument)
     {
         this.arguments.add(argument);
-    }
-
-    /**
-     * Adds the name(s) of a table to lock prior to running the query
-     * @param tableNames A set of table names to lock
-     */
-    public void addTablesToLock(String... tableNames)
-    {
-        this.lockTables.addAll( Arrays.asList( tableNames ) );
     }
 
     /**
@@ -205,8 +187,7 @@ public class DataScripter extends ScriptBuilder
     private Query formQuery()
     {
         Query query = Query.withScript( this.toString() )
-                           .inTransaction( this.useTransaction )
-                           .lockTables( this.lockTables );
+                           .inTransaction( this.useTransaction );
 
         if (!this.arguments.isEmpty())
         {

@@ -276,72 +276,6 @@ public class QueryTest
         }
     }
 
-    /***
-     * Test to see if tables can be locked in a postgresql database. This shouldn't run in a
-     * non-postgresql database since explicit table locking isn't in the sql standard and isn't
-     * guaranteed to be there or even with the same syntax
-     * @throws SQLException Thrown if a connection could not be created
-     * @throws SQLException Thrown if information about the connection could not be read
-     * @throws SQLException Thrown if the query failed to run in the database
-     */
-    @Test
-    public void lockPostgresqlTableTest() throws SQLException
-    {
-        // The following script will select all rows from the database linking locks, the tables they are
-        // locking, the schema they exist within, and format their names like 'schema.tablename', all
-        // within the 'wres' schema
-        String script = "SELECT nspname || '.' || relname AS table_name" + System.lineSeparator();
-        script       += "FROM pg_locks L" + System.lineSeparator();
-        script       += "INNER JOIN pg_class C" + System.lineSeparator();
-        script       += "    ON L.relation = C.oid" + System.lineSeparator();
-        script       += "INNER JOIN pg_namespace N" + System.lineSeparator();
-        script       += "    ON N.oid = C.relnamespace" + System.lineSeparator();
-        script       += "WHERE nspname = 'wres';";
-
-        try (Connection connection = QueryTest.databaseAndConnections.getConnection())
-        {
-            // Until we have a better process, this is the best way to tell if we have a postresql connection
-            String connectionName = (String)connection.getClientInfo().getOrDefault( "ApplicationName", "Unknown" );
-
-            // Table locks aren't SQL standard, so we can only rely on this behavior in Postgres
-            Assume.assumeTrue(
-                    "Only Postgres tables can be tested for table locks.",
-                    connectionName.equalsIgnoreCase( "PostgreSQL JDBC Driver" )
-            );
-
-            // Lock project, variable, and feature to start out with to make sure that multiple tables can be locked.
-            // Use lower case since the database will return their names that way
-            List<String> tablesToLock = new ArrayList<>();
-            tablesToLock.add("wres.project");
-            tablesToLock.add("wres.variable");
-            tablesToLock.add("wres.feature");
-
-            Query testQuery = Query.withScript( script ).lockTables( tablesToLock ).inTransaction( true );
-
-            try (ResultSet results = testQuery.call( connection ))
-            {
-                // We want to keep track of how many results are iterated through; we're expecting one for
-                // each of the tables we told it to lock
-                int entryCount = 0;
-                Assert.assertTrue("No locked tables could be found.", results.isBeforeFirst() );
-
-                while (results.next())
-                {
-                    entryCount++;
-                    String foundTable = results.getString( "table_name" );
-
-                    // The order of the returned tables isn't guaranteed, so we use "contains" to see if it
-                    // should be there
-                    Assert.assertTrue( tablesToLock.contains( foundTable ) );
-
-                    // We remove the found entry so that it isn't accidentally found again
-                    tablesToLock.remove( foundTable );
-                }
-
-                Assert.assertEquals( 3, entryCount );
-            }
-        }
-    }
 
     /**
      * The status of a connection's autocommit setting should be the same before and after the query
@@ -359,7 +293,7 @@ public class QueryTest
         {
             // Call the query. It is supposed to run in a transaction, but the connection wasn't set to be in an open
             // transaction. The connection should come back with autocommit active
-            testQuery.execute( connection );
+            testQuery.call( connection );
 
             Assert.assertTrue( "Autocommit should still be turned on, but the query "
                                + "kept it off after its transaction.",
@@ -369,7 +303,7 @@ public class QueryTest
             connection.setAutoCommit( false );
             testQuery.inTransaction( false );
 
-            testQuery.execute( connection );
+            testQuery.call( connection );
 
             Assert.assertFalse( "Autocommit was supposed to be turned off, but the query "
                                 + "somehow turned it back on.",

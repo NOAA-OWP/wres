@@ -99,7 +99,7 @@ public class PivottedValuesTest
         Ensembles ensembles = new Ensembles();
         Whitebox.invokeMethod( ensembles, "initializeDetails" );
         Whitebox.invokeMethod( ensembles, "populate", data );
-        Whitebox.setInternalState( Ensembles.class, "instance", ensembles );
+        Whitebox.setInternalState( Ensembles.class, "INSTANCE", ensembles );
     }
 
 
@@ -169,7 +169,7 @@ public class PivottedValuesTest
         Ensembles ensembles = new Ensembles();
         Whitebox.invokeMethod( ensembles, "initializeDetails" );
         Whitebox.invokeMethod( ensembles, "populate", data );
-        Whitebox.setInternalState( Ensembles.class, "instance", ensembles );
+        Whitebox.setInternalState( Ensembles.class, "INSTANCE", ensembles );
     }
 
     /**
@@ -270,6 +270,7 @@ public class PivottedValuesTest
         }
         catch ( Exception e )
         {
+            e.printStackTrace();
             Assert.fail("The test could not be properly prepared.");
         }
 

@@ -60,6 +60,22 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 			}
 		}
 	}
+	
+	/**
+	 * <p>Invalidates the cache.
+	 * 
+	 * <p>See #61206.
+	 */
+	
+	void invalidate()
+	{
+	    synchronized ( this.getDetailLock() )
+        {
+            this.details = null;
+            this.keyIndex = null;
+        }
+	}
+	
 	/**
 	 * @return The maximum number of details that may be cached at any given time
 	 */

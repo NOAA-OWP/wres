@@ -2498,50 +2498,44 @@ public class Project
 
     private DataScripter getInsertSelectStatement()
     {
-        DataScripter script = new DataScripter(  );
+        DataScripter script = new DataScripter();
+        script.setUseTransaction( true );
+        script.setHighPriority( true );
 
-        script.addLine("WITH new_project AS");
-        script.addLine("(");
-        script.addTab().addLine("INSERT INTO wres.Project (project_name, input_code)");
-        script.addTab().addLine("SELECT ?, ?");
+        script.addLine("INSERT INTO wres.Project (project_name, input_code)");
+        script.addTab().addLine( "SELECT ?, ?" );
 
         script.addArgument( this.getProjectName() );
         script.addArgument( this.getInputCode() );
 
-        script.addTab().addLine("WHERE NOT EXISTS (");
-        script.addTab(  2  ).addLine("SELECT 1");
-        script.addTab(  2  ).addLine("FROM wres.Project P");
-        script.addTab(  2  ).addLine("WHERE P.input_code = ?");
+        script.addTab().addLine( "WHERE NOT EXISTS" );
+        script.addTab().addLine( "(" );
+        script.addTab( 2 ).addLine( "SELECT 1" );
+        script.addTab( 2 ).addLine( "FROM wres.Project P" );
+        script.addTab( 2 ).addLine( "WHERE P.input_code = ?" );
 
         script.addArgument( this.getInputCode() );
 
-        script.addTab().addLine(")");
-        script.addTab().addLine("RETURNING project_id");
-        script.addLine(")");
-        script.addLine("SELECT project_id, TRUE AS wasInserted");
-        script.addLine("FROM new_project");
-        script.addLine(  );
-        script.addLine("UNION");
-        script.addLine();
-        script.addLine("SELECT project_id, FALSE AS wasInserted");
-        script.addLine("FROM wres.Project P");
-        script.addLine("WHERE P.input_code = ?;");
-
-        script.addArgument( this.getInputCode() );
-
+        script.addTab().addLine( ")" );
         return script;
     }
 
     public void save() throws SQLException
     {
         DataScripter saveScript = this.getInsertSelectStatement();
-        saveScript.setUseTransaction( true );
-        saveScript.addTablesToLock( "wres.Project" );
+        this.performedInsert = saveScript.execute() > 0;
 
-        try (DataProvider data = saveScript.getData())
+        DataScripter scriptWithId = new DataScripter();
+        scriptWithId.setHighPriority( true );
+        scriptWithId.setUseTransaction( false );
+        scriptWithId.addLine( "SELECT project_id" );
+        scriptWithId.addLine( "FROM wres.Project P" );
+        scriptWithId.addLine( "WHERE P.input_code = ?;" );
+        scriptWithId.addArgument( this.getInputCode() );
+
+        try ( DataProvider data = scriptWithId.getData() )
         {
-            this.setID( data.getInt( this.getIDName() ) );
-            this.performedInsert = data.getBoolean( "wasInserted" );
+            this.projectID = data.getInt( this.getIDName() );
         }
 
         if ( LOGGER.isTraceEnabled() )

@@ -28,8 +28,19 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String>
     /**
      *  Internal, Global cache of measurement details
      */
-    private static  MeasurementUnits instance = new MeasurementUnits();
+    private static final MeasurementUnits INSTANCE = new MeasurementUnits();
 
+    /**
+     * <p>Invalidates the global cache of the singleton associated with this class, {@link #INSTANCE}.
+     * 
+     * <p>See #61206.
+     */
+    
+    public static void invalidateGlobalCache()
+    {
+        MeasurementUnits.INSTANCE.invalidate();
+    }
+    
     @Override
     protected Object getDetailLock()
     {
@@ -57,11 +68,11 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String>
     {
         synchronized (CACHE_LOCK)
         {
-            if ( instance.isEmpty() )
+            if ( INSTANCE.isEmpty() )
             {
                 MeasurementUnits.initialize();
             }
-            return instance;
+            return INSTANCE;
         }
     }
 	
@@ -114,8 +125,9 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String>
 
             try (DataProvider data = script.getData())
             {
-                instance.populate( data );
+                INSTANCE.populate( data );
             }
+            LOGGER.debug( "Finished populating the MeasurementUnit details." );
         }
         catch (SQLException error)
         {

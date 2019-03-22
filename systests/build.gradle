@@ -37,6 +37,9 @@ distributions
                 include 'scenario*/benchmarks/**'
                 include 'smalldata/**'
                 include 'scripts/*'
+				include 'smalldata_test/**'
+				include 'template/**'
+				include 'thresholds/**'
                 exclude 'scenario*/output'
             }
 
@@ -47,6 +50,11 @@ distributions
                 include 'settings.gradle'
                 include 'gradle.properties'
                 include 'src/test/java/**'
+				include '*.bash'
+				include 'template' 
+				include 'scenario501'
+				include 'thresholds'
+				include 'smalldata_test'
             }
 
             // Gradle software itself

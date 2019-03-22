@@ -720,7 +720,8 @@ public class ScenarioHelper
         boolean isABeforeScript = false;
         for ( int i = 0; i < files.length; i++ )
         {
-            if ( files[i].startsWith( "after.sh" ) )
+            //if ( files[i].startsWith( "after.sh" ) )
+            if ( files[i].endsWith( "after.sh" ) )
             {
                 isABeforeScript = true;
                 System.out.println( "Found " + files[i] );
@@ -740,7 +741,8 @@ public class ScenarioHelper
         boolean isABeforeScript = false;
         for ( int i = 0; i < files.length; i++ )
         {
-            if ( files[i].startsWith( "before.sh" ) )
+            //if ( files[i].startsWith( "before.sh" ) )
+            if ( files[i].endsWith( "before.sh" ) )
             {
                 isABeforeScript = true;
                 System.out.println( "Found " + files[i] );

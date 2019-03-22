@@ -277,13 +277,6 @@ public final class MetricFuturesByTimeTest
     {
         MetricFuturesByTimeBuilder builder = new MetricFuturesByTimeBuilder();
 
-        // Create a new key
-        Pair<TimeWindow, OneOrTwoThresholds> key = Pair.of( TimeWindow.of( Instant.parse( "1985-05-01T12:00:00Z" ),
-                                                                           Instant.parse( "1985-05-03T12:00:00Z" ) ),
-                                                            OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 2.0 ),
-                                                                                                 Operator.GREATER,
-                                                                                                 ThresholdDataType.LEFT ) ) );
-
         builder.addBoxPlotOutput( CompletableFuture.completedFuture( boxplot ) );
         builder.addDoubleScoreOutput( CompletableFuture.completedFuture( doubleScore ) );
         builder.addDurationScoreOutput( CompletableFuture.completedFuture( durationScore ) );
