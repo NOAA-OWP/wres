@@ -9,6 +9,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
@@ -20,6 +22,9 @@ import wres.io.utilities.DataScripter;
  */
 public class USGSParameters
 {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger( USGSParameters.class );
+
     private USGSParameters() {}
 
     /**
@@ -241,24 +246,40 @@ public class USGSParameters
     /**
      * The cache used to access USGS parameter data
      */
-    private static final ConcurrentMap<ParameterKey, USGSParameter> parameterStore = new ConcurrentSkipListMap<>(  );
+    private static final ConcurrentMap<ParameterKey, USGSParameter> PARAMETER_STORE = new ConcurrentSkipListMap<>(  );
+    /**
+     * <p>Invalidates the global cache of the singleton associated with this class, {@link #PARAMETER_STORE}.
+     *
+     * <p>See #61206.
+     */
+
+    public static void invalidateGlobalCache()
+    {
+        synchronized ( PARAMETER_LOCK )
+        {
+            if( Objects.nonNull( PARAMETER_STORE ) )
+            {
+                USGSParameters.PARAMETER_STORE.clear();
+            }
+        }
+    }
 
     /**
      * Accessor and lazy initializer for the USGS Parameter cache
      * @return A map containing USGS Parameter data
      * @throws SQLException Thrown if the cache could not be populated
      */
-    private static Map<ParameterKey, USGSParameter> getParameterStore()
+    private static ConcurrentMap<ParameterKey, USGSParameter> getParameterStore()
             throws SQLException
     {
         synchronized ( PARAMETER_LOCK )
         {
-            if (USGSParameters.parameterStore.isEmpty())
+            if (USGSParameters.PARAMETER_STORE.isEmpty())
             {
                 USGSParameters.populate();
             }
 
-            return USGSParameters.parameterStore;
+            return USGSParameters.PARAMETER_STORE;
         }
     }
 
@@ -278,9 +299,11 @@ public class USGSParameters
             while ( data.next() )
             {
                 USGSParameter parameter = new USGSParameter( data );
-                USGSParameters.parameterStore.putIfAbsent( parameter.getKey(), parameter );
+                USGSParameters.PARAMETER_STORE.putIfAbsent( parameter.getKey(), parameter );
             }
         }
+
+        LOGGER.debug( "Finished populating the USGSParameters details." );
     }
 
     /**

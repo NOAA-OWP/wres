@@ -49,9 +49,20 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
     }
 
     /**
+     * <p>Invalidates the global cache of the singleton associated with this class, {@link #INSTANCE}.
+     * 
+     * <p>See #61206.
+     */
+    
+    public static void invalidateGlobalCache()
+    {
+        Features.INSTANCE.invalidate();
+    }
+    
+    /**
      *  Global cache for all Features
      */
-	private static Features instance = null;
+	private static final Features INSTANCE = new Features();
 
 	private Features()
     {
@@ -62,11 +73,11 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 	{
 		synchronized (CACHE_LOCK)
 		{
-			if ( instance == null)
+			if ( INSTANCE.isEmpty() )
 			{
-                instance = new Features();
+                INSTANCE.initializeDetails();
 			}
-			return instance;
+			return INSTANCE;
 		}
 	}
 

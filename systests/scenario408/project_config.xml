@@ -37,7 +37,7 @@
         <thresholds>
             <type>value</type>
             <applyTo>left</applyTo>
-            <source missingValue = "-999" format = "csv">scenario408/thresholds.csv</source>
+            <source missingValue = "-999" format = "csv">thresholds/scenario408/thresholds.csv</source>
             <operator>greater than or equal to</operator>
         </thresholds>
         <metric><name>mean error</name></metric>

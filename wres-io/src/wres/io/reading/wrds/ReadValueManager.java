@@ -203,7 +203,7 @@ public class ReadValueManager
             Duration between = Duration.between( startTime, dataPoint.getTime());
 
             // If we're debugging, we want to check to see if repetitive leads for forecasts are being added
-            if (LOGGER.isDebugEnabled())
+            if ( LOGGER.isDebugEnabled() )
             {
                 // If we haven't seen a repetitive value yet...
                 if ( foundAtIndex == -1 )
@@ -219,7 +219,8 @@ public class ReadValueManager
                         if ( foundLeads.get( foundTimeSeriesHash ).contains( between ) )
                         {
                             foundAtIndex = index;
-                            LOGGER.warn( "Found {} in {} again at index {}!", between, forecast, foundAtIndex );
+                            LOGGER.debug( "Found {} in {} again at index {}!",
+                                          between, forecast, foundAtIndex );
                         }
                         else
                         {
@@ -252,7 +253,11 @@ public class ReadValueManager
         details.setLid( locationDescription.getNwsLid() );
         details.save();
 
-        int variableId = Variables.getVariableID(this.dataSourceConfig);
+        // Use the Physical Element code as the variable name because AHPS
+        // forecasts have QR vs QI vs HG which represent different variables.
+        // See redmine issue #61535 for details.
+        int variableId = Variables.getVariableID( forecast.getParameterCodes()
+                                                          .getPhysicalElement() );
 
         return Features.getVariableFeatureByFeature( details, variableId );
     }

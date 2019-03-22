@@ -26,10 +26,16 @@ import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
+import wres.io.data.caching.DataSources;
+import wres.io.data.caching.Ensembles;
+import wres.io.data.caching.Features;
+import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Projects;
+import wres.io.data.caching.USGSParameters;
 import wres.io.data.caching.UnitConversions;
 import wres.io.data.caching.Variables;
 import wres.io.data.details.FeatureDetails;
+import wres.io.data.details.TimeSeries;
 import wres.io.project.Project;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
@@ -608,6 +614,45 @@ public final class Operations {
         Database.clean();
         Database.refreshStatistics( true );
         Database.releaseLockForMutation();
+        
+        // Nuke the application cache: see #61206
+        Operations.invalidateCache();
+    }
+    
+    /**
+     * <p>Invalidates the application cache of database partition names and
+     * all singleton instances of {@link wres.io.data.caching}. See #61206.
+     * 
+     * <p>The scope of this method could be relaxed if a need arises for 
+     * external control over cache invalidation.
+     * 
+     * TODO: avoid the need for explicit cache validation in the long-term,
+     * since it is inherently brittle. Instead, consider re-scoping most
+     * of the application cache to a single evaluation, which should
+     * become eligible for GC on completion. The aim should be to improve
+     * the sharing of information *within* an evaluation, not between them,
+     * because the dependencies within an evaluation far exceed those
+     * between evaluations, and caching with minimum scope is preferred.
+     * See #61388, which will define an evaluation more concretely.
+     */
+    private static void invalidateCache()
+    {
+        LOGGER.debug( "Invalidating the application cache." );
+        
+        // Invalidate cached partition names
+        TimeSeries.invalidateGlobalCache();
+        
+        // Invalidate data
+        DataSources.invalidateGlobalCache();
+        Ensembles.invalidateGlobalCache();
+        Features.invalidateGlobalCache();
+        MeasurementUnits.invalidateGlobalCache();
+        UnitConversions.invalidateGlobalCache();
+        USGSParameters.invalidateGlobalCache();
+        Projects.invalidateGlobalCache();
+        Variables.invalidateGlobalCache();
+        
+        LOGGER.debug( "Finished invalidating the application cache." );
     }
 
     /**

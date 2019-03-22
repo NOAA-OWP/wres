@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -84,6 +85,23 @@ public class Projects
         }
     }
 
+    /**
+     * <p>Invalidates the global cache of the singleton associated with this class, {@link #instance}.
+     * 
+     * <p>See #61206.
+     */
+    
+    public static void invalidateGlobalCache()
+    {
+        synchronized ( CACHE_LOCK )
+        {
+            if ( Objects.nonNull( instance ) )
+            {
+                Projects.instance.details = null;
+            }
+        }
+    }
+    
     private void initializeDetails()
     {
         synchronized ( Projects.DETAIL_LOCK )
@@ -229,6 +247,8 @@ public class Projects
                         }
                 );
             }
+            
+            LOGGER.debug( "Finished populating the Projects details." );
 
         }
         catch (SQLException error)

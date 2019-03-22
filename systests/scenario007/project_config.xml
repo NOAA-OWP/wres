@@ -35,7 +35,7 @@
         <destination type="numeric" decimalFormat="0.000000" />
         <destination type="pairs" decimalFormat="0.000000" />
         <destination type="graphic">
-            <graphical width="800" height="600" template="scenario007/testTemplateCopiedFromDefault.xml">
+            <graphical width="800" height="600" template="template/scenario007/testTemplateCopiedFromDefault.xml">
                 <!-- Test of the capability to override chart template options in project configuration. -->
                 <config>
                     <chartDrawingParameters>

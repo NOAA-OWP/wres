@@ -63,6 +63,7 @@ final class DatabaseSettings
 		TreeMap<String, String> mapping = new TreeMap<>();
 		mapping.put( "mysql", "com.mysql.jdbc.Driver" );
 		mapping.put( "postgresql", "org.postgresql.Driver" );
+		mapping.put("h2", "org.h2.Driver");
 		return mapping;
 	}
 
@@ -162,41 +163,44 @@ final class DatabaseSettings
 
 	private void cleanPriorRuns() throws SQLException
 	{
-		final String NEWLINE = System.lineSeparator();
-
-		String script = "";
-		script += "SELECT pg_terminate_backend(PT.pid)" + NEWLINE;
-		script += "FROM pg_locks L" + NEWLINE;
-		script += "INNER JOIN pg_stat_all_tables T" + NEWLINE;
-		script += "    ON L.relation = t.relid" + NEWLINE;
-		script += "INNER JOIN pg_stat_activity PT" + NEWLINE;
-		script += "    ON L.pid = PT.pid" + NEWLINE;
-		script += "WHERE T.schemaname <> 'pg_toast'::name" + NEWLINE;
-		script += "    AND t.schemaname < 'pg_catalog'::name" + NEWLINE;
-		script += "    AND usename = '" + this.getUsername() + "'" + NEWLINE;
-		script += "    AND datname = '" + this.getDatabaseName() + "'" + NEWLINE;
-		script += "GROUP BY PT.pid;";
-
-		try
-		{
-			Class.forName( DRIVER_MAPPING.get( getDatabaseType() ) );
-		}
-		catch ( ClassNotFoundException e )
-		{
-			throw new SQLException( "The database driver could not be found.", e );
-		}
-
-		try (Connection connection = this.getRawConnection( null );
-             Statement clean = connection.createStatement()
-        )
+	    if (this.databaseType == "postgresql")
         {
-            clean.execute( script );
-            if (clean.getResultSet().isBeforeFirst())
+            final String NEWLINE = System.lineSeparator();
+
+            String script = "";
+            script += "SELECT pg_terminate_backend(PT.pid)" + NEWLINE;
+            script += "FROM pg_locks L" + NEWLINE;
+            script += "INNER JOIN pg_stat_all_tables T" + NEWLINE;
+            script += "    ON L.relation = t.relid" + NEWLINE;
+            script += "INNER JOIN pg_stat_activity PT" + NEWLINE;
+            script += "    ON L.pid = PT.pid" + NEWLINE;
+            script += "WHERE T.schemaname <> 'pg_toast'::name" + NEWLINE;
+            script += "    AND t.schemaname < 'pg_catalog'::name" + NEWLINE;
+            script += "    AND usename = '" + this.getUsername() + "'" + NEWLINE;
+            script += "    AND datname = '" + this.getDatabaseName() + "'" + NEWLINE;
+            script += "GROUP BY PT.pid;";
+
+            try
             {
-                LOGGER.debug( "Lock(s) from previous runs of this applications "
-                              + "have been released." );
+                Class.forName( DRIVER_MAPPING.get( getDatabaseType() ) );
             }
-		}
+            catch ( ClassNotFoundException e )
+            {
+                throw new SQLException( "The database driver could not be found.", e );
+            }
+
+            try ( Connection connection = this.getRawConnection( null );
+                  Statement clean = connection.createStatement()
+            )
+            {
+                clean.execute( script );
+                if ( clean.getResultSet().isBeforeFirst() )
+                {
+                    LOGGER.debug( "Lock(s) from previous runs of this applications "
+                                  + "have been released." );
+                }
+            }
+        }
 	}
 
     /**
@@ -546,6 +550,11 @@ final class DatabaseSettings
         StringBuilder connectionString = new StringBuilder();
         connectionString.append( "jdbc:" );
         connectionString.append( this.getDatabaseType() );
+
+        if (this.databaseType == "h2" && this.useSSL)
+        {
+            connectionString.append(":ssl");
+        }
         connectionString.append( "://" );
         connectionString.append( this.getUrl() );
 

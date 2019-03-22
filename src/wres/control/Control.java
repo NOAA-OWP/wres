@@ -213,7 +213,7 @@ public class Control implements Function<String[], Integer>,
                                                       thresholdQueue,
                                                       metricQueue,
                                                       productQueue );
-
+        
         try
         {
             // Reduce our set of executors to one object
@@ -256,11 +256,11 @@ public class Control implements Function<String[], Integer>,
         finally
         {
             shutDownGracefully( monitoringService );
-            shutDownGracefully(productExecutor);
-            shutDownGracefully(metricExecutor);
-            shutDownGracefully(thresholdExecutor);
-            shutDownGracefully(pairExecutor);
-            shutDownGracefully(featureExecutor);
+            shutDownGracefully( productExecutor );
+            shutDownGracefully( metricExecutor );
+            shutDownGracefully( thresholdExecutor );
+            shutDownGracefully( pairExecutor );
+            shutDownGracefully( featureExecutor );
         }
     }
 
