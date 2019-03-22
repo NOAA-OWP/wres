@@ -119,6 +119,7 @@ public class TimeSeriesRetriever extends Retriever
                     final long validSeconds = data.getLong( "value_date" );
                     final int lead = data.getInt( "lead" );
                     final Double[] measurements = data.getDoubleArray( "measurements" );
+                    final Integer[] ensembles = data.getIntegerArray( "members" );
 
                     if (measurements[0] != null)
                     {
@@ -148,7 +149,20 @@ public class TimeSeriesRetriever extends Retriever
                         }
                     }
 
-                    PivottedValues pivottedValues = this.formPivottedValues( validSeconds, lead, measurements );
+                    Map<PivottedValues.EnsemblePosition, List<Double >> mappedResult = new TreeMap<>(  );
+
+                    for (int measurementPosition = 0; measurementPosition < Math.min(measurements.length, ensembles.length); ++measurementPosition)
+                    {
+                        mappedResult.put(
+                                new PivottedValues.EnsemblePosition( measurementPosition, ensembles[measurementPosition] ),
+                                List.of( measurements[measurementPosition] )
+                        );
+                    }
+
+                    PivottedValues pivottedValues = new PivottedValues( Instant.ofEpochSecond( validSeconds ),
+                                               Duration.of( lead, TimeHelper.LEAD_RESOLUTION ),
+                                               mappedResult );
+
                     EnsemblePair ensemblePair = this.getPair( pivottedValues );
 
                     if (ensemblePair == null)
@@ -177,15 +191,26 @@ public class TimeSeriesRetriever extends Retriever
      *     scaling isn't really valid, the process of pivotting data into groups for scaling
      *     isn't necessary.
      * </p>
-     * @param validSeconds The time in seconds representing when the values were valid
-     * @param lead The lead duration in {@value wres.util.TimeHelper#LEAD_RESOLUTION}
-     * @param value array of retrieved values to "pivot". There will only ever be one.
+     * @param data The raw values retrieved from the database
      * @return The set of pivotted values
      */
-    private PivottedValues formPivottedValues( final long validSeconds, final int lead, final Double[] value)
+    private PivottedValues formPivottedValues(final DataProvider data)
     {
+        final long validSeconds = data.getLong( "value_date" );
+        final int lead = data.getInt( "lead" );
+        final Double[] measurements = data.getDoubleArray( "measurements" );
+        final Integer[] ensembles = data.getIntegerArray( "members" );
+
         Map<PivottedValues.EnsemblePosition, List<Double >> mappedResult = new TreeMap<>(  );
-        mappedResult.put( new PivottedValues.EnsemblePosition( 0, 0 ), Arrays.asList( value ) );
+
+        for (int measurementPosition = 0; measurementPosition < Math.min(measurements.length, ensembles.length); ++measurementPosition)
+        {
+            mappedResult.put(
+                    new PivottedValues.EnsemblePosition( measurementPosition, ensembles[measurementPosition] ),
+                    List.of( measurements[measurementPosition] )
+            );
+        }
+
         return new PivottedValues( Instant.ofEpochSecond( validSeconds ),
                                    Duration.of( lead, TimeHelper.LEAD_RESOLUTION ),
                                    mappedResult );

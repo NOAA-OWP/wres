@@ -3,6 +3,7 @@ package wres.io.retrieval;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.Callable;
@@ -20,6 +21,7 @@ import wres.io.project.Project;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.util.CalculationException;
+import wres.util.TimeHelper;
 
 public class ByForecastSampleDataIterator extends SampleDataIterator
 {
@@ -181,6 +183,30 @@ public class ByForecastSampleDataIterator extends SampleDataIterator
                                                  this.getProject().getRightTimeShift()
                 )
         );
+
+        if ( this.getProject().getEarliestIssueDate() != null)
+        {
+            script.addTab().addLine("AND TS.initialization_date >= '", this.getProject().getEarliestIssueDate(), "'");
+        }
+
+        if (this.getProject().getLatestIssueDate() != null)
+        {
+            script.addTab().addLine("AND TS.initialization_date <= '", this.getProject().getLatestIssueDate(), "'");
+        }
+
+        if (this.getProject().getEarliestDate() != null)
+        {
+            script.addTab().add( "AND TS.initialization_date ")
+                  .add("+ INTERVAL '1 ", TimeHelper.LEAD_RESOLUTION, "' * TSV.lead >= ")
+                  .addLine("'", this.getProject().getEarliestDate(), "'");
+        }
+
+        if (this.getProject().getLatestDate() != null)
+        {
+            script.addTab().add( "AND TS.initialization_date ")
+                  .add("+ INTERVAL '1 ", TimeHelper.LEAD_RESOLUTION, "' * TSV.lead <= ")
+                  .addLine("'", this.getProject().getLatestDate(), "'");
+        }
 
         script.addLine("GROUP BY TS.timeseries_id, TS.initialization_date");
         script.addLine("ORDER BY TS.initialization_date, TS.ensemble_id;");
