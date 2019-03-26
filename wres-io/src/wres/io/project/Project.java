@@ -926,18 +926,11 @@ public class Project
         
         Objects.requireNonNull( baselineScalesAndSteps );
         
-        TreeSet<Duration> leastLeft = leftScalesAndSteps.stream()
-                                                        .map( Pair::getRight )
-                                                        .filter( Objects::nonNull )
-                                                        .collect( Collectors.toCollection( TreeSet::new ) );
-        TreeSet<Duration> leastRight = rightScalesAndSteps.stream()
-                                                          .map( Pair::getRight )
-                                                          .filter( Objects::nonNull )
-                                                          .collect( Collectors.toCollection( TreeSet::new ) );
-        TreeSet<Duration> leastBaseline = baselineScalesAndSteps.stream()
-                                                                .map( Pair::getRight )
-                                                                .filter( Objects::nonNull )
-                                                                .collect( Collectors.toCollection( TreeSet::new ) );
+        // Filter time-steps that are both non-null and not zero
+        // See #61703
+        TreeSet<Duration> leastLeft = Project.getNonZeroDurations( leftScalesAndSteps );
+        TreeSet<Duration> leastRight = Project.getNonZeroDurations( rightScalesAndSteps );
+        TreeSet<Duration> leastBaseline = Project.getNonZeroDurations( baselineScalesAndSteps );
 
         Set<Duration> leastValues = new HashSet<>();
 
@@ -992,6 +985,23 @@ public class Project
         return TimeScale.getLeastCommonDuration( java.util.Collections.unmodifiableSet( leastValues ) );
     }
     
+    /**
+     * Unpacks the input and returns the time steps without any null values or {@link Duration#ZERO}.
+     * 
+     * @param scalesAndSteps a set of pairs of time scales and time steps 
+     * @return the time steps without nulls or {@link Duration#ZERO}
+     */
+
+    private static TreeSet<Duration> getNonZeroDurations( Set<Pair<TimeScale, Duration>> scalesAndSteps )
+    {
+        Objects.requireNonNull( scalesAndSteps );
+
+        return scalesAndSteps.stream()
+                             .map( Pair::getRight )
+                             .filter( step -> Objects.nonNull( step )
+                                              && !Duration.ZERO.equals( step ) )
+                             .collect( Collectors.toCollection( TreeSet::new ) );
+    }
     
     /**
      * Loads metadata about all features that the project needs to use
