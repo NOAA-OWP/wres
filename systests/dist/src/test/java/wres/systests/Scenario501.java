@@ -5,12 +5,13 @@ import java.nio.file.Path;
 import java.sql.SQLException;
 
 import org.junit.Before;
+import org.junit.After;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.io.Operations;
-
+import wres.control.Control;
 public class Scenario501
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( Scenario501.class );
@@ -31,33 +32,30 @@ public class Scenario501
                                           baseDirectory );
         LOGGER.info( "####>> Cleaning the database..." );
         Operations.cleanDatabase();
-        
-        LOGGER.info( "####>> Removing any existing old output directories..." );
-        ScenarioHelper.deleteOldOutputDirectories( scenarioInfo.getScenarioDirectory() );
-        
-        LOGGER.info( "####>> Setting properties for run based on user settings..." );
+        //ScenarioHelper.deleteOldOutputDirectories( scenarioInfo.getScenarioDirectory() );
         ScenarioHelper.setAllPropertiesFromEnvVars( scenarioInfo );
+		//System.out.println(scenarioInfo.getName() + " is " + scenarioInfo.getScenarioDirectory().toFile().toString());
+		ScenarioHelper.searchAndReplace(scenarioInfo.getScenarioDirectory().toFile().toString() + "/before.sh");
     }
 
     @Test
     public void testScenario()
     {
-		String[] beforeFiles = {"scenario501/before.sh"};
-		System.out.println("Do before = " + ScenarioHelper.doBefore(beforeFiles));
-
-        LOGGER.info( "####>> Beginning test execution..." );
-        ScenarioHelper.assertExecuteScenario( scenarioInfo );
+        Control control = ScenarioHelper.assertExecuteScenario( scenarioInfo );
         
         //This method does it based on a file listing of the output directory.
         //The other choice can work if you have a Control available, in which case
         //you can get the output paths from the Control via its get method.
-        LOGGER.info( "####>> Assert outputs match benchmarks..." );
-        ScenarioHelper.assertOutputsMatchBenchmarks( scenarioInfo );
+        ScenarioHelper.assertOutputsMatchBenchmarks( scenarioInfo, control );
         LOGGER.info( "########################################################## COMPLETED "
                 + this.getClass().getSimpleName().toLowerCase() + NEWLINE);
-
-		String[] afterFiles = {"scenario501/after.sh"};
-		System.out.println("Do after = " + ScenarioHelper.doAfter(afterFiles));
     }
+
+	@After
+    public void afterIndividualTest() throws IOException, SQLException
+    {
+		ScenarioHelper.searchAndReplace(scenarioInfo.getScenarioDirectory().toFile().toString() + "/after.sh");
+		//System.out.println("Do after.sh " + ScenarioHelper.doAfter(scenarioInfo.getScenarioDirectory().toFile().list()));
+	}
 }
 

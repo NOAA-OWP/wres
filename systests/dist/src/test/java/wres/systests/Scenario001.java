@@ -10,14 +10,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.io.Operations;
-
+import wres.control.Control;
 public class Scenario001
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( Scenario001.class );
     private static final String NEWLINE = System.lineSeparator();
 
     private Scenario scenarioInfo;
-
+	
     @Before
     public void beforeIndividualTest() throws IOException, SQLException
     {
@@ -31,27 +31,22 @@ public class Scenario001
                                           baseDirectory );
         LOGGER.info( "####>> Cleaning the database..." );
         Operations.cleanDatabase();
-        
-        LOGGER.info( "####>> Removing any existing old output directories..." );
-        ScenarioHelper.deleteOldOutputDirectories( scenarioInfo.getScenarioDirectory() );
-        
-        LOGGER.info( "####>> Setting properties for run based on user settings..." );
+        //ScenarioHelper.deleteOldOutputDirectories( scenarioInfo.getScenarioDirectory() );
         ScenarioHelper.setAllPropertiesFromEnvVars( scenarioInfo );
     }
 
     @Test
     public void testScenario()
     {
-        LOGGER.info( "####>> Beginning test execution..." );
-        ScenarioHelper.assertExecuteScenario( scenarioInfo );
+        Control control = ScenarioHelper.assertExecuteScenario( scenarioInfo );
+        //ScenarioHelper.assertExecuteScenario( scenarioInfo );
         
         //This method does it based on a file listing of the output directory.
         //The other choice can work if you have a Control available, in which case
         //you can get the output paths from the Control via its get method.
-        LOGGER.info( "####>> Assert outputs match benchmarks..." );
-        ScenarioHelper.assertOutputsMatchBenchmarks( scenarioInfo );
+        //ScenarioHelper.assertOutputsMatchBenchmarks( scenarioInfo );
+        ScenarioHelper.assertOutputsMatchBenchmarks( scenarioInfo, control );
         LOGGER.info( "########################################################## COMPLETED "
                 + this.getClass().getSimpleName().toLowerCase() + NEWLINE);
     }
 }
-
