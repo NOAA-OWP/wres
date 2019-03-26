@@ -512,18 +512,19 @@ public class ConfigHelper
         return hashBuilder.toString().hashCode();
     }
 
-    public static boolean isForecast( DataSourceConfig dataSource )
+    public static boolean isForecast( DataSourceConfig dataSourceConfig )
     {
-        return dataSource != null &&
-               Strings.isOneOf( dataSource.getType().value(),
-                                DatasourceType.SINGLE_VALUED_FORECASTS.value(),
-                                DatasourceType.ENSEMBLE_FORECASTS.value() );
+        Objects.requireNonNull( dataSourceConfig );
+
+        return dataSourceConfig.getType() == DatasourceType.SINGLE_VALUED_FORECASTS
+               || dataSourceConfig.getType() == DatasourceType.ENSEMBLE_FORECASTS;
     }
 
     public static boolean isSimulation( DataSourceConfig dataSourceConfig )
     {
-        return dataSourceConfig != null
-               && dataSourceConfig.getType() == DatasourceType.SIMULATIONS;
+        Objects.requireNonNull( dataSourceConfig );
+        
+        return dataSourceConfig.getType() == DatasourceType.SIMULATIONS;
     }
 
     public static ProjectConfig read( final String path ) throws IOException
