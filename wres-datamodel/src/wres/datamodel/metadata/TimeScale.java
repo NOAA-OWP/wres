@@ -338,7 +338,7 @@ public final class TimeScale implements Comparable<TimeScale>
      * @param durations the time scales from which to derive the LCM
      * @return the LCM for the input
      * @throws NullPointerException if the inputs are null
-     * @throws IllegalArgumentException if the input is empty
+     * @throws IllegalArgumentException if the input is empty or contains a {@link Duration#ZERO}
      */
 
     public static Duration getLeastCommonDuration( Set<Duration> durations )
@@ -350,6 +350,15 @@ public final class TimeScale implements Comparable<TimeScale>
             throw new IllegalArgumentException( "Cannot compute the Least Common Duration from empty input." );
         }
 
+        // Do not allow a duration of zero: see #61703
+        // Note that the LCM is delivered below with ArithmeticUtils::lcm, whose documentation allows
+        // for an LCM of zero, which is not valid in this context (and, arguably, any context)
+        if ( durations.contains( Duration.ZERO ) )
+        {
+            throw new IllegalArgumentException( "When computing the Least Common Duration, found a "
+                                                + "duration of zero, which is not allowed." );
+        }
+        
         // Only one, then that must be the LCM
         if ( durations.size() == 1 )
         {

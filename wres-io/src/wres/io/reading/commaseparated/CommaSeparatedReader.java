@@ -24,8 +24,6 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
  * Helps read files of Comma Separated Values (CSV).
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 1.0
  */
 
 public class CommaSeparatedReader
