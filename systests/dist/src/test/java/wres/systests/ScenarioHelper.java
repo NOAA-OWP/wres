@@ -500,22 +500,39 @@ System.out.println("java.io.tmpdir ================ " + System.getProperty("java
 		LOGGER.info( "####>> Assert outputs match benchmarks..." + scenarioInfo.getName() );
         //Assert the output as being valid and then get the output from the provided Control if so.
         assertWRESOutputValid( completedEvaluation );
-        Set<Path> initialOutputSet = completedEvaluation.get();
-
-		// I want to check the this first
-		/*
-		for (Iterator<Path> iterator = initialOutputSet.iterator(); iterator.hasNext();)
+		// List files one-by-one
+		Set<Path> tmpset = completedEvaluation.get();
+		Path tmppath = tmpset.iterator().next();
+		File tmpdir = tmppath.getParent().toFile();
+		Set<Path> initialOutputSet = new HashSet<Path>();
+		if (tmpdir.isDirectory() && tmpdir.canRead() && tmpdir.canExecute())
 		{
-			Path iPath = iterator.next();
+			File[] tmpFiles = tmpdir.listFiles();
+			//Set<Path> initialOutputSet = new HashSet<Path>();
+			for (int i = 0; i < tmpFiles.length; i++)
+			{
+				System.out.println("tmpFile = " + tmpFiles[i].toString());
+				initialOutputSet.add(tmpFiles[i].toPath());
+			}
+		}
+		else
+        	//Set<Path> initialOutputSet = completedEvaluation.get(); // somehow this Control.get() couldn't complete get all files for scerio1000 and 1001
+        	initialOutputSet = completedEvaluation.get(); // somehow this Control.get() couldn't complete get all files for scerio1000 and 1001
+
+		// I want to check the this initialOutputSet from Control.get()
+		/*
+		for (Path iPath : initialOutputSet)
+		{
+			//Path iPath = iterator.next();
 			if ( iPath.toString().endsWith(".png"))
 			{
-				System.out.println("Remove this iPath ===== " + iPath.toString());
-				iterator.remove();
+				System.out.println("PNG file from iPath ===== " + iPath.toString());
+				//iterator.remove();
 			}
 			else
-				System.out.println("Remain this iPath ===== " + iPath.toString());
+				System.out.println("CSV file from iPath ===== " + iPath.toString());
 		}
-		*/
+		*/	
         //Create the directory listing.
         //Path dirListingPath;
         try
@@ -525,10 +542,11 @@ System.out.println("java.io.tmpdir ================ " + System.getProperty("java
             // Need to filter out the *.png files
             //HashSet<Path> finalOutputSet = Sets.newHashSet( initialOutputSet );
 			HashSet<Path> finalOutputSet = new HashSet<Path>();
+			// Now filter out the *.png file
 			for (Iterator<Path> iterator = initialOutputSet.iterator(); iterator.hasNext();)
         	{
             	Path iPath = iterator.next();
-            	if ( iPath.toString().endsWith(".png"))
+            	if ( iPath.toString().endsWith(".png") || iPath.toString().endsWith(".nc"))
             	{
                 	System.out.println("Won't add this iPath ===== " + iPath.toString());
             	}
@@ -542,6 +560,7 @@ System.out.println("java.io.tmpdir ================ " + System.getProperty("java
             //finalOutputSet.add( dirListingPath );
 
 			// Do one more chck before compare it with benchmarks
+			/*
 			for (Iterator<Path> iterator = finalOutputSet.iterator(); iterator.hasNext();)
             {
                 Path checkPath = iterator.next();
@@ -554,9 +573,9 @@ System.out.println("java.io.tmpdir ================ " + System.getProperty("java
                 	System.out.println("Remain this +++++++++++++++++++++++++++++++ " + checkPath.toString());
 				
             }
-
-            int resultCode;
-            resultCode = compareOutputAgainstBenchmarks( scenarioInfo,
+			*/
+            //int resultCode;
+            int resultCode = compareOutputAgainstBenchmarks( scenarioInfo,
                                                          finalOutputSet );
             assertEquals( "Camparison with benchmarks failed with code " + resultCode + ".", 0, resultCode );
         }
@@ -640,13 +659,17 @@ System.out.println("java.io.tmpdir ================ " + System.getProperty("java
         int miscResultCode = 0;
         for ( Path outputFilePath : generatedOutputs )
         {
+			
             String outputFileName = outputFilePath.toFile().getName();
+			/*
 			if (! outputFileName.endsWith( ".csv"))
 			{
 						System.out.println("Do not compare this file " + outputFileName); // Do not compare those are not *.csv files
 						continue;
 			}
+			*/
 			System.out.println("output file name = " + outputFileName);
+			
             //For the pairs, you need to sort them first.
             File benchmarkFile = identifyBenchmarkFile( outputFilePath, benchmarksPath );
             if ( benchmarkFile != null )
@@ -659,10 +682,12 @@ System.out.println("java.io.tmpdir ================ " + System.getProperty("java
                         assertOutputPairsEqualExpectedPairs( outputFilePath.toFile(), benchmarkFile );
                     }
                     //Otherwise just do the comparison without sorting.
+                    /*
                     else if ( outputFileName.endsWith( ".png")) 
 					{
 						System.out.println("Do not compare this file " + outputFileName); // Do not compare those are not *.csv files
 					}
+					*/
                     else
                     {
                         assertOutputTextFileMatchesExpected( outputFilePath.toFile(), benchmarkFile );
@@ -770,7 +795,7 @@ System.out.println("java.io.tmpdir ================ " + System.getProperty("java
         {
             //TODO Added trimming below to handle white space at the ends, but should I?
             //Mainly worried about the Window's carriage return popping up some day.
-			System.out.println("compare output file " + outputFile.getName() + " withe benchmarks file " + benchmarkFile.getName());
+			System.out.println("compare output file " + outputFile.getName() + " with benchmarks file " + benchmarkFile.getName());
             //System.out.println ( actualRows.get( i ));
 			//System.out.println( expectedRows.get( i ));
 			System.out.println ("Are they equals ? " + actualRows.get( i ).equals(expectedRows.get( i )));
