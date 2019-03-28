@@ -1,5 +1,7 @@
 package wres.engine.statistics.metric;
 
+import static org.junit.Assert.assertEquals;
+
 import org.junit.Test;
 
 /**
@@ -18,7 +20,7 @@ public final class MetricCalculationExceptionTest
     public void testMetricCalculationException()
     {
         final MetricCalculationException e = new MetricCalculationException();
-        final MetricCalculationException f = new MetricCalculationException("Test exception.");
-        new MetricCalculationException(f.getMessage(), e);
+        final MetricCalculationException f = new MetricCalculationException( "Test exception." );
+        assertEquals( "Test exception.", new MetricCalculationException( f.getMessage(), e ).getMessage() );
     }
 }

@@ -215,10 +215,10 @@ public final class MetadataHelperTest
     public void testThrowExceptionIfTimeStepIsZero()
     {
         exception.expect( RescalingException.class );
-        exception.expectMessage( "The period associated with the time-step cannot be zero when rescaling." );
+        exception.expectMessage( "The period associated with the time-step cannot be zero." );
 
-        MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( TimeScale.of( Duration.ofMillis( 1 ) ),
-                                                               TimeScale.of( Duration.ofMillis( 1 ) ),
+        MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( TimeScale.of( Duration.ofHours( 1 ) ),
+                                                               TimeScale.of( Duration.ofHours( 2 ) ),
                                                                Duration.ZERO );
     }
 
@@ -232,10 +232,10 @@ public final class MetadataHelperTest
     public void testThrowExceptionIfTimeStepIsNegative()
     {
         exception.expect( RescalingException.class );
-        exception.expectMessage( "The period associated with the time-step cannot be negative when rescaling." );
+        exception.expectMessage( "The period associated with the time-step cannot be negative." );
 
-        MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( TimeScale.of( Duration.ofMillis( 1 ) ),
-                                                               TimeScale.of( Duration.ofMillis( 1 ) ),
+        MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( TimeScale.of( Duration.ofHours( 1 ) ),
+                                                               TimeScale.of( Duration.ofHours( 2 ) ),
                                                                Duration.ofMillis( -1 ) );
     }
 

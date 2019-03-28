@@ -46,7 +46,7 @@ public final class RankHistogramTest
     private Random rng;
 
     @Before
-    public void setupBeforeEachTest() throws MetricParameterException
+    public void setupBeforeEachTest()
     {
         this.rng = new Random( 12345678 );
         this.rh = RankHistogram.of( this.rng );
@@ -58,7 +58,7 @@ public final class RankHistogramTest
      */
 
     @Test
-    public void testApplyWithoutTies() throws MetricParameterException
+    public void testApplyWithoutTies()
     {
         final List<EnsemblePair> values = new ArrayList<>();
         for ( int i = 0; i < 10000; i++ )
@@ -180,7 +180,7 @@ public final class RankHistogramTest
      */
 
     @Test
-    public void testConstructionWithoutRNG() throws MetricParameterException
+    public void testConstructionWithoutRNG()
     {
         assertNotNull( RankHistogram.of() );
     }

@@ -97,8 +97,8 @@ public final class TimingErrorHelperTest
      */
 
     @Test
-    public void testInstantiation() throws NoSuchMethodException, SecurityException, InstantiationException,
-            IllegalAccessException, IllegalArgumentException, InvocationTargetException
+    public void testInstantiation() throws NoSuchMethodException, InstantiationException,
+            IllegalAccessException, InvocationTargetException
     {
         final Constructor<TimingErrorHelper> constructor = TimingErrorHelper.class.getDeclaredConstructor();
         constructor.setAccessible( true );

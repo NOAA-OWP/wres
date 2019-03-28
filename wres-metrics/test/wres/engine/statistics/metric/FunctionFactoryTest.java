@@ -108,8 +108,7 @@ public final class FunctionFactoryTest
     public void testMean()
     {
         assertTrue( doubleTester.test( FunctionFactory.mean()
-                                                      .applyAsDouble( VectorOfDoubles.of( new double[] { 1.0, 2.0,
-                                                                                                         3.0 } ) ),
+                                                      .applyAsDouble( VectorOfDoubles.of( 1.0, 2.0, 3.0 ) ),
                                        2.0 ) );
     }
 
@@ -117,9 +116,7 @@ public final class FunctionFactoryTest
     public void testMedian()
     {
         assertTrue( doubleTester.test( FunctionFactory.median()
-                                                      .applyAsDouble( VectorOfDoubles.of( new double[] { 4.0, 7.0,
-                                                                                                         6.3,
-                                                                                                         5.1723 } ) ),
+                                                      .applyAsDouble( VectorOfDoubles.of( 4.0, 7.0, 6.3, 5.1723 ) ),
                                        5.73615 ) );
     }
 
@@ -127,8 +124,7 @@ public final class FunctionFactoryTest
     public void testMeanAbsolute()
     {
         assertTrue( doubleTester.test( FunctionFactory.meanAbsolute()
-                                                      .applyAsDouble( VectorOfDoubles.of( new double[] { 4.3, -2.9, 7,
-                                                                                                         13.13131 } ) ),
+                                                      .applyAsDouble( VectorOfDoubles.of( 4.3, -2.9, 7, 13.13131 ) ),
                                        6.8328275 ) );
     }
 
@@ -136,13 +132,12 @@ public final class FunctionFactoryTest
     public void testMinimum()
     {
         assertTrue( doubleTester.test( FunctionFactory.minimum()
-                                                      .applyAsDouble( VectorOfDoubles.of( new double[] { 4.3, -2.9, 7,
-                                                                                                         13.13131 } ) ),
+                                                      .applyAsDouble( VectorOfDoubles.of( 4.3, -2.9, 7, 13.13131 ) ),
                                        -2.9 ) );
 
         assertTrue( doubleTester.test( FunctionFactory.minimum()
-                                                      .applyAsDouble( VectorOfDoubles.of( new double[] { 4.3,
-                                                                                                         Double.NEGATIVE_INFINITY } ) ),
+                                                      .applyAsDouble( VectorOfDoubles.of( 4.3,
+                                                                                          Double.NEGATIVE_INFINITY ) ),
                                        Double.NEGATIVE_INFINITY ) );
     }
 
@@ -150,14 +145,13 @@ public final class FunctionFactoryTest
     public void testMaximum()
     {
         assertTrue( doubleTester.test( FunctionFactory.maximum()
-                                                      .applyAsDouble( VectorOfDoubles.of( new double[] { 4.3, -2.9, 7,
-                                                                                                         13.13131 } ) ),
+                                                      .applyAsDouble( VectorOfDoubles.of( 4.3, -2.9, 7, 13.13131 ) ),
                                        13.13131 ) );
 
         assertTrue( doubleTester.test( FunctionFactory.maximum()
-                                                      .applyAsDouble( VectorOfDoubles.of( new double[] { Double.POSITIVE_INFINITY,
-                                                                                                         4.3,
-                                                                                                         Double.NEGATIVE_INFINITY } ) ),
+                                                      .applyAsDouble( VectorOfDoubles.of( Double.POSITIVE_INFINITY,
+                                                                                          4.3,
+                                                                                          Double.NEGATIVE_INFINITY ) ),
                                        Double.POSITIVE_INFINITY ) );
     }
 
@@ -165,8 +159,7 @@ public final class FunctionFactoryTest
     public void testStandardDeviation()
     {
         assertTrue( doubleTester.test( FunctionFactory.standardDeviation()
-                                                      .applyAsDouble( VectorOfDoubles.of( new double[] { 7, 9, 11, 13,
-                                                                                                         123.883 } ) ),
+                                                      .applyAsDouble( VectorOfDoubles.of( 7, 9, 11, 13, 123.883 ) ),
                                        50.97908922 ) );
     }
 
@@ -174,8 +167,7 @@ public final class FunctionFactoryTest
     public void testSampleSize()
     {
         assertTrue( doubleTester.test( FunctionFactory.sampleSize()
-                                                      .applyAsDouble( VectorOfDoubles.of( new double[] { 7, 9, 11, 13,
-                                                                                                         123.883 } ) ),
+                                                      .applyAsDouble( VectorOfDoubles.of( 7, 9, 11, 13, 123.883 ) ),
                                        5.0 ) );
     }
 

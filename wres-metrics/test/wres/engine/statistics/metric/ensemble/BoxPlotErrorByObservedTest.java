@@ -48,7 +48,7 @@ public final class BoxPlotErrorByObservedTest
     private BoxPlotErrorByObserved bpe;
 
     @Before
-    public void setupBeforeEachTest() throws MetricParameterException
+    public void setupBeforeEachTest()
     {
         this.bpe = BoxPlotErrorByObserved.of();
     }
@@ -95,8 +95,7 @@ public final class BoxPlotErrorByObservedTest
         List<EnsemblePair> expectedBoxes = new ArrayList<>();
         expectedBoxes.add( expectedBox );
         BoxPlotStatistic expected = BoxPlotStatistic.of( expectedBoxes,
-                                                         VectorOfDoubles.of( new double[] { 0.0, 0.25, 0.5, 0.75,
-                                                                                            1.0 } ),
+                                                         VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 ),
                                                          m1,
                                                          MetricDimension.OBSERVED_VALUE,
                                                          MetricDimension.FORECAST_ERROR );
@@ -154,7 +153,7 @@ public final class BoxPlotErrorByObservedTest
     @Test
     public void testConstructionWithTwoProbabilities() throws MetricParameterException
     {
-        assertTrue( Objects.nonNull( BoxPlotErrorByObserved.of( VectorOfDoubles.of( new double[] { 0.0, 1.0 } ) ) ) );
+        assertTrue( Objects.nonNull( BoxPlotErrorByObserved.of( VectorOfDoubles.of( 0.0, 1.0 ) ) ) );
     }
 
     /**

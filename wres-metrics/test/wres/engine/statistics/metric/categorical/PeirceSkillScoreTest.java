@@ -25,7 +25,6 @@ import wres.datamodel.statistics.MatrixStatistic;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricCalculationException;
-import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.Score;
 
@@ -53,7 +52,7 @@ public final class PeirceSkillScoreTest
     private StatisticMetadata meta;
 
     @Before
-    public void setUpBeforeEachTest() throws MetricParameterException
+    public void setUpBeforeEachTest()
     {
         pss = PeirceSkillScore.of();
         meta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
@@ -90,11 +89,10 @@ public final class PeirceSkillScoreTest
     /**
      * Compares the actual output from {@link PeirceSkillScore#apply(MulticategoryPairs)} with 
      * {@link MulticategoryPairs} to the expected output.
-     * @throws MetricParameterException if the multicategory metric could not be constructed
      */
 
     @Test
-    public void testApplyWithMulticategoryInput() throws MetricParameterException
+    public void testApplyWithMulticategoryInput()
     {
         //Generate some data
         final MulticategoryPairs input = MetricTestDataFactory.getMulticategoryPairsOne();

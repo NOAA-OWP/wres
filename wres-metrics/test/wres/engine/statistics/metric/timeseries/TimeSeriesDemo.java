@@ -18,7 +18,6 @@ import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
-import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.singlevalued.MeanError;
 
 /**
@@ -31,7 +30,7 @@ public class TimeSeriesDemo
 {
 
     @Test
-    public void demonstrateTimeSeries() throws MetricParameterException
+    public void demonstrateTimeSeries()
     {
         //SET TRUE TO PRINT OUTPUT FOR DEMO TO STANDARD OUT
         boolean printOutput = false;

@@ -6,7 +6,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.Map;
 
@@ -161,7 +161,7 @@ public final class TimingErrorDurationStatisticsTest
         Duration expectedMin = Duration.ofHours( -6 );
         Duration expectedMax = Duration.ofHours( 12 );
         Duration expectedMeanAbs = Duration.ofHours( 9 );
-        Map<MetricConstants, Duration> expectedSource = new HashMap<>();
+        Map<MetricConstants, Duration> expectedSource = new EnumMap<>( MetricConstants.class );
         expectedSource.put( MetricConstants.MEAN, expectedMean );
         expectedSource.put( MetricConstants.MINIMUM, expectedMin );
         expectedSource.put( MetricConstants.MAXIMUM, expectedMax );
@@ -211,7 +211,7 @@ public final class TimingErrorDurationStatisticsTest
         // Check the results
         DurationScoreStatistic actual = ttps.apply( peakError.apply( input ) );
 
-        Map<MetricConstants, Duration> expectedSource = new HashMap<>();
+        Map<MetricConstants, Duration> expectedSource = new EnumMap<>( MetricConstants.class );
         expectedSource.put( MetricConstants.MEAN, MetricConstants.MissingValues.MISSING_DURATION );
 
         // Expected, which uses identifier of MetricConstants.MAIN for convenience

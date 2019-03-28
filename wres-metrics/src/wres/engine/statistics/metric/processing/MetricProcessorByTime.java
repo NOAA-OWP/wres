@@ -116,11 +116,11 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
     {
         if ( hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticGroup.DOUBLE_SCORE ) )
         {
-            processSingleValuedPairsByThreshold( input, futures, StatisticGroup.DOUBLE_SCORE );
+            this.processSingleValuedPairsByThreshold( input, futures, StatisticGroup.DOUBLE_SCORE );
         }
         if ( hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticGroup.MULTIVECTOR ) )
         {
-            processSingleValuedPairsByThreshold( input, futures, StatisticGroup.MULTIVECTOR );
+            this.processSingleValuedPairsByThreshold( input, futures, StatisticGroup.MULTIVECTOR );
         }
     }
 
@@ -141,15 +141,15 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
 
         if ( outGroup == StatisticGroup.DOUBLE_SCORE )
         {
-            futures.addDoubleScoreOutput( processDichotomousPairs( input,
-                                                                   dichotomousScalar,
-                                                                   ignoreTheseMetrics ) );
+            futures.addDoubleScoreOutput( this.processDichotomousPairs( input,
+                                                                        dichotomousScalar,
+                                                                        ignoreTheseMetrics ) );
         }
         else if ( outGroup == StatisticGroup.MATRIX )
         {
-            futures.addMatrixOutput( processDichotomousPairs( input,
-                                                              dichotomousMatrix,
-                                                              ignoreTheseMetrics ) );
+            futures.addMatrixOutput( this.processDichotomousPairs( input,
+                                                                   dichotomousMatrix,
+                                                                   ignoreTheseMetrics ) );
         }
 
     }
@@ -295,10 +295,10 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
 
             }
 
-            processSingleValuedPairs( pairs,
-                                      futures,
-                                      outGroup,
-                                      ignoreTheseMetrics );
+            this.processSingleValuedPairs( pairs,
+                                           futures,
+                                           outGroup,
+                                           ignoreTheseMetrics );
         }
     }
 

@@ -88,13 +88,13 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         //Remove missing values, except for ordered input, such as time-series
         SingleValuedPairs inputNoMissing = input;
 
-        if ( ! this.hasMetrics( SampleDataGroup.SINGLE_VALUED_TIME_SERIES ) )
+        if ( !this.hasMetrics( SampleDataGroup.SINGLE_VALUED_TIME_SERIES ) )
         {
             LOGGER.debug( "Removing any single-valued pairs with missing left or right values for {} at "
                           + "time window {}, since time-series metrics are not required.",
                           inputNoMissing.getMetadata().getIdentifier(),
                           inputNoMissing.getMetadata().getTimeWindow() );
-            
+
             inputNoMissing = Slicer.filter( input, Slicer.leftAndRight( ADMISSABLE_DATA ), ADMISSABLE_DATA );
         }
 
@@ -112,18 +112,18 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         }
         if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED_TIME_SERIES ) )
         {
-            if ( ! (inputNoMissing instanceof TimeSeriesOfSingleValuedPairs) )
+            if ( ! ( inputNoMissing instanceof TimeSeriesOfSingleValuedPairs ) )
             {
                 throw new MetricCalculationException( " The project configuration includes time-series metrics. "
                                                       + "Expected a time-series of single-valued pairs as input." );
             }
-            
+
             TimeSeriesOfSingleValuedPairs data = (TimeSeriesOfSingleValuedPairs) inputNoMissing;
             TimeWindow timeWindow = input.getMetadata().getTimeWindow();
             TimeSeriesOfSingleValuedPairsBuilder builder = new TimeSeriesOfSingleValuedPairsBuilder();
             data = (TimeSeriesOfSingleValuedPairs) builder.addTimeSeries( data )
                                                           .setMetadata( SampleMetadata.of( data.getMetadata(),
-                                                                                     timeWindow ) )
+                                                                                           timeWindow ) )
                                                           .build();
 
             this.processTimeSeriesPairs( data,
@@ -214,6 +214,17 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
     @Override
     void validate( ProjectConfig config )
     {
+        Objects.requireNonNull( config, MetricConfigHelper.NULL_CONFIGURATION_ERROR );
+
+        // Annotate any configuration error, if possible
+        String configurationLabel = ".";
+        if ( Objects.nonNull( config.getLabel() ) )
+        {
+            configurationLabel = " labelled '"
+                                 + config.getLabel()
+                                 + "'.";
+        }
+
         //Check the metrics individually, as some may belong to multiple groups
         for ( MetricConstants next : this.metrics )
         {
@@ -222,32 +233,29 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                      || next.isInGroup( SampleDataGroup.DICHOTOMOUS ) ) )
             {
                 throw new MetricConfigException( "Cannot configure '" + next
-                                                 + "' for single-valued inputs: correct the configuration "
-                                                 + "labelled '"
-                                                 + config.getLabel()
-                                                 + "'." );
+                                                 + "' for single-valued inputs: correct the configuration"
+                                                 + configurationLabel );
             }
 
             // Thresholds required for dichotomous metrics
             if ( next.isInGroup( SampleDataGroup.DICHOTOMOUS )
-                 && !this.getThresholdsByMetric().hasThresholdsForThisMetricAndTheseTypes( next,
-                                                                                           ThresholdGroup.PROBABILITY,
-                                                                                           ThresholdGroup.VALUE ) )
+                 && !this.getThresholdsByMetric()
+                         .hasThresholdsForThisMetricAndTheseTypes( next,
+                                                                   ThresholdGroup.PROBABILITY,
+                                                                   ThresholdGroup.VALUE ) )
             {
                 throw new MetricConfigException( "Cannot configure '" + next
-                                                 + "' without thresholds to define the events: correct the "
-                                                 + "configuration labelled '"
-                                                 + config.getLabel()
-                                                 + "'." );
+                                                 + "' without thresholds to define the events: add one "
+                                                 + "or more thresholds to the configuration"
+                                                 + configurationLabel );
             }
 
         }
 
         // Check that time-series metrics are not combined with other metrics
         String message = "Cannot configure time-series metrics together with non-time-series "
-                         + "metrics: correct the configuration labelled '"
-                         + config.getLabel()
-                         + "'.";
+                         + "metrics: correct the configuration"
+                         + configurationLabel;
 
         // Metrics that are explicitly configured as time-series
         if ( ProjectConfigs.hasTimeSeriesMetrics( config )
@@ -333,11 +341,11 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
     {
         if ( hasMetrics( SampleDataGroup.DICHOTOMOUS, StatisticGroup.DOUBLE_SCORE ) )
         {
-            processDichotomousPairsByThreshold( input, futures, StatisticGroup.DOUBLE_SCORE );
+            this.processDichotomousPairsByThreshold( input, futures, StatisticGroup.DOUBLE_SCORE );
         }
         if ( hasMetrics( SampleDataGroup.DICHOTOMOUS, StatisticGroup.MATRIX ) )
         {
-            processDichotomousPairsByThreshold( input, futures, StatisticGroup.MATRIX );
+            this.processDichotomousPairsByThreshold( input, futures, StatisticGroup.MATRIX );
         }
     }
 
@@ -457,7 +465,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             TimeSeriesOfSingleValuedPairsBuilder builder = new TimeSeriesOfSingleValuedPairsBuilder();
             pairs = (TimeSeriesOfSingleValuedPairs) builder.addTimeSeries( pairs )
                                                            .setMetadata( SampleMetadata.of( pairs.getMetadata(),
-                                                                                      oneOrTwo ) )
+                                                                                            oneOrTwo ) )
                                                            .setMetadataForBaseline( baselineMeta )
                                                            .build();
 
