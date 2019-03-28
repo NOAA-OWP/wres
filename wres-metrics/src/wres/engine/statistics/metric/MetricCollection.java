@@ -116,7 +116,6 @@ public class MetricCollection<S extends SampleData<?>, T extends Statistic<?>, U
         }
         catch ( InterruptedException e )
         {
-            LOGGER.warn( "Interrupted while computing metric collection.", e );
             Thread.currentThread().interrupt();
 
             throw new MetricCalculationException( "Computation of the metric collection was cancelled: ", e );

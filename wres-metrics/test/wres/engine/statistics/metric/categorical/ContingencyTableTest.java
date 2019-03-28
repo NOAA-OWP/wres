@@ -21,7 +21,6 @@ import wres.datamodel.sampledata.pairs.DichotomousPairs;
 import wres.datamodel.sampledata.pairs.MulticategoryPairs;
 import wres.datamodel.statistics.MatrixStatistic;
 import wres.engine.statistics.metric.Metric;
-import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
 /**
@@ -42,7 +41,7 @@ public final class ContingencyTableTest
     private ContingencyTable<MulticategoryPairs> table;
 
     @Before
-    public void setupBeforeEachTest() throws MetricParameterException
+    public void setupBeforeEachTest()
     {
         table = ContingencyTable.of();
     }

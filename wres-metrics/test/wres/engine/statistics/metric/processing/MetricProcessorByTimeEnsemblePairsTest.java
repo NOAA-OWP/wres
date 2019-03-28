@@ -40,7 +40,6 @@ import wres.datamodel.sampledata.pairs.EnsemblePairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.MatrixStatistic;
-import wres.datamodel.statistics.StatisticAccessException;
 import wres.datamodel.statistics.StatisticException;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -425,8 +424,8 @@ public final class MetricProcessorByTimeEnsemblePairsTest
             throws MetricParameterException, IOException
     {
         exception.expect( MetricConfigException.class );
-        exception.expectMessage( "Cannot configure 'BRIER SCORE' without thresholds to define the events: correct the "
-                                 + "configuration labelled 'null'." );
+        exception.expectMessage( "Cannot configure 'BRIER SCORE' without thresholds to define the events: "
+                + "add one or more thresholds to the configuration." );
 
         MetricsConfig metrics =
                 new MetricsConfig( null,
@@ -451,7 +450,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
     @Test
     public void testApplyThrowsExceptionWhenClimatologicalObservationsAreMissing()
-            throws MetricParameterException, IOException
+            throws MetricParameterException
     {
         exception.expect( MetricCalculationException.class );
         exception.expectMessage( "Unable to determine quantile threshold from probability threshold: no climatological "
@@ -492,7 +491,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
     @Test
     public void testApplyThrowsExceptionWhenBaselineIsMissing()
-            throws MetricParameterException, IOException
+            throws MetricParameterException
     {
         exception.expect( MetricConfigException.class );
         exception.expectMessage( "Specify a non-null baseline from which to generate the 'CONTINUOUS RANKED "
@@ -524,7 +523,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
     @Test
     public void testApplyThrowsExceptionForDichotomousMetricWhenClassifierThresholdsAreMissing()
-            throws MetricParameterException, IOException
+            throws MetricParameterException
     {
         exception.expect( MetricConfigException.class );
         exception.expectMessage( "In order to configure dichotomous metrics for ensemble inputs, every metric group "
@@ -562,7 +561,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
     @Test
     public void testApplyThrowsExceptionForMulticategoryMetricWhenClassifierThresholdsAreMissing()
-            throws MetricParameterException, IOException
+            throws MetricParameterException
     {
         exception.expect( MetricConfigException.class );
         exception.expectMessage( "In order to configure multicategory metrics for ensemble inputs, every metric "
@@ -711,7 +710,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
     @Test
     public void testContingencyTable()
-            throws IOException, StatisticAccessException, MetricParameterException, InterruptedException
+            throws IOException, MetricParameterException, InterruptedException
     {
         String configPath = "testinput/metricProcessorEnsemblePairsByTimeTest/testContingencyTable.xml";
 

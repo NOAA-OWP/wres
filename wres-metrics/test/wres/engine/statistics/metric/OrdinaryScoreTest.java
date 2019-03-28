@@ -26,7 +26,7 @@ public final class OrdinaryScoreTest
      */
 
     @Test
-    public void testToString() throws MetricParameterException
+    public void testToString()
     {
         SampleSize<SingleValuedPairs> ss = SampleSize.of();
 

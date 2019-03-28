@@ -21,7 +21,6 @@ import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.DichotomousPairs;
 import wres.datamodel.statistics.MatrixStatistic;
-import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
 /**
@@ -48,7 +47,7 @@ public final class ContingencyTableScoreTest
     private StatisticMetadata meta;
 
     @Before
-    public void setupBeforeEachTest() throws MetricParameterException
+    public void setupBeforeEachTest()
     {
         cs = ThreatScore.of();
         meta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),

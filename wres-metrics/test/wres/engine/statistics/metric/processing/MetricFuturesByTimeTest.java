@@ -110,8 +110,7 @@ public final class MetricFuturesByTimeTest
         // Add a boxplot future
         boxplot =
                 ListOfStatistics.of( Collections.singletonList( BoxPlotStatistic.of( Arrays.asList(),
-                                                                                     VectorOfDoubles.of( new double[] { 0.1,
-                                                                                                                        0.9 } ),
+                                                                                     VectorOfDoubles.of( 0.1, 0.9 ),
                                                                                      StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
                                                                                                            1,
                                                                                                            MeasurementUnit.of(),
@@ -259,13 +258,13 @@ public final class MetricFuturesByTimeTest
         builder.addPairedOutput( CompletableFuture.completedFuture( paired ) );
 
         // Check all expected output is present
-        MetricFuturesByTime futures = builder.build();
-        assertTrue( futures.getOutputTypes().contains( StatisticGroup.BOXPLOT ) );
-        assertTrue( futures.getOutputTypes().contains( StatisticGroup.DOUBLE_SCORE ) );
-        assertTrue( futures.getOutputTypes().contains( StatisticGroup.DURATION_SCORE ) );
-        assertTrue( futures.getOutputTypes().contains( StatisticGroup.MATRIX ) );
-        assertTrue( futures.getOutputTypes().contains( StatisticGroup.MULTIVECTOR ) );
-        assertTrue( futures.getOutputTypes().contains( StatisticGroup.PAIRED ) );
+        MetricFuturesByTime metricFutures = builder.build();
+        assertTrue( metricFutures.getOutputTypes().contains( StatisticGroup.BOXPLOT ) );
+        assertTrue( metricFutures.getOutputTypes().contains( StatisticGroup.DOUBLE_SCORE ) );
+        assertTrue( metricFutures.getOutputTypes().contains( StatisticGroup.DURATION_SCORE ) );
+        assertTrue( metricFutures.getOutputTypes().contains( StatisticGroup.MATRIX ) );
+        assertTrue( metricFutures.getOutputTypes().contains( StatisticGroup.MULTIVECTOR ) );
+        assertTrue( metricFutures.getOutputTypes().contains( StatisticGroup.PAIRED ) );
     }
 
     /**
@@ -286,13 +285,13 @@ public final class MetricFuturesByTimeTest
         builder.addFutures( this.futures );
 
         // Check all expected output is present
-        MetricFuturesByTime futures = builder.build();
-        assertTrue( futures.getOutputTypes().contains( StatisticGroup.BOXPLOT ) );
-        assertTrue( futures.getOutputTypes().contains( StatisticGroup.DOUBLE_SCORE ) );
-        assertTrue( futures.getOutputTypes().contains( StatisticGroup.DURATION_SCORE ) );
-        assertTrue( futures.getOutputTypes().contains( StatisticGroup.MATRIX ) );
-        assertTrue( futures.getOutputTypes().contains( StatisticGroup.MULTIVECTOR ) );
-        assertTrue( futures.getOutputTypes().contains( StatisticGroup.PAIRED ) );
+        MetricFuturesByTime metricFutures = builder.build();
+        assertTrue( metricFutures.getOutputTypes().contains( StatisticGroup.BOXPLOT ) );
+        assertTrue( metricFutures.getOutputTypes().contains( StatisticGroup.DOUBLE_SCORE ) );
+        assertTrue( metricFutures.getOutputTypes().contains( StatisticGroup.DURATION_SCORE ) );
+        assertTrue( metricFutures.getOutputTypes().contains( StatisticGroup.MATRIX ) );
+        assertTrue( metricFutures.getOutputTypes().contains( StatisticGroup.MULTIVECTOR ) );
+        assertTrue( metricFutures.getOutputTypes().contains( StatisticGroup.PAIRED ) );
     }
 
 }

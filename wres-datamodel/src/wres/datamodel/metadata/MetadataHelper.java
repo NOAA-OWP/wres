@@ -118,23 +118,23 @@ public final class MetadataHelper
 
         Objects.requireNonNull( timeStep, "The time-step duration cannot be null." );
 
-        // Timestep cannot be zero
-        if ( timeStep.isZero() )
-        {
-            throw new RescalingException( "The period associated with the time-step cannot be zero when rescaling." );
-        }
-
-        // Timestep cannot be negative
-        if ( timeStep.isNegative() )
-        {
-            throw new RescalingException( "The period associated with the time-step cannot be negative when rescaling." );
-        }
-
         // Change of scale required, i.e. not absolutely equal and not instantaneous
         // (which has a more lenient interpretation)
         if ( MetadataHelper.isChangeOfScaleRequired( existingTimeScale, desiredTimeScale, context ) )
         {
 
+            // Timestep cannot be zero
+            if ( timeStep.isZero() )
+            {
+                throw new RescalingException( "The period associated with the time-step cannot be zero." );
+            }
+
+            // Timestep cannot be negative
+            if ( timeStep.isNegative() )
+            {
+                throw new RescalingException( "The period associated with the time-step cannot be negative." );
+            }
+            
             // The desired time scale must be a sensible function in the context of rescaling
             MetadataHelper.throwExceptionIfDesiredFunctionIsUnknown( desiredTimeScale.getFunction() );
 

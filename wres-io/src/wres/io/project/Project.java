@@ -928,9 +928,9 @@ public class Project
         
         // Filter time-steps that are both non-null and not zero
         // See #61703
-        TreeSet<Duration> leastLeft = Project.getNonZeroDurations( leftScalesAndSteps );
-        TreeSet<Duration> leastRight = Project.getNonZeroDurations( rightScalesAndSteps );
-        TreeSet<Duration> leastBaseline = Project.getNonZeroDurations( baselineScalesAndSteps );
+        TreeSet<Duration> leastLeft = Project.getTimeStepsFromScalesAndSteps( leftScalesAndSteps );
+        TreeSet<Duration> leastRight = Project.getTimeStepsFromScalesAndSteps( rightScalesAndSteps );
+        TreeSet<Duration> leastBaseline = Project.getTimeStepsFromScalesAndSteps( baselineScalesAndSteps );
 
         Set<Duration> leastValues = new HashSet<>();
 
@@ -986,20 +986,19 @@ public class Project
     }
     
     /**
-     * Unpacks the input and returns the time steps without any null values or {@link Duration#ZERO}.
+     * Unpacks the input and returns the time steps without any null values.
      * 
      * @param scalesAndSteps a set of pairs of time scales and time steps 
-     * @return the time steps without nulls or {@link Duration#ZERO}
+     * @return the time steps without nulls
      */
 
-    private static TreeSet<Duration> getNonZeroDurations( Set<Pair<TimeScale, Duration>> scalesAndSteps )
+    private static TreeSet<Duration> getTimeStepsFromScalesAndSteps( Set<Pair<TimeScale, Duration>> scalesAndSteps )
     {
         Objects.requireNonNull( scalesAndSteps );
 
         return scalesAndSteps.stream()
                              .map( Pair::getRight )
-                             .filter( step -> Objects.nonNull( step )
-                                              && !Duration.ZERO.equals( step ) )
+                             .filter( Objects::nonNull )
                              .collect( Collectors.toCollection( TreeSet::new ) );
     }
     
@@ -2883,6 +2882,13 @@ public class Project
          */
 
         private final AtomicBoolean warnOnInstantaneous = new AtomicBoolean();
+        
+        /**
+         * Is <code>true</code> if one or more consumptions time steps were zero, i.e. two
+         * or more measurements were coincident}.
+         */
+
+        private final AtomicBoolean warnOnZeroTimeStep = new AtomicBoolean();
 
         /**
          * Is <code>true</code> if one or more consumptions generated a warning for null/missing
@@ -2950,6 +2956,14 @@ public class Project
             Duration period = value.getDuration( "scale_period" );
             String functionString = value.getString( "scale_function" );
             Duration timeStep = value.getDuration( "time_step" );
+            
+            // Ignore if the time step is zero by returning
+            if( Duration.ZERO.equals( timeStep ) )
+            {
+                this.warnOnZeroTimeStep.set( true );
+                
+                return;
+            }
 
             // Default to the existingTimeScale in the declaration
             if ( Objects.nonNull( declaredExistingTimeScale ) )
@@ -3132,6 +3146,15 @@ public class Project
                 LOGGER.warn( "Could not determine valid time scale information for one or more {}"
                              + " sources. Assuming that the desired time scale is consistent with the "
                              + "time scales of the sources for which information is missing.",
+                             this.sourceType );
+            }
+
+            // Warn when one or more instances had no time scale information
+            if ( this.warnOnZeroTimeStep.get() )
+            {
+                LOGGER.warn( "Found a zero time step for one or more {} sources. "
+                             + "Proceeding to conduct evaluation, but coincident "
+                             + "measurements may indicate bad data.",
                              this.sourceType );
             }
         }

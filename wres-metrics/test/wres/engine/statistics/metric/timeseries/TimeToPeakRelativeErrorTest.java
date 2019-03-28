@@ -22,7 +22,6 @@ import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.statistics.PairedStatistic;
-import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
 /**
@@ -39,11 +38,10 @@ public final class TimeToPeakRelativeErrorTest
     /**
      * Constructs a {@link TimeToPeakRelativeError} and compares the actual result to the expected result. Also, checks 
      * the parameters.
-     * @throws MetricParameterException if the metric could not be constructed 
      */
 
     @Test
-    public void testTimeToPeakRelativeError() throws MetricParameterException
+    public void testTimeToPeakRelativeError()
     {
         // Generate some data
         TimeSeriesOfSingleValuedPairs input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
@@ -87,11 +85,10 @@ public final class TimeToPeakRelativeErrorTest
     /**
      * Checks that {@link TimeToPeakRelativeError#apply(TimeSeriesOfSingleValuedPairs)} throws an exception when 
      * provided with null input.
-     * @throws MetricParameterException if the metric could not be constructed
      */
 
     @Test
-    public void testApplyThrowsExceptionOnNullInput() throws MetricParameterException
+    public void testApplyThrowsExceptionOnNullInput()
     {
         //Check the exceptions
         exception.expect( SampleDataException.class );

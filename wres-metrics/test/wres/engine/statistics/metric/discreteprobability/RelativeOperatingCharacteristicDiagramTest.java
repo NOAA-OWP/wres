@@ -3,7 +3,7 @@ package wres.engine.statistics.metric.discreteprobability;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.Map;
 
 import org.junit.Before;
@@ -53,7 +53,7 @@ public final class RelativeOperatingCharacteristicDiagramTest
      */
 
     @Test
-    public void testApply() throws MetricParameterException
+    public void testApply()
     {
         //Generate some data
         DiscreteProbabilityPairs input = MetricTestDataFactory.getDiscreteProbabilityPairsThree();
@@ -79,7 +79,7 @@ public final class RelativeOperatingCharacteristicDiagramTest
                                                0.11654135338345864, 0.17669172932330826, 0.22932330827067668,
                                                0.2857142857142857, 0.42105263157894735,
                                                0.6240601503759399, 1.0 };
-        Map<MetricDimension, double[]> output = new HashMap<>();
+        Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
         output.put( MetricDimension.PROBABILITY_OF_DETECTION, expectedPOD );
         output.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, expectedPOFD );
         final MultiVectorStatistic expected = MultiVectorStatistic.ofMultiVectorOutput( output, m1 );
