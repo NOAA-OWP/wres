@@ -1,7 +1,5 @@
 package wres.io.utilities;
 
-import static ru.yandex.qatools.embed.postgresql.distribution.Version.Main.V9_6;
-
 import java.beans.PropertyVetoException;
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -20,7 +18,6 @@ import org.slf4j.LoggerFactory;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 
-import ru.yandex.qatools.embed.postgresql.EmbeddedPostgres;
 import wres.system.DatabaseSchema;
 import wres.system.SystemSettings;
 
@@ -40,11 +37,11 @@ public abstract class TestDatabaseGenerator
     {
         private DatabaseAndConnections(
                 final String name,
-                final EmbeddedPostgres database,
+                //final EmbeddedPostgres database,
                 final ComboPooledDataSource dataSource
         )
         {
-            this.database = database;
+            //this.database = database;
             this.dataSource = dataSource;
             this.name = name;
         }
@@ -58,12 +55,12 @@ public abstract class TestDatabaseGenerator
         {
             LOGGER.trace( "Closing the database named {}.", this.name );
             this.dataSource.close();
-            this.database.stop();
-            this.database.close();
+            //this.database.stop();
+            //this.database.close();
             LOGGER.trace("The database named {} has been closed.", this.name);
         }
 
-        private final EmbeddedPostgres database;
+        //private final EmbeddedPostgres database;
         private final ComboPooledDataSource dataSource;
         private final String name;
     }
@@ -73,6 +70,7 @@ public abstract class TestDatabaseGenerator
         final String name = "wrestest" + DATABASE_COUNTER.incrementAndGet();
         LOGGER.trace("A database named {} is being created...", name);
 
+        /*
         EmbeddedPostgres instance = new EmbeddedPostgres( V9_6 );
         int portNumber = PORT.getAndIncrement();
 
@@ -85,6 +83,9 @@ public abstract class TestDatabaseGenerator
                 PASSWORD,
                 new ArrayList<>(  )
         );
+         */
+
+        String jdbcURL = "todo";
 
         ComboPooledDataSource dataSource = new ComboPooledDataSource(  );
         dataSource.setDriverClass("org.postgresql.Driver");
@@ -114,6 +115,7 @@ public abstract class TestDatabaseGenerator
         {
             schema.applySchema( con );
         }
+        /*
         catch(SQLException e)
         {
             if (instance.getProcess().isPresent())
@@ -130,6 +132,7 @@ public abstract class TestDatabaseGenerator
 
             throw e;
         }
+        */
 
         // Because SystemSettings is static, and parses XML in constructor,
         // and referred to elsewhere, need to use powermock to replace it
@@ -150,6 +153,6 @@ public abstract class TestDatabaseGenerator
 
         LOGGER.trace("The database named {} has been created.", name);
 
-        return new DatabaseAndConnections( name, instance, dataSource );
+        return new DatabaseAndConnections( name, dataSource );
     }
 }
