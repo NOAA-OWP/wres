@@ -736,7 +736,21 @@ public class SQLDataProvider implements DataProvider
 
             try
             {
+                if (LOGGER.isTraceEnabled())
+                {
+                    LOGGER.trace( "Closing a connection in SQLDataProvider#" + this.hashCode() + "..." );
+                }
+
                 this.connection.close();
+
+                if (this.connection.isClosed() && LOGGER.isTraceEnabled())
+                {
+                    LOGGER.info( "The connection in SQLDataProvider#" + this.hashCode() + " successfully closed." );
+                }
+                else if (!this.connection.isClosed())
+                {
+                    LOGGER.error("The connection in SQLDataProvider#" + this.hashCode() + " wasn't closed.");
+                }
             }
             catch ( SQLException e )
             {

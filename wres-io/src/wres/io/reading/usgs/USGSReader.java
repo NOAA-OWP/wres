@@ -71,6 +71,8 @@ public class USGSReader extends BasicSource
                                    + "features to request failed.", e );
         }
 
+        LOGGER.debug("{} requests will be made to USGS.", featureDetails.size());
+
         // Request Observation data for each block of locations
         for (Collection<FeatureDetails> details : featureDetails)
         {

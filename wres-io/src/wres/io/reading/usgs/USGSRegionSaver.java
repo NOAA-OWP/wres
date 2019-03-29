@@ -11,6 +11,7 @@ import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 
 import javax.ws.rs.client.Client;
@@ -124,8 +125,6 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
         // This is saved as the output time for the source
         this.operationStartTime = TimeHelper.convertDateToString( OffsetDateTime.now() );
 
-        IngestResult result = null;
-
         WebResponse response;
         try
         {
@@ -139,6 +138,15 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
         }
 
         LOGGER.debug("NWIS Data was loaded from {}", this.requestURL);
+
+        // If the WebResponse object didn't return anything, it means that there was nothing to fail on,
+        // whereas failing below means data could not be parsed
+        if (response == null)
+        {
+            return null;
+        }
+
+        IngestResult result = null;
 
         if (response.wasAlreadyRequested())
         {
@@ -215,6 +223,25 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
             LOGGER.debug("Requesting data from: {}", requestURL);
 
             Response usgsResponse = this.getResponse( webTarget );
+
+            // There's a debate on whether or not to hard fail on this or not. The
+            // response being null is an issue on USGS' side which they have fixed in the past.
+            // If we REALLY want to hard fail, yank out the if block and uncomment this null check
+            //Objects.requireNonNull( usgsResponse, "The request to USGS succeeded but they did not send any data back." );
+
+            if (usgsResponse == null)
+            {
+                LOGGER.warn( "The request to USGS succeeded but they did not send any data back.");
+                if (LOGGER.isDebugEnabled())
+                {
+                    LOGGER.debug( "USGS sent an empty response for: {}", requestURL );
+                }
+
+                return null;
+            }
+
+            LOGGER.trace("A valid USGS response was encountered.");
+
             String responseHash = Strings.getMD5Checksum( usgsResponse );
 
             SourceDetails.SourceKey sourceKey =
@@ -229,7 +256,7 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
                 if (DataSources.isCached( sourceKey ))
                 {
                     LOGGER.debug( "The data for '{}' had been previously ingested.", requestURL );
-                    return new USGSRegionSaver.WebResponse( null,
+                    return new USGSRegionSaver.WebResponse( usgsResponse,
                                                             true,
                                                             DataSources.getActiveSourceID(responseHash),
                                                             responseHash );
