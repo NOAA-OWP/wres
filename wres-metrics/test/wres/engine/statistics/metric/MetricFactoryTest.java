@@ -95,10 +95,9 @@ public final class MetricFactoryTest
 
     /**
      * Tests {@link MetricFactory#ofSingleValuedScore(MetricConstants)}. 
-     * @throws MetricParameterException if the metric construction fails
      */
     @Test
-    public void testOfSingleValuedScore() throws MetricParameterException
+    public void testOfSingleValuedScore()
     {
         assertTrue( MetricFactory.ofSingleValuedScore( MetricConstants.BIAS_FRACTION ) instanceof BiasFraction );
         assertTrue( MetricFactory.ofSingleValuedScore( MetricConstants.MEAN_ABSOLUTE_ERROR ) instanceof MeanAbsoluteError );
@@ -121,10 +120,9 @@ public final class MetricFactoryTest
 
     /**
      * Tests {@link MetricFactory#ofSingleValuedScoreCollectable(MetricConstants)}. 
-     * @throws MetricParameterException if the metric construction fails
      */
     @Test
-    public void testOfSingleValuedScoreCollectable() throws MetricParameterException
+    public void testOfSingleValuedScoreCollectable()
     {
         assertTrue( MetricFactory.ofSingleValuedScoreCollectable( MetricConstants.ROOT_MEAN_SQUARE_ERROR ) instanceof RootMeanSquareError );
         assertTrue( MetricFactory.ofSingleValuedScoreCollectable( MetricConstants.PEARSON_CORRELATION_COEFFICIENT ) instanceof CorrelationPearsons );
@@ -139,10 +137,9 @@ public final class MetricFactoryTest
 
     /**
      * Tests {@link MetricFactory#ofDiscreteProbabilityScore(MetricConstants)} 
-     * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void testOfDiscreteProbabilityScore() throws MetricParameterException
+    public void testOfDiscreteProbabilityScore() 
     {
         assertTrue( MetricFactory.ofDiscreteProbabilityScore( MetricConstants.BRIER_SCORE ) instanceof BrierScore );
         assertTrue( MetricFactory.ofDiscreteProbabilityScore( MetricConstants.BRIER_SKILL_SCORE ) instanceof BrierSkillScore );
@@ -156,10 +153,9 @@ public final class MetricFactoryTest
 
     /**
      * Tests {@link MetricFactory#ofDichotomousScore(MetricConstants)}. 
-     * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void testOfDichotomousScore() throws MetricParameterException
+    public void testOfDichotomousScore()
     {
         assertTrue( MetricFactory.ofDichotomousScore( MetricConstants.THREAT_SCORE ) instanceof ThreatScore );
         assertTrue( MetricFactory.ofDichotomousScore( MetricConstants.EQUITABLE_THREAT_SCORE ) instanceof EquitableThreatScore );
@@ -175,10 +171,9 @@ public final class MetricFactoryTest
 
     /**
      * Tests {@link MetricFactory#ofMulticategoryScore(MetricConstants)}. 
-     * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void testOfMulticategoryScore() throws MetricParameterException
+    public void testOfMulticategoryScore()
     {
         assertTrue( MetricFactory.ofMulticategoryScore( MetricConstants.PEIRCE_SKILL_SCORE ) instanceof PeirceSkillScore );
 
@@ -190,10 +185,9 @@ public final class MetricFactoryTest
 
     /**
      * Tests {@link MetricFactory#ofEnsembleScore(MetricConstants)}. 
-     * @throws MetricParameterException if the metric construction fails
      */
     @Test
-    public void testOfEnsembleScore() throws MetricParameterException
+    public void testOfEnsembleScore()
     {
         assertTrue( MetricFactory.ofEnsembleScore( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE ) instanceof ContinuousRankedProbabilityScore );
         assertTrue( MetricFactory.ofEnsembleScore( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE ) instanceof ContinuousRankedProbabilitySkillScore );
@@ -207,10 +201,9 @@ public final class MetricFactoryTest
 
     /**
      * Tests {@link MetricFactory#ofDichotomousMatrix(MetricConstants)}. 
-     * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void testOfMulticategoryMatrix() throws MetricParameterException
+    public void testOfMulticategoryMatrix()
     {
         assertTrue( MetricFactory.ofDichotomousMatrix( MetricConstants.CONTINGENCY_TABLE ) instanceof ContingencyTable );
 
@@ -222,10 +215,9 @@ public final class MetricFactoryTest
 
     /**
      * Tests {@link MetricFactory#ofSingleValuedMultiVector(MetricConstants)}. 
-     * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void testOfSingleValuedMultiVector() throws MetricParameterException
+    public void testOfSingleValuedMultiVector()
     {
         assertTrue( MetricFactory.ofSingleValuedMultiVector( MetricConstants.QUANTILE_QUANTILE_DIAGRAM ) instanceof QuantileQuantileDiagram );
 
@@ -253,10 +245,9 @@ public final class MetricFactoryTest
 
     /**
      * Tests {@link MetricFactory#ofEnsembleMultiVector(MetricConstants)}. 
-     * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void testOfEnsembleMultiVector() throws MetricParameterException
+    public void testOfEnsembleMultiVector()
     {
         assertTrue( MetricFactory.ofEnsembleMultiVector( MetricConstants.RANK_HISTOGRAM ) instanceof RankHistogram );
 
@@ -267,11 +258,10 @@ public final class MetricFactoryTest
     }
 
     /**
-     * Tests {@link MetricFactory#ofEnsembleBoxPlot(MetricConstants)}. 
-     * @throws MetricParameterException if the metric construction fails 
+     * Tests {@link MetricFactory#ofEnsembleBoxPlot(MetricConstants)}.  
      */
     @Test
-    public void testOfEnsembleBoxPlot() throws MetricParameterException
+    public void testOfEnsembleBoxPlot()
     {
         assertTrue( MetricFactory.ofEnsembleBoxPlot( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE ) instanceof BoxPlotErrorByObserved );
         assertTrue( MetricFactory.ofEnsembleBoxPlot( MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE ) instanceof BoxPlotErrorByForecast );
@@ -284,10 +274,9 @@ public final class MetricFactoryTest
 
     /**
      * Tests {@link MetricFactory#ofSingleValuedTimeSeries(MetricConstants)}. 
-     * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void testSingleValuedTimeSeries() throws MetricParameterException
+    public void testSingleValuedTimeSeries()
     {
         assertTrue( MetricFactory.ofSingleValuedTimeSeries( MetricConstants.TIME_TO_PEAK_ERROR ) instanceof TimeToPeakError );
         assertTrue( MetricFactory.ofSingleValuedTimeSeries( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR ) instanceof TimeToPeakRelativeError );
@@ -406,10 +395,9 @@ public final class MetricFactoryTest
 
     /**
      * Tests {@link MetricFactory#ofSummaryStatisticsForTimingErrorMetric(MetricConstants)}. 
-     * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void testOfSummaryStatisticsForTimingErrorMetric() throws MetricParameterException
+    public void testOfSummaryStatisticsForTimingErrorMetric()
     {
         assertTrue( Objects.nonNull( MetricFactory.ofSummaryStatisticsForTimingErrorMetric( MetricConstants.TIME_TO_PEAK_ERROR ) ) );
         assertTrue( Objects.nonNull( MetricFactory.ofSummaryStatisticsForTimingErrorMetric( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR ) ) );
@@ -465,7 +453,7 @@ public final class MetricFactoryTest
 
     @Test
     public void testOfMetricProcessorByTimeSingleValuedPairsWithExternalThresholds()
-            throws IOException, MetricParameterException
+            throws MetricParameterException
     {
         assertTrue( MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( mockSingleValued,
                                                                             null,

@@ -47,7 +47,7 @@ public final class BoxPlotErrorByForecastTest
     private BoxPlotErrorByForecast bpe;
 
     @Before
-    public void setupBeforeEachTest() throws MetricParameterException
+    public void setupBeforeEachTest()
     {
         this.bpe = BoxPlotErrorByForecast.of();
     }
@@ -93,8 +93,7 @@ public final class BoxPlotErrorByForecastTest
         List<EnsemblePair> expectedBoxes = new ArrayList<>();
         expectedBoxes.add( expectedBox );
         BoxPlotStatistic expected = BoxPlotStatistic.of( expectedBoxes,
-                                                         VectorOfDoubles.of( new double[] { 0.0, 0.25, 0.5, 0.75,
-                                                                                            1.0 } ),
+                                                         VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 ),
                                                          m1,
                                                          MetricDimension.ENSEMBLE_MEAN,
                                                          MetricDimension.FORECAST_ERROR );
@@ -140,11 +139,11 @@ public final class BoxPlotErrorByForecastTest
                                       MetricConstants.MAIN );
 
         //Build the metric
-        BoxPlotErrorByForecast bpe = BoxPlotErrorByForecast.of( MetricDimension.ENSEMBLE_MEDIAN,
-                                                                VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 ) );
+        BoxPlotErrorByForecast bpef = BoxPlotErrorByForecast.of( MetricDimension.ENSEMBLE_MEDIAN,
+                                                                 VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 ) );
 
         //Compute normally
-        final BoxPlotStatistic actual = bpe.apply( input );
+        final BoxPlotStatistic actual = bpef.apply( input );
         final EnsemblePair expectedBox =
                 EnsemblePair.of( 30.0, new double[] { 0.0, 10, 30.0, 75.0, 100.0 } );
         List<EnsemblePair> expectedBoxes = new ArrayList<>();

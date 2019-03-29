@@ -3,7 +3,6 @@ package wres.engine.statistics.metric;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Objects;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -55,7 +54,7 @@ public final class MetricTaskTest
 
     @Test
     public void testMetricTask()
-            throws MetricParameterException, MetricCalculationException, InterruptedException, ExecutionException
+            throws InterruptedException, ExecutionException
     {
         // Generate some data
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
@@ -65,13 +64,7 @@ public final class MetricTaskTest
 
         // Wrap an input in a future
         final FutureTask<SingleValuedPairs> futureInput =
-                new FutureTask<SingleValuedPairs>( new Callable<SingleValuedPairs>()
-                {
-                    public SingleValuedPairs call()
-                    {
-                        return input;
-                    }
-                } );
+                new FutureTask<>( () -> input );
 
         final MetricTask<SingleValuedPairs, DoubleScoreStatistic> task = new MetricTask<>( m, futureInput );
 
@@ -100,20 +93,14 @@ public final class MetricTaskTest
 
     @Test
     public void testMetricTaskWithExceptionalResult()
-            throws MetricParameterException, MetricCalculationException, InterruptedException, ExecutionException
+            throws InterruptedException, ExecutionException
     {
 
         // Add some appropriate metrics to the collection
         final Metric<SingleValuedPairs, DoubleScoreStatistic> m = MeanError.of();
 
         final FutureTask<SingleValuedPairs> futureInputNull =
-                new FutureTask<SingleValuedPairs>( new Callable<SingleValuedPairs>()
-                {
-                    public SingleValuedPairs call()
-                    {
-                        return null;
-                    }
-                } );
+                new FutureTask<>( () -> null );
 
         // Compute the pairs
         pairPool.submit( futureInputNull );

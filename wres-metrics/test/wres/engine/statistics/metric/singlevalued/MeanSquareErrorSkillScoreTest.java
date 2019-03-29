@@ -24,7 +24,6 @@ import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
-import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
 /**
@@ -45,7 +44,7 @@ public final class MeanSquareErrorSkillScoreTest
     private MeanSquareErrorSkillScore msess;
 
     @Before
-    public void setupBeforeEachTest() throws MetricParameterException
+    public void setupBeforeEachTest()
     {
         this.msess = MeanSquareErrorSkillScore.of();
     }

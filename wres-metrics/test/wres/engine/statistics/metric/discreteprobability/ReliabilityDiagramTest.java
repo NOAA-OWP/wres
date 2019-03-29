@@ -4,7 +4,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
@@ -24,7 +24,6 @@ import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.DiscreteProbabilityPair;
 import wres.datamodel.sampledata.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.statistics.MultiVectorStatistic;
-import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
 /**
@@ -45,7 +44,7 @@ public final class ReliabilityDiagramTest
     private ReliabilityDiagram rel;
 
     @Before
-    public void setupBeforeEachTest() throws MetricParameterException
+    public void setupBeforeEachTest()
     {
         this.rel = ReliabilityDiagram.of();
     }
@@ -56,7 +55,7 @@ public final class ReliabilityDiagramTest
      */
 
     @Test
-    public void testApply() throws MetricParameterException
+    public void testApply()
     {
         //Generate some data
         DiscreteProbabilityPairs input = MetricTestDataFactory.getDiscreteProbabilityPairsThree();
@@ -84,7 +83,7 @@ public final class ReliabilityDiagramTest
                                                 0.7272727272727273, 0.8461538461538461 };
         double[] expectedSample = new double[] { 102.0, 59.0, 41.0, 19.0, 22.0, 22.0, 34.0, 24.0, 11.0, 13.0 };
 
-        Map<MetricDimension, double[]> output = new HashMap<>();
+        Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
         output.put( MetricDimension.FORECAST_PROBABILITY, expectedFProb );
         output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, expectedOProb );
         output.put( MetricDimension.SAMPLE_SIZE, expectedSample );
@@ -100,7 +99,7 @@ public final class ReliabilityDiagramTest
      */
 
     @Test
-    public void testApplySomeBinsHaveZeroSamples() throws MetricParameterException
+    public void testApplySomeBinsHaveZeroSamples()
     {
         //Generate some data
         List<DiscreteProbabilityPair> data = new ArrayList<>();
@@ -159,7 +158,7 @@ public final class ReliabilityDiagramTest
                 new double[] { 0.16666666666666666, 0.0, 0.0, 0.0, Double.NaN, Double.NaN, 1.0, 1.0, 1.0, 1.0 };
         double[] expectedSample = new double[] { 6.0, 2.0, 2.0, 1.0, 0.0, 0.0, 1.0, 1.0, 4.0, 13.0 };
 
-        Map<MetricDimension, double[]> output = new HashMap<>();
+        Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
         output.put( MetricDimension.FORECAST_PROBABILITY, expectedFProb );
         output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, expectedOProb );
         output.put( MetricDimension.SAMPLE_SIZE, expectedSample );

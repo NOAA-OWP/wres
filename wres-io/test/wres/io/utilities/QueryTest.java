@@ -10,6 +10,7 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
@@ -20,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.system.SystemSettings;
 
+@Ignore
 @RunWith(PowerMockRunner.class)
 @PrepareForTest( { SystemSettings.class, Database.class})
 @PowerMockIgnore( { "javax.management.*", "javax.xml.*", "com.sun.*", "ch.qos.*", "org.slf4j.*", "org.xml.sax.*" } ) // thanks https://stackoverflow.com/questions/16520699/mockito-powermock-linkageerror-while-mocking-system-class#21268013

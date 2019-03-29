@@ -55,6 +55,22 @@ then
 	exit
 fi
 
+if [ -z "$TESTS_DIR" ]
+then
+	echo "Please 'export TESTS_DIR=~/your_paths/systests'"
+    exit 2
+elif [ ! -d $TESTS_DIR ]
+then
+	echo "$TESTS_DIR is not a directory or doesn't exist"
+	ls $TESTS_DIR
+	exit 2
+fi
+cd $TESTS_DIR
+# -------------- Note these are UNIX/LINUX commands, Windows may not OK
+mkdir -pv outputs
+cd outputs
+rm -rf *
+# --------------------
 cd $TESTS_DIR/dist
 pwd
 # if the test built hasn't unziped yet, then remove the all old builts
@@ -92,21 +108,14 @@ elif [ "$debug" = "NO" ]
 then
 	if [ $series -eq 0 ]
 	then
-		echo "test --tests=Scenario0* --tests=Scenario1* --tests=Scenario2* --tests=Scenario3* --tests=Scenario4* --tests=Scenario5* --tests=Scenario6* --tests=Scenario8*"
-
-		../../gradlew cleanTest test -PwresZipDirectory=/wres_share/releases/archive -PversionToTest=$built_number -PtestJvmSystemProperties="-Dwres.useSSL=true -Dwres.url=$WRES_DB_HOSTNAME -Dwres.username=$WRES_DB_USERNAME -Dwres.databaseName=$WRES_DB_NAME -Djava.io.tmpdir=. -Djava.awt.headless=true" \
---tests=Scenario00* | tee testOutputs.txt 2>&1 
-# For now I just test Scenario0*, later will uncomment below
-# --tests=Scenario01*
-#--tests=Scenario05* \
-#--tests=Scenario1* \
-#--tests=Scenario2* \
-#--tests=Scenario3* \
-#--tests=Scenario4* \
-#--tests=Scenario5* \
-#--tests=Scenario6* \
-#--tests=Scenario8* \
-#| tee testOutputs.txt 2>&1
+		#tests="--tests=Scenario00*"
+		tests="--tests=Scenario00* --tests=Scenario01* --tests=Scenario1* --tests=Scenario2* --tests=Scenario3* --tests=Scenario4* --tests=Scenario5* --tests=Scenario6* --tests=Scenario8*"
+		if [ -f testOutputs.txt ]
+		then
+			rm -v testOutputs.txt
+		fi
+		echo "Test these classes: $tests" | tee testOutputs.txt
+		../../gradlew cleanTest test -PwresZipDirectory=/wres_share/releases/archive -PversionToTest=$built_number -PtestJvmSystemProperties="-Dwres.useSSL=true -Dwres.url=$WRES_DB_HOSTNAME -Dwres.username=$WRES_DB_USERNAME -Dwres.databaseName=$WRES_DB_NAME -Djava.awt.headless=true" $tests | tee -a testOutputs.txt 2>&1 
 	elif [ $series -eq 700 ]
 	then
 		echo "test --tests=Scenario7*"

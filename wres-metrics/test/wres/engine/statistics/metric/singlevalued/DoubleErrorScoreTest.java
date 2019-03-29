@@ -35,7 +35,7 @@ public final class DoubleErrorScoreTest
     private DoubleErrorScore<SingleValuedPairs> score;
 
     @Before
-    public void setupBeforeEachTest() throws MetricParameterException
+    public void setupBeforeEachTest()
     {
         this.score = MeanError.of();
     }
@@ -46,7 +46,7 @@ public final class DoubleErrorScoreTest
      */
 
     @Test
-    public void testBaseline() throws MetricParameterException
+    public void testBaseline()
     {
 
         //Generate some data with a baseline
@@ -90,7 +90,7 @@ public final class DoubleErrorScoreTest
      */
 
     @Test
-    public void testExceptionOnMissingFunction() throws MetricParameterException
+    public void testExceptionOnMissingFunction()
     {
         class ExceptionCheck extends DoubleErrorScore<SingleValuedPairs>
         {
@@ -127,7 +127,7 @@ public final class DoubleErrorScoreTest
      */
 
     @Test
-    public void testApplyExceptionOnNullInput() throws MetricParameterException
+    public void testApplyExceptionOnNullInput()
     {
         exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'MEAN ERROR'." );

@@ -62,7 +62,7 @@ public class MetricCollectionTest
     private ExecutorService metricPool;
 
     @Before
-    public void setupBeforeEachTest() throws MetricParameterException
+    public void setupBeforeEachTest()
     {
         metricPool = Executors.newSingleThreadExecutor();
     }
@@ -88,9 +88,6 @@ public class MetricCollectionTest
 
         //Compute them
         final ListOfStatistics<DoubleScoreStatistic> d = collection.apply( input );
-
-        //Print them
-        //d.stream().forEach(g -> System.out.println(g.getData()));
 
         //Check them   
         final Double expectedFirst = 200.55;
@@ -153,9 +150,6 @@ public class MetricCollectionTest
 
         //Compute them
         final ListOfStatistics<DoubleScoreStatistic> c = collection.apply( input );
-
-        //Print them
-        //c.stream().forEach(g -> System.out.println(g.getData().doubleValue()));
 
         //Check them
         final Double expectedFirst = 0.5734265734265734;
@@ -230,9 +224,6 @@ public class MetricCollectionTest
         //Compute them
         final ListOfStatistics<DoubleScoreStatistic> d = collection.apply( input );
 
-        //Print them
-        //d.stream().forEach(g -> System.out.println(((ScalarOutput)g).getData().valueOf()));
-
         //Check them
         final Double expectedFirst = 0.26;
         final Double expectedSecond = 0.11363636363636376;
@@ -282,9 +273,6 @@ public class MetricCollectionTest
         //Compute them
         final ListOfStatistics<DoubleScoreStatistic> d = collection.apply( input );
 
-        //Print them
-        //d.stream().forEach(g -> System.out.println(((ScalarOutput)g).getData().valueOf()));
-
         //Check them
         final Double expectedFirst = 400003.929;
         final Double expectedSecond = 0.8007025335093799;
@@ -333,9 +321,6 @@ public class MetricCollectionTest
 
         //Compute them
         final ListOfStatistics<DoubleScoreStatistic> c = collection.apply( input );
-
-        //Print them
-        //c.stream().forEach(g -> System.out.println(g.getData().doubleValue()));
 
         //Check them
         final Double expectedFirst = 0.05057466520850963;
@@ -488,7 +473,7 @@ public class MetricCollectionTest
 
     @Test
     public void testLogStartOfCalculation() throws MetricParameterException, IllegalAccessException,
-            IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException
+            InvocationTargetException, NoSuchMethodException
     {
         MetricCollection<SingleValuedPairs, DoubleScoreStatistic, DoubleScoreStatistic> collection =
                 MetricFactory.ofSingleValuedScoreCollection( MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
@@ -521,7 +506,7 @@ public class MetricCollectionTest
 
     @Test
     public void testLogEndOfCalculation() throws MetricParameterException, IllegalAccessException,
-            IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException
+            InvocationTargetException, NoSuchMethodException
     {
         MetricCollection<SingleValuedPairs, DoubleScoreStatistic, DoubleScoreStatistic> collection =
                 MetricFactory.ofSingleValuedScoreCollection( MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
@@ -559,7 +544,7 @@ public class MetricCollectionTest
     @Test
     @Ignore // Until new way of interrupting with mockito is found
     public void testApplyThrowsExceptionWhenInterrupted() throws MetricParameterException, IllegalAccessException,
-            IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException
+            InvocationTargetException, NoSuchMethodException
     {
         exception.expect( InvocationTargetException.class );
         exception.expectCause( CoreMatchers.isA( MetricCalculationException.class ) );
@@ -628,9 +613,6 @@ public class MetricCollectionTest
 
         //Compute them
         final ListOfStatistics<DoubleScoreStatistic> d = n.apply( input );
-
-        //Print them
-        //d.forEach( ( a, b ) -> System.out.println( a.getKey() + " " + b.getData() ) );
 
         //Check them   
         final Double expectedFirst = 0.9999999910148981;

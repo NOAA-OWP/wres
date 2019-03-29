@@ -29,14 +29,13 @@ public final class FactoryConstructionTest
      */
 
     @Test
-    public void testCoverage() throws SecurityException,
-                               NoSuchMethodException,
-                               InstantiationException,
-                               IllegalAccessException,
-                               InvocationTargetException
+    public void testCoverage() throws NoSuchMethodException,
+            InstantiationException,
+            IllegalAccessException,
+            InvocationTargetException
     {
-        coverageSingleton(FunctionFactory.class);
-        coverageSingleton(MetricConfigHelper.class);
+        coverageSingleton( FunctionFactory.class );
+        coverageSingleton( MetricConfigHelper.class );
     }
 
     /**
@@ -51,14 +50,13 @@ public final class FactoryConstructionTest
      * @throws InvocationTargetException if reflection fails
      */
 
-    private <S> void coverageSingleton(final Class<S> singletonClass) throws SecurityException,
-                                                                      NoSuchMethodException,
-                                                                      InstantiationException,
-                                                                      IllegalAccessException,
-                                                                      InvocationTargetException
+    private <S> void coverageSingleton( final Class<S> singletonClass ) throws NoSuchMethodException,
+            InstantiationException,
+            IllegalAccessException,
+            InvocationTargetException
     {
         final Constructor<S> constructor = singletonClass.getDeclaredConstructor();
-        constructor.setAccessible(true);
+        constructor.setAccessible( true );
         constructor.newInstance();
     }
 

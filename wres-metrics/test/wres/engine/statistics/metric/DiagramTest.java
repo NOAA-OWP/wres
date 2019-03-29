@@ -26,7 +26,7 @@ public final class DiagramTest
      */
 
     @Test
-    public void testToString() throws MetricParameterException
+    public void testToString()
     {
         QuantileQuantileDiagram qqd = QuantileQuantileDiagram.of();
 

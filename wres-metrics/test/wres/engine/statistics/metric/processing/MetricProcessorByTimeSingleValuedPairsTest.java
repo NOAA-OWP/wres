@@ -10,7 +10,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -53,7 +53,6 @@ import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.MatrixStatistic;
 import wres.datamodel.statistics.PairedStatistic;
-import wres.datamodel.statistics.StatisticAccessException;
 import wres.datamodel.statistics.StatisticException;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -508,7 +507,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                 processor.getCachedMetricOutput().getDurationScoreStatistics();
 
         //Build the expected statistics
-        Map<MetricConstants, Duration> expectedSource = new HashMap<>();
+        Map<MetricConstants, Duration> expectedSource = new EnumMap<>( MetricConstants.class );
         expectedSource.put( MetricConstants.MEAN, Duration.ofHours( 3 ) );
         expectedSource.put( MetricConstants.MEDIAN, Duration.ofHours( 3 ) );
         expectedSource.put( MetricConstants.MINIMUM, Duration.ofHours( -6 ) );
@@ -562,12 +561,12 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
     @Test
     public void testApplyWithThresholdsFromSource()
-            throws IOException, StatisticAccessException, MetricParameterException, InterruptedException
+            throws IOException, MetricParameterException, InterruptedException
     {
         String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyWithThresholds.xml";
 
         // Define the external thresholds to use
-        Map<MetricConstants, Set<Threshold>> canonical = new HashMap<>();
+        Map<MetricConstants, Set<Threshold>> canonical = new EnumMap<>( MetricConstants.class );
 
         Set<Threshold> thresholds =
                 new HashSet<>( Arrays.asList( Threshold.of( OneOrTwoDoubles.of( 0.5 ),
@@ -794,7 +793,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                 processor.getCachedMetricOutput().getDurationScoreStatistics();
 
         //Build the expected statistics
-        Map<MetricConstants, Duration> expectedSource = new HashMap<>();
+        Map<MetricConstants, Duration> expectedSource = new EnumMap<>( MetricConstants.class );
         expectedSource.put( MetricConstants.MEAN, null );
         expectedSource.put( MetricConstants.MEDIAN, null );
         expectedSource.put( MetricConstants.MINIMUM, null );
@@ -909,11 +908,11 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
     @Test
     public void testApplyThrowsExceptionWhenThresholdMetricIsConfiguredWithoutThresholds()
-            throws MetricParameterException, IOException
+            throws MetricParameterException
     {
         exception.expect( MetricConfigException.class );
-        exception.expectMessage( "Cannot configure 'FREQUENCY BIAS' without thresholds to define the events: correct "
-                                 + "the configuration labelled 'null'." );
+        exception.expectMessage( "Cannot configure 'FREQUENCY BIAS' without thresholds to define the "
+                + "events: add one or more thresholds to the configuration." );
 
         MetricsConfig metrics =
                 new MetricsConfig( null,
@@ -939,7 +938,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
     @Test
     public void testApplyThrowsExceptionWhenClimatologicalObservationsAreMissing()
-            throws MetricParameterException, IOException
+            throws MetricParameterException
     {
         exception.expect( MetricCalculationException.class );
         exception.expectMessage( "Unable to determine quantile threshold from probability threshold: no climatological "
@@ -981,7 +980,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
     @Test
     public void testApplyThrowsExceptionWhenOrdinaryPairsSuppliedForTimeSeriesMetrics()
-            throws MetricParameterException, IOException
+            throws MetricParameterException
     {
         exception.expect( MetricCalculationException.class );
         exception.expectMessage( "The project configuration includes time-series metrics. "
@@ -1014,11 +1013,11 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
     @Test
     public void testExceptionOnConstructionWithEnsembleMetric()
-            throws MetricParameterException, IOException
+            throws MetricParameterException
     {
         exception.expect( MetricConfigException.class );
         exception.expectMessage( "Cannot configure 'CONTINUOUS RANKED PROBABILITY SCORE' for single-valued inputs: "
-                                 + "correct the configuration labelled 'null'." );
+                                 + "correct the configuration." );
 
         // Mock some metrics
         List<MetricConfig> metrics = new ArrayList<>();
@@ -1052,11 +1051,11 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
     @Test
     public void testExceptionOnConstructionWhenMixingTimeSeriesMetricsWithOtherMetrics()
-            throws MetricParameterException, IOException
+            throws MetricParameterException
     {
         exception.expect( MetricConfigException.class );
         exception.expectMessage( "Cannot configure time-series metrics together with non-time-series metrics: correct "
-                                 + "the configuration labelled 'null'." );
+                                 + "the configuration." );
 
         // Mock some metrics
         List<MetricConfig> metrics = new ArrayList<>();
