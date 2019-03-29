@@ -326,24 +326,19 @@ public final class Database {
 
         List<IngestResult> result = new ArrayList<>();
 
-		Future<List<IngestResult>> task;
+        try
+        {
+            // Make sure that feedback gets displayed
+            ProgressMonitor.setShouldUpdate( true );
 
-		try
-		{
-		    // Make sure that feedback gets displayed
-		    ProgressMonitor.setShouldUpdate( true );
-
-		    // Grab the first task
-            task = getStoredIngestTask();
-
-            // While there are tasks to execute,
-            while ( task != null )
+            // Process every stored task
+            for ( Future<List<IngestResult>> task : Database.storedIngestTasks )
             {
                 // Tell the client that we're moving on to the next part of work
                 ProgressMonitor.increment();
 
                 // If the task hasn't completed, we want to get the results and propagate them
-                if (!task.isDone())
+                if ( !task.isDone() )
                 {
                     // Get the task
                     List<IngestResult> singleResult = task.get();
@@ -362,9 +357,6 @@ public final class Database {
                                       + "Database class. Task: {}", task );
                     }
                 }
-
-                // Get the next task
-                task = getStoredIngestTask();
             }
         }
         catch ( InterruptedException ie )

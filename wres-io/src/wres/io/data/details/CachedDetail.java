@@ -89,6 +89,11 @@ public abstract class CachedDetail<U, V extends Comparable<V>> implements Compar
 
 				this.update( results );
 			}
+			catch(SQLException e)
+            {
+                this.getLogger().error( "Failed to save: ", this );
+                throw e;
+            }
 		}
 	}
 

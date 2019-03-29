@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintStream;
+import java.io.Serializable;
 import java.net.URI;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Paths;
@@ -14,6 +15,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -233,6 +235,7 @@ public final class Strings
 	 */
     public static String getMD5Checksum( URI filename ) throws IOException
     {
+        Objects.requireNonNull( filename, "The hash of a file cannot be generated if a URI for a file is not provided." );
         byte[] buffer = new byte[1024];
         MessageDigest complete = Strings.getMD5Algorithm();
         int bytesBuffered;
@@ -256,8 +259,9 @@ public final class Strings
         return getMD5Checksum( complete.digest() );
 	}
 
-	public static String getMD5Checksum(Object object) throws IOException
+	public static String getMD5Checksum( Serializable object) throws IOException
     {
+        Objects.requireNonNull(object, "A non-existent object cannot be suitably hashed.");
         byte[] objectBytes;
 
         try ( ByteArrayOutputStream byteStream = new ByteArrayOutputStream(  );
@@ -300,10 +304,7 @@ public final class Strings
 
 	public static String getMD5Checksum(byte[] checksum)
     {
-		if (checksum == null)
-		{
-			return null;
-		}
+        Objects.requireNonNull( checksum, "A hash cannot be generated for a non-existent byte array" );
 
 		if (checksum.length > 16)
         {

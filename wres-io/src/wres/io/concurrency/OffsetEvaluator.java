@@ -31,8 +31,17 @@ public class OffsetEvaluator extends WRESCallable<Integer>
     @Override
     protected Integer execute() throws Exception
     {
-        DataScripter scripter = this.formScript();
-        return scripter.retrieve( "offset" );
+        DataScripter script;
+
+        if ( this.project.getPairingMode() == Project.PairingMode.BY_TIMESERIES)
+        {
+            script = this.formPerTimeSeriesScript();
+        }
+        else
+        {
+            script = this.formScript();
+        }
+        return script.retrieve( "offset" );
     }
 
     private DataScripter formScript() throws CalculationException
@@ -173,6 +182,169 @@ public class OffsetEvaluator extends WRESCallable<Integer>
         script.addLine(") AS OT");
         script.addTab().addLine("ON OT.observation_time = TS.valid_time");
         script.addLine("ORDER BY TS.offset");
+        script.add("LIMIT 1;");
+
+        return script;
+    }
+
+    /**l
+     * Forms a script specialized for creating the offset value for cases where whole time series are to
+     * be evaluated in an isolated fashion
+     * @return A script to find the offset specialized for by-timeseries evaluations
+     */
+    private DataScripter formPerTimeSeriesScript()
+    {
+        DataScripter script = new DataScripter(  );
+
+        script.addLine("SELECT 0 AS offset");
+        script.addLine("FROM (");
+        script.addTab().add("SELECT TS.initialization_date + INTERVAL '1 ", TimeHelper.LEAD_RESOLUTION, "' * TSV.lead");
+
+        if (this.project.getRightTimeShift() != null)
+        {
+            script.add(" + '", this.project.getRightTimeShift(), "'");
+        }
+
+        script.addLine(" AS valid_time");
+        script.addTab().addLine("FROM (");
+        script.addTab(  2  ).addLine("SELECT TS.timeseries_id, TS.initialization_date");
+        script.addTab(  2  ).addLine("FROM (");
+        script.addTab(   3   ).addLine("SELECT TS.timeseries_id, TS.initialization_date");
+        script.addTab(   3   ).addLine("FROM wres.TimeSeries TS");
+        script.addTab(   3   ).addLine("WHERE TS.variablefeature_id = ?");
+
+        script.addArgument( this.timeseriesVariableFeatureID );
+
+        if (this.project.getEarliestIssueDate() != null)
+        {
+            script.addTab(    4    ).addLine("AND TS.initialization_date >= CAST(? AS TIMESTAMP WITHOUT TIME ZONE)");
+            script.addArgument( this.project.getEarliestIssueDate() );
+        }
+
+        if (this.project.getLatestIssueDate() != null)
+        {
+            script.addTab(    4    ).addLine("AND TS.initialization_date <= CAST(? AS TIMESTAMP WITHOUT TIME ZONE)");
+            script.addArgument( this.project.getLatestIssueDate() );
+        }
+
+        script.addTab(  2  ).addLine(") AS TS");
+        script.addTab(  2  ).addLine("INNER JOIN (");
+        script.addTab(   3   ).addLine("SELECT TSS.timeseries_id");
+        script.addTab(   3   ).addLine("FROM wres.ProjectSource PS");
+        script.addTab(   3   ).addLine("INNER JOIN wres.TimeSeriesSource TSS");
+        script.addTab(    4    ).addLine("ON TSS.source_id = PS.source_id");
+        script.addTab(   3   ).addLine("WHERE PS.project_id = ?");
+
+        script.addArgument( this.project.getId() );
+
+        script.addTab(    4    ).addLine("AND PS.member = ", Project.RIGHT_MEMBER);
+        script.addTab(  2  ).addLine(") AS TSS");
+        script.addTab(   3   ).addLine("ON TSS.timeseries_id = TS.timeseries_id");
+        script.addTab().addLine(") AS TS");
+        script.addTab().addLine("INNER JOIN (");
+        script.addTab(  2  ).addLine("SELECT TSV.timeseries_id, TSV.lead");
+        script.addTab(  2  ).addLine("FROM wres.TimeSeriesValue TSV");
+        script.addTab(  2  ).addLine("WHERE TSV.series_value IS NOT NULL");
+
+        if (this.project.getMinimumLead() > Integer.MIN_VALUE)
+        {
+            script.addTab(   3   ).addLine("AND TSV.lead >= ?");
+            script.addArgument( this.project.getMinimumValue() );
+        }
+
+        if (this.project.getMaximumLead() < Integer.MAX_VALUE)
+        {
+            script.addTab(   3   ).addLine("AND TSV.lead <= ?");
+            script.addArgument( this.project.getMaximumLead() );
+        }
+
+        if (this.project.getMinimumValue() > -Double.MAX_VALUE && this.project.getDefaultMinimumValue() == null)
+        {
+            script.addTab(   3   ).addLine("AND series_value >= ?");
+            script.addArgument( this.project.getMinimumValue() );
+        }
+
+        if (this.project.getMaximumValue() < Double.MAX_VALUE && this.project.getDefaultMaximumValue() == null)
+        {
+            script.addTab(   3   ).addLine("AND series_value <= ?");
+            script.addArgument( this.project.getMaximumValue() );
+        }
+
+        script.addTab().addLine(") AS TSV");
+        script.addTab(  2  ).addLine("ON TSV.timeseries_id = TS.timeseries_id");
+        script.addTab().addLine("GROUP BY TS.initialization_date, TSV.lead");
+        script.addTab().addLine("ORDER BY valid_time");
+        script.addLine(") AS TS");
+        script.addLine("WHERE EXISTS (");
+        script.addTab().addLine("SELECT 1");
+        script.addTab().addLine("FROM (");
+        script.addTab(  2  ).addLine("SELECT source_id");
+        script.addTab(  2  ).addLine("FROM wres.ProjectSource PS");
+        script.addTab(  2  ).addLine("WHERE PS.project_id = ?");
+
+        script.addArgument( this.project.getId() );
+
+        script.addTab(   3   ).addLine("AND PS.member = ", Project.LEFT_MEMBER);
+        script.addTab().addLine(") AS PS");
+        script.addTab().addLine("INNER JOIN (");
+        script.addTab(  2  ).add("SELECT source_id, observation_time");
+
+        if (this.project.getLeftTimeShift() != null)
+        {
+            script.add(" + '", this.project.getLeftTimeShift(), "' AS observation_time");
+        }
+
+        script.addLine();
+        script.addTab(  2  ).addLine("FROM wres.Observation");
+        script.addTab(  2  ).addLine("WHERE variablefeature_id = ?");
+
+        script.addArgument( this.observationVariableFeatureID );
+
+        script.addTab(   3   ).addLine("AND observed_value IS NOT NULL");
+
+        if (this.project.getEarliestDate() != null)
+        {
+            script.addTab(   3   ).add("AND observation_time");
+
+            if (this.project.getLeftTimeShift() != null)
+            {
+                script.add(" + '", this.project.getLeftTimeShift(), "'");
+            }
+
+            script.addLine(" >= CAST(? AS TIMESTAMP WITHOUT TIME ZONE)");
+
+            script.addArgument( this.project.getEarliestDate() );
+        }
+
+        if (this.project.getLatestDate() != null)
+        {
+            script.addTab(   3   ).add("AND observation_time");
+
+            if (this.project.getLeftTimeShift() != null)
+            {
+                script.add(" + '", this.project.getLeftTimeShift(), "'");
+            }
+
+            script.addLine(" <= CAST(? AS TIMESTAMP WITHOUT TIME ZONE)");
+            script.addArgument( this.project.getLatestDate() );
+        }
+
+        if (this.project.getMinimumValue() > -Double.MAX_VALUE && this.project.getDefaultMinimumValue() == null)
+        {
+            script.addTab(   3   ).addLine("AND observed_value >= ?");
+            script.addArgument( this.project.getMinimumValue() );
+        }
+
+        if (this.project.getMaximumValue() < Double.MAX_VALUE && this.project.getDefaultMaximumValue() == null)
+        {
+            script.addTab(   3   ).addLine("AND observed_value <= ?");
+            script.addArgument( this.project.getMaximumValue() );
+        }
+
+        script.addTab().addLine(") AS O");
+        script.addTab(  2  ).addLine("ON O.source_id = PS.source_id");
+        script.addTab().addLine("WHERE O.observation_time = TS.valid_time");
+        script.addLine(")");
         script.add("LIMIT 1;");
 
         return script;
