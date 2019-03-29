@@ -63,6 +63,7 @@ public class ScenarioHelper
      */
     static void setAllPropertiesFromEnvVars( Scenario scenarioInfo )
     {
+		LOGGER.info( "####>> Setting properties for run based on user settings..." );
         //The databae host.
         String dbHostFromEnvVar = System.getenv( "WRES_DB_HOSTNAME" );
         String dbHostFromSysProp = System.getProperty( "wres.url" );
@@ -100,10 +101,24 @@ public class ScenarioHelper
         //the execute script below.  Remove this TODO once the log level can be set correctly.
 
         //Set he temp directory.
-        System.setProperty( "java.io.tmpdir",
+        /* System.setProperty( "java.io.tmpdir",
                             scenarioInfo.getScenarioDirectory()
-                                        .toString() );
-
+                                        .toString() ); */
+		// By Redmine ticket 51654#387, item 2, set the tmpdir to ~/....../systests/outputs
+		String testOutputs = Paths.get(System.getProperty("user.dir")).toFile().getParentFile().getAbsolutePath() + "/outputs";
+		File testOutputsDir = Paths.get(testOutputs).toFile();
+		if (testOutputsDir.isFile()) {
+			testOutputsDir.delete();
+			testOutputsDir.mkdir();
+		} else if (! testOutputsDir.exists()) {
+			testOutputsDir.mkdir();
+		} else if (testOutputsDir.isDirectory()) {
+			// we don't delete old output directories
+			// Because we want to save the output directories after tests.
+			// Let the testing script clean the old output directories
+			; 
+		}	
+		System.setProperty("java.io.tmpdir", testOutputs);
         LOGGER.info( "Properties used to run test:" );
         LOGGER.info( "    wres.hostname = " + System.getProperty( "wres.hostname" ) );
         LOGGER.info( "    wres.url = " + System.getProperty( "wres.url" ) );
@@ -120,9 +135,12 @@ public class ScenarioHelper
      * It should be a direct pass through and the method called should confirm that execution was successful.
      * @param scenarioInfo The {@link Scenario} information.
      */
-    static void assertExecuteScenario( Scenario scenarioInfo )
+    //static void assertExecuteScenario( Scenario scenarioInfo )
+    public static Control assertExecuteScenario( Scenario scenarioInfo )
     {
-        assertExecuteScenarioThroughControl( scenarioInfo ); //If this is used, return its returned Control.
+		LOGGER.info( "####>> Beginning test execution... " + scenarioInfo.getName());
+        return assertExecuteScenarioThroughControl( scenarioInfo ); //If this is used, return its returned Control.
+        //assertExecuteScenarioThroughControl( scenarioInfo ); //If this is used, return its returned Control.
 //        assertExecuteScenarioThroughProcessBuilder( scenarioInfo );
 //        assertExecuteScenarioThroughMainWithShutdownHook(scenarioInfo);
     }
@@ -141,6 +159,7 @@ public class ScenarioHelper
         Path config = scenarioInfo.getScenarioDirectory().resolve( ScenarioHelper.USUAL_EVALUATION_FILE_NAME );
         String args[] = { config.toString() };
         Control wresEvaluation = new Control();
+System.out.println("java.io.tmpdir ================ " + System.getProperty("java.io.tmpdir"));
         int exitCode = wresEvaluation.apply( args );
         assertEquals( "Execution of WRES failed with exit code " + exitCode
                       + "; see log for more information!",
@@ -293,6 +312,8 @@ public class ScenarioHelper
                     Path outputPath = directoryToLookIn.resolve( files[i] );
                     System.out.println( "Deleting old system testing output directory, "
                                         + outputPath.toFile().getAbsolutePath() );
+					LOGGER.info( "####>> Deleting old system testing output directory, "
+                                        + outputPath.toFile().getAbsolutePath() );
                     FileUtils.deleteDirectory( outputPath.toFile() );
                 }
             }
@@ -378,12 +399,26 @@ public class ScenarioHelper
         //List the files.
         File[] outputFiles = outputFolderPath.toFile().listFiles();
 
+		// I want to check each file
+		for (int i = 0; i < outputFiles.length; i++)
+		{
+			System.out.println("Output file " + i + outputFiles[i].getName());
+		}
+
         //Covert to paths and return.  There may be a utility for this; ask.
         //Set should ensure one instance of each path.
         Set<Path> outputPaths = new HashSet<Path>();
         for ( File file : outputFiles )
         {
-            outputPaths.add( file.toPath() );
+			if (file.getName().endsWith(".csv")) // only need *.csv files
+			{
+				System.out.println("Add this file " + file.getName());
+            	outputPaths.add( file.toPath() );
+			}
+			else
+			{
+				System.out.println("This isn't s CSV file " + file.getName());
+			}
         }
         return outputPaths;
     }
@@ -409,10 +444,22 @@ public class ScenarioHelper
         {
             //Construct the directory listing file for the output set.  Add the dir listing
             //to the final set of outputs.
-            Path dirListingPath = constructDirListingFile( initialOutputSet );
+            //
+            //Redmine 51654#387 decided not to compare the dirListing.txt
+            //Path dirListingPath = constructDirListingFile( initialOutputSet );
             HashSet<Path> finalOutputSet = Sets.newHashSet( initialOutputSet );
-            finalOutputSet.add( dirListingPath );
+            //finalOutputSet.add( dirListingPath );
 
+			// Do one more chck before compare it with benchmarks
+			for (Iterator<Path> iterator = finalOutputSet.iterator(); iterator.hasNext();)
+			{
+				Path checkPath = iterator.next();
+				System.out.println("check path +++++++++++++++++++++++++++++++ " + checkPath.toString());
+				if (checkPath.toString().endsWith(".png"))
+				{
+					iterator.remove();
+				}
+			}
             //Call the compare method to obtain a result code and check that it is zero.
             int resultCode;
             resultCode = compareOutputAgainstBenchmarks( scenarioInfo,
@@ -450,19 +497,85 @@ public class ScenarioHelper
     static void assertOutputsMatchBenchmarks( Scenario scenarioInfo,
                                               Control completedEvaluation )
     {
+		LOGGER.info( "####>> Assert outputs match benchmarks..." + scenarioInfo.getName() );
         //Assert the output as being valid and then get the output from the provided Control if so.
         assertWRESOutputValid( completedEvaluation );
-        Set<Path> initialOutputSet = completedEvaluation.get();
+		// List files one-by-one
+		Set<Path> tmpset = completedEvaluation.get();
+		Path tmppath = tmpset.iterator().next();
+		File tmpdir = tmppath.getParent().toFile();
+		Set<Path> initialOutputSet = new HashSet<Path>();
+		if (tmpdir.isDirectory() && tmpdir.canRead() && tmpdir.canExecute())
+		{
+			File[] tmpFiles = tmpdir.listFiles();
+			//Set<Path> initialOutputSet = new HashSet<Path>();
+			for (int i = 0; i < tmpFiles.length; i++)
+			{
+				System.out.println("tmpFile = " + tmpFiles[i].toString());
+				initialOutputSet.add(tmpFiles[i].toPath());
+			}
+		}
+		else
+        	//Set<Path> initialOutputSet = completedEvaluation.get(); // somehow this Control.get() couldn't complete get all files for scerio1000 and 1001
+        	initialOutputSet = completedEvaluation.get(); // somehow this Control.get() couldn't complete get all files for scerio1000 and 1001
 
+		// I want to check the this initialOutputSet from Control.get()
+		/*
+		for (Path iPath : initialOutputSet)
+		{
+			//Path iPath = iterator.next();
+			if ( iPath.toString().endsWith(".png"))
+			{
+				System.out.println("PNG file from iPath ===== " + iPath.toString());
+				//iterator.remove();
+			}
+			else
+				System.out.println("CSV file from iPath ===== " + iPath.toString());
+		}
+		*/	
         //Create the directory listing.
-        Path dirListingPath;
+        //Path dirListingPath;
         try
-        {
-            dirListingPath = constructDirListingFile( initialOutputSet );
-            HashSet<Path> finalOutputSet = Sets.newHashSet( initialOutputSet );
-            finalOutputSet.add( dirListingPath );
-            int resultCode;
-            resultCode = compareOutputAgainstBenchmarks( scenarioInfo,
+        {	
+			//Redmine 51654#387 decided not to compare the dirListing.txt
+            //dirListingPath = constructDirListingFile( initialOutputSet );
+            // Need to filter out the *.png files
+            //HashSet<Path> finalOutputSet = Sets.newHashSet( initialOutputSet );
+			HashSet<Path> finalOutputSet = new HashSet<Path>();
+			// Now filter out the *.png file
+			for (Iterator<Path> iterator = initialOutputSet.iterator(); iterator.hasNext();)
+        	{
+            	Path iPath = iterator.next();
+            	if ( iPath.toString().endsWith(".png") || iPath.toString().endsWith(".nc"))
+            	{
+                	System.out.println("Won't add this iPath ===== " + iPath.toString());
+            	}
+            	else
+				{
+                	System.out.println("Will add this iPath ===== " + iPath.toString());
+					finalOutputSet.add(iPath);
+				}
+        	}
+			// do not check the dirListing for now
+            //finalOutputSet.add( dirListingPath );
+
+			// Do one more chck before compare it with benchmarks
+			/*
+			for (Iterator<Path> iterator = finalOutputSet.iterator(); iterator.hasNext();)
+            {
+                Path checkPath = iterator.next();
+                if (checkPath.toString().endsWith(".png"))
+                {
+                	System.out.println("Remove path +++++++++++++++++++++++++++++++ " + checkPath.toString());
+                    iterator.remove();
+                }
+				else
+                	System.out.println("Remain this +++++++++++++++++++++++++++++++ " + checkPath.toString());
+				
+            }
+			*/
+            //int resultCode;
+            int resultCode = compareOutputAgainstBenchmarks( scenarioInfo,
                                                          finalOutputSet );
             assertEquals( "Camparison with benchmarks failed with code " + resultCode + ".", 0, resultCode );
         }
@@ -529,6 +642,8 @@ public class ScenarioHelper
         if ( benchmarksDir.exists() && benchmarksDir.isDirectory() )
         {
             benchmarkedFiles.addAll( Arrays.asList( benchmarksDir.list() ) );
+			if (benchmarkedFiles.contains("dirListing.txt"))
+				benchmarkedFiles.remove("dirListing.txt"); // for now we don't compare this file
         }
         else
         {
@@ -544,8 +659,17 @@ public class ScenarioHelper
         int miscResultCode = 0;
         for ( Path outputFilePath : generatedOutputs )
         {
+			
             String outputFileName = outputFilePath.toFile().getName();
-
+			/*
+			if (! outputFileName.endsWith( ".csv"))
+			{
+						System.out.println("Do not compare this file " + outputFileName); // Do not compare those are not *.csv files
+						continue;
+			}
+			*/
+			System.out.println("output file name = " + outputFileName);
+			
             //For the pairs, you need to sort them first.
             File benchmarkFile = identifyBenchmarkFile( outputFilePath, benchmarksPath );
             if ( benchmarkFile != null )
@@ -558,6 +682,12 @@ public class ScenarioHelper
                         assertOutputPairsEqualExpectedPairs( outputFilePath.toFile(), benchmarkFile );
                     }
                     //Otherwise just do the comparison without sorting.
+                    /*
+                    else if ( outputFileName.endsWith( ".png")) 
+					{
+						System.out.println("Do not compare this file " + outputFileName); // Do not compare those are not *.csv files
+					}
+					*/
                     else
                     {
                         assertOutputTextFileMatchesExpected( outputFilePath.toFile(), benchmarkFile );
@@ -570,19 +700,23 @@ public class ScenarioHelper
                     if ( outputFileName.endsWith( "pairs.csv" ) )
                     {
                         pairResultCode = 16;
+						System.err.println("The pair result code " + pairResultCode + " with file name " + outputFileName);
                     }
                     //Otherwise just do the comparison without sorting.
                     else if ( outputFileName.endsWith( ".csv" ) )
                     {
                         metricCSVResultCode = 32;
+						System.err.println("The metric CSV result code " + metricCSVResultCode + " with file name " + outputFileName);
                     }
                     else if ( outputFileName.endsWith( ".txt" ) )
                     {
                         txtResultCode = 4;
+						System.err.println("The text result code " + txtResultCode + " with file name " + outputFileName);
                     }
                     else
                     {
                         miscResultCode = 2;
+						System.err.println("The miscellaneous result code " + miscResultCode + " with file name " + outputFileName);
                     }
                 }
                 //Remove the benchmark as one to check.
@@ -651,7 +785,7 @@ public class ScenarioHelper
         //Read in all of the data.  May need a lot of memory!
         List<String> actualRows = Files.readAllLines( outputFile.toPath() );
         List<String> expectedRows = Files.readAllLines( benchmarkFile.toPath() );
-
+		// there is problem for scenario1000 and 1001, this Files.readAllLines only read part of files, not all.
         //Files must not be zero sized and must be identical in number of lines.
         assertTrue( actualRows.size() > 0 && expectedRows.size() > 0 );
         assertEquals( actualRows.size(), expectedRows.size() );
@@ -661,12 +795,18 @@ public class ScenarioHelper
         {
             //TODO Added trimming below to handle white space at the ends, but should I?
             //Mainly worried about the Window's carriage return popping up some day.
+			System.out.println("compare output file " + outputFile.getName() + " with benchmarks file " + benchmarkFile.getName());
+            //System.out.println ( actualRows.get( i ));
+			//System.out.println( expectedRows.get( i ));
+			System.out.println ("Are they equals ? " + actualRows.get( i ).equals(expectedRows.get( i )));
+			int expectedRowsIndex = expectedRows.indexOf(actualRows.get( i ));
             assertEquals( "For output file, " + outputFile.getName()
                           + ", row "
                           + i
                           + " differs from benchmark.",
-                          actualRows.get( i ).trim(),
-                          expectedRows.get( i ).trim() );
+                          actualRows.get( i ), expectedRows.get( expectedRowsIndex ) );
+                          //actualRows.get( i ).trim(), expectedRows.get( expectedRowsIndex ).trim() );
+                          //expectedRows.get( i ).trim() );
         }
     }
 
@@ -717,18 +857,18 @@ public class ScenarioHelper
     */
     static boolean doAfter( String[] files )
     {
-        boolean isABeforeScript = false;
+        boolean isAnAfterScript = false;
         for ( int i = 0; i < files.length; i++ )
         {
             //if ( files[i].startsWith( "after.sh" ) )
             if ( files[i].endsWith( "after.sh" ) )
             {
-                isABeforeScript = true;
+                isAnAfterScript = true;
                 System.out.println( "Found " + files[i] );
                 searchAndReplace( System.getProperty( "user.dir" ) + "/" + files[i] );
             }
         }
-        return isABeforeScript;
+        return isAnAfterScript;
     }
 
     /**

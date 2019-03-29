@@ -2,7 +2,6 @@ package wres.engine.statistics.metric;
 
 import static org.junit.Assert.assertEquals;
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -47,7 +46,7 @@ public final class CollectableTaskTest
     private StatisticMetadata m1;
 
     @Before
-    public void setupBeforeEachTest() throws MetricParameterException
+    public void setupBeforeEachTest()
     {
         // Tests can run simultaneously, use only 1 (additional) Thread per test
         pairPool = Executors.newFixedThreadPool( 1 );
@@ -66,14 +65,10 @@ public final class CollectableTaskTest
     {
         //Wrap an input in a future
         final FutureTask<MatrixStatistic> futureInput =
-                new FutureTask<MatrixStatistic>( new Callable<MatrixStatistic>()
-                {
-                    public MatrixStatistic call()
-                    {
-                        final double[][] returnMe =
-                                new double[][] { { 1.0, 1.0 }, { 1.0, 1.0 } };
-                        return MatrixStatistic.of( returnMe, m1 );
-                    }
+                new FutureTask<>( () -> {
+                    final double[][] returnMe =
+                            new double[][] { { 1.0, 1.0 }, { 1.0, 1.0 } };
+                    return MatrixStatistic.of( returnMe, m1 );
                 } );
 
         CollectableTask<DichotomousPairs, MatrixStatistic, DoubleScoreStatistic> task =
@@ -93,13 +88,7 @@ public final class CollectableTaskTest
     public void testExceptionOnNullInput() throws ExecutionException, InterruptedException
     {
         final FutureTask<MatrixStatistic> futureInputNull =
-                new FutureTask<MatrixStatistic>( new Callable<MatrixStatistic>()
-                {
-                    public MatrixStatistic call()
-                    {
-                        return null;
-                    }
-                } );
+                new FutureTask<>( () -> null );
 
         pairPool.submit( futureInputNull );
 

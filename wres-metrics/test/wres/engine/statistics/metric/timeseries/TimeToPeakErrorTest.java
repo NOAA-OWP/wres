@@ -46,7 +46,7 @@ public final class TimeToPeakErrorTest
     private TimeToPeakError ttp;
 
     @Before
-    public void setupBeforeEachTest() throws MetricParameterException
+    public void setupBeforeEachTest()
     {
         ttp = TimeToPeakError.of( new Random( 123456789 ) );
     }
@@ -54,11 +54,10 @@ public final class TimeToPeakErrorTest
     /**
      * Constructs a {@link TimeToPeakError} and compares the actual result to the expected result. Also, checks 
      * the parameters.
-     * @throws MetricParameterException if the metric could not be constructed 
      */
 
     @Test
-    public void testTimeToPeakError() throws MetricParameterException
+    public void testTimeToPeakError()
     {
         // Generate some data
         TimeSeriesOfSingleValuedPairs input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
@@ -111,11 +110,10 @@ public final class TimeToPeakErrorTest
     /**
      * Checks that {@link TimeToPeakError#apply(TimeSeriesOfSingleValuedPairs)} throws an exception when 
      * provided with null input.
-     * @throws MetricParameterException if the metric could not be constructed
      */
 
     @Test
-    public void testApplyThrowsExceptionOnNullInput() throws MetricParameterException
+    public void testApplyThrowsExceptionOnNullInput()
     {
         //Check the exceptions
         exception.expect( SampleDataException.class );

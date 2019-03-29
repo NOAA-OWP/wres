@@ -19,7 +19,6 @@ import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.statistics.MultiVectorStatistic;
-import wres.engine.statistics.metric.MetricParameterException;
 
 /**
  * Tests the {@link QuantileQuantileDiagram}.
@@ -39,7 +38,7 @@ public final class QuantileQuantileDiagramTest
     private QuantileQuantileDiagram qqd;
 
     @Before
-    public void setupBeforeEachTest() throws MetricParameterException
+    public void setupBeforeEachTest()
     {
         this.qqd = QuantileQuantileDiagram.of();
     }
@@ -82,8 +81,8 @@ public final class QuantileQuantileDiagramTest
         //Expected values
         for ( int i = 1; i < 1000; i++ )
         {
-            double expectedObserved = i + 1;
-            double expectedPredicted = i + 1;
+            double expectedObserved = i + 1.0;
+            double expectedPredicted = i + 1.0;
             double actualObserved = Precision.round( actualObs[i], 5 );
             double actualPredicted = Precision.round( actualPred[i], 5 );
             assertTrue( "Difference between actual and expected quantiles of observations [" + expectedObserved

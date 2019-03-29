@@ -29,11 +29,10 @@ public final class SampleSizeTest
     /**
      * Constructs a {@link SampleSize} and compares the actual result to the expected result. Also, checks the 
      * parameters of the metric.
-     * @throws MetricParameterException if the metric could not be constructed
      */
 
     @Test
-    public void testSampleSize() throws MetricParameterException
+    public void testSampleSize()
     {
         //Obtain the factories
 
@@ -70,11 +69,10 @@ public final class SampleSizeTest
 
     /**
      * Constructs a {@link SampleSize} and checks for exceptional cases.
-     * @throws MetricParameterException if the metric could not be constructed
      */
 
     @Test
-    public void testExceptions() throws MetricParameterException
+    public void testExceptions()
     {
         //Build the metric
         SampleSize<SingleValuedPairs> ss = SampleSize.of();

@@ -23,7 +23,6 @@ import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.MatrixStatistic;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.Metric;
-import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.Score;
 
@@ -51,7 +50,7 @@ public final class ProbabilityOfFalseDetectionTest
     private StatisticMetadata meta;
 
     @Before
-    public void setUpBeforeEachTest() throws MetricParameterException
+    public void setUpBeforeEachTest()
     {
         pofd = ProbabilityOfFalseDetection.of();
         meta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),

@@ -18,7 +18,6 @@ import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
-import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
 /**
@@ -39,7 +38,7 @@ public final class CorrelationPearsonsTest
     private CorrelationPearsons rho;
 
     @Before
-    public void setupBeforeEachTest() throws MetricParameterException
+    public void setupBeforeEachTest()
     {
         this.rho = CorrelationPearsons.of();
     }

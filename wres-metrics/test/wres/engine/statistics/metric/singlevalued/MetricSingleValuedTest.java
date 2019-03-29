@@ -8,7 +8,6 @@ import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
 import wres.engine.statistics.metric.Metric;
-import wres.engine.statistics.metric.MetricParameterException;
 
 /**
  * Tests the {@link Metric} using single-valued metrics.
@@ -27,7 +26,7 @@ public final class MetricSingleValuedTest
      */
 
     @Test
-    public void testToString() throws MetricParameterException
+    public void testToString()
     {
 
         //Build a metric

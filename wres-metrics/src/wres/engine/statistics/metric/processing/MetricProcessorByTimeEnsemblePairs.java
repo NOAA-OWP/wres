@@ -311,6 +311,15 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
     {
         Objects.requireNonNull( config, MetricConfigHelper.NULL_CONFIGURATION_ERROR );
 
+        // Annotate any configuration error, if possible
+        String configurationLabel = ".";
+        if ( Objects.nonNull( config.getLabel() ) )
+        {
+            configurationLabel = " labelled '"
+                                 + config.getLabel()
+                                 + "'.";
+        }
+        
         // This method checks local parameters, so ensure they have been set.
         // If null, this is being called by the superclass constructor, not the local constructor
         if ( Objects.nonNull( this.toSingleValues ) )
@@ -326,14 +335,13 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                                                                                                ThresholdGroup.VALUE ) )
                 {
                     throw new MetricConfigException( "Cannot configure '" + next
-                                                     + "' without thresholds to define the events: correct the "
-                                                     + "configuration labelled '"
-                                                     + config.getLabel()
-                                                     + "'." );
+                                                     + "' without thresholds to define the events: "
+                                                     + "add one or more thresholds to the configuration"
+                                                     + configurationLabel );
                 }
             }
 
-            validateCategoricalState();
+            this.validateCategoricalState();
 
             //Ensemble input, vector output
             if ( hasMetrics( SampleDataGroup.ENSEMBLE, StatisticGroup.DOUBLE_SCORE )

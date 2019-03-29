@@ -506,7 +506,7 @@ public abstract class MetricProcessor<S extends SampleData<?>, T extends Statist
     double[] getSortedClimatology( SampleData<?> input, Set<Threshold> thresholds )
     {
         double[] sorted = null;
-        if ( hasProbabilityThreshold( thresholds ) && input.hasClimatology() )
+        if ( this.hasProbabilityThreshold( thresholds ) && input.hasClimatology() )
         {
             sorted = input.getClimatology().getDoubles();
             Arrays.sort( sorted );

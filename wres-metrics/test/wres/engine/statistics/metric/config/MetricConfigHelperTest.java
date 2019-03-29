@@ -7,7 +7,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -209,7 +209,7 @@ public final class MetricConfigHelperTest
         Map<MetricConstants, Set<OneOrTwoThresholds>> actual = actualByMetric.getOneOrTwoThresholds();
 
         // Derive expected thresholds
-        Map<MetricConstants, Set<OneOrTwoThresholds>> expected = new HashMap<>();
+        Map<MetricConstants, Set<OneOrTwoThresholds>> expected = new EnumMap<>( MetricConstants.class );
         Set<OneOrTwoThresholds> atomicThresholds = new HashSet<>();
 
         atomicThresholds.add( OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
@@ -322,7 +322,7 @@ public final class MetricConfigHelperTest
                                    null );
 
         // Mock external thresholds
-        Map<MetricConstants, Set<Threshold>> mockExternal = new HashMap<>();
+        Map<MetricConstants, Set<Threshold>> mockExternal = new EnumMap<>( MetricConstants.class );
         Set<Threshold> atomicExternal = new HashSet<>();
         atomicExternal.add( Threshold.of( OneOrTwoDoubles.of( 0.3 ),
                                                      Operator.GREATER,
@@ -340,7 +340,7 @@ public final class MetricConfigHelperTest
         Map<MetricConstants, Set<OneOrTwoThresholds>> actual = actualByMetric.getOneOrTwoThresholds();
 
         // Derive expected thresholds
-        Map<MetricConstants, Set<OneOrTwoThresholds>> expected = new HashMap<>();
+        Map<MetricConstants, Set<OneOrTwoThresholds>> expected = new EnumMap<>( MetricConstants.class );
         Set<OneOrTwoThresholds> atomicThresholds = new HashSet<>();
 
         atomicThresholds.add( OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
@@ -380,7 +380,7 @@ public final class MetricConfigHelperTest
 
     @Test
     public void testGetThresholdsFromConfigWithBetweenCondition() throws NoSuchMethodException,
-            SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException
+            IllegalAccessException, InvocationTargetException
     {
 
         Method method =
@@ -395,10 +395,11 @@ public final class MetricConfigHelperTest
         // Test with probability thresholds
         @SuppressWarnings( "unchecked" )
         Set<Threshold> actual = (Set<Threshold>) method.invoke( null,
-                                                                new Object[] { "0.1,0.2,0.3", Operator.BETWEEN,
-                                                                               ThresholdConstants.ThresholdDataType.LEFT,
-                                                                               true,
-                                                                               null } );
+                                                                "0.1,0.2,0.3",
+                                                                Operator.BETWEEN,
+                                                                ThresholdConstants.ThresholdDataType.LEFT,
+                                                                true,
+                                                                null );
 
         Set<Threshold> expected = new HashSet<>();
         expected.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1, 0.2 ),
@@ -412,11 +413,11 @@ public final class MetricConfigHelperTest
         // Test with value thresholds
         @SuppressWarnings( "unchecked" )
         Set<Threshold> actualValue = (Set<Threshold>) method.invoke( null,
-                                                                     new Object[] { "0.1,0.2,0.3",
-                                                                                    Operator.BETWEEN,
-                                                                                    ThresholdConstants.ThresholdDataType.LEFT,
-                                                                                    false,
-                                                                                    null } );
+                                                                     "0.1,0.2,0.3",
+                                                                     Operator.BETWEEN,
+                                                                     ThresholdConstants.ThresholdDataType.LEFT,
+                                                                     false,
+                                                                     null );
 
         Set<Threshold> expectedValue = new HashSet<>();
         expectedValue.add( Threshold.of( OneOrTwoDoubles.of( 0.1, 0.2 ),
@@ -432,11 +433,11 @@ public final class MetricConfigHelperTest
         // Test exception    
         exception.expectCause( CoreMatchers.isA( MetricConfigException.class ) );
         method.invoke( null,
-                       new Object[] { "0.1",
-                                      Operator.BETWEEN,
-                                      ThresholdConstants.ThresholdDataType.LEFT,
-                                      false,
-                                      null } );
+                       "0.1",
+                       Operator.BETWEEN,
+                       ThresholdConstants.ThresholdDataType.LEFT,
+                       false,
+                       null );
     }
 
     /**

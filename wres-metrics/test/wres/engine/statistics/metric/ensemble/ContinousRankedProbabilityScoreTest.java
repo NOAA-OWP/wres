@@ -41,7 +41,7 @@ public final class ContinousRankedProbabilityScoreTest
     private ContinuousRankedProbabilityScore crps;
 
     @Before
-    public void setupBeforeEachTest() throws MetricParameterException
+    public void setupBeforeEachTest()
     {
         this.crps = ContinuousRankedProbabilityScore.of();
     }

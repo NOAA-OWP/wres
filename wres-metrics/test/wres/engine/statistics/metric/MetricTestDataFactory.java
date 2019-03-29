@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -154,7 +155,7 @@ public final class MetricTestDataFactory
         {
             for ( int j = 0; j < 100; j++ )
             {
-                values.add( SingleValuedPair.of( i + 1, i + 6 ) );
+                values.add( SingleValuedPair.of( i + 1.0, i + 6.0 ) );
             }
         }
 
@@ -194,7 +195,8 @@ public final class MetricTestDataFactory
         final List<SingleValuedPair> values = new ArrayList<>();
 
         File file = new File( "testinput/metricTestDataFactory/getSingleValuedPairsFive.asc" );
-        try ( BufferedReader in = new BufferedReader( new InputStreamReader( new FileInputStream( file ), "UTF-8" ) ) )
+        try ( BufferedReader in =
+                new BufferedReader( new InputStreamReader( new FileInputStream( file ), StandardCharsets.UTF_8 ) ) )
         {
             String line = null;
             while ( Objects.nonNull( line = in.readLine() ) && !line.isEmpty() )
@@ -303,7 +305,8 @@ public final class MetricTestDataFactory
 
         File file = new File( "testinput/metricTestDataFactory/getEnsemblePairsOne.asc" );
         List<Double> climatology = new ArrayList<>();
-        try ( BufferedReader in = new BufferedReader( new InputStreamReader( new FileInputStream( file ), "UTF-8" ) ) )
+        try ( BufferedReader in =
+                new BufferedReader( new InputStreamReader( new FileInputStream( file ), StandardCharsets.UTF_8 ) ) )
         {
             String line = null;
             while ( Objects.nonNull( line = in.readLine() ) && !line.isEmpty() )
@@ -354,7 +357,8 @@ public final class MetricTestDataFactory
 
         File file = new File( "testinput/metricTestDataFactory/getEnsemblePairsOne.asc" );
         List<Double> climatology = new ArrayList<>();
-        try ( BufferedReader in = new BufferedReader( new InputStreamReader( new FileInputStream( file ), "UTF-8" ) ) )
+        try ( BufferedReader in =
+                new BufferedReader( new InputStreamReader( new FileInputStream( file ), StandardCharsets.UTF_8 ) ) )
         {
             String line = null;
             while ( Objects.nonNull( line = in.readLine() ) && !line.isEmpty() )
@@ -410,7 +414,8 @@ public final class MetricTestDataFactory
 
         File file = new File( "testinput/metricTestDataFactory/getEnsemblePairsTwo.asc" );
         List<Double> climatology = new ArrayList<>();
-        try ( BufferedReader in = new BufferedReader( new InputStreamReader( new FileInputStream( file ), "UTF-8" ) ) )
+        try ( BufferedReader in =
+                new BufferedReader( new InputStreamReader( new FileInputStream( file ), StandardCharsets.UTF_8 ) ) )
         {
             String line = null;
             while ( Objects.nonNull( line = in.readLine() ) && !line.isEmpty() )
@@ -636,7 +641,7 @@ public final class MetricTestDataFactory
         final List<DiscreteProbabilityPair> baseline = new ArrayList<>();
         baseline.add( DiscreteProbabilityPair.of( 0, 2.0 / 5.0 ) );
         baseline.add( DiscreteProbabilityPair.of( 0, 2.0 / 5.0 ) );
-        baseline.add( DiscreteProbabilityPair.of( 1, 5.0 / 5.0 ) );
+        baseline.add( DiscreteProbabilityPair.of( 1, 1.0 ) );
         baseline.add( DiscreteProbabilityPair.of( 1, 3.0 / 5.0 ) );
         baseline.add( DiscreteProbabilityPair.of( 0, 4.0 / 5.0 ) );
         baseline.add( DiscreteProbabilityPair.of( 1, 1.0 / 5.0 ) );
@@ -1230,4 +1235,9 @@ public final class MetricTestDataFactory
                                                       .build();
     }
 
+    /**
+     * Hidden constructor
+     */
+    private MetricTestDataFactory() {}
+    
 }

@@ -30,7 +30,6 @@ import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
-import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
 /**
@@ -51,7 +50,7 @@ public final class RelativeOperatingCharacteristicScoreTest
     private RelativeOperatingCharacteristicScore rocScore;
 
     @Before
-    public void setupBeforeEachTest() throws MetricParameterException
+    public void setupBeforeEachTest()
     {
         this.rocScore = RelativeOperatingCharacteristicScore.of();
     }
@@ -163,7 +162,7 @@ public final class RelativeOperatingCharacteristicScoreTest
      */
 
     @Test
-    public void testApplyWithNoOccurrences() throws MetricParameterException
+    public void testApplyWithNoOccurrences()
     {
         //Generate some data
         final List<DiscreteProbabilityPair> values = new ArrayList<>();
