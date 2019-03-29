@@ -7,11 +7,17 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
+import liquibase.Contexts;
+import liquibase.Liquibase;
+import liquibase.database.Database;
+import liquibase.database.DatabaseFactory;
+import liquibase.database.jvm.JdbcConnection;
+import liquibase.exception.LiquibaseException;
+import liquibase.resource.ClassLoaderResourceAccessor;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -29,7 +35,6 @@ import wres.io.project.Project;
 import wres.io.utilities.DatabaseConnectionSupplier;
 import wres.system.SystemSettings;
 
-@Ignore
 @RunWith( PowerMockRunner.class)
 @PrepareForTest( { SystemSettings.class } )
 @PowerMockIgnore( { "javax.management.*", "java.io.*", "javax.xml.*", "com.sun.*", "org.xml.*" } )
@@ -39,19 +44,27 @@ public class DetailsTest
     private static String connectionString;
     private Connection rawConnection;
     private @Mock DatabaseConnectionSupplier mockConnectionSupplier;
+    private Database liquibaseDatabase;
 
     @BeforeClass
     public static void oneTimeSetup()
     {
+        // TODO: with HikariCP #54944, try to move this to @BeforeTest rather
+        // than having a static one-time db. The only reason we have the static
+        // variable instead of an instance variable is because c3p0 didn't work
+        // properly with the instance variable.
+
         // Create our own test data source connecting to in-memory H2 database
         connectionPoolDataSource = new ComboPooledDataSource();
         connectionPoolDataSource.resetPoolManager();
 
-        //connectionPoolDataSource.setJdbcUrl("jdbc:h2:mem:wres;DB_CLOSE_DELAY=-1");
+        //connectionPoolDataSource.setJdbcUrl( "jdbc:h2:mem:wres;DB_CLOSE_DELAY=-1" );
+
         // helps h2 use a subset of postgres' syntax or features:
-        //connectionPoolDataSource.setJdbcUrl("jdbc:h2:mem:wres;DB_CLOSE_DELAY=-1;MODE=PostgreSQL");
+        //connectionPoolDataSource.setJdbcUrl( "jdbc:h2:mem:wres;DB_CLOSE_DELAY=-1;MODE=PostgreSQL" );
+
         // Use this verbose one to figure out issues with queries/files/h2/etc:
-        //connectionPoolDataSource.setJdbcUrl("jdbc:h2:mem:wres;DB_CLOSE_DELAY=-1;MODE=PostgreSQL;TRACE_LEVEL_SYSTEM_OUT=3");
+        //connectionPoolDataSource.setJdbcUrl( "jdbc:h2:mem:wres;DB_CLOSE_DELAY=-1;MODE=PostgreSQL;TRACE_LEVEL_SYSTEM_OUT=3" );
         //connectionPoolDataSource.setJdbcUrl( "jdbc:h2:mem:wres;MODE=PostgreSQL;TRACE_LEVEL_SYSTEM_OUT=3" );
 
         // Even when pool is closed/nulled/re-instantiated for each test, the
@@ -90,16 +103,22 @@ public class DetailsTest
                     .thenReturn( DetailsTest.connectionPoolDataSource );
         PowerMockito.when( SystemSettings.class, "getHighPriorityConnectionPool" )
                     .thenReturn( DetailsTest.connectionPoolDataSource );
+
+        // Set up a liquibase database to run migrations against.
+        JdbcConnection liquibaseConnection = new JdbcConnection( this.rawConnection );
+        this.liquibaseDatabase =
+                DatabaseFactory.getInstance()
+                               .findCorrectDatabaseImplementation( liquibaseConnection );
     }
 
     @Test
-    public void saveSourceDetails() throws SQLException
+    public void saveSourceDetails() throws SQLException, LiquibaseException
     {
-        // Add the source table (should probably use liquibase source script)
-        try ( Statement statement = this.rawConnection.createStatement() )
-        {
-            statement.execute( "CREATE TABLE wres.Source ( source_id INTEGER PRIMARY KEY AUTO_INCREMENT, path TEXT, output_time TIMESTAMP, is_point_data BOOLEAN, lead SMALLINT, hash BYTEA(16) UNIQUE );" );
-        }
+        // Add the source table
+        Liquibase liquibase = new Liquibase( "database/wres.Source_v5.xml",
+                                             new ClassLoaderResourceAccessor(),
+                                             this.liquibaseDatabase );
+        liquibase.update( new Contexts() );
 
         SourceDetails.SourceKey sourceKey = SourceDetails.createKey( URI.create( "/this/is/just/a/test" ),
                                                                      "2017-06-16 11:13:00",
