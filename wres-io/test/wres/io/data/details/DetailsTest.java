@@ -139,12 +139,13 @@ public class DetailsTest
     }
 
     @Test
-    public void saveProjectDetails() throws SQLException
+    public void saveProjectDetails() throws SQLException, LiquibaseException
     {
-        try ( Statement statement = this.rawConnection.createStatement() )
-        {
-            statement.execute( "CREATE TABLE wres.Project ( project_id SMALLINT PRIMARY KEY AUTO_INCREMENT, input_code INTEGER UNIQUE, project_name TEXT );" );
-        }
+        // Add the project table
+        Liquibase liquibase = new Liquibase( "database/wres.Project_v2.xml",
+                                             new ClassLoaderResourceAccessor(),
+                                             this.liquibaseDatabase );
+        liquibase.update( new Contexts() );
 
         Project project = new Project( new ProjectConfig( null, null, null, null, null, null ),
                                                      321 );
@@ -154,6 +155,7 @@ public class DetailsTest
         assertNotNull( "Expected the id of the source to be non-null",
                        project.getId() );
 
+        // Remove the project table
         try ( Statement statement = this.rawConnection.createStatement() )
         {
             statement.execute( "DROP TABLE wres.Project" );
