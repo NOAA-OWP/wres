@@ -6,6 +6,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+
+import com.mchange.v2.c3p0.ComboPooledDataSource;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Assume;
@@ -22,15 +24,16 @@ import org.slf4j.LoggerFactory;
 import wres.system.SystemSettings;
 
 @Ignore
-@RunWith(PowerMockRunner.class)
+@RunWith( PowerMockRunner.class )
 @PrepareForTest( { SystemSettings.class, Database.class})
 @PowerMockIgnore( { "javax.management.*", "javax.xml.*", "com.sun.*", "ch.qos.*", "org.slf4j.*", "org.xml.sax.*" } ) // thanks https://stackoverflow.com/questions/16520699/mockito-powermock-linkageerror-while-mocking-system-class#21268013
 public class QueryTest
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( QueryTest.class);
 
+    private static String jdbcString;
     // We need a way to control faked out database connections
-    private static TestDatabaseGenerator.DatabaseAndConnections databaseAndConnections;
+    private static ComboPooledDataSource databaseAndConnections;
 
     /**
      * Precondition for not running this test class because embedded postgres does not
@@ -50,8 +53,9 @@ public class QueryTest
 
         LOGGER.info( "Windows OS not detected: executing wres.io.data.caching.DataSourcesTest." );
 
+        QueryTest.jdbcString = TestDatabaseGenerator.getConnectionString( "QueryTest" );
         // We need to create a test database so we aren't trying to reach out to a real, deployed database
-        QueryTest.databaseAndConnections = TestDatabaseGenerator.createDatabase();
+        QueryTest.databaseAndConnections = TestDatabaseGenerator.createDatabase( QueryTest.jdbcString );
 
         LOGGER.trace("setup ended");
     }
