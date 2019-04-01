@@ -47,30 +47,33 @@ public class DetailsTest
     private Database liquibaseDatabase;
 
     @BeforeClass
-    public static void oneTimeSetup()
+    public static void oneTimeSetup() throws ClassNotFoundException
     {
         // TODO: with HikariCP #54944, try to move this to @BeforeTest rather
         // than having a static one-time db. The only reason we have the static
         // variable instead of an instance variable is because c3p0 didn't work
         // properly with the instance variable.
 
+        Class.forName( "org.h2.Driver" );
+
         // Create our own test data source connecting to in-memory H2 database
         connectionPoolDataSource = new ComboPooledDataSource();
-        connectionPoolDataSource.resetPoolManager();
+        //connectionPoolDataSource.resetPoolManager();
 
-        //connectionPoolDataSource.setJdbcUrl( "jdbc:h2:mem:wres;DB_CLOSE_DELAY=-1" );
+        //connectionPoolDataSource.setJdbcUrl( "jdbc:h2:mem:DetailsTest;DB_CLOSE_DELAY=-1" );
 
         // helps h2 use a subset of postgres' syntax or features:
-        //connectionPoolDataSource.setJdbcUrl( "jdbc:h2:mem:wres;DB_CLOSE_DELAY=-1;MODE=PostgreSQL" );
+        //connectionPoolDataSource.setJdbcUrl( "jdbc:h2:mem:DetailsTest;DB_CLOSE_DELAY=-1;MODE=PostgreSQL" );
 
         // Use this verbose one to figure out issues with queries/files/h2/etc:
-        //connectionPoolDataSource.setJdbcUrl( "jdbc:h2:mem:wres;DB_CLOSE_DELAY=-1;MODE=PostgreSQL;TRACE_LEVEL_SYSTEM_OUT=3" );
-        //connectionPoolDataSource.setJdbcUrl( "jdbc:h2:mem:wres;MODE=PostgreSQL;TRACE_LEVEL_SYSTEM_OUT=3" );
+        //connectionPoolDataSource.setJdbcUrl( "jdbc:h2:mem:DetailsTest;DB_CLOSE_DELAY=-1;MODE=PostgreSQL;TRACE_LEVEL_SYSTEM_OUT=3" );
+        //connectionPoolDataSource.setJdbcUrl( "jdbc:h2:mem:DetailsTest;MODE=PostgreSQL;TRACE_LEVEL_SYSTEM_OUT=3" );
 
         // Even when pool is closed/nulled/re-instantiated for each test, the
         // old c3p0 pool is somehow found by the 2nd and following test runs.
         // Got around it by having a single pool for all the tests.
-        connectionString = "jdbc:h2:mem:wres;MODE=PostgreSQL;TRACE_LEVEL_SYSTEM_OUT=3";
+
+        connectionString = "jdbc:h2:mem:DetailsTest;MODE=PostgreSQL;";
         connectionPoolDataSource.setJdbcUrl( connectionString );
         connectionPoolDataSource.setUnreturnedConnectionTimeout( 1 );
         connectionPoolDataSource.setDebugUnreturnedConnectionStackTraces( true );
@@ -135,6 +138,7 @@ public class DetailsTest
         try ( Statement statement = this.rawConnection.createStatement() )
         {
             statement.execute( "DROP TABLE wres.Source" );
+            statement.execute( "DROP TABLE public.databasechangelog; DROP TABLE public.databasechangeloglock;" );
         }
     }
 
@@ -155,10 +159,11 @@ public class DetailsTest
         assertNotNull( "Expected the id of the source to be non-null",
                        project.getId() );
 
-        // Remove the project table
+        // Remove the project table and liquibase tables
         try ( Statement statement = this.rawConnection.createStatement() )
         {
             statement.execute( "DROP TABLE wres.Project" );
+            statement.execute( "DROP TABLE public.databasechangelog; DROP TABLE public.databasechangeloglock;" );
         }
     }
 
