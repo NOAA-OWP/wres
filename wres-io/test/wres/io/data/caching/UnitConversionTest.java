@@ -1,35 +1,26 @@
 package wres.io.data.caching;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.powermock.core.classloader.annotations.PowerMockIgnore;
-import org.powermock.modules.junit4.PowerMockRunner;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import wres.io.utilities.TestDatabaseGenerator;
+import wres.io.utilities.TestDatabase;
 
 @Ignore
-@RunWith( PowerMockRunner.class)
-@PowerMockIgnore( { "javax.management.*", "java.io.*", "javax.xml.*", "com.sun.*", "org.xml.*" } )
 public class UnitConversionTest
 {
     private static final double EPSILON = 0.000001;
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( UnitConversionTest.class );
+    private static TestDatabase testDatabase;
+    private static ComboPooledDataSource dataSource;
 
-    private static ComboPooledDataSource databaseAndConnections;
-
-    @Before
+    @BeforeClass
     public void setup()
     {
-        String jdbcString =
-                TestDatabaseGenerator.getConnectionString( this.getClass()
-                                                               .getSimpleName() );
-        UnitConversionTest.databaseAndConnections = TestDatabaseGenerator.createDatabase( jdbcString );
+        UnitConversionTest.testDatabase = new TestDatabase( this.getClass()
+                                                                .getSimpleName() );
+        UnitConversionTest.dataSource = UnitConversionTest.testDatabase.getNewComboPooledDataSource();
     }
 
     @Test
@@ -120,6 +111,14 @@ public class UnitConversionTest
     {
         // TODO: Write mm to time conversion tests
         final double initial = 3.587;
+    }
+
+    @AfterClass
+    public void tearDown()
+    {
+        UnitConversionTest.dataSource.close();
+        UnitConversionTest.dataSource = null;
+        UnitConversionTest.testDatabase = null;
     }
 
     private boolean areEqual(double valueOne, double valueTwo)

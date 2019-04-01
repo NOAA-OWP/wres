@@ -10,8 +10,6 @@ import com.mchange.v2.c3p0.ComboPooledDataSource;
 import liquibase.Contexts;
 import liquibase.Liquibase;
 import liquibase.database.Database;
-import liquibase.database.DatabaseFactory;
-import liquibase.database.jvm.JdbcConnection;
 import liquibase.exception.LiquibaseException;
 import liquibase.resource.ClassLoaderResourceAccessor;
 import org.junit.After;
@@ -33,6 +31,7 @@ import static org.junit.Assert.assertTrue;
 import wres.config.generated.ProjectConfig;
 import wres.io.project.Project;
 import wres.io.utilities.DatabaseConnectionSupplier;
+import wres.io.utilities.TestDatabase;
 import wres.system.SystemSettings;
 
 @RunWith( PowerMockRunner.class)
@@ -40,57 +39,38 @@ import wres.system.SystemSettings;
 @PowerMockIgnore( { "javax.management.*", "java.io.*", "javax.xml.*", "com.sun.*", "org.xml.*" } )
 public class DetailsTest
 {
-    private static ComboPooledDataSource connectionPoolDataSource;
-    private static String connectionString;
+    private static TestDatabase testDatabase;
+    private static ComboPooledDataSource dataSource;
     private Connection rawConnection;
     private @Mock DatabaseConnectionSupplier mockConnectionSupplier;
     private Database liquibaseDatabase;
 
     @BeforeClass
-    public static void oneTimeSetup() throws ClassNotFoundException
+    public static void oneTimeSetup()
     {
         // TODO: with HikariCP #54944, try to move this to @BeforeTest rather
         // than having a static one-time db. The only reason we have the static
         // variable instead of an instance variable is because c3p0 didn't work
         // properly with the instance variable.
 
-        Class.forName( "org.h2.Driver" );
-
-        // Create our own test data source connecting to in-memory H2 database
-        connectionPoolDataSource = new ComboPooledDataSource();
-        //connectionPoolDataSource.resetPoolManager();
-
-        //connectionPoolDataSource.setJdbcUrl( "jdbc:h2:mem:DetailsTest;DB_CLOSE_DELAY=-1" );
-
-        // helps h2 use a subset of postgres' syntax or features:
-        //connectionPoolDataSource.setJdbcUrl( "jdbc:h2:mem:DetailsTest;DB_CLOSE_DELAY=-1;MODE=PostgreSQL" );
-
-        // Use this verbose one to figure out issues with queries/files/h2/etc:
-        //connectionPoolDataSource.setJdbcUrl( "jdbc:h2:mem:DetailsTest;DB_CLOSE_DELAY=-1;MODE=PostgreSQL;TRACE_LEVEL_SYSTEM_OUT=3" );
-        //connectionPoolDataSource.setJdbcUrl( "jdbc:h2:mem:DetailsTest;MODE=PostgreSQL;TRACE_LEVEL_SYSTEM_OUT=3" );
+        DetailsTest.testDatabase = new TestDatabase( "DetailsTest" );
 
         // Even when pool is closed/nulled/re-instantiated for each test, the
         // old c3p0 pool is somehow found by the 2nd and following test runs.
         // Got around it by having a single pool for all the tests.
-
-        connectionString = "jdbc:h2:mem:DetailsTest;MODE=PostgreSQL;";
-        connectionPoolDataSource.setJdbcUrl( connectionString );
-        connectionPoolDataSource.setUnreturnedConnectionTimeout( 1 );
-        connectionPoolDataSource.setDebugUnreturnedConnectionStackTraces( true );
+        // Create our own test data source connecting to in-memory H2 database
+        DetailsTest.dataSource = DetailsTest.testDatabase.getNewComboPooledDataSource();
     }
 
     @Before
     public void setup() throws Exception
     {
         // Also mock a plain datasource (which works per test unlike c3p0)
-        this.rawConnection = DriverManager.getConnection( connectionString );
+        this.rawConnection = DriverManager.getConnection( DetailsTest.testDatabase.getJdbcString() );
         Mockito.when( this.mockConnectionSupplier.get() ).thenReturn( this.rawConnection );
 
         // Set up a bare bones database with only the schema
-        try ( Statement statement = this.rawConnection.createStatement() )
-        {
-            statement.execute( "CREATE SCHEMA wres" );
-        }
+        DetailsTest.testDatabase.createWresSchema( this.rawConnection );
 
         // Substitute raw connection where needed:
         PowerMockito.mockStatic( SystemSettings.class );
@@ -103,15 +83,12 @@ public class DetailsTest
 
         // Substitute our H2 connection pool for both pools:
         PowerMockito.when( SystemSettings.class, "getConnectionPool" )
-                    .thenReturn( DetailsTest.connectionPoolDataSource );
+                    .thenReturn( DetailsTest.dataSource );
         PowerMockito.when( SystemSettings.class, "getHighPriorityConnectionPool" )
-                    .thenReturn( DetailsTest.connectionPoolDataSource );
+                    .thenReturn( DetailsTest.dataSource );
 
         // Set up a liquibase database to run migrations against.
-        JdbcConnection liquibaseConnection = new JdbcConnection( this.rawConnection );
-        this.liquibaseDatabase =
-                DatabaseFactory.getInstance()
-                               .findCorrectDatabaseImplementation( liquibaseConnection );
+        this.liquibaseDatabase = DetailsTest.testDatabase.createNewLiquibaseDatabase( this.rawConnection );
     }
 
     @Test
@@ -138,43 +115,34 @@ public class DetailsTest
         try ( Statement statement = this.rawConnection.createStatement() )
         {
             statement.execute( "DROP TABLE wres.Source" );
-            statement.execute( "DROP TABLE public.databasechangelog; DROP TABLE public.databasechangeloglock;" );
         }
+
+        DetailsTest.testDatabase.dropLiquibaseChangeTables( this.rawConnection );
     }
 
     @Test
     public void saveProjectDetails() throws SQLException, LiquibaseException
     {
         // Add the project table
-        Liquibase liquibase = new Liquibase( "database/wres.Project_v2.xml",
-                                             new ClassLoaderResourceAccessor(),
-                                             this.liquibaseDatabase );
-        liquibase.update( new Contexts() );
+        DetailsTest.testDatabase.createProjectsTable( this.liquibaseDatabase );
 
         Project project = new Project( new ProjectConfig( null, null, null, null, null, null ),
                                                      321 );
         project.save();
-        assertTrue( "Expected source details to have performed insert.",
+        assertTrue( "Expected project details to have performed insert.",
                     project.performedInsert() );
         assertNotNull( "Expected the id of the source to be non-null",
                        project.getId() );
 
         // Remove the project table and liquibase tables
-        try ( Statement statement = this.rawConnection.createStatement() )
-        {
-            statement.execute( "DROP TABLE wres.Project" );
-            statement.execute( "DROP TABLE public.databasechangelog; DROP TABLE public.databasechangeloglock;" );
-        }
+        DetailsTest.testDatabase.dropProjectsTable( this.rawConnection );
+        DetailsTest.testDatabase.dropLiquibaseChangeTables( this.rawConnection );
     }
 
     @After
     public void tearDown() throws SQLException
     {
-        try ( Statement statement = this.rawConnection.createStatement() )
-        {
-            statement.execute( "DROP SCHEMA wres CASCADE" );
-        }
-
+        DetailsTest.testDatabase.dropWresSchema( this.rawConnection );
         this.rawConnection.close();
         this.rawConnection = null;
     }
@@ -182,7 +150,8 @@ public class DetailsTest
     @AfterClass
     public static void tearDownAfterAllTests()
     {
-        connectionPoolDataSource.close();
-        connectionPoolDataSource = null;
+        DetailsTest.dataSource.close();
+        DetailsTest.dataSource = null;
+        DetailsTest.testDatabase = null;
     }
 }
