@@ -1,64 +1,78 @@
 package wres.io.utilities;
 
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
-
 import com.mchange.v2.c3p0.ComboPooledDataSource;
+import liquibase.Contexts;
+import liquibase.Liquibase;
+import liquibase.database.DatabaseFactory;
+import liquibase.database.jvm.JdbcConnection;
+import liquibase.exception.DatabaseException;
+import liquibase.exception.LiquibaseException;
+import liquibase.resource.ClassLoaderResourceAccessor;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
-import org.junit.Assume;
+import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.powermock.core.classloader.annotations.PowerMockIgnore;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.system.SystemSettings;
-
-@Ignore
-@RunWith( PowerMockRunner.class )
-@PrepareForTest( { SystemSettings.class, Database.class})
-@PowerMockIgnore( { "javax.management.*", "javax.xml.*", "com.sun.*", "ch.qos.*", "org.slf4j.*", "org.xml.sax.*" } ) // thanks https://stackoverflow.com/questions/16520699/mockito-powermock-linkageerror-while-mocking-system-class#21268013
 public class QueryTest
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( QueryTest.class);
 
     private static String jdbcString;
+
     // We need a way to control faked out database connections
     private static ComboPooledDataSource databaseAndConnections;
 
-    /**
-     * Precondition for not running this test class because embedded postgres does not
-     * play nicely on Windows.
-     *
-     * TODO: back this out when the dependency on embedded postgres is removed
-     * See #60309
-     */
-    private static final boolean IS_WINDOWS = System.getProperty( "os.name" ).toLowerCase().contains( "windows" );
+    // We need a raw connection to use to run setup/teardown operations on.
+    private Connection rawConnection;
+
+    // We need a liquibase instance to use to build up tables.
+    private liquibase.database.Database liquibaseDatabase;
 
     @BeforeClass
-    public static void setup() throws Exception
+    public static void setup()
     {
-        // TODO: back this out when the dependency on embedded postgres is removed
-        // See #60309
-        Assume.assumeFalse( QueryTest.IS_WINDOWS );
-
+        LOGGER.trace( "@BeforeClass began" );
         LOGGER.info( "Windows OS not detected: executing wres.io.data.caching.DataSourcesTest." );
 
         QueryTest.jdbcString = TestDatabaseGenerator.getConnectionString( "QueryTest" );
         // We need to create a test database so we aren't trying to reach out to a real, deployed database
         QueryTest.databaseAndConnections = TestDatabaseGenerator.createDatabase( QueryTest.jdbcString );
-
-        LOGGER.trace("setup ended");
+        LOGGER.trace( "@BeforeClass ended" );
     }
+
+    @Before
+    public void beforeEachTest()
+            throws ClassNotFoundException, SQLException, DatabaseException
+    {
+        LOGGER.trace( "@Before began" );
+        Class.forName( "org.h2.Driver" );
+        this.rawConnection = DriverManager.getConnection( QueryTest.jdbcString );
+
+        try( Statement statement = this.rawConnection.createStatement() )
+        {
+            statement.execute( "CREATE SCHEMA wres" );
+        }
+
+        // Set up a liquibase database to run migrations against.
+        JdbcConnection liquibaseConnection = new JdbcConnection( this.rawConnection );
+        this.liquibaseDatabase =
+                DatabaseFactory.getInstance()
+                               .findCorrectDatabaseImplementation( liquibaseConnection );
+        LOGGER.trace( "@Before ended" );
+    }
+
 
     /**
      * Test to see if a Query can execute a single static query in the database and return the desired results
@@ -66,30 +80,29 @@ public class QueryTest
      * @throws SQLException Thrown if the query 'Select 1 as one;' cannot be called
      * @throws SQLException Thrown if an int in the "one" column could not be retrieved
      */
+
     @Test
     public void simpleCallTest() throws SQLException
     {
         // All we need to do is retrieve some value that we can test against
         String script = "SELECT 1 AS one;";
 
-        try ( Connection connection = QueryTest.databaseAndConnections.getConnection())
+        try ( Connection connection = QueryTest.databaseAndConnections.getConnection();
+              ResultSet results = Query.withScript( script ).call( connection ) )
         {
-            try ( ResultSet results = Query.withScript( script ).call( connection ) )
-            {
-                // False means that nothing was retrieved
-                Assert.assertTrue( results.isBeforeFirst() );
+            // False means that nothing was retrieved
+            Assert.assertTrue( results.isBeforeFirst() );
 
-                // JDBC requires that we move to the first record in the result set
-                results.next();
+            // JDBC requires that we move to the first record in the result set
+            results.next();
 
-                // We told it to give us the value 1 as "one", so that should be what we get back
-                int value = results.getInt( "one" );
+            // We told it to give us the value 1 as "one", so that should be what we get back
+            int value = results.getInt( "one" );
 
-                Assert.assertEquals( 1, value );
-
-            }
+            Assert.assertEquals( 1, value );
         }
     }
+
 
     /**
      * Test to see if a Query can execute a single parameterized query in the database and return the
@@ -99,6 +112,7 @@ public class QueryTest
      * @throws SQLException Thrown if the query 'Select ? as one;' cannot be called
      * @throws SQLException Thrown if an int in the "one" column could not be retrieved
      */
+
     @Test
     public void parameterizedCallTest() throws SQLException
     {
@@ -107,24 +121,22 @@ public class QueryTest
 
         Query testQuery = Query.withScript( script ).setParameters( 1 );
 
-        try ( Connection connection = QueryTest.databaseAndConnections.getConnection())
+        try ( Connection connection = QueryTest.databaseAndConnections.getConnection();
+              ResultSet results = testQuery.call( connection ) )
         {
-            try ( ResultSet results = testQuery.call( connection ) )
-            {
-                // False means that nothing was retrieved
-                Assert.assertTrue( "No values were returned from the query.", results.isBeforeFirst() );
+            // False means that nothing was retrieved
+            Assert.assertTrue( "No values were returned from the query.", results.isBeforeFirst() );
 
-                // JDBC requires that we move to the first record in the result set
-                results.next();
+            // JDBC requires that we move to the first record in the result set
+            results.next();
 
-                // We told it to give us the value 1 as "one", so that should be what we get back
-                int value = results.getInt( "one" );
+            // We told it to give us the value 1 as "one", so that should be what we get back
+            int value = results.getInt( "one" );
 
-                Assert.assertEquals( value, 1 );
-
-            }
+            Assert.assertEquals( value, 1 );
         }
     }
+
 
     /**
      * Tests to see if a simple query can be executed
@@ -132,10 +144,18 @@ public class QueryTest
      * @throws SQLException Thrown if a statement could not be run in the database
      * @throws SQLException Thrown if values could not be retrieved from the results
      */
+
     @Test
-    public void simpleExecuteTest() throws SQLException
+    public void simpleExecuteTest() throws SQLException, LiquibaseException
     {
         // Since wres.Project is such a simple table, we're going to use that one to test
+
+        // Add the project table
+        Liquibase liquibase = new Liquibase( "database/wres.Project_v2.xml",
+                                             new ClassLoaderResourceAccessor(),
+                                             this.liquibaseDatabase );
+        liquibase.update( new Contexts() );
+
         String script = "INSERT INTO wres.Project(input_code, project_name) VALUES (0, 'zero');";
 
         Query testQuery = Query.withScript( script );
@@ -149,9 +169,8 @@ public class QueryTest
             // One row should have been inserted
             Assert.assertEquals( 1, insertedRows );
 
-            // To check to see if we've added anything, we can go ahead and do that by removing everything.
-            // This will remove everything and select it all at the same time
-            testQuery = Query.withScript( "DELETE FROM wres.Project RETURNING *;" );
+            // To check to see if we've added anything
+            testQuery = Query.withScript( "SELECT input_code, project_name FROM wres.Project;" );
 
             try (ResultSet projects = testQuery.call( connection ))
             {
@@ -170,7 +189,15 @@ public class QueryTest
                 Assert.assertFalse(projects.next());
             }
         }
+
+        // Remove the project table and liquibase tables
+        try ( Statement statement = this.rawConnection.createStatement() )
+        {
+            statement.execute( "DROP TABLE wres.Project" );
+            statement.execute( "DROP TABLE public.databasechangelog; DROP TABLE public.databasechangeloglock;" );
+        }
     }
+
 
     /**
      * Test to see if many values can be inserted into the database with a single batch execution
@@ -181,10 +208,18 @@ public class QueryTest
      * @throws SQLException Thrown if no data was returned for examination
      * @throws SQLException Thrown if the values to check could not be properly retrieved from the result set
      */
+
     @Test
-    public void batchExecuteTest() throws SQLException
+    public void batchExecuteTest() throws SQLException, LiquibaseException
     {
         // Since wres.Project is such a simple table, we're going to use that one to test
+
+        // Add the project table
+        Liquibase liquibase = new Liquibase( "database/wres.Project_v2.xml",
+                                             new ClassLoaderResourceAccessor(),
+                                             this.liquibaseDatabase );
+        liquibase.update( new Contexts() );
+
         String script = "INSERT INTO wres.Project(input_code, project_name) VALUES (?, ?);";
 
         // Since we're going to run this as batch, we need a ton of parameters to pass in
@@ -208,9 +243,8 @@ public class QueryTest
             // There were six sets of parameters, so there should have been six inserted rows
             Assert.assertEquals( 6, insertedRows );
 
-            // To check to see if we've added anything, we can go ahead and do that by removing everything.
-            // This will remove everything and select it all at the same time
-            testQuery = Query.withScript( "DELETE FROM wres.Project RETURNING *;" );
+            // To check to see if we've added anything,
+            testQuery = Query.withScript( "SELECT input_code, project_name FROM wres.Project;" );
 
             try (ResultSet projects = testQuery.call( connection ))
             {
@@ -231,7 +265,15 @@ public class QueryTest
                 Assert.assertFalse("Too many values were returned.", projects.next());
             }
         }
+
+        // Remove the project table and liquibase tables
+        try ( Statement statement = this.rawConnection.createStatement() )
+        {
+            statement.execute( "DROP TABLE wres.Project" );
+            statement.execute( "DROP TABLE public.databasechangelog; DROP TABLE public.databasechangeloglock;" );
+        }
     }
+
 
     /**
      * Test to see if values may be added to the database with a parameterized statement
@@ -241,10 +283,18 @@ public class QueryTest
      * @throws SQLException Thrown if no data was returned for examination
      * @throws SQLException Thrown if the values to check could not be properly retrieved from the result set
      */
+
     @Test
-    public void parameterizedExecuteTest() throws SQLException
+    public void parameterizedExecuteTest() throws SQLException, LiquibaseException
     {
         // Since wres.Project is such a simple table, we're going to use that one to test
+
+        // Add the project table
+        Liquibase liquibase = new Liquibase( "database/wres.Project_v2.xml",
+                                             new ClassLoaderResourceAccessor(),
+                                             this.liquibaseDatabase );
+        liquibase.update( new Contexts() );
+
         String script = "INSERT INTO wres.Project(input_code, project_name) VALUES (?, ?);";
 
         Query testQuery = Query.withScript( script ).setParameters(0, "zero");
@@ -260,7 +310,7 @@ public class QueryTest
 
             // To check to see if we've added anything, we can go ahead and do that by removing everything.
             // This will remove everything and select it all at the same time
-            testQuery = Query.withScript( "DELETE FROM wres.Project RETURNING *;" );
+            testQuery = Query.withScript( "SELECT input_code, project_name FROM wres.Project;" );
 
             try (ResultSet projects = testQuery.call( connection ))
             {
@@ -280,6 +330,13 @@ public class QueryTest
                 Assert.assertEquals( 1, entryCount );
             }
         }
+
+        // Remove the project table and liquibase tables
+        try ( Statement statement = this.rawConnection.createStatement() )
+        {
+            statement.execute( "DROP TABLE wres.Project" );
+            statement.execute( "DROP TABLE public.databasechangelog; DROP TABLE public.databasechangeloglock;" );
+        }
     }
 
 
@@ -290,10 +347,11 @@ public class QueryTest
      * @throws SQLException Thrown if the query could not use the connection to execute the script
      * @throws SQLException Thrown if the state of the connection's autocommit could not be evaluated
      */
+
     @Test
     public void maintainAutoCommitTest() throws SQLException
     {
-        Query testQuery = Query.withScript( "SELECT version();" ).inTransaction( true );
+        Query testQuery = Query.withScript( "SELECT 1;" ).inTransaction( true );
 
         try (Connection connection = databaseAndConnections.getConnection())
         {
@@ -317,20 +375,26 @@ public class QueryTest
         }
     }
 
+    @After
+    public void afterEachTest() throws SQLException
+    {
+        LOGGER.trace( "@After began" );
+        try( Statement statement = this.rawConnection.createStatement() )
+        {
+            statement.execute( "DROP SCHEMA wres CASCADE" );
+        }
+
+        this.rawConnection.close();
+        this.rawConnection = null;
+        LOGGER.trace( "@After ended" );
+    }
 
     @AfterClass
     public static void tearDown()
     {
-        // TODO: back this out when the dependency on embedded postgres is removed
-        // See #60309
-        if ( ! QueryTest.IS_WINDOWS && QueryTest.databaseAndConnections != null )
-        {
-            LOGGER.trace( "tearDown began" );
-
-            QueryTest.databaseAndConnections.close();
-
-            LOGGER.trace( "tearDown ended" );
-        }
+        LOGGER.trace( "@AfterClass began" );
+        QueryTest.databaseAndConnections.close();
+        QueryTest.databaseAndConnections = null;
+        LOGGER.trace( "@AfterClass ended" );
     }
-
 }
