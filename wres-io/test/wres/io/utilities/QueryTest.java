@@ -4,18 +4,12 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
-import liquibase.Contexts;
-import liquibase.Liquibase;
-import liquibase.database.DatabaseFactory;
-import liquibase.database.jvm.JdbcConnection;
 import liquibase.exception.DatabaseException;
 import liquibase.exception.LiquibaseException;
-import liquibase.resource.ClassLoaderResourceAccessor;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -29,10 +23,9 @@ public class QueryTest
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( QueryTest.class);
 
-    private static String jdbcString;
-
     // We need a way to control faked out database connections
-    private static ComboPooledDataSource databaseAndConnections;
+    private static TestDatabase testDatabase;
+    private static ComboPooledDataSource dataSource;
 
     // We need a raw connection to use to run setup/teardown operations on.
     private Connection rawConnection;
@@ -44,32 +37,23 @@ public class QueryTest
     public static void setup()
     {
         LOGGER.trace( "@BeforeClass began" );
-        LOGGER.info( "Windows OS not detected: executing wres.io.data.caching.DataSourcesTest." );
-
-        QueryTest.jdbcString = TestDatabaseGenerator.getConnectionString( "QueryTest" );
         // We need to create a test database so we aren't trying to reach out to a real, deployed database
-        QueryTest.databaseAndConnections = TestDatabaseGenerator.createDatabase( QueryTest.jdbcString );
+        QueryTest.testDatabase = new TestDatabase( "QueryTest" );
+        QueryTest.dataSource = QueryTest.testDatabase.getNewComboPooledDataSource();
         LOGGER.trace( "@BeforeClass ended" );
     }
 
     @Before
-    public void beforeEachTest()
-            throws ClassNotFoundException, SQLException, DatabaseException
+    public void beforeEachTest() throws SQLException, DatabaseException
     {
         LOGGER.trace( "@Before began" );
-        Class.forName( "org.h2.Driver" );
-        this.rawConnection = DriverManager.getConnection( QueryTest.jdbcString );
+        this.rawConnection = DriverManager.getConnection( QueryTest.testDatabase.getJdbcString() );
 
-        try( Statement statement = this.rawConnection.createStatement() )
-        {
-            statement.execute( "CREATE SCHEMA wres" );
-        }
+        // Set up a bare bones database with only the schema
+        QueryTest.testDatabase.createWresSchema( this.rawConnection );
 
         // Set up a liquibase database to run migrations against.
-        JdbcConnection liquibaseConnection = new JdbcConnection( this.rawConnection );
-        this.liquibaseDatabase =
-                DatabaseFactory.getInstance()
-                               .findCorrectDatabaseImplementation( liquibaseConnection );
+        this.liquibaseDatabase = QueryTest.testDatabase.createNewLiquibaseDatabase( this.rawConnection );
         LOGGER.trace( "@Before ended" );
     }
 
@@ -87,7 +71,7 @@ public class QueryTest
         // All we need to do is retrieve some value that we can test against
         String script = "SELECT 1 AS one;";
 
-        try ( Connection connection = QueryTest.databaseAndConnections.getConnection();
+        try ( Connection connection = QueryTest.dataSource.getConnection();
               ResultSet results = Query.withScript( script ).call( connection ) )
         {
             // False means that nothing was retrieved
@@ -121,7 +105,7 @@ public class QueryTest
 
         Query testQuery = Query.withScript( script ).setParameters( 1 );
 
-        try ( Connection connection = QueryTest.databaseAndConnections.getConnection();
+        try ( Connection connection = QueryTest.dataSource.getConnection();
               ResultSet results = testQuery.call( connection ) )
         {
             // False means that nothing was retrieved
@@ -151,16 +135,13 @@ public class QueryTest
         // Since wres.Project is such a simple table, we're going to use that one to test
 
         // Add the project table
-        Liquibase liquibase = new Liquibase( "database/wres.Project_v2.xml",
-                                             new ClassLoaderResourceAccessor(),
-                                             this.liquibaseDatabase );
-        liquibase.update( new Contexts() );
+        QueryTest.testDatabase.createProjectsTable( this.liquibaseDatabase );
 
         String script = "INSERT INTO wres.Project(input_code, project_name) VALUES (0, 'zero');";
 
         Query testQuery = Query.withScript( script );
 
-        try (Connection connection = QueryTest.databaseAndConnections.getConnection())
+        try ( Connection connection = QueryTest.dataSource.getConnection() )
         {
             // Since execute does all of the interior closing, we don't need to do anything special to
             // make sure that there isn't an open statement anywhere (nor can we)
@@ -191,11 +172,8 @@ public class QueryTest
         }
 
         // Remove the project table and liquibase tables
-        try ( Statement statement = this.rawConnection.createStatement() )
-        {
-            statement.execute( "DROP TABLE wres.Project" );
-            statement.execute( "DROP TABLE public.databasechangelog; DROP TABLE public.databasechangeloglock;" );
-        }
+        QueryTest.testDatabase.dropProjectsTable( this.rawConnection );
+        QueryTest.testDatabase.dropLiquibaseChangeTables( this.rawConnection );
     }
 
 
@@ -215,10 +193,7 @@ public class QueryTest
         // Since wres.Project is such a simple table, we're going to use that one to test
 
         // Add the project table
-        Liquibase liquibase = new Liquibase( "database/wres.Project_v2.xml",
-                                             new ClassLoaderResourceAccessor(),
-                                             this.liquibaseDatabase );
-        liquibase.update( new Contexts() );
+        QueryTest.testDatabase.createProjectsTable( this.liquibaseDatabase );
 
         String script = "INSERT INTO wres.Project(input_code, project_name) VALUES (?, ?);";
 
@@ -234,7 +209,7 @@ public class QueryTest
 
         Query testQuery = Query.withScript( script ).setBatchParameters( arguments );
 
-        try (Connection connection = QueryTest.databaseAndConnections.getConnection())
+        try ( Connection connection = QueryTest.dataSource.getConnection() )
         {
             // Since execute does all of the interior closing, we don't need to do anything special to
             // make sure that there isn't an open statement anywhere (nor can we)
@@ -267,11 +242,8 @@ public class QueryTest
         }
 
         // Remove the project table and liquibase tables
-        try ( Statement statement = this.rawConnection.createStatement() )
-        {
-            statement.execute( "DROP TABLE wres.Project" );
-            statement.execute( "DROP TABLE public.databasechangelog; DROP TABLE public.databasechangeloglock;" );
-        }
+        QueryTest.testDatabase.dropProjectsTable( this.rawConnection );
+        QueryTest.testDatabase.dropLiquibaseChangeTables( this.rawConnection );
     }
 
 
@@ -290,16 +262,13 @@ public class QueryTest
         // Since wres.Project is such a simple table, we're going to use that one to test
 
         // Add the project table
-        Liquibase liquibase = new Liquibase( "database/wres.Project_v2.xml",
-                                             new ClassLoaderResourceAccessor(),
-                                             this.liquibaseDatabase );
-        liquibase.update( new Contexts() );
+        QueryTest.testDatabase.createProjectsTable( this.liquibaseDatabase );
 
         String script = "INSERT INTO wres.Project(input_code, project_name) VALUES (?, ?);";
 
         Query testQuery = Query.withScript( script ).setParameters(0, "zero");
 
-        try (Connection connection = QueryTest.databaseAndConnections.getConnection())
+        try ( Connection connection = QueryTest.dataSource.getConnection() )
         {
             // Since execute does all of the interior closing, we don't need to do anything special to
             // make sure that there isn't an open statement anywhere (nor can we)
@@ -332,11 +301,8 @@ public class QueryTest
         }
 
         // Remove the project table and liquibase tables
-        try ( Statement statement = this.rawConnection.createStatement() )
-        {
-            statement.execute( "DROP TABLE wres.Project" );
-            statement.execute( "DROP TABLE public.databasechangelog; DROP TABLE public.databasechangeloglock;" );
-        }
+        QueryTest.testDatabase.dropProjectsTable( this.rawConnection );
+        QueryTest.testDatabase.dropLiquibaseChangeTables( this.rawConnection );
     }
 
 
@@ -353,7 +319,7 @@ public class QueryTest
     {
         Query testQuery = Query.withScript( "SELECT 1;" ).inTransaction( true );
 
-        try (Connection connection = databaseAndConnections.getConnection())
+        try ( Connection connection = dataSource.getConnection() )
         {
             // Call the query. It is supposed to run in a transaction, but the connection wasn't set to be in an open
             // transaction. The connection should come back with autocommit active
@@ -379,11 +345,7 @@ public class QueryTest
     public void afterEachTest() throws SQLException
     {
         LOGGER.trace( "@After began" );
-        try( Statement statement = this.rawConnection.createStatement() )
-        {
-            statement.execute( "DROP SCHEMA wres CASCADE" );
-        }
-
+        QueryTest.testDatabase.dropWresSchema( this.rawConnection );
         this.rawConnection.close();
         this.rawConnection = null;
         LOGGER.trace( "@After ended" );
@@ -393,8 +355,9 @@ public class QueryTest
     public static void tearDown()
     {
         LOGGER.trace( "@AfterClass began" );
-        QueryTest.databaseAndConnections.close();
-        QueryTest.databaseAndConnections = null;
+        QueryTest.dataSource.close();
+        QueryTest.dataSource = null;
+        QueryTest.testDatabase = null;
         LOGGER.trace( "@AfterClass ended" );
     }
 }

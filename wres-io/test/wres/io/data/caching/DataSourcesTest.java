@@ -15,8 +15,6 @@ import com.mchange.v2.c3p0.ComboPooledDataSource;
 import liquibase.Contexts;
 import liquibase.Liquibase;
 import liquibase.database.Database;
-import liquibase.database.DatabaseFactory;
-import liquibase.database.jvm.JdbcConnection;
 import liquibase.exception.LiquibaseException;
 import liquibase.resource.ClassLoaderResourceAccessor;
 import org.junit.After;
@@ -40,7 +38,7 @@ import wres.io.data.details.SourceDetails;
 import wres.io.utilities.DataBuilder;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DatabaseConnectionSupplier;
-import wres.io.utilities.TestDatabaseGenerator;
+import wres.io.utilities.TestDatabase;
 import wres.system.SystemSettings;
 
 @RunWith( PowerMockRunner.class )
@@ -50,8 +48,9 @@ public class DataSourcesTest
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( DataSourcesTest.class );
 
+    private static TestDatabase testDatabase;
     private static ComboPooledDataSource dataSource;
-    private static String jdbcString;
+
     private Connection rawConnection;
     private @Mock DatabaseConnectionSupplier mockConnectionSupplier;
     private Database liquibaseDatabase;
@@ -60,8 +59,8 @@ public class DataSourcesTest
     public static void setup()
     {
         LOGGER.debug( "'@BeforeClass' started" );
-        DataSourcesTest.jdbcString = TestDatabaseGenerator.getConnectionString( "DataSourcesTest" );
-        DataSourcesTest.dataSource = TestDatabaseGenerator.createDatabase( jdbcString );
+        DataSourcesTest.testDatabase = new TestDatabase( "DataSourcesTest" );
+        DataSourcesTest.dataSource = DataSourcesTest.testDatabase.getNewComboPooledDataSource();
         LOGGER.debug( "'@BeforeClass' ended with {}", DataSourcesTest.dataSource );
     }
 
@@ -69,15 +68,13 @@ public class DataSourcesTest
     public void beforeEachTest() throws Exception
     {
         LOGGER.debug( "'@Before' started" );
-        Class.forName( "org.h2.Driver" );
-        this.rawConnection = DriverManager.getConnection( DataSourcesTest.jdbcString );
-        Mockito.when( this.mockConnectionSupplier.get() ).thenReturn( this.rawConnection );
+        this.rawConnection = DriverManager.getConnection( DataSourcesTest.testDatabase.getJdbcString() );
 
         // Set up a bare bones database with only the schema
-        try ( Statement statement = rawConnection.createStatement() )
-        {
-            statement.execute( "CREATE SCHEMA wres" );
-        }
+        DataSourcesTest.testDatabase.createWresSchema( this.rawConnection );
+
+        // Set up a mock for wherever raw connections are used.
+        Mockito.when( this.mockConnectionSupplier.get() ).thenReturn( this.rawConnection );
 
         // Substitute raw connection where needed:
         PowerMockito.mockStatic( SystemSettings.class );
@@ -95,10 +92,7 @@ public class DataSourcesTest
                     .thenReturn( DataSourcesTest.dataSource );
 
         // Set up a liquibase database to run migrations against.
-        JdbcConnection liquibaseConnection = new JdbcConnection( this.rawConnection );
-        this.liquibaseDatabase =
-                DatabaseFactory.getInstance()
-                               .findCorrectDatabaseImplementation( liquibaseConnection );
+        this.liquibaseDatabase = DataSourcesTest.testDatabase.createNewLiquibaseDatabase( this.rawConnection );
         LOGGER.debug( "'@Before' ended" );
     }
 
@@ -170,8 +164,9 @@ public class DataSourcesTest
         try ( Statement statement = this.rawConnection.createStatement() )
         {
             statement.execute( "DROP TABLE wres.Source" );
-            statement.execute( "DROP TABLE public.databasechangelog; DROP TABLE public.databasechangeloglock;" );
         }
+
+        DataSourcesTest.testDatabase.dropLiquibaseChangeTables( this.rawConnection );
 
         LOGGER.debug( "getTwiceFromDataSources ended" );
     }
@@ -207,8 +202,9 @@ public class DataSourcesTest
         try ( Statement statement = this.rawConnection.createStatement() )
         {
             statement.execute( "DROP TABLE wres.Source; " );
-            statement.execute( "DROP TABLE public.databasechangelog; DROP TABLE public.databasechangeloglock;" );
         }
+
+        DataSourcesTest.testDatabase.dropLiquibaseChangeTables( this.rawConnection );
 
         LOGGER.debug( "initializeCacheWithExistingData ended" );
     }
@@ -300,11 +296,7 @@ public class DataSourcesTest
     public void afterEachTest() throws SQLException
     {
         LOGGER.debug( "'@After' began" );
-        try ( Statement statement = this.rawConnection.createStatement() )
-        {
-            statement.execute( "DROP SCHEMA wres CASCADE" );
-        }
-
+        DataSourcesTest.testDatabase.dropWresSchema( this.rawConnection );
         this.rawConnection.close();
         this.rawConnection = null;
         LOGGER.debug( "'@After' ended" );
@@ -314,11 +306,9 @@ public class DataSourcesTest
     public static void tearDown()
     {
         LOGGER.debug( "'@AfterClass' began" );
-
-
         DataSourcesTest.dataSource.close();
         DataSourcesTest.dataSource = null;
-
+        DataSourcesTest.testDatabase = null;
         LOGGER.debug( "'@AfterClass' ended" );
     }
 }
