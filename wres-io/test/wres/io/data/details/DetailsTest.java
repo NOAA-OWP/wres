@@ -4,14 +4,10 @@ import java.net.URI;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.sql.Statement;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
-import liquibase.Contexts;
-import liquibase.Liquibase;
 import liquibase.database.Database;
 import liquibase.exception.LiquibaseException;
-import liquibase.resource.ClassLoaderResourceAccessor;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -95,10 +91,7 @@ public class DetailsTest
     public void saveSourceDetails() throws SQLException, LiquibaseException
     {
         // Add the source table
-        Liquibase liquibase = new Liquibase( "database/wres.Source_v5.xml",
-                                             new ClassLoaderResourceAccessor(),
-                                             this.liquibaseDatabase );
-        liquibase.update( new Contexts() );
+        DetailsTest.testDatabase.createSourceTable( this.liquibaseDatabase );
 
         SourceDetails.SourceKey sourceKey = SourceDetails.createKey( URI.create( "/this/is/just/a/test" ),
                                                                      "2017-06-16 11:13:00",
@@ -112,11 +105,7 @@ public class DetailsTest
                        sourceDetails.getId() );
 
         // Remove the source table now that assertions have finished.
-        try ( Statement statement = this.rawConnection.createStatement() )
-        {
-            statement.execute( "DROP TABLE wres.Source" );
-        }
-
+        DetailsTest.testDatabase.dropSourceTable( this.rawConnection );
         DetailsTest.testDatabase.dropLiquibaseChangeTables( this.rawConnection );
     }
 
@@ -124,7 +113,7 @@ public class DetailsTest
     public void saveProjectDetails() throws SQLException, LiquibaseException
     {
         // Add the project table
-        DetailsTest.testDatabase.createProjectsTable( this.liquibaseDatabase );
+        DetailsTest.testDatabase.createProjectTable( this.liquibaseDatabase );
 
         Project project = new Project( new ProjectConfig( null, null, null, null, null, null ),
                                                      321 );
@@ -135,7 +124,7 @@ public class DetailsTest
                        project.getId() );
 
         // Remove the project table and liquibase tables
-        DetailsTest.testDatabase.dropProjectsTable( this.rawConnection );
+        DetailsTest.testDatabase.dropProjectTable( this.rawConnection );
         DetailsTest.testDatabase.dropLiquibaseChangeTables( this.rawConnection );
     }
 

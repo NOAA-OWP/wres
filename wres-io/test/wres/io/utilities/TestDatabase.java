@@ -107,7 +107,7 @@ public class TestDatabase
      * For example, if you call createWresSchema in @Before, you must call
      * dropWresSchema in @After.
      * @param connection the connection to use to create the schema
-     * @throws SQLException when creation fails
+     * @throws SQLException when create fails
      */
 
     public void createWresSchema( Connection connection ) throws SQLException
@@ -124,7 +124,7 @@ public class TestDatabase
      * For example, if you call createWresSchema in @Before, you must call
      * dropWresSchema in @After.
      * @param connection the connection to use to drop the schema
-     * @throws SQLException when dropping fails
+     * @throws SQLException when drop fails
      */
 
     public void dropWresSchema( Connection connection ) throws SQLException
@@ -137,16 +137,16 @@ public class TestDatabase
 
 
     /**
-     * Create the WRES projects table using liquibase.
-     * Expected to be called within a test requiring the projects table. If you
-     * call createProjectsTable at the beginning of a test, you must call
-     * dropProjectsTable at the end of the test. You must also call
+     * Create the WRES project table using given liquibase database.
+     * Expected to be called within a test requiring the project table. If you
+     * call createProjectTable at the beginning of a test, you must call
+     * dropProjectTable at the end of the test. You must also call
      * dropLiquibaseChangeTables at the end of the test.
      * @param liquibaseDatabase the Liquibase Database instance to use
      * @throws LiquibaseException when liquibase migration fails
      */
 
-    public void createProjectsTable( Database liquibaseDatabase )
+    public void createProjectTable( Database liquibaseDatabase )
             throws LiquibaseException
     {
         Liquibase liquibase = new Liquibase( "database/wres.Project_v2.xml",
@@ -155,20 +155,60 @@ public class TestDatabase
         liquibase.update( new Contexts() );
     }
 
+
     /**
-     * Drop the WRES projects table on a connection.
-     * Expected to be called at the same level as createProjectsTable, namely
-     * within a test that requires the projects table, at the end of the test.
+     * Drop the WRES project table using given connection.
+     * Expected to be called at the same level as createProjectTable, namely
+     * within a test that requires the project table, at the end of the test.
      * @param connection the connection to use
-     * @throws SQLException when dropping fails
+     * @throws SQLException when drop fails
      */
-    public void dropProjectsTable( Connection connection ) throws SQLException
+
+    public void dropProjectTable( Connection connection ) throws SQLException
     {
         try ( Statement statement = connection.createStatement() )
         {
             statement.execute( "DROP TABLE wres.Project" );
         }
     }
+
+
+    /**
+     * Create the WRES source table using given liquibase database.
+     * Expected to be called within a test requiring the source table. If you
+     * call createSourceTable at the beginning of a test, you must call
+     * dropSourcesTable at the end of the test. You must also call
+     * dropLiquibaseChangeTables at the end of the test.
+     * @param liquibaseDatabase the Liquibase Database instance to use
+     * @throws LiquibaseException when liquibase migration fails
+     */
+
+    public void createSourceTable( Database liquibaseDatabase )
+            throws LiquibaseException
+    {
+        Liquibase liquibase = new Liquibase( "database/wres.Source_v5.xml",
+                                             new ClassLoaderResourceAccessor(),
+                                             liquibaseDatabase );
+        liquibase.update( new Contexts() );
+
+    }
+
+
+    /**
+     * Drop the WRES source table using given connection.
+     * Expected to be called at the same level as createSourceTable, namely
+     * within a test that requires the sources table, at the end of the test.
+     * @param connection the connection to use
+     * @throws SQLException when drop fails
+     */
+    public void dropSourceTable( Connection connection ) throws SQLException
+    {
+        try ( Statement statement = connection.createStatement() )
+        {
+            statement.execute( "DROP TABLE wres.Source" );
+        }
+    }
+
 
     /**
      * Create a liquibase database instance to be used to create tables.
@@ -193,12 +233,12 @@ public class TestDatabase
      *
      * You must call this at the same level if you created any database tables
      * using liquibase. For example, you create the projects table using
-     * createProjectsTable, you ran your test and asserted everything, then you
-     * called dropProjectsTable, but liquibase still has a memory of the
+     * createProjectTable, you ran your test and asserted everything, then you
+     * called dropProjectTable, but liquibase still has a memory of the
      * migration that created the projects table. So you call this to have it
      * forget.
      * @param connection the connection to use
-     * @throws SQLException when dropping fails
+     * @throws SQLException when drop fails
      */
 
     public void dropLiquibaseChangeTables( Connection connection )
