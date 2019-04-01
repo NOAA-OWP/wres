@@ -12,11 +12,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
-import liquibase.Contexts;
-import liquibase.Liquibase;
 import liquibase.database.Database;
 import liquibase.exception.LiquibaseException;
-import liquibase.resource.ClassLoaderResourceAccessor;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -130,10 +127,7 @@ public class DataSourcesTest
         LOGGER.debug( "getTwiceFromDataSources began" );
 
         // Add the source table
-        Liquibase liquibase = new Liquibase( "database/wres.Source_v5.xml",
-                                             new ClassLoaderResourceAccessor(),
-                                             this.liquibaseDatabase );
-        liquibase.update( new Contexts() );
+        DataSourcesTest.testDatabase.createSourceTable( this.liquibaseDatabase );
 
         final URI path = new URI( "/this/is/just/a/test" );
         final String time = "2017-06-16 11:13:00";
@@ -161,11 +155,7 @@ public class DataSourcesTest
                      1, countOfRows);
 
         // Remove the source table etc. now that assertions have finished.
-        try ( Statement statement = this.rawConnection.createStatement() )
-        {
-            statement.execute( "DROP TABLE wres.Source" );
-        }
-
+        DataSourcesTest.testDatabase.dropSourceTable( this.rawConnection );
         DataSourcesTest.testDatabase.dropLiquibaseChangeTables( this.rawConnection );
 
         LOGGER.debug( "getTwiceFromDataSources ended" );
@@ -178,10 +168,7 @@ public class DataSourcesTest
         LOGGER.debug( "initializeCacheWithExistingData began" );
 
         // Add the source table
-        Liquibase liquibase = new Liquibase( "database/wres.Source_v5.xml",
-                                             new ClassLoaderResourceAccessor(),
-                                             this.liquibaseDatabase );
-        liquibase.update( new Contexts() );
+        DataSourcesTest.testDatabase.createSourceTable( this.liquibaseDatabase );
 
         // Create one cache that inserts data to set us up for 2nd cache init.
         DataSources sc = new DataSources();
@@ -199,11 +186,7 @@ public class DataSourcesTest
                     firstId, secondId);
 
         // Remove the source table now that assertions have finished.
-        try ( Statement statement = this.rawConnection.createStatement() )
-        {
-            statement.execute( "DROP TABLE wres.Source; " );
-        }
-
+        DataSourcesTest.testDatabase.dropSourceTable( this.rawConnection );
         DataSourcesTest.testDatabase.dropLiquibaseChangeTables( this.rawConnection );
 
         LOGGER.debug( "initializeCacheWithExistingData ended" );

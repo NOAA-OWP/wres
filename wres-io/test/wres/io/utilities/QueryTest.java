@@ -135,7 +135,7 @@ public class QueryTest
         // Since wres.Project is such a simple table, we're going to use that one to test
 
         // Add the project table
-        QueryTest.testDatabase.createProjectsTable( this.liquibaseDatabase );
+        QueryTest.testDatabase.createProjectTable( this.liquibaseDatabase );
 
         String script = "INSERT INTO wres.Project(input_code, project_name) VALUES (0, 'zero');";
 
@@ -172,7 +172,7 @@ public class QueryTest
         }
 
         // Remove the project table and liquibase tables
-        QueryTest.testDatabase.dropProjectsTable( this.rawConnection );
+        QueryTest.testDatabase.dropProjectTable( this.rawConnection );
         QueryTest.testDatabase.dropLiquibaseChangeTables( this.rawConnection );
     }
 
@@ -193,7 +193,7 @@ public class QueryTest
         // Since wres.Project is such a simple table, we're going to use that one to test
 
         // Add the project table
-        QueryTest.testDatabase.createProjectsTable( this.liquibaseDatabase );
+        QueryTest.testDatabase.createProjectTable( this.liquibaseDatabase );
 
         String script = "INSERT INTO wres.Project(input_code, project_name) VALUES (?, ?);";
 
@@ -242,7 +242,7 @@ public class QueryTest
         }
 
         // Remove the project table and liquibase tables
-        QueryTest.testDatabase.dropProjectsTable( this.rawConnection );
+        QueryTest.testDatabase.dropProjectTable( this.rawConnection );
         QueryTest.testDatabase.dropLiquibaseChangeTables( this.rawConnection );
     }
 
@@ -262,7 +262,7 @@ public class QueryTest
         // Since wres.Project is such a simple table, we're going to use that one to test
 
         // Add the project table
-        QueryTest.testDatabase.createProjectsTable( this.liquibaseDatabase );
+        QueryTest.testDatabase.createProjectTable( this.liquibaseDatabase );
 
         String script = "INSERT INTO wres.Project(input_code, project_name) VALUES (?, ?);";
 
@@ -301,7 +301,7 @@ public class QueryTest
         }
 
         // Remove the project table and liquibase tables
-        QueryTest.testDatabase.dropProjectsTable( this.rawConnection );
+        QueryTest.testDatabase.dropProjectTable( this.rawConnection );
         QueryTest.testDatabase.dropLiquibaseChangeTables( this.rawConnection );
     }
 
