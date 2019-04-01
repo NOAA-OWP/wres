@@ -1,6 +1,6 @@
 package wres.io.data.caching;
 
-import org.junit.Assume;
+import com.mchange.v2.c3p0.ComboPooledDataSource;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -14,35 +14,22 @@ import wres.io.utilities.TestDatabaseGenerator;
 
 @Ignore
 @RunWith( PowerMockRunner.class)
-@PowerMockIgnore( "javax.management.*")
+@PowerMockIgnore( { "javax.management.*", "java.io.*", "javax.xml.*", "com.sun.*", "org.xml.*" } )
 public class UnitConversionTest
 {
     private static final double EPSILON = 0.000001;
 
     private static final Logger LOGGER = LoggerFactory.getLogger( UnitConversionTest.class );
 
-    private static TestDatabaseGenerator.DatabaseAndConnections databaseAndConnections;
-
-    /** 
-     * Precondition for not running this test class because embedded postgres does not
-     * play nicely on Windows.
-     * 
-     * TODO: back this out when the dependency on embedded postgres is removed
-     * See #60309
-     */
-
-    private static final boolean IS_WINDOWS = System.getProperty( "os.name" ).toLowerCase().contains( "windows" );
+    private static ComboPooledDataSource databaseAndConnections;
 
     @Before
-    public void setup() throws Exception
+    public void setup()
     {
-        // TODO: back this out when the dependency on embedded postgres is removed
-        // See #60309
-        Assume.assumeFalse( UnitConversionTest.IS_WINDOWS );
-        
-        LOGGER.info( "Windows OS not detected: executing wres.io.data.caching.UnitConversionTest." );
-
-        UnitConversionTest.databaseAndConnections = TestDatabaseGenerator.createDatabase();
+        String jdbcString =
+                TestDatabaseGenerator.getConnectionString( this.getClass()
+                                                               .getSimpleName() );
+        UnitConversionTest.databaseAndConnections = TestDatabaseGenerator.createDatabase( jdbcString );
     }
 
     @Test
