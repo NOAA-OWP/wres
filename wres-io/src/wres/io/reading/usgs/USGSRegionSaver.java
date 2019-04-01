@@ -224,21 +224,16 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
 
             Response usgsResponse = this.getResponse( webTarget );
 
-            // There's a debate on whether or not to hard fail on this or not. The
-            // response being null is an issue on USGS' side which they have fixed in the past.
-            // If we REALLY want to hard fail, yank out the if block and uncomment this null check
-            //Objects.requireNonNull( usgsResponse, "The request to USGS succeeded but they did not send any data back." );
-
-            if (usgsResponse == null)
+            if (usgsResponse == null && LOGGER.isDebugEnabled())
             {
-                LOGGER.warn( "The request to USGS succeeded but they did not send any data back.");
-                if (LOGGER.isDebugEnabled())
-                {
-                    LOGGER.debug( "USGS sent an empty response for: {}", requestURL );
-                }
-
-                return null;
+                LOGGER.debug("USGS sent an empty response for: {}", requestURL);
             }
+
+            Objects.requireNonNull(
+                    usgsResponse,
+                    "The request to USGS succeeded but they did not send any data back."
+                    + "Please contact USGS at: https://water.usgs.gov/contact/gsanswers"
+            );
 
             LOGGER.trace("A valid USGS response was encountered.");
 
