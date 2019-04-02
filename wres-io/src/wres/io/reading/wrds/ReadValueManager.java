@@ -15,13 +15,11 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -43,17 +41,20 @@ import wres.io.data.details.TimeSeries;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.reading.IngestedValues;
+import wres.io.reading.PreIngestException;
 import wres.util.Strings;
 import wres.util.TimeHelper;
 
 public class ReadValueManager
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( ReadValueManager.class );
-    private static final Set<Integer> foundTimeSeries = new HashSet<>();
-    private static final Map<Integer, List<Duration>> foundLeads = new HashMap<>(  );
 
     // TODO: inject http client in constructor without changing much else #60281
     private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
+
+    private final URI location;
+    private final ProjectConfig projectConfig;
+    private final DataSourceConfig dataSourceConfig;
 
     ReadValueManager( final ProjectConfig projectConfig,
                       final DataSourceConfig datasourceConfig,
@@ -183,56 +184,65 @@ public class ReadValueManager
         
         // Get the time scale information, if available
         TimeScale timeScale = TimeScaleFromParameterCodes.getTimeScale( forecast.getParameterCodes(), this.location );
-        
+
         TimeSeries timeSeries = this.getTimeSeries( forecast, sourceId, startTime, timeScale );
 
-        Integer foundTimeSeriesHash = null;
-
-        // If we're debugging, we want to have an easily identifiable code for a time series that
-        // might have repetitive data
-        if (LOGGER.isDebugEnabled())
-        {
-            foundTimeSeriesHash = Objects.hash( timeSeries );
-        }
-
-        int index = 0;
-        int foundAtIndex = -1;
+        // Before ingest, validate the timeseries as being a timeseries in the
+        // sense that a timeseries is a sequence of values in time.
+        this.validateTimeseries( dataPointsList );
 
         for (DataPoint dataPoint : dataPointsList)
         {
             Duration between = Duration.between( startTime, dataPoint.getTime());
 
-            // If we're debugging, we want to check to see if repetitive leads for forecasts are being added
-            if ( LOGGER.isDebugEnabled() )
-            {
-                // If we haven't seen a repetitive value yet...
-                if ( foundAtIndex == -1 )
-                {
-
-                    synchronized ( foundLeads )
-                    {
-                        if ( !foundLeads.containsKey( foundTimeSeriesHash ) )
-                        {
-                            foundLeads.put( foundTimeSeriesHash, new ArrayList<>() );
-                        }
-
-                        if ( foundLeads.get( foundTimeSeriesHash ).contains( between ) )
-                        {
-                            foundAtIndex = index;
-                            LOGGER.debug( "Found {} in {} again at index {}!",
-                                          between, forecast, foundAtIndex );
-                        }
-                        else
-                        {
-                            foundLeads.get( foundTimeSeriesHash ).add( between );
-                        }
-                    }
-                }
-            }
-
             int lead = ( int ) TimeHelper.durationToLongUnits( between, TimeHelper.LEAD_RESOLUTION );
             IngestedValues.addTimeSeriesValue( timeSeries.getTimeSeriesID(), lead, dataPoint.getValue() );
-            index++;
+        }
+    }
+
+
+    /**
+     * Validate a timeseries. Return if valid, else throw PreIngestException.
+     *
+     * A timeseries according to this method is a sequence of values in time.
+     * Therefore a list of data with duplicate values for any given datetime is
+     * invalid and will cause a PreIngestException.
+     *
+     * @param dataPointsList the WRDS-formatted timeseries data points
+     * @throws wres.io.reading.PreIngestException when invalid timeseries found
+     */
+
+    private void validateTimeseries( List<DataPoint> dataPointsList )
+    {
+        Objects.requireNonNull( dataPointsList );
+
+        // Put each datetime in a set. We can compare the set size to the list
+        // size and if they are identical: all good.
+        Set<OffsetDateTime> dateTimes = new HashSet<>( dataPointsList.size() );
+
+        // For error message purposes, track the exact datetimes that had more
+        // than one value.
+        Set<OffsetDateTime> multipleValues = new TreeSet<>();
+
+        for ( DataPoint wrdsDataPoint : dataPointsList )
+        {
+            OffsetDateTime dateTimeForOneValue = wrdsDataPoint.getTime();
+            boolean added = dateTimes.add( dateTimeForOneValue );
+
+            if ( !added )
+            {
+                multipleValues.add( dateTimeForOneValue );
+            }
+        }
+
+        // Check the size of the datetimes set vs the size of the list
+        if ( dataPointsList.size() != dateTimes.size() )
+        {
+            String message = "Invalid timeseries data encountered. Multiple data"
+                             + " found for each of the following datetimes in "
+                             + "a forecast from " + this.getLocation()
+                             + " : " + multipleValues;
+            throw new PreIngestException( message );
         }
     }
 
@@ -351,7 +361,8 @@ public class ReadValueManager
         }
     }
 
-    private final URI location;
-    private final ProjectConfig projectConfig;
-    private final DataSourceConfig dataSourceConfig;
+    private URI getLocation()
+    {
+        return this.location;
+    }
 }

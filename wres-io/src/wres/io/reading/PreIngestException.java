@@ -7,12 +7,12 @@ package wres.io.reading;
  */
 public class PreIngestException extends RuntimeException
 {
-    PreIngestException( String message, Exception cause )
+    public PreIngestException( String message, Exception cause )
     {
         super( message, cause );
     }
 
-    PreIngestException( String message )
+    public PreIngestException( String message )
     {
         super( message );
     }
