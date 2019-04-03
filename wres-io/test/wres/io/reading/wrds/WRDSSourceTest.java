@@ -15,6 +15,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpRequest;
+import org.mockserver.model.HttpStatusCode;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
@@ -62,8 +63,10 @@ public class WRDSSourceTest
     private static ClientAndServer mockServer;
     private static final String VALID_AHPS_PATH = "/api/v1/forecasts/streamflow/ahps/nwsLocations/DRRC2";
     private static final String INVALID_AHPS_PATH = "/api/v1/forecasts/streamflow/ahps/nwsLocations/FAKE2";
+    private static final String NO_FORECASTS_PATH = "/api/v1/forecasts/streamflow/ahps/nwsLocations/NONE2";
     private static final String AHPS_QUERY_PARAMS = "issuedTime=(2018-10-01T00:00:00Z,2018-10-03T00:00:00Z]&validTime=all&groupsRefTime=basisTime";
 
+    private static final String WRDS_NO_FORECASTS_BODY = "{\"status\": 400, \"message\": \"No forecasts are available at station GSVT2 per the provided parameters.\"}";
     private static final String INVALID_AHPS_BODY = "{\n"
         +"  \"header\": {\n"
         +"  \"schema\": \"http://***REMOVED***.***REMOVED***.***REMOVED***/api/schemas/v1/forecasts/streamflow/ahps/nwsLocations/nwsLid/schema.json\",\n"
@@ -3409,7 +3412,7 @@ public class WRDSSourceTest
                                       + "?" + AHPS_QUERY_PARAMS
         );
 
-        List<DataSourceConfig.Source> sourceList = new ArrayList<>();
+        List<DataSourceConfig.Source> sourceList = new ArrayList<>( 1 );
         Format format = Format.WRDS;
         DataSourceConfig.Source confSource = new DataSourceConfig.Source( fakeAhpsUri,
                                                                           format,
@@ -3421,9 +3424,9 @@ public class WRDSSourceTest
                                                                           null,
                                                                           null );
 
-        sourceList.add(confSource);
+        sourceList.add( confSource );
 
-        DataSourceConfig.Variable configVariable = new DataSourceConfig.Variable( "streamflow", null, "CFS" );
+        DataSourceConfig.Variable configVariable = new DataSourceConfig.Variable( "QR", null, "CFS" );
         DataSourceConfig config = new DataSourceConfig( DatasourceType.SINGLE_VALUED_FORECASTS,
                                                         sourceList,
                                                         configVariable,
@@ -3452,7 +3455,7 @@ public class WRDSSourceTest
                                              null,
                                              null );
 
-        List<Feature> features = new ArrayList<>();
+        List<Feature> features = new ArrayList<>( 1 );
         features.add( featureConfig );
         PairConfig pairConfig = new PairConfig( "CMS",
                                                 features,
@@ -3507,7 +3510,7 @@ public class WRDSSourceTest
         );
 
 
-        List<DataSourceConfig.Source> sourceList = new ArrayList<>();
+        List<DataSourceConfig.Source> sourceList = new ArrayList<>( 1 );
         Format format = Format.WRDS;
         DataSourceConfig.Source confSource = new DataSourceConfig.Source( fakeAhpsUri,
                                                                           format,
@@ -3519,9 +3522,9 @@ public class WRDSSourceTest
                                                                           null,
                                                                           null );
 
-        sourceList.add(confSource);
+        sourceList.add( confSource );
 
-        DataSourceConfig.Variable configVariable = new DataSourceConfig.Variable( "streamflow", null, "CFS" );
+        DataSourceConfig.Variable configVariable = new DataSourceConfig.Variable( "QR", null, "CFS" );
         DataSourceConfig config = new DataSourceConfig( DatasourceType.SINGLE_VALUED_FORECASTS,
                                                         sourceList,
                                                         configVariable,
@@ -3550,7 +3553,7 @@ public class WRDSSourceTest
                                              null,
                                              null );
 
-        List<Feature> features = new ArrayList<>();
+        List<Feature> features = new ArrayList<>( 1 );
         features.add( featureConfig );
         PairConfig pairConfig = new PairConfig( "CMS",
                                                 features,
@@ -3585,6 +3588,106 @@ public class WRDSSourceTest
 
         WRDSSourceTest.mockServer.reset();
     }
+
+
+    @Test
+    public void readWrdsResponseWithNoForecasts() throws IOException
+    {
+        WRDSSourceTest.mockServer.when( HttpRequest.request()
+                                                   .withPath( NO_FORECASTS_PATH )
+                                                   .withMethod( "GET" ) )
+                                 .respond( org.mockserver.model.HttpResponse.response( WRDS_NO_FORECASTS_BODY )
+                                                                            .withStatusCode( HttpStatusCode.BAD_REQUEST_400.code() ));
+
+        URI fakeAhpsUri = URI.create( "http://localhost:"
+                                      + WRDSSourceTest.mockServer.getLocalPort()
+                                      + NO_FORECASTS_PATH
+                                      + "?" + AHPS_QUERY_PARAMS
+        );
+
+        List<DataSourceConfig.Source> sourceList = new ArrayList<>( 1 );
+        Format format = Format.WRDS;
+        DataSourceConfig.Source confSource = new DataSourceConfig.Source( fakeAhpsUri,
+                                                                          format,
+                                                                          null,
+                                                                          null,
+                                                                          null,
+                                                                          null,
+                                                                          null,
+                                                                          null,
+                                                                          null );
+
+        sourceList.add( confSource );
+
+        DataSourceConfig.Variable configVariable = new DataSourceConfig.Variable( "QR", null, "CFS" );
+        DataSourceConfig config = new DataSourceConfig( DatasourceType.SINGLE_VALUED_FORECASTS,
+                                                        sourceList,
+                                                        configVariable,
+                                                        null,
+                                                        null,
+                                                        null,
+                                                        null,
+                                                        null,
+                                                        null);
+
+        ProjectConfig.Inputs inputs = new ProjectConfig.Inputs( null,
+                                                                config,
+                                                                null );
+
+        Feature featureConfig = new Feature( null,
+                                             null,
+                                             null,
+                                             null,
+                                             null,
+                                             "NONE2",
+                                             null,
+                                             null,
+                                             null,
+                                             null,
+                                             null,
+                                             null,
+                                             null );
+
+        List<Feature> features = new ArrayList<>( 1 );
+        features.add( featureConfig );
+        PairConfig pairConfig = new PairConfig( "CMS",
+                                                features,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null );
+
+        ProjectConfig projectConfig = new ProjectConfig( inputs,
+                                                         pairConfig,
+                                                         null,
+                                                         null,
+                                                         null,
+                                                         null );
+
+        WRDSSource wrdsSource = new WRDSSource( projectConfig, fakeAhpsUri );
+        wrdsSource.setDataSourceConfig( config );
+        List<IngestResult> ingestResults = wrdsSource.save();
+
+        WRDSSourceTest.mockServer.verify( request().withMethod( "GET" )
+                                                   .withPath( NO_FORECASTS_PATH ) );
+
+        assertFalse( "Expected single result to have been 'ingested' during the test.",
+                     ingestResults.get( 0 )
+                                  .wasFoundAlready() );
+        assertEquals( "Expected ingest to happen for 'right'.",
+                      LeftOrRightOrBaseline.RIGHT, ingestResults.get( 0 )
+                                                                .getLeftOrRightOrBaseline() );
+
+        WRDSSourceTest.mockServer.reset();
+    }
+
 
     @AfterClass
     public static void destroyFakeServer()
