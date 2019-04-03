@@ -460,7 +460,7 @@ public class ConfigHelperTest
 
     @Test
     public void
-            testGetTimeWindowsWithLeadHoursDatesIssuedDatesIssuedDatesPoolingWindowAndLeadTimesPoolingWindowReturnsTwentyFourWindows()
+            testGetTimeWindowsWithLeadHoursDatesIssuedDatesIssuedDatesPoolingWindowAndLeadTimesPoolingWindowReturnsTwentyThreeWindows()
     {
         // Mock the sufficient elements of the ProjectConfig
         
