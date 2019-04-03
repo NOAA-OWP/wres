@@ -11,6 +11,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
@@ -21,6 +23,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.compress.utils.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +46,6 @@ import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.reading.IngestedValues;
 import wres.io.reading.PreIngestException;
-import wres.util.Strings;
 import wres.util.TimeHelper;
 
 public class ReadValueManager
@@ -67,9 +70,60 @@ public class ReadValueManager
 
     public List<IngestResult> save() throws IOException
     {
-        ObjectMapper mapper = new ObjectMapper();
+
+        InputStream forecastData;
+
+        if ( this.location.getScheme().equals( "file" ) )
+        {
+            forecastData = this.getFromFile( this.location );
+        }
+        else if ( this.location.getScheme().startsWith( "http" ) )
+        {
+            Pair<Integer,InputStream> response = this.getFromWeb( this.location );
+            int httpStatus = response.getLeft();
+
+            if ( httpStatus >= 400 && httpStatus < 500 )
+            {
+                LOGGER.warn( "Treating HTTP response code {} as no data found from URI {}",
+                             httpStatus,
+                             this.location );
+                forecastData = InputStream.nullInputStream();
+            }
+            else
+            {
+                forecastData = response.getRight();
+            }
+        }
+        else
+        {
+            throw new UnsupportedOperationException("Only file and http(s) "
+                    + "are supported. Got: "
+                    + this.location );
+        }
+
+        // It is conceivable that we could tee/pipe the data to both
+        // the md5sum and the parser at the same time, but this involves
+        // more complexity and may not be worth it. For now assume that we are
+        // not going to exhaust our heap by including the whole forecast
+        // here in memory temporarily.
+        byte[] rawForecast = IOUtils.toByteArray( forecastData );
+
+        MessageDigest md5Name;
+
+        try
+        {
+            md5Name = MessageDigest.getInstance( "MD5" );
+        }
+        catch ( NoSuchAlgorithmException nsae )
+        {
+            throw new PreIngestException( "Couldn't use MD5 algorithm.", nsae );
+        }
+
+        DigestUtils digestUtils = new DigestUtils( md5Name );
+        String hash = digestUtils.digestAsHex( rawForecast )
+                                 .toUpperCase();
+
         Instant now = Instant.now();
-        String hash = Strings.getMD5Checksum( this.location.toURL().getFile().getBytes());
 
         boolean foundAlready;
         SourceDetails source;
@@ -85,64 +139,47 @@ public class ReadValueManager
                                        "' could not be stored or retrieved from the database." );
         }
 
-        // If this was the application that performed the insert into the source records,
-        // this needs to perform the ingest
         if ( !foundAlready )
         {
+            LOGGER.debug( "{} is responsible for source {}", this, hash );
+            ObjectMapper mapper = new ObjectMapper();
+            ForecastResponse response = mapper.readValue( rawForecast,
+                                                          ForecastResponse.class );
+
             try
             {
-                InputStream forecastData;
-
-                if ( this.location.getScheme().equals( "file" ) )
-                {
-                    forecastData = this.getFromFile( this.location );
-                }
-                else if ( this.location.getScheme().startsWith( "http" ) )
-                {
-                    Pair<Integer,InputStream> response = this.getFromWeb( this.location );
-                    int httpStatus = response.getLeft();
-
-                    if ( httpStatus >= 400 && httpStatus < 500 )
-                    {
-                        LOGGER.warn( "Treating HTTP response code {} as no data found from URI {}",
-                                     httpStatus,
-                                     this.location );
-
-                        // Mark this data as already having been ingested even
-                        // if it is no data found. See #60289 for why.
-                        return IngestResult.singleItemListFrom(
-                                this.projectConfig,
-                                this.dataSourceConfig,
-                                hash,
-                                this.location,
-                                false
-                        );
-                    }
-
-                    forecastData = response.getRight();
-                }
-                else
-                {
-                    throw new UnsupportedOperationException("Only file and http(s) "
-                            + "are supported. Got: "
-                            + this.location );
-                }
-
-                ForecastResponse response = mapper.readValue( forecastData,
-                                                              ForecastResponse.class );
-
                 for ( Forecast forecast : response.getForecasts() )
                 {
-                    LOGGER.debug("Parsing {}", forecast);
+                    LOGGER.debug( "Parsing {}", forecast );
                     this.read( forecast, source.getId() );
                 }
             }
             catch ( SQLException e )
             {
-                throw new IngestException(
-                        "Values from WRDS could not be ingested.",
-                        e );
+                throw new IngestException( "Values from WRDS could not be ingested.",
+                                           e );
             }
+        }
+        else
+        {
+            // For the time being, WRES assumes that "foundAlready" means that
+            // some other Thread (in or out of process) will have successfully
+            // completed ingest by the time this evaluation begins. This may not
+            // be true and eventually WRES software will need some kind of check
+            // before beginning evaluation. For the time being, the heavy-handed
+            // ingest lock provides assurance that no other process can do
+            // ingest at all, therefore the (1) ingest lock combined with an
+            // assumption (2) that a failed ingest will cause no evaluation to
+            // proceed without orphaned data removal, combined with an
+            // assumption (3) that evaluation will not start until all readers
+            // have read, parsed, and inserted/copied data, these three
+            // provide some confidence that this source will be present and
+            // ready for evaluation when retrieval begins.
+            // This still is not enough to prevent process B seeing the db as
+            // corrupt while process A performs a liquibase migration on the db.
+            // But that's a separate issue.
+            // In any case, this is working well-enough for now.
+            LOGGER.debug( "{} yields for source {}", this, hash );
         }
 
         return IngestResult.singleItemListFrom(
