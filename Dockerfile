@@ -1,7 +1,7 @@
 FROM centos:7.6.1810
 
 RUN yum install -y \
-    java-11-openjdk-headless-11.0.1.13-3.el7_6.x86_64 \
+    java-11-openjdk-headless-11.0.2.7-0.el7_6 \
     unzip-6.0-19.el7 \
     which-2.20-7.el7 \
     fontconfig-2.13.0-4.3.el7 \
