@@ -14,7 +14,7 @@
 
 if [ $# -lt 1 ]
 then
-	echo "Usage: $0 yyyymmdd-hhhhh [-r 0|700|900] [-d Scenario###]"
+	echo "Usage: $0 yyyymmdd-hhhhh [-r 0|1|700|900] [-d Scenario###]"
 	exit
 fi
 built_number=$1
@@ -31,7 +31,7 @@ while getopts "r:d:" opt; do
 			debug=$OPTARG
 			;;
 		\?)
-			echo "Usage: $0 yyyymmdd-hhhhh [-r 0|700|900] [-d Scenario###]"
+			echo "Usage: $0 yyyymmdd-hhhhh [-r 0|1|700|900] [-d Scenario###]"
 			exit 2
 			;;
 	esac
@@ -102,13 +102,18 @@ echo "Ready to test /wres_share/releases/archive/wres-"$built_number".zip"
 
 if [ "$debug" != "NO" ]
 then
-	echo "Do debug for $debug"
-	../../gradlew cleanTest test --debug -PwresZipDirectory=/wres_share/releases/archive -PversionToTest=$built_number -PtestJvmSystemProperties="-Dwres.useSSL=true -Dwres.url=$WRES_DB_HOSTNAME -Dwres.username=$WRES_DB_USERNAME -Dwres.databaseName=$WRES_DB_NAME -Djava.awt.headless=true" --tests=$debug | tee debug.txt 2>&1
+	if [  $series -eq 1 ]
+	then
+		echo "Do debug for $debug"
+		../../gradlew cleanTest test --debug -PwresZipDirectory=/wres_share/releases/archive -PversionToTest=$built_number -PtestJvmSystemProperties="-Dwres.useSSL=true -Dwres.url=$WRES_DB_HOSTNAME -Dwres.username=$WRES_DB_USERNAME -Dwres.databaseName=$WRES_DB_NAME -Djava.awt.headless=true" --tests=$debug | tee debug.txt 2>&1
+	elif [ $series -eq 0 ]
+	then
+		../../gradlew cleanTest test -PwresZipDirectory=/wres_share/releases/archive -PversionToTest=$built_number -PtestJvmSystemProperties="-Dwres.useSSL=true -Dwres.url=$WRES_DB_HOSTNAME -Dwres.username=$WRES_DB_USERNAME -Dwres.databaseName=$WRES_DB_NAME -Djava.awt.headless=true" --tests=$debug | tee testOutputs.txt 2>&1
+	fi
 elif [ "$debug" = "NO" ]
 then
 	if [ $series -eq 0 ]
 	then
-		#tests="--tests=Scenario00*"
 		tests="--tests=Scenario00* --tests=Scenario01* --tests=Scenario1* --tests=Scenario2* --tests=Scenario3* --tests=Scenario4* --tests=Scenario5* --tests=Scenario6* --tests=Scenario8*"
 		if [ -f testOutputs.txt ]
 		then
