@@ -2058,12 +2058,17 @@ public class ConfigHelper
         TimeWindow baseWindow = ConfigHelper.getTimeWindowFromPairConfig( pairConfig );
         
         // Create the elements necessary to increment the windows
-        ChronoUnit periodUnits = ChronoUnit.valueOf( issuedDatesPoolingWindow.getUnit()
+        ChronoUnit timeUnits = ChronoUnit.valueOf( issuedDatesPoolingWindow.getUnit()
                                                                              .toString()
                                                                              .toUpperCase() );
         // Period associated with the issuedDatesPoolingWindow
-        Duration periodOfIssuedDatesPoolingWindow = Duration.of( issuedDatesPoolingWindow.getPeriod(), periodUnits );
-
+        // The default period is one time unit
+        Duration periodOfIssuedDatesPoolingWindow = Duration.of( 1, timeUnits );
+        if ( Objects.nonNull( issuedDatesPoolingWindow.getPeriod() ) )
+        {
+            periodOfIssuedDatesPoolingWindow =
+                    Duration.of( issuedDatesPoolingWindow.getPeriod(), timeUnits );
+        }
         // Exclusive lower bound: #56213-104
         Instant earliestInstantExclusive = Instant.parse( issuedDates.getEarliest() );
 
@@ -2075,7 +2080,7 @@ public class ConfigHelper
         Duration increment = periodOfIssuedDatesPoolingWindow;        
         if( Objects.nonNull( issuedDatesPoolingWindow.getFrequency() ) )
         {
-            increment = Duration.of( issuedDatesPoolingWindow.getFrequency(), periodUnits );
+            increment = Duration.of( issuedDatesPoolingWindow.getFrequency(), timeUnits );
         }
         
         // Lower bound of the current window
