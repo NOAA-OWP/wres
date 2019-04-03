@@ -23,6 +23,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 
+import com.fasterxml.jackson.databind.JsonMappingException;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.compress.utils.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -143,20 +144,30 @@ public class ReadValueManager
         {
             LOGGER.debug( "{} is responsible for source {}", this, hash );
             ObjectMapper mapper = new ObjectMapper();
-            ForecastResponse response = mapper.readValue( rawForecast,
-                                                          ForecastResponse.class );
 
             try
             {
+                ForecastResponse response = mapper.readValue( rawForecast,
+                                                              ForecastResponse.class );
+
                 for ( Forecast forecast : response.getForecasts() )
                 {
                     LOGGER.debug( "Parsing {}", forecast );
                     this.read( forecast, source.getId() );
                 }
             }
+            catch ( JsonMappingException jme )
+            {
+                throw new PreIngestException( "Failed to parse the response body"
+                                              + " from WRDS url "
+                                              + this.location,
+                                              jme );
+            }
             catch ( SQLException e )
             {
-                throw new IngestException( "Values from WRDS could not be ingested.",
+                throw new IngestException( "Values from WRDS url "
+                                           + this.location
+                                           + " could not be ingested.",
                                            e );
             }
         }

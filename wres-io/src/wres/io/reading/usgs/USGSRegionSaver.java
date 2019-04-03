@@ -40,6 +40,7 @@ import wres.io.data.details.SourceDetails;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.reading.IngestedValues;
+import wres.io.reading.PreIngestException;
 import wres.io.reading.waterml.Response;
 import wres.io.reading.waterml.timeseries.TimeSeries;
 import wres.io.reading.waterml.timeseries.TimeSeriesValue;
@@ -224,18 +225,17 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
 
             Response usgsResponse = this.getResponse( webTarget );
 
-            if (usgsResponse == null && LOGGER.isDebugEnabled())
+            if ( usgsResponse == null )
             {
-                LOGGER.debug("USGS sent an empty response for: {}", requestURL);
+                throw new PreIngestException( "A request to USGS url "
+                                              + requestURL
+                                              + " returned 'success' but had an"
+                                              + " empty body. "
+                                              + "Please contact USGS at: https://water.usgs.gov/contact/gsanswers" );
             }
 
-            Objects.requireNonNull(
-                    usgsResponse,
-                    "The request to USGS succeeded but they did not send any data back."
-                    + "Please contact USGS at: https://water.usgs.gov/contact/gsanswers"
-            );
-
-            LOGGER.trace("A valid USGS response was encountered.");
+            LOGGER.trace( "A valid USGS response was encountered for url {}",
+                          requestURL );
 
             String responseHash = Strings.getMD5Checksum( usgsResponse );
 
