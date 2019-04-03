@@ -55,6 +55,7 @@ public class ReadValueManager
 
     // TODO: inject http client in constructor without changing much else #60281
     private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
+    private static final String MD5SUM_OF_EMPTY_STRING = "68b329da9893e34099c7d8ad5cb9c940";
 
     private final URI location;
     private final ProjectConfig projectConfig;
@@ -71,8 +72,8 @@ public class ReadValueManager
 
     public List<IngestResult> save() throws IOException
     {
-
         InputStream forecastData;
+        Instant now = Instant.now();
 
         if ( this.location.getScheme().equals( "file" ) )
         {
@@ -88,7 +89,28 @@ public class ReadValueManager
                 LOGGER.warn( "Treating HTTP response code {} as no data found from URI {}",
                              httpStatus,
                              this.location );
-                forecastData = InputStream.nullInputStream();
+
+                try
+                {
+                    SourceDetails details = DataSources.get( this.location,
+                                                             now.toString(),
+                                                             null,
+                                                             MD5SUM_OF_EMPTY_STRING );
+                    boolean foundAlready = !details.performedInsert();
+                    return IngestResult.singleItemListFrom(
+                            this.projectConfig,
+                            this.dataSourceConfig,
+                            MD5SUM_OF_EMPTY_STRING,
+                            this.location,
+                            foundAlready
+                    );
+                }
+                catch ( SQLException e )
+                {
+                    throw new IngestException( "Source metadata for '"
+                                               + this.location +
+                                               "' could not be stored in or retrieved from the database." );
+                }
             }
             else
             {
@@ -97,9 +119,9 @@ public class ReadValueManager
         }
         else
         {
-            throw new UnsupportedOperationException("Only file and http(s) "
-                    + "are supported. Got: "
-                    + this.location );
+            throw new UnsupportedOperationException( "Only file and http(s) "
+                                                     + "are supported. Got: "
+                                                     + this.location );
         }
 
         // It is conceivable that we could tee/pipe the data to both
@@ -123,8 +145,6 @@ public class ReadValueManager
         DigestUtils digestUtils = new DigestUtils( md5Name );
         String hash = digestUtils.digestAsHex( rawForecast )
                                  .toUpperCase();
-
-        Instant now = Instant.now();
 
         boolean foundAlready;
         SourceDetails source;
@@ -229,7 +249,7 @@ public class ReadValueManager
                                                   dataPointsList.get( 1 ).getTime() );
 
         OffsetDateTime startTime = this.getStartTime( forecast, timeDuration );
-        
+
         // Get the time scale information, if available
         TimeScale timeScale = TimeScaleFromParameterCodes.getTimeScale( forecast.getParameterCodes(), this.location );
 
