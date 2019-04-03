@@ -449,4 +449,205 @@ public class ConfigHelperTest
         assertEquals( expectedTimeWindows, actualTimeWindows );
     }
     
+    /**
+     * <p>Tests the {@link ConfigHelper#getTimeWindowsFromProjectConfig(wres.config.generated.ProjectConfig)}
+     * where the project declaration includes a <code>issuedDatesPoolingWindow</code> and a 
+     * <code>leadTimesPoolingWindow</code>. Expects twenty-three time windows.
+     * 
+     * <p>The project declaration from this test matches (in all important ways) the declaration associated 
+     * with system test scenario704, as of commit 77387b9dd1e87eb7314b7b1e6d469de7b37aa2c6.
+     */
+
+    @Test
+    public void
+            testGetTimeWindowsWithLeadHoursDatesIssuedDatesIssuedDatesPoolingWindowAndLeadTimesPoolingWindowReturnsTwentyFourWindows()
+    {
+        // Mock the sufficient elements of the ProjectConfig
+        
+        // Lead durations for all time windows
+        IntBoundsType leadBoundsConfig = new IntBoundsType( 0, 18 );
+        
+        // Issued dates into which all time windows must fit
+        DateCondition issuedDatesConfig = new DateCondition( "2017-08-08T00:00:00Z", "2017-08-08T23:00:00Z" );
+        
+        // Valid dates into which all time windows must fit
+        DateCondition datesConfig = new DateCondition( "2017-08-08T00:00:00Z", "2017-08-09T17:00:00Z" );
+        
+        // The declaration of the time windows by lead duration and issued date
+        PoolingWindowConfig leadTimesPoolingWindowConfig =
+                new PoolingWindowConfig( 18, null, DurationUnit.HOURS );
+        PoolingWindowConfig issuedDatesPoolingWindowConfig =
+                new PoolingWindowConfig( null, 1, DurationUnit.HOURS );
+        PairConfig pairsConfig = new PairConfig( null,
+                                                 null,
+                                                 null,
+                                                 leadBoundsConfig,
+                                                 datesConfig,
+                                                 issuedDatesConfig,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 issuedDatesPoolingWindowConfig,
+                                                 leadTimesPoolingWindowConfig,
+                                                 null,
+                                                 null );
+        ProjectConfig mockedConfig =
+                new ProjectConfig( null,
+                                   pairsConfig,
+                                   null,
+                                   null,
+                                   null,
+                                   null );
+
+        // Generate the expected time windows
+        Set<TimeWindow> expectedTimeWindows = new HashSet<>( 22 );
+        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2017-08-08T00:00:00Z" ),
+                                                Instant.parse( "2017-08-08T01:00:00Z" ),
+                                                Instant.parse( "2017-08-08T00:00:00Z" ),
+                                                Instant.parse( "2017-08-09T17:00:00Z" ),
+                                                Duration.ofHours( 0 ),
+                                                Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2017-08-08T01:00:00Z" ),
+                                                Instant.parse( "2017-08-08T02:00:00Z" ),
+                                                Instant.parse( "2017-08-08T00:00:00Z" ),
+                                                Instant.parse( "2017-08-09T17:00:00Z" ),
+                                                Duration.ofHours( 0 ),
+                                                Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2017-08-08T02:00:00Z" ),
+                                                Instant.parse( "2017-08-08T03:00:00Z" ),
+                                                Instant.parse( "2017-08-08T00:00:00Z" ),
+                                                Instant.parse( "2017-08-09T17:00:00Z" ),
+                                                Duration.ofHours( 0 ),
+                                                Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2017-08-08T03:00:00Z" ),
+                                                Instant.parse( "2017-08-08T04:00:00Z" ),
+                                                Instant.parse( "2017-08-08T00:00:00Z" ),
+                                                Instant.parse( "2017-08-09T17:00:00Z" ),
+                                                Duration.ofHours( 0 ),
+                                                Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2017-08-08T04:00:00Z" ),
+                                                Instant.parse( "2017-08-08T05:00:00Z" ),
+                                                Instant.parse( "2017-08-08T00:00:00Z" ),
+                                                Instant.parse( "2017-08-09T17:00:00Z" ),
+                                                Duration.ofHours( 0 ),
+                                                Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2017-08-08T05:00:00Z" ),
+                                                Instant.parse( "2017-08-08T06:00:00Z" ),
+                                                Instant.parse( "2017-08-08T00:00:00Z" ),
+                                                Instant.parse( "2017-08-09T17:00:00Z" ),
+                                                Duration.ofHours( 0 ),
+                                                Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2017-08-08T06:00:00Z" ),
+                                                Instant.parse( "2017-08-08T07:00:00Z" ),
+                                                Instant.parse( "2017-08-08T00:00:00Z" ),
+                                                Instant.parse( "2017-08-09T17:00:00Z" ),
+                                                Duration.ofHours( 0 ),
+                                                Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2017-08-08T07:00:00Z" ),
+                                                Instant.parse( "2017-08-08T08:00:00Z" ),
+                                                Instant.parse( "2017-08-08T00:00:00Z" ),
+                                                Instant.parse( "2017-08-09T17:00:00Z" ),
+                                                Duration.ofHours( 0 ),
+                                                Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2017-08-08T08:00:00Z" ),
+                                                Instant.parse( "2017-08-08T09:00:00Z" ),
+                                                Instant.parse( "2017-08-08T00:00:00Z" ),
+                                                Instant.parse( "2017-08-09T17:00:00Z" ),
+                                                Duration.ofHours( 0 ),
+                                                Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2017-08-08T09:00:00Z" ),
+                                                Instant.parse( "2017-08-08T10:00:00Z" ),
+                                                Instant.parse( "2017-08-08T00:00:00Z" ),
+                                                Instant.parse( "2017-08-09T17:00:00Z" ),
+                                                Duration.ofHours( 0 ),
+                                                Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2017-08-08T10:00:00Z" ),
+                                                Instant.parse( "2017-08-08T11:00:00Z" ),
+                                                Instant.parse( "2017-08-08T00:00:00Z" ),
+                                                Instant.parse( "2017-08-09T17:00:00Z" ),
+                                                Duration.ofHours( 0 ),
+                                                Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2017-08-08T11:00:00Z" ),
+                                                Instant.parse( "2017-08-08T12:00:00Z" ),
+                                                Instant.parse( "2017-08-08T00:00:00Z" ),
+                                                Instant.parse( "2017-08-09T17:00:00Z" ),
+                                                Duration.ofHours( 0 ),
+                                                Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2017-08-08T12:00:00Z" ),
+                                                Instant.parse( "2017-08-08T13:00:00Z" ),
+                                                Instant.parse( "2017-08-08T00:00:00Z" ),
+                                                Instant.parse( "2017-08-09T17:00:00Z" ),
+                                                Duration.ofHours( 0 ),
+                                                Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2017-08-08T13:00:00Z" ),
+                                                Instant.parse( "2017-08-08T14:00:00Z" ),
+                                                Instant.parse( "2017-08-08T00:00:00Z" ),
+                                                Instant.parse( "2017-08-09T17:00:00Z" ),
+                                                Duration.ofHours( 0 ),
+                                                Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2017-08-08T14:00:00Z" ),
+                                                Instant.parse( "2017-08-08T15:00:00Z" ),
+                                                Instant.parse( "2017-08-08T00:00:00Z" ),
+                                                Instant.parse( "2017-08-09T17:00:00Z" ),
+                                                Duration.ofHours( 0 ),
+                                                Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2017-08-08T15:00:00Z" ),
+                                                Instant.parse( "2017-08-08T16:00:00Z" ),
+                                                Instant.parse( "2017-08-08T00:00:00Z" ),
+                                                Instant.parse( "2017-08-09T17:00:00Z" ),
+                                                Duration.ofHours( 0 ),
+                                                Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2017-08-08T16:00:00Z" ),
+                                                Instant.parse( "2017-08-08T17:00:00Z" ),
+                                                Instant.parse( "2017-08-08T00:00:00Z" ),
+                                                Instant.parse( "2017-08-09T17:00:00Z" ),
+                                                Duration.ofHours( 0 ),
+                                                Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2017-08-08T17:00:00Z" ),
+                                                Instant.parse( "2017-08-08T18:00:00Z" ),
+                                                Instant.parse( "2017-08-08T00:00:00Z" ),
+                                                Instant.parse( "2017-08-09T17:00:00Z" ),
+                                                Duration.ofHours( 0 ),
+                                                Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2017-08-08T18:00:00Z" ),
+                                                Instant.parse( "2017-08-08T19:00:00Z" ),
+                                                Instant.parse( "2017-08-08T00:00:00Z" ),
+                                                Instant.parse( "2017-08-09T17:00:00Z" ),
+                                                Duration.ofHours( 0 ),
+                                                Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2017-08-08T19:00:00Z" ),
+                                                Instant.parse( "2017-08-08T20:00:00Z" ),
+                                                Instant.parse( "2017-08-08T00:00:00Z" ),
+                                                Instant.parse( "2017-08-09T17:00:00Z" ),
+                                                Duration.ofHours( 0 ),
+                                                Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2017-08-08T20:00:00Z" ),
+                                                Instant.parse( "2017-08-08T21:00:00Z" ),
+                                                Instant.parse( "2017-08-08T00:00:00Z" ),
+                                                Instant.parse( "2017-08-09T17:00:00Z" ),
+                                                Duration.ofHours( 0 ),
+                                                Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2017-08-08T21:00:00Z" ),
+                                                Instant.parse( "2017-08-08T22:00:00Z" ),
+                                                Instant.parse( "2017-08-08T00:00:00Z" ),
+                                                Instant.parse( "2017-08-09T17:00:00Z" ),
+                                                Duration.ofHours( 0 ),
+                                                Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2017-08-08T22:00:00Z" ),
+                                                Instant.parse( "2017-08-08T23:00:00Z" ),
+                                                Instant.parse( "2017-08-08T00:00:00Z" ),
+                                                Instant.parse( "2017-08-09T17:00:00Z" ),
+                                                Duration.ofHours( 0 ),
+                                                Duration.ofHours( 18 ) ) );
+        
+        // Generate the actual time windows
+        Set<TimeWindow> actualTimeWindows = ConfigHelper.getTimeWindowsFromProjectConfig( mockedConfig );
+
+        // Assert the expected cardinality
+        assertEquals( 23, actualTimeWindows.size() );
+
+        // Assert that the expected and actual time windows are equal
+        assertEquals( expectedTimeWindows, actualTimeWindows );
+    }    
+    
 }
