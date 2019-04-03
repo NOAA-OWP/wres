@@ -283,6 +283,9 @@ project(':wres-io')
         // One reader uses javax.validation.constraints.NotNull
         compile 'javax.validation:validation-api:2.0.1.Final'
 
+        // Easier MD5
+        compile 'commons-codec:commons-codec:1.12'
+
         // Because org.postgresql:postgresql uses JUL logging, bridge at runtime
         runtime 'org.slf4j:jul-to-slf4j:1.8.0-beta2'
 
