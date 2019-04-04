@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -149,13 +150,53 @@ public class TimeSeriesRetriever extends Retriever
                         }
                     }
 
+                    if (measurements.length > 1 || ensembles.length > 1)
+                    {
+                        LOGGER.debug( "More than one value was found in timeseries id: " +
+                                      this.getSampleMetadata().getSampleNumber() + " at lead " + lead );
+                    }
+
                     Map<PivottedValues.EnsemblePosition, List<Double >> mappedResult = new TreeMap<>(  );
 
+                    // 99.9% There will only be one value to store; this is a safety measure
                     for (int measurementPosition = 0; measurementPosition < Math.min(measurements.length, ensembles.length); ++measurementPosition)
                     {
+                        Double measurement = measurements[measurementPosition];
+
+                        if (measurement != null)
+                        {
+                            measurement = this.convertMeasurement( measurements[measurementPosition],
+                                                                         data.getInt( "measurementunit_id" ) );
+
+                            if ( this.getProjectDetails().getMaximumValue() < measurement )
+                            {
+                                if ( this.getProjectDetails().getDefaultMaximumValue() != null )
+                                {
+                                    measurement = this.getProjectDetails().getDefaultMaximumValue();
+                                }
+                                else
+                                {
+                                    measurement = Double.NaN;
+                                }
+                            }
+                            else if ( this.getProjectDetails().getMinimumValue() > measurement )
+                            {
+                                if ( this.getProjectDetails().getDefaultMinimumValue() != null )
+                                {
+                                    measurement = this.getProjectDetails().getDefaultMinimumValue();
+                                }
+                                else
+                                {
+                                    measurement = Double.NaN;
+                                }
+                            }
+                        }
+
+                        List<Double> value = new ArrayList<>();
+                        value.add( measurement );
                         mappedResult.put(
                                 new PivottedValues.EnsemblePosition( measurementPosition, ensembles[measurementPosition] ),
-                                List.of( measurements[measurementPosition] )
+                                value
                         );
                     }
 
@@ -182,38 +223,6 @@ public class TimeSeriesRetriever extends Retriever
         {
             throw new RetrievalFailedException( "Values needed for evaluation could not be loaded.", e );
         }
-    }
-
-    /**
-     * Manually creates a PivottedValues object rather than using an IngestedValueCollection
-     * <p>
-     *     Since all values in the retrieved set will always be in the same time series and
-     *     scaling isn't really valid, the process of pivotting data into groups for scaling
-     *     isn't necessary.
-     * </p>
-     * @param data The raw values retrieved from the database
-     * @return The set of pivotted values
-     */
-    private PivottedValues formPivottedValues(final DataProvider data)
-    {
-        final long validSeconds = data.getLong( "value_date" );
-        final int lead = data.getInt( "lead" );
-        final Double[] measurements = data.getDoubleArray( "measurements" );
-        final Integer[] ensembles = data.getIntegerArray( "members" );
-
-        Map<PivottedValues.EnsemblePosition, List<Double >> mappedResult = new TreeMap<>(  );
-
-        for (int measurementPosition = 0; measurementPosition < Math.min(measurements.length, ensembles.length); ++measurementPosition)
-        {
-            mappedResult.put(
-                    new PivottedValues.EnsemblePosition( measurementPosition, ensembles[measurementPosition] ),
-                    List.of( measurements[measurementPosition] )
-            );
-        }
-
-        return new PivottedValues( Instant.ofEpochSecond( validSeconds ),
-                                   Duration.of( lead, TimeHelper.LEAD_RESOLUTION ),
-                                   mappedResult );
     }
 
     @Override
