@@ -12,9 +12,9 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
@@ -144,52 +144,58 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
         // Check the expected number of paths: #61841
         assertTrue( pathsToFile.size() == 3 );
 
-        
-        Iterator<Path> pathIterator = pathsToFile.iterator();
-        
-        Path pathToFirstFile = pathIterator.next();
-        
+        Optional<Path> pathToFirstFile =
+                pathsToFile.stream()
+                           .filter( next -> next.endsWith( "DRRC2_SQIN_HEFS_MEAN_ABSOLUTE_ERROR.csv" ) )
+                           .findAny();
+   
         // Check the expected path: #61841
-        assertTrue( pathToFirstFile.endsWith( "DRRC2_SQIN_HEFS_MEAN_ABSOLUTE_ERROR.csv" ) );
+        assertTrue( pathToFirstFile.isPresent() );
 
-        List<String> thirdResult = Files.readAllLines( pathToFirstFile );
+        List<String> firstResult = Files.readAllLines( pathToFirstFile.get() );
 
-        assertTrue( thirdResult.get( 0 ).contains( "," ) );
-        assertTrue( thirdResult.get( 0 ).contains( "ERROR" ) );
-        assertTrue( thirdResult.get( 1 )
+        assertTrue( firstResult.get( 0 ).contains( "," ) );
+        assertTrue( firstResult.get( 0 ).contains( "ERROR" ) );
+        assertTrue( firstResult.get( 1 )
                                .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,3600,3600,"
                                         + "3.0" ) );
-        
-        Path pathToSecondFile = pathIterator.next();
-        
-        // Check the expected path: #61841
-        assertTrue( pathToSecondFile.endsWith( "DRRC2_SQIN_HEFS_MEAN_ERROR.csv" ) );
 
-        List<String> secondResult = Files.readAllLines( pathToSecondFile );
+        Optional<Path> pathToSecondFile =
+                pathsToFile.stream()
+                           .filter( next -> next.endsWith( "DRRC2_SQIN_HEFS_MEAN_ERROR.csv" ) )
+                           .findAny();
+
+        // Check the expected path: #61841
+        assertTrue( pathToSecondFile.isPresent() );
+
+        List<String> secondResult = Files.readAllLines( pathToSecondFile.get() );
 
         assertTrue( secondResult.get( 0 ).contains( "," ) );
         assertTrue( secondResult.get( 0 ).contains( "ERROR" ) );
         assertTrue( secondResult.get( 1 )
                                 .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,3600,3600,"
                                          + "2.0" ) );
-              
-        Path pathToThirdFile = pathIterator.next();
+
+        Optional<Path> pathToThirdFile =
+                pathsToFile.stream()
+                           .filter( next -> next.endsWith( "DRRC2_SQIN_HEFS_MEAN_SQUARE_ERROR.csv" ) )
+                           .findAny();
 
         // Check the expected path: #61841
-        assertTrue( pathToThirdFile.endsWith( "DRRC2_SQIN_HEFS_MEAN_SQUARE_ERROR.csv" ) );
+        assertTrue( pathToThirdFile.isPresent() );
 
-        List<String> firstResult = Files.readAllLines( pathToThirdFile );
+        List<String> thirdResult = Files.readAllLines( pathToThirdFile.get() );
 
-        assertTrue( firstResult.get( 0 ).contains( "," ) );
-        assertTrue( firstResult.get( 0 ).contains( "ERROR" ) );
-        assertTrue( firstResult.get( 1 )
+        assertTrue( thirdResult.get( 0 ).contains( "," ) );
+        assertTrue( thirdResult.get( 0 ).contains( "ERROR" ) );
+        assertTrue( thirdResult.get( 1 )
                                .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,3600,3600,"
                                         + "1.0" ) );
-        
+
         // If all succeeded, remove the file, otherwise leave to help debugging.
-        Files.deleteIfExists( pathToThirdFile );
-        Files.deleteIfExists( pathToSecondFile );
-        Files.deleteIfExists( pathToFirstFile );
+        Files.deleteIfExists( pathToThirdFile.get() );
+        Files.deleteIfExists( pathToSecondFile.get() );
+        Files.deleteIfExists( pathToFirstFile.get() );
     }
 
     /**
