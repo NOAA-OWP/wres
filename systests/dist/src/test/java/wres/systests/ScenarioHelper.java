@@ -500,6 +500,7 @@ System.out.println("java.io.tmpdir ================ " + System.getProperty("java
 		LOGGER.info( "####>> Assert outputs match benchmarks..." + scenarioInfo.getName() );
         //Assert the output as being valid and then get the output from the provided Control if so.
         assertWRESOutputValid( completedEvaluation );
+		/*
 		// List files one-by-one
 		Set<Path> tmpset = completedEvaluation.get();
 		Path tmppath = tmpset.iterator().next();
@@ -516,11 +517,13 @@ System.out.println("java.io.tmpdir ================ " + System.getProperty("java
 			}
 		}
 		else
-        	//Set<Path> initialOutputSet = completedEvaluation.get(); // somehow this Control.get() couldn't complete get all files for scerio1000 and 1001
         	initialOutputSet = completedEvaluation.get(); // somehow this Control.get() couldn't complete get all files for scerio1000 and 1001
+		*/
 
-		// I want to check the this initialOutputSet from Control.get()
+        Set<Path> initialOutputSet = completedEvaluation.get(); // somehow this Control.get() couldn't complete get all files for scerio1000 and 1001
+
 		/*
+		// I want to check the this initialOutputSet from Control.get()
 		for (Path iPath : initialOutputSet)
 		{
 			//Path iPath = iterator.next();
