@@ -12,8 +12,10 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
@@ -136,18 +138,33 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
                                               this.outputDirectory );
         writer.accept( output.getDoubleScoreStatistics() );
 
-        // Read the file, verify it has what we wanted:
-        Path pathToFirstFile = Paths.get( this.outputDirectory.toString(),
-                                          "DRRC2_SQIN_HEFS_MEAN_SQUARE_ERROR.csv" );
-        List<String> firstResult = Files.readAllLines( pathToFirstFile );
+        // Determine the paths written
+        Set<Path> pathsToFile = writer.get();
 
-        assertTrue( firstResult.get( 0 ).contains( "," ) );
-        assertTrue( firstResult.get( 0 ).contains( "ERROR" ) );
-        assertTrue( firstResult.get( 1 )
+        // Check the expected number of paths: #61841
+        assertTrue( pathsToFile.size() == 3 );
+
+        
+        Iterator<Path> pathIterator = pathsToFile.iterator();
+        
+        Path pathToFirstFile = pathIterator.next();
+        
+        // Check the expected path: #61841
+        assertTrue( pathToFirstFile.endsWith( "DRRC2_SQIN_HEFS_MEAN_ABSOLUTE_ERROR.csv" ) );
+
+        List<String> thirdResult = Files.readAllLines( pathToFirstFile );
+
+        assertTrue( thirdResult.get( 0 ).contains( "," ) );
+        assertTrue( thirdResult.get( 0 ).contains( "ERROR" ) );
+        assertTrue( thirdResult.get( 1 )
                                .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,3600,3600,"
-                                        + "1.0" ) );
-        Path pathToSecondFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
-                                           "DRRC2_SQIN_HEFS_MEAN_ERROR.csv" );
+                                        + "3.0" ) );
+        
+        Path pathToSecondFile = pathIterator.next();
+        
+        // Check the expected path: #61841
+        assertTrue( pathToSecondFile.endsWith( "DRRC2_SQIN_HEFS_MEAN_ERROR.csv" ) );
+
         List<String> secondResult = Files.readAllLines( pathToSecondFile );
 
         assertTrue( secondResult.get( 0 ).contains( "," ) );
@@ -155,20 +172,24 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
         assertTrue( secondResult.get( 1 )
                                 .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,3600,3600,"
                                          + "2.0" ) );
-        Path pathToThirdFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
-                                          "DRRC2_SQIN_HEFS_MEAN_ABSOLUTE_ERROR.csv" );
-        List<String> thirdResult = Files.readAllLines( pathToThirdFile );
+              
+        Path pathToThirdFile = pathIterator.next();
 
-        assertTrue( thirdResult.get( 0 ).contains( "," ) );
-        assertTrue( thirdResult.get( 0 ).contains( "ERROR" ) );
-        assertTrue( thirdResult.get( 1 )
+        // Check the expected path: #61841
+        assertTrue( pathToThirdFile.endsWith( "DRRC2_SQIN_HEFS_MEAN_SQUARE_ERROR.csv" ) );
+
+        List<String> firstResult = Files.readAllLines( pathToThirdFile );
+
+        assertTrue( firstResult.get( 0 ).contains( "," ) );
+        assertTrue( firstResult.get( 0 ).contains( "ERROR" ) );
+        assertTrue( firstResult.get( 1 )
                                .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,3600,3600,"
-                                        + "3.0" ) );
-
+                                        + "1.0" ) );
+        
         // If all succeeded, remove the file, otherwise leave to help debugging.
-        Files.deleteIfExists( pathToFirstFile );
-        Files.deleteIfExists( pathToSecondFile );
         Files.deleteIfExists( pathToThirdFile );
+        Files.deleteIfExists( pathToSecondFile );
+        Files.deleteIfExists( pathToFirstFile );
     }
 
     /**
@@ -246,10 +267,18 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
                                               ChronoUnit.SECONDS,
                                               this.outputDirectory );
         writer.accept( output.getDurationScoreStatistics() );
+        
+        // Determine the paths written
+        Set<Path> pathsToFile = writer.get();
 
-        // read the file, verify it has what we wanted:
-        Path pathToFile = Paths.get( this.outputDirectory.toString(),
-                                     "DOLC2_SQIN_HEFS_TIME_TO_PEAK_ERROR_STATISTIC.csv" );
+        // Check the expected number of paths: #61841
+        assertTrue( pathsToFile.size() == 1 );
+
+        Path pathToFile = pathsToFile.iterator().next();
+
+        // Check the expected path: #61841
+        assertTrue( pathToFile.endsWith( "DOLC2_SQIN_HEFS_TIME_TO_PEAK_ERROR_STATISTIC.csv" ) );
+
         List<String> result = Files.readAllLines( pathToFile );
 
         assertTrue( result.get( 0 ).contains( "," ) );
@@ -382,11 +411,18 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
                                               this.outputDirectory );
         writer.accept( output.getDoubleScoreStatistics() );
 
-        // read the file, verify it has what we wanted:
-        Path pathToFirstFile = Paths.get( this.outputDirectory.toString(),
-                                          "FTSC1_SQIN_HEFS_MEAN_SQUARE_ERROR.csv" );
+        // Determine the paths written
+        Set<Path> pathsToFile = writer.get();
 
-        List<String> firstResult = Files.readAllLines( pathToFirstFile );
+        // Check the expected number of paths: #61841
+        assertTrue( pathsToFile.size() == 1 );
+
+        Path pathToFile = pathsToFile.iterator().next();
+
+        // Check the expected path: #61841
+        assertTrue( pathToFile.endsWith( "FTSC1_SQIN_HEFS_MEAN_SQUARE_ERROR.csv" ) );
+
+        List<String> firstResult = Files.readAllLines( pathToFile );
 
         assertTrue( firstResult.get( 0 ).equals( "EARLIEST ISSUE TIME,LATEST ISSUE TIME,EARLIEST LEAD TIME IN SECONDS,"
                                                  + "LATEST LEAD TIME IN SECONDS,MEAN SQUARE ERROR All data,"
@@ -399,7 +435,7 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
                                         + "7200,1.0,NA" ) );
 
         // If all succeeded, remove the file, otherwise leave to help debugging.
-        Files.deleteIfExists( pathToFirstFile );
+        Files.deleteIfExists( pathToFile );
     }
 
 

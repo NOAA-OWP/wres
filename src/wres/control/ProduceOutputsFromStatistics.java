@@ -204,7 +204,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         try
         {
             // implicitly passing resolvedProject via shared state
-            buildConsumers( sharedWriters );
+            this.buildConsumers( sharedWriters );
         }
         catch ( ProjectConfigException e )
         {
@@ -229,37 +229,37 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
             // Multivector output available
             if ( input.hasStatistic( StatisticGroup.MULTIVECTOR ) )
             {
-                processDiagramOutputs( input.getMultiVectorStatistics() );
+                this.processDiagramOutputs( input.getMultiVectorStatistics() );
             }
 
             // Box-plot output available
             if ( input.hasStatistic( StatisticGroup.BOXPLOT ) )
             {
-                processBoxPlotOutputs( input.getBoxPlotStatistics() );
+                this.processBoxPlotOutputs( input.getBoxPlotStatistics() );
             }
 
             // Matrix output available
             if ( input.hasStatistic( StatisticGroup.MATRIX ) )
             {
-                processMatrixOutputs( input.getMatrixStatistics() );
+                this.processMatrixOutputs( input.getMatrixStatistics() );
             }
 
             // Ordinary scores available
             if ( input.hasStatistic( StatisticGroup.DOUBLE_SCORE ) )
             {
-                processDoubleScoreOutputs( input.getDoubleScoreStatistics() );
+                this.processDoubleScoreOutputs( input.getDoubleScoreStatistics() );
             }
 
             // Duration scores available
             if ( input.hasStatistic( StatisticGroup.DURATION_SCORE ) )
             {
-                processDurationScoreOutputs( input.getDurationScoreStatistics() );
+                this.processDurationScoreOutputs( input.getDurationScoreStatistics() );
             }
 
             // Paired metric output available
             if ( input.hasStatistic( StatisticGroup.PAIRED ) )
             {
-                processPairedOutputByInstantDuration( input.getPairedStatistics() );
+                this.processPairedOutputByInstantDuration( input.getPairedStatistics() );
             }
         }
         catch ( InterruptedException e)
@@ -316,20 +316,20 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         if ( configNeedsThisTypeOfOutput( DestinationType.NETCDF ) )
         {
             // implicitly passing resolvedProject via shared state
-            buildNetCDFConsumers( sharedWriters );
+            this.buildNetCDFConsumers( sharedWriters );
             //buildNetCDFConsumers();
         }
 
         // Register consumers for the CSV output type
         if ( configNeedsThisTypeOfOutput( DestinationType.CSV ) )
         {
-            buildCommaSeparatedConsumers();
+            this.buildCommaSeparatedConsumers();
         }
 
         // Register consumers for the PNG output type
         if ( configNeedsThisTypeOfOutput( DestinationType.PNG ) )
         {
-            buildPortableNetworkGraphicsConsumers();
+            this.buildPortableNetworkGraphicsConsumers();
         }
 
     }
@@ -347,65 +347,68 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         Path outputDirectory = this.getResolvedProject().getOutputDirectory();
 
         // Build the consumers conditionally
-        if ( writeWhenTrue.test( StatisticGroup.MULTIVECTOR, DestinationType.CSV ) )
+        if ( this.writeWhenTrue.test( StatisticGroup.MULTIVECTOR, DestinationType.CSV ) )
         {
             CommaSeparatedDiagramWriter diagramWriter =
                     CommaSeparatedDiagramWriter.of( projectConfig,
                                                     ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
                                                     outputDirectory );
-            diagramConsumers.put( DestinationType.CSV,
+            this.diagramConsumers.put( DestinationType.CSV,
                                   diagramWriter );
             this.writersToPaths.add( diagramWriter );
         }
 
-        if ( writeWhenTrue.test( StatisticGroup.BOXPLOT, DestinationType.CSV ) )
+        if ( this.writeWhenTrue.test( StatisticGroup.BOXPLOT, DestinationType.CSV ) )
         {
             CommaSeparatedBoxPlotWriter boxPlotWriter =
                     CommaSeparatedBoxPlotWriter.of( projectConfig,
                                                     ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
                                                     outputDirectory );
-            boxPlotConsumers.put( DestinationType.CSV,
+            this.boxPlotConsumers.put( DestinationType.CSV,
                                   boxPlotWriter );
             this.writersToPaths.add( boxPlotWriter );
         }
 
-        if ( writeWhenTrue.test( StatisticGroup.MATRIX, DestinationType.CSV ) )
+        if ( this.writeWhenTrue.test( StatisticGroup.MATRIX, DestinationType.CSV ) )
         {
             CommaSeparatedMatrixWriter matrixWriter =
                     CommaSeparatedMatrixWriter.of( projectConfig,
                                                    ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
                                                    outputDirectory );
-            matrixConsumers.put( DestinationType.CSV,
+            this.matrixConsumers.put( DestinationType.CSV,
                                  matrixWriter );
             this.writersToPaths.add( matrixWriter );
         }
 
-        if ( writeWhenTrue.test( StatisticGroup.PAIRED, DestinationType.CSV ) )
+        if ( this.writeWhenTrue.test( StatisticGroup.PAIRED, DestinationType.CSV ) )
         {
-            pairedConsumers.put( DestinationType.CSV,
-                                 CommaSeparatedPairedWriter.of( projectConfig,
-                                                                ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
-                                                                outputDirectory ) );
+            // Add the paths for the paired writer: #61841
+            CommaSeparatedPairedWriter<Instant, Duration> pairedWriter =
+                    CommaSeparatedPairedWriter.of( projectConfig,
+                                                   ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
+                                                   outputDirectory );
+            this.pairedConsumers.put( DestinationType.CSV, pairedWriter );
+            this.writersToPaths.add( pairedWriter );
         }
 
-        if ( writeWhenTrue.test( StatisticGroup.DOUBLE_SCORE, DestinationType.CSV ) )
+        if ( this.writeWhenTrue.test( StatisticGroup.DOUBLE_SCORE, DestinationType.CSV ) )
         {
             CommaSeparatedScoreWriter<DoubleScoreStatistic> doubleScoreWriter =
                     CommaSeparatedScoreWriter.of( projectConfig,
                                                   ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
                                                   outputDirectory );
-            doubleScoreConsumers.put( DestinationType.CSV,
+            this.doubleScoreConsumers.put( DestinationType.CSV,
                                       doubleScoreWriter );
             this.writersToPaths.add( doubleScoreWriter );
         }
 
-        if ( writeWhenTrue.test( StatisticGroup.DURATION_SCORE, DestinationType.CSV ) )
+        if ( this.writeWhenTrue.test( StatisticGroup.DURATION_SCORE, DestinationType.CSV ) )
         {
             CommaSeparatedScoreWriter<DurationScoreStatistic> durationScoreWriter =
                     CommaSeparatedScoreWriter.of( projectConfig,
                                                   ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
                                                   outputDirectory );
-            durationScoreConsumers.put( DestinationType.CSV,
+            this.durationScoreConsumers.put( DestinationType.CSV,
                                         durationScoreWriter );
             this.writersToPaths.add( durationScoreWriter );
         }
@@ -423,54 +426,54 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         Path outputDirectory = this.getResolvedProject().getOutputDirectory();
 
         // Build the consumers conditionally
-        if ( writeWhenTrue.test( StatisticGroup.MULTIVECTOR, DestinationType.PNG ) )
+        if ( this.writeWhenTrue.test( StatisticGroup.MULTIVECTOR, DestinationType.PNG ) )
         {
             PNGDiagramWriter diagramWriter = PNGDiagramWriter.of( projectConfigPlus,
                                                                   ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
                                                                   outputDirectory );
-            diagramConsumers.put( DestinationType.PNG,
+            this.diagramConsumers.put( DestinationType.PNG,
                                   diagramWriter );
             this.writersToPaths.add( diagramWriter );
         }
 
-        if ( writeWhenTrue.test( StatisticGroup.BOXPLOT, DestinationType.PNG ) )
+        if ( this.writeWhenTrue.test( StatisticGroup.BOXPLOT, DestinationType.PNG ) )
         {
             PNGBoxPlotWriter boxPlotWriter = PNGBoxPlotWriter.of( projectConfigPlus,
                                                                   ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
                                                                   outputDirectory );
-            boxPlotConsumers.put( DestinationType.PNG,
+            this.boxPlotConsumers.put( DestinationType.PNG,
                                   boxPlotWriter );
             this.writersToPaths.add( boxPlotWriter );
         }
 
-        if ( writeWhenTrue.test( StatisticGroup.PAIRED, DestinationType.PNG ) )
+        if ( this.writeWhenTrue.test( StatisticGroup.PAIRED, DestinationType.PNG ) )
         {
             PNGPairedWriter pairedWriter = PNGPairedWriter.of( projectConfigPlus,
                                                                ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
                                                                outputDirectory );
-            pairedConsumers.put( DestinationType.PNG,
+            this.pairedConsumers.put( DestinationType.PNG,
                                  pairedWriter );
             this.writersToPaths.add( pairedWriter );
         }
 
-        if ( writeWhenTrue.test( StatisticGroup.DOUBLE_SCORE, DestinationType.PNG ) )
+        if ( this.writeWhenTrue.test( StatisticGroup.DOUBLE_SCORE, DestinationType.PNG ) )
         {
             PNGDoubleScoreWriter doubleScoreWriter =
                     PNGDoubleScoreWriter.of( projectConfigPlus,
                                              ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
                                              outputDirectory );
-            doubleScoreConsumers.put( DestinationType.PNG,
+            this.doubleScoreConsumers.put( DestinationType.PNG,
                                       doubleScoreWriter );
             this.writersToPaths.add( doubleScoreWriter );
         }
 
-        if ( writeWhenTrue.test( StatisticGroup.DURATION_SCORE, DestinationType.PNG ) )
+        if ( this.writeWhenTrue.test( StatisticGroup.DURATION_SCORE, DestinationType.PNG ) )
         {
             PNGDurationScoreWriter durationScoreWriter =
                     PNGDurationScoreWriter.of( projectConfigPlus,
                                                ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
                                                outputDirectory );
-            durationScoreConsumers.put( DestinationType.PNG,
+            this.durationScoreConsumers.put( DestinationType.PNG,
                                         durationScoreWriter );
             this.writersToPaths.add( durationScoreWriter );
         }
@@ -490,7 +493,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
             this.writersToPaths.add( sharedWriters );
             // Not in charge of closing the sharedwriters, that is out at top.
         }
-        else if ( writeWhenTrue.test( StatisticGroup.DOUBLE_SCORE, DestinationType.NETCDF ) )
+        else if ( this.writeWhenTrue.test( StatisticGroup.DOUBLE_SCORE, DestinationType.NETCDF ) )
         {
             LOGGER.debug( "There are netcdf consumers for {}", this );
             NetcdfOutputWriter netcdfOutputWriter = NetcdfOutputWriter.of( projectConfig,
@@ -521,10 +524,10 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
         // Iterate through the consumers
-        for ( Entry<DestinationType, Consumer<ListOfStatistics<MultiVectorStatistic>>> next : diagramConsumers.entrySet() )
+        for ( Entry<DestinationType, Consumer<ListOfStatistics<MultiVectorStatistic>>> next : this.diagramConsumers.entrySet() )
         {
             // Consume conditionally
-            if ( writeWhenTrue.test( StatisticGroup.MULTIVECTOR, next.getKey() ) )
+            if ( this.writeWhenTrue.test( StatisticGroup.MULTIVECTOR, next.getKey() ) )
             {
                 log( outputs, next.getKey(), true );
 
@@ -550,10 +553,10 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
         // Iterate through the consumers
-        for ( Entry<DestinationType, Consumer<ListOfStatistics<BoxPlotStatistic>>> next : boxPlotConsumers.entrySet() )
+        for ( Entry<DestinationType, Consumer<ListOfStatistics<BoxPlotStatistic>>> next : this.boxPlotConsumers.entrySet() )
         {
             // Consume conditionally
-            if ( writeWhenTrue.test( StatisticGroup.BOXPLOT, next.getKey() ) )
+            if ( this.writeWhenTrue.test( StatisticGroup.BOXPLOT, next.getKey() ) )
             {
                 log( outputs, next.getKey(), true );
 
@@ -579,10 +582,10 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
         // Iterate through the consumers
-        for ( Entry<DestinationType, Consumer<ListOfStatistics<MatrixStatistic>>> next : matrixConsumers.entrySet() )
+        for ( Entry<DestinationType, Consumer<ListOfStatistics<MatrixStatistic>>> next : this.matrixConsumers.entrySet() )
         {
             // Consume conditionally
-            if ( writeWhenTrue.test( StatisticGroup.MATRIX, next.getKey() ) )
+            if ( this.writeWhenTrue.test( StatisticGroup.MATRIX, next.getKey() ) )
             {
                 log( outputs, next.getKey(), true );
 
@@ -609,10 +612,10 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
         // Iterate through the consumers
-        for ( Entry<DestinationType, Consumer<ListOfStatistics<DoubleScoreStatistic>>> next : doubleScoreConsumers.entrySet() )
+        for ( Entry<DestinationType, Consumer<ListOfStatistics<DoubleScoreStatistic>>> next : this.doubleScoreConsumers.entrySet() )
         {
             // Consume conditionally
-            if ( writeWhenTrue.test( StatisticGroup.DOUBLE_SCORE, next.getKey() ) )
+            if ( this.writeWhenTrue.test( StatisticGroup.DOUBLE_SCORE, next.getKey() ) )
             {
                 log( outputs, next.getKey(), true );
 
@@ -639,10 +642,10 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
         // Iterate through the consumers
-        for ( Entry<DestinationType, Consumer<ListOfStatistics<DurationScoreStatistic>>> next : durationScoreConsumers.entrySet() )
+        for ( Entry<DestinationType, Consumer<ListOfStatistics<DurationScoreStatistic>>> next : this.durationScoreConsumers.entrySet() )
         {
             // Consume conditionally
-            if ( writeWhenTrue.test( StatisticGroup.DURATION_SCORE, next.getKey() ) )
+            if ( this.writeWhenTrue.test( StatisticGroup.DURATION_SCORE, next.getKey() ) )
             {
                 log( outputs, next.getKey(), true );
 
@@ -669,10 +672,10 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
         // Iterate through the consumers
-        for ( Entry<DestinationType, Consumer<ListOfStatistics<PairedStatistic<Instant, Duration>>>> next : pairedConsumers.entrySet() )
+        for ( Entry<DestinationType, Consumer<ListOfStatistics<PairedStatistic<Instant, Duration>>>> next : this.pairedConsumers.entrySet() )
         {
             // Consume conditionally
-            if ( writeWhenTrue.test( StatisticGroup.PAIRED, next.getKey() ) )
+            if ( this.writeWhenTrue.test( StatisticGroup.PAIRED, next.getKey() ) )
             {
                 log( outputs, next.getKey(), true );
 

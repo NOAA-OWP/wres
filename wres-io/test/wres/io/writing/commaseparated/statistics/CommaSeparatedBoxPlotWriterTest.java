@@ -12,6 +12,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
@@ -107,10 +108,10 @@ public class CommaSeparatedBoxPlotWriterTest extends CommaSeparatedWriterTestHel
         // Fake output wrapper.
         ListOfStatistics<BoxPlotStatistic> fakeOutputData =
                 ListOfStatistics.of( Collections.singletonList( BoxPlotStatistic.of( fakeOutputs,
-                                                                                    probs,
-                                                                                    fakeMetadata,
-                                                                                    MetricDimension.OBSERVED_VALUE,
-                                                                                    MetricDimension.FORECAST_ERROR ) ) );
+                                                                                     probs,
+                                                                                     fakeMetadata,
+                                                                                     MetricDimension.OBSERVED_VALUE,
+                                                                                     MetricDimension.FORECAST_ERROR ) ) );
         // wrap outputs in future
         Future<ListOfStatistics<BoxPlotStatistic>> outputMapByMetricFuture =
                 CompletableFuture.completedFuture( fakeOutputData );
@@ -124,14 +125,23 @@ public class CommaSeparatedBoxPlotWriterTest extends CommaSeparatedWriterTestHel
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        CommaSeparatedBoxPlotWriter.of( projectConfig,
-                                        ChronoUnit.SECONDS,
-                                        this.outputDirectory )
-                                   .accept( output.getBoxPlotStatistics() );
+        CommaSeparatedBoxPlotWriter writer = CommaSeparatedBoxPlotWriter.of( projectConfig,
+                                                                             ChronoUnit.SECONDS,
+                                                                             this.outputDirectory );
+        
+        writer.accept( output.getBoxPlotStatistics() );
 
-        // Read the file, verify it has what we wanted:
-        Path pathToFile = Paths.get( this.outputDirectory.toString(),
-                                     "JUNP1_SQIN_HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE_86400_SECONDS.csv" );
+        // Determine the paths written
+        Set<Path> pathsToFile = writer.get();
+
+        // Check the expected number of paths: #61841
+        assertTrue( pathsToFile.size() == 1 );
+
+        Path pathToFile = pathsToFile.iterator().next();
+
+        // Check the expected path: #61841
+        assertTrue( pathToFile.endsWith( "JUNP1_SQIN_HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE_86400_SECONDS.csv" ) );
+
         List<String> result = Files.readAllLines( pathToFile );
 
         assertTrue( result.get( 0 ).contains( "," ) );

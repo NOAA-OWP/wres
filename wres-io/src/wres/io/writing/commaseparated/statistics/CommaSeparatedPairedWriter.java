@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -38,9 +39,15 @@ import wres.io.writing.commaseparated.CommaSeparatedUtilities;
  */
 
 public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedStatisticsWriter
-        implements Consumer<ListOfStatistics<PairedStatistic<S, T>>>
+        implements Consumer<ListOfStatistics<PairedStatistic<S, T>>>, Supplier<Set<Path>>
 {
 
+    /**
+     * Set of paths that this writer actually wrote to
+     */
+    
+    private final Set<Path> pathsWrittenTo = new HashSet<>();    
+    
     /**
      * Returns an instance of a writer.
      * 
@@ -88,11 +95,14 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedStatisticsWr
             // Write per time-window
             try
             {
-                CommaSeparatedPairedWriter.writeOnePairedOutputType( super.getOutputDirectory(),
-                                                                     destinationConfig,
-                                                                     output,
-                                                                     formatter,
-                                                                     super.getDurationUnits() );
+                Set<Path> innerPathsWrittenTo =
+                        CommaSeparatedPairedWriter.writeOnePairedOutputType( super.getOutputDirectory(),
+                                                                             destinationConfig,
+                                                                             output,
+                                                                             formatter,
+                                                                             super.getDurationUnits() );
+
+                this.pathsWrittenTo.addAll( innerPathsWrittenTo );
             }
             catch ( IOException e )
             {
@@ -102,6 +112,18 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedStatisticsWr
         }
 
     }
+    
+    /**
+     * Return a snapshot of the paths written to (so far)
+     * 
+     * @return the paths written so far.
+     */
+
+    @Override
+    public Set<Path> get()
+    {
+        return this.getPathsWrittenTo();
+    }    
 
     /**
      * Writes all output for one paired type.
@@ -224,6 +246,17 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedStatisticsWr
         }
 
         return returnMe;
+    }
+    
+    /**
+     * Return a snapshot of the paths written to (so far)
+     * 
+     * @return the paths written so far.
+     */
+
+    private Set<Path> getPathsWrittenTo()
+    {
+        return Collections.unmodifiableSet( this.pathsWrittenTo );
     }
 
     /**
