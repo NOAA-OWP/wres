@@ -191,6 +191,10 @@ public class TimeSeriesRetriever extends Retriever
                                 }
                             }
                         }
+                        else
+                        {
+                            measurement = Double.NaN;
+                        }
 
                         List<Double> value = new ArrayList<>();
                         value.add( measurement );

@@ -274,11 +274,6 @@ class IngestedValueCollection
             {
                 PivottedValues.EnsemblePosition ensemblePosition = new PivottedValues.EnsemblePosition( index, value.getMemberID( index ) );
                 
-                //TODO: Jbr - check and remove these unused references. Something to do with
-                // propagating ensemble labels?, i.e. #58350
-                Pair<Integer, Integer> keyIndex = Pair.of(index, value.getMemberID( index ));
-                Integer key = value.getMemberID( index );
-                
                 if ( !valueMapping.containsKey( ensemblePosition ) )
                 {
                     valueMapping.put( ensemblePosition, new ArrayList<>() );
