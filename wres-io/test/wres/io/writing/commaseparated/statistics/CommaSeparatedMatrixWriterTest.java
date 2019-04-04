@@ -12,6 +12,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
@@ -102,11 +103,11 @@ public class CommaSeparatedMatrixWriterTest extends CommaSeparatedWriterTestHelp
         // Fake output wrapper.
         ListOfStatistics<MatrixStatistic> fakeOutputData =
                 ListOfStatistics.of( Collections.singletonList( MatrixStatistic.of( fakeOutputs,
-                                                                                   Arrays.asList( MetricDimension.TRUE_POSITIVES,
-                                                                                                  MetricDimension.FALSE_POSITIVES,
-                                                                                                  MetricDimension.FALSE_NEGATIVES,
-                                                                                                  MetricDimension.TRUE_NEGATIVES ),
-                                                                                   fakeMetadata ) ) );
+                                                                                    Arrays.asList( MetricDimension.TRUE_POSITIVES,
+                                                                                                   MetricDimension.FALSE_POSITIVES,
+                                                                                                   MetricDimension.FALSE_NEGATIVES,
+                                                                                                   MetricDimension.TRUE_NEGATIVES ),
+                                                                                    fakeMetadata ) ) );
         // wrap outputs in future
         Future<ListOfStatistics<MatrixStatistic>> outputMapByMetricFuture =
                 CompletableFuture.completedFuture( fakeOutputData );
@@ -120,14 +121,23 @@ public class CommaSeparatedMatrixWriterTest extends CommaSeparatedWriterTestHelp
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        CommaSeparatedMatrixWriter.of( projectConfig,
-                                       ChronoUnit.SECONDS,
-                                       this.outputDirectory )
-                                  .accept( output.getMatrixStatistics() );
+        CommaSeparatedMatrixWriter writer = CommaSeparatedMatrixWriter.of( projectConfig,
+                                                                           ChronoUnit.SECONDS,
+                                                                           this.outputDirectory );
 
-        // read the file, verify it has what we wanted:
-        Path pathToFile = Paths.get( this.outputDirectory.toString(),
-                                     "BDAC1_SQIN_HEFS_CONTINGENCY_TABLE_86400_SECONDS.csv" );
+        writer.accept( output.getMatrixStatistics() );
+
+        // Determine the paths written
+        Set<Path> pathsToFile = writer.get();
+
+        // Check the expected number of paths: #61841
+        assertTrue( pathsToFile.size() == 1 );
+
+        Path pathToFile = pathsToFile.iterator().next();
+
+        // Check the expected path: #61841
+        assertTrue( pathToFile.endsWith( "BDAC1_SQIN_HEFS_CONTINGENCY_TABLE_86400_SECONDS.csv" ) );
+
         List<String> result = Files.readAllLines( pathToFile );
 
         assertTrue( result.get( 0 ).contains( "," ) );

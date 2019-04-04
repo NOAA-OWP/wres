@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
@@ -120,14 +121,23 @@ public class CommaSeparatedDiagramOutputTest extends CommaSeparatedWriterTestHel
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        CommaSeparatedDiagramWriter.of( projectConfig,
+        CommaSeparatedDiagramWriter writer = CommaSeparatedDiagramWriter.of( projectConfig,
                                         ChronoUnit.SECONDS,
-                                        this.outputDirectory )
-                                   .accept( output.getMultiVectorStatistics() );
+                                        this.outputDirectory );
 
-        // read the file, verify it has what we wanted:
-        Path pathToFile = Paths.get( this.outputDirectory.toString(),
-                                     "CREC1_SQIN_HEFS_RELIABILITY_DIAGRAM_86400_SECONDS.csv" );
+        writer.accept( output.getMultiVectorStatistics() );
+        
+        // Determine the paths written
+        Set<Path> pathsToFile = writer.get();
+        
+        // Check the expected number of paths: #61841
+        assertTrue( pathsToFile.size() == 1 );
+        
+        Path pathToFile = pathsToFile.iterator().next();
+        
+        // Check the expected path: #61841
+        assertTrue( pathToFile.endsWith( "CREC1_SQIN_HEFS_RELIABILITY_DIAGRAM_86400_SECONDS.csv" ) );
+
         List<String> result = Files.readAllLines( pathToFile );
 
         assertTrue( result.get( 0 ).contains( "," ) );

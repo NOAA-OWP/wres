@@ -546,19 +546,18 @@ System.out.println("java.io.tmpdir ================ " + System.getProperty("java
             //HashSet<Path> finalOutputSet = Sets.newHashSet( initialOutputSet );
 			HashSet<Path> finalOutputSet = new HashSet<Path>();
 			// Now filter out the *.png file
-			for (Iterator<Path> iterator = initialOutputSet.iterator(); iterator.hasNext();)
-        	{
-            	Path iPath = iterator.next();
-            	if ( iPath.toString().endsWith(".png") || iPath.toString().endsWith(".nc"))
-            	{
-                	System.out.println("Won't add this iPath ===== " + iPath.toString());
-            	}
-            	else
-				{
-                	System.out.println("Will add this iPath ===== " + iPath.toString());
-					finalOutputSet.add(iPath);
-				}
-        	}
+            for ( Path nextPath : initialOutputSet )
+            {
+                if ( nextPath.endsWith( ".png" ) || nextPath.endsWith( ".nc" ) )
+                {
+                    LOGGER.info( "Won't add this iPath ===== {}", nextPath );
+                }
+                else
+                {
+                    LOGGER.info( "Will add this iPath ===== {}", nextPath );
+                    finalOutputSet.add( nextPath );
+                }
+            }
 			// do not check the dirListing for now
             //finalOutputSet.add( dirListingPath );
 
