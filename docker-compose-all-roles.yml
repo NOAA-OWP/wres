@@ -33,7 +33,7 @@ services:
         # rabbitmq.conf should have 180m specified as high watermark
         mem_limit: 360m
     worker:
-        image: "a7fb70abcde6"
+        image: "467afa884063"
         restart: always
         depends_on:
          - "broker"
