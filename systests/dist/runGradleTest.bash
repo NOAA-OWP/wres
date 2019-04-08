@@ -114,12 +114,25 @@ elif [ "$debug" = "NO" ]
 then
 	if [ $series -eq 0 ]
 	then
-		tests="--tests=Scenario00* --tests=Scenario01* --tests=Scenario1* --tests=Scenario2* --tests=Scenario3* --tests=Scenario4* --tests=Scenario5* --tests=Scenario6* --tests=Scenario8*"
 		if [ -f testOutputs.txt ]
 		then
 			rm -v testOutputs.txt
 		fi
-		echo "Test these classes: $tests" | tee testOutputs.txt
+		# try to test by wild cards
+#		tests="--tests=Scenario00* --tests=Scenario01*  --tests=Scenario05* --tests=Scenario1* --tests=Scenario2* --tests=Scenario3* --tests=Scenario4* --tests=Scenario5* --tests=Scenario6* --tests=Scenario8*"
+#		echo "Test these classes: $tests" | tee testOutputs.txt
+#		../../gradlew cleanTest test -PwresZipDirectory=/wres_share/releases/archive -PversionToTest=$built_number -PtestJvmSystemProperties="-Dwres.useSSL=true -Dwres.url=$WRES_DB_HOSTNAME -Dwres.username=$WRES_DB_USERNAME -Dwres.databaseName=$WRES_DB_NAME -Djava.awt.headless=true" --tests=$tests | tee -a testOutputs.txt 2>&1 
+
+		# try to do one by one
+		testClasses=`ls build/classes/java/test/wres/systests/Scenario[0-1]* build/classes/java/test/wres/systests/Scenario[2-6,8]* | gawk -F/ '{print($NF)}' | cut -d'.' -f1`
+		echo "Test these classes: $testClasses" | tee testOutputs.txt
+		tests=
+		for testClass in $testClasses
+		do
+			tests="$tests --tests=$testClass "
+		done
+		#echo $tests
+		#echo "$tests" | tee -a testOutputs.txt
 		../../gradlew cleanTest test -PwresZipDirectory=/wres_share/releases/archive -PversionToTest=$built_number -PtestJvmSystemProperties="-Dwres.useSSL=true -Dwres.url=$WRES_DB_HOSTNAME -Dwres.username=$WRES_DB_USERNAME -Dwres.databaseName=$WRES_DB_NAME -Djava.awt.headless=true" $tests | tee -a testOutputs.txt 2>&1 
 	elif [ $series -eq 700 ]
 	then
