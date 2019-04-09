@@ -755,14 +755,16 @@ System.out.println("java.io.tmpdir ================ " + System.getProperty("java
         {
             //TODO Added trimming below to handle white space at the ends, but should I?
             //Mainly worried about the Window's carriage return popping up some day.
-			LOGGER.info("compare output file " + outputFile.getName() + " with benchmarks file " + benchmarkFile.getName());
+			LOGGER.info("compare output file " + outputFile.getName() + " line " + i + " with benchmarks file " + benchmarkFile.getName());
 			LOGGER.info("Are they equals ? " + actualRows.get( i ).equals(expectedRows.get( i )));
-			int expectedRowsIndex = expectedRows.indexOf(actualRows.get( i ));
+			//int expectedRowsIndex = expectedRows.indexOf(actualRows.get( i ));
+			//LOGGER.info("Are they equals ? " + actualRows.get( i ).equals(expectedRows.get( expectedRowsIndex )));
             assertEquals( "For output file, " + outputFile.getName()
                           + ", row "
                           + i
                           + " differs from benchmark.",
-                          actualRows.get( i ).trim(), expectedRows.get( expectedRowsIndex ).trim() );
+                          actualRows.get( i ).trim(), expectedRows.get( i ).trim() );
+                          //actualRows.get( i ).trim(), expectedRows.get( expectedRowsIndex ).trim() );
                           //actualRows.get( i ), expectedRows.get( expectedRowsIndex ) );
         }
     }
@@ -793,6 +795,8 @@ System.out.println("java.io.tmpdir ================ " + System.getProperty("java
         // Verify by row, rather than all at once
         for ( int i = 0; i < actualRows.size(); i++ )
         {
+			LOGGER.info("compare output file " + pairsFile.getName() + " line " + i + " with benchmarks file " + benchmarkFile.getName());
+			LOGGER.info("Are they equals ? " + actualRows.get( i ).equals(expectedRows.get( i )));
             assertEquals( "For pairs file file, " + pairsFile.getName()
                           + ", after sorting alphabetically, row "
                           + i
@@ -871,7 +875,7 @@ System.out.println("java.io.tmpdir ================ " + System.getProperty("java
                     if ( aLine.indexOf( searchFor ) >= 0 )
                     {
                         aLine = aLine.replaceAll( searchFor, replace );
-                        LOGGER.info( "Replaced line " + lineNumber + " to " + aLine );
+                        LOGGER.info( "Replaced line " + lineNumber + " to " + aLine + " in file " + file.toString() );
                     }
                     arrayList.add( aLine );
                     lineNumber++;
