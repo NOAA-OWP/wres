@@ -343,8 +343,9 @@ public class CommaSeparatedReaderTest
 
         exception.expect( IllegalArgumentException.class );
 
-        exception.expectMessage( "When processing thresholds by feature, 7 of 8 features failed with exceptions, "
-                                 + "as follows. "
+        exception.expectMessage( "When processing thresholds by feature, 7 of 8 features contained in '"
+                                 + commaSeparated
+                                 + "' failed with exceptions, as follows. "
                                  + "These features failed with an inconsistency between the number of "
                                  + "labels and the number of thresholds: [LOCWITHWRONGCOUNT_A, LOCWITHWRONGCOUNT_B]. "
                                  + "These features failed because all thresholds matched the missing value: "

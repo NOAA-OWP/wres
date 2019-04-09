@@ -83,7 +83,7 @@ public class CommaSeparatedReader
 
         // Feature count
         int totalFeatures = 0;
-        
+
         // Read the input
         try ( BufferedReader input = Files.newBufferedReader( commaSeparated, StandardCharsets.UTF_8 ) )
         {
@@ -161,7 +161,7 @@ public class CommaSeparatedReader
 
                 // Move to next line
                 nextLine = input.readLine();
-                
+
                 totalFeatures++;
             }
 
@@ -169,6 +169,7 @@ public class CommaSeparatedReader
 
         // Propagate any exceptions that were caught to avoid drip-feeding
         CommaSeparatedReader.throwExceptionIfOneOrMoreFailed( totalFeatures,
+                                                              commaSeparated,
                                                               featuresThatFailedWithLabelInconsistency,
                                                               featuresThatFailedWithAllThresholdsMissing,
                                                               featuresThatFailedWithNonNumericInput,
@@ -343,6 +344,7 @@ public class CommaSeparatedReader
      * exception with the type of failure, based on the input.
      * 
      * @param totalFeatures the total number of features processed
+     * @param pathToThresholds the path to the CSV thresholds-by-feature
      * @param featuresThatFailedWithLabelInconsistency features that failed with an inconsistency between labels and thresholds
      * @param featuresThatFailedWithAllThresholdsMissing features that failed with all thresholds missing
      * @param featuresThatFailedWithNonNumericInput features that failed with non-numeric input
@@ -351,6 +353,7 @@ public class CommaSeparatedReader
      */
 
     private static void throwExceptionIfOneOrMoreFailed( int totalFeatures,
+                                                         Path pathToThresholds,
                                                          Set<String> featuresThatFailedWithLabelInconsistency,
                                                          Set<String> featuresThatFailedWithAllThresholdsMissing,
                                                          Set<String> featuresThatFailedWithNonNumericInput,
@@ -368,7 +371,9 @@ public class CommaSeparatedReader
             exceptionMessage.add( "When processing thresholds by feature, " + failCount
                                   + " of "
                                   + totalFeatures
-                                  + " features failed with exceptions, as follows." );
+                                  + " features contained in '"
+                                  + pathToThresholds
+                                  + "' failed with exceptions, as follows." );
         }
 
         if ( !featuresThatFailedWithLabelInconsistency.isEmpty() )
