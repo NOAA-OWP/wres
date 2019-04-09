@@ -95,7 +95,9 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                           inputNoMissing.getMetadata().getIdentifier(),
                           inputNoMissing.getMetadata().getTimeWindow() );
 
-            inputNoMissing = Slicer.filter( input, Slicer.leftAndRight( ADMISSABLE_DATA ), ADMISSABLE_DATA );
+            inputNoMissing = Slicer.filter( input,
+                                            Slicer.leftAndRight( MetricProcessor.ADMISSABLE_DATA ),
+                                            MetricProcessor.ADMISSABLE_DATA );
         }
 
         //Metric futures 
