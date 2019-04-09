@@ -126,7 +126,9 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         //Remove missing values. 
         //TODO: when time-series metrics are supported, leave missings in place for time-series
         EnsemblePairs inputNoMissing =
-                Slicer.filter( input, Slicer.leftAndEachOfRight( ADMISSABLE_DATA ), ADMISSABLE_DATA );
+                Slicer.filter( input,
+                               Slicer.leftAndEachOfRight( MetricProcessor.ADMISSABLE_DATA ),
+                               MetricProcessor.ADMISSABLE_DATA );
 
         //Process the metrics that consume ensemble pairs
         if ( hasMetrics( SampleDataGroup.ENSEMBLE ) )

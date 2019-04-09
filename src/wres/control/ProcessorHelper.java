@@ -91,6 +91,15 @@ class ProcessorHelper
         // Create output directory prior to ingest, fails early when it fails.
         Path outputDirectory = ProcessorHelper.createTempOutputDirectory();
 
+        // Read external thresholds from the configuration, per feature
+        // Compare on locationId only. TODO: consider how better to transmit these thresholds
+        // to wres-metrics, given that they are resolved by project configuration that is
+        // passed separately to wres-metrics. Options include moving MetricProcessor* to 
+        // wres-control, since they make processing decisions, or passing ResolvedProject onwards
+        final Map<FeaturePlus, ThresholdsByMetric> thresholds =
+                new TreeMap<>( FeaturePlus::compareByLocationId );
+        thresholds.putAll( ConfigHelper.readExternalThresholdsFromProjectConfig( projectConfig ) );        
+        
         LOGGER.debug( "Beginning ingest for project {}...", projectConfigPlus );
 
         // Need to ingest first
@@ -111,15 +120,6 @@ class ProcessorHelper
         {
             throw new IOException( "Failed to retrieve the set of features.", e );
         }
-
-        // Read external thresholds from the configuration, per feature
-        // Compare on locationId only. TODO: consider how better to transmit these thresholds
-        // to wres-metrics, given that they are resolved by project configuration that is
-        // passed separately to wres-metrics. Options include moving MetricProcessor* to 
-        // wres-control, since they make processing decisions, or passing ResolvedProject onwards
-        final Map<FeaturePlus, ThresholdsByMetric> thresholds =
-                new TreeMap<>( FeaturePlus::compareByLocationId );
-        thresholds.putAll( ConfigHelper.readExternalThresholdsFromProjectConfig( projectConfig ) );
 
         // The project code - ideally project hash
         String projectIdentifier = String.valueOf( project.getInputCode() );

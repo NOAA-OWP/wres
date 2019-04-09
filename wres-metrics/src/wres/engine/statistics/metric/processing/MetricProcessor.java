@@ -159,13 +159,13 @@ public abstract class MetricProcessor<S extends SampleData<?>, T extends Statist
      */
 
     final ExecutorService thresholdExecutor;
-
+    
     /**
      * The number of decimal places to use when rounding.
      */
 
     private static final int DECIMALS = 5;
-
+    
     /**
      * Returns true if a prior call led to the caching of metric outputs.
      * 
