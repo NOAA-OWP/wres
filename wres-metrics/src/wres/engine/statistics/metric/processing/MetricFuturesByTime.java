@@ -16,7 +16,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.statistics.BoxPlotStatistic;
+import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
@@ -56,10 +56,10 @@ class MetricFuturesByTime
     private final List<Future<ListOfStatistics<MultiVectorStatistic>>> multiVector = new ArrayList<>();
 
     /**
-     * {@link BoxPlotStatistic} results.
+     * {@link BoxPlotStatistics} results.
      */
 
-    private final List<Future<ListOfStatistics<BoxPlotStatistic>>> boxplot = new ArrayList<>();
+    private final List<Future<ListOfStatistics<BoxPlotStatistics>>> boxplot = new ArrayList<>();
 
     /**
      * {@link PairedStatistic} results.
@@ -177,10 +177,10 @@ class MetricFuturesByTime
                 new ConcurrentLinkedQueue<>();
 
         /**
-         * {@link BoxPlotStatistic} results.
+         * {@link BoxPlotStatistics} results.
          */
 
-        private final ConcurrentLinkedQueue<Future<ListOfStatistics<BoxPlotStatistic>>> boxplot =
+        private final ConcurrentLinkedQueue<Future<ListOfStatistics<BoxPlotStatistics>>> boxplot =
                 new ConcurrentLinkedQueue<>();
 
         /**
@@ -240,13 +240,13 @@ class MetricFuturesByTime
         }
 
         /**
-         * Adds a set of future {@link BoxPlotStatistic} to the appropriate internal store.
+         * Adds a set of future {@link BoxPlotStatistics} to the appropriate internal store.
          * 
          * @param value the future result
          * @return the builder
          */
 
-        MetricFuturesByTimeBuilder addBoxPlotOutput( Future<ListOfStatistics<BoxPlotStatistic>> value )
+        MetricFuturesByTimeBuilder addBoxPlotOutput( Future<ListOfStatistics<BoxPlotStatistics>> value )
         {
             this.boxplot.add( value );
 

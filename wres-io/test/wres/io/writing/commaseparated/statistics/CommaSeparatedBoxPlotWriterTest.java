@@ -32,8 +32,8 @@ import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.datamodel.statistics.BoxPlotStatistic;
+import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -51,7 +51,7 @@ public class CommaSeparatedBoxPlotWriterTest extends CommaSeparatedWriterTestHel
     private final Path outputDirectory = Paths.get( System.getProperty( "java.io.tmpdir" ) );
 
     /**
-     * Tests the writing of {@link BoxPlotStatistic} to file.
+     * Tests the writing of {@link BoxPlotStatistics} to file.
      * 
      * @throws ProjectConfigException if the project configuration is incorrect
      * @throws IOException if the output could not be written
@@ -98,22 +98,21 @@ public class CommaSeparatedBoxPlotWriterTest extends CommaSeparatedWriterTestHel
                                       MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
                                       null );
 
-        List<EnsemblePair> fakeOutputs = new ArrayList<>();
-        VectorOfDoubles probs = VectorOfDoubles.of( new double[] { 0, 0.25, 0.5, 0.75, 1.0 } );
+        List<BoxPlotStatistic> fakeOutputs = new ArrayList<>();
+        VectorOfDoubles probs = VectorOfDoubles.of( 0, 0.25, 0.5, 0.75, 1.0 );
 
-        fakeOutputs.add( EnsemblePair.of( 1, new double[] { 2, 3, 4, 5, 6 } ) );
-        fakeOutputs.add( EnsemblePair.of( 3, new double[] { 7, 9, 11, 13, 15 } ) );
-        fakeOutputs.add( EnsemblePair.of( 5, new double[] { 21, 24, 27, 30, 33 } ) );
+        fakeOutputs.add( BoxPlotStatistic.of( probs, VectorOfDoubles.of( 2, 3, 4, 5, 6 ), fakeMetadata, 1 ) );
+        fakeOutputs.add( BoxPlotStatistic.of( probs, VectorOfDoubles.of( 7, 9, 11, 13, 15 ), fakeMetadata, 3 ) );
+        fakeOutputs.add( BoxPlotStatistic.of( probs, VectorOfDoubles.of( 21, 24, 27, 30, 33 ), fakeMetadata, 5 ) );
 
         // Fake output wrapper.
-        ListOfStatistics<BoxPlotStatistic> fakeOutputData =
-                ListOfStatistics.of( Collections.singletonList( BoxPlotStatistic.of( fakeOutputs,
-                                                                                     probs,
-                                                                                     fakeMetadata,
+        ListOfStatistics<BoxPlotStatistics> fakeOutputData =
+                ListOfStatistics.of( Collections.singletonList( BoxPlotStatistics.of( fakeOutputs,
                                                                                      MetricDimension.OBSERVED_VALUE,
-                                                                                     MetricDimension.FORECAST_ERROR ) ) );
+                                                                                     MetricDimension.FORECAST_ERROR,
+                                                                                     fakeMetadata ) ) );
         // wrap outputs in future
-        Future<ListOfStatistics<BoxPlotStatistic>> outputMapByMetricFuture =
+        Future<ListOfStatistics<BoxPlotStatistics>> outputMapByMetricFuture =
                 CompletableFuture.completedFuture( fakeOutputData );
 
         outputBuilder.addBoxPlotStatistics( outputMapByMetricFuture );

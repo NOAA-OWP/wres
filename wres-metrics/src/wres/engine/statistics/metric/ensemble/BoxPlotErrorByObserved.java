@@ -4,7 +4,9 @@ import java.util.Arrays;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
+import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.engine.statistics.metric.MetricCalculationException;
@@ -54,12 +56,13 @@ public class BoxPlotErrorByObserved extends BoxPlot
     /**
      * Creates a box from a {@link EnsemblePair}.
      * 
+     * @param metadata the box metadata
      * @return a box
      * @throws MetricCalculationException if the box cannot be constructed
      */
 
     @Override
-    EnsemblePair getBox( EnsemblePair pair )
+    BoxPlotStatistic getBox( EnsemblePair pair, StatisticMetadata metadata )
     {
         //Get the sorted errors
         double[] probs = probabilities.getDoubles();
@@ -67,7 +70,7 @@ public class BoxPlotErrorByObserved extends BoxPlot
         //Compute the quantiles
         double[] box =
                 Arrays.stream( probs ).map( Slicer.getQuantileFunction( sortedErrors ) ).toArray();
-        return EnsemblePair.of( pair.getLeft(), box );
+        return BoxPlotStatistic.of( this.probabilities, VectorOfDoubles.of( box ), metadata, pair.getLeft() );
     }
 
     /**

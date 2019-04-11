@@ -7,8 +7,10 @@ import java.util.function.ToDoubleFunction;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
+import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -85,15 +87,17 @@ public class BoxPlotErrorByForecast extends BoxPlot
     /**
      * Creates a box from a {@link EnsemblePair}.
      * 
+     * @param pair an ensemble pair
+     * @param metadata the box metadata
      * @return a box
      * @throws MetricCalculationException if the box cannot be constructed
      */
 
     @Override
-    EnsemblePair getBox( EnsemblePair pair )
+    BoxPlotStatistic getBox( EnsemblePair pair, StatisticMetadata metadata )
     {
         //Get the sorted errors
-        double[] probs = probabilities.getDoubles();
+        double[] probs = this.probabilities.getDoubles();
         double[] sorted = pair.getRight();
         Arrays.sort( sorted );
         double[] sortedErrors = Arrays.stream( sorted ).map( x -> x - pair.getLeft() ).toArray();
@@ -101,7 +105,10 @@ public class BoxPlotErrorByForecast extends BoxPlot
         //Compute the quantiles
         double[] box =
                 Arrays.stream( probs ).map( Slicer.getQuantileFunction( sortedErrors ) ).toArray();
-        return EnsemblePair.of( domainMapper.applyAsDouble( VectorOfDoubles.of( sorted ) ), box );
+        return BoxPlotStatistic.of( this.probabilities,
+                                    VectorOfDoubles.of( box ),
+                                    metadata,
+                                    domainMapper.applyAsDouble( VectorOfDoubles.of( sorted ) ) );
     }
 
     /**

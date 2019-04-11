@@ -14,6 +14,7 @@ import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.datamodel.sampledata.pairs.EnsemblePairs;
 import wres.datamodel.statistics.BoxPlotStatistic;
+import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.engine.statistics.metric.Diagram;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -30,7 +31,7 @@ import wres.engine.statistics.metric.MetricParameterException;
 
 abstract class BoxPlot
         extends
-        Diagram<EnsemblePairs, BoxPlotStatistic>
+        Diagram<EnsemblePairs, BoxPlotStatistics>
 {
 
     /**
@@ -50,11 +51,12 @@ abstract class BoxPlot
      * Creates a box from a {@link EnsemblePair}.
      * 
      * @param pair the pair
+     * @param metadata the box metadata
      * @return a box
      * @throws MetricCalculationException if the box cannot be constructed
      */
 
-    abstract EnsemblePair getBox( EnsemblePair pair );
+    abstract BoxPlotStatistic getBox( EnsemblePair pair, StatisticMetadata metadata );
 
     /**
      * Returns the dimension associated with the left side of the pairing, i.e. the value against which each box is
@@ -75,25 +77,29 @@ abstract class BoxPlot
     abstract MetricDimension getRangeAxisDimension();
 
     @Override
-    public BoxPlotStatistic apply( final EnsemblePairs s )
+    public BoxPlotStatistics apply( final EnsemblePairs s )
     {
         if ( Objects.isNull( s ) )
         {
             throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
-        List<EnsemblePair> boxes = new ArrayList<>();
+        
+        List<BoxPlotStatistic> boxes = new ArrayList<>();
+        
+        StatisticMetadata metOut = StatisticMetadata.of( s.getMetadata(),
+                                                         this.getID(),
+                                                         MetricConstants.MAIN,
+                                                         this.hasRealUnits(),
+                                                         s.getRawData().size(),
+                                                         null );
+        
         //Create each box
         for ( EnsemblePair next : s )
         {
-            boxes.add( getBox( next ) );
+            boxes.add( this.getBox( next, metOut ) );
         }
-        StatisticMetadata metOut = StatisticMetadata.of( s.getMetadata(),
-                                                          this.getID(),
-                                                          MetricConstants.MAIN,
-                                                          this.hasRealUnits(),
-                                                          s.getRawData().size(),
-                                                          null );
-        return BoxPlotStatistic.of( boxes, probabilities, metOut, getDomainAxisDimension(), getRangeAxisDimension() );
+
+        return BoxPlotStatistics.of( boxes, getDomainAxisDimension(), getRangeAxisDimension(), metOut );
     }
 
     @Override

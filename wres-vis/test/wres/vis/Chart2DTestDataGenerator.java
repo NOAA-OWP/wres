@@ -34,8 +34,8 @@ import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.SampleMetadata.SampleMetadataBuilder;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.datamodel.statistics.BoxPlotStatistic;
+import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
@@ -633,17 +633,17 @@ public abstract class Chart2DTestDataGenerator
     }
 
     /**
-     * Returns a {@link ListOfStatistics} of {@link BoxPlotStatistic} that contains a box plot of forecast
+     * Returns a {@link ListOfStatistics} of {@link BoxPlotStatistics} that contains a box plot of forecast
      * errors against observed value for a single threshold (all data) and for several forecast lead times.
      * Reads the input data from testinput/chart2DTest/getBoxPlotErrorsByObservedAndLeadThreshold.xml.
      *
      * @return an output map of verification scores
      */
 
-    static ListOfStatistics<BoxPlotStatistic> getBoxPlotErrorsByObservedAndLeadThreshold()
+    static ListOfStatistics<BoxPlotStatistics> getBoxPlotErrorsByObservedAndLeadThreshold()
             throws IOException
     {
-        final List<BoxPlotStatistic> rawData = new ArrayList<>();
+        final List<BoxPlotStatistics> rawData = new ArrayList<>();
 
         //Create the input file
         final File resultFile = new File( "testinput/chart2DTest/getBoxPlotErrorsByObservedAndLeadThreshold.xml" );
@@ -678,25 +678,31 @@ public abstract class Chart2DTestDataGenerator
             //Thresholds in the first row
             VectorOfDoubles probabilities = VectorOfDoubles.of( Arrays.copyOfRange( bp[0], 1, bp[0].length ) );
             //Boxes in the remaining rows
-            final List<EnsemblePair> output = new ArrayList<>();
+            final List<BoxPlotStatistic> output = new ArrayList<>();
+
+            StatisticMetadata meta = StatisticMetadata.of( SampleMetadata.of( source,
+                                                                              window,
+                                                                              threshold ),
+                                                           1000,
+                                                           MeasurementUnit.of( "INCH" ),
+                                                           MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
+                                                           MetricConstants.MAIN );
+
             for ( double[] next : bp )
             {
                 if ( Double.compare( next[0], -999 ) != 0 )
                 {
-                    output.add( EnsemblePair.of( next[0], Arrays.copyOfRange( next, 1, next.length ) ) );
+                    output.add( BoxPlotStatistic.of( probabilities,
+                                                     VectorOfDoubles.of( Arrays.copyOfRange( next, 1, next.length ) ),
+                                                     meta,
+                                                     next[0] ) );
                 }
             }
-            final BoxPlotStatistic out = BoxPlotStatistic.of( output,
-                                                        probabilities,
-                                                        StatisticMetadata.of( SampleMetadata.of( source,
-                                                                                                 window,
-                                                                                                 threshold ),
-                                                                              1000,
-                                                                              MeasurementUnit.of( "INCH" ),
-                                                                              MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
-                                                                              MetricConstants.MAIN ),
-                                                        MetricDimension.OBSERVED_VALUE,
-                                                        MetricDimension.FORECAST_ERROR );
+            
+            final BoxPlotStatistics out = BoxPlotStatistics.of( output,
+                                                                MetricDimension.OBSERVED_VALUE,
+                                                                MetricDimension.FORECAST_ERROR,
+                                                                meta );
 
             //Append result
             rawData.add( out );
@@ -707,17 +713,17 @@ public abstract class Chart2DTestDataGenerator
     }
 
     /**
-     * Returns a {@link ListOfStatistics} of {@link BoxPlotStatistic} that contains a box plot of forecast
+     * Returns a {@link ListOfStatistics} of {@link BoxPlotStatistics} that contains a box plot of forecast
      * errors against observed value for a single threshold (all data) and for several forecast lead times.
      * Reads the input data from testinput/chart2DTest/getBoxPlotErrorsByForecastAndLeadThreshold.xml.
      *
      * @return an output map of verification scores
      */
 
-    static ListOfStatistics<BoxPlotStatistic> getBoxPlotErrorsByForecastAndLeadThreshold()
+    static ListOfStatistics<BoxPlotStatistics> getBoxPlotErrorsByForecastAndLeadThreshold()
             throws IOException
     {
-        final List<BoxPlotStatistic> rawData = new ArrayList<>();
+        final List<BoxPlotStatistics> rawData = new ArrayList<>();
 
         //Create the input file
         final File resultFile = new File( "testinput/chart2DTest/getBoxPlotErrorsByForecastAndLeadThreshold.xml" );
@@ -751,25 +757,30 @@ public abstract class Chart2DTestDataGenerator
             //Thresholds in the first row
             VectorOfDoubles probabilities = VectorOfDoubles.of( Arrays.copyOfRange( bp[0], 1, bp[0].length ) );
             //Boxes in the remaining rows
-            final List<EnsemblePair> output = new ArrayList<>();
+            final List<BoxPlotStatistic> output = new ArrayList<>();
+            
+            StatisticMetadata meta = StatisticMetadata.of( SampleMetadata.of( source,
+                                                                              window,
+                                                                              threshold ),
+                                                           1000,
+                                                           MeasurementUnit.of( "INCH" ),
+                                                           MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
+                                                           MetricConstants.MAIN );
+
             for ( double[] next : bp )
             {
                 if ( Double.compare( next[0], -999 ) != 0 )
                 {
-                    output.add( EnsemblePair.of( next[0], Arrays.copyOfRange( next, 1, next.length ) ) );
+                    output.add( BoxPlotStatistic.of( probabilities,
+                                                     VectorOfDoubles.of( Arrays.copyOfRange( next, 1, next.length ) ),
+                                                     meta,
+                                                     next[0] ) );
                 }
             }
-            final BoxPlotStatistic out = BoxPlotStatistic.of( output,
-                                                        probabilities,
-                                                        StatisticMetadata.of( SampleMetadata.of( source,
-                                                                                                 window,
-                                                                                                 threshold ),
-                                                                              1000,
-                                                                              MeasurementUnit.of( "INCH" ),
-                                                                              MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
-                                                                              MetricConstants.MAIN ),
-                                                        MetricDimension.ENSEMBLE_MEAN,
-                                                        MetricDimension.FORECAST_ERROR );
+            final BoxPlotStatistics out = BoxPlotStatistics.of( output,
+                                                                MetricDimension.ENSEMBLE_MEAN,
+                                                                MetricDimension.FORECAST_ERROR,
+                                                                meta );
 
             //Append result
             rawData.add( out );

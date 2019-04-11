@@ -21,7 +21,7 @@ import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.statistics.BoxPlotStatistic;
+import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -96,7 +96,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param durationUnits the time units for durations
      * @throws NullPointerException if either input is null
      */
-    public WRESArgumentProcessor( final BoxPlotStatistic displayPlotInput, final ChronoUnit durationUnits )
+    public WRESArgumentProcessor( final BoxPlotStatistics displayPlotInput, final ChronoUnit durationUnits )
     {
         super();
 
@@ -123,7 +123,8 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
                                                    + " for "
                                                    + meta.getSampleMetadata().getThresholds() );
         addArgument( "probabilities",
-                     HString.buildStringFromArray( displayPlotInput.getProbabilities().getDoubles(), ", " )
+                     HString.buildStringFromArray( displayPlotInput.getData().get( 0 ).getProbabilities().getDoubles(),
+                                                   ", " )
                             .replaceAll( "0.0,", "min," )
                             .replaceAll( "1.0", "max" ) );
 
