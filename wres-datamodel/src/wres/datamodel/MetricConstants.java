@@ -8,12 +8,12 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.MatrixStatistic;
 import wres.datamodel.statistics.MultiVectorStatistic;
 import wres.datamodel.statistics.PairedStatistic;
+import wres.datamodel.statistics.BoxPlotStatistic;
 
 /**
  * Metric constants. The metric identifiers are grouped by metric input/output type, as defined by the
@@ -54,6 +54,12 @@ public enum MetricConstants
      */
 
     BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE( SampleDataGroup.ENSEMBLE, StatisticGroup.BOXPLOT ),
+    
+    /**
+     * Identifier for a box plot of errors.
+     */
+
+    BOX_PLOT_OF_ERRORS( SampleDataGroup.SINGLE_VALUED, StatisticGroup.BOXPLOT ),    
 
     /**
      * Identifier for coefficient of determination.

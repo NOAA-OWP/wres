@@ -47,7 +47,7 @@ import wres.datamodel.Slicer;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
-import wres.datamodel.statistics.BoxPlotStatistic;
+import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
@@ -646,7 +646,7 @@ public abstract class ChartEngineFactory
      * @throws WRESVisXMLReadingException when reading template fails.
      */
     private static WRESChartEngine
-            processBoxPlotErrorsDiagram( BoxPlotStatistic input,
+            processBoxPlotErrorsDiagram( BoxPlotStatistics input,
                                          String templateName,
                                          String overrideParametersStr,
                                          ChronoUnit durationUnits )
@@ -693,7 +693,7 @@ public abstract class ChartEngineFactory
      */
     public static ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, ChartEngine>
             buildBoxPlotChartEngine( final ProjectConfig config, 
-                                     final ListOfStatistics<BoxPlotStatistic> input,
+                                     final ListOfStatistics<BoxPlotStatistics> input,
                                      final String userSpecifiedTemplateResourceName,
                                      final String overrideParametersStr,
                                      final ChronoUnit durationUnits )
@@ -715,7 +715,7 @@ public abstract class ChartEngineFactory
         }
 
         //For each lead time, do the following....
-        for ( BoxPlotStatistic next : input )
+        for ( BoxPlotStatistics next : input )
         {
             if ( meta.getMetricID() == MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE
                  || meta.getMetricID() == MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE )

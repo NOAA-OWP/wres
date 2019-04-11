@@ -28,7 +28,7 @@ import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.datamodel.sampledata.pairs.EnsemblePairs;
 import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
-import wres.datamodel.statistics.BoxPlotStatistic;
+import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.MultiVectorStatistic;
@@ -95,10 +95,10 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link EnsemblePairs} and produce
-     * {@link BoxPlotStatistic}.
+     * {@link BoxPlotStatistics}.
      */
 
-    final MetricCollection<EnsemblePairs, BoxPlotStatistic, BoxPlotStatistic> ensembleBoxPlot;
+    final MetricCollection<EnsemblePairs, BoxPlotStatistics, BoxPlotStatistics> ensembleBoxPlot;
 
     /**
      * Default function that maps between ensemble pairs and single-valued pairs.

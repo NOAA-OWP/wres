@@ -188,7 +188,7 @@ public class ListOfStatistics<T extends Statistic<?>> implements Iterable<T>
      * @throws StatisticException if the outputs contain one or more null entries
      */
 
-    private ListOfStatistics( List<T> statistics )
+    ListOfStatistics( List<T> statistics )
     {
         Objects.requireNonNull( statistics, "Specify a non-null list of outputs." );
 

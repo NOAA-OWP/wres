@@ -31,7 +31,7 @@ import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.Slicer;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
-import wres.datamodel.statistics.BoxPlotStatistic;
+import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
@@ -62,7 +62,7 @@ public abstract class XYChartDataSourceFactory
      * @return A data source to be used to draw the plot.
      */
     public static DefaultXYChartDataSource ofBoxPlotOutput( int orderIndex,
-                                                            final BoxPlotStatistic input,
+                                                            final BoxPlotStatistics input,
                                                             Integer subPlotIndex )
     {
         DefaultXYChartDataSource source = new DefaultXYChartDataSource()
@@ -84,7 +84,7 @@ public abstract class XYChartDataSourceFactory
 
         buildInitialParameters( source,
                                 orderIndex,
-                                input.getProbabilities().size() );
+                                input.getData().get( 0 ).getData().size() );
 
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
               .setDefaultDomainAxisTitle( input.getDomainAxisDimension()

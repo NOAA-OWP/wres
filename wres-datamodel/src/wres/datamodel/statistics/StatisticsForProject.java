@@ -52,10 +52,10 @@ public class StatisticsForProject
     private final List<Future<ListOfStatistics<MatrixStatistic>>> matrix = new ArrayList<>();
 
     /**
-     * Thread safe map for {@link BoxPlotStatistic}.
+     * Thread safe map for {@link BoxPlotStatistics}.
      */
 
-    private final List<Future<ListOfStatistics<BoxPlotStatistic>>> boxplot = new ArrayList<>();
+    private final List<Future<ListOfStatistics<BoxPlotStatistics>>> boxplot = new ArrayList<>();
 
     /**
      * Thread safe map for {@link PairedStatistic}.
@@ -119,14 +119,14 @@ public class StatisticsForProject
     }
 
     /**
-     * Returns a {@link ListOfStatistics} of {@link BoxPlotStatistic} or null if no output exists.
+     * Returns a {@link ListOfStatistics} of {@link BoxPlotStatistics} or null if no output exists.
      * 
      * @return the matrix output or null
      * @throws StatisticException if the output could not be retrieved
      * @throws InterruptedException if the retrieval was interrupted
      */
 
-    public ListOfStatistics<BoxPlotStatistic> getBoxPlotStatistics() throws InterruptedException
+    public ListOfStatistics<BoxPlotStatistics> getBoxPlotStatistics() throws InterruptedException
     {
         return this.unwrap( StatisticGroup.BOXPLOT, boxplot );
     }
@@ -252,10 +252,10 @@ public class StatisticsForProject
                 new ConcurrentLinkedQueue<>();
 
         /**
-         * Thread safe map for {@link BoxPlotStatistic}.
+         * Thread safe map for {@link BoxPlotStatistics}.
          */
 
-        private final ConcurrentLinkedQueue<Future<ListOfStatistics<BoxPlotStatistic>>> boxplotInternal =
+        private final ConcurrentLinkedQueue<Future<ListOfStatistics<BoxPlotStatistics>>> boxplotInternal =
                 new ConcurrentLinkedQueue<>();
 
         /**
@@ -330,7 +330,7 @@ public class StatisticsForProject
         }
 
         /**
-         * Adds a new {@link BoxPlotStatistic} for a collection of metrics to the internal store, merging with existing 
+         * Adds a new {@link BoxPlotStatistics} for a collection of metrics to the internal store, merging with existing 
          * items that share the same key, as required.
          * 
          * @param result the result
@@ -338,7 +338,7 @@ public class StatisticsForProject
          */
 
         public StatisticsForProjectBuilder
-                addBoxPlotStatistics( Future<ListOfStatistics<BoxPlotStatistic>> result )
+                addBoxPlotStatistics( Future<ListOfStatistics<BoxPlotStatistics>> result )
         {
             boxplotInternal.add( result );
 

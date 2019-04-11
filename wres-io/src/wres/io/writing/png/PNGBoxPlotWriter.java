@@ -25,20 +25,20 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.statistics.BoxPlotStatistic;
+import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.io.config.ConfigHelper;
 import wres.vis.ChartEngineFactory;
 
 /**
- * Helps write charts comprising {@link BoxPlotStatistic} to a file in Portable Network Graphics (PNG) format.
+ * Helps write charts comprising {@link BoxPlotStatistics} to a file in Portable Network Graphics (PNG) format.
  * 
  * @author james.brown@hydrosolved.com
  */
 
 public class PNGBoxPlotWriter extends PNGWriter
-        implements Consumer<ListOfStatistics<BoxPlotStatistic>>,
+        implements Consumer<ListOfStatistics<BoxPlotStatistics>>,
         Supplier<Set<Path>>
 {
     private Set<Path> pathsWrittenTo = new HashSet<>();
@@ -70,7 +70,7 @@ public class PNGBoxPlotWriter extends PNGWriter
      */
 
     @Override
-    public void accept( final ListOfStatistics<BoxPlotStatistic> output )
+    public void accept( final ListOfStatistics<BoxPlotStatistics> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
@@ -109,7 +109,7 @@ public class PNGBoxPlotWriter extends PNGWriter
     }
 
     /**
-     * Writes a set of charts associated with {@link BoxPlotStatistic} for a single metric and time window,
+     * Writes a set of charts associated with {@link BoxPlotStatistics} for a single metric and time window,
      * stored in a {@link ListOfStatistics}.
      *
      * @param outputDirectory the directory into which to write
@@ -124,7 +124,7 @@ public class PNGBoxPlotWriter extends PNGWriter
     private static Set<Path> writeBoxPlotCharts( Path outputDirectory,
                                                  ProjectConfigPlus projectConfigPlus,
                                                  DestinationConfig destinationConfig,
-                                                 ListOfStatistics<BoxPlotStatistic> output,
+                                                 ListOfStatistics<BoxPlotStatistics> output,
                                                  ChronoUnit durationUnits )
     {
         Set<Path> pathsWrittenTo = new HashSet<>();

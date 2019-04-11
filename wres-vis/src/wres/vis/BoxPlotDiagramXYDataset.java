@@ -2,7 +2,7 @@ package wres.vis;
 
 import org.jfree.data.xy.XYDataset;
 
-import wres.datamodel.statistics.BoxPlotStatistic;
+import wres.datamodel.statistics.BoxPlotStatistics;
 
 /**
  * The {@link XYDataset} for use in building the reliability diagram portion of the reliability diagram plot (the other
@@ -11,17 +11,17 @@ import wres.datamodel.statistics.BoxPlotStatistic;
  * @author Hank.Herr
  */
 public class BoxPlotDiagramXYDataset extends
-        WRESAbstractXYDataset<BoxPlotStatistic, BoxPlotStatistic>
+        WRESAbstractXYDataset<BoxPlotStatistics, BoxPlotStatistics>
 {
     private static final long serialVersionUID = 4254109136599641286L;
 
-    public BoxPlotDiagramXYDataset( final BoxPlotStatistic input)
+    public BoxPlotDiagramXYDataset( final BoxPlotStatistics input)
     {
         super( input );
     }
 
     @Override
-    protected void preparePlotData( BoxPlotStatistic rawData )
+    protected void preparePlotData( BoxPlotStatistics rawData )
     {
         //This check should not be necessary, since the conditions should be impossible.  I'll do it anyway just to be sure.
         if (rawData.getData().isEmpty())
@@ -42,26 +42,26 @@ public class BoxPlotDiagramXYDataset extends
     @Override
     public Number getX( final int series, final int item )
     {
-        return getPlotData().getData().get( item ).getLeft();
+        return getPlotData().getData().get( item ).getLinkedValue();
     }
 
     @Override
     public Number getY( final int series, final int item )
     {
-        return getPlotData().getData().get( item ).getRight()[series];
+        return getPlotData().getData().get( item ).getData().getDoubles()[series];
     }
 
     @Override
     public int getSeriesCount()
     {
         //The prepare method will fail if the data is empty.  So there must be at least one item; hence hard coded 0.
-        return getPlotData().getData().get( 0 ).getRight().length;
+        return getPlotData().getData().get( 0 ).getData().getDoubles().length;
     }
 
     @Override
     public Comparable<String> getSeriesKey( final int series )
     {
-        return "Probability " + getPlotData().getProbabilities().getDoubles()[series];
+        return "Probability " + getPlotData().getData().get( 0 ).getProbabilities().getDoubles()[series];
     }
 
 }

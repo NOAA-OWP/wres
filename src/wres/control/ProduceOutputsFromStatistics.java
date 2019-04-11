@@ -28,7 +28,7 @@ import wres.config.generated.DestinationType;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Outputs;
 import wres.datamodel.MetricConstants.StatisticGroup;
-import wres.datamodel.statistics.BoxPlotStatistic;
+import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
@@ -116,10 +116,10 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
             new EnumMap<>( DestinationType.class );
 
     /**
-     * Store of consumers for processing {@link BoxPlotStatistic} by {@link DestinationType} format.
+     * Store of consumers for processing {@link BoxPlotStatistics} by {@link DestinationType} format.
      */
 
-    private final Map<DestinationType, Consumer<ListOfStatistics<BoxPlotStatistic>>> boxPlotConsumers =
+    private final Map<DestinationType, Consumer<ListOfStatistics<BoxPlotStatistics>>> boxPlotConsumers =
             new EnumMap<>( DestinationType.class );
 
     /**
@@ -540,20 +540,20 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
     }
 
     /**
-     * Processes {@link BoxPlotStatistic}.
+     * Processes {@link BoxPlotStatistics}.
      * 
      * @param outputs the output to consume
      * @throws IOException if the output could not be consumed
      * @throws NullPointerException if the input is null
      */
 
-    private void processBoxPlotOutputs( ListOfStatistics<BoxPlotStatistic> outputs )
+    private void processBoxPlotOutputs( ListOfStatistics<BoxPlotStatistics> outputs )
             throws IOException
     {
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
         // Iterate through the consumers
-        for ( Entry<DestinationType, Consumer<ListOfStatistics<BoxPlotStatistic>>> next : this.boxPlotConsumers.entrySet() )
+        for ( Entry<DestinationType, Consumer<ListOfStatistics<BoxPlotStatistics>>> next : this.boxPlotConsumers.entrySet() )
         {
             // Consume conditionally
             if ( this.writeWhenTrue.test( StatisticGroup.BOXPLOT, next.getKey() ) )
