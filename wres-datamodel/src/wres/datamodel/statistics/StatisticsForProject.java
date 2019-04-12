@@ -128,7 +128,7 @@ public class StatisticsForProject
 
     public ListOfStatistics<BoxPlotStatistics> getBoxPlotStatistics() throws InterruptedException
     {
-        return this.unwrap( StatisticGroup.BOXPLOT, boxplot );
+        return this.unwrap( StatisticGroup.BOXPLOT_PER_PAIR, boxplot );
     }
 
     /**
@@ -164,7 +164,7 @@ public class StatisticsForProject
                 return !multiVector.isEmpty();
             case MATRIX:
                 return !matrix.isEmpty();
-            case BOXPLOT:
+            case BOXPLOT_PER_PAIR:
                 return !boxplot.isEmpty();
             case PAIRED:
                 return !paired.isEmpty();
@@ -203,9 +203,9 @@ public class StatisticsForProject
             returnMe.add( StatisticGroup.MATRIX );
         }
 
-        if ( hasStatistic( StatisticGroup.BOXPLOT ) )
+        if ( hasStatistic( StatisticGroup.BOXPLOT_PER_PAIR ) )
         {
-            returnMe.add( StatisticGroup.BOXPLOT );
+            returnMe.add( StatisticGroup.BOXPLOT_PER_PAIR );
         }
 
         if ( hasStatistic( StatisticGroup.PAIRED ) )

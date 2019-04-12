@@ -233,7 +233,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
             }
 
             // Box-plot output available
-            if ( input.hasStatistic( StatisticGroup.BOXPLOT ) )
+            if ( input.hasStatistic( StatisticGroup.BOXPLOT_PER_PAIR ) )
             {
                 this.processBoxPlotOutputs( input.getBoxPlotStatistics() );
             }
@@ -358,7 +358,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
             this.writersToPaths.add( diagramWriter );
         }
 
-        if ( this.writeWhenTrue.test( StatisticGroup.BOXPLOT, DestinationType.CSV ) )
+        if ( this.writeWhenTrue.test( StatisticGroup.BOXPLOT_PER_PAIR, DestinationType.CSV ) )
         {
             CommaSeparatedBoxPlotWriter boxPlotWriter =
                     CommaSeparatedBoxPlotWriter.of( projectConfig,
@@ -436,7 +436,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
             this.writersToPaths.add( diagramWriter );
         }
 
-        if ( this.writeWhenTrue.test( StatisticGroup.BOXPLOT, DestinationType.PNG ) )
+        if ( this.writeWhenTrue.test( StatisticGroup.BOXPLOT_PER_PAIR, DestinationType.PNG ) )
         {
             PNGBoxPlotWriter boxPlotWriter = PNGBoxPlotWriter.of( projectConfigPlus,
                                                                   ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
@@ -556,7 +556,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         for ( Entry<DestinationType, Consumer<ListOfStatistics<BoxPlotStatistics>>> next : this.boxPlotConsumers.entrySet() )
         {
             // Consume conditionally
-            if ( this.writeWhenTrue.test( StatisticGroup.BOXPLOT, next.getKey() ) )
+            if ( this.writeWhenTrue.test( StatisticGroup.BOXPLOT_PER_PAIR, next.getKey() ) )
             {
                 log( outputs, next.getKey(), true );
 

@@ -16,7 +16,7 @@ import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricParameterException;
 
 /**
- * An concrete implementation of a {@link BoxPlot} that plots the ensemble forecast errors (right - left) against 
+ * An concrete implementation of a {@link EnsembleBoxPlot} that plots the ensemble forecast errors (right - left) against 
  * forecast value. A box is constructed for the errors associated with each ensemble forecast where the errors 
  * (whiskers) are mapped to prescribed quantiles (probability thresholds). The function used to map the forecast
  * value may be prescribed.
@@ -24,7 +24,7 @@ import wres.engine.statistics.metric.MetricParameterException;
  * @author james.brown@hydrosolved.com
  */
 
-public class BoxPlotErrorByForecast extends BoxPlot
+public class BoxPlotErrorByForecast extends EnsembleBoxPlot
 {
 
     /**
@@ -108,33 +108,8 @@ public class BoxPlotErrorByForecast extends BoxPlot
         return BoxPlotStatistic.of( this.probabilities,
                                     VectorOfDoubles.of( box ),
                                     metadata,
-                                    domainMapper.applyAsDouble( VectorOfDoubles.of( sorted ) ) );
-    }
-
-    /**
-     * Returns the dimension associated with the left side of the pairing, i.e. the value against which each box is
-     * plotted on the domain axis. 
-     * 
-     * @return the domain axis dimension
-     */
-
-    @Override
-    MetricDimension getDomainAxisDimension()
-    {
-        return domainDimension;
-    }
-
-    /**
-     * Returns the dimension associated with the right side of the pairing, i.e. the values associated with the 
-     * whiskers of each box. 
-     * 
-     * @return the range axis dimension
-     */
-
-    @Override
-    MetricDimension getRangeAxisDimension()
-    {
-        return MetricDimension.FORECAST_ERROR;
+                                    domainMapper.applyAsDouble( VectorOfDoubles.of( sorted ) ),
+                                    this.domainDimension );
     }
 
     /**

@@ -94,14 +94,13 @@ public final class BoxPlotErrorByForecastTest
                 BoxPlotStatistic.of( VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 ),
                                      VectorOfDoubles.of( 0.0, 10, 30.0, 75.0, 100.0 ),
                                      m1,
-                                     40.0 );
+                                     40.0,
+                                     MetricDimension.ENSEMBLE_MEAN );
         
         List<BoxPlotStatistic> expectedBoxes = Collections.singletonList( expectedBox );
         
-        BoxPlotStatistics expected = BoxPlotStatistics.of( expectedBoxes,
-                                                           MetricDimension.ENSEMBLE_MEAN,
-                                                           MetricDimension.FORECAST_ERROR,
-                                                           m1 );
+        BoxPlotStatistics expected = BoxPlotStatistics.of( expectedBoxes, m1 );
+        
         //Check the results
         assertTrue( "The actual output for the box plot of forecast errors by observed value does not match the "
                     + "expected output.",
@@ -153,14 +152,12 @@ public final class BoxPlotErrorByForecastTest
                 BoxPlotStatistic.of( VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 ),
                                      VectorOfDoubles.of( 0.0, 10, 30.0, 75.0, 100.0 ),
                                      m1,
-                                     30.0 );
+                                     30.0,
+                                     MetricDimension.ENSEMBLE_MEDIAN );
         
         List<BoxPlotStatistic> expectedBoxes = Collections.singletonList( expectedBox );
         
-        BoxPlotStatistics expected = BoxPlotStatistics.of( expectedBoxes,
-                                                           MetricDimension.ENSEMBLE_MEDIAN,
-                                                           MetricDimension.FORECAST_ERROR,
-                                                           m1 );
+        BoxPlotStatistics expected = BoxPlotStatistics.of( expectedBoxes, m1 );
 
         //Check the results
         assertTrue( "The actual output for the box plot of forecast errors by observed value does not match the "

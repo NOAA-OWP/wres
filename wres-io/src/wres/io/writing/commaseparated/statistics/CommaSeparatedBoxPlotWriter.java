@@ -292,23 +292,32 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
         BoxPlotStatistics nextValues = output.getData().get( 0 );
         SortedSet<OneOrTwoThresholds> thresholds =
                 Slicer.discover( output, next -> next.getMetadata().getSampleMetadata().getThresholds() );
-        for ( OneOrTwoThresholds nextThreshold : thresholds )
+        
+        if ( !nextValues.getData().isEmpty() )
         {
-            returnMe.add( HEADER_DELIMITER + nextValues.getDomainAxisDimension() + HEADER_DELIMITER + nextThreshold );
-            VectorOfDoubles headerProbabilities = VectorOfDoubles.of();
-            if( !nextValues.getData().isEmpty() )
+            for ( OneOrTwoThresholds nextThreshold : thresholds )
             {
-                // Probabilities are fixed for all boxes in the collection
-                headerProbabilities = nextValues.getData().get( 0 ).getProbabilities();
-            }
-            for ( double nextProb : headerProbabilities.getDoubles() )
-            {
-                returnMe.add( HEADER_DELIMITER + nextValues.getRangeAxisDimension()
-                              + HEADER_DELIMITER
-                              + nextThreshold
-                              + HEADER_DELIMITER
-                              + "QUANTILE Pr="
-                              + nextProb );
+                BoxPlotStatistic statistic = nextValues.getData().get( 0 );
+
+                // Probabilities and types are fixed for all boxes in the collection
+                if ( nextValues.getData().get( 0 ).hasLinkedValue() )
+                {
+                    returnMe.add( HEADER_DELIMITER + statistic.getLinkedValueType()
+                                  + HEADER_DELIMITER
+                                  + nextThreshold );
+                }
+
+                VectorOfDoubles headerProbabilities = statistic.getProbabilities();
+
+                for ( double nextProb : headerProbabilities.getDoubles() )
+                {
+                    returnMe.add( HEADER_DELIMITER + statistic.getValueType()
+                                  + HEADER_DELIMITER
+                                  + nextThreshold
+                                  + HEADER_DELIMITER
+                                  + "QUANTILE Pr="
+                                  + nextProb );
+                }
             }
         }
         return returnMe;

@@ -31,6 +31,7 @@ import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.Slicer;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
+import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
@@ -82,16 +83,18 @@ public abstract class XYChartDataSourceFactory
             }
         };
 
+        BoxPlotStatistic statistic = input.getData().get( 0 );
+        
         buildInitialParameters( source,
                                 orderIndex,
-                                input.getData().get( 0 ).getData().size() );
+                                statistic.getData().size() );
 
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
-              .setDefaultDomainAxisTitle( input.getDomainAxisDimension()
+              .setDefaultDomainAxisTitle( statistic.getLinkedValueType()
                                                .toString()
                                           + "@inputUnitsLabelSuffix@" );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
-              .setDefaultRangeAxisTitle( input.getRangeAxisDimension()
+              .setDefaultRangeAxisTitle( statistic.getValueType()
                                               .toString()
                                          + "@outputUnitsLabelSuffix@" );
 

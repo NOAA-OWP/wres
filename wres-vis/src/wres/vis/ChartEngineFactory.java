@@ -128,7 +128,7 @@ public abstract class ChartEngineFactory
             new EnumMap<>( StatisticGroup.class );
     static
     {
-        metricOutputGroupToDefaultChartTypeMap.put( StatisticGroup.BOXPLOT, ChartType.UNIQUE );
+        metricOutputGroupToDefaultChartTypeMap.put( StatisticGroup.BOXPLOT_PER_PAIR, ChartType.UNIQUE );
         metricOutputGroupToDefaultChartTypeMap.put( StatisticGroup.DOUBLE_SCORE, ChartType.LEAD_THRESHOLD );
         metricOutputGroupToDefaultChartTypeMap.put( StatisticGroup.DURATION_SCORE, ChartType.UNIQUE );
         metricOutputGroupToDefaultChartTypeMap.put( StatisticGroup.MATRIX, ChartType.UNIQUE );

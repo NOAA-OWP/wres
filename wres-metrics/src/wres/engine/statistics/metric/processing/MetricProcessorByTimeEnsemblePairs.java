@@ -242,11 +242,11 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
             ensembleMultiVector = null;
         }
         //Ensemble input, box-plot output
-        if ( hasMetrics( SampleDataGroup.ENSEMBLE, StatisticGroup.BOXPLOT ) )
+        if ( hasMetrics( SampleDataGroup.ENSEMBLE, StatisticGroup.BOXPLOT_PER_PAIR ) )
         {
             ensembleBoxPlot = MetricFactory.ofEnsembleBoxPlotCollection( metricExecutor,
                                                                          this.getMetrics( SampleDataGroup.ENSEMBLE,
-                                                                                          StatisticGroup.BOXPLOT ) );
+                                                                                          StatisticGroup.BOXPLOT_PER_PAIR ) );
         }
         else
         {
@@ -384,9 +384,9 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         {
             processEnsemblePairsByThreshold( input, futures, StatisticGroup.MULTIVECTOR );
         }
-        if ( hasMetrics( SampleDataGroup.ENSEMBLE, StatisticGroup.BOXPLOT ) )
+        if ( hasMetrics( SampleDataGroup.ENSEMBLE, StatisticGroup.BOXPLOT_PER_PAIR ) )
         {
-            processEnsemblePairsByThreshold( input, futures, StatisticGroup.BOXPLOT );
+            processEnsemblePairsByThreshold( input, futures, StatisticGroup.BOXPLOT_PER_PAIR );
         }
     }
 
@@ -478,7 +478,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                                                                 ensembleMultiVector,
                                                                 ignoreTheseMetrics ) );
         }
-        else if ( outGroup == StatisticGroup.BOXPLOT )
+        else if ( outGroup == StatisticGroup.BOXPLOT_PER_PAIR )
         {
             futures.addBoxPlotOutput( processEnsemblePairs( input,
                                                             ensembleBoxPlot,

@@ -7,7 +7,6 @@ import java.util.Objects;
 import java.util.Set;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.sampledata.SampleDataException;
@@ -29,9 +28,7 @@ import wres.engine.statistics.metric.MetricParameterException;
  * @author james.brown@hydrosolved.com
  */
 
-abstract class BoxPlot
-        extends
-        Diagram<EnsemblePairs, BoxPlotStatistics>
+abstract class EnsembleBoxPlot extends Diagram<EnsemblePairs, BoxPlotStatistics>
 {
 
     /**
@@ -58,24 +55,6 @@ abstract class BoxPlot
 
     abstract BoxPlotStatistic getBox( EnsemblePair pair, StatisticMetadata metadata );
 
-    /**
-     * Returns the dimension associated with the left side of the pairing, i.e. the value against which each box is
-     * plotted on the domain axis. 
-     * 
-     * @return the domain axis dimension
-     */
-
-    abstract MetricDimension getDomainAxisDimension();
-
-    /**
-     * Returns the dimension associated with the right side of the pairing, i.e. the values associated with the 
-     * whiskers of each box. 
-     * 
-     * @return the range axis dimension
-     */
-
-    abstract MetricDimension getRangeAxisDimension();
-
     @Override
     public BoxPlotStatistics apply( final EnsemblePairs s )
     {
@@ -99,7 +78,7 @@ abstract class BoxPlot
             boxes.add( this.getBox( next, metOut ) );
         }
 
-        return BoxPlotStatistics.of( boxes, getDomainAxisDimension(), getRangeAxisDimension(), metOut );
+        return BoxPlotStatistics.of( boxes, metOut );
     }
 
     @Override
@@ -112,7 +91,7 @@ abstract class BoxPlot
      * Hidden constructor.
      */
 
-    BoxPlot()
+    EnsembleBoxPlot()
     {
         super();
 
@@ -126,7 +105,7 @@ abstract class BoxPlot
      * @throws MetricParameterException if one or more parameters are invalid
      */
 
-    BoxPlot( VectorOfDoubles probabilities ) throws MetricParameterException
+    EnsembleBoxPlot( VectorOfDoubles probabilities ) throws MetricParameterException
     {
         super();
 

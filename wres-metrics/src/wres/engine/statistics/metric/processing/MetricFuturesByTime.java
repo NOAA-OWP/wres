@@ -121,7 +121,7 @@ class MetricFuturesByTime
 
         if ( !this.boxplot.isEmpty() )
         {
-            returnMe.add( StatisticGroup.BOXPLOT );
+            returnMe.add( StatisticGroup.BOXPLOT_PER_PAIR );
         }
 
         if ( !this.paired.isEmpty() )
@@ -354,7 +354,7 @@ class MetricFuturesByTime
                     {
                         this.multiVector.addAll( futures.multiVector );
                     }
-                    else if ( nextGroup == StatisticGroup.BOXPLOT )
+                    else if ( nextGroup == StatisticGroup.BOXPLOT_PER_PAIR )
                     {
                         this.boxplot.addAll( futures.boxplot );
                     }

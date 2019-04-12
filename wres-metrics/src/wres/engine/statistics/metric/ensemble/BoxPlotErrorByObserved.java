@@ -13,14 +13,14 @@ import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricParameterException;
 
 /**
- * An concrete implementation of a {@link BoxPlot} that plots the ensemble forecast errors (right - left) against 
+ * An concrete implementation of a {@link EnsembleBoxPlot} that plots the ensemble forecast errors (right - left) against 
  * observed value. A box is constructed for the errors associated with each ensemble forecast where the errors (whiskers) 
  * are mapped to prescribed quantiles (probability thresholds).
  * 
  * @author james.brown@hydrosolved.com
  */
 
-public class BoxPlotErrorByObserved extends BoxPlot
+public class BoxPlotErrorByObserved extends EnsembleBoxPlot
 {
 
     /**
@@ -70,33 +70,11 @@ public class BoxPlotErrorByObserved extends BoxPlot
         //Compute the quantiles
         double[] box =
                 Arrays.stream( probs ).map( Slicer.getQuantileFunction( sortedErrors ) ).toArray();
-        return BoxPlotStatistic.of( this.probabilities, VectorOfDoubles.of( box ), metadata, pair.getLeft() );
-    }
-
-    /**
-     * Returns the dimension associated with the left side of the pairing, i.e. the value against which each box is
-     * plotted on the domain axis. 
-     * 
-     * @return the domain axis dimension
-     */
-
-    @Override
-    MetricDimension getDomainAxisDimension()
-    {
-        return MetricDimension.OBSERVED_VALUE;
-    }
-
-    /**
-     * Returns the dimension associated with the right side of the pairing, i.e. the values associated with the 
-     * whiskers of each box. 
-     * 
-     * @return the range axis dimension
-     */
-
-    @Override
-    MetricDimension getRangeAxisDimension()
-    {
-        return MetricDimension.FORECAST_ERROR;
+        return BoxPlotStatistic.of( this.probabilities,
+                                    VectorOfDoubles.of( box ),
+                                    metadata,
+                                    pair.getLeft(),
+                                    MetricDimension.OBSERVED_VALUE );
     }
 
     /**
