@@ -51,10 +51,10 @@ public final class BoxPlotStatisticsTest
         VectorOfDoubles pa = VectorOfDoubles.of( new double[] { 0.0, 0.5, 1.0 } );
         for ( int i = 0; i < 10; i++ )
         {
-            mva.add( BoxPlotStatistic.of( pa, VectorOfDoubles.of( 1, 2, 3 ), m1, 1 ) );
+            mva.add( BoxPlotStatistic.of( pa, VectorOfDoubles.of( 1, 2, 3 ), m1, 1, MetricDimension.OBSERVED_VALUE ) );
         }
 
-        basic = BoxPlotStatistics.of( mva, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR, m1 );
+        basic = BoxPlotStatistics.of( mva, m1 );
     }
 
     /**
@@ -98,47 +98,79 @@ public final class BoxPlotStatisticsTest
         VectorOfDoubles pa = VectorOfDoubles.of( new double[] { 0.0, 0.5, 1.0 } );
         for ( int i = 0; i < 10; i++ )
         {
-            mva.add( BoxPlotStatistic.of( pa, VectorOfDoubles.of( 1, 2, 3 ), m1, 1 ) );
-            mvb.add( BoxPlotStatistic.of( pa, VectorOfDoubles.of( 1, 2, 3 ), m1, 1 ) );
+            mva.add( BoxPlotStatistic.of( pa, VectorOfDoubles.of( 1, 2, 3 ), m1, 1, MetricDimension.OBSERVED_VALUE ) );
+            mvb.add( BoxPlotStatistic.of( pa, VectorOfDoubles.of( 1, 2, 3 ), m1, 1, MetricDimension.OBSERVED_VALUE ) );
         }
 
         List<BoxPlotStatistic> mvc = new ArrayList<>();
         VectorOfDoubles pb = VectorOfDoubles.of( new double[] { 0.0, 0.25, 0.5, 1.0 } );
         for ( int i = 0; i < 10; i++ )
         {
-            mvc.add( BoxPlotStatistic.of( pb, VectorOfDoubles.of( 1, 2, 3, 4 ), m1, 1 ) );
+            mvc.add( BoxPlotStatistic.of( pb,
+                                          VectorOfDoubles.of( 1, 2, 3, 4 ),
+                                          m1,
+                                          1,
+                                          MetricDimension.OBSERVED_VALUE ) );
         }
         List<BoxPlotStatistic> mvd = new ArrayList<>();
         for ( int i = 0; i < 5; i++ )
         {
-            mvd.add( BoxPlotStatistic.of( pb, VectorOfDoubles.of( 1, 2, 3, 4 ), m1, 1 ) );
+            mvd.add( BoxPlotStatistic.of( pb,
+                                          VectorOfDoubles.of( 1, 2, 3, 4 ),
+                                          m1,
+                                          1,
+                                          MetricDimension.OBSERVED_VALUE ) );
         }
         List<BoxPlotStatistic> mve = new ArrayList<>();
         for ( int i = 0; i < 5; i++ )
         {
-            mve.add( BoxPlotStatistic.of( pb, VectorOfDoubles.of( 2, 3, 4, 5 ), m1, 1 ) );
+            mve.add( BoxPlotStatistic.of( pb,
+                                          VectorOfDoubles.of( 2, 3, 4, 5 ),
+                                          m1,
+                                          1,
+                                          MetricDimension.OBSERVED_VALUE ) );
+        }
+
+        List<BoxPlotStatistic> mvf = new ArrayList<>();
+        for ( int i = 0; i < 5; i++ )
+        {
+            mvf.add( BoxPlotStatistic.of( pb,
+                                          VectorOfDoubles.of( 1, 2, 3, 4 ),
+                                          m1,
+                                          1,
+                                          MetricDimension.ENSEMBLE_MEAN ) );
+        }
+        List<BoxPlotStatistic> mvg = new ArrayList<>();
+        for ( int i = 0; i < 5; i++ )
+        {
+            mvg.add( BoxPlotStatistic.of( pb,
+                                          VectorOfDoubles.of( 1, 2, 3, 4 ),
+                                          MetricDimension.FORECAST_VALUE,
+                                          m1,
+                                          1,
+                                          MetricDimension.OBSERVED_VALUE ) );
         }
 
         final BoxPlotStatistics q =
-                BoxPlotStatistics.of( mva, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR, m2 );
+                BoxPlotStatistics.of( mva, m2 );
         final BoxPlotStatistics r =
-                BoxPlotStatistics.of( mvb, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR, m3 );
+                BoxPlotStatistics.of( mvb, m3 );
         final BoxPlotStatistics s =
-                BoxPlotStatistics.of( mva, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR, m1 );
+                BoxPlotStatistics.of( mva, m1 );
         final BoxPlotStatistics t =
-                BoxPlotStatistics.of( mvb, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR, m1 );
+                BoxPlotStatistics.of( mvb, m1 );
         final BoxPlotStatistics u =
-                BoxPlotStatistics.of( mvc, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR, m1 );
+                BoxPlotStatistics.of( mvc, m1 );
         final BoxPlotStatistics v =
-                BoxPlotStatistics.of( mvc, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR, m2 );
+                BoxPlotStatistics.of( mvc, m2 );
         final BoxPlotStatistics w =
-                BoxPlotStatistics.of( mvd, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR, m2 );
+                BoxPlotStatistics.of( mvd, m2 );
         final BoxPlotStatistics x =
-                BoxPlotStatistics.of( mvd, MetricDimension.ENSEMBLE_MEAN, MetricDimension.FORECAST_ERROR, m2 );
+                BoxPlotStatistics.of( mvf, m2 );
         final BoxPlotStatistics y =
-                BoxPlotStatistics.of( mvd, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_VALUE, m2 );
+                BoxPlotStatistics.of( mvg, m2 );
         final BoxPlotStatistics z =
-                BoxPlotStatistics.of( mve, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR, m2 );
+                BoxPlotStatistics.of( mve, m2 );
 
         // Compare
         assertThat( s, is( t ) );
@@ -181,11 +213,11 @@ public final class BoxPlotStatisticsTest
         VectorOfDoubles pa = VectorOfDoubles.of( new double[] { 0.0, 0.5, 1.0 } );
         for ( int i = 0; i < 10; i++ )
         {
-            mva.add( BoxPlotStatistic.of( pa, VectorOfDoubles.of( 1, 2, 3 ), m1, 1 ) );
+            mva.add( BoxPlotStatistic.of( pa, VectorOfDoubles.of( 1, 2, 3 ), m1, 1, MetricDimension.OBSERVED_VALUE ) );
         }
 
         BoxPlotStatistics basicTwo =
-                BoxPlotStatistics.of( mva, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR, m1 );
+                BoxPlotStatistics.of( mva, m1 );
 
         assertTrue( basic.equals( basicTwo ) && basic.hashCode() == basicTwo.hashCode() );
 
@@ -194,7 +226,7 @@ public final class BoxPlotStatisticsTest
         {
             assertTrue( basic.hashCode() == basicTwo.hashCode() );
         }
-        
+
     }
 
     /**
@@ -227,11 +259,7 @@ public final class BoxPlotStatisticsTest
     {
         assertTrue( basic.getData().size() == 10 );
         assertTrue( basic.iterator().hasNext() );
-        assertThat( basic.getDomainAxisDimension(), is( MetricDimension.OBSERVED_VALUE ) );
-        assertThat( basic.getRangeAxisDimension(), is( MetricDimension.FORECAST_ERROR ) );
     }
 
 
-    
-    
 }

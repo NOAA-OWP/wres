@@ -354,7 +354,7 @@ public final class MetricConfigHelper
         }
 
         // Never cache box plot output, as it does not apply to thresholds
-        returnMe.remove( StatisticGroup.BOXPLOT );
+        returnMe.remove( StatisticGroup.BOXPLOT_PER_PAIR );
 
         // Never cache duration score output as timing error summary statistics are computed once all data 
         // is available
@@ -480,7 +480,7 @@ public final class MetricConfigHelper
                                          ThresholdConstants.ThresholdDataType.LEFT_AND_RIGHT );
 
         // All data only
-        if ( metric.getMetricOutputGroup() == StatisticGroup.BOXPLOT
+        if ( metric.getMetricOutputGroup() == StatisticGroup.BOXPLOT_PER_PAIR
              || metric == MetricConstants.QUANTILE_QUANTILE_DIAGRAM )
         {
             return Collections.unmodifiableSet( new HashSet<>( Arrays.asList( allData ) ) );

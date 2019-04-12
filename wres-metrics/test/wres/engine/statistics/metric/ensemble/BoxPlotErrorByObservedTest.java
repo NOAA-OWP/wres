@@ -97,14 +97,12 @@ public final class BoxPlotErrorByObservedTest
                 BoxPlotStatistic.of( VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 ),
                                      VectorOfDoubles.of( -50.0, -37.5, 0.0, 37.5, 50.0 ),
                                      m1,
-                                     50.0 );
+                                     50.0,
+                                     MetricDimension.OBSERVED_VALUE );
         
         List<BoxPlotStatistic> expectedBoxes = Collections.singletonList( expectedBox );
         
-        BoxPlotStatistics expected = BoxPlotStatistics.of( expectedBoxes,
-                                                           MetricDimension.OBSERVED_VALUE,
-                                                           MetricDimension.FORECAST_ERROR,
-                                                           m1 );
+        BoxPlotStatistics expected = BoxPlotStatistics.of( expectedBoxes, m1 );
 
         //Check the results
         assertTrue( "The actual output for the box plot of forecast errors by observed value does not match the "

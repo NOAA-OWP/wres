@@ -4,6 +4,7 @@ import java.util.Objects;
 import java.util.StringJoiner;
 
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.metadata.StatisticMetadata;
 
 /**
@@ -40,7 +41,20 @@ public class BoxPlotStatistic implements Statistic<VectorOfDoubles>
     private final double linkedValue;
 
     /**
-     * Returns an instance from the inputs.
+     * The dimension associated with the whiskers.
+     */
+
+    private final MetricDimension valueType;
+
+    /**
+     * The dimension associated with the linked value.
+     */
+
+    private final MetricDimension linkedValueType;
+
+    /**
+     * Returns an instance from the inputs with a default value type of
+     * {@link MetricDimension#FORECAST_ERROR}.
      * 
      * @param probabilities the probabilities
      * @param quantiles the quantiles
@@ -54,16 +68,18 @@ public class BoxPlotStatistic implements Statistic<VectorOfDoubles>
                                        VectorOfDoubles quantiles,
                                        StatisticMetadata meta )
     {
-        return new BoxPlotStatistic( probabilities, quantiles, meta, Double.NaN );
+        return new BoxPlotStatistic( probabilities, quantiles, MetricDimension.FORECAST_ERROR, meta, Double.NaN, null );
     }
 
     /**
-     * Returns an instance from the inputs.
+     * Returns an instance from the inputs with a default value type of
+     * {@link MetricDimension#FORECAST_ERROR}.
      * 
      * @param probabilities the probabilities
      * @param quantiles the quantiles
      * @param meta the statistic metadata
      * @param linkedValue a linked value
+     * @param linkedValueType the type of linked value
      * @throws StatisticException if any inputs is invalid
      * @throws NullPointerException if any input is null
      * @return an instance of the output
@@ -72,9 +88,44 @@ public class BoxPlotStatistic implements Statistic<VectorOfDoubles>
     public static BoxPlotStatistic of( VectorOfDoubles probabilities,
                                        VectorOfDoubles quantiles,
                                        StatisticMetadata meta,
-                                       double linkedValue )
+                                       double linkedValue,
+                                       MetricDimension linkedValueType )
     {
-        return new BoxPlotStatistic( probabilities, quantiles, meta, linkedValue );
+        return new BoxPlotStatistic( probabilities,
+                                     quantiles,
+                                     MetricDimension.FORECAST_ERROR,
+                                     meta,
+                                     linkedValue,
+                                     linkedValueType );
+    }
+
+    /**
+     * Returns an instance from the inputs.
+     * 
+     * @param probabilities the probabilities
+     * @param quantiles the quantiles
+     * @param valueType the value type
+     * @param meta the statistic metadata
+     * @param linkedValue a linked value
+     * @param linkedValueType the type of linked value
+     * @throws StatisticException if any inputs is invalid
+     * @throws NullPointerException if any input is null
+     * @return an instance of the output
+     */
+
+    public static BoxPlotStatistic of( VectorOfDoubles probabilities,
+                                       VectorOfDoubles quantiles,
+                                       MetricDimension valueType,
+                                       StatisticMetadata meta,
+                                       double linkedValue,
+                                       MetricDimension linkedValueType )
+    {
+        return new BoxPlotStatistic( probabilities,
+                                     quantiles,
+                                     valueType,
+                                     meta,
+                                     linkedValue,
+                                     linkedValueType );
     }
 
     @Override
@@ -98,6 +149,28 @@ public class BoxPlotStatistic implements Statistic<VectorOfDoubles>
     public double getLinkedValue()
     {
         return this.linkedValue;
+    }
+
+    /**
+     * Returns the value type of the whiskers.
+     * 
+     * @return the value type
+     */
+
+    public MetricDimension getValueType()
+    {
+        return this.valueType;
+    }
+
+    /**
+     * Returns the linked value type, which may be null.
+     * 
+     * @return the linked value type or null
+     */
+
+    public MetricDimension getLinkedValueType()
+    {
+        return this.linkedValueType;
     }
 
     /**
@@ -133,8 +206,20 @@ public class BoxPlotStatistic implements Statistic<VectorOfDoubles>
         }
         final BoxPlotStatistic v = (BoxPlotStatistic) o;
 
+        // Check the value type
+        if ( this.getValueType() != v.getValueType() )
+        {
+            return false;
+        }
+
         // Check the linked value
-        if ( this.getLinkedValue() != v.getLinkedValue() )
+        if ( Double.compare( this.getLinkedValue(), v.getLinkedValue() ) != 0 )
+        {
+            return false;
+        }
+
+        // Check the linked value type
+        if ( this.getLinkedValueType() != v.getLinkedValueType() )
         {
             return false;
         }
@@ -158,7 +243,7 @@ public class BoxPlotStatistic implements Statistic<VectorOfDoubles>
     @Override
     public int hashCode()
     {
-        return Objects.hash( linkedValue, meta, probabilities, quantiles );
+        return Objects.hash( meta, probabilities, quantiles, valueType, linkedValue, linkedValueType );
     }
 
     @Override
@@ -166,9 +251,15 @@ public class BoxPlotStatistic implements Statistic<VectorOfDoubles>
     {
         StringJoiner joiner = new StringJoiner( ",", "(", ")" );
 
-        joiner.add( "PROBABILITIES: " + probabilities );
-        joiner.add( "QUANTILES: " + quantiles );
-        joiner.add( "LINKED VALUE: " + linkedValue );
+        joiner.add( "PROBABILITIES: " + this.getProbabilities() );
+        joiner.add( "QUANTILES: " + this.getData() );
+        joiner.add( "VALUE TYPE: " + this.getValueType() );
+
+        if ( this.hasLinkedValue() )
+        {
+            joiner.add( "LINKED VALUE: " + this.getLinkedValue() );
+            joiner.add( "LINKED VALUE TYPE: " + this.getLinkedValueType() );
+        }
 
         return joiner.toString();
     }
@@ -178,23 +269,36 @@ public class BoxPlotStatistic implements Statistic<VectorOfDoubles>
      * 
      * @param probabilities the probabilities
      * @param quantiles the quantiles
+     * @param valueType the type of value
      * @param meta the box plot metadata
      * @param linkedValue a linked value
+     * @param linkedValueType the type of linked value
      * @throws StatisticException if any input is invalid
      * @throws NullPointerException if any input is null
      */
 
     private BoxPlotStatistic( VectorOfDoubles probabilities,
                               VectorOfDoubles quantiles,
+                              MetricDimension valueType,
                               StatisticMetadata meta,
-                              double linkedValue )
+                              double linkedValue,
+                              MetricDimension linkedValueType )
     {
         //Validate
-        Objects.requireNonNull( meta, "Specify non-null metadata." );
-        
-        Objects.requireNonNull( probabilities, "Specify non-null probabilities." );
-        
-        Objects.requireNonNull( quantiles, "Specify non-null quantiles." );
+        Objects.requireNonNull( meta, "Specify non-null metadata for the box plot statistic." );
+
+        Objects.requireNonNull( probabilities, "Specify non-null probabilities for the box plot statistic." );
+
+        Objects.requireNonNull( quantiles, "Specify non-null quantiles for the box plot statistic." );
+
+        Objects.requireNonNull( valueType, "Specify a non-null value type for the box plot statistic." );
+
+        if ( !Double.isNaN( linkedValue ) )
+        {
+            Objects.requireNonNull( linkedValueType,
+                                    "Specify a non-null linked value type for the box "
+                                                     + "plot statistic." );
+        }
 
         // At least two probabilities
         if ( probabilities.size() < 2 )
@@ -219,6 +323,8 @@ public class BoxPlotStatistic implements Statistic<VectorOfDoubles>
         this.probabilities = probabilities;
         this.meta = meta;
         this.linkedValue = linkedValue;
+        this.valueType = valueType;
+        this.linkedValueType = linkedValueType;
     }
 
     /**

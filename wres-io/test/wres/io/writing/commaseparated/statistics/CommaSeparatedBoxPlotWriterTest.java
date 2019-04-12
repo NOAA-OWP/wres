@@ -101,16 +101,26 @@ public class CommaSeparatedBoxPlotWriterTest extends CommaSeparatedWriterTestHel
         List<BoxPlotStatistic> fakeOutputs = new ArrayList<>();
         VectorOfDoubles probs = VectorOfDoubles.of( 0, 0.25, 0.5, 0.75, 1.0 );
 
-        fakeOutputs.add( BoxPlotStatistic.of( probs, VectorOfDoubles.of( 2, 3, 4, 5, 6 ), fakeMetadata, 1 ) );
-        fakeOutputs.add( BoxPlotStatistic.of( probs, VectorOfDoubles.of( 7, 9, 11, 13, 15 ), fakeMetadata, 3 ) );
-        fakeOutputs.add( BoxPlotStatistic.of( probs, VectorOfDoubles.of( 21, 24, 27, 30, 33 ), fakeMetadata, 5 ) );
+        fakeOutputs.add( BoxPlotStatistic.of( probs,
+                                              VectorOfDoubles.of( 2, 3, 4, 5, 6 ),
+                                              fakeMetadata,
+                                              1,
+                                              MetricDimension.OBSERVED_VALUE ) );
+        fakeOutputs.add( BoxPlotStatistic.of( probs,
+                                              VectorOfDoubles.of( 7, 9, 11, 13, 15 ),
+                                              fakeMetadata,
+                                              3,
+                                              MetricDimension.OBSERVED_VALUE ) );
+        fakeOutputs.add( BoxPlotStatistic.of( probs,
+                                              VectorOfDoubles.of( 21, 24, 27, 30, 33 ),
+                                              fakeMetadata,
+                                              5,
+                                              MetricDimension.OBSERVED_VALUE ) );
 
         // Fake output wrapper.
         ListOfStatistics<BoxPlotStatistics> fakeOutputData =
                 ListOfStatistics.of( Collections.singletonList( BoxPlotStatistics.of( fakeOutputs,
-                                                                                     MetricDimension.OBSERVED_VALUE,
-                                                                                     MetricDimension.FORECAST_ERROR,
-                                                                                     fakeMetadata ) ) );
+                                                                                      fakeMetadata ) ) );
         // wrap outputs in future
         Future<ListOfStatistics<BoxPlotStatistics>> outputMapByMetricFuture =
                 CompletableFuture.completedFuture( fakeOutputData );
@@ -127,7 +137,7 @@ public class CommaSeparatedBoxPlotWriterTest extends CommaSeparatedWriterTestHel
         CommaSeparatedBoxPlotWriter writer = CommaSeparatedBoxPlotWriter.of( projectConfig,
                                                                              ChronoUnit.SECONDS,
                                                                              this.outputDirectory );
-        
+
         writer.accept( output.getBoxPlotStatistics() );
 
         // Determine the paths written

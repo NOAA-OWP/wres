@@ -695,13 +695,12 @@ public abstract class Chart2DTestDataGenerator
                     output.add( BoxPlotStatistic.of( probabilities,
                                                      VectorOfDoubles.of( Arrays.copyOfRange( next, 1, next.length ) ),
                                                      meta,
-                                                     next[0] ) );
+                                                     next[0],
+                                                     MetricDimension.OBSERVED_VALUE ) );
                 }
             }
             
             final BoxPlotStatistics out = BoxPlotStatistics.of( output,
-                                                                MetricDimension.OBSERVED_VALUE,
-                                                                MetricDimension.FORECAST_ERROR,
                                                                 meta );
 
             //Append result
@@ -774,12 +773,11 @@ public abstract class Chart2DTestDataGenerator
                     output.add( BoxPlotStatistic.of( probabilities,
                                                      VectorOfDoubles.of( Arrays.copyOfRange( next, 1, next.length ) ),
                                                      meta,
-                                                     next[0] ) );
+                                                     next[0],
+                                                     MetricDimension.ENSEMBLE_MEAN ) );
                 }
             }
             final BoxPlotStatistics out = BoxPlotStatistics.of( output,
-                                                                MetricDimension.ENSEMBLE_MEAN,
-                                                                MetricDimension.FORECAST_ERROR,
                                                                 meta );
 
             //Append result
