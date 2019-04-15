@@ -65,10 +65,10 @@ import wres.io.writing.png.PNGPairedWriter;
  */
 
 class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
-                                  Closeable,
-                                  Supplier<Set<Path>>
+        Closeable,
+        Supplier<Set<Path>>
 {
-    
+
     /**
      * Logger.
      */
@@ -80,7 +80,6 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
      */
 
     private static final String NULL_OUTPUT_STRING = "Specify non-null outputs for product generation.";
-
 
     /**
      * The resolved project configuration.
@@ -119,9 +118,16 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
      * Store of consumers for processing {@link BoxPlotStatistics} by {@link DestinationType} format.
      */
 
-    private final Map<DestinationType, Consumer<ListOfStatistics<BoxPlotStatistics>>> boxPlotConsumers =
+    private final Map<DestinationType, Consumer<ListOfStatistics<BoxPlotStatistics>>> boxPlotConsumersPerPair =
             new EnumMap<>( DestinationType.class );
 
+    /**
+     * Store of consumers for processing {@link BoxPlotStatistics} by {@link DestinationType} format.
+     */
+
+    private final Map<DestinationType, Consumer<ListOfStatistics<BoxPlotStatistics>>> boxPlotConsumersPerPool =
+            new EnumMap<>( DestinationType.class );
+    
     /**
      * Store of consumers for processing {@link MatrixStatistic} by {@link DestinationType} format.
      */
@@ -171,10 +177,10 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
      */
 
     ProduceOutputsFromStatistics( final ResolvedProject resolvedProject,
-                      final BiPredicate<StatisticGroup, DestinationType> writeWhenTrue )
+                                  final BiPredicate<StatisticGroup, DestinationType> writeWhenTrue )
     {
-        this( resolvedProject, writeWhenTrue, null);
-    }    
+        this( resolvedProject, writeWhenTrue, null );
+    }
 
     /**
      * Build a product processor that writes conditionally.
@@ -187,8 +193,8 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
      */
 
     ProduceOutputsFromStatistics( final ResolvedProject resolvedProject,
-                      final BiPredicate<StatisticGroup, DestinationType> writeWhenTrue,
-                      final SharedStatisticsWriters sharedWriters )
+                                  final BiPredicate<StatisticGroup, DestinationType> writeWhenTrue,
+                                  final SharedStatisticsWriters sharedWriters )
     {
         Objects.requireNonNull( resolvedProject,
                                 "Specify a non-null configuration for the results processor." );
@@ -232,12 +238,18 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
                 this.processDiagramOutputs( input.getMultiVectorStatistics() );
             }
 
-            // Box-plot output available
+            // Box-plot output available per pair
             if ( input.hasStatistic( StatisticGroup.BOXPLOT_PER_PAIR ) )
             {
-                this.processBoxPlotOutputs( input.getBoxPlotStatistics() );
+                this.processBoxPlotOutputsPerPair( input.getBoxPlotStatisticsPerPair() );
             }
 
+            // Box-plot output available per pool
+            if ( input.hasStatistic( StatisticGroup.BOXPLOT_PER_POOL ) )
+            {
+                this.processBoxPlotOutputsPerPool( input.getBoxPlotStatisticsPerPool() );
+            }
+            
             // Matrix output available
             if ( input.hasStatistic( StatisticGroup.MATRIX ) )
             {
@@ -262,12 +274,12 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
                 this.processPairedOutputByInstantDuration( input.getPairedStatistics() );
             }
         }
-        catch ( InterruptedException e)
+        catch ( InterruptedException e )
         {
             String message = "Interrupted while processing intermediate results:";
             LOGGER.warn( message, e );
             Thread.currentThread().interrupt();
-            
+
             throw new WresProcessingException( message, e );
         }
         catch ( IOException e )
@@ -313,7 +325,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         // with projects, not destinations. The consumers must iterate destinations.
 
         // Register consumers for the NetCDF output type
-        if ( configNeedsThisTypeOfOutput( DestinationType.NETCDF ) )
+        if ( this.configNeedsThisTypeOfOutput( DestinationType.NETCDF ) )
         {
             // implicitly passing resolvedProject via shared state
             this.buildNetCDFConsumers( sharedWriters );
@@ -321,13 +333,13 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         }
 
         // Register consumers for the CSV output type
-        if ( configNeedsThisTypeOfOutput( DestinationType.CSV ) )
+        if ( this.configNeedsThisTypeOfOutput( DestinationType.CSV ) )
         {
             this.buildCommaSeparatedConsumers();
         }
 
         // Register consumers for the PNG output type
-        if ( configNeedsThisTypeOfOutput( DestinationType.PNG ) )
+        if ( this.configNeedsThisTypeOfOutput( DestinationType.PNG ) )
         {
             this.buildPortableNetworkGraphicsConsumers();
         }
@@ -354,7 +366,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
                                                     ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
                                                     outputDirectory );
             this.diagramConsumers.put( DestinationType.CSV,
-                                  diagramWriter );
+                                       diagramWriter );
             this.writersToPaths.add( diagramWriter );
         }
 
@@ -364,8 +376,19 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
                     CommaSeparatedBoxPlotWriter.of( projectConfig,
                                                     ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
                                                     outputDirectory );
-            this.boxPlotConsumers.put( DestinationType.CSV,
-                                  boxPlotWriter );
+            this.boxPlotConsumersPerPair.put( DestinationType.CSV,
+                                       boxPlotWriter );
+            this.writersToPaths.add( boxPlotWriter );
+        }
+        
+        if ( this.writeWhenTrue.test( StatisticGroup.BOXPLOT_PER_POOL, DestinationType.CSV ) )
+        {
+            CommaSeparatedBoxPlotWriter boxPlotWriter =
+                    CommaSeparatedBoxPlotWriter.of( projectConfig,
+                                                    ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
+                                                    outputDirectory );
+            this.boxPlotConsumersPerPool.put( DestinationType.CSV,
+                                       boxPlotWriter );
             this.writersToPaths.add( boxPlotWriter );
         }
 
@@ -376,7 +399,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
                                                    ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
                                                    outputDirectory );
             this.matrixConsumers.put( DestinationType.CSV,
-                                 matrixWriter );
+                                      matrixWriter );
             this.writersToPaths.add( matrixWriter );
         }
 
@@ -398,7 +421,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
                                                   ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
                                                   outputDirectory );
             this.doubleScoreConsumers.put( DestinationType.CSV,
-                                      doubleScoreWriter );
+                                           doubleScoreWriter );
             this.writersToPaths.add( doubleScoreWriter );
         }
 
@@ -409,7 +432,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
                                                   ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
                                                   outputDirectory );
             this.durationScoreConsumers.put( DestinationType.CSV,
-                                        durationScoreWriter );
+                                             durationScoreWriter );
             this.writersToPaths.add( durationScoreWriter );
         }
     }
@@ -432,7 +455,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
                                                                   ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
                                                                   outputDirectory );
             this.diagramConsumers.put( DestinationType.PNG,
-                                  diagramWriter );
+                                       diagramWriter );
             this.writersToPaths.add( diagramWriter );
         }
 
@@ -441,8 +464,8 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
             PNGBoxPlotWriter boxPlotWriter = PNGBoxPlotWriter.of( projectConfigPlus,
                                                                   ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
                                                                   outputDirectory );
-            this.boxPlotConsumers.put( DestinationType.PNG,
-                                  boxPlotWriter );
+            this.boxPlotConsumersPerPair.put( DestinationType.PNG,
+                                       boxPlotWriter );
             this.writersToPaths.add( boxPlotWriter );
         }
 
@@ -452,7 +475,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
                                                                ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
                                                                outputDirectory );
             this.pairedConsumers.put( DestinationType.PNG,
-                                 pairedWriter );
+                                      pairedWriter );
             this.writersToPaths.add( pairedWriter );
         }
 
@@ -463,7 +486,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
                                              ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
                                              outputDirectory );
             this.doubleScoreConsumers.put( DestinationType.PNG,
-                                      doubleScoreWriter );
+                                           doubleScoreWriter );
             this.writersToPaths.add( doubleScoreWriter );
         }
 
@@ -474,9 +497,10 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
                                                ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
                                                outputDirectory );
             this.durationScoreConsumers.put( DestinationType.PNG,
-                                        durationScoreWriter );
+                                             durationScoreWriter );
             this.writersToPaths.add( durationScoreWriter );
         }
+
     }
 
     private void buildNetCDFConsumers( SharedStatisticsWriters sharedWriters )
@@ -540,20 +564,20 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
     }
 
     /**
-     * Processes {@link BoxPlotStatistics}.
+     * Processes {@link BoxPlotStatistics} per pair.
      * 
      * @param outputs the output to consume
      * @throws IOException if the output could not be consumed
      * @throws NullPointerException if the input is null
      */
 
-    private void processBoxPlotOutputs( ListOfStatistics<BoxPlotStatistics> outputs )
+    private void processBoxPlotOutputsPerPair( ListOfStatistics<BoxPlotStatistics> outputs )
             throws IOException
     {
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
         // Iterate through the consumers
-        for ( Entry<DestinationType, Consumer<ListOfStatistics<BoxPlotStatistics>>> next : this.boxPlotConsumers.entrySet() )
+        for ( Entry<DestinationType, Consumer<ListOfStatistics<BoxPlotStatistics>>> next : this.boxPlotConsumersPerPair.entrySet() )
         {
             // Consume conditionally
             if ( this.writeWhenTrue.test( StatisticGroup.BOXPLOT_PER_PAIR, next.getKey() ) )
@@ -568,6 +592,35 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         }
     }
 
+    /**
+     * Processes {@link BoxPlotStatistics} per pool.
+     * 
+     * @param outputs the output to consume
+     * @throws IOException if the output could not be consumed
+     * @throws NullPointerException if the input is null
+     */
+
+    private void processBoxPlotOutputsPerPool( ListOfStatistics<BoxPlotStatistics> outputs )
+            throws IOException
+    {
+        Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
+
+        // Iterate through the consumers
+        for ( Entry<DestinationType, Consumer<ListOfStatistics<BoxPlotStatistics>>> next : this.boxPlotConsumersPerPool.entrySet() )
+        {
+            // Consume conditionally
+            if ( this.writeWhenTrue.test( StatisticGroup.BOXPLOT_PER_POOL, next.getKey() ) )
+            {
+                log( outputs, next.getKey(), true );
+
+                // Consume the output
+                next.getValue().accept( outputs );
+
+                log( outputs, next.getKey(), false );
+            }
+        }
+    }
+    
     /**
      * Processes {@link MatrixStatistic}.
      * 
@@ -765,7 +818,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
             positionString = "Started ";
         }
 
-        if ( ! output.getData().isEmpty() )
+        if ( !output.getData().isEmpty() )
         {
             LOGGER.debug( "{} processing of result type '{}' for '{}' "
                           + "at time window {}.",

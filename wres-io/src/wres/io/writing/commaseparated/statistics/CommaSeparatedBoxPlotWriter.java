@@ -21,11 +21,11 @@ import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.ListOfStatistics;
@@ -111,7 +111,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
 
         this.pathsWrittenTo.addAll( pathsWrittenTo );
     }
-    
+
     /**
      * Return a snapshot of the paths written to (so far)
      * 
@@ -122,7 +122,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
     public Set<Path> get()
     {
         return this.getPathsWrittenTo();
-    }    
+    }
 
     /**
      * Writes all output for one box plot type.
@@ -144,9 +144,16 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
     {
         Set<Path> pathsWrittenTo = new HashSet<>( 1 );
 
-        // Iterate through types
-        SortedSet<MetricConstants> metrics = Slicer.discover( output, meta -> meta.getMetadata().getMetricID() );
-        for ( MetricConstants next : metrics )
+        // Distinguish between pooled outputs and outputs per pair
+        // TODO: this will not be necessary once all pools are written to a single destination
+
+        // Iterate through types per pair
+        ListOfStatistics<BoxPlotStatistics> perPair =
+                Slicer.filter( output, meta -> meta.getMetricID().isInGroup( StatisticGroup.BOXPLOT_PER_PAIR ) );
+
+        SortedSet<MetricConstants> metricsPerPair =
+                Slicer.discover( perPair, meta -> meta.getMetadata().getMetricID() );
+        for ( MetricConstants next : metricsPerPair )
         {
             Set<Path> innerPathsWrittenTo =
                     CommaSeparatedBoxPlotWriter.writeOneBoxPlotOutputTypePerTimeWindow( outputDirectory,
@@ -154,6 +161,23 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
                                                                                         Slicer.filter( output, next ),
                                                                                         formatter,
                                                                                         durationUnits );
+            pathsWrittenTo.addAll( innerPathsWrittenTo );
+        }
+
+        // Iterate through the pool types
+        ListOfStatistics<BoxPlotStatistics> perPool =
+                Slicer.filter( output, meta -> meta.getMetricID().isInGroup( StatisticGroup.BOXPLOT_PER_POOL ) );
+
+        SortedSet<MetricConstants> metricsPerPool =
+                Slicer.discover( perPool, meta -> meta.getMetadata().getMetricID() );
+        for ( MetricConstants next : metricsPerPool )
+        {
+            Set<Path> innerPathsWrittenTo =
+                    CommaSeparatedBoxPlotWriter.writeOneBoxPlotOutputTypePerMetric( outputDirectory,
+                                                                                    destinationConfig,
+                                                                                    Slicer.filter( output, next ),
+                                                                                    formatter,
+                                                                                    durationUnits );
             pathsWrittenTo.addAll( innerPathsWrittenTo );
         }
 
@@ -193,7 +217,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
 
             StringJoiner headerRow =
                     CommaSeparatedUtilities.getPartialTimeWindowHeaderFromSampleMetadata( meta.getSampleMetadata(),
-                                                                                   durationUnits );
+                                                                                          durationUnits );
             List<RowCompareByLeft> rows =
                     CommaSeparatedBoxPlotWriter.getRowsForOneBoxPlot( next, formatter, durationUnits );
 
@@ -213,6 +237,54 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
             pathsWrittenTo.add( outputPath );
         }
 
+        return Collections.unmodifiableSet( pathsWrittenTo );
+    }
+
+    /**
+     * Writes all box plot output into a single destination for one metric.
+     *
+     * @param outputDirectory the directory into which to write
+     * @param destinationConfig the destination configuration    
+     * @param output the box plot output
+     * @param formatter optional formatter, can be null
+     * @param durationUnits the time units for durations
+     * @throws IOException if the output cannot be written
+     * @return set of paths actually written to
+     */
+
+    private static Set<Path> writeOneBoxPlotOutputTypePerMetric( Path outputDirectory,
+                                                                 DestinationConfig destinationConfig,
+                                                                 ListOfStatistics<BoxPlotStatistics> output,
+                                                                 Format formatter,
+                                                                 ChronoUnit durationUnits )
+            throws IOException
+    {
+        Set<Path> pathsWrittenTo = new HashSet<>( 1 );
+
+        if( !output.getData().isEmpty() )
+        {
+            StatisticMetadata meta = output.getData().get( 0 ).getMetadata();
+
+            StringJoiner headerRow =
+                    CommaSeparatedUtilities.getPartialTimeWindowHeaderFromSampleMetadata( meta.getSampleMetadata(),
+                                                                                          durationUnits );
+            List<RowCompareByLeft> rows =
+                    CommaSeparatedBoxPlotWriter.getRowsForOneBoxPlot( output, formatter, durationUnits );
+
+            // Add the header row
+            rows.add( RowCompareByLeft.of( HEADER_INDEX,
+                                           CommaSeparatedBoxPlotWriter.getBoxPlotHeader( output, headerRow ) ) );
+            // Write the output
+            Path outputPath = ConfigHelper.getOutputPathToWrite( outputDirectory,
+                                                                 destinationConfig,
+                                                                 meta );
+
+            CommaSeparatedStatisticsWriter.writeTabularOutputToFile( rows, outputPath );
+            // If writeTabularOutputToFile did not throw an exception, assume
+            // it succeeded in writing to the file, track outputs now.
+            pathsWrittenTo.add( outputPath );
+        }
+        
         return Collections.unmodifiableSet( pathsWrittenTo );
     }
 
@@ -244,19 +316,25 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
             for ( TimeWindow timeWindow : timeWindows )
             {
                 BoxPlotStatistics nextValues = Slicer.filter( output,
-                                                             next -> next.getSampleMetadata()
-                                                                         .getThresholds()
-                                                                         .equals( t )
-                                                                     && next.getSampleMetadata()
-                                                                            .getTimeWindow()
-                                                                            .equals( timeWindow ) )
-                                                    .getData()
-                                                    .get( 0 );
+                                                              next -> next.getSampleMetadata()
+                                                                          .getThresholds()
+                                                                          .equals( t )
+                                                                      && next.getSampleMetadata()
+                                                                             .getTimeWindow()
+                                                                             .equals( timeWindow ) )
+                                                     .getData()
+                                                     .get( 0 );
                 // Add each box
                 for ( BoxPlotStatistic nextBox : nextValues )
                 {
                     List<Double> data = new ArrayList<>();
-                    data.add( nextBox.getLinkedValue() );
+                    
+                    // Add linked value if available
+                    if( nextBox.hasLinkedValue() )
+                    {
+                        data.add( nextBox.getLinkedValue() );
+                    }
+                    
                     data.addAll( Arrays.stream( nextBox.getData().getDoubles() )
                                        .boxed()
                                        .collect( Collectors.toList() ) );
@@ -287,12 +365,12 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
         // Append to header
         StringJoiner returnMe = new StringJoiner( "," );
         returnMe.merge( headerRow );
-        
+
         // Discover the first item and use this to help
         BoxPlotStatistics nextValues = output.getData().get( 0 );
         SortedSet<OneOrTwoThresholds> thresholds =
                 Slicer.discover( output, next -> next.getMetadata().getSampleMetadata().getThresholds() );
-        
+
         if ( !nextValues.getData().isEmpty() )
         {
             for ( OneOrTwoThresholds nextThreshold : thresholds )

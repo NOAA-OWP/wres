@@ -262,14 +262,14 @@ public final class MetricTestDataFactory
                                                                              "ESP" ) );
         return SingleValuedPairs.of( Collections.emptyList(), Collections.emptyList(), main, base );
     }
-    
+
     /**
-     * Returns a set of single-valued pairs without a baseline.
+     * Returns a set of single-valued pairs without a baseline and with some missing values.
      * 
      * @return single-valued pairs
      */
 
-    public static SingleValuedPairs getSingleValuedPairsEightWithMissings()
+    public static SingleValuedPairs getSingleValuedPairsEight()
     {
         //Construct some single-valued pairs
         final List<SingleValuedPair> values = new ArrayList<>();
@@ -288,7 +288,181 @@ public final class MetricTestDataFactory
         values.add( SingleValuedPair.of( Double.NaN, Double.NaN ) );
 
         return SingleValuedPairs.of( values, SampleMetadata.of() );
-    }    
+    }
+
+    /**
+     * Returns a list of {@link TimeSeriesOfSingleValuedPairs}. Corresponds to the pairs 
+     * associated with system test scenario504 as of commit e91b36a8f6b798d1987e78a0f37b38f3ca4501ae.
+     * 
+     * @return a time series of single-valued pairs
+     */
+
+    public static TimeSeriesOfSingleValuedPairs getSingleValuedPairsNine()
+    {
+        TimeSeriesOfSingleValuedPairsBuilder tsBuilder = new TimeSeriesOfSingleValuedPairsBuilder();
+
+        List<Event<SingleValuedPair>> listOfPairs = new ArrayList<>();
+
+        // Add the first time-series
+        Instant basisTime = Instant.parse( "2551-03-17T12:00:00Z" );
+
+        listOfPairs.add( Event.of( basisTime,
+                                   Instant.parse( "2551-03-17T15:00:00Z" ),
+                                   SingleValuedPair.of( 409.67, 73.00 ) ) );
+        listOfPairs.add( Event.of( basisTime,
+                                   Instant.parse( "2551-03-17T18:00:00Z" ),
+                                   SingleValuedPair.of( 428.33, 79.00 ) ) );
+        listOfPairs.add( Event.of( basisTime,
+                                   Instant.parse( "2551-03-17T21:00:00Z" ),
+                                   SingleValuedPair.of( 443.67, 83.00 ) ) );
+        listOfPairs.add( Event.of( basisTime,
+                                   Instant.parse( "2551-03-18T00:00:00Z" ),
+                                   SingleValuedPair.of( 460.33, 89.00 ) ) );
+        listOfPairs.add( Event.of( basisTime,
+                                   Instant.parse( "2551-03-18T03:00:00Z" ),
+                                   SingleValuedPair.of( 477.67, 97.00 ) ) );
+        listOfPairs.add( Event.of( basisTime,
+                                   Instant.parse( "2551-03-18T06:00:00Z" ),
+                                   SingleValuedPair.of( 497.67, 101.00 ) ) );
+        listOfPairs.add( Event.of( basisTime,
+                                   Instant.parse( "2551-03-18T09:00:00Z" ),
+                                   SingleValuedPair.of( 517.67, 103.00 ) ) );
+        listOfPairs.add( Event.of( basisTime,
+                                   Instant.parse( "2551-03-18T12:00:00Z" ),
+                                   SingleValuedPair.of( 548.33, 107.00 ) ) );
+        listOfPairs.add( Event.of( basisTime,
+                                   Instant.parse( "2551-03-18T15:00:00Z" ),
+                                   SingleValuedPair.of( 567.67, 109.00 ) ) );
+        listOfPairs.add( Event.of( basisTime,
+                                   Instant.parse( "2551-03-18T18:00:00Z" ),
+                                   SingleValuedPair.of( 585.67, 113.00 ) ) );
+        listOfPairs.add( Event.of( basisTime,
+                                   Instant.parse( "2551-03-18T21:00:00Z" ),
+                                   SingleValuedPair.of( 602.33, 127.00 ) ) );
+
+        // Add second time-series
+        Instant basisTimeTwo = Instant.parse( "2551-03-18T00:00:00Z" );
+        listOfPairs.add( Event.of( basisTimeTwo,
+                                   Instant.parse( "2551-03-18T03:00:00Z" ),
+                                   SingleValuedPair.of( 477.67, 131.00 ) ) );
+        listOfPairs.add( Event.of( basisTimeTwo,
+                                   Instant.parse( "2551-03-18T06:00:00Z" ),
+                                   SingleValuedPair.of( 497.67, 137.00 ) ) );
+        listOfPairs.add( Event.of( basisTimeTwo,
+                                   Instant.parse( "2551-03-18T09:00:00Z" ),
+                                   SingleValuedPair.of( 517.67, 139.00 ) ) );
+        listOfPairs.add( Event.of( basisTimeTwo,
+                                   Instant.parse( "2551-03-18T12:00:00Z" ),
+                                   SingleValuedPair.of( 548.33, 149.00 ) ) );
+        listOfPairs.add( Event.of( basisTimeTwo,
+                                   Instant.parse( "2551-03-18T15:00:00Z" ),
+                                   SingleValuedPair.of( 567.67, 151.00 ) ) );
+        listOfPairs.add( Event.of( basisTimeTwo,
+                                   Instant.parse( "2551-03-18T18:00:00Z" ),
+                                   SingleValuedPair.of( 585.67, 157.00 ) ) );
+        listOfPairs.add( Event.of( basisTimeTwo,
+                                   Instant.parse( "2551-03-18T21:00:00Z" ),
+                                   SingleValuedPair.of( 602.33, 163.00 ) ) );
+        listOfPairs.add( Event.of( basisTimeTwo,
+                                   Instant.parse( "2551-03-19T00:00:00Z" ),
+                                   SingleValuedPair.of( 616.33, 167.00 ) ) );
+        listOfPairs.add( Event.of( basisTimeTwo,
+                                   Instant.parse( "2551-03-19T03:00:00Z" ),
+                                   SingleValuedPair.of( 638.33, 173.00 ) ) );
+        listOfPairs.add( Event.of( basisTimeTwo,
+                                   Instant.parse( "2551-03-19T06:00:00Z" ),
+                                   SingleValuedPair.of( 653.00, 179.00 ) ) );
+        listOfPairs.add( Event.of( basisTimeTwo,
+                                   Instant.parse( "2551-03-19T09:00:00Z" ),
+                                   SingleValuedPair.of( 670.33, 181.00 ) ) );
+
+        // Add third time-series
+        Instant basisTimeThree = Instant.parse( "2551-03-18T12:00:00Z" );
+        listOfPairs.add( Event.of( basisTimeThree,
+                                   Instant.parse( "2551-03-18T15:00:00Z" ),
+                                   SingleValuedPair.of( 567.67, 191.00 ) ) );
+        listOfPairs.add( Event.of( basisTimeThree,
+                                   Instant.parse( "2551-03-18T18:00:00Z" ),
+                                   SingleValuedPair.of( 585.67, 193.00 ) ) );
+        listOfPairs.add( Event.of( basisTimeThree,
+                                   Instant.parse( "2551-03-18T21:00:00Z" ),
+                                   SingleValuedPair.of( 602.33, 197.00 ) ) );
+        listOfPairs.add( Event.of( basisTimeThree,
+                                   Instant.parse( "2551-03-19T00:00:00Z" ),
+                                   SingleValuedPair.of( 616.33, 199.00 ) ) );
+        listOfPairs.add( Event.of( basisTimeThree,
+                                   Instant.parse( "2551-03-19T03:00:00Z" ),
+                                   SingleValuedPair.of( 638.33, 211.00 ) ) );
+        listOfPairs.add( Event.of( basisTimeThree,
+                                   Instant.parse( "2551-03-19T06:00:00Z" ),
+                                   SingleValuedPair.of( 653.00, 223.00 ) ) );
+        listOfPairs.add( Event.of( basisTimeThree,
+                                   Instant.parse( "2551-03-19T09:00:00Z" ),
+                                   SingleValuedPair.of( 670.33, 227.00 ) ) );
+        listOfPairs.add( Event.of( basisTimeThree,
+                                   Instant.parse( "2551-03-19T12:00:00Z" ),
+                                   SingleValuedPair.of( 691.67, 229.00 ) ) );
+        listOfPairs.add( Event.of( basisTimeThree,
+                                   Instant.parse( "2551-03-19T15:00:00Z" ),
+                                   SingleValuedPair.of( 718.33, 233.00 ) ) );
+        listOfPairs.add( Event.of( basisTimeThree,
+                                   Instant.parse( "2551-03-19T18:00:00Z" ),
+                                   SingleValuedPair.of( 738.33, 239.00 ) ) );
+        listOfPairs.add( Event.of( basisTimeThree,
+                                   Instant.parse( "2551-03-19T21:00:00Z" ),
+                                   SingleValuedPair.of( 756.33, 241.00 ) ) );
+
+        // Add third time-series
+        Instant basisTimeFour = Instant.parse( "2551-03-19T00:00:00Z" );
+        listOfPairs.add( Event.of( basisTimeFour,
+                                   Instant.parse( "2551-03-19T03:00:00Z" ),
+                                   SingleValuedPair.of( 638.33, 251.00 ) ) );
+        listOfPairs.add( Event.of( basisTimeFour,
+                                   Instant.parse( "2551-03-19T06:00:00Z" ),
+                                   SingleValuedPair.of( 653.00, 257.00 ) ) );
+        listOfPairs.add( Event.of( basisTimeFour,
+                                   Instant.parse( "2551-03-19T09:00:00Z" ),
+                                   SingleValuedPair.of( 670.33, 263.00 ) ) );
+        listOfPairs.add( Event.of( basisTimeFour,
+                                   Instant.parse( "2551-03-19T12:00:00Z" ),
+                                   SingleValuedPair.of( 691.67, 269.00 ) ) );
+        listOfPairs.add( Event.of( basisTimeFour,
+                                   Instant.parse( "2551-03-19T15:00:00Z" ),
+                                   SingleValuedPair.of( 718.33, 271.00 ) ) );
+        listOfPairs.add( Event.of( basisTimeFour,
+                                   Instant.parse( "2551-03-19T18:00:00Z" ),
+                                   SingleValuedPair.of( 738.33, 277.00 ) ) );
+        listOfPairs.add( Event.of( basisTimeFour,
+                                   Instant.parse( "2551-03-19T21:00:00Z" ),
+                                   SingleValuedPair.of( 756.33, 281.00 ) ) );
+        listOfPairs.add( Event.of( basisTimeFour,
+                                   Instant.parse( "2551-03-20T00:00:00Z" ),
+                                   SingleValuedPair.of( 776.33, 283.00 ) ) );
+        listOfPairs.add( Event.of( basisTimeFour,
+                                   Instant.parse( "2551-03-20T03:00:00Z" ),
+                                   SingleValuedPair.of( 805.67, 293.00 ) ) );
+        listOfPairs.add( Event.of( basisTimeFour,
+                                   Instant.parse( "2551-03-20T06:00:00Z" ),
+                                   SingleValuedPair.of( 823.67, 307.00 ) ) );
+        listOfPairs.add( Event.of( basisTimeFour,
+                                   Instant.parse( "2551-03-20T09:00:00Z" ),
+                                   SingleValuedPair.of( 840.33, 311.00 ) ) );
+
+        final TimeWindow window = TimeWindow.of( Instant.parse( "2551-03-17T00:00:00Z" ),
+                                                 Instant.parse( "2551-03-20T00:00:00Z" ),
+                                                 Duration.ofSeconds( 10800 ),
+                                                 Duration.ofSeconds( 118800 ) );
+
+        SampleMetadata metaData = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+                                                             .setIdentifier( DatasetIdentifier.of( getLocation( "FAKE2" ),
+                                                                                                   "DISCHARGE" ) )
+                                                             .setTimeWindow( window )
+                                                             .build();
+
+        tsBuilder.setMetadata( metaData );
+
+        return tsBuilder.addTimeSeries( listOfPairs ).build();
+    }
 
     /**
      * Returns a moderately-sized test dataset of ensemble pairs with the same dataset as a baseline. Reads the pairs 
@@ -1238,6 +1412,8 @@ public final class MetricTestDataFactory
     /**
      * Hidden constructor
      */
-    private MetricTestDataFactory() {}
-    
+    private MetricTestDataFactory()
+    {
+    }
+
 }

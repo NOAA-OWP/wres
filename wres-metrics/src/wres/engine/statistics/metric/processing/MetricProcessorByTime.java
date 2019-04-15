@@ -114,14 +114,21 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
     void processSingleValuedPairs( SingleValuedPairs input,
                                    MetricFuturesByTime.MetricFuturesByTimeBuilder futures )
     {
-        if ( hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticGroup.DOUBLE_SCORE ) )
+        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticGroup.DOUBLE_SCORE ) )
         {
             this.processSingleValuedPairsByThreshold( input, futures, StatisticGroup.DOUBLE_SCORE );
         }
-        if ( hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticGroup.MULTIVECTOR ) )
+
+        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticGroup.MULTIVECTOR ) )
         {
             this.processSingleValuedPairsByThreshold( input, futures, StatisticGroup.MULTIVECTOR );
         }
+
+        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticGroup.BOXPLOT_PER_POOL ) )
+        {
+            this.processSingleValuedPairsByThreshold( input, futures, StatisticGroup.BOXPLOT_PER_POOL );
+        }
+
     }
 
     /**
@@ -317,17 +324,27 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
                                            StatisticGroup outGroup,
                                            Set<MetricConstants> ignoreTheseMetrics )
     {
-        if ( outGroup == StatisticGroup.DOUBLE_SCORE )
+        switch ( outGroup )
         {
-            futures.addDoubleScoreOutput( processSingleValuedPairs( input,
-                                                                    singleValuedScore,
-                                                                    ignoreTheseMetrics ) );
-        }
-        else if ( outGroup == StatisticGroup.MULTIVECTOR )
-        {
-            futures.addMultiVectorOutput( processSingleValuedPairs( input,
-                                                                    singleValuedMultiVector,
-                                                                    ignoreTheseMetrics ) );
+            case DOUBLE_SCORE:
+                futures.addDoubleScoreOutput( this.processSingleValuedPairs( input,
+                                                                             this.singleValuedScore,
+                                                                             ignoreTheseMetrics ) );
+                break;
+
+            case MULTIVECTOR:
+                futures.addMultiVectorOutput( this.processSingleValuedPairs( input,
+                                                                             this.singleValuedMultiVector,
+                                                                             ignoreTheseMetrics ) );
+                break;
+            case BOXPLOT_PER_POOL:
+                futures.addBoxPlotOutputPerPool( this.processSingleValuedPairs( input,
+                                                                                this.singleValuedBoxPlot,
+                                                                                ignoreTheseMetrics ) );
+                break;
+            default:
+                throw new IllegalStateException( "The statistic group '" + outGroup
+                                                 + "' is not supported in this context." );
         }
     }
 

@@ -337,10 +337,13 @@ public final class MetricConfigHelper
 
     public static Set<StatisticGroup> getCacheListFromProjectConfig( ProjectConfig projectConfig )
     {
-        // Always cache ordinary scores and paired output for timing error metrics 
+        // Always cache ordinary scores and paired output for timing error metrics
         Set<StatisticGroup> returnMe = new TreeSet<>();
         returnMe.add( StatisticGroup.DOUBLE_SCORE );
         returnMe.add( StatisticGroup.PAIRED );
+        
+        // Always cache box plot outputs for pooled predictions
+        returnMe.add( StatisticGroup.BOXPLOT_PER_POOL );
 
         // Cache other outputs as required
         StatisticGroup[] options = StatisticGroup.values();
@@ -353,7 +356,7 @@ public final class MetricConfigHelper
             }
         }
 
-        // Never cache box plot output, as it does not apply to thresholds
+        // Never cache box plot output for individual pairs
         returnMe.remove( StatisticGroup.BOXPLOT_PER_PAIR );
 
         // Never cache duration score output as timing error summary statistics are computed once all data 
@@ -481,6 +484,7 @@ public final class MetricConfigHelper
 
         // All data only
         if ( metric.getMetricOutputGroup() == StatisticGroup.BOXPLOT_PER_PAIR
+             || metric.getMetricOutputGroup() == StatisticGroup.BOXPLOT_PER_POOL
              || metric == MetricConstants.QUANTILE_QUANTILE_DIAGRAM )
         {
             return Collections.unmodifiableSet( new HashSet<>( Arrays.asList( allData ) ) );

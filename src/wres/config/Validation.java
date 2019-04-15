@@ -409,7 +409,7 @@ public class Validation
                            result.set( false );
                            LOGGER.warn( "In file {}, a metric named {} was requested, but is not allowed. "
                                         + "Only verification scores are allowed in "
-                                        + "combination with a poolingWindow configuration.",
+                                        + "combination with a pooling window configuration.",
                                         projectConfigPlus.getOrigin(),
                                         nextMetric.getName() );
                        }
