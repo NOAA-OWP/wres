@@ -264,6 +264,7 @@
             <xs:enumeration value="all valid" />
 
             <xs:enumeration value="bias fraction" />
+            <xs:enumeration value="box plot of errors" />
             <xs:enumeration value="box plot of errors by observed value" />
             <xs:enumeration value="box plot of errors by forecast value" />
             <xs:enumeration value="brier score" />

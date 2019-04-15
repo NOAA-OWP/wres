@@ -115,7 +115,7 @@ public final class MetricFuturesByTimeTest
                                                                                                             MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
                                                                                                             MetricConstants.MAIN ) ) ) );
 
-        builder.addBoxPlotOutput( CompletableFuture.completedFuture( boxplot ) );
+        builder.addBoxPlotOutputPerPair( CompletableFuture.completedFuture( boxplot ) );
 
         // Add a double score future
         doubleScore =
@@ -239,14 +239,14 @@ public final class MetricFuturesByTimeTest
     {
         MetricFuturesByTimeBuilder builder = new MetricFuturesByTimeBuilder();
         // Add once
-        builder.addBoxPlotOutput( CompletableFuture.completedFuture( boxplot ) );
+        builder.addBoxPlotOutputPerPair( CompletableFuture.completedFuture( boxplot ) );
         builder.addDoubleScoreOutput( CompletableFuture.completedFuture( doubleScore ) );
         builder.addDurationScoreOutput( CompletableFuture.completedFuture( durationScore ) );
         builder.addMatrixOutput( CompletableFuture.completedFuture( matrix ) );
         builder.addMultiVectorOutput( CompletableFuture.completedFuture( multivector ) );
         builder.addPairedOutput( CompletableFuture.completedFuture( paired ) );
         // Add again
-        builder.addBoxPlotOutput( CompletableFuture.completedFuture( boxplot ) );
+        builder.addBoxPlotOutputPerPair( CompletableFuture.completedFuture( boxplot ) );
         builder.addDoubleScoreOutput( CompletableFuture.completedFuture( doubleScore ) );
         builder.addDurationScoreOutput( CompletableFuture.completedFuture( durationScore ) );
         builder.addMatrixOutput( CompletableFuture.completedFuture( matrix ) );
@@ -272,7 +272,7 @@ public final class MetricFuturesByTimeTest
     {
         MetricFuturesByTimeBuilder builder = new MetricFuturesByTimeBuilder();
 
-        builder.addBoxPlotOutput( CompletableFuture.completedFuture( boxplot ) );
+        builder.addBoxPlotOutputPerPair( CompletableFuture.completedFuture( boxplot ) );
         builder.addDoubleScoreOutput( CompletableFuture.completedFuture( doubleScore ) );
         builder.addDurationScoreOutput( CompletableFuture.completedFuture( durationScore ) );
         builder.addMatrixOutput( CompletableFuture.completedFuture( matrix ) );

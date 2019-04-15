@@ -13,7 +13,6 @@ import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.MatrixStatistic;
 import wres.datamodel.statistics.MultiVectorStatistic;
 import wres.datamodel.statistics.PairedStatistic;
-import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.BoxPlotStatistics;
 
 /**
@@ -665,16 +664,15 @@ public enum MetricConstants
          */
 
         MATRIX,
-
+        
         /**
-         * Metrics that produce a {@link BoxPlotStatistics} for a pool of pairs, 
-         * comprising one {@link BoxPlotStatistic} per pair.
+         * Metrics that produce a {@link BoxPlotStatistics} per pair.
          */
 
         BOXPLOT_PER_PAIR,
         
         /**
-         * Metrics that produce a {@link BoxPlotStatistic} for a pool of pairs.
+         * Metrics that produce a {@link BoxPlotStatistics} per pool of pairs.
          */
 
         BOXPLOT_PER_POOL,

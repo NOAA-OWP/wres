@@ -56,11 +56,17 @@ class MetricFuturesByTime
     private final List<Future<ListOfStatistics<MultiVectorStatistic>>> multiVector = new ArrayList<>();
 
     /**
-     * {@link BoxPlotStatistics} results.
+     * {@link BoxPlotStatistics} results per pair.
      */
 
-    private final List<Future<ListOfStatistics<BoxPlotStatistics>>> boxplot = new ArrayList<>();
+    private final List<Future<ListOfStatistics<BoxPlotStatistics>>> boxplotPerPair = new ArrayList<>();
 
+    /**
+     * {@link BoxPlotStatistics} results per pool.
+     */
+
+    private final List<Future<ListOfStatistics<BoxPlotStatistics>>> boxplotPerPool = new ArrayList<>();    
+    
     /**
      * {@link PairedStatistic} results.
      */
@@ -88,7 +94,8 @@ class MetricFuturesByTime
         doubleScore.forEach( builder::addDoubleScoreOutput );
         durationScore.forEach( builder::addDurationScoreStatistics );
         multiVector.forEach( builder::addMultiVectorStatistics );
-        boxplot.forEach( builder::addBoxPlotStatistics );
+        boxplotPerPair.forEach( builder::addBoxPlotStatisticsPerPair );
+        boxplotPerPool.forEach( builder::addBoxPlotStatisticsPerPool );
         paired.forEach( builder::addPairedStatistics );
         matrix.forEach( builder::addMatrixStatistics );
         return builder.build();
@@ -119,9 +126,14 @@ class MetricFuturesByTime
             returnMe.add( StatisticGroup.MULTIVECTOR );
         }
 
-        if ( !this.boxplot.isEmpty() )
+        if ( !this.boxplotPerPair.isEmpty() )
         {
             returnMe.add( StatisticGroup.BOXPLOT_PER_PAIR );
+        }
+        
+        if ( !this.boxplotPerPool.isEmpty() )
+        {
+            returnMe.add( StatisticGroup.BOXPLOT_PER_POOL );
         }
 
         if ( !this.paired.isEmpty() )
@@ -177,10 +189,17 @@ class MetricFuturesByTime
                 new ConcurrentLinkedQueue<>();
 
         /**
-         * {@link BoxPlotStatistics} results.
+         * {@link BoxPlotStatistics} results per pair.
          */
 
-        private final ConcurrentLinkedQueue<Future<ListOfStatistics<BoxPlotStatistics>>> boxplot =
+        private final ConcurrentLinkedQueue<Future<ListOfStatistics<BoxPlotStatistics>>> boxplotPerPair =
+                new ConcurrentLinkedQueue<>();
+        
+        /**
+         * {@link BoxPlotStatistics} results per pool.
+         */
+
+        private final ConcurrentLinkedQueue<Future<ListOfStatistics<BoxPlotStatistics>>> boxplotPerPool =
                 new ConcurrentLinkedQueue<>();
 
         /**
@@ -240,18 +259,32 @@ class MetricFuturesByTime
         }
 
         /**
-         * Adds a set of future {@link BoxPlotStatistics} to the appropriate internal store.
+         * Adds a set of future {@link BoxPlotStatistics} per pair to the appropriate internal store.
          * 
          * @param value the future result
          * @return the builder
          */
 
-        MetricFuturesByTimeBuilder addBoxPlotOutput( Future<ListOfStatistics<BoxPlotStatistics>> value )
+        MetricFuturesByTimeBuilder addBoxPlotOutputPerPair( Future<ListOfStatistics<BoxPlotStatistics>> value )
         {
-            this.boxplot.add( value );
+            this.boxplotPerPair.add( value );
 
             return this;
         }
+        
+        /**
+         * Adds a set of future {@link BoxPlotStatistics} per pool to the appropriate internal store.
+         * 
+         * @param value the future result
+         * @return the builder
+         */
+
+        MetricFuturesByTimeBuilder addBoxPlotOutputPerPool( Future<ListOfStatistics<BoxPlotStatistics>> value )
+        {
+            this.boxplotPerPool.add( value );
+
+            return this;
+        }        
 
         /**
          * Adds a set of future {@link MatrixStatistic} to the appropriate internal store.
@@ -356,7 +389,11 @@ class MetricFuturesByTime
                     }
                     else if ( nextGroup == StatisticGroup.BOXPLOT_PER_PAIR )
                     {
-                        this.boxplot.addAll( futures.boxplot );
+                        this.boxplotPerPair.addAll( futures.boxplotPerPair );
+                    }
+                    else if ( nextGroup == StatisticGroup.BOXPLOT_PER_POOL )
+                    {
+                        this.boxplotPerPool.addAll( futures.boxplotPerPool );
                     }
                     else if ( nextGroup == StatisticGroup.PAIRED )
                     {
@@ -383,7 +420,8 @@ class MetricFuturesByTime
         doubleScore.addAll( builder.doubleScore );
         durationScore.addAll( builder.durationScore );
         multiVector.addAll( builder.multiVector );
-        boxplot.addAll( builder.boxplot );
+        boxplotPerPair.addAll( builder.boxplotPerPair );
+        boxplotPerPool.addAll( builder.boxplotPerPool );
         paired.addAll( builder.paired );
         matrix.addAll( builder.matrix );
     }

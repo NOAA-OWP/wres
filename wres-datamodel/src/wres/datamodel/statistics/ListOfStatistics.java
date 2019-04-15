@@ -100,8 +100,11 @@ public class ListOfStatistics<T extends Statistic<?>> implements Iterable<T>
 
         // Remove trailing newline
         int lines = b.length();
-        b.delete( lines - System.lineSeparator().length(), lines );
-
+        if( lines > 0 )
+        {
+            b.delete( lines - System.lineSeparator().length(), lines );
+        }
+        
         return b.toString();
     }
 

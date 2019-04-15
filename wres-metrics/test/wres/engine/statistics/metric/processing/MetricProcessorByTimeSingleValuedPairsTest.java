@@ -39,6 +39,7 @@ import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
@@ -48,6 +49,7 @@ import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
+import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
@@ -119,6 +121,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                 Slicer.filter( results.getDoubleScoreStatistics(), MetricConstants.ROOT_MEAN_SQUARE_ERROR );
         ListOfStatistics<DoubleScoreStatistic> ve =
                 Slicer.filter( results.getDoubleScoreStatistics(), MetricConstants.VOLUMETRIC_EFFICIENCY );
+        ListOfStatistics<BoxPlotStatistics> bpe =
+                Slicer.filter( results.getBoxPlotStatisticsPerPool(), MetricConstants.BOX_PLOT_OF_ERRORS );
 
         //Test contents
         assertTrue( "Unexpected difference in " + MetricConstants.BIAS_FRACTION,
@@ -135,6 +139,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                     rmse.getData().get( 0 ).getData().equals( 5.0 ) );
         assertTrue( "Unexpected difference in " + MetricConstants.VOLUMETRIC_EFFICIENCY,
                     ve.getData().get( 0 ).getData().equals( -0.6666666666666666 ) );
+        assertTrue( "Unexpected difference in " + MetricConstants.BOX_PLOT_OF_ERRORS,
+                    bpe.getData().get( 0 ).getData().get( 0 ).getData().equals( VectorOfDoubles.of( 5, 5, 5, 5, 5 ) ) );
     }
 
     /**
@@ -850,7 +856,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<SingleValuedPairs, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config, StatisticGroup.set() );
-        SingleValuedPairs pairs = MetricTestDataFactory.getSingleValuedPairsEightWithMissings();
+        SingleValuedPairs pairs = MetricTestDataFactory.getSingleValuedPairsEight();
 
         // Generate results
         final TimeWindow window = TimeWindow.of( Instant.MIN,

@@ -23,6 +23,7 @@ import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.pairs.DichotomousPairs;
 import wres.datamodel.sampledata.pairs.EnsemblePairs;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
+import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.MatrixStatistic;
 import wres.datamodel.statistics.Statistic;
@@ -127,6 +128,13 @@ public abstract class MetricProcessor<S extends SampleData<?>, T extends Statist
      */
 
     final MetricCollection<SingleValuedPairs, MultiVectorStatistic, MultiVectorStatistic> singleValuedMultiVector;
+    
+    /**
+     * A {@link MetricCollection} of {@link Metric} that consume {@link SingleValuedPairs} and produce
+     * {@link BoxPlotStatistics}.
+     */
+
+    final MetricCollection<SingleValuedPairs, BoxPlotStatistics, BoxPlotStatistics> singleValuedBoxPlot;    
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link DichotomousPairs} and produce
@@ -347,6 +355,8 @@ public abstract class MetricProcessor<S extends SampleData<?>, T extends Statist
         Objects.requireNonNull( metricExecutor, "Specify a non-null metric executor service." );
 
         this.metrics = MetricConfigHelper.getMetricsFromConfig( config );
+        
+        LOGGER.debug( "Based on the project declaration, the following metrics will be computed: {}.", this.metrics );
 
         //Construct the metrics that are common to more than one type of input pairs
         if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticGroup.DOUBLE_SCORE ) )
@@ -360,6 +370,8 @@ public abstract class MetricProcessor<S extends SampleData<?>, T extends Statist
         {
             this.singleValuedScore = null;
         }
+        
+        // Diagrams
         if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticGroup.MULTIVECTOR ) )
         {
             this.singleValuedMultiVector =
@@ -384,6 +396,7 @@ public abstract class MetricProcessor<S extends SampleData<?>, T extends Statist
         {
             this.dichotomousScalar = null;
         }
+        
         // Contingency table
         if ( this.hasMetrics( SampleDataGroup.DICHOTOMOUS, StatisticGroup.MATRIX ) )
         {
@@ -396,7 +409,20 @@ public abstract class MetricProcessor<S extends SampleData<?>, T extends Statist
         {
             this.dichotomousMatrix = null;
         }
-
+        
+        //Box plots
+        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticGroup.BOXPLOT_PER_POOL ) )
+        {
+            this.singleValuedBoxPlot =
+                    MetricFactory.ofSingleValuedBoxPlotCollection( metricExecutor,
+                                                                   this.getMetrics( SampleDataGroup.SINGLE_VALUED,
+                                                                                    StatisticGroup.BOXPLOT_PER_POOL ) );
+        }
+        else
+        {
+            this.singleValuedBoxPlot = null;
+        }
+        
         //Set the thresholds: canonical --> metric-local overrides --> global        
         this.thresholdsByMetric = MetricConfigHelper.getThresholdsFromConfig( config, externalThresholds );
 

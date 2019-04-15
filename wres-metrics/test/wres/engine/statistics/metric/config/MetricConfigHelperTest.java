@@ -1,5 +1,6 @@
 package wres.engine.statistics.metric.config;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -653,8 +654,9 @@ public final class MetricConfigHelperTest
         expected.add( StatisticGroup.MULTIVECTOR );
         expected.add( StatisticGroup.PAIRED );
         expected.add( StatisticGroup.DOUBLE_SCORE );
-
-        assertTrue( MetricConfigHelper.getCacheListFromProjectConfig( mockedConfigWithOutput ).equals( expected ) );
+        expected.add( StatisticGroup.BOXPLOT_PER_POOL );
+        
+        assertEquals( expected, MetricConfigHelper.getCacheListFromProjectConfig( mockedConfigWithOutput ) );
 
     }
 
