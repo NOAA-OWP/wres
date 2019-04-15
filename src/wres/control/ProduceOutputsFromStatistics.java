@@ -277,14 +277,9 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         catch ( InterruptedException e )
         {
             String message = "Interrupted while processing intermediate results:";
-            LOGGER.warn( message, e );
             Thread.currentThread().interrupt();
 
             throw new WresProcessingException( message, e );
-        }
-        catch ( IOException e )
-        {
-            throw new WresProcessingException( "Error while processing intermediate results:", e );
         }
     }
 
@@ -329,7 +324,6 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         {
             // implicitly passing resolvedProject via shared state
             this.buildNetCDFConsumers( sharedWriters );
-            //buildNetCDFConsumers();
         }
 
         // Register consumers for the CSV output type
@@ -468,6 +462,16 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
                                        boxPlotWriter );
             this.writersToPaths.add( boxPlotWriter );
         }
+        
+        if ( this.writeWhenTrue.test( StatisticGroup.BOXPLOT_PER_POOL, DestinationType.PNG ) )
+        {
+            PNGBoxPlotWriter boxPlotWriter = PNGBoxPlotWriter.of( projectConfigPlus,
+                                                                  ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
+                                                                  outputDirectory );
+            this.boxPlotConsumersPerPool.put( DestinationType.PNG,
+                                              boxPlotWriter );
+            this.writersToPaths.add( boxPlotWriter );
+        }
 
         if ( this.writeWhenTrue.test( StatisticGroup.PAIRED, DestinationType.PNG ) )
         {
@@ -567,12 +571,10 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
      * Processes {@link BoxPlotStatistics} per pair.
      * 
      * @param outputs the output to consume
-     * @throws IOException if the output could not be consumed
      * @throws NullPointerException if the input is null
      */
 
     private void processBoxPlotOutputsPerPair( ListOfStatistics<BoxPlotStatistics> outputs )
-            throws IOException
     {
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
@@ -596,12 +598,10 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
      * Processes {@link BoxPlotStatistics} per pool.
      * 
      * @param outputs the output to consume
-     * @throws IOException if the output could not be consumed
      * @throws NullPointerException if the input is null
      */
 
     private void processBoxPlotOutputsPerPool( ListOfStatistics<BoxPlotStatistics> outputs )
-            throws IOException
     {
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
@@ -625,12 +625,10 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
      * Processes {@link MatrixStatistic}.
      * 
      * @param outputs the output to consume
-     * @throws IOException if the output could not be consumed
      * @throws NullPointerException if the input is null
      */
 
     private void processMatrixOutputs( ListOfStatistics<MatrixStatistic> outputs )
-            throws IOException
     {
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
@@ -655,12 +653,10 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
      * Processes {@link DoubleScoreStatistic}.
      * 
      * @param outputs the output to consume
-     * @throws IOException if the output could not be consumed
      * @throws NullPointerException if the input is null
      */
 
     private void processDoubleScoreOutputs( ListOfStatistics<DoubleScoreStatistic> outputs )
-            throws IOException
     {
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
@@ -685,12 +681,10 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
      * Processes {@link DurationScoreStatistic}.
      * 
      * @param outputs the output to consume
-     * @throws IOException if the output could not be consumed
      * @throws NullPointerException if the input is null
      */
 
     private void processDurationScoreOutputs( ListOfStatistics<DurationScoreStatistic> outputs )
-            throws IOException
     {
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
@@ -714,13 +708,11 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
      * Processes {@link PairedStatistic}.
      * 
      * @param outputs the output to consume
-     * @throws IOException if the output could not be consumed
      * @throws NullPointerException if the input is null
      */
 
     private void
             processPairedOutputByInstantDuration( ListOfStatistics<PairedStatistic<Instant, Duration>> outputs )
-                    throws IOException
     {
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 

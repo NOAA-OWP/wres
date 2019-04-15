@@ -475,7 +475,7 @@ public class Chart2DTestOutput
 
         //Call the factory.
         final Map<Pair<TimeWindow, OneOrTwoThresholds>, ChartEngine> engineMap =
-                ChartEngineFactory.buildBoxPlotChartEngine( null,
+                ChartEngineFactory.buildBoxPlotChartEnginePerPool( null,
                                                             results,
                                                             null,
                                                             null,
@@ -526,7 +526,7 @@ public class Chart2DTestOutput
 
         //Call the factory.
         final Map<Pair<TimeWindow, OneOrTwoThresholds>, ChartEngine> engineMap =
-                ChartEngineFactory.buildBoxPlotChartEngine( null,
+                ChartEngineFactory.buildBoxPlotChartEnginePerPool( null,
                                                             results,
                                                             null,
                                                             null,

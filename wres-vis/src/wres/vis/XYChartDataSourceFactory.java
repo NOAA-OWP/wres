@@ -28,6 +28,7 @@ import ohd.hseb.charter.parameters.DataSourceDrawingParameters;
 import ohd.hseb.charter.parameters.SeriesDrawingParameters;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.datamodel.Slicer;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
@@ -60,18 +61,28 @@ public abstract class XYChartDataSourceFactory
      * @param orderIndex Order index of the data source; lower index sources are drawn on top of higher index sources.
      * @param input The data to plot.
      * @param subPlotIndex 0 for bottom, 1 for the one above, etc.
+     * @param durationUnits the duration units
      * @return A data source to be used to draw the plot.
      */
     public static DefaultXYChartDataSource ofBoxPlotOutput( int orderIndex,
                                                             final BoxPlotStatistics input,
-                                                            Integer subPlotIndex )
+                                                            Integer subPlotIndex,
+                                                            ChronoUnit durationUnits )
     {
+        Objects.requireNonNull( input );
+        
+        Objects.requireNonNull( durationUnits );
+        
+        // One box per pool? See #62374
+        boolean pooledInput = input.getMetadata().getMetricID().isInGroup( StatisticGroup.BOXPLOT_PER_POOL );
+        
         DefaultXYChartDataSource source = new DefaultXYChartDataSource()
         {
             @Override
             public XYChartDataSource returnNewInstanceWithCopyOfInitialParameters() throws XYChartDataSourceException
             {
-                DefaultXYChartDataSource newSource = ofBoxPlotOutput( orderIndex, input, subPlotIndex );
+                DefaultXYChartDataSource newSource =
+                        XYChartDataSourceFactory.ofBoxPlotOutput( orderIndex, input, subPlotIndex, durationUnits );
                 this.copyTheseParametersIntoDataSource( newSource );
                 return newSource;
             }
@@ -79,6 +90,12 @@ public abstract class XYChartDataSourceFactory
             @Override
             protected XYDataset buildXYDataset( DataSourceDrawingParameters arg0 ) throws XYChartDataSourceException
             {
+                // Add a boxplot for output that contains one box per pool. See #62374
+                if( pooledInput )
+                {
+                    return new BoxPlotDiagramByLeadXYDataset( input, durationUnits );
+                }
+                
                 return new BoxPlotDiagramXYDataset( input );
             }
         };
@@ -89,10 +106,19 @@ public abstract class XYChartDataSourceFactory
                                 orderIndex,
                                 statistic.getData().size() );
 
-        source.getDefaultFullySpecifiedDataSourceDrawingParameters()
-              .setDefaultDomainAxisTitle( statistic.getLinkedValueType()
-                                               .toString()
-                                          + "@inputUnitsLabelSuffix@" );
+        if ( pooledInput )
+        {
+            source.getDefaultFullySpecifiedDataSourceDrawingParameters()
+                  .setDefaultDomainAxisTitle( "FORECAST LEAD TIME [" + durationUnits.toString().toUpperCase() + "]" );
+        }
+        else
+        {
+            source.getDefaultFullySpecifiedDataSourceDrawingParameters()
+                  .setDefaultDomainAxisTitle( statistic.getLinkedValueType()
+                                                       .toString()
+                                              + "@inputUnitsLabelSuffix@" );
+        }
+        
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
               .setDefaultRangeAxisTitle( statistic.getValueType()
                                               .toString()
