@@ -36,11 +36,6 @@ evaluation = '''
     <pair>
         <unit>CMS</unit>
         <feature locationId="FAKE1" />
-        <desiredTimeScale>
-            <function>mean</function>
-            <period>1</period>
-            <unit>hours</unit>
-        </desiredTimeScale>
     </pair>
 
     <metrics>
