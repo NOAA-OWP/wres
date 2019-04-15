@@ -94,13 +94,14 @@ public class ScoreOutputByLeadAndThresholdXYDataset extends
     @Override
     public Number getX( final int series, final int item )
     {
-        return TimeHelper.durationToLongUnits( getPlotData().get( series )
-                                                            .getData()
-                                                            .get( item )
-                                                            .getMetadata()
-                                                            .getSampleMetadata()
-                                                            .getTimeWindow()
-                                                            .getLatestLeadDuration(),
+        return TimeHelper.durationToLongUnits( this.getPlotData()
+                                                   .get( series )
+                                                   .getData()
+                                                   .get( item )
+                                                   .getMetadata()
+                                                   .getSampleMetadata()
+                                                   .getTimeWindow()
+                                                   .getLatestLeadDuration(),
                                                this.durationUnits );
     }
 

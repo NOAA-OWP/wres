@@ -118,10 +118,21 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
                                 + " "
                                 + this.getDurationUnits().name().toUpperCase();
 
-        addArgument( "diagramInstanceDescription",
-                     "at Lead Time " + durationString
-                                                   + " for "
-                                                   + meta.getSampleMetadata().getThresholds() );
+        // Plot per pool? See: #62374
+        if ( displayPlotInput.getMetadata().getMetricID().isInGroup( StatisticGroup.BOXPLOT_PER_POOL ) )
+        {
+            addArgument( "diagramInstanceDescription",
+                         "for "
+                                                       + meta.getSampleMetadata().getThresholds() );
+        }
+        else
+        {
+            addArgument( "diagramInstanceDescription",
+                         "at Lead Time " + durationString
+                                                       + " for "
+                                                       + meta.getSampleMetadata().getThresholds() );            
+        }
+
         addArgument( "probabilities",
                      HString.buildStringFromArray( displayPlotInput.getData().get( 0 ).getProbabilities().getDoubles(),
                                                    ", " )

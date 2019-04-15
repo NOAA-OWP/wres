@@ -82,12 +82,12 @@ public class BoxPlotError extends Diagram<SingleValuedPairs, BoxPlotStatistics>
             return BoxPlotStatistics.of( new ArrayList<>(), metOut );
         }
 
-        //Get the sorted errors
+        // Get the sorted errors
         double[] probs = this.getProbabilities().getDoubles();
         double[] sortedErrors =
                 s.getRawData().stream().mapToDouble( a -> a.getRight() - a.getLeft() ).sorted().toArray();
 
-        //Compute the quantiles
+        // Compute the quantiles of the errors at a rounded precision
         double[] box =
                 Arrays.stream( probs )
                       .map( Slicer.getQuantileFunction( sortedErrors ) )
