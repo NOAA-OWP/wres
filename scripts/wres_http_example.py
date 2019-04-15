@@ -110,11 +110,10 @@ post_result = requests.post( url="https://***REMOVED***wres"+env_suffix+".***REM
 print( "The response from the server was:" )
 print( post_result )
 
-# More details about above follow. The -i option of curl causes response headers
-# to be returned. The --cacert option of curl specifies the Certificate
-# Authority to trust for this request (see above). The --data option of curl
-# causes a POST to be performed rather than the default GET, inside which are
-# the parameters and values to POST.
+# More details about above follow. The "verify" parameter specifies the
+# Certificate Authority to trust for this request (see above). The "data"
+# parameter contains the map of query parameters and their values. Use of the
+# "post" method causes an HTTP POST to be performed.
 
 # We check whether the POST was successful by looking for HTTP code 200 or
 # 201, something in the 2xx series.
@@ -166,8 +165,8 @@ if evaluation_status == "COMPLETED_REPORTED_SUCCESS":
     # In requests, we use the header arg to specify the Accept header and to
     # set it to text/plain, because WRES text/plain is easier to parse than html
     output_data = requests.get( url = job_location + "/output",
-                                      verify = wres_ca_file,
-                                      headers = { 'Accept': 'text/plain' }
+                                verify = wres_ca_file,
+                                headers = { 'Accept': 'text/plain' }
                               ).text
 
     print( "Found these output resources available to GET:" )
