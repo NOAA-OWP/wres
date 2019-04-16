@@ -291,8 +291,9 @@ public final class MetricTestDataFactory
     }
 
     /**
-     * Returns a list of {@link TimeSeriesOfSingleValuedPairs}. Corresponds to the pairs 
+     * Returns a list of {@link TimeSeriesOfSingleValuedPairs} which corresponds to the pairs 
      * associated with system test scenario504 as of commit e91b36a8f6b798d1987e78a0f37b38f3ca4501ae.
+     * The pairs are reproduced to 2 d.p. only.
      * 
      * @return a time series of single-valued pairs
      */
