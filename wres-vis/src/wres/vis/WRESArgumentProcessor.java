@@ -122,15 +122,15 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         if ( displayPlotInput.getMetadata().getMetricID().isInGroup( StatisticGroup.BOXPLOT_PER_POOL ) )
         {
             addArgument( "diagramInstanceDescription",
-                         "for "
-                                                       + meta.getSampleMetadata().getThresholds() );
+                         "and for Threshold " + meta.getSampleMetadata().getThresholds() );
         }
         else
         {
             addArgument( "diagramInstanceDescription",
-                         "at Lead Time " + durationString
-                                                       + " for "
-                                                       + meta.getSampleMetadata().getThresholds() );            
+                         "and at Lead Time "
+                                                       + durationString
+                                                       + " and for Threshold "
+                                                       + meta.getSampleMetadata().getThresholds() );
         }
 
         addArgument( "probabilities",
@@ -244,13 +244,13 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
             final DatasetIdentifier identifier = meta.getIdentifier();
             addArgument( "locationName", identifier.getGeospatialID().toString() );
             addArgument( "variableName", identifier.getVariableID() );
-            if ( identifier.getScenarioID() == null )
+            if ( identifier.hasScenarioID() )
             {
-                addArgument( "primaryScenario", "" );
+                addArgument( "primaryScenario", " "+identifier.getScenarioID() );
             }
             else
             {
-                addArgument( "primaryScenario", identifier.getScenarioID() );
+                addArgument( "primaryScenario", "" );
             }
         }
     }
@@ -346,7 +346,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         if ( threshold != null )
         {
             addArgument( "diagramInstanceDescription",
-                         "for Threshold " + threshold.toString() );
+                         "and for Threshold " + threshold.toString() );
             addArgument( "plotTitleVariable", "Lead Times" );
         }
     }
@@ -434,8 +434,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
                             + " "
                             + this.getDurationUnits().name().toUpperCase();
 
-            timeScale =
-                    " with time scale [" + period + ", " + meta.getSampleMetadata().getTimeScale().getFunction() + "] ";
+            timeScale = "[" + period + ", " + meta.getSampleMetadata().getTimeScale().getFunction() + "] ";
         }
 
         addArgument( "timeScale", timeScale );
