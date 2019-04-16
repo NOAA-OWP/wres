@@ -1337,8 +1337,8 @@ public final class Slicer
     /**
      * Returns a function to compute a value from the sorted array that corresponds to the input non-exceedence 
      * probability. This method produces undefined results if the input array is unsorted. Corresponds to 
-     * method 6 in the R function, <code>quantile{stats}</code> and to <code>PERCENTILE.EXC</code> in Microsoft 
-     * Excel: <a href=
+     * method 6 in the R function, <code>quantile{stats}</code>. This is largely equivalent to <code>PERCENTILE.EXC</code> 
+     * function in Microsoft Excel, but the latter cannot compute the bounds or values close to the bounds: <a href=
      * "https://stat.ethz.ch/R-manual/R-devel/library/stats/html/quantile.html">https://stat.ethz.ch/R-manual/R-devel/library/stats/html/quantile.html</a>.
      * Also see: <a href=
      * "https://en.wikipedia.org/wiki/Quantile#Estimating_quantiles_from_a_sample">https://en.wikipedia.org/wiki/Quantile#Estimating_quantiles_from_a_sample</a>.
