@@ -70,6 +70,26 @@ public class BoxPlotStatistic implements Statistic<VectorOfDoubles>
     {
         return new BoxPlotStatistic( probabilities, quantiles, MetricDimension.FORECAST_ERROR, meta, Double.NaN, null );
     }
+    
+    /**
+     * Returns an instance from the inputs with a prescribed value type.
+     * 
+     * @param probabilities the probabilities
+     * @param quantiles the quantiles
+     * @param valueType the value type
+     * @param meta the statistic metadata
+     * @throws StatisticException if any of the input is invalid
+     * @throws NullPointerException if any input is null
+     * @return an instance of the output
+     */
+
+    public static BoxPlotStatistic of( VectorOfDoubles probabilities,
+                                       VectorOfDoubles quantiles,
+                                       MetricDimension valueType,
+                                       StatisticMetadata meta )
+    {
+        return new BoxPlotStatistic( probabilities, quantiles, valueType, meta, Double.NaN, null );
+    }
 
     /**
      * Returns an instance from the inputs with a default value type of

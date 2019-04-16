@@ -59,7 +59,13 @@ public enum MetricConstants
      * Identifier for a box plot of errors.
      */
 
-    BOX_PLOT_OF_ERRORS( SampleDataGroup.SINGLE_VALUED, StatisticGroup.BOXPLOT_PER_POOL ),    
+    BOX_PLOT_OF_ERRORS( SampleDataGroup.SINGLE_VALUED, StatisticGroup.BOXPLOT_PER_POOL ),   
+    
+    /**
+     * Identifier for a box plot of errors as a percentage of the left value.
+     */
+
+    BOX_PLOT_OF_PERCENTAGE_ERRORS( SampleDataGroup.SINGLE_VALUED, StatisticGroup.BOXPLOT_PER_POOL ),       
 
     /**
      * Identifier for coefficient of determination.
@@ -921,8 +927,14 @@ public enum MetricConstants
          * Identifier for true negatives.
          */
 
-        TRUE_NEGATIVES;
-
+        TRUE_NEGATIVES,
+        
+        /**
+         * Identifier for error as a percentage of the verifying value.
+         */
+        
+        ERROR_PERCENT_OF_VERIFYING_VALUE;
+        
         /**
          * Returns a string representation.
          * 

@@ -50,6 +50,7 @@ import wres.engine.statistics.metric.processing.MetricProcessorByTimeSingleValue
 import wres.engine.statistics.metric.processing.MetricProcessorForProject;
 import wres.engine.statistics.metric.singlevalued.BiasFraction;
 import wres.engine.statistics.metric.singlevalued.BoxPlotError;
+import wres.engine.statistics.metric.singlevalued.BoxPlotPercentageError;
 import wres.engine.statistics.metric.singlevalued.CoefficientOfDetermination;
 import wres.engine.statistics.metric.singlevalued.CorrelationPearsons;
 import wres.engine.statistics.metric.singlevalued.IndexOfAgreement;
@@ -863,13 +864,14 @@ public final class MetricFactory
 
     public static Metric<SingleValuedPairs, BoxPlotStatistics> ofSingleValuedBoxPlot( MetricConstants metric )
     {
-        if ( MetricConstants.BOX_PLOT_OF_ERRORS.equals( metric ) )
+        switch ( metric )
         {
-            return BoxPlotError.of();
-        }
-        else
-        {
-            throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
+            case BOX_PLOT_OF_ERRORS:
+                return BoxPlotError.of();
+            case BOX_PLOT_OF_PERCENTAGE_ERRORS:
+                return BoxPlotPercentageError.of();
+            default:
+                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         }
     }    
     

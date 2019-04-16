@@ -69,14 +69,17 @@ public final class BoxPlotErrorTest
         BoxPlotStatistics actual = this.boxPlotError.apply( input );
         VectorOfDoubles probabilities = VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 );
 
-        List<BoxPlotStatistic> bpList = new ArrayList<>();
+        List<BoxPlotStatistic> expectedRaw = new ArrayList<>();
         BoxPlotStatistic bp =
                 BoxPlotStatistic.of( probabilities,
                                      VectorOfDoubles.of( -3, -0.325, 1, 2.55, 2000 ),
                                      meta );
-        bpList.add( bp );
+        expectedRaw.add( bp );
 
-        BoxPlotStatistics expected = BoxPlotStatistics.of( bpList, meta );
+        BoxPlotStatistics expected = BoxPlotStatistics.of( expectedRaw, meta );
+        
+        assertEquals( expected.getData().size(), expectedRaw.size() );
+        
         assertEquals( expected, actual );
     }
 
@@ -98,57 +101,62 @@ public final class BoxPlotErrorTest
                                                        MetricConstants.BOX_PLOT_OF_ERRORS,
                                                        MetricConstants.MAIN );
         //Check the results        
-        List<BoxPlotStatistic> actual = new ArrayList<>();
+        List<BoxPlotStatistic> actualRaw = new ArrayList<>();
 
         // Compute the metric for each duration separately
         input.getDurations()
-             .forEach( next -> actual.addAll( this.boxPlotError.apply( Slicer.filterByDuration( input,
+             .forEach( next -> actualRaw.addAll( this.boxPlotError.apply( Slicer.filterByDuration( input,
                                                                                                 a -> a.equals( next ) ) )
                                                                .getData() ) );
 
+        BoxPlotStatistics actual = BoxPlotStatistics.of( actualRaw, meta );
+        
         VectorOfDoubles probabilities = VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 );
-
-        List<BoxPlotStatistic> bpList = new ArrayList<>();
-        bpList.add( BoxPlotStatistic.of( probabilities,
+        
+        List<BoxPlotStatistic> expectedRaw = new ArrayList<>();
+        expectedRaw.add( BoxPlotStatistic.of( probabilities,
                                          VectorOfDoubles.of( -387.33, -384.665, -361.67, -339.17, -336.67 ),
                                          meta ) );
-        bpList.add( BoxPlotStatistic.of( probabilities,
+        expectedRaw.add( BoxPlotStatistic.of( probabilities,
                                          VectorOfDoubles.of( -396.0, -395.1675, -376.67, -352.165, -349.33 ),
                                          meta ) );
-        bpList.add( BoxPlotStatistic.of( probabilities,
+        expectedRaw.add( BoxPlotStatistic.of( probabilities,
                                          VectorOfDoubles.of( -407.33, -406.83, -392, -365.17, -360.67 ),
                                          meta ) );
-        bpList.add( BoxPlotStatistic.of( probabilities,
+        expectedRaw.add( BoxPlotStatistic.of( probabilities,
                                          VectorOfDoubles.of( -422.67, -421.335, -408.33, -378.33, -371.33 ),
                                          meta ) );
-        bpList.add( BoxPlotStatistic.of( probabilities,
+        expectedRaw.add( BoxPlotStatistic.of( probabilities,
                                          VectorOfDoubles.of( -447.33, -442.33, -422, -389.67, -380.67 ),
                                          meta ) );
-        bpList.add( BoxPlotStatistic.of( probabilities,
+        expectedRaw.add( BoxPlotStatistic.of( probabilities,
                                          VectorOfDoubles.of( -461.33, -453.4975, -429.335, -404.67, -396.67 ),
                                          meta ) );
-        bpList.add( BoxPlotStatistic.of( probabilities,
+        expectedRaw.add( BoxPlotStatistic.of( probabilities,
                                          VectorOfDoubles.of( -475.33, -467.33, -441.33, -420.835, -414.67 ),
                                          meta ) );
-        bpList.add( BoxPlotStatistic.of( probabilities,
+        expectedRaw.add( BoxPlotStatistic.of( probabilities,
                                          VectorOfDoubles.of( -493.33, -485.665, -456, -443.33, -441.33 ),
                                          meta ) );
-        bpList.add( BoxPlotStatistic.of( probabilities,
+        expectedRaw.add( BoxPlotStatistic.of( probabilities,
                                          VectorOfDoubles.of( -512.67, -505.835, -475.33, -460.335, -458.67 ),
                                          meta ) );
-        bpList.add( BoxPlotStatistic.of( probabilities,
+        expectedRaw.add( BoxPlotStatistic.of( probabilities,
                                          VectorOfDoubles.of( -516.67, -512.335, -486.665, -473.0025, -472.67 ),
                                          meta ) );
-        bpList.add( BoxPlotStatistic.of( probabilities,
+        expectedRaw.add( BoxPlotStatistic.of( probabilities,
                                          VectorOfDoubles.of( -529.33, -525.83, -502.33, -478.83, -475.33 ),
                                          meta ) );
 
-        BoxPlotStatistics expected = BoxPlotStatistics.of( bpList, meta );
-        assertEquals( expected.getData(), actual );
+        BoxPlotStatistics expected = BoxPlotStatistics.of( expectedRaw, meta );
+        
+        assertEquals( expected.getData().size(), expectedRaw.size() );
+        
+        assertEquals( expected, actual );
     }
 
     /**
-     * Validates the output from {@link MeanError#apply(SingleValuedPairs)} when supplied with no data.
+     * Validates the output from {@link BoxPlotError#apply(SingleValuedPairs)} when supplied with no data.
      */
 
     @Test
@@ -164,8 +172,8 @@ public final class BoxPlotErrorTest
     }
 
     /**
-     * Checks that the {@link MeanError#getName()} returns 
-     * {@link MetricConstants#MEAN_ERROR.toString()}
+     * Checks that the {@link BoxPlotError#getName()} returns 
+     * {@link MetricConstants#BOX_PLOT_OF_ERRORS.toString()}
      */
 
     @Test
@@ -175,7 +183,7 @@ public final class BoxPlotErrorTest
     }
 
     /**
-     * Tests for an expected exception on calling {@link MeanError#apply(SingleValuedPairs)} with null 
+     * Tests for an expected exception on calling {@link BoxPlotError#apply(SingleValuedPairs)} with null 
      * input.
      */
 
