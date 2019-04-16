@@ -162,7 +162,8 @@ public abstract class PairsWriter<S extends Pair<?,?>, T extends Pairs<S> & Time
                 leadDurationString = leadDurationString + " ["
                                      + s.getFunction()
                                      + " OVER PAST "
-                                     + s.getPeriod().get( this.getTimeResolution() )
+                                     + Long.toString( TimeHelper.durationToLongUnits( s.getPeriod(),
+                                                                                      this.getTimeResolution() ) )
                                      + " "
                                      + this.getTimeResolution().toString().toUpperCase()
                                      + "]";
@@ -284,8 +285,9 @@ public abstract class PairsWriter<S extends Pair<?,?>, T extends Pairs<S> & Time
                             joiner.add( nextPair.getTime().toString() );
 
                             // Lead duration in standard units
-                            joiner.add( Long.toString( Duration.between( basisTime, nextPair.getTime() )
-                                                               .get( this.getTimeResolution() ) ) );
+                            joiner.add( Long.toString( TimeHelper.durationToLongUnits( Duration.between( basisTime,
+                                                                                                         nextPair.getTime() ),
+                                                                                       this.getTimeResolution() ) ) );
 
                             // Write the values
                             joiner.add( this.getPairFormatter().apply( nextPair.getValue() ) );
