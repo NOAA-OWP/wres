@@ -4,8 +4,8 @@
 
     <plotTitle>
         <font family="Dialog" size="12" style="1"/>
-        <text>@metricName@@metricComponentNameSuffix@ for @primaryScenario@ predictions of @variableName@
-at @locationName@@baselineLabelSuffix@@timeScale@
+        <text>@metricName@@metricComponentNameSuffix@ for@primaryScenario@ predictions of @variableName@
+at @locationName@@baselineLabelSuffix@ with Time Scale @timeScale@
 @referenceTime@@dataPoolingWindow(yyyy-MM-dd'T'HH:mm:ss zz;GMT)@</text>
     </plotTitle>
 
