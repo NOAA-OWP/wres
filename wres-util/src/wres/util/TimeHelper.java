@@ -194,6 +194,7 @@ public final class TimeHelper
      * Retrieves the specified number of time units from the input duration. Accepted units include:
      * 
      * <ol>
+     * <li>{@link ChronoUnit#DAYS}</li>
      * <li>{@link ChronoUnit#HOURS}</li>
      * <li>{@link ChronoUnit#MINUTES}</li>
      * <li>{@link ChronoUnit#SECONDS}</li>
@@ -211,6 +212,8 @@ public final class TimeHelper
     {
         switch ( durationUnits )
         {
+            case DAYS:
+                return duration.toDays();
             case HOURS:
                 return duration.toHours();
             case MINUTES:

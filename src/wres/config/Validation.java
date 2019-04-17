@@ -31,7 +31,6 @@ import wres.config.generated.DateCondition;
 import wres.config.generated.DesiredTimeScaleConfig;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
-import wres.config.generated.DurationUnit;
 import wres.config.generated.Feature;
 import wres.config.generated.Format;
 import wres.config.generated.IntBoundsType;
@@ -1618,63 +1617,23 @@ public class Validation
                          left.sourceLocation().getColumnNumber() );
         }
 
-        result = Validation.isDataSourceConfigValid( projectConfigPlus,
-                                                     left )
+        result = Validation.areDataSourcesValid( projectConfigPlus,
+                                                 left )
                  && result;
 
-        result = Validation.isDataSourceConfigValid( projectConfigPlus,
-                                                     right )
+        result = Validation.areDataSourcesValid( projectConfigPlus,
+                                                 right )
                  && result;
 
         if ( baseline != null )
         {
-            result = Validation.isDataSourceConfigValid( projectConfigPlus,
-                                                         baseline )
+            result = Validation.areDataSourcesValid( projectConfigPlus,
+                                                     baseline )
                      && result;
         }
 
         return result;
     }
-
-    private static boolean isDataSourceConfigValid( ProjectConfigPlus projectConfigPlus,
-                                                    DataSourceConfig dataSourceConfig )
-    {
-        boolean result = true;
-
-        TimeScaleConfig timeAggregation = dataSourceConfig.getExistingTimeScale();
-
-        if ( timeAggregation != null
-             && timeAggregation.getUnit() == DurationUnit.NANOS )
-        {
-            boolean instantMakesSense = true;
-
-            if ( timeAggregation.getPeriod() != 1 )
-            {
-                instantMakesSense = false;
-            }
-
-            // The message is the same whether for period or duration
-            if ( !instantMakesSense && LOGGER.isWarnEnabled() )
-            {
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + " When using 'instant' duration, the period (and"
-                             + " frequency, if specified) must be 1.",
-                             projectConfigPlus,
-                             timeAggregation.sourceLocation().getLineNumber(),
-                             timeAggregation.sourceLocation().getColumnNumber() );
-            }
-
-            result = instantMakesSense && result;
-        }
-
-        boolean dataSourcesValid = Validation.areDataSourcesValid( projectConfigPlus,
-                                                                   dataSourceConfig );
-
-        result = dataSourcesValid && result;
-
-        return result;
-    }
-
 
     /**
      * Checks that given DataSourceConfig has at least one
