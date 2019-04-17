@@ -61,19 +61,6 @@ class ProcessorHelper
     private static final Logger LOGGER = LoggerFactory.getLogger( ProcessorHelper.class );
 
     /**
-     * Default resolution for writing outputs that contain time units, such as lead durations, time scales and
-     * datetimes. To change the resolution, change this default.
-     */
-
-    static final ChronoUnit DEFAULT_TEMPORAL_UNITS = ChronoUnit.SECONDS;
-
-    private ProcessorHelper()
-    {
-        // Helper class with static methods therefore no construction allowed.
-    }
-
-
-    /**
      * Processes a {@link ProjectConfigPlus} using a prescribed {@link ExecutorService} for each of the pairs, 
      * thresholds and metrics.
      * 
@@ -140,6 +127,10 @@ class ProcessorHelper
                                                               projectIdentifier,
                                                               thresholds,
                                                               outputDirectory );
+        
+        // Obtain the duration units for outputs: #55441
+        String durationUnitsString = projectConfig.getOutputs().getDurationFormat().value().toUpperCase();
+        ChronoUnit durationUnits = ChronoUnit.valueOf( durationUnitsString );
 
         // Build any writers of incremental formats that are shared across features
         /* skip the general-purpose incomplete netcdf writer
@@ -159,7 +150,7 @@ class ProcessorHelper
             */
             // Use the gridded netcdf writer
             sharedWritersBuilder.setNetcdfOutputWriter( NetcdfOutputWriter.of( projectConfig,
-                                                                               ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
+                                                                               durationUnits,
                                                                                outputDirectory ) );
         }
 
@@ -179,14 +170,14 @@ class ProcessorHelper
 
             sharedSampleDataWriters =
                     SharedSampleDataWriters.of( Paths.get( outputDirectory.toString(), PairsWriter.DEFAULT_PAIRS_NAME ),
-                                                ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
+                                                durationUnits,
                                                 decimalFormatter );
             // Baseline writer?
             if ( Objects.nonNull( projectConfig.getInputs().getBaseline() ) )
             {
                 sharedBaselineSampleDataWriters = SharedSampleDataWriters.of( Paths.get( outputDirectory.toString(),
                                                                                          PairsWriter.DEFAULT_BASELINE_PAIRS_NAME ),
-                                                                              ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
+                                                                              durationUnits,
                                                                               decimalFormatter );
             }
         }
@@ -506,5 +497,11 @@ class ProcessorHelper
         {
             return this.productExecutor;
         }
+    }
+    
+
+    private ProcessorHelper()
+    {
+        // Helper class with static methods therefore no construction allowed.
     }
 }

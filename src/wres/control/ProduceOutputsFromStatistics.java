@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -152,7 +153,13 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
      * a list of paths that those writers actually ended up writing to.
      */
     private final List<Supplier<Set<Path>>> writersToPaths;
+    
+    /**
+     * The duration units obtained from the {@link #resolvedProject} and stored here for convenience.
+     */
 
+    private final ChronoUnit durationUnits;
+    
     /**
      * Build a product processor that writes unconditionally
      *
@@ -206,6 +213,11 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         this.resolvedProject = resolvedProject;
         this.writeWhenTrue = writeWhenTrue;
 
+        // Register the duration units
+        String durationUnitsString =
+                resolvedProject.getProjectConfig().getOutputs().getDurationFormat().value().toUpperCase();
+        this.durationUnits = ChronoUnit.valueOf( durationUnitsString );
+        
         // Register output consumers
         try
         {
@@ -216,7 +228,6 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         {
             throw new WresProcessingException( "While processing the project configuration to write output:", e );
         }
-
     }
 
     /**
@@ -357,7 +368,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         {
             CommaSeparatedDiagramWriter diagramWriter =
                     CommaSeparatedDiagramWriter.of( projectConfig,
-                                                    ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
+                                                    this.getDurationUnits(),
                                                     outputDirectory );
             this.diagramConsumers.put( DestinationType.CSV,
                                        diagramWriter );
@@ -368,7 +379,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         {
             CommaSeparatedBoxPlotWriter boxPlotWriter =
                     CommaSeparatedBoxPlotWriter.of( projectConfig,
-                                                    ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
+                                                    this.getDurationUnits(),
                                                     outputDirectory );
             this.boxPlotConsumersPerPair.put( DestinationType.CSV,
                                        boxPlotWriter );
@@ -379,7 +390,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         {
             CommaSeparatedBoxPlotWriter boxPlotWriter =
                     CommaSeparatedBoxPlotWriter.of( projectConfig,
-                                                    ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
+                                                    this.getDurationUnits(),
                                                     outputDirectory );
             this.boxPlotConsumersPerPool.put( DestinationType.CSV,
                                        boxPlotWriter );
@@ -390,7 +401,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         {
             CommaSeparatedMatrixWriter matrixWriter =
                     CommaSeparatedMatrixWriter.of( projectConfig,
-                                                   ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
+                                                   this.getDurationUnits(),
                                                    outputDirectory );
             this.matrixConsumers.put( DestinationType.CSV,
                                       matrixWriter );
@@ -402,7 +413,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
             // Add the paths for the paired writer: #61841
             CommaSeparatedPairedWriter<Instant, Duration> pairedWriter =
                     CommaSeparatedPairedWriter.of( projectConfig,
-                                                   ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
+                                                   this.getDurationUnits(),
                                                    outputDirectory );
             this.pairedConsumers.put( DestinationType.CSV, pairedWriter );
             this.writersToPaths.add( pairedWriter );
@@ -412,7 +423,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         {
             CommaSeparatedScoreWriter<DoubleScoreStatistic> doubleScoreWriter =
                     CommaSeparatedScoreWriter.of( projectConfig,
-                                                  ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
+                                                  this.getDurationUnits(),
                                                   outputDirectory );
             this.doubleScoreConsumers.put( DestinationType.CSV,
                                            doubleScoreWriter );
@@ -423,7 +434,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         {
             CommaSeparatedScoreWriter<DurationScoreStatistic> durationScoreWriter =
                     CommaSeparatedScoreWriter.of( projectConfig,
-                                                  ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
+                                                  this.getDurationUnits(),
                                                   outputDirectory );
             this.durationScoreConsumers.put( DestinationType.CSV,
                                              durationScoreWriter );
@@ -446,7 +457,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         if ( this.writeWhenTrue.test( StatisticGroup.MULTIVECTOR, DestinationType.PNG ) )
         {
             PNGDiagramWriter diagramWriter = PNGDiagramWriter.of( projectConfigPlus,
-                                                                  ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
+                                                                  this.getDurationUnits(),
                                                                   outputDirectory );
             this.diagramConsumers.put( DestinationType.PNG,
                                        diagramWriter );
@@ -456,7 +467,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         if ( this.writeWhenTrue.test( StatisticGroup.BOXPLOT_PER_PAIR, DestinationType.PNG ) )
         {
             PNGBoxPlotWriter boxPlotWriter = PNGBoxPlotWriter.of( projectConfigPlus,
-                                                                  ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
+                                                                  this.getDurationUnits(),
                                                                   outputDirectory );
             this.boxPlotConsumersPerPair.put( DestinationType.PNG,
                                        boxPlotWriter );
@@ -466,7 +477,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         if ( this.writeWhenTrue.test( StatisticGroup.BOXPLOT_PER_POOL, DestinationType.PNG ) )
         {
             PNGBoxPlotWriter boxPlotWriter = PNGBoxPlotWriter.of( projectConfigPlus,
-                                                                  ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
+                                                                  this.getDurationUnits(),
                                                                   outputDirectory );
             this.boxPlotConsumersPerPool.put( DestinationType.PNG,
                                               boxPlotWriter );
@@ -476,7 +487,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         if ( this.writeWhenTrue.test( StatisticGroup.PAIRED, DestinationType.PNG ) )
         {
             PNGPairedWriter pairedWriter = PNGPairedWriter.of( projectConfigPlus,
-                                                               ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
+                                                               this.getDurationUnits(),
                                                                outputDirectory );
             this.pairedConsumers.put( DestinationType.PNG,
                                       pairedWriter );
@@ -487,7 +498,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         {
             PNGDoubleScoreWriter doubleScoreWriter =
                     PNGDoubleScoreWriter.of( projectConfigPlus,
-                                             ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
+                                             this.getDurationUnits(),
                                              outputDirectory );
             this.doubleScoreConsumers.put( DestinationType.PNG,
                                            doubleScoreWriter );
@@ -498,7 +509,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         {
             PNGDurationScoreWriter durationScoreWriter =
                     PNGDurationScoreWriter.of( projectConfigPlus,
-                                               ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
+                                               this.getDurationUnits(),
                                                outputDirectory );
             this.durationScoreConsumers.put( DestinationType.PNG,
                                              durationScoreWriter );
@@ -525,7 +536,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         {
             LOGGER.debug( "There are netcdf consumers for {}", this );
             NetcdfOutputWriter netcdfOutputWriter = NetcdfOutputWriter.of( projectConfig,
-                                                                           ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
+                                                                           this.getDurationUnits(),
                                                                            this.getResolvedProject()
                                                                                .getOutputDirectory() );
             doubleScoreConsumers.put( DestinationType.NETCDF,
@@ -856,5 +867,14 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
     {
         return this.getResolvedProject()
                    .getProjectConfig();
+    }
+    
+    /**
+     * @return the duration units
+     */
+    
+    private ChronoUnit getDurationUnits()
+    {
+        return this.durationUnits;
     }
 }
