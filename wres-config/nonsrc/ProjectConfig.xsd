@@ -521,7 +521,6 @@ A unit of time
             java.time.temporal.ChronoUnit values. Please only add values to this
             enum that can also be converted to java.time.temporal.ChronoUnit
             Also note: we define an "instant" as 1 minute or less. -->
-            <xs:enumeration value="nanos" />
             <xs:enumeration value="seconds" />
             <xs:enumeration value="minutes" />
             <xs:enumeration value="hours" />
