@@ -702,6 +702,9 @@ time scale within a single class, rather than two classes.
                         <xs:sequence>
                             <xs:element name="destination" type="destination" maxOccurs="unbounded"/>
                         </xs:sequence>
+
+                        <xs:attribute name="durationFormat" type="durationUnit" default = "seconds" />
+
                     </xs:complexType>
                 </xs:element>
             </xs:sequence>

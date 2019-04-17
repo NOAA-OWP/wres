@@ -74,7 +74,7 @@ class CommaSeparatedWriterTestHelper
         destinations.add( destinationConfig );
 
         ProjectConfig.Outputs outputsConfig =
-                new ProjectConfig.Outputs( destinations );
+                new ProjectConfig.Outputs( destinations, null );
 
         List<Feature> features = new ArrayList<>();
         features.add( feature );
