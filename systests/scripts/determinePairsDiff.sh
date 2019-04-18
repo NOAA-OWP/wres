@@ -71,42 +71,45 @@ fi
 # without sorted in their names (in case an old sorted_pairs.csv is floating around), do...
 for directory in ${outputDirPrefix}*
 do
-    for pairsFile in $directory/pairs.csv
-    do
-        echo "$echoPrefix Sorting and comparing file $pairsFile with benchmark..."
-        pairsFileBaseName=$( basename $pairsFile )
+	if [ -f $directory/pairs.csv ]
+	then
+    	for pairsFile in $directory/pairs.csv
+    	do
+        	echo "$echoPrefix Sorting and comparing file $pairsFile with benchmark..."
+        	pairsFileBaseName=$( basename $pairsFile )
 
         # Sort the pairs file.
         #sort -t, -k1d,1 -k4n,4 -k2,2 -k3n,3 $pairsFile > $directory/sorted_$pairsFileBaseName
-        (head -n 1 $pairsFile && tail -n +2 $pairsFile | sort -t, -k1d,1 -k2,2 -k3,3 -k6n,6 -k7n,7 -k4,4 -k5,5 -k8,8 -k9n,9 ) > $directory/sorted_$pairsFileBaseName
-        sortResult=$?
-        if [ ${sortResult} -ne 0 ] # Sorting failed.
-        then
-            testResult=$(( ${testResult} + ${SORT_FAILED_RESULT} ))
-        fi
+        	(head -n 1 $pairsFile && tail -n +2 $pairsFile | sort -t, -k1d,1 -k2,2 -k3,3 -k6n,6 -k7n,7 -k4,4 -k5,5 -k8,8 -k9n,9 ) > $directory/sorted_$pairsFileBaseName
+        	sortResult=$?
+        	if [ ${sortResult} -ne 0 ] # Sorting failed.
+        	then
+            	testResult=$(( ${testResult} + ${SORT_FAILED_RESULT} ))
+        	fi
 
         # Check for benchmark and, if there, diff.
-        if [ -f ${benchmarkDir}/sorted_$pairsFileBaseName \
-             -a -f $directory/sorted_$pairsFileBaseName ]
-        then
+        	if [ -f ${benchmarkDir}/sorted_$pairsFileBaseName \
+             	-a -f $directory/sorted_$pairsFileBaseName ]
+        	then
             # both files exist, do the comparison
             # Avoid pipe to "tee" because it hides the exit code
-            diff --brief $directory/sorted_$pairsFileBaseName ${benchmarkDir}/sorted_$pairsFileBaseName
-            pairsDiffResult=$?
+            	diff --brief $directory/sorted_$pairsFileBaseName ${benchmarkDir}/sorted_$pairsFileBaseName
+            	pairsDiffResult=$?
 
-            if [ ${pairsDiffResult} -ne 0 ]
-            then
-                echo "$echoPrefix The pairs file $directory/sorted_$pairsFileBaseName does not match the benchmark." | tee /dev/stderr
-                testResult=$(( ${testResult} + ${DIFFERENT_PAIRS_RESULT} ))
-            fi
-        elif [ ! -f $directory/$pairsFileBaseName ]
-        then
-            echo "$echoPrefix Not comparing pairs file with benchmark: File $directory/$pairsFileBaseName not found."
-        elif [ ! -f ${benchmarkDir}/sorted_$pairsFileBaseName ]
-        then
-            echo "$echoPrefix Not comparing pairs File with benchmark: ${benchmarkDir}/sorted_$pairsFileBaseName not found."
-        fi
-    done
+            	if [ ${pairsDiffResult} -ne 0 ]
+            	then
+                	echo "$echoPrefix The pairs file $directory/sorted_$pairsFileBaseName does not match the benchmark." | tee /dev/stderr
+                	testResult=$(( ${testResult} + ${DIFFERENT_PAIRS_RESULT} ))
+            	fi
+        	elif [ ! -f $directory/$pairsFileBaseName ]
+        	then
+            	echo "$echoPrefix Not comparing pairs file with benchmark: File $directory/$pairsFileBaseName not found."
+        	elif [ ! -f ${benchmarkDir}/sorted_$pairsFileBaseName ]
+        	then
+            	echo "$echoPrefix Not comparing pairs File with benchmark: ${benchmarkDir}/sorted_$pairsFileBaseName not found."
+        	fi
+    	done
+	fi
 done
 
 # ==============================================
