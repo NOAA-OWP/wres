@@ -14,7 +14,7 @@
 
 if [ $# -lt 1 ]
 then
-	echo "Usage: $0 yyyymmdd-hhhhh [-r 0|1|700|900] [-d Scenario###]"
+	echo "Usage: $0 yyyymmdd-hhhhh [-r 0|1|700|900] [-d Scenario###] [-m yes|no]"
 	exit
 fi
 built_number=$1
@@ -22,7 +22,8 @@ shift
 #echo $built_number
 series=0 # default
 debug="NO"
-while getopts "r:d:" opt; do
+multipleTest="Yes"
+while getopts "r:d:m:" opt; do
 	case $opt in
 		r)
 			series=$OPTARG
@@ -30,12 +31,17 @@ while getopts "r:d:" opt; do
 		d)
 			debug=$OPTARG
 			;;
+		m)
+			multipleTest=$OPTARG
+			;;
 		\?)
-			echo "Usage: $0 yyyymmdd-hhhhh [-r 0|1|700|900] [-d Scenario###]"
+			echo "Usage: $0 yyyymmdd-hhhhh [-r 0|1|700|900] [-d Scenario###] [-m yes|no]"
 			exit 2
 			;;
 	esac
 done
+
+multipleTest=`echo $multipleTest | tr [a-z] [A-Z]`
 # assume you export your WRES environment variables in your ~/.bash_profile
 . ~/.bash_profile
 # If you stored in diffeernt place, then you need to export them into here.
@@ -123,17 +129,29 @@ then
 #		echo "Test these classes: $tests" | tee testOutputs.txt
 #		../../gradlew cleanTest test -PwresZipDirectory=/wres_share/releases/archive -PversionToTest=$built_number -PtestJvmSystemProperties="-Dwres.useSSL=true -Dwres.url=$WRES_DB_HOSTNAME -Dwres.username=$WRES_DB_USERNAME -Dwres.databaseName=$WRES_DB_NAME -Djava.awt.headless=true" --tests=$tests | tee -a testOutputs.txt 2>&1 
 
-		# try to do one by one
-		testClasses=`ls build/classes/java/test/wres/systests/Scenario[0-1]* build/classes/java/test/wres/systests/Scenario[2-6,8]* | gawk -F/ '{print($NF)}' | cut -d'.' -f1`
-		echo "Test these classes: $testClasses" | tee testOutputs.txt
-		tests=
-		for testClass in $testClasses
-		do
-			tests="$tests --tests=$testClass "
-		done
-		#echo $tests
+		testClasses=`ls build/classes/java/test/wres/systests/Scenario[0-6,8]*.class | gawk -F/ '{print($NF)}' | cut -d'.' -f1`
+		if [ "$multipleTest" = "NO" ]
+		then
+			# try to do one by one
+				echo "Test these classes: $testClasses" | tee testOutputs.txt
+				for testClass in $testClasses
+        		do
+					tests="--tests=$testClass"
+					echo $tests | tee -a testOutputs.txt 2>&1
+					../../gradlew cleanTest test -PwresZipDirectory=/wres_share/releases/archive -PversionToTest=$built_number -PtestJvmSystemProperties="-Dwres.useSSL=true -Dwres.url=$WRES_DB_HOSTNAME -Dwres.username=$WRES_DB_USERNAME -Dwres.databaseName=$WRES_DB_NAME -Djava.awt.headless=true" $tests | tee -a testOutputs.txt 2>&1 
+				done
+		elif [ "$multipleTest" = "YES" ]
+		then
+			# Do multiple tests
+			tests=
+			for testClass in $testClasses
+			do
+				tests="$tests --tests=$testClass "
+			done
+#		#echo $tests
 		#echo "$tests" | tee -a testOutputs.txt
-		../../gradlew cleanTest test -PwresZipDirectory=/wres_share/releases/archive -PversionToTest=$built_number -PtestJvmSystemProperties="-Dwres.useSSL=true -Dwres.url=$WRES_DB_HOSTNAME -Dwres.username=$WRES_DB_USERNAME -Dwres.databaseName=$WRES_DB_NAME -Djava.awt.headless=true" $tests | tee -a testOutputs.txt 2>&1 
+			../../gradlew cleanTest test -PwresZipDirectory=/wres_share/releases/archive -PversionToTest=$built_number -PtestJvmSystemProperties="-Dwres.useSSL=true -Dwres.url=$WRES_DB_HOSTNAME -Dwres.username=$WRES_DB_USERNAME -Dwres.databaseName=$WRES_DB_NAME -Djava.awt.headless=true" $tests | tee -a testOutputs.txt 2>&1 
+		fi
 	elif [ $series -eq 700 ]
 	then
 		echo "test --tests=Scenario7*"
