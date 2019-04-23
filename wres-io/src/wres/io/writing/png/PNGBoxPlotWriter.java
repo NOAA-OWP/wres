@@ -32,7 +32,6 @@ import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.io.config.ConfigHelper;
-import wres.io.writing.commaseparated.statistics.CommaSeparatedBoxPlotWriter;
 import wres.vis.ChartEngineFactory;
 
 /**

@@ -8,6 +8,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -700,7 +701,7 @@ public abstract class ChartEngineFactory
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
      * @throws WRESVisXMLReadingException when reading template fails
      */
-    public static ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, ChartEngine>
+    public static Map<Pair<TimeWindow, OneOrTwoThresholds>, ChartEngine>
             buildBoxPlotChartEnginePerPool( final ProjectConfig config,
                                             final ListOfStatistics<BoxPlotStatistics> input,
                                             final String userSpecifiedTemplateResourceName,
@@ -708,7 +709,7 @@ public abstract class ChartEngineFactory
                                             final ChronoUnit durationUnits )
                     throws ChartEngineException, WRESVisXMLReadingException
     {
-        final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, ChartEngine> results = new ConcurrentSkipListMap<>();
+        final Map<Pair<TimeWindow, OneOrTwoThresholds>, ChartEngine> results = new ConcurrentSkipListMap<>();
 
         //Determine the output type, converting DEFAULT accordingly, and template name.
         ChartType usedPlotType = determineChartType( config, input, null );
@@ -734,7 +735,8 @@ public abstract class ChartEngineFactory
                                   next.getMetadata().getSampleMetadata().getThresholds() ),
                          engine );
         }
-        return results;
+        
+        return Collections.unmodifiableMap( results );
     }
 
     /**
