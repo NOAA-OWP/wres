@@ -1,9 +1,7 @@
 package wres.io.data.caching;
 
 import java.sql.SQLException;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -150,6 +148,8 @@ public class USGSParameters
 
         /**
          * Gets the human and configuration friendly name specified for and by the WRES
+         * 
+         * @return a friendly name
          */
         public String getName()
         {
@@ -158,6 +158,8 @@ public class USGSParameters
 
         /**
          * Gets the USGS description for the parameter
+         * 
+         * @return a parameter description
          */
         public String getDescription()
         {
@@ -166,6 +168,8 @@ public class USGSParameters
 
         /**
          * Gets the five digit parameter code
+         * 
+         * @return a parameter code
          */
         public String getParameterCode()
         {
@@ -174,6 +178,8 @@ public class USGSParameters
 
         /**
          * Gets some description for how the data was accumulated
+         * 
+         * @return the aggregation
          */
         public String getAggregation()
         {
@@ -184,6 +190,8 @@ public class USGSParameters
          * Gets the name of the unit of measurement that USGS says the data is measured in
          * <br><br>
          * There's a chance that the unit that USGS uses isn't mapped to a unit utilized by the WRES
+         * 
+         * @return the measurement unit string
          */
         public String getMeasurementUnit()
         {
@@ -192,12 +200,18 @@ public class USGSParameters
 
         /**
          * Gets the WRES ID for the unit of measurement that USGS measures the data in
+         * 
+         * @return the measurement unit identifier
          */
         public Integer getMeasurementUnitID()
         {
             return measurementUnitID;
         }
 
+        /**
+         * @return the parameter key
+         */
+        
         public ParameterKey getKey()
         {
             return new ParameterKey( this.getName(),
@@ -404,7 +418,7 @@ public class USGSParameters
      * @param description USGS' description of the parameter
      * @param measurementUnit The unit of measurement that USGS uses for the parameter
      * @return USGS Parameter metadata for the new parameter
-     * @throws SQLException
+     * @throws SQLException if the parameter cannot be retrieved from the database
      */
     public static USGSParameter addRequestedParameter(
             final String name,

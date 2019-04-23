@@ -428,13 +428,24 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         String timeScale = "";
         if ( meta.getSampleMetadata().hasTimeScale() )
         {
-            String period =
-                    Long.toString( TimeHelper.durationToLongUnits( meta.getSampleMetadata().getTimeScale().getPeriod(),
-                                                                   this.getDurationUnits() ) )
-                            + " "
-                            + this.getDurationUnits().name().toUpperCase();
+            // Use the default string representation of an instantaneous time scale
+            // See #62867
+            if( meta.getSampleMetadata().getTimeScale().isInstantaneous() )
+            {
+                timeScale = meta.getSampleMetadata().getTimeScale().toString()  + " ";
+            }
+            else
+            {
+                String period =
+                        Long.toString( TimeHelper.durationToLongUnits( meta.getSampleMetadata()
+                                                                           .getTimeScale()
+                                                                           .getPeriod(),
+                                                                       this.getDurationUnits() ) )
+                                + " "
+                                + this.getDurationUnits().name().toUpperCase();
 
-            timeScale = "[" + period + ", " + meta.getSampleMetadata().getTimeScale().getFunction() + "] ";
+                timeScale = "[" + period + ", " + meta.getSampleMetadata().getTimeScale().getFunction() + "] ";
+            }
         }
 
         addArgument( "timeScale", timeScale );
