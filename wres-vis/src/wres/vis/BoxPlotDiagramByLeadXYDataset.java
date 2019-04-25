@@ -2,6 +2,7 @@ package wres.vis;
 
 import java.time.temporal.ChronoUnit;
 import java.util.Objects;
+import java.util.OptionalInt;
 
 import org.jfree.data.xy.XYDataset;
 
@@ -9,10 +10,7 @@ import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.util.TimeHelper;
 
 /**
- * The {@link XYDataset} for use in building the reliability diagram portion of the reliability diagram plot (the other
- * being the sample size portion).
- * 
- * @author Hank.Herr
+ * The {@link XYDataset} for use in building a box plot by lead duration.
  */
 public class BoxPlotDiagramByLeadXYDataset extends BoxPlotDiagramXYDataset
 {
@@ -38,8 +36,8 @@ public class BoxPlotDiagramByLeadXYDataset extends BoxPlotDiagramXYDataset
         super( input );
         
         Objects.requireNonNull( durationUnits );
-        
-        this.durationUnits = durationUnits;
+
+        this.durationUnits = durationUnits;    
     }
 
     @Override

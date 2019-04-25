@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.junit.Before;
@@ -226,9 +227,28 @@ public final class BoxPlotPercentageErrorTest
         SingleValuedPairs input =
                 SingleValuedPairs.of( Arrays.asList(), SampleMetadata.of() );
 
-        BoxPlotStatistics actual = boxPlotPercentageError.apply( input );
+        BoxPlotStatistics actual = this.boxPlotPercentageError.apply( input );
 
-        assertTrue( actual.getData().isEmpty() );
+        StatisticMetadata meta = StatisticMetadata.of( SampleMetadata.of(),
+                                                       0,
+                                                       MeasurementUnit.of( "%" ),
+                                                       MetricConstants.BOX_PLOT_OF_PERCENTAGE_ERRORS,
+                                                       MetricConstants.MAIN );
+
+        VectorOfDoubles probabilities = VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 );
+        VectorOfDoubles quantiles = VectorOfDoubles.of( Double.NaN,
+                                                        Double.NaN,
+                                                        Double.NaN,
+                                                        Double.NaN,
+                                                        Double.NaN );
+
+        BoxPlotStatistics expected =
+                BoxPlotStatistics.of( Collections.singletonList( BoxPlotStatistic.of( probabilities,
+                                                                                      quantiles,
+                                                                                      meta ) ),
+                                      meta );
+
+        assertEquals( expected, actual );
     }
 
     /**
@@ -239,8 +259,8 @@ public final class BoxPlotPercentageErrorTest
     @Test
     public void testGetName()
     {
-        assertTrue( boxPlotPercentageError.getName()
-                                          .equals( MetricConstants.BOX_PLOT_OF_PERCENTAGE_ERRORS.toString() ) );
+        assertTrue( this.boxPlotPercentageError.getName()
+                                               .equals( MetricConstants.BOX_PLOT_OF_PERCENTAGE_ERRORS.toString() ) );
     }
 
     /**
@@ -251,10 +271,10 @@ public final class BoxPlotPercentageErrorTest
     @Test
     public void testApplyExceptionOnNullInput()
     {
-        exception.expect( SampleDataException.class );
-        exception.expectMessage( "Specify non-null input to the 'BOX PLOT OF PERCENTAGE ERRORS'." );
+        this.exception.expect( SampleDataException.class );
+        this.exception.expectMessage( "Specify non-null input to the 'BOX PLOT OF PERCENTAGE ERRORS'." );
 
-        boxPlotPercentageError.apply( null );
+        this.boxPlotPercentageError.apply( null );
     }
 
 }

@@ -6,45 +6,25 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Duration;
-import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
 
 import org.junit.Test;
 
 import wres.config.ProjectConfigException;
+import wres.config.generated.DestinationType;
 import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.DataFactory;
-import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.Location;
-import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.SampleMetadata;
-import wres.datamodel.metadata.StatisticMetadata;
-import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.MultiVectorStatistic;
-import wres.datamodel.statistics.StatisticsForProject;
-import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.thresholds.Threshold;
-import wres.datamodel.thresholds.ThresholdConstants.Operator;
-import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
+
+import wres.io.writing.WriterTestHelper;
 
 /**
  * Tests the writing of diagram outputs to a file of Comma Separated Values (CSV).
  */
 
-public class CommaSeparatedDiagramOutputTest extends CommaSeparatedWriterTestHelper
+public class CommaSeparatedDiagramOutputTest
 {
     private final Path outputDirectory = Paths.get( System.getProperty( "java.io.tmpdir" ) );
 
@@ -61,80 +41,26 @@ public class CommaSeparatedDiagramOutputTest extends CommaSeparatedWriterTestHel
             throws IOException, InterruptedException
     {
 
-        // location id
-        final String LID = "CREC1";
-
-        // Create fake outputs
-        StatisticsForProject.StatisticsForProjectBuilder outputBuilder =
-                DataFactory.ofMetricOutputForProjectByTimeAndThreshold();
-
-        TimeWindow timeOne =
-                TimeWindow.of( Instant.MIN,
-                               Instant.MAX,
-                               Duration.ofHours( 24 ),
-                               Duration.ofHours( 24 ) );
-
-        OneOrTwoThresholds threshold =
-                OneOrTwoThresholds.of( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( 11.94128 ),
-                                                                      OneOrTwoDoubles.of( 0.9 ),
-                                                                      Operator.GREATER_EQUAL,
-                                                                      ThresholdDataType.LEFT ) );
-
-        // Output requires a future... which requires a metadata...
-        // which requires a datasetidentifier..
-
-        DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP" );
-
-        StatisticMetadata fakeMetadata =
-                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                         datasetIdentifier,
-                                                         timeOne,
-                                                         threshold ),
-                                      1000,
-                                      MeasurementUnit.of(),
-                                      MetricConstants.RELIABILITY_DIAGRAM,
-                                      null );
-
-        Map<MetricDimension, double[]> fakeOutputs = new HashMap<>();
-        fakeOutputs.put( MetricDimension.FORECAST_PROBABILITY,
-                         new double[] { 0.08625, 0.2955, 0.50723, 0.70648, 0.92682 } );
-        fakeOutputs.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY,
-                         new double[] { 0.06294, 0.2938, 0.5, 0.73538, 0.93937 } );
-        fakeOutputs.put( MetricDimension.SAMPLE_SIZE, new double[] { 5926, 371, 540, 650, 1501 } );
-
-        // Fake output wrapper.
-        ListOfStatistics<MultiVectorStatistic> fakeOutputData =
-                ListOfStatistics.of( Collections.singletonList( MultiVectorStatistic.ofMultiVectorOutput( fakeOutputs,
-                                                                                                          fakeMetadata ) ) );
-
-        // wrap outputs in future
-        Future<ListOfStatistics<MultiVectorStatistic>> outputMapByMetricFuture =
-                CompletableFuture.completedFuture( fakeOutputData );
-
-        outputBuilder.addMultiVectorStatistics( outputMapByMetricFuture );
-
-        StatisticsForProject output = outputBuilder.build();
-
-        // Construct a fake configuration file.
-        Feature feature = getMockedFeature( LID );
-        ProjectConfig projectConfig = getMockedProjectConfig( feature );
+        // Construct a fake configuration file
+        String LID = "CREC1";
+        Feature feature = WriterTestHelper.getMockedFeature( LID );
+        ProjectConfig projectConfig = WriterTestHelper.getMockedProjectConfig( feature, DestinationType.NUMERIC );
 
         // Begin the actual test now that we have constructed dependencies.
         CommaSeparatedDiagramWriter writer = CommaSeparatedDiagramWriter.of( projectConfig,
-                                        ChronoUnit.SECONDS,
-                                        this.outputDirectory );
+                                                                             ChronoUnit.SECONDS,
+                                                                             this.outputDirectory );
 
-        writer.accept( output.getMultiVectorStatistics() );
-        
+        writer.accept( WriterTestHelper.getReliabilityDiagramForOnePool() );
+
         // Determine the paths written
         Set<Path> pathsToFile = writer.get();
-        
+
         // Check the expected number of paths: #61841
         assertTrue( pathsToFile.size() == 1 );
-        
+
         Path pathToFile = pathsToFile.iterator().next();
-        
+
         // Check the expected path: #61841
         assertTrue( pathToFile.endsWith( "CREC1_SQIN_HEFS_RELIABILITY_DIAGRAM_86400_SECONDS.csv" ) );
 

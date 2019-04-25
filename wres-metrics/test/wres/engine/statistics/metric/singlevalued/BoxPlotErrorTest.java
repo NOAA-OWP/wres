@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.junit.Before;
@@ -77,9 +78,9 @@ public final class BoxPlotErrorTest
         expectedRaw.add( bp );
 
         BoxPlotStatistics expected = BoxPlotStatistics.of( expectedRaw, meta );
-        
+
         assertEquals( expected.getData().size(), expectedRaw.size() );
-        
+
         assertEquals( expected, actual );
     }
 
@@ -106,52 +107,52 @@ public final class BoxPlotErrorTest
         // Compute the metric for each duration separately
         input.getDurations()
              .forEach( next -> actualRaw.addAll( this.boxPlotError.apply( Slicer.filterByDuration( input,
-                                                                                                a -> a.equals( next ) ) )
-                                                               .getData() ) );
+                                                                                                   a -> a.equals( next ) ) )
+                                                                  .getData() ) );
 
         BoxPlotStatistics actual = BoxPlotStatistics.of( actualRaw, meta );
-        
+
         VectorOfDoubles probabilities = VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 );
-        
+
         List<BoxPlotStatistic> expectedRaw = new ArrayList<>();
         expectedRaw.add( BoxPlotStatistic.of( probabilities,
-                                         VectorOfDoubles.of( -387.33, -384.665, -361.67, -339.17, -336.67 ),
-                                         meta ) );
+                                              VectorOfDoubles.of( -387.33, -384.665, -361.67, -339.17, -336.67 ),
+                                              meta ) );
         expectedRaw.add( BoxPlotStatistic.of( probabilities,
-                                         VectorOfDoubles.of( -396.0, -395.1675, -376.67, -352.165, -349.33 ),
-                                         meta ) );
+                                              VectorOfDoubles.of( -396.0, -395.1675, -376.67, -352.165, -349.33 ),
+                                              meta ) );
         expectedRaw.add( BoxPlotStatistic.of( probabilities,
-                                         VectorOfDoubles.of( -407.33, -406.83, -392, -365.17, -360.67 ),
-                                         meta ) );
+                                              VectorOfDoubles.of( -407.33, -406.83, -392, -365.17, -360.67 ),
+                                              meta ) );
         expectedRaw.add( BoxPlotStatistic.of( probabilities,
-                                         VectorOfDoubles.of( -422.67, -421.335, -408.33, -378.33, -371.33 ),
-                                         meta ) );
+                                              VectorOfDoubles.of( -422.67, -421.335, -408.33, -378.33, -371.33 ),
+                                              meta ) );
         expectedRaw.add( BoxPlotStatistic.of( probabilities,
-                                         VectorOfDoubles.of( -447.33, -442.33, -422, -389.67, -380.67 ),
-                                         meta ) );
+                                              VectorOfDoubles.of( -447.33, -442.33, -422, -389.67, -380.67 ),
+                                              meta ) );
         expectedRaw.add( BoxPlotStatistic.of( probabilities,
-                                         VectorOfDoubles.of( -461.33, -453.4975, -429.335, -404.67, -396.67 ),
-                                         meta ) );
+                                              VectorOfDoubles.of( -461.33, -453.4975, -429.335, -404.67, -396.67 ),
+                                              meta ) );
         expectedRaw.add( BoxPlotStatistic.of( probabilities,
-                                         VectorOfDoubles.of( -475.33, -467.33, -441.33, -420.835, -414.67 ),
-                                         meta ) );
+                                              VectorOfDoubles.of( -475.33, -467.33, -441.33, -420.835, -414.67 ),
+                                              meta ) );
         expectedRaw.add( BoxPlotStatistic.of( probabilities,
-                                         VectorOfDoubles.of( -493.33, -485.665, -456, -443.33, -441.33 ),
-                                         meta ) );
+                                              VectorOfDoubles.of( -493.33, -485.665, -456, -443.33, -441.33 ),
+                                              meta ) );
         expectedRaw.add( BoxPlotStatistic.of( probabilities,
-                                         VectorOfDoubles.of( -512.67, -505.835, -475.33, -460.335, -458.67 ),
-                                         meta ) );
+                                              VectorOfDoubles.of( -512.67, -505.835, -475.33, -460.335, -458.67 ),
+                                              meta ) );
         expectedRaw.add( BoxPlotStatistic.of( probabilities,
-                                         VectorOfDoubles.of( -516.67, -512.335, -486.665, -473.0025, -472.67 ),
-                                         meta ) );
+                                              VectorOfDoubles.of( -516.67, -512.335, -486.665, -473.0025, -472.67 ),
+                                              meta ) );
         expectedRaw.add( BoxPlotStatistic.of( probabilities,
-                                         VectorOfDoubles.of( -529.33, -525.83, -502.33, -478.83, -475.33 ),
-                                         meta ) );
+                                              VectorOfDoubles.of( -529.33, -525.83, -502.33, -478.83, -475.33 ),
+                                              meta ) );
 
         BoxPlotStatistics expected = BoxPlotStatistics.of( expectedRaw, meta );
-        
+
         assertEquals( expected.getData().size(), expectedRaw.size() );
-        
+
         assertEquals( expected, actual );
     }
 
@@ -166,9 +167,28 @@ public final class BoxPlotErrorTest
         SingleValuedPairs input =
                 SingleValuedPairs.of( Arrays.asList(), SampleMetadata.of() );
 
-        BoxPlotStatistics actual = boxPlotError.apply( input );
+        BoxPlotStatistics actual = this.boxPlotError.apply( input );
 
-        assertTrue( actual.getData().isEmpty() );
+        StatisticMetadata meta = StatisticMetadata.of( SampleMetadata.of(),
+                                                       0,
+                                                       MeasurementUnit.of(),
+                                                       MetricConstants.BOX_PLOT_OF_ERRORS,
+                                                       MetricConstants.MAIN );
+
+        VectorOfDoubles probabilities = VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 );
+        VectorOfDoubles quantiles = VectorOfDoubles.of( Double.NaN,
+                                                        Double.NaN,
+                                                        Double.NaN,
+                                                        Double.NaN,
+                                                        Double.NaN );
+
+        BoxPlotStatistics expected =
+                BoxPlotStatistics.of( Collections.singletonList( BoxPlotStatistic.of( probabilities,
+                                                                                      quantiles,
+                                                                                      meta ) ),
+                                      meta );
+
+        assertEquals( expected, actual );
     }
 
     /**
@@ -179,7 +199,7 @@ public final class BoxPlotErrorTest
     @Test
     public void testGetName()
     {
-        assertTrue( boxPlotError.getName().equals( MetricConstants.BOX_PLOT_OF_ERRORS.toString() ) );
+        assertTrue( this.boxPlotError.getName().equals( MetricConstants.BOX_PLOT_OF_ERRORS.toString() ) );
     }
 
     /**
@@ -190,10 +210,10 @@ public final class BoxPlotErrorTest
     @Test
     public void testApplyExceptionOnNullInput()
     {
-        exception.expect( SampleDataException.class );
-        exception.expectMessage( "Specify non-null input to the 'BOX PLOT OF ERRORS'." );
+        this.exception.expect( SampleDataException.class );
+        this.exception.expectMessage( "Specify non-null input to the 'BOX PLOT OF ERRORS'." );
 
-        boxPlotError.apply( null );
+        this.boxPlotError.apply( null );
     }
 
 }

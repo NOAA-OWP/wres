@@ -320,12 +320,6 @@ public class BoxPlotStatistic implements Statistic<VectorOfDoubles>
                                                      + "plot statistic." );
         }
 
-        // At least two probabilities
-        if ( probabilities.size() < 2 )
-        {
-            throw new StatisticException( "Specify two or more probabilities for the whiskers." );
-        }
-
         // Probabilities and quantiles of equal size
         if ( quantiles.size() != probabilities.size() )
         {
