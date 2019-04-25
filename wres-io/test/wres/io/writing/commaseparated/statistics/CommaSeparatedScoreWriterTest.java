@@ -6,47 +6,26 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Duration;
-import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
 
 import org.junit.Test;
 
 import wres.config.ProjectConfigException;
+import wres.config.generated.DestinationType;
 import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.DataFactory;
-import wres.datamodel.MetricConstants;
-import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.Location;
-import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.SampleMetadata;
-import wres.datamodel.metadata.StatisticMetadata;
-import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
-import wres.datamodel.statistics.ListOfStatistics;
-import wres.datamodel.statistics.StatisticsForProject;
-import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.thresholds.Threshold;
-import wres.datamodel.thresholds.ThresholdConstants.Operator;
-import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
+import wres.io.writing.WriterTestHelper;
 
 /**
  * Tests the writing of score outputs to a file of Comma Separated Values (CSV).
  */
 
-public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelper
+public class CommaSeparatedScoreWriterTest
 {
     private final Path outputDirectory = Paths.get( System.getProperty( "java.io.tmpdir" ) );
 
@@ -64,79 +43,19 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
     {
 
         // location id
-        final String LID = "DRRC2";
-
-        StatisticsForProject.StatisticsForProjectBuilder outputBuilder =
-                DataFactory.ofMetricOutputForProjectByTimeAndThreshold();
-
-        TimeWindow timeOne = TimeWindow.of( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
-
-        OneOrTwoThresholds threshold =
-                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                     Operator.GREATER,
-                                                     ThresholdDataType.LEFT ) );
-
-        // Output requires a future... which requires a metadata...
-        // which requires a datasetidentifier..
-        DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP" );
-
-        StatisticMetadata fakeMetadataA =
-                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                         datasetIdentifier,
-                                                         timeOne,
-                                                         threshold ),
-                                      1000,
-                                      MeasurementUnit.of(),
-                                      MetricConstants.MEAN_SQUARE_ERROR,
-                                      MetricConstants.MAIN );
-
-        StatisticMetadata fakeMetadataB =
-                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                         datasetIdentifier,
-                                                         timeOne,
-                                                         threshold ),
-                                      1000,
-                                      MeasurementUnit.of(),
-                                      MetricConstants.MEAN_ERROR,
-                                      MetricConstants.MAIN );
-        StatisticMetadata fakeMetadataC =
-                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                         datasetIdentifier,
-                                                         timeOne,
-                                                         threshold ),
-                                      1000,
-                                      MeasurementUnit.of(),
-                                      MetricConstants.MEAN_ABSOLUTE_ERROR,
-                                      MetricConstants.MAIN );
-
-        List<DoubleScoreStatistic> fakeOutputs = new ArrayList<>();
-        fakeOutputs.add( DoubleScoreStatistic.of( 1.0, fakeMetadataA ) );
-        fakeOutputs.add( DoubleScoreStatistic.of( 2.0, fakeMetadataB ) );
-        fakeOutputs.add( DoubleScoreStatistic.of( 3.0, fakeMetadataC ) );
-
-        // Fake output wrapper.
-        ListOfStatistics<DoubleScoreStatistic> fakeOutputData =
-                ListOfStatistics.of( fakeOutputs );
-
-        // Wrap outputs in future
-        Future<ListOfStatistics<DoubleScoreStatistic>> outputMapByMetricFuture =
-                CompletableFuture.completedFuture( fakeOutputData );
-
-        outputBuilder.addDoubleScoreOutput( outputMapByMetricFuture );
-
-        StatisticsForProject output = outputBuilder.build();
+        String LID = "DRRC2";
 
         // Construct a fake configuration file.
-        Feature feature = getMockedFeature( LID );
-        ProjectConfig projectConfig = this.getMockedProjectConfig( feature );
+        Feature feature = WriterTestHelper.getMockedFeature( LID );
+        ProjectConfig projectConfig = WriterTestHelper.getMockedProjectConfig( feature, DestinationType.NUMERIC );
 
         // Begin the actual test now that we have constructed dependencies.
         CommaSeparatedScoreWriter<DoubleScoreStatistic> writer =
                 CommaSeparatedScoreWriter.of( projectConfig,
                                               ChronoUnit.SECONDS,
                                               this.outputDirectory );
-        writer.accept( output.getDoubleScoreStatistics() );
+
+        writer.accept( WriterTestHelper.getScoreStatisticsForOnePool() );
 
         // Determine the paths written
         Set<Path> pathsToFile = writer.get();
@@ -148,7 +67,7 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
                 pathsToFile.stream()
                            .filter( next -> next.endsWith( "DRRC2_SQIN_HEFS_MEAN_ABSOLUTE_ERROR.csv" ) )
                            .findAny();
-   
+
         // Check the expected path: #61841
         assertTrue( pathToFirstFile.isPresent() );
 
@@ -212,68 +131,19 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
     {
 
         // location id
-        final String LID = "DOLC2";
-
-        // Create fake outputs
-        StatisticsForProject.StatisticsForProjectBuilder outputBuilder =
-                DataFactory.ofMetricOutputForProjectByTimeAndThreshold();
-
-        TimeWindow timeOne =
-                TimeWindow.of( Instant.MIN,
-                               Instant.MAX,
-                               Duration.ofHours( 1 ),
-                               Duration.ofHours( 18 ) );
-
-        OneOrTwoThresholds threshold =
-                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                     Operator.GREATER,
-                                                     ThresholdDataType.LEFT ) );
-
-        // Output requires a future... which requires a metadata...
-        // which requires a datasetidentifier..
-
-        DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP" );
-
-        StatisticMetadata fakeMetadata =
-                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                         datasetIdentifier,
-                                                         timeOne,
-                                                         threshold ),
-                                      1000,
-                                      MeasurementUnit.of(),
-                                      MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
-                                      null );
-
-        Map<MetricConstants, Duration> fakeOutputs = new HashMap<>();
-        fakeOutputs.put( MetricConstants.MEAN, Duration.ofHours( 1 ) );
-        fakeOutputs.put( MetricConstants.MEDIAN, Duration.ofHours( 2 ) );
-        fakeOutputs.put( MetricConstants.MAXIMUM, Duration.ofHours( 3 ) );
-
-        // Fake output wrapper.
-        ListOfStatistics<DurationScoreStatistic> fakeOutputData =
-                ListOfStatistics.of( Collections.singletonList( DurationScoreStatistic.of( fakeOutputs,
-                                                                                           fakeMetadata ) ) );
-
-        // wrap outputs in future
-        Future<ListOfStatistics<DurationScoreStatistic>> outputMapByMetricFuture =
-                CompletableFuture.completedFuture( fakeOutputData );
-
-        outputBuilder.addDurationScoreStatistics( outputMapByMetricFuture );
-
-        StatisticsForProject output = outputBuilder.build();
+        String LID = "DOLC2";
 
         // Construct a fake configuration file.
-        Feature feature = getMockedFeature( LID );
-        ProjectConfig projectConfig = getMockedProjectConfig( feature );
+        Feature feature = WriterTestHelper.getMockedFeature( LID );
+        ProjectConfig projectConfig = WriterTestHelper.getMockedProjectConfig( feature, DestinationType.NUMERIC );
 
         // Begin the actual test now that we have constructed dependencies.
         CommaSeparatedScoreWriter<DurationScoreStatistic> writer =
                 CommaSeparatedScoreWriter.of( projectConfig,
                                               ChronoUnit.SECONDS,
                                               this.outputDirectory );
-        writer.accept( output.getDurationScoreStatistics() );
-        
+        writer.accept( WriterTestHelper.getDurationScoreStatisticsForOnePool() );
+
         // Determine the paths written
         Set<Path> pathsToFile = writer.get();
 
@@ -311,111 +181,18 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
     {
 
         // location id
-        final String LID = "FTSC1";
-
-        // Create fake outputs
-        StatisticsForProject.StatisticsForProjectBuilder outputBuilder =
-                DataFactory.ofMetricOutputForProjectByTimeAndThreshold();
-
-        TimeWindow timeOne = TimeWindow.of( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
-
-        OneOrTwoThresholds thresholdOne =
-                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                     Operator.GREATER,
-                                                     ThresholdDataType.LEFT ) );
-
-        // Output requires a future... which requires a metadata...
-        // which requires a datasetidentifier..
-
-        DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP" );
-
-        StatisticMetadata fakeMetadataA =
-                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                         datasetIdentifier,
-                                                         timeOne,
-                                                         thresholdOne ),
-                                      1000,
-                                      MeasurementUnit.of(),
-                                      MetricConstants.MEAN_SQUARE_ERROR,
-                                      MetricConstants.MAIN );
-
-        List<DoubleScoreStatistic> fakeOutputs =
-                Collections.singletonList( DoubleScoreStatistic.of( 1.0, fakeMetadataA ) );
-
-        // Fake output wrapper.
-        ListOfStatistics<DoubleScoreStatistic> fakeOutputData =
-                ListOfStatistics.of( fakeOutputs );
-
-        // wrap outputs in future
-        Future<ListOfStatistics<DoubleScoreStatistic>> outputMapByMetricFuture =
-                CompletableFuture.completedFuture( fakeOutputData );
-
-        outputBuilder.addDoubleScoreOutput( outputMapByMetricFuture );
-
-        // Add the data for another threshold at the same time
-        OneOrTwoThresholds thresholdTwo =
-                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 23.0 ),
-                                                     Operator.GREATER,
-                                                     ThresholdDataType.LEFT ) );
-
-        StatisticMetadata fakeMetadataB =
-                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                         datasetIdentifier,
-                                                         timeOne,
-                                                         thresholdTwo ),
-                                      1000,
-                                      MeasurementUnit.of(),
-                                      MetricConstants.MEAN_SQUARE_ERROR,
-                                      MetricConstants.MAIN );
-
-        List<DoubleScoreStatistic> fakeOutputsB =
-                Collections.singletonList( DoubleScoreStatistic.of( 1.0, fakeMetadataB ) );
-
-        ListOfStatistics<DoubleScoreStatistic> fakeOutputDataB =
-                ListOfStatistics.of( fakeOutputsB );
-
-        Future<ListOfStatistics<DoubleScoreStatistic>> outputMapByMetricFutureB =
-                CompletableFuture.completedFuture( fakeOutputDataB );
-
-        outputBuilder.addDoubleScoreOutput( outputMapByMetricFutureB );
-
-        // Add data for another time, and one threshold only
-        TimeWindow timeTwo = TimeWindow.of( Instant.MIN, Instant.MAX, Duration.ofHours( 2 ) );
-
-        StatisticMetadata fakeMetadataC =
-                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                         datasetIdentifier,
-                                                         timeTwo,
-                                                         thresholdOne ),
-                                      1000,
-                                      MeasurementUnit.of(),
-                                      MetricConstants.MEAN_SQUARE_ERROR,
-                                      MetricConstants.MAIN );
-
-        List<DoubleScoreStatistic> fakeOutputsC =
-                Collections.singletonList( DoubleScoreStatistic.of( 1.0, fakeMetadataC ) );
-
-        ListOfStatistics<DoubleScoreStatistic> fakeOutputDataC =
-                ListOfStatistics.of( fakeOutputsC );
-
-        Future<ListOfStatistics<DoubleScoreStatistic>> outputMapByMetricFutureC =
-                CompletableFuture.completedFuture( fakeOutputDataC );
-
-        outputBuilder.addDoubleScoreOutput( outputMapByMetricFutureC );
-
-        StatisticsForProject output = outputBuilder.build();
+        String LID = "FTSC1";
 
         // Construct a fake configuration file.
-        Feature feature = getMockedFeature( LID );
-        ProjectConfig projectConfig = getMockedProjectConfig( feature );
+        Feature feature = WriterTestHelper.getMockedFeature( LID );
+        ProjectConfig projectConfig = WriterTestHelper.getMockedProjectConfig( feature, DestinationType.NUMERIC );
 
         // Begin the actual test now that we have constructed dependencies.
         CommaSeparatedScoreWriter<DoubleScoreStatistic> writer =
                 CommaSeparatedScoreWriter.of( projectConfig,
                                               ChronoUnit.SECONDS,
                                               this.outputDirectory );
-        writer.accept( output.getDoubleScoreStatistics() );
+        writer.accept( WriterTestHelper.getScoreStatisticsForThreePoolsWithMissings() );
 
         // Determine the paths written
         Set<Path> pathsToFile = writer.get();
@@ -430,9 +207,10 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
 
         List<String> firstResult = Files.readAllLines( pathToFile );
 
-        assertTrue( firstResult.get( 0 ).equals( "EARLIEST ISSUE TIME,LATEST ISSUE TIME,EARLIEST LEAD TIME IN SECONDS,"
-                                                 + "LATEST LEAD TIME IN SECONDS,MEAN SQUARE ERROR All data,"
-                                                 + "MEAN SQUARE ERROR > 23.0" ) );
+        assertTrue( firstResult.get( 0 )
+                               .equals( "EARLIEST ISSUE TIME,LATEST ISSUE TIME,EARLIEST LEAD TIME IN SECONDS,"
+                                        + "LATEST LEAD TIME IN SECONDS,MEAN SQUARE ERROR All data,"
+                                        + "MEAN SQUARE ERROR > 23.0" ) );
         assertTrue( firstResult.get( 1 )
                                .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                         + "3600,3600,1.0,1.0" ) );

@@ -5,8 +5,7 @@ import org.jfree.data.xy.XYDataset;
 import wres.datamodel.statistics.BoxPlotStatistics;
 
 /**
- * The {@link XYDataset} for use in building the reliability diagram portion of the reliability diagram plot (the other
- * being the sample size portion).
+ * The {@link XYDataset} for use in building a box plot.
  * 
  * @author Hank.Herr
  */

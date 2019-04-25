@@ -75,7 +75,7 @@ public abstract class XYChartDataSourceFactory
         
         // One box per pool? See #62374
         boolean pooledInput = input.getMetadata().getMetricID().isInGroup( StatisticGroup.BOXPLOT_PER_POOL );
-        
+
         DefaultXYChartDataSource source = new DefaultXYChartDataSource()
         {
             @Override
@@ -91,20 +91,20 @@ public abstract class XYChartDataSourceFactory
             protected XYDataset buildXYDataset( DataSourceDrawingParameters arg0 ) throws XYChartDataSourceException
             {
                 // Add a boxplot for output that contains one box per pool. See #62374
-                if( pooledInput )
-                {
+                if ( pooledInput )
+                {                    
                     return new BoxPlotDiagramByLeadXYDataset( input, durationUnits );
                 }
                 
                 return new BoxPlotDiagramXYDataset( input );
             }
         };
-
-        BoxPlotStatistic statistic = input.getData().get( 0 );
         
-        buildInitialParameters( source,
-                                orderIndex,
-                                statistic.getData().size() );
+        BoxPlotStatistic statistic = input.getData().get( 0 );
+
+        XYChartDataSourceFactory.buildInitialParameters( source,
+                                                         orderIndex,
+                                                         statistic.getData().size() );
 
         if ( pooledInput )
         {
@@ -131,6 +131,39 @@ public abstract class XYChartDataSourceFactory
 
         return source;
     }
+    
+//    /**
+//     * Helper that returns the maximum number of whiskers associated with boxes in the input.
+//     * 
+//     * @param boxPlotStatistics the box plot statistics
+//     * @return the maximum number of whiskers in any box
+//     */
+//    
+//    private static int getMaxWhiskers( BoxPlotStatistics boxPlotStatistics )
+//    {
+//        int returnMe = 0;
+//        
+//        for ( BoxPlotStatistic next : boxPlotStatistics )
+//        {
+//            // A sample size of zero means an empty box
+//            // which is translated to a box with two whiskers 
+//            // for the charting library: see #62863-30
+//            if ( next.getMetadata().getSampleSize() == 0 )
+//            {
+//                // Two whiskers for empty boxes
+//                if( 2 > returnMe )
+//                {
+//                    returnMe = 2;
+//                }
+//            }
+//            else if( next.getData().size() > returnMe )
+//            {
+//                returnMe = next.getData().size() ;               
+//            }
+//        }       
+//        
+//        return returnMe;
+//    }
 
     /**
      * Factory method for single-valued pairs.
@@ -623,7 +656,7 @@ public abstract class XYChartDataSourceFactory
         {
             String message = "Construction of CategoricalXYChartDataSource "
                              + "with null generator, orderIndex '" + orderIndex
-                             + "', xCategories '" + String.valueOf( xCategories )
+                             + "', xCategories '" + xCategories
                              + "', and yAxisValuesBySeries '" + yAxisValuesBySeries
                              + "' failed when it shouldn't have.";
             throw new IllegalStateException( message, e );

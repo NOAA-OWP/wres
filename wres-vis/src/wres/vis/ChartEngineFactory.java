@@ -191,8 +191,8 @@ public abstract class ChartEngineFactory
      * @return The {@link OutputTypeSelection} specifying the output type for the plot.  
      */
     private static <T extends Statistic<?>> ChartType determineChartType( ProjectConfig config,
-                                                                             ListOfStatistics<T> input,
-                                                                             OutputTypeSelection userSpecifiedOutputType )
+                                                                          ListOfStatistics<T> input,
+                                                                          OutputTypeSelection userSpecifiedOutputType )
     {
         //Pooling window case.
         if ( Objects.nonNull( config ) && Objects.nonNull( config.getPair() )
@@ -753,6 +753,7 @@ public abstract class ChartEngineFactory
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
      * @throws WRESVisXMLReadingException when reading template fails
      * @throws NullPointerException if the config, input or durationUnits is null
+     * @throws IllegalArgumentException if no box plots are available
      */
     public static ChartEngine buildBoxPlotChartEngine( ProjectConfig config,
                                                        BoxPlotStatistics input,
@@ -762,10 +763,17 @@ public abstract class ChartEngineFactory
             throws ChartEngineException, WRESVisXMLReadingException
     {
         Objects.requireNonNull( config );
-        
+
         Objects.requireNonNull( input );
-        
+
         Objects.requireNonNull( durationUnits );
+
+        if ( input.getData().isEmpty() )
+        {
+            throw new IllegalArgumentException( "Cannot generate box plot graphics for dataset with metadata '"
+                                                + input.getMetadata()
+                                                + "' because no box plots statistics were available." );
+        }
         
         //Determine the output type
         ChartType usedPlotType = ChartEngineFactory.determineChartType( config, input, null );

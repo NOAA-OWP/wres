@@ -325,25 +325,6 @@ public final class BoxPlotStatisticTest
     }
 
     /**
-     * Tests for an expected exception on construction with too few (one) probabilities.
-     */
-
-    @Test
-    public void testBuildThrowsExceptionWithOneProbability()
-    {
-        exception.expect( StatisticException.class );
-        exception.expectMessage( "Specify two or more probabilities for the whiskers." );
-
-        BoxPlotStatistic.of( VectorOfDoubles.of( 0.0 ),
-                             VectorOfDoubles.of( 1, 2, 3 ),
-                             StatisticMetadata.of( SampleMetadata.of(),
-                                                   10,
-                                                   MeasurementUnit.of(),
-                                                   MetricConstants.BOX_PLOT_OF_ERRORS,
-                                                   MetricConstants.MAIN ) );
-    }
-
-    /**
      * Tests for an expected exception on construction with null probabilities.
      */
 

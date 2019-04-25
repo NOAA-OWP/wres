@@ -1,6 +1,5 @@
 package wres.engine.statistics.metric.singlevalued;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Objects;
@@ -35,6 +34,13 @@ public class BoxPlotPercentageError extends Diagram<SingleValuedPairs, BoxPlotSt
 
     private static final VectorOfDoubles DEFAULT_PROBABILITIES = VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 );
 
+    /**
+     * Empty box.
+     */
+
+    private static final VectorOfDoubles EMPTY_BOX =
+            VectorOfDoubles.of( Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN );    
+    
     /**
      * Function for rounding the errors.
      */
@@ -81,7 +87,9 @@ public class BoxPlotPercentageError extends Diagram<SingleValuedPairs, BoxPlotSt
         // Empty output for empty input
         if ( s.getRawData().isEmpty() )
         {
-            return BoxPlotStatistics.of( new ArrayList<>(), metOut );
+            // Add an empty box: #62863
+            BoxPlotStatistic emptyBox = BoxPlotStatistic.of( DEFAULT_PROBABILITIES, EMPTY_BOX, metOut );
+            return BoxPlotStatistics.of( Collections.singletonList( emptyBox ), metOut );
         }
 
         // Get the sorted percentage errors
