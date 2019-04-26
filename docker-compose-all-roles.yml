@@ -23,7 +23,7 @@ services:
         ports:
          - "5671:5671"
          - "15671:15671"
-        image: "f5bab4b84d2a"
+        image: "fd7ee5d59ff3"
         restart: always
         volumes:
          # For certificates and keys that correspond to them:
