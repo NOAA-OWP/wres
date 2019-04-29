@@ -431,6 +431,8 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
 
     private boolean hasDiscreteParameterCode()
     {
+        // TODO: '\\d{5}' will probably match on "My Variable: 9238238942397' since it has 5 digits
+        // Test with "^\\d{5}$", meaning have the string contain ONLY those 5 digits
         return this.dataSourceConfig.getVariable().getValue().matches( "\\d{5}" );
     }
 

@@ -405,7 +405,21 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                 // Figure out the location of all values and build the origin in each variable grid
                 Location location = score.getMetadata().getSampleMetadata().getIdentifier().getGeospatialID();
 
-                int[] origin = this.getOrigin( name, location );
+                int[] origin = new int[0];
+
+                try
+                {
+                    origin = this.getOrigin( name, location );
+                }
+                catch ( CoordinateNotFoundException e )
+                {
+                    LOGGER.error( e.getMessage() );
+                    LOGGER.warn( "There are no records for where to put results for " + location +
+                                 ". Netcdf output for " + location + " cannot be written. If outputs are not "
+                                 + "written in other formats, you will not be able to view these results." );
+                    return;
+                }
+
                 Double actualValue = score.getData();
 
                 this.saveValues( name, origin, actualValue );
@@ -555,7 +569,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
          * @param location The location specification detailing where to place a value
          * @return The coordinates for the location within the Netcdf variable describing where to place data
          */
-        private int[] getOrigin( String name, Location location ) throws IOException
+        private int[] getOrigin( String name, Location location ) throws IOException, CoordinateNotFoundException
         {
             int[] origin;
 
@@ -567,7 +581,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
             {
                 if ( !location.hasCoordinates() )
                 {
-                    throw new WriteException( "The location '" +
+                    throw new CoordinateNotFoundException( "The location '" +
                                               location
                                               +
                                               "' cannot be written to the "
@@ -600,12 +614,15 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                                                                 location.getVectorIdentifier().intValue(),
                                                                 this.outputWriter.getNetcdfConfiguration()
                                                                                  .getVectorVariable() );
-                Objects.requireNonNull(
-                                        vectorIndex,
-                                        "An index for the vector coordinate could not "
-                                                     + "be evaluated. [value = "
-                                                     + location.getVectorIdentifier()
-                                                     + "]" );
+
+                if (vectorIndex == null)
+                {
+
+                    throw new CoordinateNotFoundException( "An index for the vector coordinate could not "
+                                                           + "be evaluated. [value = "
+                                                           + location.getVectorIdentifier()
+                                                           + "]. The location was " + location );
+                }
 
                 origin = new int[] { vectorIndex };
             }
