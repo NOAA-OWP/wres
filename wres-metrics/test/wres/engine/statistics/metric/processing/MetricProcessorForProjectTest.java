@@ -144,10 +144,12 @@ public final class MetricProcessorForProjectTest
     {
         assertTrue( singleValuedProcessor.getMetricOutputTypesToCache()
                                          .equals( new HashSet<>( Arrays.asList( StatisticGroup.PAIRED,
-                                                                                StatisticGroup.DOUBLE_SCORE ) ) ) );
+                                                                                StatisticGroup.DOUBLE_SCORE,
+                                                                                StatisticGroup.BOXPLOT_PER_POOL ) ) ) );
         assertTrue( ensembleProcessor.getMetricOutputTypesToCache()
                                      .equals( new HashSet<>( Arrays.asList( StatisticGroup.PAIRED,
-                                                                            StatisticGroup.DOUBLE_SCORE ) ) ) );
+                                                                            StatisticGroup.DOUBLE_SCORE,
+                                                                            StatisticGroup.BOXPLOT_PER_POOL  ) ) ) );
     }
 
     /**

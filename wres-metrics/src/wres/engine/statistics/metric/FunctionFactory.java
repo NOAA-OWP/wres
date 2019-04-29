@@ -118,9 +118,16 @@ public class FunctionFactory
     public static BiFunction<Double, Integer, Double> round()
     {
         return ( input, digits ) -> {
-            BigDecimal bd = new BigDecimal( Double.toString( input ) ); //Always use String constructor
-            bd = bd.setScale( digits, RoundingMode.HALF_UP );
-            return bd.doubleValue();
+            
+            if ( Double.isFinite( input ) )
+            {
+                BigDecimal bd = new BigDecimal( Double.toString( input ) ); //Always use String constructor
+                bd = bd.setScale( digits, RoundingMode.HALF_UP );
+                
+                return bd.doubleValue();
+            }
+            
+            return input;
         };
     }
 

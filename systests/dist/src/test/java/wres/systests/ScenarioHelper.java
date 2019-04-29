@@ -447,22 +447,25 @@ System.out.println("java.io.tmpdir ================ " + System.getProperty("java
             //
             //Redmine 51654#387 decided not to compare the dirListing.txt
             //Path dirListingPath = constructDirListingFile( initialOutputSet );
-            HashSet<Path> finalOutputSet = Sets.newHashSet( initialOutputSet );
+            //HashSet<Path> finalOutputSet = Sets.newHashSet( initialOutputSet );
+			HashSet<Path> finalOutputSet = new HashSet<Path>();
             //finalOutputSet.add( dirListingPath );
 
-			// Do one more chck before compare it with benchmarks
-			for (Iterator<Path> iterator = finalOutputSet.iterator(); iterator.hasNext();)
-			{
-				Path checkPath = iterator.next();
-				System.out.println("check path +++++++++++++++++++++++++++++++ " + checkPath.toString());
-				if (checkPath.toString().endsWith(".png"))
-				{
-					iterator.remove();
-				}
-			}
+            // Need to filter out the *.png and the *.nc files
+			for ( Path nextPath : initialOutputSet )
+            {
+                if ( nextPath.endsWith( ".png" ) || nextPath.endsWith( ".nc" ) )
+                {
+                    LOGGER.info( "Won't add this path ===== {}", nextPath );
+                }
+                else
+                {
+                    LOGGER.info( "Will add this path ===== {}", nextPath );
+                    finalOutputSet.add( nextPath );
+                }
+            }
             //Call the compare method to obtain a result code and check that it is zero.
-            int resultCode;
-            resultCode = compareOutputAgainstBenchmarks( scenarioInfo,
+            int resultCode = compareOutputAgainstBenchmarks( scenarioInfo,
                                                          finalOutputSet );
             assertEquals( "Camparison with benchmarks failed with code " + resultCode + ".", 0, resultCode );
         }
@@ -520,63 +523,33 @@ System.out.println("java.io.tmpdir ================ " + System.getProperty("java
         	initialOutputSet = completedEvaluation.get(); // somehow this Control.get() couldn't complete get all files for scerio1000 and 1001
 		*/
 
-        Set<Path> initialOutputSet = completedEvaluation.get(); // somehow this Control.get() couldn't complete get all files for scerio1000 and 1001
+        Set<Path> initialOutputSet = completedEvaluation.get();
 
-		/*
-		// I want to check the this initialOutputSet from Control.get()
-		for (Path iPath : initialOutputSet)
-		{
-			//Path iPath = iterator.next();
-			if ( iPath.toString().endsWith(".png"))
-			{
-				System.out.println("PNG file from iPath ===== " + iPath.toString());
-				//iterator.remove();
-			}
-			else
-				System.out.println("CSV file from iPath ===== " + iPath.toString());
-		}
-		*/	
         //Create the directory listing.
         //Path dirListingPath;
         try
         {	
 			//Redmine 51654#387 decided not to compare the dirListing.txt
             //dirListingPath = constructDirListingFile( initialOutputSet );
-            // Need to filter out the *.png files
+            // Below Sets.newHasSet() won't filter out the *.png and *.nc files
             //HashSet<Path> finalOutputSet = Sets.newHashSet( initialOutputSet );
 			HashSet<Path> finalOutputSet = new HashSet<Path>();
-			// Now filter out the *.png file
+            // Need to filter out the *.png and the *.nc files
             for ( Path nextPath : initialOutputSet )
             {
                 if ( nextPath.endsWith( ".png" ) || nextPath.endsWith( ".nc" ) )
                 {
-                    LOGGER.info( "Won't add this iPath ===== {}", nextPath );
+                    LOGGER.info( "Won't add this path ===== {}", nextPath );
                 }
                 else
                 {
-                    LOGGER.info( "Will add this iPath ===== {}", nextPath );
+                    LOGGER.info( "Will add this path ===== {}", nextPath );
                     finalOutputSet.add( nextPath );
                 }
             }
-			// do not check the dirListing for now
+			// do not check the dirListing for now, see Redmine 51654#387
             //finalOutputSet.add( dirListingPath );
 
-			// Do one more chck before compare it with benchmarks
-			/*
-			for (Iterator<Path> iterator = finalOutputSet.iterator(); iterator.hasNext();)
-            {
-                Path checkPath = iterator.next();
-                if (checkPath.toString().endsWith(".png"))
-                {
-                	System.out.println("Remove path +++++++++++++++++++++++++++++++ " + checkPath.toString());
-                    iterator.remove();
-                }
-				else
-                	System.out.println("Remain this +++++++++++++++++++++++++++++++ " + checkPath.toString());
-				
-            }
-			*/
-            //int resultCode;
             int resultCode = compareOutputAgainstBenchmarks( scenarioInfo,
                                                          finalOutputSet );
             assertEquals( "Camparison with benchmarks failed with code " + resultCode + ".", 0, resultCode );
@@ -663,14 +636,7 @@ System.out.println("java.io.tmpdir ================ " + System.getProperty("java
         {
 			
             String outputFileName = outputFilePath.toFile().getName();
-			/*
-			if (! outputFileName.endsWith( ".csv"))
-			{
-						System.out.println("Do not compare this file " + outputFileName); // Do not compare those are not *.csv files
-						continue;
-			}
-			*/
-			System.out.println("output file name = " + outputFileName);
+			LOGGER.info("output file name = " + outputFileName);
 			
             //For the pairs, you need to sort them first.
             File benchmarkFile = identifyBenchmarkFile( outputFilePath, benchmarksPath );
@@ -684,12 +650,6 @@ System.out.println("java.io.tmpdir ================ " + System.getProperty("java
                         assertOutputPairsEqualExpectedPairs( outputFilePath.toFile(), benchmarkFile );
                     }
                     //Otherwise just do the comparison without sorting.
-                    /*
-                    else if ( outputFileName.endsWith( ".png")) 
-					{
-						System.out.println("Do not compare this file " + outputFileName); // Do not compare those are not *.csv files
-					}
-					*/
                     else
                     {
                         assertOutputTextFileMatchesExpected( outputFilePath.toFile(), benchmarkFile );
@@ -698,27 +658,26 @@ System.out.println("java.io.tmpdir ================ " + System.getProperty("java
                 //Modify the result code if an assertion error is reported.
                 catch ( AssertionError e )
                 {
-                    System.out.println( e.getMessage() );
                     if ( outputFileName.endsWith( "pairs.csv" ) )
                     {
                         pairResultCode = 16;
-						System.err.println("The pair result code " + pairResultCode + " with file name " + outputFileName);
+						LOGGER.warn("The pair result code " + pairResultCode + " with file name " + outputFileName);
                     }
                     //Otherwise just do the comparison without sorting.
                     else if ( outputFileName.endsWith( ".csv" ) )
                     {
                         metricCSVResultCode = 32;
-						System.err.println("The metric CSV result code " + metricCSVResultCode + " with file name " + outputFileName);
+						LOGGER.warn("The metric CSV result code " + metricCSVResultCode + " with file name " + outputFileName);
                     }
                     else if ( outputFileName.endsWith( ".txt" ) )
                     {
                         txtResultCode = 4;
-						System.err.println("The text result code " + txtResultCode + " with file name " + outputFileName);
+						LOGGER.warn("The text result code " + txtResultCode + " with file name " + outputFileName);
                     }
                     else
                     {
                         miscResultCode = 2;
-						System.err.println("The miscellaneous result code " + miscResultCode + " with file name " + outputFileName);
+						LOGGER.warn("The miscellaneous result code " + miscResultCode + " with file name " + outputFileName);
                     }
                 }
                 //Remove the benchmark as one to check.
@@ -727,7 +686,7 @@ System.out.println("java.io.tmpdir ================ " + System.getProperty("java
         }
         if ( !benchmarkedFiles.isEmpty() )
         {
-            System.out.println( "The following benchmarked files were not present in the evaluation output directory: "
+            LOGGER.warn( "The following benchmarked files were not present in the evaluation output directory: "
                                 + Arrays.toString( benchmarkedFiles.toArray() ) );
             miscResultCode = 2;
         }
@@ -787,7 +746,6 @@ System.out.println("java.io.tmpdir ================ " + System.getProperty("java
         //Read in all of the data.  May need a lot of memory!
         List<String> actualRows = Files.readAllLines( outputFile.toPath() );
         List<String> expectedRows = Files.readAllLines( benchmarkFile.toPath() );
-		// there is problem for scenario1000 and 1001, this Files.readAllLines only read part of files, not all.
         //Files must not be zero sized and must be identical in number of lines.
         assertTrue( actualRows.size() > 0 && expectedRows.size() > 0 );
         assertEquals( actualRows.size(), expectedRows.size() );
@@ -797,18 +755,17 @@ System.out.println("java.io.tmpdir ================ " + System.getProperty("java
         {
             //TODO Added trimming below to handle white space at the ends, but should I?
             //Mainly worried about the Window's carriage return popping up some day.
-			System.out.println("compare output file " + outputFile.getName() + " with benchmarks file " + benchmarkFile.getName());
-            //System.out.println ( actualRows.get( i ));
-			//System.out.println( expectedRows.get( i ));
-			System.out.println ("Are they equals ? " + actualRows.get( i ).equals(expectedRows.get( i )));
-			int expectedRowsIndex = expectedRows.indexOf(actualRows.get( i ));
+			LOGGER.info("compare output file " + outputFile.getName() + " line " + i + " with benchmarks file " + benchmarkFile.getName());
+			LOGGER.info("Are they equals ? " + actualRows.get( i ).equals(expectedRows.get( i )));
+			//int expectedRowsIndex = expectedRows.indexOf(actualRows.get( i ));
+			//LOGGER.info("Are they equals ? " + actualRows.get( i ).equals(expectedRows.get( expectedRowsIndex )));
             assertEquals( "For output file, " + outputFile.getName()
                           + ", row "
                           + i
                           + " differs from benchmark.",
-                          actualRows.get( i ), expectedRows.get( expectedRowsIndex ) );
+                          actualRows.get( i ).trim(), expectedRows.get( i ).trim() );
                           //actualRows.get( i ).trim(), expectedRows.get( expectedRowsIndex ).trim() );
-                          //expectedRows.get( i ).trim() );
+                          //actualRows.get( i ), expectedRows.get( expectedRowsIndex ) );
         }
     }
 
@@ -838,6 +795,8 @@ System.out.println("java.io.tmpdir ================ " + System.getProperty("java
         // Verify by row, rather than all at once
         for ( int i = 0; i < actualRows.size(); i++ )
         {
+			LOGGER.info("compare output file " + pairsFile.getName() + " line " + i + " with benchmarks file " + benchmarkFile.getName());
+			LOGGER.info("Are they equals ? " + actualRows.get( i ).equals(expectedRows.get( i )));
             assertEquals( "For pairs file file, " + pairsFile.getName()
                           + ", after sorting alphabetically, row "
                           + i
@@ -862,11 +821,10 @@ System.out.println("java.io.tmpdir ================ " + System.getProperty("java
         boolean isAnAfterScript = false;
         for ( int i = 0; i < files.length; i++ )
         {
-            //if ( files[i].startsWith( "after.sh" ) )
             if ( files[i].endsWith( "after.sh" ) )
             {
                 isAnAfterScript = true;
-                System.out.println( "Found " + files[i] );
+                LOGGER.info( "Found " + files[i] );
                 searchAndReplace( System.getProperty( "user.dir" ) + "/" + files[i] );
             }
         }
@@ -883,11 +841,10 @@ System.out.println("java.io.tmpdir ================ " + System.getProperty("java
         boolean isABeforeScript = false;
         for ( int i = 0; i < files.length; i++ )
         {
-            //if ( files[i].startsWith( "before.sh" ) )
             if ( files[i].endsWith( "before.sh" ) )
             {
                 isABeforeScript = true;
-                System.out.println( "Found " + files[i] );
+                LOGGER.info( "Found " + files[i] );
                 searchAndReplace( System.getProperty( "user.dir" ) + "/" + files[i] );
             }
         }
@@ -904,12 +861,7 @@ System.out.println("java.io.tmpdir ================ " + System.getProperty("java
     static void searchAndReplace( String fileName, String searchFor, String replace, String line )
     {
         File file = Paths.get( System.getProperty( "user.dir" ) + "/" + fileName ).toFile();
-        /*
-        System.out.println(file.toString() + '\n' +
-                searchFor + '\n' +
-        replace + '\n' +
-        line);
-        */
+        
         if ( file.exists() )
         {
             try
@@ -923,7 +875,7 @@ System.out.println("java.io.tmpdir ================ " + System.getProperty("java
                     if ( aLine.indexOf( searchFor ) >= 0 )
                     {
                         aLine = aLine.replaceAll( searchFor, replace );
-                        System.out.println( "Replaced line " + lineNumber + " to " + aLine );
+                        LOGGER.info( "Replaced line " + lineNumber + " to " + aLine + " in file " + file.toString() );
                     }
                     arrayList.add( aLine );
                     lineNumber++;
@@ -933,7 +885,6 @@ System.out.println("java.io.tmpdir ================ " + System.getProperty("java
                 BufferedWriter bufferedWriter = new BufferedWriter( new FileWriter( file ) );
                 for ( Iterator<String> iterator = arrayList.iterator(); iterator.hasNext(); lineNumber++ )
                 {
-                    //System.out.println(lineNumber + ": " + iterator.next().toString());
                     bufferedWriter.write( iterator.next().toString() );
                     bufferedWriter.newLine();
                 }
@@ -979,22 +930,18 @@ System.out.println("java.io.tmpdir ================ " + System.getProperty("java
                     if ( ( index = aLine.lastIndexOf( "File=" ) ) > 0 )
                     {
                         theFile = aLine.substring( index ).split( "=" );
-                        //System.out.println("File = " + theFile[1]);
                     }
                     else if ( ( index = aLine.lastIndexOf( "Search=" ) ) > 0 )
                     {
                         search = aLine.substring( index ).split( "=" );
-                        //System.out.println("Search = " + search[1]);
                     }
                     else if ( ( index = aLine.lastIndexOf( "Replace=" ) ) > 0 )
                     {
                         replace = aLine.substring( index ).split( "=" );
-                        //System.out.println("Replace = " + replace[1]);
                     }
                     else if ( ( index = aLine.lastIndexOf( "Line=" ) ) > 0 )
                     {
                         line = aLine.substring( index ).split( "=" );
-                        //System.out.println("Line = " + line[1]);
                     }
                 } // end while loop
                 bufferedReader.close();

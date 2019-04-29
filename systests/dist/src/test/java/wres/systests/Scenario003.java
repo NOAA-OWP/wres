@@ -30,7 +30,7 @@ public class Scenario003
                                               .toLowerCase(),
                                           baseDirectory );
         LOGGER.info( "####>> Cleaning the database..." );
-        Operations.cleanDatabase();
+        //Operations.cleanDatabase();
         //ScenarioHelper.deleteOldOutputDirectories( scenarioInfo.getScenarioDirectory() );
         ScenarioHelper.setAllPropertiesFromEnvVars( scenarioInfo );
     }

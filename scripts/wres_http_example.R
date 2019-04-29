@@ -83,11 +83,6 @@ evaluation <- '<?xml version="1.0" encoding="UTF-8"?>
     <pair>
         <unit>CMS</unit>
         <feature locationId="FAKE1" />
-        <desiredTimeScale>
-            <function>mean</function>
-            <period>1</period>
-            <unit>hours</unit>
-        </desiredTimeScale>
     </pair>
 
     <metrics>

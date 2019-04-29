@@ -56,20 +56,88 @@ import wres.util.TimeHelper;
 
 public class USGSRegionSaver extends WRESCallable<IngestResult>
 {
+    
+    /**
+     * Enumeration of NWIS endpoints.
+     */
+    
+    private enum USGSEndpoint
+    {
+        /**
+         * Instantaneous values endpoint.
+         */
+
+        INSTANTANEOUS_VALUE,
+
+        /**
+         * Daily values endpoint.
+         */
+
+        DAILY_VALUE;
+
+        /**
+         * String representation of the endpoint.
+         * 
+         * @return a string for use within a URI
+         */
+        @Override
+        public String toString()
+        {
+            if ( this == INSTANTANEOUS_VALUE )
+            {
+                return "iv";
+            }
+            else
+            {
+                return "dv";
+            }
+        }
+    }
+    
     private static final Logger LOGGER = LoggerFactory.getLogger(USGSRegionSaver.class);
 
     // Hardcoded because this is the reader for USGS' services, not a generic waterml service
     // If a generic water ML service is required, one should be written for it.
     private static final URI USGS_URL =
             URI.create( "https://waterservices.usgs.gov/nwis/" );
-    private static final String INSTANTANEOUS_VALUE = "iv";
-    private static final String DAILY_VALUE = "dv";
+
     private static final double EPSILON = 0.0000001;
 
     private static final int RETRY_COUNT = 5;
     private static final Duration RETRY_WAIT = Duration.of(5, ChronoUnit.SECONDS);
 
     private static final String EARLIEST_DATE = "2008-01-01T00:00:00Z";
+    
+    /**
+     * Endpoint used by this instance.
+     */
+    
+    private final USGSEndpoint endpoint;
+
+    private String startDate;
+    private String endDate;
+    private Integer variableID;
+    private Map<String, Integer> variableFeatureIDs;
+    private final Collection<FeatureDetails> region;
+    private final ProjectConfig projectConfig;
+    private final DataSourceConfig dataSourceConfig;
+    private String operationStartTime;
+    private URI requestURL;
+
+    private ExceptionalConsumer<TimeSeries, IOException> onUpdate;
+
+    // "00060" corresponds to a specific type of discharge. We need a list and
+    // a way to transform user specifications about variable, time aggregation,
+    // and measurement to find the correct code from the config
+    private String parameterCode;
+
+    private USGSParameters.USGSParameter parameter;
+    
+    
+    /**
+     * Indicates that the data saved by this instance originates from the
+     * {@link INSTANTANEOUS_VALUE} endpoint and is, therefore, instantaneous.
+     */
 
     // There's a chance this operation will output the time in the wrong format
     private static final String LATEST_DATE = TimeHelper.convertDateToString(
@@ -110,16 +178,51 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
         private final String hash;
     }
 
+    /**
+     * Construct an instance that points to the {@link USGSEndpoint#INSTANTANEOUS_VALUE} endpoint.
+     * 
+     * @param region the region to consider
+     * @param projectConfig the project declaration
+     * @param dataSourceConfig the data source declaration
+     * @throws NullPointerException if any input is null
+     */
+
     USGSRegionSaver( final Collection<FeatureDetails> region,
-                            final ProjectConfig projectConfig,
-                            final DataSourceConfig dataSourceConfig)
-            throws IOException
+                     final ProjectConfig projectConfig,
+                     final DataSourceConfig dataSourceConfig )
     {
+        this( region, projectConfig, dataSourceConfig, USGSEndpoint.INSTANTANEOUS_VALUE );
+    }
+
+    /**
+     * Construct an instance that points to a prescribed endpoint.
+     * 
+     * @param region the region to consider
+     * @param projectConfig the project declaration
+     * @param dataSourceConfig the data source declaration
+     * @param endpoint the service endpoint
+     * @throws NullPointerException if any input is null
+     */
+
+    USGSRegionSaver( final Collection<FeatureDetails> region,
+                     final ProjectConfig projectConfig,
+                     final DataSourceConfig dataSourceConfig,
+                     final USGSEndpoint endpoint )
+    {
+        Objects.requireNonNull( region );
+        
+        Objects.requireNonNull( projectConfig );
+        
+        Objects.requireNonNull( dataSourceConfig );
+        
+        Objects.requireNonNull( endpoint );
+        
         this.region = region;
         this.dataSourceConfig = dataSourceConfig;
         this.projectConfig = projectConfig;
+        this.endpoint = endpoint;
     }
-
+    
     @Override
     protected IngestResult execute() throws Exception
     {
@@ -132,10 +235,10 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
             // Request observation data from USGS
             response = this.load();
         }
-        catch(Exception ie)
+        catch ( Exception ie )
         {
-            LOGGER.debug(String.format("A USGS Request failed. The URL was: %s", this.requestURL), ie);
-            throw ie;
+            String errorString = String.format( "A USGS Request failed. The URL was: %s", this.requestURL );
+            throw new IOException( errorString, ie );
         }
 
         LOGGER.debug("NWIS Data was loaded from {}", this.requestURL);
@@ -245,45 +348,13 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
                                                  null,
                                                  responseHash );
 
-            try
-            {
-
-                if (DataSources.isCached( sourceKey ))
-                {
-                    LOGGER.debug( "The data for '{}' had been previously ingested.", requestURL );
-                    return new USGSRegionSaver.WebResponse( usgsResponse,
-                                                            true,
-                                                            DataSources.getActiveSourceID(responseHash),
-                                                            responseHash );
-                }
-
-                SourceDetails usgsDetails = new SourceDetails( sourceKey );
-
-                usgsDetails.save();
-
-                if (!usgsDetails.performedInsert())
-                {
-                    LOGGER.debug( "The data for '{}' had been previously ingested.", requestURL );
-                }
-
-                return new USGSRegionSaver.WebResponse(
-                        usgsResponse,
-                        !usgsDetails.performedInsert(),
-                        usgsDetails.getId(),
-                        responseHash
-                );
-            }
-            catch ( SQLException e )
-            {
-                throw new IOException( "Source information about the requested "
-                                       + "USGS data could not be found.", e );
-            }
+            return this.createWebResponse( usgsResponse, sourceKey, responseHash );
         }
         catch ( IOException e)
         {
-            String message = "Data from the location '" +
-                             String.valueOf(requestURL) +
-                             "' could not be retrieved.";
+            String message = "Data from the location '"
+                             + requestURL
+                             + "' could not be retrieved.";
             LOGGER.debug( message );
             throw new IngestException( message, e );
         }
@@ -295,13 +366,59 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
             }
         }
     }
+    
+    /**
+     * Creates a {@link WebResponse} from the input.
+     * @param usgsResponse the usgsResponse
+     * @param sourceKey the source key
+     * @param responseHash the hash of the body
+     * @return the web response
+     * @throws IOException if the resnpose could not be created
+     */
+    
+    private WebResponse createWebResponse( Response usgsResponse, SourceDetails.SourceKey sourceKey, String responseHash )
+            throws IOException
+    {
+        try
+        {
+
+            if ( DataSources.isCached( sourceKey ) )
+            {
+                LOGGER.debug( "The data for '{}' had been previously ingested.", requestURL );
+                return new WebResponse( usgsResponse,
+                                        true,
+                                        DataSources.getActiveSourceID( responseHash ),
+                                        responseHash );
+            }
+
+            SourceDetails usgsDetails = new SourceDetails( sourceKey );
+
+            usgsDetails.save();
+
+            if ( !usgsDetails.performedInsert() )
+            {
+                LOGGER.debug( "The data for '{}' had been previously ingested.", requestURL );
+            }
+
+            return new WebResponse( usgsResponse,
+                                    !usgsDetails.performedInsert(),
+                                    usgsDetails.getId(),
+                                    responseHash );
+        }
+        catch ( SQLException e )
+        {
+            throw new IOException( "Source information about the requested "
+                                   + "USGS data could not be found.",
+                                   e );
+        }
+    }
 
     private WebTarget buildWebTarget(final Client client) throws IngestException
     {
+        String earliestDate = this.getStartDate();
+        String latestDate = this.getEndDate();
         String gageStatement;
-        String earliestDate;
-        String latestDate;
-        String parameterCode;
+        String parCode;
 
         try
         {
@@ -314,27 +431,7 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
 
         try
         {
-            earliestDate = this.getStartDate();
-        }
-        catch ( IOException e )
-        {
-            throw new IngestException( "The date for the earliest data to ask "
-                                       + "USGS for could not be determined.", e );
-        }
-
-        try
-        {
-            latestDate = this.getEndDate();
-        }
-        catch ( IOException e )
-        {
-            throw new IngestException( "The date of the latest data to ask "
-                                       + "USGS for could not be determined.", e );
-        }
-
-        try
-        {
-            parameterCode = this.getParameterCode();
+            parCode = this.getParameterCode();
         }
         catch ( SQLException e )
         {
@@ -343,8 +440,8 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
         }
 
         WebTarget webTarget = client.target( USGS_URL );
-        // Determines if we use the daily REST service or the instantaenous REST service
-        webTarget = webTarget.path( this.getValueType() );
+        // Determines if we use the daily REST service or the instantaneous REST service
+        webTarget = webTarget.path( this.getEndpoint().toString() );
 
         // Not necessary, but aids with debugging
         webTarget = webTarget.queryParam( "indent", "on" );
@@ -359,7 +456,7 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
         // We use "all" because we could theoretically need historical data
         // from now defunct sites
         webTarget = webTarget.queryParam( "siteStatus", "all" );
-        webTarget = webTarget.queryParam( "parameterCd", parameterCode);
+        webTarget = webTarget.queryParam( "parameterCd", parCode);
 
         return webTarget;
     }
@@ -396,37 +493,38 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
      * @throws NoDataException when gage ids cannot be found
      */
 
-    private String getGageIdParameter(Collection<FeatureDetails> features)
+    private String getGageIdParameter( Collection<FeatureDetails> features )
     {
-        String parameter = null;
+        StringBuilder parameterName = new StringBuilder();
 
-        for (FeatureDetails feature : features)
+        for ( FeatureDetails feature : features )
         {
             String gageID = feature.getGageID();
 
             if ( !StringUtils.isNumeric( gageID ) )
             {
                 LOGGER.warn( "Invalid USGS gageID {} will not be used from feature {}.",
-                             gageID, feature );
+                             gageID,
+                             feature );
                 continue;
             }
 
-            if ( Strings.hasValue( gageID ) && !Strings.hasValue( parameter ))
+            if ( Strings.hasValue( gageID ) && !Strings.hasValue( parameterName.toString() ) )
             {
-                parameter = gageID;
+                parameterName.append( gageID );
             }
-            else if (Strings.hasValue( gageID ))
+            else if ( Strings.hasValue( gageID ) )
             {
-                parameter += "," + gageID;
+                parameterName.append( "," ).append( gageID );
             }
         }
 
-        if (!Strings.hasValue( parameter ))
+        if ( !Strings.hasValue( parameterName.toString() ) )
         {
             throw new NoDataException( "No valid gageIDs could be found. USGS data could not be ingested." );
         }
 
-        return parameter;
+        return parameterName.toString();
     }
 
     private boolean hasDiscreteParameterCode()
@@ -516,7 +614,7 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
         return this.parameter;
     }
 
-    private String getStartDate() throws IOException
+    private String getStartDate()
     {
         if (this.startDate == null)
         {
@@ -544,7 +642,7 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
         return this.startDate;
     }
 
-    private String getEndDate() throws IOException
+    private String getEndDate()
     {
         if (this.endDate == null)
         {
@@ -597,21 +695,13 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
         return this.endDate;
     }
 
-    private String getValueType()
+    /**
+     * @return the USGS endpoint used by this saver.
+     */
+    
+    private USGSEndpoint getEndpoint()
     {
-        String valueType;
-
-        if ( this.dataSourceConfig.getExistingTimeScale() != null &&
-             this.dataSourceConfig.getExistingTimeScale().getUnit() == DurationUnit.DAYS)
-        {
-            valueType = DAILY_VALUE;
-        }
-        else
-        {
-            valueType = INSTANTANEOUS_VALUE;
-        }
-
-        return valueType;
+        return this.endpoint;
     }
 
     private Integer getVariableFeatureID(String gageID) throws SQLException
@@ -661,7 +751,12 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
         TimeScale.TimeScaleFunction function = TimeScale.TimeScaleFunction.UNKNOWN;
         Duration period = null;
 
-        if (this.getParameter().getAggregation().equalsIgnoreCase( "sum" ))
+        // IV service endpoint only returns instantaneous values: #60265
+        if( this.getEndpoint() == USGSEndpoint.INSTANTANEOUS_VALUE )
+        {
+            period = Duration.ofMinutes( 1 );
+        }
+        else if (this.getParameter().getAggregation().equalsIgnoreCase( "sum" ))
         {
             period = timeStep;
             function = TimeScale.TimeScaleFunction.TOTAL;
@@ -789,25 +884,6 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
             this.onUpdate.accept( series );
         }
     }
-
-    private String startDate;
-    private String endDate;
-    private Integer variableID;
-    private Map<String, Integer> variableFeatureIDs;
-    private final Collection<FeatureDetails> region;
-    private final ProjectConfig projectConfig;
-    private final DataSourceConfig dataSourceConfig;
-    private String operationStartTime;
-    private URI requestURL;
-
-    private ExceptionalConsumer<TimeSeries, IOException> onUpdate;
-
-    // "00060" corresponds to a specific type of discharge. We need a list and
-    // a way to transform user specifications about variable, time aggregation,
-    // and measurement to find the correct code from the config
-    private String parameterCode;
-
-    private USGSParameters.USGSParameter parameter;
 
     @Override
     protected Logger getLogger()

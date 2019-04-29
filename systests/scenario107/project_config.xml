@@ -21,7 +21,7 @@
             <existingTimeScale>
                 <function>mean</function>
                 <period>1</period>
-                <unit>nanos</unit>
+                <unit>seconds</unit>
             </existingTimeScale>
         </right>
         <baseline label="ESP" >
@@ -32,7 +32,7 @@
             <existingTimeScale>
                 <function>mean</function>
                 <period>1</period>
-                <unit>nanos</unit>
+                <unit>seconds</unit>
             </existingTimeScale>
         </baseline>
 

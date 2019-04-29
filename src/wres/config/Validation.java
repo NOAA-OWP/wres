@@ -31,7 +31,6 @@ import wres.config.generated.DateCondition;
 import wres.config.generated.DesiredTimeScaleConfig;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
-import wres.config.generated.DurationUnit;
 import wres.config.generated.Feature;
 import wres.config.generated.Format;
 import wres.config.generated.IntBoundsType;
@@ -409,7 +408,7 @@ public class Validation
                            result.set( false );
                            LOGGER.warn( "In file {}, a metric named {} was requested, but is not allowed. "
                                         + "Only verification scores are allowed in "
-                                        + "combination with a poolingWindow configuration.",
+                                        + "combination with a pooling window configuration.",
                                         projectConfigPlus.getOrigin(),
                                         nextMetric.getName() );
                        }
@@ -748,36 +747,40 @@ public class Validation
 
         if ( dates != null )
         {
-            String earliest = dates.getEarliest();
-            String latest = dates.getLatest();
-            if ( earliest != null )
+            String earliestRaw = dates.getEarliest();
+            String latestRaw = dates.getLatest();
+            if ( earliestRaw != null )
             {
                 result = Validation.isDateStringValid( projectConfigPlus,
                                                        dates,
-                                                       earliest )
+                                                       earliestRaw )
                          && result;
             }
 
-            if ( latest != null )
+            if ( latestRaw != null )
             {
                 result = Validation.isDateStringValid( projectConfigPlus,
                                                        dates,
-                                                       latest )
+                                                       latestRaw )
                          && result;
 
                 // If we plan on using USGS, but we want a date later than now,
                 // break; that's impossible.
                 boolean usesUSGSData = ConfigHelper.usesUSGSData( projectConfigPlus.getProjectConfig() );
 
-                if (result && usesUSGSData && Instant.parse(latest).isAfter(Instant.now()))
+                Instant now = Instant.now();
+                Instant latest = Instant.parse( latestRaw );
+
+                if ( result && usesUSGSData && latest.isAfter( now ) )
                 {
                     result = false;
                     if ( LOGGER.isWarnEnabled() )
                     {
                         String msg = FILE_LINE_COLUMN_BOILERPLATE
                                      + " Data from the future cannot be"
-                                     + "requested from USGS; the latest date is"
-                                     + "invalid.";
+                                     + " requested from USGS; the latest date"
+                                     + " specified was " + latestRaw
+                                     + " but it is currently " + now;
 
                         LOGGER.warn( msg,
                                      projectConfigPlus.getOrigin(),
@@ -1614,63 +1617,23 @@ public class Validation
                          left.sourceLocation().getColumnNumber() );
         }
 
-        result = Validation.isDataSourceConfigValid( projectConfigPlus,
-                                                     left )
+        result = Validation.areDataSourcesValid( projectConfigPlus,
+                                                 left )
                  && result;
 
-        result = Validation.isDataSourceConfigValid( projectConfigPlus,
-                                                     right )
+        result = Validation.areDataSourcesValid( projectConfigPlus,
+                                                 right )
                  && result;
 
         if ( baseline != null )
         {
-            result = Validation.isDataSourceConfigValid( projectConfigPlus,
-                                                         baseline )
+            result = Validation.areDataSourcesValid( projectConfigPlus,
+                                                     baseline )
                      && result;
         }
 
         return result;
     }
-
-    private static boolean isDataSourceConfigValid( ProjectConfigPlus projectConfigPlus,
-                                                    DataSourceConfig dataSourceConfig )
-    {
-        boolean result = true;
-
-        TimeScaleConfig timeAggregation = dataSourceConfig.getExistingTimeScale();
-
-        if ( timeAggregation != null
-             && timeAggregation.getUnit() == DurationUnit.NANOS )
-        {
-            boolean instantMakesSense = true;
-
-            if ( timeAggregation.getPeriod() != 1 )
-            {
-                instantMakesSense = false;
-            }
-
-            // The message is the same whether for period or duration
-            if ( !instantMakesSense && LOGGER.isWarnEnabled() )
-            {
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + " When using 'instant' duration, the period (and"
-                             + " frequency, if specified) must be 1.",
-                             projectConfigPlus,
-                             timeAggregation.sourceLocation().getLineNumber(),
-                             timeAggregation.sourceLocation().getColumnNumber() );
-            }
-
-            result = instantMakesSense && result;
-        }
-
-        boolean dataSourcesValid = Validation.areDataSourcesValid( projectConfigPlus,
-                                                                   dataSourceConfig );
-
-        result = dataSourcesValid && result;
-
-        return result;
-    }
-
 
     /**
      * Checks that given DataSourceConfig has at least one

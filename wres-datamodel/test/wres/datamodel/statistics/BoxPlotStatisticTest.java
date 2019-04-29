@@ -1,13 +1,17 @@
 package wres.datamodel.statistics;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import org.junit.Before;
+import org.junit.Rule;
+
+import static org.hamcrest.CoreMatchers.*;
 
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
@@ -17,7 +21,6 @@ import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.StatisticMetadata;
-import wres.datamodel.sampledata.pairs.EnsemblePair;
 
 /**
  * Tests the {@link BoxPlotStatistic}.
@@ -27,449 +30,396 @@ import wres.datamodel.sampledata.pairs.EnsemblePair;
 public final class BoxPlotStatisticTest
 {
 
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
+
     /**
-     * Constructs a {@link BoxPlotStatistic} and tests for equality with another {@link BoxPlotStatistic}.
+     * Basic instance for testing.
      */
 
-    @SuppressWarnings( "unlikely-arg-type" )
-    @Test
-    public void test1Equals()
+    private BoxPlotStatistic bpa = null;
+
+    @Before
+    public void beforeEachTest()
     {
-
-        //Build datasets
-        final Location l1 = Location.of( "A" );
-        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                              DatasetIdentifier.of( l1,
+        //Build a statistic
+        final Location locA = Location.of( "A" );
+        final StatisticMetadata ma = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( locA,
                                                                                                     "B",
                                                                                                     "C" ) ),
                                                            10,
                                                            MeasurementUnit.of(),
-                                                           MetricConstants.CONTINGENCY_TABLE,
+                                                           MetricConstants.BOX_PLOT_OF_ERRORS,
                                                            MetricConstants.MAIN );
-        final Location l2 = Location.of( "A" );
-        final StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                              DatasetIdentifier.of( l2,
-                                                                                                    "B",
-                                                                                                    "C" ) ),
-                                                           12,
-                                                           MeasurementUnit.of(),
-                                                           MetricConstants.CONTINGENCY_TABLE,
-                                                           MetricConstants.MAIN );
-        final Location l3 = Location.of( "B" );
-        final StatisticMetadata m3 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                              DatasetIdentifier.of( l3,
-                                                                                                    "B",
-                                                                                                    "C" ) ),
-                                                           10,
-                                                           MeasurementUnit.of(),
-                                                           MetricConstants.CONTINGENCY_TABLE,
-                                                           MetricConstants.MAIN );
-        List<EnsemblePair> mva = new ArrayList<>();
-        List<EnsemblePair> mvb = new ArrayList<>();
-        VectorOfDoubles pa = VectorOfDoubles.of( new double[] { 0.0, 0.5, 1.0 } );
-        for ( int i = 0; i < 10; i++ )
-        {
-            mva.add( EnsemblePair.of( 1, new double[] { 1, 2, 3 } ) );
-            mvb.add( EnsemblePair.of( 1, new double[] { 1, 2, 3 } ) );
-        }
-        List<EnsemblePair> mvc = new ArrayList<>();
-        VectorOfDoubles pb = VectorOfDoubles.of( new double[] { 0.0, 0.25, 0.5, 1.0 } );
-        for ( int i = 0; i < 10; i++ )
-        {
-            mvc.add( EnsemblePair.of( 1, new double[] { 1, 2, 3, 4 } ) );
-        }
-        List<EnsemblePair> mvd = new ArrayList<>();
-        for ( int i = 0; i < 5; i++ )
-        {
-            mvd.add( EnsemblePair.of( 1, new double[] { 1, 2, 3, 4 } ) );
-        }
-        List<EnsemblePair> mve = new ArrayList<>();
-        for ( int i = 0; i < 5; i++ )
-        {
-            mve.add( EnsemblePair.of( 1, new double[] { 2, 3, 4, 5 } ) );
-        }
 
-        final BoxPlotStatistic q =
-                BoxPlotStatistic.of( mva, pa, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
-        final BoxPlotStatistic r =
-                BoxPlotStatistic.of( mvb, pa, m3, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
-        final BoxPlotStatistic s =
-                BoxPlotStatistic.of( mva, pa, m1, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
-        final BoxPlotStatistic t =
-                BoxPlotStatistic.of( mvb, pa, m1, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
-        final BoxPlotStatistic u =
-                BoxPlotStatistic.of( mvc, pb, m1, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
-        final BoxPlotStatistic v =
-                BoxPlotStatistic.of( mvc, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
-        final BoxPlotStatistic w =
-                BoxPlotStatistic.of( mvd, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
-        final BoxPlotStatistic x =
-                BoxPlotStatistic.of( mvd, pb, m2, MetricDimension.ENSEMBLE_MEAN, MetricDimension.FORECAST_ERROR );
-        final BoxPlotStatistic y =
-                BoxPlotStatistic.of( mvd, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_VALUE );
-        final BoxPlotStatistic z =
-                BoxPlotStatistic.of( mve, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
-        //Conduct comparisons
-        assertTrue( "Expected equal outputs.", s.equals( t ) );
-        assertTrue( "Expected non-equal outputs.", !s.equals( null ) );
-        assertTrue( "Expected non-equal outputs.", !s.equals( Double.valueOf( 1.0 ) ) );
-        assertTrue( "Expected non-equal outputs.", !s.equals( u ) );
-        assertTrue( "Expected non-equal outputs.", !s.equals( v ) );
-        assertTrue( "Expected non-equal outputs.", !v.equals( w ) );
-        assertTrue( "Expected non-equal outputs.", !w.equals( x ) );
-        assertTrue( "Expected non-equal outputs.", !w.equals( y ) );
-        assertTrue( "Expected non-equal outputs.", !w.equals( z ) );
-        assertTrue( "Expected equal outputs.", q.equals( q ) );
-        assertTrue( "Expected non-equal outputs.", !s.equals( q ) );
-        assertTrue( "Expected non-equal outputs.", !q.equals( s ) );
-        assertTrue( "Expected non-equal outputs.", !q.equals( r ) );
+        VectorOfDoubles pa = VectorOfDoubles.of( 0.0, 0.5, 1.0 );
+        VectorOfDoubles qa = VectorOfDoubles.of( 1, 2, 3 );
+        double la = 1;
+        bpa = BoxPlotStatistic.of( pa, qa, ma, la, MetricDimension.OBSERVED_VALUE );
     }
 
     /**
-     * Constructs a {@link BoxPlotStatistic} and tests for equal hashcodes with another {@link BoxPlotStatistic}.
+     * Tests the {@link BoxPlotStatistic#equals(Object)}.
      */
 
     @Test
-    public void test2Hashcode()
+    public void testEquals()
     {
 
-        //Build datasets
-        final Location l1 = Location.of( "A" );
-        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                              DatasetIdentifier.of( l1,
+        final Location locA = Location.of( "A" );
+        final StatisticMetadata ma = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( locA,
                                                                                                     "B",
                                                                                                     "C" ) ),
                                                            10,
                                                            MeasurementUnit.of(),
-                                                           MetricConstants.CONTINGENCY_TABLE,
+                                                           MetricConstants.BOX_PLOT_OF_ERRORS,
                                                            MetricConstants.MAIN );
-        final Location l2 = Location.of( "A" );
-        final StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                              DatasetIdentifier.of( l2,
-                                                                                                    "B",
-                                                                                                    "C" ) ),
-                                                           11,
-                                                           MeasurementUnit.of(),
-                                                           MetricConstants.CONTINGENCY_TABLE,
-                                                           MetricConstants.MAIN );
-        final Location l3 = Location.of( "B" );
-        final StatisticMetadata m3 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                              DatasetIdentifier.of( l3,
-                                                                                                    "B",
-                                                                                                    "C" ) ),
-                                                           10,
-                                                           MeasurementUnit.of(),
-                                                           MetricConstants.CONTINGENCY_TABLE,
-                                                           MetricConstants.MAIN );
-        List<EnsemblePair> mva = new ArrayList<>();
-        List<EnsemblePair> mvb = new ArrayList<>();
-        VectorOfDoubles pa = VectorOfDoubles.of( new double[] { 0.0, 0.5, 1.0 } );
-        for ( int i = 0; i < 10; i++ )
+
+        VectorOfDoubles pa = VectorOfDoubles.of( 0.0, 0.5, 1.0 );
+        VectorOfDoubles qa = VectorOfDoubles.of( 1, 2, 3 );
+        double la = 1;
+
+        // Reflexive 
+        assertEquals( bpa, bpa );
+
+        // Symmetric
+        BoxPlotStatistic bpb = BoxPlotStatistic.of( pa, qa, ma, la, MetricDimension.OBSERVED_VALUE );
+
+        assertTrue( bpa.equals( bpb ) && bpb.equals( bpa ) );
+
+        // Transitive
+        BoxPlotStatistic bpc = BoxPlotStatistic.of( pa, qa, ma, la, MetricDimension.OBSERVED_VALUE );
+
+        assertTrue( bpa.equals( bpc ) && bpc.equals( bpb ) && bpa.equals( bpb ) );
+
+        // Consistent
+        for ( int i = 0; i < 100; i++ )
         {
-            mva.add( EnsemblePair.of( 1, new double[] { 1, 2, 3 } ) );
-            mvb.add( EnsemblePair.of( 1, new double[] { 1, 2, 3 } ) );
-        }
-        List<EnsemblePair> mvc = new ArrayList<>();
-        VectorOfDoubles pb = VectorOfDoubles.of( new double[] { 0.0, 0.25, 0.5, 1.0 } );
-        for ( int i = 0; i < 10; i++ )
-        {
-            mvc.add( EnsemblePair.of( 1, new double[] { 1, 2, 3, 4 } ) );
-        }
-        List<EnsemblePair> mvd = new ArrayList<>();
-        for ( int i = 0; i < 5; i++ )
-        {
-            mvd.add( EnsemblePair.of( 1, new double[] { 1, 2, 3, 4 } ) );
-        }
-        List<EnsemblePair> mve = new ArrayList<>();
-        for ( int i = 0; i < 5; i++ )
-        {
-            mve.add( EnsemblePair.of( 1, new double[] { 2, 3, 4, 5 } ) );
+            assertTrue( bpa.equals( bpb ) );
         }
 
-        final BoxPlotStatistic q =
-                BoxPlotStatistic.of( mva, pa, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
-        final BoxPlotStatistic r =
-                BoxPlotStatistic.of( mvb, pa, m3, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
-        final BoxPlotStatistic s =
-                BoxPlotStatistic.of( mva, pa, m1, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
-        final BoxPlotStatistic t =
-                BoxPlotStatistic.of( mvb, pa, m1, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
-        final BoxPlotStatistic u =
-                BoxPlotStatistic.of( mvc, pb, m1, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
-        final BoxPlotStatistic v =
-                BoxPlotStatistic.of( mvc, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
-        final BoxPlotStatistic w =
-                BoxPlotStatistic.of( mvd, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
-        final BoxPlotStatistic x =
-                BoxPlotStatistic.of( mvd, pb, m2, MetricDimension.ENSEMBLE_MEAN, MetricDimension.FORECAST_ERROR );
-        final BoxPlotStatistic y =
-                BoxPlotStatistic.of( mvd, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_VALUE );
-        final BoxPlotStatistic z =
-                BoxPlotStatistic.of( mve, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
-        //Conduct comparisons
-        assertTrue( "Expected equal hashes.", s.hashCode() == t.hashCode() );
-        assertTrue( "Expected non-equal hashes.", s.hashCode() != Objects.hash( (Object) null ) );
-        assertTrue( "Expected non-equal hashes.", s.hashCode() != Double.hashCode( ( 1.0 ) ) );
-        assertTrue( "Expected non-equal hashes.", s.hashCode() != u.hashCode() );
-        assertTrue( "Expected non-equal hashes.", s.hashCode() != v.hashCode() );
-        assertTrue( "Expected non-equal hashes.", v.hashCode() != w.hashCode() );
-        assertTrue( "Expected non-equal hashes.", w.hashCode() != x.hashCode() );
-        assertTrue( "Expected non-equal hashes.", w.hashCode() != y.hashCode() );
-        assertTrue( "Expected non-equal hashes.", w.hashCode() != z.hashCode() );
-        assertTrue( "Expected equal hashes.", q.hashCode() == q.hashCode() );
-        assertTrue( "Expected non-equal hashes.", s.hashCode() != q.hashCode() );
-        assertTrue( "Expected non-equal hashes.", q.hashCode() != s.hashCode() );
-        assertTrue( "Expected non-equal hashes.", q.hashCode() != r.hashCode() );
+        // Unequal cases
+
+        // Unequal probabilities        
+        VectorOfDoubles pb = VectorOfDoubles.of( 0.0, 0.6, 1.0 );
+        BoxPlotStatistic bpd = BoxPlotStatistic.of( pb, qa, ma, la, MetricDimension.OBSERVED_VALUE );
+
+        assertThat( bpd, not( bpa ) );
+
+        // Unequal quantiles
+        VectorOfDoubles qb = VectorOfDoubles.of( 1, 2, 4 );
+        BoxPlotStatistic bpe = BoxPlotStatistic.of( pa, qb, ma, la, MetricDimension.OBSERVED_VALUE );
+
+        assertThat( bpe, not( bpa ) );
+
+        // Unequal metadata
+        final StatisticMetadata mb = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( locA,
+                                                                                                    "B",
+                                                                                                    "E" ) ),
+                                                           10,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.CONTINGENCY_TABLE,
+                                                           MetricConstants.MAIN );
+
+        BoxPlotStatistic bpf = BoxPlotStatistic.of( pa, qa, mb, la, MetricDimension.OBSERVED_VALUE );
+
+        assertThat( bpf, not( bpa ) );
+
+        // Unequal linked values
+        BoxPlotStatistic bpg = BoxPlotStatistic.of( pa, qa, mb );
+        assertThat( bpg, not( bpa ) );
+
+        // Unequal linked value type
+        BoxPlotStatistic bph = BoxPlotStatistic.of( pa, qa, mb, la, MetricDimension.FORECAST_VALUE );
+        assertThat( bph, not( bpf ) );
+
+        // Unequal value type
+        BoxPlotStatistic bpi =
+                BoxPlotStatistic.of( pa, qa, MetricDimension.ENSEMBLE_MEAN, mb, la, MetricDimension.FORECAST_VALUE );
+
+        assertThat( bph, not( bpi ) );
+
+        // Different object type       
+        assertThat( bpg, not( Double.valueOf( 1 ) ) );
+    }
+
+
+    /**
+     * Tests the {@link BoxPlotStatistic#hashCode()}.
+     */
+
+    @Test
+    public void testHashCode()
+    {
+        // Equal objects have equal hashcodes
+        assertEquals( bpa.hashCode(), bpa.hashCode() );
+
+        // Consistent with equals
+        final Location locA = Location.of( "A" );
+        final StatisticMetadata ma = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( locA,
+                                                                                                    "B",
+                                                                                                    "C" ) ),
+                                                           10,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.BOX_PLOT_OF_ERRORS,
+                                                           MetricConstants.MAIN );
+
+        VectorOfDoubles pa = VectorOfDoubles.of( 0.0, 0.5, 1.0 );
+        VectorOfDoubles qa = VectorOfDoubles.of( 1, 2, 3 );
+        double la = 1;
+        BoxPlotStatistic bpb = BoxPlotStatistic.of( pa, qa, ma, la, MetricDimension.OBSERVED_VALUE );
+
+        assertTrue( bpa.equals( bpb ) && bpb.equals( bpa ) && bpa.hashCode() == bpb.hashCode() );
+
+
+        // Internally consistent      
+        for ( int i = 0; i < 100; i++ )
+        {
+            assertTrue( bpa.hashCode() == bpb.hashCode() );
+        }
     }
 
     /**
-     * Constructs a {@link BoxPlotStatistic} and checks the {@link BoxPlotStatistic#getMetadata()}.
+     * Tests the {@link BoxPlotStatistic#hasLinkedValue()}
      */
 
     @Test
-    public void test2GetMetadata()
+    public void testHasLinkedValue()
     {
+        assertTrue( bpa.hasLinkedValue() );
 
-        final Location l1 = Location.of( "A" );
-        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                              DatasetIdentifier.of( l1,
-                                                                                                    "B",
-                                                                                                    "C" ) ),
-                                                           10,
-                                                           MeasurementUnit.of(),
-                                                           MetricConstants.CONTINGENCY_TABLE,
-                                                           MetricConstants.MAIN );
-        final Location l2 = Location.of( "B" );
-        final StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                              DatasetIdentifier.of( l2,
-                                                                                                    "B",
-                                                                                                    "C" ) ),
-                                                           10,
-                                                           MeasurementUnit.of(),
-                                                           MetricConstants.CONTINGENCY_TABLE,
-                                                           MetricConstants.MAIN );
-        final List<EnsemblePair> values = new ArrayList<>();
-        for ( int i = 0; i < 10; i++ )
-        {
-            values.add( EnsemblePair.of( 1, new double[] { 1, 2, 3 } ) );
-        }
-        final BoxPlotStatistic q =
-                BoxPlotStatistic.of( values,
-                                     VectorOfDoubles.of( new double[] { 0.1, 0.5, 1.0 } ),
-                                     m1,
-                                     MetricDimension.OBSERVED_VALUE,
-                                     MetricDimension.FORECAST_ERROR );
-        final BoxPlotStatistic r =
-                BoxPlotStatistic.of( values,
-                                     VectorOfDoubles.of( new double[] { 0.1, 0.5, 1.0 } ),
-                                     m2,
-                                     MetricDimension.OBSERVED_VALUE,
-                                     MetricDimension.FORECAST_ERROR );
-        assertTrue( "Expected unequal dimensions.", !q.getMetadata().equals( r.getMetadata() ) );
+        BoxPlotStatistic bpb = BoxPlotStatistic.of( VectorOfDoubles.of( 0.1, 0.9 ),
+                                                    VectorOfDoubles.of( 1, 2 ),
+                                                    StatisticMetadata.of( SampleMetadata.of(),
+                                                                          10,
+                                                                          MeasurementUnit.of(),
+                                                                          MetricConstants.BOX_PLOT_OF_ERRORS,
+                                                                          MetricConstants.MAIN ) );
+
+        assertFalse( bpb.hasLinkedValue() );
+
     }
 
     /**
-     * Constructs a {@link BoxPlotStatistic} and checks the accessor methods for correct operation.
+     * Tests the {@link BoxPlotStatistic#getLinkedValue()}
      */
 
     @Test
-    public void test3Accessors()
+    public void testGetLinkedValue()
     {
-
-        final Location l1 = Location.of( "A" );
-        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                              DatasetIdentifier.of( l1,
-                                                                                                    "B",
-                                                                                                    "C" ) ),
-                                                           10,
-                                                           MeasurementUnit.of(),
-                                                           MetricConstants.CONTINGENCY_TABLE,
-                                                           MetricConstants.MAIN );
-        ;
-        final List<EnsemblePair> values = new ArrayList<>();
-        for ( int i = 0; i < 10; i++ )
-        {
-            values.add( EnsemblePair.of( 1, new double[] { 1, 2, 3 } ) );
-        }
-        final BoxPlotStatistic q =
-                BoxPlotStatistic.of( values,
-                                     VectorOfDoubles.of( new double[] { 0.1, 0.5, 1.0 } ),
-                                     m1,
-                                     MetricDimension.OBSERVED_VALUE,
-                                     MetricDimension.FORECAST_ERROR );
-        assertTrue( "Expected a list of data.", !q.getData().isEmpty() );
-        assertTrue( "Expected an iterator with some elements to iterate.", q.iterator().hasNext() );
-        assertTrue( "Unexpected probabilities associated with the box plot data.",
-                    q.getProbabilities().equals( VectorOfDoubles.of( new double[] { 0.1, 0.5, 1.0 } ) ) );
-        assertTrue( "Expected a domain axis dimension of " + MetricDimension.OBSERVED_VALUE
-                    + ".",
-                    q.getDomainAxisDimension().equals( MetricDimension.OBSERVED_VALUE ) );
-        assertTrue( "Expected a range axis dimension of " + MetricDimension.FORECAST_ERROR
-                    + ".",
-                    q.getRangeAxisDimension().equals( MetricDimension.FORECAST_ERROR ) );
+        assertThat( bpa.getLinkedValue(), is( Double.valueOf( 1 ) ) );
     }
 
     /**
-     * Attempts to construct a {@link BoxPlotStatistic} and checks for exceptions on invalid inputs.
+     * Tests the {@link BoxPlotStatistic#getLinkedValueType()}
      */
 
     @Test
-    public void test4Exceptions()
+    public void testGetLinkedValueType()
     {
-
-        final Location l1 = Location.of( "A" );
-        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                              DatasetIdentifier.of( l1,
-                                                                                                    "B",
-                                                                                                    "C" ) ),
-                                                           10,
-                                                           MeasurementUnit.of(),
-                                                           MetricConstants.CONTINGENCY_TABLE,
-                                                           MetricConstants.MAIN );
-        final List<EnsemblePair> values = new ArrayList<>();
-        for ( int i = 0; i < 10; i++ )
-        {
-            values.add( EnsemblePair.of( 1, new double[] { 1, 2, 3 } ) );
-        }
-        try
-        {
-            BoxPlotStatistic.of( null,
-                                 VectorOfDoubles.of( new double[] { 0.1, 0.5, 1.0 } ),
-                                 m1,
-                                 MetricDimension.OBSERVED_VALUE,
-                                 MetricDimension.FORECAST_ERROR );
-            fail( "Expected an exception on null input data." );
-        }
-        catch ( StatisticException e )
-        {
-        }
-        try
-        {
-            BoxPlotStatistic.of( values,
-                                 VectorOfDoubles.of( new double[] { 0.1, 0.5, 1.0 } ),
-                                 null,
-                                 MetricDimension.OBSERVED_VALUE,
-                                 MetricDimension.FORECAST_ERROR );
-            fail( "Expected an exception on null metadata." );
-        }
-        catch ( StatisticException e )
-        {
-        }
-        try
-        {
-            BoxPlotStatistic.of( values,
-                                 null,
-                                 m1,
-                                 MetricDimension.OBSERVED_VALUE,
-                                 MetricDimension.FORECAST_ERROR );
-            fail( "Expected an exception on a null vector of probabilities." );
-        }
-        catch ( StatisticException e )
-        {
-        }
-        try
-        {
-            BoxPlotStatistic.of( values,
-                                 VectorOfDoubles.of( new double[] {} ),
-                                 m1,
-                                 MetricDimension.OBSERVED_VALUE,
-                                 MetricDimension.FORECAST_ERROR );
-            fail( "Expected an exception on an empty vector of probabilities." );
-        }
-        catch ( StatisticException e )
-        {
-        }
-        try
-        {
-            BoxPlotStatistic.of( values,
-                                 VectorOfDoubles.of( new double[] { 5.0, 10.0, 15.0 } ),
-                                 m1,
-                                 MetricDimension.OBSERVED_VALUE,
-                                 MetricDimension.FORECAST_ERROR );
-            fail( "Expected an exception on invalid probabilities." );
-        }
-        catch ( StatisticException e )
-        {
-        }
-        try
-        {
-            BoxPlotStatistic.of( values,
-                                 VectorOfDoubles.of( new double[] { 5.0, 10.0 } ),
-                                 m1,
-                                 MetricDimension.OBSERVED_VALUE,
-                                 MetricDimension.FORECAST_ERROR );
-            fail( "Expected an exception on fewer probabilities than whiskers." );
-        }
-        catch ( StatisticException e )
-        {
-        }
-        try
-        {
-            final List<EnsemblePair> uneven = new ArrayList<>();
-            uneven.add( EnsemblePair.of( 1.0, new double[] { 1, 2, 3 } ) );
-            uneven.add( EnsemblePair.of( 1.0, new double[] { 1, 2, 3, 4 } ) );
-            BoxPlotStatistic.of( uneven,
-                                 VectorOfDoubles.of( new double[] { 0.0, 0.5, 1.0 } ),
-                                 m1,
-                                 MetricDimension.OBSERVED_VALUE,
-                                 MetricDimension.FORECAST_ERROR );
-            fail( "Expected an exception on boxes with varying numbers of whiskers." );
-        }
-        catch ( StatisticException e )
-        {
-        }
-        try
-        {
-            final List<EnsemblePair> uneven = new ArrayList<>();
-            uneven.add( EnsemblePair.of( 1.0, new double[] { 1, 2, 3 } ) );
-            uneven.add( EnsemblePair.of( 1.0, new double[] {} ) );
-            BoxPlotStatistic.of( uneven,
-                                 VectorOfDoubles.of( new double[] { 0.0, 0.5, 1.0 } ),
-                                 m1,
-                                 MetricDimension.OBSERVED_VALUE,
-                                 MetricDimension.FORECAST_ERROR );
-            fail( "Expected an exception on boxes with missing whiskers." );
-        }
-        catch ( StatisticException e )
-        {
-        }
-        try
-        {
-            BoxPlotStatistic.of( values,
-                                 VectorOfDoubles.of( new double[] { 0.0, -0.5, 1.0 } ),
-                                 m1,
-                                 MetricDimension.OBSERVED_VALUE,
-                                 MetricDimension.FORECAST_ERROR );
-            fail( "Expected an exception on boxes with invalid probabilities." );
-        }
-        catch ( StatisticException e )
-        {
-        }
-        try
-        {
-            BoxPlotStatistic.of( values,
-                                 VectorOfDoubles.of( new double[] { 0.0, 0.5, 1.0 } ),
-                                 m1,
-                                 null,
-                                 MetricDimension.FORECAST_ERROR );
-            fail( "Expected an exception on a null domain axis dimension." );
-        }
-        catch ( StatisticException e )
-        {
-        }
-        try
-        {
-            BoxPlotStatistic.of( values,
-                                 VectorOfDoubles.of( new double[] { 0.0, 0.5, 1.0 } ),
-                                 m1,
-                                 MetricDimension.OBSERVED_VALUE,
-                                 null );
-            fail( "Expected an exception on a null range axis dimension." );
-        }
-        catch ( StatisticException e )
-        {
-        }
+        assertThat( bpa.getLinkedValueType(), is( MetricDimension.OBSERVED_VALUE ) );
     }
 
+    /**
+     * Tests the {@link BoxPlotStatistic#getValueType()}
+     */
+
+    @Test
+    public void testGetValueType()
+    {
+        assertThat( bpa.getValueType(), is( MetricDimension.FORECAST_ERROR ) );
+    }
+
+    /**
+     * Tests the {@link BoxPlotStatistic#toString}
+     */
+
+    @Test
+    public void testToString()
+    {
+        assertThat( bpa.toString(),
+                    is( "(PROBABILITIES: [0.0, 0.5, 1.0],QUANTILES: [1.0, 2.0, 3.0],"
+                        + "VALUE TYPE: FORECAST ERROR,LINKED VALUE: 1.0,LINKED VALUE TYPE: OBSERVED VALUE)" ) );
+    }
+
+    /**
+     * Tests for an expected exception on construction with a probability < 0.
+     */
+
+    @Test
+    public void testBuildThrowsExceptionOnProbabilityLessThanZero()
+    {
+        exception.expect( StatisticException.class );
+        exception.expectMessage( "One or more of the probabilities is out of bounds. Probabilities must be in [0,1]" );
+
+        BoxPlotStatistic.of( VectorOfDoubles.of( -0.1, 0.1 ),
+                             VectorOfDoubles.of( 1, 2 ),
+                             StatisticMetadata.of( SampleMetadata.of(),
+                                                   10,
+                                                   MeasurementUnit.of(),
+                                                   MetricConstants.BOX_PLOT_OF_ERRORS,
+                                                   MetricConstants.MAIN ) );
+    }
+
+
+    /**
+     * Tests for an expected exception on construction with a probability > 1.
+     */
+
+    @Test
+    public void testBuildThrowsExceptionOnProbabilityGreaterThanOne()
+    {
+        exception.expect( StatisticException.class );
+        exception.expectMessage( "One or more of the probabilities is out of bounds. Probabilities must be in [0,1]" );
+
+        BoxPlotStatistic.of( VectorOfDoubles.of( 0.0, 1.1 ),
+                             VectorOfDoubles.of( 1, 2 ),
+                             StatisticMetadata.of( SampleMetadata.of(),
+                                                   10,
+                                                   MeasurementUnit.of(),
+                                                   MetricConstants.BOX_PLOT_OF_ERRORS,
+                                                   MetricConstants.MAIN ) );
+    }
+
+
+    /**
+     * Tests for an expected exception on construction with more probabilities than quantiles.
+     */
+
+    @Test
+    public void testBuildThrowsExceptionOnMoreProbabilitiesThanQuantiles()
+    {
+        exception.expect( StatisticException.class );
+        exception.expectMessage( "The number of probabilities (3) does not match the number of quantiles (2)." );
+
+        BoxPlotStatistic.of( VectorOfDoubles.of( 0.0, 0.1, 0.2 ),
+                             VectorOfDoubles.of( 1, 2 ),
+                             StatisticMetadata.of( SampleMetadata.of(),
+                                                   10,
+                                                   MeasurementUnit.of(),
+                                                   MetricConstants.BOX_PLOT_OF_ERRORS,
+                                                   MetricConstants.MAIN ) );
+    }
+
+    /**
+     * Tests for an expected exception on construction with more quantiles than probabilities.
+     */
+
+    @Test
+    public void testBuildThrowsExceptionOnMoreQuantilesThanProbabilities()
+    {
+        exception.expect( StatisticException.class );
+        exception.expectMessage( "The number of probabilities (2) does not match the number of quantiles (3)." );
+
+        BoxPlotStatistic.of( VectorOfDoubles.of( 0.0, 0.1 ),
+                             VectorOfDoubles.of( 1, 2, 3 ),
+                             StatisticMetadata.of( SampleMetadata.of(),
+                                                   10,
+                                                   MeasurementUnit.of(),
+                                                   MetricConstants.BOX_PLOT_OF_ERRORS,
+                                                   MetricConstants.MAIN ) );
+    }
+
+    /**
+     * Tests for an expected exception on construction with null probabilities.
+     */
+
+    @Test
+    public void testBuildThrowsExceptionWithNullProbabilities()
+    {
+        exception.expect( NullPointerException.class );
+        exception.expectMessage( "Specify non-null probabilities for the box plot statistic." );
+
+        BoxPlotStatistic.of( null,
+                             VectorOfDoubles.of( 1, 2, 3 ),
+                             StatisticMetadata.of( SampleMetadata.of(),
+                                                   10,
+                                                   MeasurementUnit.of(),
+                                                   MetricConstants.BOX_PLOT_OF_ERRORS,
+                                                   MetricConstants.MAIN ) );
+    }
+
+    /**
+     * Tests for an expected exception on construction with null quantiles.
+     */
+
+    @Test
+    public void testBuildThrowsExceptionWithNullQuantiles()
+    {
+        exception.expect( NullPointerException.class );
+        exception.expectMessage( "Specify non-null quantiles for the box plot statistic." );
+
+        BoxPlotStatistic.of( VectorOfDoubles.of( 0.0, 0.9 ),
+                             null,
+                             StatisticMetadata.of( SampleMetadata.of(),
+                                                   10,
+                                                   MeasurementUnit.of(),
+                                                   MetricConstants.BOX_PLOT_OF_ERRORS,
+                                                   MetricConstants.MAIN ) );
+    }
+
+    /**
+     * Tests for an expected exception on construction with null metadata.
+     */
+
+    @Test
+    public void testBuildThrowsExceptionWithNullMetadata()
+    {
+        exception.expect( NullPointerException.class );
+        exception.expectMessage( "Specify non-null metadata for the box plot statistic." );
+
+        BoxPlotStatistic.of( VectorOfDoubles.of( 0.0, 0.9 ),
+                             VectorOfDoubles.of( 1, 2 ),
+                             null );
+    }
+
+    /**
+     * Tests for an expected exception on construction with null value type.
+     */
+
+    @Test
+    public void testBuildThrowsExceptionWithNullValueType()
+    {
+        exception.expect( NullPointerException.class );
+        exception.expectMessage( "Specify a non-null value type for the box plot statistic." );
+
+        BoxPlotStatistic.of( VectorOfDoubles.of( 0.0, 0.9 ),
+                             VectorOfDoubles.of( 1, 2 ),
+                             null,
+                             StatisticMetadata.of( SampleMetadata.of(),
+                                                   10,
+                                                   MeasurementUnit.of(),
+                                                   MetricConstants.BOX_PLOT_OF_ERRORS,
+                                                   MetricConstants.MAIN ),
+                             1,
+                             MetricDimension.OBSERVED_VALUE );
+    }
+    
+    /**
+     * Tests for an expected exception on construction with null linked value type.
+     */
+
+    @Test
+    public void testBuildThrowsExceptionWithNullLinkedValueType()
+    {
+        exception.expect( NullPointerException.class );
+        exception.expectMessage( "Specify a non-null linked value type for the box plot statistic." );
+
+        BoxPlotStatistic.of( VectorOfDoubles.of( 0.0, 0.9 ),
+                             VectorOfDoubles.of( 1, 2 ),
+                             MetricDimension.FORECAST_ERROR,
+                             StatisticMetadata.of( SampleMetadata.of(),
+                                                   10,
+                                                   MeasurementUnit.of(),
+                                                   MetricConstants.BOX_PLOT_OF_ERRORS,
+                                                   MetricConstants.MAIN ),
+                             1,
+                             null );
+    }    
+    
 
 }

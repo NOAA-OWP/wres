@@ -8,12 +8,12 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.MatrixStatistic;
 import wres.datamodel.statistics.MultiVectorStatistic;
 import wres.datamodel.statistics.PairedStatistic;
+import wres.datamodel.statistics.BoxPlotStatistic;
 
 /**
  * Metric constants. The metric identifiers are grouped by metric input/output type, as defined by the
@@ -47,13 +47,25 @@ public enum MetricConstants
      * Identifier for a box plot of errors by observed value.
      */
 
-    BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE( SampleDataGroup.ENSEMBLE, StatisticGroup.BOXPLOT ),
+    BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE( SampleDataGroup.ENSEMBLE, StatisticGroup.BOXPLOT_PER_PAIR ),
 
     /**
      * Identifier for a box plot of errors by forecast value.
      */
 
-    BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE( SampleDataGroup.ENSEMBLE, StatisticGroup.BOXPLOT ),
+    BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE( SampleDataGroup.ENSEMBLE, StatisticGroup.BOXPLOT_PER_PAIR ),
+    
+    /**
+     * Identifier for a box plot of errors.
+     */
+
+    BOX_PLOT_OF_ERRORS( SampleDataGroup.SINGLE_VALUED, StatisticGroup.BOXPLOT_PER_POOL ),   
+    
+    /**
+     * Identifier for a box plot of errors as a percentage of the left value.
+     */
+
+    BOX_PLOT_OF_PERCENTAGE_ERRORS( SampleDataGroup.SINGLE_VALUED, StatisticGroup.BOXPLOT_PER_POOL ),       
 
     /**
      * Identifier for coefficient of determination.
@@ -658,12 +670,18 @@ public enum MetricConstants
          */
 
         MATRIX,
-
+        
         /**
-         * Metrics that produce a {@link BoxPlotStatistic}.
+         * Metrics that produce a {@link BoxPlotStatistic} for each pair within a pool.
          */
 
-        BOXPLOT,
+        BOXPLOT_PER_PAIR,
+        
+        /**
+         * Metrics that produce a {@link BoxPlotStatistic} for each pool of pairs.
+         */
+
+        BOXPLOT_PER_POOL,
 
         /**
          * Metrics that produce a {@link PairedStatistic}.
@@ -852,7 +870,7 @@ public enum MetricConstants
         PREDICTED_QUANTILES,
 
         /**
-         * Identifier for forecast error.
+         * Identifier for error.
          */
 
         FORECAST_ERROR,
@@ -909,8 +927,14 @@ public enum MetricConstants
          * Identifier for true negatives.
          */
 
-        TRUE_NEGATIVES;
-
+        TRUE_NEGATIVES,
+        
+        /**
+         * Identifier for error as a percentage of the verifying value.
+         */
+        
+        ERROR_PERCENT_OF_VERIFYING_VALUE;
+        
         /**
          * Returns a string representation.
          * 

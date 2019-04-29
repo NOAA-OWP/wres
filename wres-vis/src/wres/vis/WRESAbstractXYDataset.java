@@ -2,6 +2,7 @@ package wres.vis;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import org.jfree.chart.JFreeChart;
 import org.jfree.data.xy.AbstractIntervalXYDataset;
@@ -51,6 +52,8 @@ public abstract class WRESAbstractXYDataset<T, U> extends AbstractIntervalXYData
 
     WRESAbstractXYDataset(final U rawData)
     {
+        Objects.requireNonNull( rawData );
+        
         preparePlotData(rawData);
         for(int i = 0; i < getSeriesCount(); i++)
         {

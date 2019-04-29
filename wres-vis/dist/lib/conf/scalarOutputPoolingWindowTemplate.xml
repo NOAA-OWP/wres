@@ -4,8 +4,8 @@
 
 	<plotTitle>
         <font family="Dialog" size="12" style="1"/>
-		<text>@metricName@@metricComponentNameSuffix@ for @primaryScenario@ predictions of @variableName@
-at @locationName@@baselineLabelSuffix@@timeScale@</text>
+		<text>@metricName@@metricComponentNameSuffix@ for@primaryScenario@ predictions of @variableName@
+at @locationName@@baselineLabelSuffix@ with Time Scale @timeScale@</text>
 	</plotTitle>
 
 	<!-- Empty out the nameInLegend so that it uses the defaults; show scatter points. -->

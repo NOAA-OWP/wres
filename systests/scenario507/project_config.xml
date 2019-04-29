@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="scenario507">
+
+    <inputs>
+        <left>
+            <type>observations</type>
+            <source>smalldata/25510317T00_FAKE2_observations.xml</source>
+            <variable>DISCHARGE</variable>
+        </left>
+        <right>
+            <type>single valued forecasts</type>
+            <source>smalldata/25510317T12_FAKE2_forecast.xml</source>
+            <source>smalldata/25510318T00_FAKE2_forecast.xml</source>
+            <source>smalldata/25510318T12_FAKE2_forecast.xml</source>
+            <source>smalldata/25510319T00_FAKE2_forecast.xml</source>
+            <variable>STREAMFLOW</variable>
+        </right>
+    </inputs>
+
+    <pair>
+        <unit>CMS</unit>
+        <feature locationId="FAKE2" />
+        <issuedDates earliest="2551-03-17T00:00:00Z" latest="2551-03-20T00:00:00Z" />
+        <desiredTimeScale>
+            <function>mean</function>
+            <period>3</period>
+            <unit>hours</unit>
+        </desiredTimeScale>
+    </pair>
+
+    <metrics>
+        <metric><name>box plot of errors</name></metric>
+        <metric><name>box plot of percentage errors</name></metric>
+    </metrics>
+
+    <outputs>
+        <destination type="numeric" decimalFormat="0.0000" />
+    </outputs>
+
+</project>

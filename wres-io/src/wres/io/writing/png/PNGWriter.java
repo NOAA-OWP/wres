@@ -97,6 +97,7 @@ abstract class PNGWriter
     {
         final File outputImageFile = outputImage.toFile();
 
+        // TODO: these defaults should be provided in the declaration
         int width = SystemSettings.getDefaultChartWidth();
         int height = SystemSettings.getDefaultChartHeight();
 
