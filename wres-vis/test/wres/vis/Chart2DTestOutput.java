@@ -24,7 +24,7 @@ import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.statistics.BoxPlotStatistic;
+import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
@@ -467,7 +467,7 @@ public class Chart2DTestOutput
 
         FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
 
-        final ListOfStatistics<BoxPlotStatistic> results =
+        final ListOfStatistics<BoxPlotStatistics> results =
                 Chart2DTestDataGenerator.getBoxPlotErrorsByObservedAndLeadThreshold();
 
         //Get an implementation of the factory to use for testing.
@@ -475,7 +475,7 @@ public class Chart2DTestOutput
 
         //Call the factory.
         final Map<Pair<TimeWindow, OneOrTwoThresholds>, ChartEngine> engineMap =
-                ChartEngineFactory.buildBoxPlotChartEngine( null,
+                ChartEngineFactory.buildBoxPlotChartEnginePerPool( null,
                                                             results,
                                                             null,
                                                             null,
@@ -518,7 +518,7 @@ public class Chart2DTestOutput
 
         FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
 
-        final ListOfStatistics<BoxPlotStatistic> results =
+        final ListOfStatistics<BoxPlotStatistics> results =
                 Chart2DTestDataGenerator.getBoxPlotErrorsByForecastAndLeadThreshold();
 
         //Get an implementation of the factory to use for testing.
@@ -526,7 +526,7 @@ public class Chart2DTestOutput
 
         //Call the factory.
         final Map<Pair<TimeWindow, OneOrTwoThresholds>, ChartEngine> engineMap =
-                ChartEngineFactory.buildBoxPlotChartEngine( null,
+                ChartEngineFactory.buildBoxPlotChartEnginePerPool( null,
                                                             results,
                                                             null,
                                                             null,

@@ -7,14 +7,16 @@ import java.util.function.ToDoubleFunction;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
+import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricParameterException;
 
 /**
- * An concrete implementation of a {@link BoxPlot} that plots the ensemble forecast errors (right - left) against 
+ * An concrete implementation of a {@link EnsembleBoxPlot} that plots the ensemble forecast errors (right - left) against 
  * forecast value. A box is constructed for the errors associated with each ensemble forecast where the errors 
  * (whiskers) are mapped to prescribed quantiles (probability thresholds). The function used to map the forecast
  * value may be prescribed.
@@ -22,7 +24,7 @@ import wres.engine.statistics.metric.MetricParameterException;
  * @author james.brown@hydrosolved.com
  */
 
-public class BoxPlotErrorByForecast extends BoxPlot
+public class BoxPlotErrorByForecast extends EnsembleBoxPlot
 {
 
     /**
@@ -85,15 +87,17 @@ public class BoxPlotErrorByForecast extends BoxPlot
     /**
      * Creates a box from a {@link EnsemblePair}.
      * 
+     * @param pair an ensemble pair
+     * @param metadata the box metadata
      * @return a box
      * @throws MetricCalculationException if the box cannot be constructed
      */
 
     @Override
-    EnsemblePair getBox( EnsemblePair pair )
+    BoxPlotStatistic getBox( EnsemblePair pair, StatisticMetadata metadata )
     {
         //Get the sorted errors
-        double[] probs = probabilities.getDoubles();
+        double[] probs = this.probabilities.getDoubles();
         double[] sorted = pair.getRight();
         Arrays.sort( sorted );
         double[] sortedErrors = Arrays.stream( sorted ).map( x -> x - pair.getLeft() ).toArray();
@@ -101,33 +105,11 @@ public class BoxPlotErrorByForecast extends BoxPlot
         //Compute the quantiles
         double[] box =
                 Arrays.stream( probs ).map( Slicer.getQuantileFunction( sortedErrors ) ).toArray();
-        return EnsemblePair.of( domainMapper.applyAsDouble( VectorOfDoubles.of( sorted ) ), box );
-    }
-
-    /**
-     * Returns the dimension associated with the left side of the pairing, i.e. the value against which each box is
-     * plotted on the domain axis. 
-     * 
-     * @return the domain axis dimension
-     */
-
-    @Override
-    MetricDimension getDomainAxisDimension()
-    {
-        return domainDimension;
-    }
-
-    /**
-     * Returns the dimension associated with the right side of the pairing, i.e. the values associated with the 
-     * whiskers of each box. 
-     * 
-     * @return the range axis dimension
-     */
-
-    @Override
-    MetricDimension getRangeAxisDimension()
-    {
-        return MetricDimension.FORECAST_ERROR;
+        return BoxPlotStatistic.of( this.probabilities,
+                                    VectorOfDoubles.of( box ),
+                                    metadata,
+                                    domainMapper.applyAsDouble( VectorOfDoubles.of( sorted ) ),
+                                    this.domainDimension );
     }
 
     /**

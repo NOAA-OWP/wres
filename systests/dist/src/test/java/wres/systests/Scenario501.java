@@ -31,7 +31,7 @@ public class Scenario501
                                               .toLowerCase(),
                                           baseDirectory );
         LOGGER.info( "####>> Cleaning the database..." );
-        Operations.cleanDatabase();
+        //Operations.cleanDatabase();
         //ScenarioHelper.deleteOldOutputDirectories( scenarioInfo.getScenarioDirectory() );
         ScenarioHelper.setAllPropertiesFromEnvVars( scenarioInfo );
 		//System.out.println(scenarioInfo.getName() + " is " + scenarioInfo.getScenarioDirectory().toFile().toString());
@@ -57,5 +57,6 @@ public class Scenario501
 		ScenarioHelper.searchAndReplace(scenarioInfo.getScenarioDirectory().toFile().toString() + "/after.sh");
 		//System.out.println("Do after.sh " + ScenarioHelper.doAfter(scenarioInfo.getScenarioDirectory().toFile().list()));
 	}
+
 }
 

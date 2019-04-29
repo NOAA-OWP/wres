@@ -1,31 +1,20 @@
 package wres.datamodel.statistics;
 
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
 
-import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.metadata.StatisticMetadata;
-import wres.datamodel.sampledata.pairs.EnsemblePair;
 
 /**
- * Immutable store of box plot statistics. Contains a {@link EnsemblePair} where the 
- * left side is a single value and the right side comprises the "whiskers" (quantiles) associated with a single box.
+ * An immutable representation of a box plot statistic, which comprises a set of 
+ * quantiles and, optionally, a linked value, such as an observed or forecast value.
  * 
  * @author james.brown@hydrosolved.com
  */
-public class BoxPlotStatistic
-        implements Statistic<List<EnsemblePair>>, Iterable<EnsemblePair>
+public class BoxPlotStatistic implements Statistic<VectorOfDoubles>
 {
-
-    /**
-     * The boxes in an immutable list.
-     */
-
-    private final List<EnsemblePair> output;
 
     /**
      * The metadata associated with the output.
@@ -34,42 +23,129 @@ public class BoxPlotStatistic
     private final StatisticMetadata meta;
 
     /**
-     * The dimension associated with the domain axis.
-     */
-
-    private final MetricDimension domainAxisDimension;
-
-    /**
-     * The dimension associated with the range axis (boxes).
-     */
-
-    private final MetricDimension rangeAxisDimension;
-
-    /**
      * Probabilities associated with the whiskers for each box.
      */
 
-    private VectorOfDoubles probabilities;
+    private final VectorOfDoubles probabilities;
+
+    /**
+     * The values that correspond to the probabilities.
+     */
+
+    private final VectorOfDoubles quantiles;
+
+    /**
+     * An optional value against which the box is stored.
+     */
+
+    private final double linkedValue;
+
+    /**
+     * The dimension associated with the whiskers.
+     */
+
+    private final MetricDimension valueType;
+
+    /**
+     * The dimension associated with the linked value.
+     */
+
+    private final MetricDimension linkedValueType;
+
+    /**
+     * Returns an instance from the inputs with a default value type of
+     * {@link MetricDimension#FORECAST_ERROR}.
+     * 
+     * @param probabilities the probabilities
+     * @param quantiles the quantiles
+     * @param meta the statistic metadata
+     * @throws StatisticException if any of the input is invalid
+     * @throws NullPointerException if any input is null
+     * @return an instance of the output
+     */
+
+    public static BoxPlotStatistic of( VectorOfDoubles probabilities,
+                                       VectorOfDoubles quantiles,
+                                       StatisticMetadata meta )
+    {
+        return new BoxPlotStatistic( probabilities, quantiles, MetricDimension.FORECAST_ERROR, meta, Double.NaN, null );
+    }
+    
+    /**
+     * Returns an instance from the inputs with a prescribed value type.
+     * 
+     * @param probabilities the probabilities
+     * @param quantiles the quantiles
+     * @param valueType the value type
+     * @param meta the statistic metadata
+     * @throws StatisticException if any of the input is invalid
+     * @throws NullPointerException if any input is null
+     * @return an instance of the output
+     */
+
+    public static BoxPlotStatistic of( VectorOfDoubles probabilities,
+                                       VectorOfDoubles quantiles,
+                                       MetricDimension valueType,
+                                       StatisticMetadata meta )
+    {
+        return new BoxPlotStatistic( probabilities, quantiles, valueType, meta, Double.NaN, null );
+    }
+
+    /**
+     * Returns an instance from the inputs with a default value type of
+     * {@link MetricDimension#FORECAST_ERROR}.
+     * 
+     * @param probabilities the probabilities
+     * @param quantiles the quantiles
+     * @param meta the statistic metadata
+     * @param linkedValue a linked value
+     * @param linkedValueType the type of linked value
+     * @throws StatisticException if any inputs is invalid
+     * @throws NullPointerException if any input is null
+     * @return an instance of the output
+     */
+
+    public static BoxPlotStatistic of( VectorOfDoubles probabilities,
+                                       VectorOfDoubles quantiles,
+                                       StatisticMetadata meta,
+                                       double linkedValue,
+                                       MetricDimension linkedValueType )
+    {
+        return new BoxPlotStatistic( probabilities,
+                                     quantiles,
+                                     MetricDimension.FORECAST_ERROR,
+                                     meta,
+                                     linkedValue,
+                                     linkedValueType );
+    }
 
     /**
      * Returns an instance from the inputs.
      * 
-     * @param output the box plot data
      * @param probabilities the probabilities
-     * @param meta the box plot metadata
-     * @param domainAxisDimension the domain axis dimension
-     * @param rangeAxisDimension the range axis dimension
-     * @throws StatisticException if any of the inputs are invalid
+     * @param quantiles the quantiles
+     * @param valueType the value type
+     * @param meta the statistic metadata
+     * @param linkedValue a linked value
+     * @param linkedValueType the type of linked value
+     * @throws StatisticException if any inputs is invalid
+     * @throws NullPointerException if any input is null
      * @return an instance of the output
      */
 
-    public static BoxPlotStatistic of( List<EnsemblePair> output,
-                                    VectorOfDoubles probabilities,
-                                    StatisticMetadata meta,
-                                    MetricDimension domainAxisDimension,
-                                    MetricDimension rangeAxisDimension )
+    public static BoxPlotStatistic of( VectorOfDoubles probabilities,
+                                       VectorOfDoubles quantiles,
+                                       MetricDimension valueType,
+                                       StatisticMetadata meta,
+                                       double linkedValue,
+                                       MetricDimension linkedValueType )
     {
-        return new BoxPlotStatistic( output, probabilities, meta, domainAxisDimension, rangeAxisDimension );
+        return new BoxPlotStatistic( probabilities,
+                                     quantiles,
+                                     valueType,
+                                     meta,
+                                     linkedValue,
+                                     linkedValueType );
     }
 
     @Override
@@ -79,20 +155,59 @@ public class BoxPlotStatistic
     }
 
     @Override
-    public List<EnsemblePair> getData()
+    public VectorOfDoubles getData()
     {
-        return output;
-    }
-
-    @Override
-    public Iterator<EnsemblePair> iterator()
-    {
-        return output.iterator();
+        return quantiles;
     }
 
     /**
-     * Returns the probabilities associated with the whiskers (quantiles) in each box. The probabilities are stored
-     * in the same order as the quantiles.
+     * Returns a value linked to the box.
+     * 
+     * @return a value linked to the box
+     */
+
+    public double getLinkedValue()
+    {
+        return this.linkedValue;
+    }
+
+    /**
+     * Returns the value type of the whiskers.
+     * 
+     * @return the value type
+     */
+
+    public MetricDimension getValueType()
+    {
+        return this.valueType;
+    }
+
+    /**
+     * Returns the linked value type, which may be null.
+     * 
+     * @return the linked value type or null
+     */
+
+    public MetricDimension getLinkedValueType()
+    {
+        return this.linkedValueType;
+    }
+
+    /**
+     * Returns <code>true</code> if there is a linked value associated
+     * with the box that is not a {@link Double#NaN}, otherwise false.
+     * 
+     * @return true if there is a linked value, false otherwise 
+     */
+
+    public boolean hasLinkedValue()
+    {
+        return !Double.isNaN( linkedValue );
+    }
+
+    /**
+     * Returns the probabilities associated with the whiskers (quantiles) in each box. 
+     * The probabilities are stored in the same order as the quantiles.
      * 
      * @return the probabilities associated with the whiskers of each box
      */
@@ -100,30 +215,6 @@ public class BoxPlotStatistic
     public VectorOfDoubles getProbabilities()
     {
         return this.probabilities;
-    }
-
-    /**
-     * Returns the dimension associated with the left side of the pairing, i.e. the value against which each box is
-     * plotted on the domain axis. 
-     * 
-     * @return the domain axis dimension
-     */
-
-    public MetricDimension getDomainAxisDimension()
-    {
-        return this.domainAxisDimension;
-    }
-
-    /**
-     * Returns the dimension associated with the right side of the pairing, i.e. the values associated with the 
-     * whiskers of each box. 
-     * 
-     * @return the range axis dimension
-     */
-
-    public MetricDimension getRangeAxisDimension()
-    {
-        return this.rangeAxisDimension;
     }
 
     @Override
@@ -134,33 +225,37 @@ public class BoxPlotStatistic
             return false;
         }
         final BoxPlotStatistic v = (BoxPlotStatistic) o;
-        //Check probabilities
-        if ( !getProbabilities().equals( v.getProbabilities() ) )
+
+        // Check the value type
+        if ( this.getValueType() != v.getValueType() )
         {
             return false;
         }
-        //Check dimensions
-        if ( !getDomainAxisDimension().equals( v.getDomainAxisDimension() ) )
+
+        // Check the linked value
+        if ( Double.compare( this.getLinkedValue(), v.getLinkedValue() ) != 0 )
         {
             return false;
         }
-        if ( !getRangeAxisDimension().equals( v.getRangeAxisDimension() ) )
+
+        // Check the linked value type
+        if ( this.getLinkedValueType() != v.getLinkedValueType() )
         {
             return false;
         }
-        //Check pairs
-        if ( v.output.size() != output.size() )
+
+        // Check the probabilities
+        if ( !this.getProbabilities().equals( v.getProbabilities() ) )
         {
             return false;
         }
-        Iterator<EnsemblePair> it = iterator();
-        for ( EnsemblePair next : v )
+
+        // Check the quantiles
+        if ( !this.getData().equals( v.getData() ) )
         {
-            if ( !next.equals( it.next() ) )
-            {
-                return false;
-            }
+            return false;
         }
+
         //Check metadata
         return meta.equals( v.getMetadata() );
     }
@@ -168,18 +263,23 @@ public class BoxPlotStatistic
     @Override
     public int hashCode()
     {
-        return Objects.hash( meta, output, probabilities, domainAxisDimension, rangeAxisDimension );
+        return Objects.hash( meta, probabilities, quantiles, valueType, linkedValue, linkedValueType );
     }
 
     @Override
     public String toString()
     {
-        StringJoiner joiner = new StringJoiner( System.lineSeparator() );
+        StringJoiner joiner = new StringJoiner( ",", "(", ")" );
 
-        joiner.add( "PROBABILITIES: " + probabilities );
+        joiner.add( "PROBABILITIES: " + this.getProbabilities() );
+        joiner.add( "QUANTILES: " + this.getData() );
+        joiner.add( "VALUE TYPE: " + this.getValueType() );
 
-        joiner.add( "BOXES:" );
-        output.forEach( nextBox -> joiner.add( nextBox.toString() ) );
+        if ( this.hasLinkedValue() )
+        {
+            joiner.add( "LINKED VALUE: " + this.getLinkedValue() );
+            joiner.add( "LINKED VALUE TYPE: " + this.getLinkedValueType() );
+        }
 
         return joiner.toString();
     }
@@ -187,87 +287,58 @@ public class BoxPlotStatistic
     /**
      * Hidden constructor.
      * 
-     * @param output the box plot data
      * @param probabilities the probabilities
+     * @param quantiles the quantiles
+     * @param valueType the type of value
      * @param meta the box plot metadata
-     * @param domainAxisDimension the domain axis dimension
-     * @param rangeAxisDimension the range axis dimension
-     * @throws StatisticException if any of the inputs are invalid
+     * @param linkedValue a linked value
+     * @param linkedValueType the type of linked value
+     * @throws StatisticException if any input is invalid
+     * @throws NullPointerException if any input is null
      */
 
-    private BoxPlotStatistic( List<EnsemblePair> output,
-                           VectorOfDoubles probabilities,
-                           StatisticMetadata meta,
-                           MetricDimension domainAxisDimension,
-                           MetricDimension rangeAxisDimension )
+    private BoxPlotStatistic( VectorOfDoubles probabilities,
+                              VectorOfDoubles quantiles,
+                              MetricDimension valueType,
+                              StatisticMetadata meta,
+                              double linkedValue,
+                              MetricDimension linkedValueType )
     {
         //Validate
-        if ( Objects.isNull( output ) )
+        Objects.requireNonNull( meta, "Specify non-null metadata for the box plot statistic." );
+
+        Objects.requireNonNull( probabilities, "Specify non-null probabilities for the box plot statistic." );
+
+        Objects.requireNonNull( quantiles, "Specify non-null quantiles for the box plot statistic." );
+
+        Objects.requireNonNull( valueType, "Specify a non-null value type for the box plot statistic." );
+
+        if ( !Double.isNaN( linkedValue ) )
         {
-            throw new StatisticException( "Specify a non-null output." );
-        }
-        if ( Objects.isNull( meta ) )
-        {
-            throw new StatisticException( "Specify non-null metadata." );
-        }
-        if ( Objects.isNull( domainAxisDimension ) )
-        {
-            throw new StatisticException( "Specify a non-null domain axis dimension." );
-        }
-        if ( Objects.isNull( rangeAxisDimension ) )
-        {
-            throw new StatisticException( "Specify a non-null range axis dimension." );
-        }
-        if ( Objects.isNull( probabilities ) )
-        {
-            throw new StatisticException( "Specify non-null probabilities." );
-        }
-        if ( probabilities.size() < 2 )
-        {
-            throw new StatisticException( "Specify two or more probabilities for the whiskers." );
-        }
-        if ( !output.isEmpty() && probabilities.size() != output.get( 0 ).getRight().length )
-        {
-            throw new StatisticException( "The number of probabilities does not match the number of whiskers "
-                                             + "associated with each box." );
+            Objects.requireNonNull( linkedValueType,
+                                    "Specify a non-null linked value type for the box "
+                                                     + "plot statistic." );
         }
 
-        //Check contents
-        checkEachProbability( probabilities );
-        checkEachBox( output );
+        // Probabilities and quantiles of equal size
+        if ( quantiles.size() != probabilities.size() )
+        {
+            throw new StatisticException( "The number of probabilities (" + probabilities.size()
+                                          + ") does not match the number of quantiles ("
+                                          + quantiles.size()
+                                          + ")." );
+        }
+
+        // Check the probabilities
+        this.checkEachProbability( probabilities );
 
         //Ensure safe types
-        this.output = Collections.unmodifiableList( output );
+        this.quantiles = quantiles;
         this.probabilities = probabilities;
-        this.domainAxisDimension = domainAxisDimension;
-        this.rangeAxisDimension = rangeAxisDimension;
         this.meta = meta;
-    }
-
-    /**
-     * Validates each box in each input.
-     * 
-     * @param boxes the boxes
-     */
-
-    private void checkEachBox( List<EnsemblePair> boxes )
-    {
-        if ( !boxes.isEmpty() )
-        {
-            int check = boxes.get( 0 ).getRight().length;
-            for ( EnsemblePair next : boxes )
-            {
-                if ( next.getRight().length == 0 )
-                {
-                    throw new StatisticException( "One or more boxes are missing whiskers." );
-                }
-                if ( next.getRight().length != check )
-                {
-                    throw new StatisticException( "One or more boxes has a different number of whiskers than "
-                                                     + "input probabilities." );
-                }
-            }
-        }
+        this.linkedValue = linkedValue;
+        this.valueType = valueType;
+        this.linkedValueType = linkedValueType;
     }
 
     /**
@@ -282,7 +353,8 @@ public class BoxPlotStatistic
         {
             if ( next < 0.0 || next > 1.0 )
             {
-                throw new StatisticException( "One or more of the probabilities is invalid." );
+                throw new StatisticException( "One or more of the probabilities is out of bounds. "
+                                              + "Probabilities must be in [0,1]." );
             }
         }
     }

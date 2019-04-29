@@ -8,6 +8,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +48,7 @@ import wres.datamodel.Slicer;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
-import wres.datamodel.statistics.BoxPlotStatistic;
+import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
@@ -128,7 +129,8 @@ public abstract class ChartEngineFactory
             new EnumMap<>( StatisticGroup.class );
     static
     {
-        metricOutputGroupToDefaultChartTypeMap.put( StatisticGroup.BOXPLOT, ChartType.UNIQUE );
+        metricOutputGroupToDefaultChartTypeMap.put( StatisticGroup.BOXPLOT_PER_PAIR, ChartType.UNIQUE );
+        metricOutputGroupToDefaultChartTypeMap.put( StatisticGroup.BOXPLOT_PER_POOL, ChartType.UNIQUE );
         metricOutputGroupToDefaultChartTypeMap.put( StatisticGroup.DOUBLE_SCORE, ChartType.LEAD_THRESHOLD );
         metricOutputGroupToDefaultChartTypeMap.put( StatisticGroup.DURATION_SCORE, ChartType.UNIQUE );
         metricOutputGroupToDefaultChartTypeMap.put( StatisticGroup.MATRIX, ChartType.UNIQUE );
@@ -153,6 +155,8 @@ public abstract class ChartEngineFactory
                                        "boxPlotOfErrorsTemplate.xml" );
         metricSpecificTemplateMap.put( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
                                        "boxPlotOfErrorsTemplate.xml" );
+        metricSpecificTemplateMap.put( MetricConstants.BOX_PLOT_OF_ERRORS, "boxPlotOfErrorsTemplate.xml" );
+        metricSpecificTemplateMap.put( MetricConstants.BOX_PLOT_OF_PERCENTAGE_ERRORS, "boxPlotOfErrorsTemplate.xml" );
         metricSpecificTemplateMap.put( MetricConstants.TIME_TO_PEAK_ERROR, "timeToPeakErrorTemplate.xml" );
         metricSpecificTemplateMap.put( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR, "timeToPeakErrorTemplate.xml" );
         metricSpecificTemplateMap.put( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
@@ -187,8 +191,8 @@ public abstract class ChartEngineFactory
      * @return The {@link OutputTypeSelection} specifying the output type for the plot.  
      */
     private static <T extends Statistic<?>> ChartType determineChartType( ProjectConfig config,
-                                                                             ListOfStatistics<T> input,
-                                                                             OutputTypeSelection userSpecifiedOutputType )
+                                                                          ListOfStatistics<T> input,
+                                                                          OutputTypeSelection userSpecifiedOutputType )
     {
         //Pooling window case.
         if ( Objects.nonNull( config ) && Objects.nonNull( config.getPair() )
@@ -646,7 +650,7 @@ public abstract class ChartEngineFactory
      * @throws WRESVisXMLReadingException when reading template fails.
      */
     private static WRESChartEngine
-            processBoxPlotErrorsDiagram( BoxPlotStatistic input,
+            processBoxPlotErrorsDiagram( BoxPlotStatistics input,
                                          String templateName,
                                          String overrideParametersStr,
                                          ChronoUnit durationUnits )
@@ -657,29 +661,35 @@ public abstract class ChartEngineFactory
         int[] diagonalDataSourceIndices = null;
         String axisToSquareAgainstDomain = null;
 
-        if ( input.getMetadata().getMetricID() != MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE
-             && input.getMetadata().getMetricID() != MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE )
+        if ( !input.getMetadata().getMetricID().isInGroup( StatisticGroup.BOXPLOT_PER_PAIR )
+             && !input.getMetadata().getMetricID().isInGroup( StatisticGroup.BOXPLOT_PER_POOL ) )
         {
-            throw new IllegalArgumentException( "Unrecognized plot type of " + input.getMetadata().getMetricID()
-                                                + " specified in the metric information." );
+            throw new IllegalArgumentException( "Unrecognized data type for metric " + input.getMetadata().getMetricID()
+                                                + ". Expected one of "
+                                                + StatisticGroup.BOXPLOT_PER_PAIR
+                                                + " or "
+                                                + StatisticGroup.BOXPLOT_PER_POOL
+                                                + ", but got "
+                                                + input.getMetadata().getMetricID().getMetricOutputGroup()
+                                                + "." );
         }
 
         arguments = new WRESArgumentProcessor( input, durationUnits );
 
         //Add the data source
-        dataSources.add( XYChartDataSourceFactory.ofBoxPlotOutput( 0, input, null ) );
+        dataSources.add( XYChartDataSourceFactory.ofBoxPlotOutput( 0, input, null, durationUnits ) );
 
         //Build the ChartEngine instance.
-        return generateChartEngine( dataSources,
-                                    arguments,
-                                    templateName,
-                                    overrideParametersStr,
-                                    diagonalDataSourceIndices,
-                                    axisToSquareAgainstDomain );
+        return ChartEngineFactory.generateChartEngine( dataSources,
+                                                       arguments,
+                                                       templateName,
+                                                       overrideParametersStr,
+                                                       diagonalDataSourceIndices,
+                                                       axisToSquareAgainstDomain );
     }
 
     /**
-     * At this time, there is only one plot type available for box plots, so the user specified plot type is not included as an argument.
+     * Builds a box plot for each {@link BoxPlotStatistics} in the input.
      * @param config The project configuration.
      * @param input The metric output to plot.
      * @param userSpecifiedTemplateResourceName Name of the resource to load which provides the default template for
@@ -691,22 +701,22 @@ public abstract class ChartEngineFactory
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
      * @throws WRESVisXMLReadingException when reading template fails
      */
-    public static ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, ChartEngine>
-            buildBoxPlotChartEngine( final ProjectConfig config, 
-                                     final ListOfStatistics<BoxPlotStatistic> input,
-                                     final String userSpecifiedTemplateResourceName,
-                                     final String overrideParametersStr,
-                                     final ChronoUnit durationUnits )
+    public static Map<Pair<TimeWindow, OneOrTwoThresholds>, ChartEngine>
+            buildBoxPlotChartEnginePerPool( final ProjectConfig config,
+                                            final ListOfStatistics<BoxPlotStatistics> input,
+                                            final String userSpecifiedTemplateResourceName,
+                                            final String overrideParametersStr,
+                                            final ChronoUnit durationUnits )
                     throws ChartEngineException, WRESVisXMLReadingException
     {
-        final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, ChartEngine> results = new ConcurrentSkipListMap<>();
+        final Map<Pair<TimeWindow, OneOrTwoThresholds>, ChartEngine> results = new ConcurrentSkipListMap<>();
 
         //Determine the output type, converting DEFAULT accordingly, and template name.
         ChartType usedPlotType = determineChartType( config, input, null );
-        
+
         // Find the metadata for the first element, which is sufficient here
         StatisticMetadata meta = input.getData().get( 0 ).getMetadata();
-        
+
         String templateName = determineTemplate( meta.getMetricID(),
                                                  usedPlotType );
         if ( userSpecifiedTemplateResourceName != null )
@@ -714,34 +724,75 @@ public abstract class ChartEngineFactory
             templateName = userSpecifiedTemplateResourceName;
         }
 
-        //For each lead time, do the following....
-        for ( BoxPlotStatistic next : input )
+        //For each input in the list, create a chart
+        for ( BoxPlotStatistics next : input )
         {
-            if ( meta.getMetricID() == MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE
-                 || meta.getMetricID() == MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE )
-            {
-
-                final ChartEngine engine = processBoxPlotErrorsDiagram( next,
-                                                                        templateName,
-                                                                        overrideParametersStr,
-                                                                        durationUnits );
-                results.put( Pair.of( next.getMetadata().getSampleMetadata().getTimeWindow(),
-                                      next.getMetadata().getSampleMetadata().getThresholds() ),
-                             engine );
-            }
-
-            //===================================================
-            //Unrecognized metric.
-            //===================================================
-            else
-            {
-                throw new IllegalArgumentException( "Unrecognized metric of " + meta.getMetricID()
-                                                    + " specified in the metric information for the box plot chart." );
-            }
+            ChartEngine engine = ChartEngineFactory.processBoxPlotErrorsDiagram( next,
+                                                                                 templateName,
+                                                                                 overrideParametersStr,
+                                                                                 durationUnits );
+            results.put( Pair.of( next.getMetadata().getSampleMetadata().getTimeWindow(),
+                                  next.getMetadata().getSampleMetadata().getThresholds() ),
+                         engine );
         }
-        return results;
+        
+        return Collections.unmodifiableMap( results );
     }
 
+    /**
+     * Builds a box plot for the input.
+     * 
+     * @param config The project configuration.
+     * @param input The metric output to plot.
+     * @param userSpecifiedTemplateResourceName Name of the resource to load which provides the default template for
+     *            chart construction. May be null to use default template identified in static table.
+     * @param overrideParametersStr String of XML (top level tag: chartDrawingParameters) that specifies the user
+     *            overrides for the appearance of chart.
+     * @param durationUnits the duration units
+     * @return Map where the keys are instances of {@link Pair} with the two keys being an integer and a threshold.
+     * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
+     * @throws WRESVisXMLReadingException when reading template fails
+     * @throws NullPointerException if the config, input or durationUnits is null
+     * @throws IllegalArgumentException if no box plots are available
+     */
+    public static ChartEngine buildBoxPlotChartEngine( ProjectConfig config,
+                                                       BoxPlotStatistics input,
+                                                       String userSpecifiedTemplateResourceName,
+                                                       String overrideParametersStr,
+                                                       ChronoUnit durationUnits )
+            throws ChartEngineException, WRESVisXMLReadingException
+    {
+        Objects.requireNonNull( config );
+
+        Objects.requireNonNull( input );
+
+        Objects.requireNonNull( durationUnits );
+
+        if ( input.getData().isEmpty() )
+        {
+            throw new IllegalArgumentException( "Cannot generate box plot graphics for dataset with metadata '"
+                                                + input.getMetadata()
+                                                + "' because no box plots statistics were available." );
+        }
+        
+        //Determine the output type
+        ChartType usedPlotType = ChartEngineFactory.determineChartType( config, input, null );
+
+        // Find the metadata for the first element, which is sufficient here
+        StatisticMetadata meta = input.getData().get( 0 ).getMetadata();
+
+        String templateName = determineTemplate( meta.getMetricID(), usedPlotType );
+        if ( userSpecifiedTemplateResourceName != null )
+        {
+            templateName = userSpecifiedTemplateResourceName;
+        }
+
+        return ChartEngineFactory.processBoxPlotErrorsDiagram( input,
+                                                               templateName,
+                                                               overrideParametersStr,
+                                                               durationUnits );
+    }
+    
 
     /**
      * Builds a {@link ChartEngine} for each component of a score.

@@ -85,20 +85,13 @@
     <pair>
         <unit>CMS</unit>
         <feature locationId="DRRC2" />
-        <leadHours minimum="1" maximum="24" />
-
-        <desiredTimeScale>
-            <function>mean</function>
-            <period>1</period>
-            <unit>hours</unit>
-        </desiredTimeScale>
+        <leadHours minimum="1" maximum="48" />
     </pair>
 
     <metrics>
         <thresholds>
-            <type>value</type>
-            <!-- These values are in the unit specified for pairs above -->
-            <commaSeparatedValues>0.5,1,2,5,10,15,20,25</commaSeparatedValues>
+            <type>probability</type>
+            <commaSeparatedValues>0.0, 0.25, 0.50, 0.75, 1.0</commaSeparatedValues>
             <operator>greater than or equal to</operator>
         </thresholds>
 

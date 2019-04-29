@@ -4,8 +4,8 @@
 
 	<plotTitle>
         <font family="Dialog" size="12" style="1"/>
-		<text>@metricName@ for Various Event @plotTitleVariable@ (Upper) and Sample Counts (Lower)
-@locationName@.@variableName@.@primaryScenario@@timeScale@@diagramInstanceDescription@
+		<text>@metricName@ (upper) and SAMPLE COUNTS (lower) for@primaryScenario@ predictions of @variableName@
+at @locationName@ with Time Scale @timeScale@@diagramInstanceDescription@
 @referenceTime@@dataPoolingWindow(yyyy-MM-dd'T'HH:mm:ss zz;GMT)@</text>
 	</plotTitle>
 	

@@ -21,7 +21,7 @@ import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.statistics.BoxPlotStatistic;
+import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -96,7 +96,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param durationUnits the time units for durations
      * @throws NullPointerException if either input is null
      */
-    public WRESArgumentProcessor( final BoxPlotStatistic displayPlotInput, final ChronoUnit durationUnits )
+    public WRESArgumentProcessor( final BoxPlotStatistics displayPlotInput, final ChronoUnit durationUnits )
     {
         super();
 
@@ -118,12 +118,24 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
                                 + " "
                                 + this.getDurationUnits().name().toUpperCase();
 
-        addArgument( "diagramInstanceDescription",
-                     "at Lead Time " + durationString
-                                                   + " for "
-                                                   + meta.getSampleMetadata().getThresholds() );
+        // Plot per pool? See: #62374
+        if ( displayPlotInput.getMetadata().getMetricID().isInGroup( StatisticGroup.BOXPLOT_PER_POOL ) )
+        {
+            addArgument( "diagramInstanceDescription",
+                         "and for Threshold " + meta.getSampleMetadata().getThresholds() );
+        }
+        else
+        {
+            addArgument( "diagramInstanceDescription",
+                         "and at Lead Time "
+                                                       + durationString
+                                                       + " and for Threshold "
+                                                       + meta.getSampleMetadata().getThresholds() );
+        }
+
         addArgument( "probabilities",
-                     HString.buildStringFromArray( displayPlotInput.getProbabilities().getDoubles(), ", " )
+                     HString.buildStringFromArray( displayPlotInput.getData().get( 0 ).getProbabilities().getDoubles(),
+                                                   ", " )
                             .replaceAll( "0.0,", "min," )
                             .replaceAll( "1.0", "max" ) );
 
@@ -232,13 +244,13 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
             final DatasetIdentifier identifier = meta.getIdentifier();
             addArgument( "locationName", identifier.getGeospatialID().toString() );
             addArgument( "variableName", identifier.getVariableID() );
-            if ( identifier.getScenarioID() == null )
+            if ( identifier.hasScenarioID() )
             {
-                addArgument( "primaryScenario", "" );
+                addArgument( "primaryScenario", " "+identifier.getScenarioID() );
             }
             else
             {
-                addArgument( "primaryScenario", identifier.getScenarioID() );
+                addArgument( "primaryScenario", "" );
             }
         }
     }
@@ -334,7 +346,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         if ( threshold != null )
         {
             addArgument( "diagramInstanceDescription",
-                         "for Threshold " + threshold.toString() );
+                         "and for Threshold " + threshold.toString() );
             addArgument( "plotTitleVariable", "Lead Times" );
         }
     }
@@ -416,14 +428,24 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         String timeScale = "";
         if ( meta.getSampleMetadata().hasTimeScale() )
         {
-            String period =
-                    Long.toString( TimeHelper.durationToLongUnits( meta.getSampleMetadata().getTimeScale().getPeriod(),
-                                                                   this.getDurationUnits() ) )
-                            + " "
-                            + this.getDurationUnits().name().toUpperCase();
+            // Use the default string representation of an instantaneous time scale
+            // See #62867
+            if( meta.getSampleMetadata().getTimeScale().isInstantaneous() )
+            {
+                timeScale = meta.getSampleMetadata().getTimeScale().toString()  + " ";
+            }
+            else
+            {
+                String period =
+                        Long.toString( TimeHelper.durationToLongUnits( meta.getSampleMetadata()
+                                                                           .getTimeScale()
+                                                                           .getPeriod(),
+                                                                       this.getDurationUnits() ) )
+                                + " "
+                                + this.getDurationUnits().name().toUpperCase();
 
-            timeScale =
-                    " with time scale [" + period + ", " + meta.getSampleMetadata().getTimeScale().getFunction() + "] ";
+                timeScale = "[" + period + ", " + meta.getSampleMetadata().getTimeScale().getFunction() + "] ";
+            }
         }
 
         addArgument( "timeScale", timeScale );

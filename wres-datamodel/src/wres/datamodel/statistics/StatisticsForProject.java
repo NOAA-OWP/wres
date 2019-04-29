@@ -52,10 +52,16 @@ public class StatisticsForProject
     private final List<Future<ListOfStatistics<MatrixStatistic>>> matrix = new ArrayList<>();
 
     /**
-     * Thread safe map for {@link BoxPlotStatistic}.
+     * Thread safe map for {@link BoxPlotStatistics} for each pair within a pool.
      */
 
-    private final List<Future<ListOfStatistics<BoxPlotStatistic>>> boxplot = new ArrayList<>();
+    private final List<Future<ListOfStatistics<BoxPlotStatistics>>> boxplotPerPair = new ArrayList<>();
+
+    /**
+     * Thread safe map for {@link BoxPlotStatistics} for each pool.
+     */
+
+    private final List<Future<ListOfStatistics<BoxPlotStatistics>>> boxplotPerPool = new ArrayList<>();
 
     /**
      * Thread safe map for {@link PairedStatistic}.
@@ -119,16 +125,31 @@ public class StatisticsForProject
     }
 
     /**
-     * Returns a {@link ListOfStatistics} of {@link BoxPlotStatistic} or null if no output exists.
+     * Returns a {@link ListOfStatistics} of {@link BoxPlotStatistics} per pair or null if no 
+     * output exists.
      * 
-     * @return the matrix output or null
+     * @return the box plot output or null
      * @throws StatisticException if the output could not be retrieved
      * @throws InterruptedException if the retrieval was interrupted
      */
 
-    public ListOfStatistics<BoxPlotStatistic> getBoxPlotStatistics() throws InterruptedException
+    public ListOfStatistics<BoxPlotStatistics> getBoxPlotStatisticsPerPair() throws InterruptedException
     {
-        return this.unwrap( StatisticGroup.BOXPLOT, boxplot );
+        return this.unwrap( StatisticGroup.BOXPLOT_PER_PAIR, boxplotPerPair );
+    }
+
+    /**
+     * Returns a {@link ListOfStatistics} of {@link BoxPlotStatistics} for each pool or null if no 
+     * output exists.
+     * 
+     * @return the box plot output or null
+     * @throws StatisticException if the output could not be retrieved
+     * @throws InterruptedException if the retrieval was interrupted
+     */
+
+    public ListOfStatistics<BoxPlotStatistics> getBoxPlotStatisticsPerPool() throws InterruptedException
+    {
+        return this.unwrap( StatisticGroup.BOXPLOT_PER_POOL, boxplotPerPool );
     }
 
     /**
@@ -164,8 +185,10 @@ public class StatisticsForProject
                 return !multiVector.isEmpty();
             case MATRIX:
                 return !matrix.isEmpty();
-            case BOXPLOT:
-                return !boxplot.isEmpty();
+            case BOXPLOT_PER_PAIR:
+                return !boxplotPerPair.isEmpty();
+            case BOXPLOT_PER_POOL:
+                return !boxplotPerPool.isEmpty();
             case PAIRED:
                 return !paired.isEmpty();
             default:
@@ -183,32 +206,37 @@ public class StatisticsForProject
     {
         Set<StatisticGroup> returnMe = new HashSet<>();
 
-        if ( hasStatistic( StatisticGroup.DOUBLE_SCORE ) )
+        if ( this.hasStatistic( StatisticGroup.DOUBLE_SCORE ) )
         {
             returnMe.add( StatisticGroup.DOUBLE_SCORE );
         }
 
-        if ( hasStatistic( StatisticGroup.DURATION_SCORE ) )
+        if ( this.hasStatistic( StatisticGroup.DURATION_SCORE ) )
         {
             returnMe.add( StatisticGroup.DURATION_SCORE );
         }
 
-        if ( hasStatistic( StatisticGroup.MULTIVECTOR ) )
+        if ( this.hasStatistic( StatisticGroup.MULTIVECTOR ) )
         {
             returnMe.add( StatisticGroup.MULTIVECTOR );
         }
 
-        if ( hasStatistic( StatisticGroup.MATRIX ) )
+        if ( this.hasStatistic( StatisticGroup.MATRIX ) )
         {
             returnMe.add( StatisticGroup.MATRIX );
         }
 
-        if ( hasStatistic( StatisticGroup.BOXPLOT ) )
+        if ( this.hasStatistic( StatisticGroup.BOXPLOT_PER_PAIR ) )
         {
-            returnMe.add( StatisticGroup.BOXPLOT );
+            returnMe.add( StatisticGroup.BOXPLOT_PER_PAIR );
         }
 
-        if ( hasStatistic( StatisticGroup.PAIRED ) )
+        if ( this.hasStatistic( StatisticGroup.BOXPLOT_PER_POOL ) )
+        {
+            returnMe.add( StatisticGroup.BOXPLOT_PER_POOL );
+        }
+
+        if ( this.hasStatistic( StatisticGroup.PAIRED ) )
         {
             returnMe.add( StatisticGroup.PAIRED );
         }
@@ -252,10 +280,17 @@ public class StatisticsForProject
                 new ConcurrentLinkedQueue<>();
 
         /**
-         * Thread safe map for {@link BoxPlotStatistic}.
+         * Thread safe map for {@link BoxPlotStatistics} for each pair.
          */
 
-        private final ConcurrentLinkedQueue<Future<ListOfStatistics<BoxPlotStatistic>>> boxplotInternal =
+        private final ConcurrentLinkedQueue<Future<ListOfStatistics<BoxPlotStatistics>>> boxplotPerPairInternal =
+                new ConcurrentLinkedQueue<>();
+
+        /**
+         * Thread safe map for {@link BoxPlotStatistics} for each pool.
+         */
+
+        private final ConcurrentLinkedQueue<Future<ListOfStatistics<BoxPlotStatistics>>> boxplotPerPoolInternal =
                 new ConcurrentLinkedQueue<>();
 
         /**
@@ -330,17 +365,33 @@ public class StatisticsForProject
         }
 
         /**
-         * Adds a new {@link BoxPlotStatistic} for a collection of metrics to the internal store, merging with existing 
-         * items that share the same key, as required.
+         * Adds a new {@link BoxPlotStatistics} per pair for a collection of metrics to the internal store, 
+         * merging with existing items that share the same key, as required.
          * 
          * @param result the result
          * @return the builder
          */
 
         public StatisticsForProjectBuilder
-                addBoxPlotStatistics( Future<ListOfStatistics<BoxPlotStatistic>> result )
+                addBoxPlotStatisticsPerPair( Future<ListOfStatistics<BoxPlotStatistics>> result )
         {
-            boxplotInternal.add( result );
+            boxplotPerPairInternal.add( result );
+
+            return this;
+        }
+
+        /**
+         * Adds a new {@link BoxPlotStatistics} per pool for a collection of metrics to the internal store, 
+         * merging with existing items that share the same key, as required.
+         * 
+         * @param result the result
+         * @return the builder
+         */
+
+        public StatisticsForProjectBuilder
+                addBoxPlotStatisticsPerPool( Future<ListOfStatistics<BoxPlotStatistics>> result )
+        {
+            boxplotPerPoolInternal.add( result );
 
             return this;
         }
@@ -386,7 +437,8 @@ public class StatisticsForProject
         durationScore.addAll( builder.durationScoreInternal );
         multiVector.addAll( builder.multiVectorInternal );
         matrix.addAll( builder.matrixInternal );
-        boxplot.addAll( builder.boxplotInternal );
+        boxplotPerPair.addAll( builder.boxplotPerPairInternal );
+        boxplotPerPool.addAll( builder.boxplotPerPoolInternal );
         paired.addAll( builder.pairedInternal );
     }
 

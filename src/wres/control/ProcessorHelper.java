@@ -23,6 +23,8 @@ import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +34,10 @@ import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationType;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.thresholds.ThresholdsByMetric;
+import wres.engine.statistics.metric.config.MetricConfigHelper;
 import wres.io.Operations;
 import wres.io.config.ConfigHelper;
 import wres.io.project.Project;
@@ -56,19 +61,6 @@ class ProcessorHelper
     private static final Logger LOGGER = LoggerFactory.getLogger( ProcessorHelper.class );
 
     /**
-     * Default resolution for writing outputs that contain time units, such as lead durations, time scales and
-     * datetimes. To change the resolution, change this default.
-     */
-
-    static final ChronoUnit DEFAULT_TEMPORAL_UNITS = ChronoUnit.SECONDS;
-
-    private ProcessorHelper()
-    {
-        // Helper class with static methods therefore no construction allowed.
-    }
-
-
-    /**
      * Processes a {@link ProjectConfigPlus} using a prescribed {@link ExecutorService} for each of the pairs, 
      * thresholds and metrics.
      * 
@@ -77,6 +69,7 @@ class ProcessorHelper
      * @throws IOException when an issue occurs during ingest
      * @throws ProjectConfigException if the project configuration is invalid
      * @throws WresProcessingException when an issue occurs during processing
+     * @return the paths to which outputs were written
      */
 
     static Set<Path> processProjectConfig( final ProjectConfigPlus projectConfigPlus,
@@ -91,6 +84,15 @@ class ProcessorHelper
         // Create output directory prior to ingest, fails early when it fails.
         Path outputDirectory = ProcessorHelper.createTempOutputDirectory();
 
+        // Read external thresholds from the configuration, per feature
+        // Compare on locationId only. TODO: consider how better to transmit these thresholds
+        // to wres-metrics, given that they are resolved by project configuration that is
+        // passed separately to wres-metrics. Options include moving MetricProcessor* to 
+        // wres-control, since they make processing decisions, or passing ResolvedProject onwards
+        final Map<FeaturePlus, ThresholdsByMetric> thresholds =
+                new TreeMap<>( FeaturePlus::compareByLocationId );
+        thresholds.putAll( ConfigHelper.readExternalThresholdsFromProjectConfig( projectConfig ) );        
+        
         LOGGER.debug( "Beginning ingest for project {}...", projectConfigPlus );
 
         // Need to ingest first
@@ -112,14 +114,10 @@ class ProcessorHelper
             throw new IOException( "Failed to retrieve the set of features.", e );
         }
 
-        // Read external thresholds from the configuration, per feature
-        // Compare on locationId only. TODO: consider how better to transmit these thresholds
-        // to wres-metrics, given that they are resolved by project configuration that is
-        // passed separately to wres-metrics. Options include moving MetricProcessor* to 
-        // wres-control, since they make processing decisions, or passing ResolvedProject onwards
-        final Map<FeaturePlus, ThresholdsByMetric> thresholds =
-                new TreeMap<>( FeaturePlus::compareByLocationId );
-        thresholds.putAll( ConfigHelper.readExternalThresholdsFromProjectConfig( projectConfig ) );
+        // Validate the thresholds-by-feature against the features 
+        ProcessorHelper.throwExceptionIfSomeFeaturesAreMissingRequiredThresholds( thresholds.keySet(),
+                                                                                  decomposedFeatures,
+                                                                                  projectConfig );
 
         // The project code - ideally project hash
         String projectIdentifier = String.valueOf( project.getInputCode() );
@@ -129,6 +127,10 @@ class ProcessorHelper
                                                               projectIdentifier,
                                                               thresholds,
                                                               outputDirectory );
+        
+        // Obtain the duration units for outputs: #55441
+        String durationUnitsString = projectConfig.getOutputs().getDurationFormat().value().toUpperCase();
+        ChronoUnit durationUnits = ChronoUnit.valueOf( durationUnitsString );
 
         // Build any writers of incremental formats that are shared across features
         /* skip the general-purpose incomplete netcdf writer
@@ -148,7 +150,7 @@ class ProcessorHelper
             */
             // Use the gridded netcdf writer
             sharedWritersBuilder.setNetcdfOutputWriter( NetcdfOutputWriter.of( projectConfig,
-                                                                               ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
+                                                                               durationUnits,
                                                                                outputDirectory ) );
         }
 
@@ -168,14 +170,14 @@ class ProcessorHelper
 
             sharedSampleDataWriters =
                     SharedSampleDataWriters.of( Paths.get( outputDirectory.toString(), PairsWriter.DEFAULT_PAIRS_NAME ),
-                                                ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
+                                                durationUnits,
                                                 decimalFormatter );
             // Baseline writer?
             if ( Objects.nonNull( projectConfig.getInputs().getBaseline() ) )
             {
                 sharedBaselineSampleDataWriters = SharedSampleDataWriters.of( Paths.get( outputDirectory.toString(),
                                                                                          PairsWriter.DEFAULT_BASELINE_PAIRS_NAME ),
-                                                                              ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
+                                                                              durationUnits,
                                                                               decimalFormatter );
             }
         }
@@ -305,6 +307,7 @@ class ProcessorHelper
      * should already handle exceptions otherwise the exceptions will not be caught here (i.e. all futures will process
      * to completion).
      *
+     * @param <T> the type of future
      * @param futures the futures to compose
      * @return the composed futures
      * @throws CompletionException if completing exceptionally 
@@ -330,6 +333,63 @@ class ProcessorHelper
         return CompletableFuture.anyOf( allDone, oneExceptional );
     }
 
+    /**
+     * <p>Throws an exception if:
+     * 
+     * <ol>
+     * <li>Thresholds have been defined for one or more features individually; and</li>
+     * <li>The list of features that require computation contains one or more features for which
+     * thresholds have not been defined; and</li>
+     * <li>The project declaration contains metrics that require thresholds.</li>
+     * </ol>
+     * 
+     * <p>In these circumstances, thresholds will be missing for some metrics, so 
+     * failure is guaranteed, and this validation makes it happen sooner.
+     * 
+     * @param featuresWithThresholds the features with thresholds
+     * @param featuresToEvaluate the features to evaluate
+     * @param projectConfig the project declaration
+     * @throws IllegalArgumentException if some expected thresholds are missing
+     */
+
+    private static void
+            throwExceptionIfSomeFeaturesAreMissingRequiredThresholds( Set<FeaturePlus> featuresWithThresholds,
+                                                                      Set<FeaturePlus> featuresToEvaluate,
+                                                                      ProjectConfig projectConfig )
+    {
+        // Thresholds have been defined by feature, so validate them
+        if ( !featuresWithThresholds.isEmpty() )
+        {
+            // Determine whether any metrics require thresholds
+            Set<MetricConstants> metrics = MetricConfigHelper.getMetricsFromConfig( projectConfig );
+            boolean requiresThresholds = metrics.stream()
+                                                .anyMatch( nextMetric -> nextMetric.isInGroup( SampleDataGroup.DICHOTOMOUS )
+                                                                         || nextMetric.isInGroup( SampleDataGroup.DISCRETE_PROBABILITY )
+                                                                         || nextMetric.isInGroup( SampleDataGroup.MULTICATEGORY ) );
+
+            // If thresholds are required, check that all features have them 
+            if ( requiresThresholds )
+            {
+                // Determine missing thresholds by locationId
+                Set<String> missingThresholds =
+                        featuresToEvaluate.stream()
+                                          .filter( Predicate.not( featuresWithThresholds::contains ) )
+                                          .map( feature -> feature.getFeature().getLocationId() )
+                                          .collect( Collectors.toSet() );
+
+                if ( !missingThresholds.isEmpty() )
+                {
+                    throw new IllegalArgumentException( "The project declaration contains some metrics for which thresholds are "
+                                                        + "required, but some features for which thresholds are not available. "
+                                                        + "Found "
+                                                        + missingThresholds.size()
+                                                        + " features to evaluate in the project declaration for which "
+                                                        + "thresholds were missing from an external source of thresholds: "
+                                                        + missingThresholds );
+                }
+            }
+        }
+    }
 
     /**
      * A value object that a) reduces count of args for some methods and
@@ -373,6 +433,7 @@ class ProcessorHelper
          * @param pairExecutor the pair executor
          * @param thresholdExecutor the threshold executor
          * @param metricExecutor the metric executor
+         * @param productExecutor the product executor
          */
         ExecutorServices( ExecutorService featureExecutor,
                           ExecutorService pairExecutor,
@@ -436,5 +497,11 @@ class ProcessorHelper
         {
             return this.productExecutor;
         }
+    }
+    
+
+    private ProcessorHelper()
+    {
+        // Helper class with static methods therefore no construction allowed.
     }
 }

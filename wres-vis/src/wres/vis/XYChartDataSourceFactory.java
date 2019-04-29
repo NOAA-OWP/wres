@@ -28,10 +28,12 @@ import ohd.hseb.charter.parameters.DataSourceDrawingParameters;
 import ohd.hseb.charter.parameters.SeriesDrawingParameters;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.datamodel.Slicer;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.statistics.BoxPlotStatistic;
+import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
@@ -59,18 +61,28 @@ public abstract class XYChartDataSourceFactory
      * @param orderIndex Order index of the data source; lower index sources are drawn on top of higher index sources.
      * @param input The data to plot.
      * @param subPlotIndex 0 for bottom, 1 for the one above, etc.
+     * @param durationUnits the duration units
      * @return A data source to be used to draw the plot.
      */
     public static DefaultXYChartDataSource ofBoxPlotOutput( int orderIndex,
-                                                            final BoxPlotStatistic input,
-                                                            Integer subPlotIndex )
+                                                            final BoxPlotStatistics input,
+                                                            Integer subPlotIndex,
+                                                            ChronoUnit durationUnits )
     {
+        Objects.requireNonNull( input );
+        
+        Objects.requireNonNull( durationUnits );
+        
+        // One box per pool? See #62374
+        boolean pooledInput = input.getMetadata().getMetricID().isInGroup( StatisticGroup.BOXPLOT_PER_POOL );
+
         DefaultXYChartDataSource source = new DefaultXYChartDataSource()
         {
             @Override
             public XYChartDataSource returnNewInstanceWithCopyOfInitialParameters() throws XYChartDataSourceException
             {
-                DefaultXYChartDataSource newSource = ofBoxPlotOutput( orderIndex, input, subPlotIndex );
+                DefaultXYChartDataSource newSource =
+                        XYChartDataSourceFactory.ofBoxPlotOutput( orderIndex, input, subPlotIndex, durationUnits );
                 this.copyTheseParametersIntoDataSource( newSource );
                 return newSource;
             }
@@ -78,20 +90,37 @@ public abstract class XYChartDataSourceFactory
             @Override
             protected XYDataset buildXYDataset( DataSourceDrawingParameters arg0 ) throws XYChartDataSourceException
             {
+                // Add a boxplot for output that contains one box per pool. See #62374
+                if ( pooledInput )
+                {                    
+                    return new BoxPlotDiagramByLeadXYDataset( input, durationUnits );
+                }
+                
                 return new BoxPlotDiagramXYDataset( input );
             }
         };
+        
+        BoxPlotStatistic statistic = input.getData().get( 0 );
 
-        buildInitialParameters( source,
-                                orderIndex,
-                                input.getProbabilities().size() );
+        XYChartDataSourceFactory.buildInitialParameters( source,
+                                                         orderIndex,
+                                                         statistic.getData().size() );
 
+        if ( pooledInput )
+        {
+            source.getDefaultFullySpecifiedDataSourceDrawingParameters()
+                  .setDefaultDomainAxisTitle( "FORECAST LEAD TIME [" + durationUnits.toString().toUpperCase() + "]" );
+        }
+        else
+        {
+            source.getDefaultFullySpecifiedDataSourceDrawingParameters()
+                  .setDefaultDomainAxisTitle( statistic.getLinkedValueType()
+                                                       .toString()
+                                              + "@inputUnitsLabelSuffix@" );
+        }
+        
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
-              .setDefaultDomainAxisTitle( input.getDomainAxisDimension()
-                                               .toString()
-                                          + "@inputUnitsLabelSuffix@" );
-        source.getDefaultFullySpecifiedDataSourceDrawingParameters()
-              .setDefaultRangeAxisTitle( input.getRangeAxisDimension()
+              .setDefaultRangeAxisTitle( statistic.getValueType()
                                               .toString()
                                          + "@outputUnitsLabelSuffix@" );
 
@@ -102,6 +131,39 @@ public abstract class XYChartDataSourceFactory
 
         return source;
     }
+    
+//    /**
+//     * Helper that returns the maximum number of whiskers associated with boxes in the input.
+//     * 
+//     * @param boxPlotStatistics the box plot statistics
+//     * @return the maximum number of whiskers in any box
+//     */
+//    
+//    private static int getMaxWhiskers( BoxPlotStatistics boxPlotStatistics )
+//    {
+//        int returnMe = 0;
+//        
+//        for ( BoxPlotStatistic next : boxPlotStatistics )
+//        {
+//            // A sample size of zero means an empty box
+//            // which is translated to a box with two whiskers 
+//            // for the charting library: see #62863-30
+//            if ( next.getMetadata().getSampleSize() == 0 )
+//            {
+//                // Two whiskers for empty boxes
+//                if( 2 > returnMe )
+//                {
+//                    returnMe = 2;
+//                }
+//            }
+//            else if( next.getData().size() > returnMe )
+//            {
+//                returnMe = next.getData().size() ;               
+//            }
+//        }       
+//        
+//        return returnMe;
+//    }
 
     /**
      * Factory method for single-valued pairs.
@@ -594,7 +656,7 @@ public abstract class XYChartDataSourceFactory
         {
             String message = "Construction of CategoricalXYChartDataSource "
                              + "with null generator, orderIndex '" + orderIndex
-                             + "', xCategories '" + String.valueOf( xCategories )
+                             + "', xCategories '" + xCategories
                              + "', and yAxisValuesBySeries '" + yAxisValuesBySeries
                              + "' failed when it shouldn't have.";
             throw new IllegalStateException( message, e );

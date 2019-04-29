@@ -19,7 +19,7 @@ import wres.datamodel.sampledata.pairs.EnsemblePairs;
 import wres.datamodel.sampledata.pairs.MulticategoryPairs;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
-import wres.datamodel.statistics.BoxPlotStatistic;
+import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.MatrixStatistic;
 import wres.datamodel.statistics.MultiVectorStatistic;
@@ -49,6 +49,8 @@ import wres.engine.statistics.metric.processing.MetricProcessorByTimeEnsemblePai
 import wres.engine.statistics.metric.processing.MetricProcessorByTimeSingleValuedPairs;
 import wres.engine.statistics.metric.processing.MetricProcessorForProject;
 import wres.engine.statistics.metric.singlevalued.BiasFraction;
+import wres.engine.statistics.metric.singlevalued.BoxPlotError;
+import wres.engine.statistics.metric.singlevalued.BoxPlotPercentageError;
 import wres.engine.statistics.metric.singlevalued.CoefficientOfDetermination;
 import wres.engine.statistics.metric.singlevalued.CorrelationPearsons;
 import wres.engine.statistics.metric.singlevalued.IndexOfAgreement;
@@ -314,7 +316,7 @@ public final class MetricFactory
     {
         return MetricFactory.ofSingleValuedMultiVectorCollection( ForkJoinPool.commonPool(), metric );
     }
-
+    
     /**
      * <p>Returns a {@link MetricCollection} of metrics that consume {@link DiscreteProbabilityPairs} and produce
      * {@link DoubleScoreStatistic}.</p>
@@ -427,7 +429,7 @@ public final class MetricFactory
 
     /**
      * <p>Returns a {@link MetricCollection} of metrics that consume {@link EnsemblePairs} and produce
-     * {@link BoxPlotStatistic}.</p>
+     * {@link BoxPlotStatistics}.</p>
      * 
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
      * 
@@ -437,7 +439,7 @@ public final class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public static MetricCollection<EnsemblePairs, BoxPlotStatistic, BoxPlotStatistic>
+    public static MetricCollection<EnsemblePairs, BoxPlotStatistics, BoxPlotStatistics>
             ofEnsembleBoxPlotCollection( MetricConstants... metric ) throws MetricParameterException
     {
         return MetricFactory.ofEnsembleBoxPlotCollection( ForkJoinPool.commonPool(), metric );
@@ -520,6 +522,32 @@ public final class MetricFactory
         for ( MetricConstants next : metric )
         {
             builder.addMetric( MetricFactory.ofSingleValuedMultiVector( next ) );
+        }
+        builder.setExecutorService( executor );
+        return builder.build();
+    }
+
+    /**
+     * Returns a {@link MetricCollection} of metrics that consume {@link SingleValuedPairs} and produce
+     * {@link BoxPlotStatistics}.
+     * 
+     * @param executor an optional {@link ExecutorService} for executing the metrics
+     * @param metric the metric identifiers
+     * @return a collection of metrics
+     * @throws MetricParameterException if one or more parameter values is incorrect
+     * @throws IllegalArgumentException if a metric identifier is not recognized 
+     */
+
+    public static MetricCollection<SingleValuedPairs, BoxPlotStatistics, BoxPlotStatistics>
+            ofSingleValuedBoxPlotCollection( ExecutorService executor,
+                                             MetricConstants... metric )
+                    throws MetricParameterException
+    {
+        final MetricCollectionBuilder<SingleValuedPairs, BoxPlotStatistics, BoxPlotStatistics> builder =
+                MetricCollectionBuilder.of();
+        for ( MetricConstants next : metric )
+        {
+            builder.addMetric( MetricFactory.ofSingleValuedBoxPlot( next ) );
         }
         builder.setExecutorService( executor );
         return builder.build();
@@ -684,7 +712,7 @@ public final class MetricFactory
 
     /**
      * Returns a {@link MetricCollection} of metrics that consume {@link EnsemblePairs} and produce
-     * {@link BoxPlotStatistic}.
+     * {@link BoxPlotStatistics}.
      * 
      * @param executor an optional {@link ExecutorService} for executing the metrics
      * @param metric the metric identifiers
@@ -693,12 +721,12 @@ public final class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public static MetricCollection<EnsemblePairs, BoxPlotStatistic, BoxPlotStatistic>
+    public static MetricCollection<EnsemblePairs, BoxPlotStatistics, BoxPlotStatistics>
             ofEnsembleBoxPlotCollection( ExecutorService executor,
                                          MetricConstants... metric )
                     throws MetricParameterException
     {
-        final MetricCollectionBuilder<EnsemblePairs, BoxPlotStatistic, BoxPlotStatistic> builder =
+        final MetricCollectionBuilder<EnsemblePairs, BoxPlotStatistics, BoxPlotStatistics> builder =
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
@@ -826,6 +854,27 @@ public final class MetricFactory
         }
     }
 
+    /**
+     * Returns a {@link Metric} that consumes {@link SingleValuedPairs} and produces {@link BoxPlotStatistics}.
+     * 
+     * @param metric the metric identifier
+     * @return a metric
+     * @throws IllegalArgumentException if the metric identifier is not recognized
+     */
+
+    public static Metric<SingleValuedPairs, BoxPlotStatistics> ofSingleValuedBoxPlot( MetricConstants metric )
+    {
+        switch ( metric )
+        {
+            case BOX_PLOT_OF_ERRORS:
+                return BoxPlotError.of();
+            case BOX_PLOT_OF_PERCENTAGE_ERRORS:
+                return BoxPlotPercentageError.of();
+            default:
+                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
+        }
+    }    
+    
     /**
      * Returns a {@link Metric} that consumes {@link DiscreteProbabilityPairs} and produces {@link DoubleScoreStatistic}.
      * 
@@ -968,14 +1017,14 @@ public final class MetricFactory
     }
 
     /**
-     * Returns a {@link Metric} that consumes {@link EnsemblePairs} and produces {@link BoxPlotStatistic}.
+     * Returns a {@link Metric} that consumes {@link EnsemblePairs} and produces {@link BoxPlotStatistics}.
      * 
      * @param metric the metric identifier
      * @return a metric
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public static Metric<EnsemblePairs, BoxPlotStatistic> ofEnsembleBoxPlot( MetricConstants metric )
+    public static Metric<EnsemblePairs, BoxPlotStatistics> ofEnsembleBoxPlot( MetricConstants metric )
     {
         switch ( metric )
         {

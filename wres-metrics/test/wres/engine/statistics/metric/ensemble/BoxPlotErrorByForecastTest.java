@@ -6,6 +6,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.junit.Before;
@@ -27,6 +28,7 @@ import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.datamodel.sampledata.pairs.EnsemblePairs;
 import wres.datamodel.statistics.BoxPlotStatistic;
+import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.engine.statistics.metric.MetricParameterException;
 
 /**
@@ -87,16 +89,18 @@ public final class BoxPlotErrorByForecastTest
                                       MetricConstants.MAIN );
 
         //Compute normally
-        final BoxPlotStatistic actual = bpe.apply( input );
-        final EnsemblePair expectedBox =
-                EnsemblePair.of( 40.0, new double[] { 0.0, 10, 30.0, 75.0, 100.0 } );
-        List<EnsemblePair> expectedBoxes = new ArrayList<>();
-        expectedBoxes.add( expectedBox );
-        BoxPlotStatistic expected = BoxPlotStatistic.of( expectedBoxes,
-                                                         VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 ),
-                                                         m1,
-                                                         MetricDimension.ENSEMBLE_MEAN,
-                                                         MetricDimension.FORECAST_ERROR );
+        final BoxPlotStatistics actual = bpe.apply( input );
+        final BoxPlotStatistic expectedBox =
+                BoxPlotStatistic.of( VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 ),
+                                     VectorOfDoubles.of( 0.0, 10, 30.0, 75.0, 100.0 ),
+                                     m1,
+                                     40.0,
+                                     MetricDimension.ENSEMBLE_MEAN );
+        
+        List<BoxPlotStatistic> expectedBoxes = Collections.singletonList( expectedBox );
+        
+        BoxPlotStatistics expected = BoxPlotStatistics.of( expectedBoxes, m1 );
+        
         //Check the results
         assertTrue( "The actual output for the box plot of forecast errors by observed value does not match the "
                     + "expected output.",
@@ -143,16 +147,18 @@ public final class BoxPlotErrorByForecastTest
                                                                  VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 ) );
 
         //Compute normally
-        final BoxPlotStatistic actual = bpef.apply( input );
-        final EnsemblePair expectedBox =
-                EnsemblePair.of( 30.0, new double[] { 0.0, 10, 30.0, 75.0, 100.0 } );
-        List<EnsemblePair> expectedBoxes = new ArrayList<>();
-        expectedBoxes.add( expectedBox );
-        BoxPlotStatistic expected = BoxPlotStatistic.of( expectedBoxes,
-                                                         VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 ),
-                                                         m1,
-                                                         MetricDimension.ENSEMBLE_MEDIAN,
-                                                         MetricDimension.FORECAST_ERROR );
+        final BoxPlotStatistics actual = bpef.apply( input );
+        final BoxPlotStatistic expectedBox =
+                BoxPlotStatistic.of( VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 ),
+                                     VectorOfDoubles.of( 0.0, 10, 30.0, 75.0, 100.0 ),
+                                     m1,
+                                     30.0,
+                                     MetricDimension.ENSEMBLE_MEDIAN );
+        
+        List<BoxPlotStatistic> expectedBoxes = Collections.singletonList( expectedBox );
+        
+        BoxPlotStatistics expected = BoxPlotStatistics.of( expectedBoxes, m1 );
+
         //Check the results
         assertTrue( "The actual output for the box plot of forecast errors by observed value does not match the "
                     + "expected output.",
@@ -170,10 +176,7 @@ public final class BoxPlotErrorByForecastTest
         EnsemblePairs input =
                 EnsemblePairs.of( Arrays.asList(), SampleMetadata.of() );
 
-        BoxPlotStatistic actual = bpe.apply( input );
-
-        assertTrue( Arrays.equals( actual.getProbabilities().getDoubles(),
-                                   new double[] { 0.0, 0.25, 0.5, 0.75, 1.0 } ) );
+        BoxPlotStatistics actual = bpe.apply( input );
 
         assertTrue( actual.getData().equals( Arrays.asList() ) );
     }
