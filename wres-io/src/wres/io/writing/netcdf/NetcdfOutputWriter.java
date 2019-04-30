@@ -195,7 +195,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                 Callable<Set<Path>> writerTask = new Callable<Set<Path>>()
                 {
                     @Override
-                    public Set<Path> call() throws Exception
+                    public Set<Path> call() throws IOException, InvalidRangeException
                     {
                         Set<Path> pathsWrittenTo = new HashSet<>( 1 );
 
@@ -207,7 +207,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                             pathsWrittenTo.add( pathWritten );
                             return Collections.unmodifiableSet( pathsWrittenTo );
                         }
-                        catch ( Exception e )
+                        catch ( IOException | InvalidRangeException e )
                         {
                             LOGGER.error( "Writing to output failed.", e );
                             throw e;
@@ -447,7 +447,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
             }
             // Exception is being caught because the threads calling metric
             // writing are currently eating runtime errors.
-            catch ( Exception e )
+            catch ( IOException e )
             {
                 LOGGER.error( "The output writer could not be created", e );
                 throw new IOException( "The output writer could not be created.", e );
@@ -515,7 +515,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                     {
                         writer.write( key.getVariableName(), key.getOrigin(), netcdfValue );
                     }
-                    catch ( Exception e )
+                    catch ( IOException | InvalidRangeException e )
                     {
                         LOGGER.trace( "Error encountered while writing Netcdf data" );
                         throw e;
@@ -526,7 +526,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
 
                 this.valuesToSave.clear();
             }
-            catch ( Exception e )
+            catch ( IOException | InvalidRangeException e )
             {
                 LOGGER.error( "Error Occurred when writing directly to the Netcdf output", e );
                 throw e;
