@@ -27,6 +27,14 @@
     </xs:simpleType>
 
     <xs:simpleType name="sourceTransformationType">
+        <xs:annotation>
+            <xs:documentation>This is only useful currently in one circumstance:
+                where a persistence forecast is to serve as a "baseline" source. In
+                that case, the "baseline" source should refer to a long time series,
+                such as observations or simulations (i.e., the "left" source) with
+                this flag specified as "persistence".
+            </xs:documentation>
+        </xs:annotation>
         <xs:restriction base="xs:string">
             <xs:enumeration value="persistence" />
         </xs:restriction>
@@ -50,6 +58,18 @@
     </xs:simpleType>
 
     <xs:complexType name="ensembleCondition">
+        <xs:annotation>
+            <xs:documentation>The ensemble element can be used to restrict
+                reading based upon ensemble information contained in the data. This
+                currently is only compatible with a PI-XML source. For example, you
+                can restrict reading to a single ensembleId, specified by the name
+                attribute; single member index, specified by the member_id
+                attribute; or a qualifier code based on the qualifier attribute. If
+                the exclude flag is set to true, then the settings actually specify
+                time series to exclude; otherwise it specifies times series to
+                include.
+            </xs:documentation>
+        </xs:annotation>
         <xs:attribute name="label" type="xs:string" />
         <xs:attribute name="name" type="xs:string" />
         <xs:attribute name="member_id" type="xs:string" />
@@ -127,8 +147,8 @@
             <xs:appinfo>
                 <jaxb:class name="DataSourceConfig" />
             </xs:appinfo>
-            <xs:documentation>
-                Used to explain what data to use for evaluation
+            <xs:documentation>Provides information necessary for WRES to load
+                data from various sources.
             </xs:documentation>
         </xs:annotation>
 
@@ -136,26 +156,115 @@
             <xs:element name="type" type="datasourceType" />
 
             <xs:element name="source" minOccurs="1" maxOccurs="unbounded">
+                <xs:annotation>
+                    <xs:documentation>Provides details about the source of the data.
+                        The text value of the element specifies an individual file to read
+                        (full path); a directory to process (it is scanned recursively and
+                        all files read unless the pattern is set; see below); or a URL (if
+                        the format is an API).  For USGS NWIS, leave the text blank since
+                        the API URL is known by WRES.  For WRDS AHPS Forecast API specify
+                        its URL as the text:
+                        "http://***REMOVED***.***REMOVED***.***REMOVED***/api/v1/forecasts/streamflow/ahps").
+                    </xs:documentation>
+                </xs:annotation>
                 <xs:complexType>
                     <xs:simpleContent>
                         <xs:extension base="xs:anyURI">
-                            <xs:attribute name="format" type="format" />
-                            <!-- Can we remove unit below? Shouldn't the unit of
-                                 the variable suffice? -Jesse -->
-                            <xs:attribute name="unit" type="xs:string" default="" />
-                            <xs:attribute name="locationId" type="xs:string" default="" />
-                            <xs:attribute name="zoneOffset" type="xs:string" />
-                            <!-- missingValue may have multiple comma delimited values like "-999, -996"-->
-                            <xs:attribute name="missingValue" type="xs:string" default="-999.0" />
-                            <xs:attribute name="pattern" type="xs:string" default="" />
-                            <xs:attribute name="has_header" type="xs:boolean" default="false" />
-                            <xs:attribute name="bucket" type="xs:string" />
+                            <xs:attribute name="format" type="format">
+                                <xs:annotation>
+                                    <xs:documentation>Specifies the format; see available format
+                                        types. This is required for any source. The formats: "PI-XML"
+                                        for FEWS PI-timeseries XML; "usgs" for USGS NWIS; "wrds" for
+                                        WRDS supports JSON; "datacard" for NWS Datacard legacy format;
+                                        "csv" for CSV; "netCDF" for NWM compliant NetCDF files.
+                                    </xs:documentation>
+                                </xs:annotation>
+                            </xs:attribute>
+
+                            <!-- Can we remove unit below? Shouldn't the unit of the variable 
+                                suffice? -Jesse -->
+                            <xs:attribute name="unit" type="xs:string" default="">
+                                <xs:annotation>
+                                    <xs:documentation>Specifies the measurement unit of the data
+                                        being read. For example, "CFS" or "ft3/s".
+                                    </xs:documentation>
+                                </xs:annotation>
+                            </xs:attribute>
+
+                            <xs:attribute name="locationId" type="xs:string" default="">
+                                <xs:annotation>
+                                    <xs:documentation>CHECK THIS... Specify the locationId
+                                        attribute in order to force the data read from the source to
+                                        be for a specific location or feature. This may be useful if
+                                        the "left" data uses a different location id than the "right"
+                                        or "baseline" data.
+                                    </xs:documentation>
+                                </xs:annotation>
+                            </xs:attribute>
+
+                            <xs:attribute name="zoneOffset" type="xs:string">
+                                <xs:annotation>
+                                    <xs:documentation>Specifies the time zone offset for the data.
+                                        This is required for the datacard format, which does not
+                                        include time zone information in the file. For example,
+                                        datacard data from ABRFC may including a zoneOffset of "CST".
+                                        It should be unnecessary for most/all other formats.
+                                    </xs:documentation>
+                                </xs:annotation>
+                            </xs:attribute>
+
+                            <!-- missingValue may have multiple comma delimited values like "-999, 
+                                -996" -->
+                            <xs:attribute name="missingValue" type="xs:string" default="-999.0">
+                                <xs:annotation>
+                                    <xs:documentation>Specifies the values to treat as missing. It
+                                        is a comma delimited list of numbers. For example,
+                                        "-9999.0,-999.0,-998.0" would mean -998, -999, and -9999 are
+                                        all treated as missing values.
+                                    </xs:documentation>
+                                </xs:annotation>
+                            </xs:attribute>
+
+                            <xs:attribute name="pattern" type="xs:string" default="">
+                                <xs:annotation>
+                                    <xs:documentation>Uses GLOB notation,
+                                        https://en.wikipedia.org/wiki/Glob_(programming), to specify a
+                                        pattern that restricts files read to only those matching the
+                                        pattern. For example, "**/*.xml" will match any XML file. Note
+                                        that the "**/" at the beginning is required.
+                                    </xs:documentation>
+                                </xs:annotation>
+                            </xs:attribute>
+
+                            <xs:attribute name="has_header" type="xs:boolean" default="false">
+                                <xs:annotation>
+                                    <xs:documentation>For processing of CSV files, if true then the
+                                        first row of the CSV file will be treated as the row of column
+                                        headers and ignored when reading.
+                                    </xs:documentation>
+                                </xs:annotation>
+                            </xs:attribute>
+
+                            <xs:attribute name="bucket" type="xs:string">
+                                <xs:annotation>
+                                    <xs:documentation>NEED TO FILL THIS IN!
+                                    </xs:documentation>
+                                </xs:annotation>
+                            </xs:attribute>
                         </xs:extension>
                     </xs:simpleContent>
                 </xs:complexType>
             </xs:element>
             <xs:element name="variable">
                 <xs:complexType>
+                    <xs:annotation>
+                        <xs:documentation>Specifies the variable to read, either assigning
+                            a variable id to the data read (where one is not specified in the
+                            source) or restricting the evaluation to one of the variables
+                            specified by the source. The unit may also be specified to
+                            indicate the measuring unit of the variable data if necessary.
+                        </xs:documentation>
+                    </xs:annotation>
                     <xs:simpleContent>
                         <xs:extension base="xs:string">
                             <xs:attribute name="label" type="xs:string" />
@@ -169,6 +278,13 @@
             <xs:element name="arbitraryFunctionToApplyToValues" type="xs:string" minOccurs="0" maxOccurs="1" />
             <xs:element name="timeShift" minOccurs="0" maxOccurs="1">
                 <xs:complexType>
+                    <xs:annotation>
+                        <xs:documentation>Can be used to manually time-shift the data read 
+                            from the source prior to data ingest. For example, with width set
+                            to "-2" and a unit set to "hours", the data will have all times read
+                            in adjusted by -2 hours.
+                        </xs:documentation>
+                    </xs:annotation>
                     <xs:sequence>
                         <xs:element name="width" type="duration" />
                         <xs:element name="unit" type="durationUnit" />
@@ -671,6 +787,12 @@ time scale within a single class, rather than two classes.
     </xs:complexType>
 
     <xs:element name="project">
+        <xs:annotation>
+            <xs:documentation>This is the top level WRES project configuration
+                XML element. Every project configuration must include this element
+                and its four required sub-elements.
+            </xs:documentation>
+        </xs:annotation>
         <xs:complexType>
 
             <!-- for class naming using xjc-->
@@ -683,6 +805,18 @@ time scale within a single class, rather than two classes.
             <xs:sequence>
 
                 <xs:element name="inputs">
+                    <xs:annotation>
+                        <xs:documentation>Specifies the data to evaluate. The "left" data
+                            specifies the "truth" against which the forecasts will be
+                            evaluated, being typically observations (or simulations). The
+                            "right" data specifies the forecasts to evaluate. The "baseline"
+                            data specifies baseline forecasts against which the forecasts
+                            will be compared when calculating skill scores, for example.
+                            Instructions for how to indicate specific sources of data,
+                            including flat files, USGS NWIS, the WRDS AHPS forecast API, are
+                            provided with the elements below.
+                        </xs:documentation>
+                    </xs:annotation>
                     <xs:complexType>
                         <xs:sequence>
                             <xs:element name="left" type="datasource" />
@@ -692,11 +826,31 @@ time scale within a single class, rather than two classes.
                     </xs:complexType>
                 </xs:element>
 
-                <xs:element name="pair" type="pair"/>
+                <xs:element name="pair" type="pair">
+                    <xs:annotation>
+                        <xs:documentation>Specifies various aspects pertaining to how the
+                            data will be prepared for evaluation, including setting the
+                            measurement unit, features to include, lead times to include,
+                            restricts on the valid times or issued times, season, desired
+                            time scale, and pooling windows, among others.
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:element>
 
-                <xs:element name="metrics" type="metrics" minOccurs ="1" maxOccurs="unbounded"/>
+                <xs:element name="metrics" type="metrics" minOccurs="1" maxOccurs="unbounded">
+                    <xs:annotation>
+                        <xs:documentation>Specifies the metrics to calculate and the
+                            parameters of those metrics, such as thresholds.
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:element>
 
                 <xs:element name="outputs">
+                    <xs:annotation>
+                        <xs:documentation>Specifies the types of outputs to generate,
+                            including ASCII CSV files,
+                        </xs:documentation>
+                    </xs:annotation>
                     <xs:complexType>
                         <xs:sequence>
                             <xs:element name="destination" type="destination" maxOccurs="unbounded"/>
