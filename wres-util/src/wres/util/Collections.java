@@ -128,8 +128,9 @@ public final class Collections
      * @param expression The expression used to determine what should be in the list
      * @return A new collection containing  all elements that passed through the filter
      */
-    public static <U> Collection<U> where(Collection<U> source, Predicate<U> expression) {
-        List<U> filteredValues = null;
+    public static <U> Collection<U> where(Collection<U> source, Predicate<U> expression)
+    {
+        List<U> filteredValues = new ArrayList<>(  );
 
         if (source != null)
         {
@@ -137,11 +138,6 @@ public final class Collections
             {
                 if (expression.test( sourceValue ))
                 {
-                    if (filteredValues == null)
-                    {
-                        filteredValues = new ArrayList<>(  );
-                    }
-
                     filteredValues.add( sourceValue );
                 }
             }
