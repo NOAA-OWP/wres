@@ -1,32 +1,65 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- This is a test of real, baseline validation streamflows verified through WRES where the obs is 24-h
-     and the forecasts are 6-h.  Time aggregation is needed. -->
+
+<!-- This is a test of real, HEFS baseline validation streamflow data verified through WRES 
+     where the observations are 24h mean streamflow (QME) provided in a PI-timeseries XML 
+     file and the HEFS ensemble forecasts are of 6h instantaneous stream flow (QINE) 
+     provided in a gzipped tarball.  The HEFS forecasts are compared against ESP forecasts
+     of the same variable allowing for the computation of skill scores; they are also 
+     provided in a gzipped tarball.  The evaluation includes temporal rescaling of the 
+     forecast data and the computation of a temporal offset (due to time zones) in order to 
+     align the forecasts and observations. -->
 <project label="ExampleProject" name="scenario103">
 
+    <!-- Specify in the input data in the inputs tag. -->
     <inputs>
+    
+        <!-- Observations are provided in a PI-timeseries file as 24h QME. Though the path
+             below is relative, for most executions of WRES, it will need to be an absolute
+             path starting from the directory /mnt/wres_share/... on the WRES Deployment
+             Platform. 
+        -->
         <left label="">
             <type>observations</type>
             <source format="PI-XML">data/abrfcExample/LGNN5_QME.xml</source>
             <variable>QME</variable>
         </left>
+        
+        <!-- The forecasts are HEFS provided in a gzipped tarball of PI-timeseries XML files.
+        -->
         <right label="HEFS" >
             <type>ensemble forecasts</type>
             <source format="PI-XML">data/abrfcExample/LGNN5_hefs_flow_1yr.tgz</source>
             <variable>QINE</variable>
         </right>
+        
+        <!-- The baseline for calculating skill scores are ESP forecasts also provided in a
+             gzipped tarball of PI-timeseries XML files. 
+        -->
         <baseline label="ESP" >
             <type>ensemble forecasts</type>
-            <source format="PI-XML"
->data/abrfcExample/LGNN5_hefs-mefp_flow_1yr.tgz</source>
+            <source format="PI-XML">data/abrfcExample/LGNN5_hefs-mefp_flow_1yr.tgz</source>
             <variable>QINE</variable>
         </baseline>
     </inputs>
 
+    <!-- Pairing options are specified within the pair tag. -->
     <pair label="Pairs by location and lead time"> 
+    
+        <!-- The measuring unit of the evaluation. -->
         <unit>CMS</unit>
+        
+        <!-- The location id associated with the evaluation; in this case a handbook5 id. -->
         <feature locationId="LGNN5" />
+        
+        <!-- The evaluation is restricted to the first 48 hours.  With 24-hour data, this will
+             yield either one or two lead times for evaluation.  In this specific case there
+             was only one because of the temporal offset identified in order to allow for the
+             forecasts and observation to align. 
+        -->
         <leadHours minimum="1" maximum="48" />
 
+        <!-- The desired time scale of the evaluation, which matches that of the observations.
+        -->
         <desiredTimeScale>
             <function>mean</function>
             <period>24</period>
@@ -34,13 +67,19 @@
         </desiredTimeScale>
     </pair>
 
+    <!-- Metrics and options associated with the metrics are specified in the metrics tag. -->
     <metrics>
+    
+        <!-- Specifies the thresholds for which to perform the evaluation as quantiles of the
+             distribution of the "left" data; i.e., the observations. 
+        -->
         <thresholds>
             <applyTo>left</applyTo>
             <commaSeparatedValues>0.1,0.25,0.5,0.75,0.9,0.95</commaSeparatedValues>
             <operator>greater than or equal to</operator>
         </thresholds>
 
+        <!-- Metrics are indicated one at a time. -->
         <metric><name>mean error</name></metric>
         <metric> <name>brier score</name> </metric>
         <metric><name>mean square error skill score</name></metric>
@@ -50,13 +89,27 @@
         <metric><name>continuous ranked probability score</name></metric>
         <metric><name>continuous ranked probability skill score</name></metric>
         <metric><name>sample size</name></metric>        
-
     </metrics>
+    
+    <!-- Outputs and options associated with the outputs are specified in the outputs tag. -->
     <outputs>
+    
+        <!-- Metric output CSV files. -->
         <destination type="numeric" decimalFormat="0.000000" />
+        
+        <!-- A CSV file specifying all pairs.  This file can be very large. -->
         <destination type="pairs" decimalFormat="0.000000" />
+        
+        <!-- Image PNG files, each being an X-Y chart.  The outputType indicates that scores
+             are plotted against lead time, which is the domain axis, and across thresholds, 
+             which form the legend (an outputType of "threshold lead" would reverse the two).
+             The graphical tag includes options specific to image generation, in this case
+             specifying the dimensions of the PNG images to generate. 
+        -->
         <destination type="graphic">
             <outputType>lead threshold</outputType>
+            
+            <!-- Graphics specific options, such as the dimensions of the image. -->
             <graphical width="800" height="600" />
         </destination>
     </outputs>
