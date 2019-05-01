@@ -232,14 +232,18 @@ public final class Collections
      */
     public static <U> boolean exists(Collection<U> source, Predicate<U> expression)
     {
-        Collection<U> filteredCollection = where(source, expression);
-        boolean valueExists = false;
+        boolean exists = false;
 
-        if (filteredCollection != null)
+        for (U value : source)
         {
-            valueExists = !filteredCollection.isEmpty();
+            if (expression.test( value ))
+            {
+                exists = true;
+                break;
+            }
         }
-        return valueExists;
+
+        return exists;
     }
 
     /**
