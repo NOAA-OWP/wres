@@ -228,7 +228,7 @@ public class Validation
                 config -> config.getType() != DestinationType.NETCDF && config.getNetcdf() != null
         );
 
-        if ( incorrectDestinations != null)
+        if ( !incorrectDestinations.isEmpty())
         {
             for (DestinationConfig destinationConfig : incorrectDestinations)
             {
@@ -240,7 +240,7 @@ public class Validation
             }
         }
 
-        return templateMissing == null && incorrectDestinations == null;
+        return templateMissing == null && incorrectDestinations.isEmpty();
     }
 
     /**

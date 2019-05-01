@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<project label="ExampleProject" name="scenario001">
+<project label="ExampleProject" name="/home/tubbs/workspace/wres/wres/systests/scenario001">
 
     <inputs>
         <left label="">
             <type>simulations</type>
-            <source format="PI-XML">data/DRRC2QINE.xml</source>
+            <source format="PI-XML">/home/tubbs/workspace/wres/wres/systests/data/DRRC2QINE.xml</source>
             <variable>QINE</variable>
 
         </left>
         <right label="HEFS">
             <type>ensemble forecasts</type>
-            <source format="PI-XML" pattern="**/*.xml*">data/drrc2ForecastsOneMonth/</source>
+            <source format="PI-XML" pattern="**/*.xml*">/home/tubbs/workspace/wres/wres/systests/data/drrc2ForecastsOneMonth/</source>
             <variable>SQIN</variable>
 
         </right>
