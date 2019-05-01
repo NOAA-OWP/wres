@@ -1,12 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!-- An example of an evaluation of single-valued, operational flow forecasts applying a time
+     series metric, such as time-to-peak-error.  Such evaluations are inherently different than
+     other evaluations which most often yield results per lead time or other temporal pooling
+     window.  In this case, the forecast time series is treated as a whole, the peak identified,
+     the time to peak computed, and that value compared against an equivalent computation based
+     on observations.
+ -->
 <project name="scenario1001">  
   
+    <!-- Specify in the input data in the inputs tag. -->
     <inputs>
+    
+        <!-- Observations are provided in a PI-timeseries file as hourly streamflow. Though the 
+             path below is relative, for most executions of WRES, it will need to be an absolute
+             path starting from the directory /mnt/wres_share/... on the WRES Deployment
+             Platform. 
+        -->
         <left>
             <type>observations</type>
             <source>smalldata/25510317T00_FAKE3_observations.xml</source>
             <variable>DISCHARGE</variable>
         </left>
+        
+        <!-- The forecasts are provided in multiple PI-timeseries XML files, each specified
+             separately.
+        -->
         <right>
             <type>single valued forecasts</type>
             <source>smalldata/25510317T12_FAKE3_forecast.xml</source>
@@ -17,17 +36,28 @@
         </right>
     </inputs>
 
+    <!-- Pairing options are specified within the pair tag.  The evaluation is largely 
+         performed on the evaluation data without any further rescaling and noting that
+         pooling windows do not impact time series evaluation metrics, such as the
+         time-to-peak error. -->
     <pair>
         <unit>CMS</unit>
     </pair>
 
+    <!-- Metrics and options associated with the metrics are specified in the metrics tag. -->
     <metrics>
+    
+        <!-- JAMES: Please explain.
+        -->
         <thresholds>
             <type>value</type>
             <applyTo>left and right</applyTo>
             <commaSeparatedValues>183, 184</commaSeparatedValues>
             <operator>greater than</operator>
         </thresholds>   
+        
+        <!-- JAMES: Please explain.
+        -->
         <timeSeriesMetric>
             <name>time to peak error</name>
             <summaryStatistics>
@@ -39,6 +69,9 @@
                 <name>mean absolute</name>
             </summaryStatistics>
         </timeSeriesMetric>
+        
+        <!-- JAMES: Please explain.
+        -->
         <timeSeriesMetric>
             <name>time to peak relative error</name>
             <summaryStatistics>
@@ -52,10 +85,19 @@
         </timeSeriesMetric> 
     </metrics>
 
+    <!-- Outputs and options associated with the outputs are specified in the outputs tag. -->
     <outputs>
+    
+        <!-- A CSV file specifying all pairs.  This file can be very large. -->
         <destination type="pairs" decimalFormat="0.000000" />
+        
+        <!-- Metric output CSV files. -->
         <destination type="numeric" decimalFormat="0.000000" />
+        
+        <!-- Image PNG files, each being an X-Y chart. -->
         <destination type="graphic">
+        
+            <!-- Graphics specific options, such as the dimensions of the image. -->
             <graphical width="800" height="600">
             </graphical>
         </destination>

@@ -1,15 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- See Redmine ticket #45344 -->
-
+<!-- An example of an evaluation of ensemble, operational stage forecasts using two types of 
+     thresholds: stage thresholds in a CSV file and probability classifier thresholds 
+     specified within this configuration.  The evaluation is of the 4-day maximums (peak
+     stages) between the lead times of 2 days and 6 days.
+ -->
 <project name="scenario801">
 
+    <!-- Specify in the input data in the inputs tag. -->
     <inputs>
+    
+        <!-- Observations are provided in a PI-timeseries file as 6h stages. Though the path
+             below is relative, for most executions of WRES, it will need to be an absolute
+             path starting from the directory /mnt/wres_share/... on the WRES Deployment
+             Platform. 
+        -->
         <left>
             <type>observations</type>
             <source format="PI-XML">data/CKLN6_STG.xml</source>
             <variable label = "STAGE">STG</variable>
         </left>
+        
+        <!-- The forecasts are HEFS provided in a gzipped tarball of PI-timeseries XML files.
+        -->
         <right label="HEFS" >
             <type>ensemble forecasts</type>
             <source format="PI-XML">data/CKLN6_HEFS_STG_forecasts.tgz</source>
@@ -17,8 +30,18 @@
         </right>
     </inputs>
 
+    <!-- Pairing options are specified within the pair tag.  Note that no feature specification
+         is included.  In that case, the WRES will evaluate all locations for which is its 
+         provided data. 
+    -->
     <pair> 
+    
+        <!-- The measuring unit of the evaluation. -->
         <unit>FT</unit>
+        
+        <!-- The evaluation is restricted to lead hours 48 - 144, or 4 days. The
+             desiredTimeScale of the evaluation is the 4 day maximum between those 4 days. 
+        -->
         <leadHours minimum="48" maximum="144" />
         <desiredTimeScale>
             <function>maximum</function>
@@ -27,21 +50,37 @@
         </desiredTimeScale>
     </pair>
 
+    <!-- Metrics and options associated with the metrics are specified in the metrics tag. -->
     <metrics>
+        
+        <!-- The stage thresholds are spedcified in a CSV file at the location specified. -->
         <thresholds>
             <type>value</type>
             <source missingValue = "-999" format = "csv">thresholds/scenario801/thresholds.csv</source>
         </thresholds>
+        
+        <!-- The probability classifier thresholds are defined here and indicate different
+             probabilities for which an ensemble forecast is considered to forecast 
+             exceedance of a stage threshold. -->
         <thresholds>
             <type>probability classifier</type>
             <commaSeparatedValues>0.1,0.3,0.5,0.7,0.9</commaSeparatedValues>
         </thresholds>
+        
+        <!-- Metrics are indicated one at a time. -->
         <metric><name>contingency table</name></metric>     
     </metrics>
+    
+    
+    <!-- Outputs and options associated with the outputs are specified in the outputs tag. -->
     <outputs>
+    
+        <!-- Metric output CSV files. -->
         <destination type="numeric" decimalFormat="0.000000">
             <outputType>threshold lead</outputType>
         </destination>
+        
+        <!-- A CSV file specifying all pairs.  This file can be very large. -->
         <destination type="pairs" decimalFormat="0.000000" />
     </outputs>
 

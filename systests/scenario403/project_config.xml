@@ -1,19 +1,45 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- This is a test of real, baseline validation streamflows verified through WRES where the obs is 24-h
-     and the forecasts are 6-h.  Time aggregation is needed. -->
+<!-- An example of an evaluation of single-valued, operational stream flow forecasts against
+     observations provided in an NWSRFS datacard file.  It includes a comparison against 
+     persistence forecasts generated from the same datacard observations.  The evaluation is 
+     performed at a 24-hour, mean desired time scale with lead times pooled into windows that
+     are adjacent, non-overlapping, and 24-hours in width.  More details are proivded below.
+ -->
 <project label="ExampleProject" name="scenario403">
 
+    <!-- Specify in the input data in the inputs tag. -->
     <inputs>
+        <!-- Observations are provided in an NWSRFS datacard format file.  With such data
+             typically being provided in local standard time, the zoneOffset attribute is 
+             included.  The unit is also provided and, if it conflicts with the unit specified
+             in the datacard file, an exception will occur.  The variable of QINE indicates
+             that the data is instantaneous streamflow.  Note that the variable must be 
+             specified; WRES will not parse the file name in order to identify the variable.
+             
+             HANK -- DOUBLE CHECK THE ABOVE COMMENTS!!! 
+        -->
         <left label="Observations">
             <type>observations</type>
             <source format="datacard" zoneOffset="CST" unit="CFS" >data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard</source>
             <variable>QINE</variable>
         </left>
+        
+        <!-- Forecasts are provided as PI-timeseries XML files contained beneath a directory.
+             The directory is navigated recursively with every file found processed.  An
+             additional option not shown here is the pattern, which will allow for only files 
+             matching a file name pattern to be processed.  It uses GLOB format, described
+             at https://en.wikipedia.org/wiki/Glob_(programming).  For example, 
+             'pattern="**/*.xml"' will match any file with the file extension .xml. 
+        -->
         <right label="Operational Single-Valued Forecasts" >
             <type>single valued forecasts</type>
             <source format="PI-XML">data/singleValuedEx_ABRFC_ARCFUL_QINE</source>
             <variable>QINE</variable>
         </right>
+        
+        <!-- The baseline forecast source is persistence, which is computed from the source 
+             specified, which matches the "left" source above. 
+        -->
         <baseline>
             <type>observations</type>
             <source format="datacard" zoneOffset="CST" unit="CFS" >data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard</source>
@@ -22,37 +48,70 @@
         </baseline>
     </inputs>
 
+    <!-- Pairing options are specified within the pair tag. -->
     <pair label="Pairs by location and lead time">
+    
+        <!-- The measuring unit of the evaluation. -->
         <unit>CMS</unit>
+        
+        <!-- The location id associated with the evaluation; in this case a handbook5 id. -->
         <feature locationId="GLOO2" />
+        
+        <!-- The evaluation is restricted to the first 48 hours. -->
         <leadHours minimum="1" maximum="48" />
+        
+        <!-- The time scale at which to perform the evaluation, which is a 24-hour mean. -->
         <desiredTimeScale>
             <function>mean</function>
             <period>24</period>
             <unit>hours</unit>
         </desiredTimeScale>
+        
+        <!-- Specifies how to pool the data by lead time.  In this case, since the leadHours
+             maximum is 48, two windows are defined: (0h, 24h] and (24h, 48]. -->
         <leadTimesPoolingWindow>
             <period>24</period>
             <unit>hours</unit>
         </leadTimesPoolingWindow>
     </pair>
 
+    <!-- Metrics and options associated with the metrics are specified in the metrics tag. -->
     <metrics>
+    
+        <!-- Specifies the thresholds for which to perform the evaluation as quantiles of the
+             distribution of the "left" data; i.e., the observations. 
+        -->
         <thresholds>
             <applyTo>left</applyTo>
             <commaSeparatedValues>0.1,0.25,0.5,0.75,0.9,0.95</commaSeparatedValues>
             <operator>greater than or equal to</operator>
         </thresholds>
+        
+        <!-- Metrics are indicated one at a time. -->
         <metric><name>mean error</name></metric>
         <metric><name>sample size</name></metric>
         <metric><name>mean square error skill score</name></metric>
     </metrics>
 
+    <!-- Outputs and options associated with the outputs are specified in the outputs tag. -->
     <outputs>
+    
+        <!-- A CSV file specifying all pairs.  This file can be very large. -->
         <destination type="pairs" decimalFormat="0.000000" />
+        
+        <!-- Metric output CSV files. -->
         <destination type="numeric" decimalFormat="0.000000" />
+        
+        <!-- Image PNG files, each being an X-Y chart.  The outputType indicates that scores
+             are plotted against lead time, which is the domain axis, and across thresholds, 
+             which form the legend (an outputType of "threshold lead" would reverse the two).
+             The graphical tag includes options specific to image generation, in this case
+             specifying the dimensions of the PNG images to generate. 
+        -->
         <destination type="graphic">
             <outputType>lead threshold</outputType>
+            
+            <!-- Graphics specific options, such as the dimensions of the image. -->
             <graphical width="800" height="600" />
         </destination>
     </outputs>
