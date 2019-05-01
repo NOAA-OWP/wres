@@ -16,7 +16,7 @@
              that the data is instantaneous streamflow.  Note that the variable must be 
              specified; WRES will not parse the file name in order to identify the variable.
              
-             HANK -- DOUBLE CHECK THE ABOVE COMMENTS!!! 
+             HANK - DOUBLE CHECK THE ABOVE COMMENTS!!!
         -->
         <left label="Observations">
             <type>observations</type>
