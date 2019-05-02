@@ -34,9 +34,11 @@
              following filter, then set the root level to be DEBUG (either by
              editing the root appender below or by setting
              -Dwres.logLevel=debug at runtime) -->
+        <!--
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
             <level>INFO</level>
         </filter>
+        -->
         <encoder>
 
           <!-- %nopexception: suppress stacktrace here -->
@@ -75,7 +77,7 @@
     </logger>
 
     <!-- Allow -Dwres.logLevel to set logging level, otherwise info. -->
-    <root level="${wres.logLevel:-debug}">
+    <root level="${wres.logLevel:-info}">
         <appender-ref ref="STDOUT" />
         <appender-ref ref="FILE" />
     </root>
