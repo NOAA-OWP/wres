@@ -276,7 +276,17 @@ public final class MetadataHelper
 
         if ( secondDecimal.remainder( firstDecimal ).compareTo( BigDecimal.ZERO ) != 0 )
         {
-            throw new RescalingException( "The desired period must be an integer multiple of the " + periodType + "." );
+            throw new RescalingException( "The desired period of " + desiredPeriod
+                                          + " is not an integer multiple of the "
+                                          + periodType
+                                          + " ("
+                                          + inputPeriod
+                                          + "). If the data has multiple time-steps that "
+                                          + "vary by time or feature, it may not be possible to "
+                                          + "achieve the desired time scale for all of the data. "
+                                          + "In that case, consider removing the desired time "
+                                          + "scale and performing an evaluation at the "
+                                          + "existing time scale of the data, where possible." );
         }
     }
 

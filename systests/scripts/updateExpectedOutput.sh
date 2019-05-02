@@ -3,7 +3,7 @@
 # expected outputs relative to revision numbers so that images can be compared later to confirm that
 # they are being created as expected.
 
-revision=$(./wres.sh donothing | grep -m 1 version | cut -c 14-29)
+revision=$(./wres.sh donothing | grep -m 1 version | cut -c 24-39)
 if [[ $? != 0 ]]; then
     echo "Unable to execute wres.sh to acquire revision number.  Aborting..."
     exit 1
