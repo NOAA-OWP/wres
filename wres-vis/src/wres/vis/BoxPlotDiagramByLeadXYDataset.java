@@ -2,7 +2,6 @@ package wres.vis;
 
 import java.time.temporal.ChronoUnit;
 import java.util.Objects;
-import java.util.OptionalInt;
 
 import org.jfree.data.xy.XYDataset;
 
