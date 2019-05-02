@@ -16,7 +16,7 @@
         </left>
         <right label="HEFS" >
             <type>ensemble forecasts</type>
-            <source format="PI-XML">data/archive/baselineValidationExample/dataContents900</source>
+            <source format="PI-XML">data/archive/baselineValidationExample/LGNN5_Streamflow_hefs_Baseline_Validation_19850101_20160106.tgz</source>
             <variable>QINE</variable>
         </right>
     </inputs>
