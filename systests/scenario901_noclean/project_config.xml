@@ -18,11 +18,6 @@
             <type>ensemble forecasts</type>
             <source format="PI-XML">data/archive/baselineValidationExample/LGNN5_Streamflow_hefs_Baseline_Validation_19850101_20160106.tgz</source>
             <variable>QINE</variable>
-            <existingTimeScale>
-                <function>mean</function>
-                <period>1</period>
-                <unit>nanos</unit>
-            </existingTimeScale>
         </right>
     </inputs>
 
