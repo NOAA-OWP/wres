@@ -1,21 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <wresconfig>
     <database>
-        <url>***REMOVED***wresdb-dev01.***REMOVED***.***REMOVED***</url>
-        <username>wres_user1</username>
-        <name>wres1</name>
+        <url>localhost</url>
+        <username>wres_user</username>
+        <name>wres</name>
         <port>5432</port>
         <database_type>postgresql</database_type>
         <max_idle_time>80</max_idle_time>
-	<!-- Important: the sum of the max_pool_size settings of WRES instances
-             that connect to a shared database instance must be equal to or
-             less than the database instance's maximum connection settings else
-             the WRES instances will see gnarly-looking exceptions such as
-             "org.postgresql.util.PSQLException: FATAL: remaining connection
-              slots are reserved for non-replication superuser connections" -->
-        <max_pool_size>20</max_pool_size>
+        <!-- Important: the sum of the max_pool_size settings of WRES instances
+                 that connect to a shared database instance must be equal to or
+                 less than the database instance's maximum connection settings else
+                 the WRES instances will see gnarly-looking exceptions such as
+                 "org.postgresql.util.PSQLException: FATAL: remaining connection
+                  slots are reserved for non-replication superuser connections" -->
+        <max_pool_size>8</max_pool_size>
+        <use_ssl>true</use_ssl>
+        <certificate_file_to_trust>classpath:***REMOVED***ca_expires_2020-06.pem</certificate_file_to_trust>
     </database>
-    <maximum_thread_count>10</maximum_thread_count>
+    <maximum_thread_count>7</maximum_thread_count>
     <maximum_archive_threads>5</maximum_archive_threads>
     <fetch_size>50000</fetch_size>
     <maximum_copies>10000</maximum_copies>
