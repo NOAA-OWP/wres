@@ -18,21 +18,11 @@
             <type>ensemble forecasts</type>
             <source format="PI-XML">data/archive/baselineValidationExample/AMCK1_Streamflow_hefs_Baseline_Validation.tgz</source>
             <variable>QINE</variable>
-            <existingTimeScale>
-                <function>mean</function>
-                <period>1</period>
-                <unit>nanos</unit>
-            </existingTimeScale>
         </right>
         <baseline label="ESP" >
             <type>ensemble forecasts</type>
             <source format="PI-XML">data/archive/baselineValidationExample/AMCK1_Streamflow_hefs-mefp_Baseline_Validation.tgz</source>
             <variable>QINE</variable>
-            <existingTimeScale>
-                <function>mean</function>
-                <period>1</period>
-                <unit>nanos</unit>
-            </existingTimeScale>
         </baseline>
     </inputs>
 
