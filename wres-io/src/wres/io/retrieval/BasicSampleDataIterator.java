@@ -53,11 +53,11 @@ final class BasicSampleDataIterator extends SampleDataIterator
         {
             final Duration lastPossibleLead = Duration.of( this.getProject().getLastLead( this.getFeature() ),
                                                            TimeHelper.LEAD_RESOLUTION );
-
+ 
             int leadIteration = 0;
 
             Pair<Duration, Duration> leadBounds = this.getLeadBounds( leadIteration );
-
+         
             while (TimeHelper.lessThan(leadBounds.getLeft(), lastPossibleLead) &&
                    TimeHelper.lessThanOrEqualTo( leadBounds.getRight(), lastPossibleLead ))
             {
@@ -78,7 +78,7 @@ final class BasicSampleDataIterator extends SampleDataIterator
 
                 leadIteration++;
 
-                leadBounds = this.getLeadBounds( leadIteration );
+                leadBounds = this.getLeadBounds( leadIteration );                
             }
         }
         else

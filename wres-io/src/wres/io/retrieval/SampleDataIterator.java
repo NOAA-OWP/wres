@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.NoSuchElementException;
@@ -18,6 +19,10 @@ import org.slf4j.Logger;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
+import wres.config.generated.IntBoundsType;
+import wres.config.generated.PairConfig;
+import wres.config.generated.PoolingWindowConfig;
+import wres.config.generated.ProjectConfig;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metadata.TimeScale;
 import wres.datamodel.sampledata.SampleData;
@@ -226,12 +231,124 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
     protected abstract void calculateSamples() throws CalculationException;
 
     /**
-     * Get the left and right lead bounds for a sample
+     * <p>Get the left and right lead bounds for a sample
+     * 
+     * <p>TODO: replace with #56213. Cannot be confident that this is working correctly under
+     * all circumstances, particularly for the default system behavior, which is to generate
+     * one (data dependent) lead duration pool for each lead duration present in the pairs.
+     * 
+     * @param sampleNumber The number of the sample, 0 indexed, that indicates the order of evaluation
+     * @return A pair of durations describing the left and right lead bounds for the sample
+     * @throws CalculationException Thrown if the frequency, period, or offset for lead bounds 
+     *            could not be calculated
+     */
+    Pair<Duration, Duration> getLeadBounds( final int sampleNumber ) throws CalculationException
+    {
+        // Are leadTimesPoolingWindows defined?
+        // If so, they must be respected and not modified by the data: #63407
+        if ( Objects.nonNull( this.getProject().getProjectConfig().getPair().getLeadTimesPoolingWindow() ) )
+        {
+            return this.getLeadBoundsForLeadTimesPoolingWindows( this.getProject().getProjectConfig(),
+                                                                 sampleNumber );
+        }
+        // No leadTimesPoolingWindows, so use default system behavior, 
+        // which is one pool for each lead duration
+        else
+        {
+            return this.getLeadBoundsForDefaultLeadTimesPoolingWindows( sampleNumber );
+        }
+    }
+
+    /**
+     * <p>Returns the lower and upper bounds of the next lead duration pooling window
+     * whose sample number corresponds to the input. There is no validation that
+     * the sampleNumber exceeds the declared upper bound for all windows.
+     * 
+     * <p>TODO: replace with #56213
+     * 
+     * @param project The project declaration
+     * @param sampleNumber The number of the sample, 0 indexed, that indicates the order of evaluation
+     * @return A pair of durations describing the left and right lead bounds for the sample number
+     * @throws CalculationException if the iteration exceeds the declared upper bound
+     * @throws NullPointerException if the project is null
+     */
+
+    private Pair<Duration, Duration> getLeadBoundsForLeadTimesPoolingWindows( ProjectConfig project,
+                                                                              int sampleNumber )
+            throws CalculationException
+    {
+        Objects.requireNonNull( project );
+
+        // Get the pair declaration, which includes pooling windows
+        PairConfig pairConfig = project.getPair();
+
+        IntBoundsType leadHours = pairConfig.getLeadHours();
+
+        PoolingWindowConfig leadTimesPoolingWindow = pairConfig.getLeadTimesPoolingWindow();
+
+        // Create the elements necessary to increment the windows
+        ChronoUnit periodUnits = ChronoUnit.valueOf( leadTimesPoolingWindow.getUnit()
+                                                                           .toString()
+                                                                           .toUpperCase() );
+        // Period associated with the leadTimesPoolingWindow
+        Duration periodOfLeadTimesPoolingWindow = Duration.of( leadTimesPoolingWindow.getPeriod(), periodUnits );
+
+        // Exclusive lower bound
+        Duration earliestLeadDurationExclusive = Duration.ofHours( leadHours.getMinimum() );
+
+        // Duration by which to increment. Defaults to the period associated
+        // with the leadTimesPoolingWindow, otherwise the frequency.
+        Duration increment = periodOfLeadTimesPoolingWindow;
+        if ( Objects.nonNull( leadTimesPoolingWindow.getFrequency() ) )
+        {
+            increment = Duration.of( leadTimesPoolingWindow.getFrequency(), periodUnits );
+        }
+
+        // Determine the increment for the current sample number
+        Duration incrementMultipliedBySampleNumber = increment.multipliedBy( sampleNumber );
+
+        // Add the increment for the current sample number to the lower bound
+        Duration earliestExclusive = earliestLeadDurationExclusive.plus( incrementMultipliedBySampleNumber );
+
+        // Upper bound of the current window, which is the lower bound plus the period      
+        Duration latestInclusive = earliestExclusive.plus( periodOfLeadTimesPoolingWindow );
+
+        // TODO: it would be preferable to allow a bounds-check here, but some 
+        // implementations of SampleDataIterator::calculateSamples currently call 
+        // this method to iterate beyond the bounds and then check. 
+        // All this will disappear with #56213, so leaving for now.
+        
+        // Validate the upper bound as being less than or equal to the overall upper bound
+//        Duration latestLeadDurationInclusive = Duration.ofHours( leadHours.getMaximum() );
+//
+//        if ( latestInclusive.compareTo( latestLeadDurationInclusive ) > 0 )
+//        {
+//            throw new CalculationException( "Iteration of lead duration bounds failed on the "
+//                                            + "iterated upper bound of "
+//                                            + latestInclusive
+//                                            + " exceeding the declared "
+//                                            + "upper bound of "
+//                                            + latestLeadDurationInclusive
+//                                            + "." );
+//        }
+
+        return Pair.of( earliestExclusive, latestInclusive );
+    }
+
+    /**
+     * <p>Returns the lower and upper bounds of the next lead duration pooling window
+     * whose sample number corresponds to the input when the pooling windows are 
+     * based on the default system behavior. The default behavior is to produce one
+     * pool for each lead duration.  
+     * 
+     * <p>TODO: replace with #56213
+     * 
      * @param sampleNumber The number of the sample, 0 indexed, that indicates the order of evaluation
      * @return A pair of durations describing the left and right lead bounds for the sample
      * @throws CalculationException Thrown if the frequency, period, or offset for lead bounds could not be calculated
      */
-    Pair<Duration, Duration> getLeadBounds(final int sampleNumber) throws CalculationException
+    Pair<Duration, Duration> getLeadBoundsForDefaultLeadTimesPoolingWindows( final int sampleNumber )
+            throws CalculationException
     {
         Duration beginning;
         Duration end;
@@ -250,7 +367,7 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
                                             + "not be loaded.",
                                             e );
         }
-        
+
         Duration leadFrequency = this.getProject().getLeadFrequency();
         Duration leadPeriod = this.getProject().getLeadPeriod();
 
@@ -271,12 +388,13 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
         {
             beginning = offset.plus( leadFrequency.multipliedBy( sampleNumber ) );
         }
-        
-        end = beginning.plus( leadPeriod ); 
 
-        return Pair.of(beginning, end);
-    }
+        end = beginning.plus( leadPeriod );
 
+        return Pair.of( beginning, end );
+    }    
+    
+    
     int getFinalPoolingStep() throws CalculationException
     {
         if (this.finalPoolingStep == null)

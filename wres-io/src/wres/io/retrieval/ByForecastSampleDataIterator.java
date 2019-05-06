@@ -3,9 +3,6 @@ package wres.io.retrieval;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.sql.SQLException;
-import java.time.Instant;
-import java.util.LinkedList;
-import java.util.Queue;
 import java.util.concurrent.Callable;
 
 import org.slf4j.Logger;
