@@ -137,7 +137,7 @@ public class Validation
         }
 
         // Validate data sources
-        result = Validation.areDataSourceConfigsValid( projectConfigPlus )
+        result = Validation.isInputsConfigValid( projectConfigPlus )
                  && result;
 
         // Validate pair section
@@ -1596,7 +1596,7 @@ public class Validation
         return valid;
     }
     
-    private static boolean areDataSourceConfigsValid( ProjectConfigPlus projectConfigPlus )
+    private static boolean isInputsConfigValid( ProjectConfigPlus projectConfigPlus )
     {
         boolean result = true;
 
@@ -1701,88 +1701,124 @@ public class Validation
                           && sourceValid;
         }
 
-        if ( source.getValue() != null
-             && source.getValue()
-                      .getScheme() != null
-             && source.getValue()
-                      .getScheme()
-                      .startsWith( "http" ) )
+        if ( source.getFormat() == Format.WRDS )
         {
-            sourceValid = Validation.isAPISourceValid( projectConfigPlus,
-                                                       dataSourceConfig,
-                                                       source )
+            sourceValid = Validation.isWRDSSourceValid( projectConfigPlus,
+                                                        dataSourceConfig,
+                                                        source )
                           && sourceValid;
         }
 
         return sourceValid;
     }
 
-    private static boolean isAPISourceValid( ProjectConfigPlus projectConfigPlus,
-                                             DataSourceConfig dataSourceConfig,
-                                             DataSourceConfig.Source source )
+    private static boolean isWRDSSourceValid( ProjectConfigPlus projectConfigPlus,
+                                              DataSourceConfig dataSourceConfig,
+                                              DataSourceConfig.Source source )
     {
-        boolean apiSourceValid = true;
+        boolean wrdsSourceValid = true;
 
-        if ( source.getFormat().equals( Format.WRDS ) )
+        // Require that a leadTimesPoolingWindow is declared: #63408
+        // This will be superseded by work connected to #56213, which will require 
+        // a leadTimesPoolingWindow in all cases. At that point, the validation below
+        // can be removed and will be replaced with earlier validation to require 
+        // a leadTimesPoolingWindow in all cases.
+        // TODO: re-examine when finalizing work connected to #56213
+        if ( Objects.isNull( projectConfigPlus.getProjectConfig().getPair().getLeadTimesPoolingWindow() ) )
         {
+            // Line separator
+            String nL = System.lineSeparator();
 
-            if ( dataSourceConfig.equals( projectConfigPlus.getProjectConfig()
-                                                           .getInputs()
-                                                           .getLeft() ) )
-            {
-                if ( LOGGER.isWarnEnabled() )
-                {
-                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE +
-                                 " WRDS observations are not supported. Please use WRDS on 'right' or 'baseline'",
-                                 projectConfigPlus,
-                                 source.sourceLocation().getLineNumber(),
-                                 source.sourceLocation().getColumnNumber() );
-                }
+            // Example of the requried declaration
+            String leadTimesPoolingWindowExample = nL
+                                                   + "<leadHours minimum=\"0\" maximum=\"24\"/>"
+                                                   + nL
+                                                   + "<leadTimesPoolingWindow>"
+                                                   + nL
+                                                   + "        <period>6</period"
+                                                   + nL
+                                                   + "        <unit>hours</unit>"
+                                                   + nL
+                                                   + "</leadTimesPoolingWindow>";
 
-                apiSourceValid = false;
-            }
+            // Composed warning
+            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE +
+                         " Attempting to evaluate data from a WRDS source without a leadTimesPoolingWindow in the "
+                         + "project declaration, which is not allowed. When evaluating forecasts from a WRDS source, "
+                         + "it is assumed that the forecasts are AHPS operational single-valued forecasts. Such "
+                         + "forecasts admit issued datetimes that do not correspond to synoptic times. "
+                         + "Separately, the default system behavior is to create a pool for each distinct "
+                         + "lead duration. This does not work well for AHPS forecasts, because the lead "
+                         + "durations are irregular. Instead, we require that the declaration includes a "
+                         + "leadTimesPoolingWindow when evaluating data from WRDS. Please add a "
+                         + "leadTimesPoolingWindow to declare the required pools, since you have declared "
+                         + "WRDS as a source. The following is an example of a leadTimesPoolingWindow in "
+                         + "the correct context: {}",
+                         projectConfigPlus,
+                         source.sourceLocation().getLineNumber(),
+                         source.sourceLocation().getColumnNumber(),
+                         leadTimesPoolingWindowExample );
 
-            DateCondition issuedDates = projectConfigPlus.getProjectConfig()
-                                                         .getPair()
-                                                         .getIssuedDates();
-            if ( issuedDates == null )
-            {
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE + " "
-                             + API_SOURCE_MISSING_ISSUED_DATES_ERROR_MESSAGE,
-                             projectConfigPlus,
-                             projectConfigPlus.getProjectConfig()
-                                              .getPair()
-                                              .sourceLocation()
-                                              .getLineNumber(),
-                             projectConfigPlus.getProjectConfig()
-                                              .getPair()
-                                              .sourceLocation()
-                                              .getColumnNumber(),
-                             source.sourceLocation()
-                                   .getLineNumber(),
-                             source.sourceLocation()
-                                   .getColumnNumber() );
-                apiSourceValid = false;
-            }
-            else if ( issuedDates.getEarliest() == null
-                      || issuedDates.getLatest() == null )
-            {
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE + " "
-                             + API_SOURCE_MISSING_ISSUED_DATES_ERROR_MESSAGE,
-                             projectConfigPlus,
-                             issuedDates.sourceLocation()
-                                        .getLineNumber(),
-                             issuedDates.sourceLocation()
-                                        .getColumnNumber(),
-                             source.sourceLocation()
-                                   .getLineNumber(),
-                             source.sourceLocation()
-                                   .getColumnNumber() );
-                apiSourceValid = false;
-            }
+            wrdsSourceValid = false;
         }
 
-        return apiSourceValid;
+        if ( dataSourceConfig.equals( projectConfigPlus.getProjectConfig()
+                                                       .getInputs()
+                                                       .getLeft() ) )
+        {
+            if ( LOGGER.isWarnEnabled() )
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE +
+                             " WRDS observations are not supported. Please use WRDS on 'right' or 'baseline'",
+                             projectConfigPlus,
+                             source.sourceLocation().getLineNumber(),
+                             source.sourceLocation().getColumnNumber() );
+            }
+
+            wrdsSourceValid = false;
+        }
+
+        DateCondition issuedDates = projectConfigPlus.getProjectConfig()
+                                                     .getPair()
+                                                     .getIssuedDates();
+        if ( issuedDates == null )
+        {
+            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE + " "
+                         + API_SOURCE_MISSING_ISSUED_DATES_ERROR_MESSAGE,
+                         projectConfigPlus,
+                         projectConfigPlus.getProjectConfig()
+                                          .getPair()
+                                          .sourceLocation()
+                                          .getLineNumber(),
+                         projectConfigPlus.getProjectConfig()
+                                          .getPair()
+                                          .sourceLocation()
+                                          .getColumnNumber(),
+                         source.sourceLocation()
+                               .getLineNumber(),
+                         source.sourceLocation()
+                               .getColumnNumber() );
+            wrdsSourceValid = false;
+        }
+        else if ( issuedDates.getEarliest() == null
+                  || issuedDates.getLatest() == null )
+        {
+            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE + " "
+                         + API_SOURCE_MISSING_ISSUED_DATES_ERROR_MESSAGE,
+                         projectConfigPlus,
+                         issuedDates.sourceLocation()
+                                    .getLineNumber(),
+                         issuedDates.sourceLocation()
+                                    .getColumnNumber(),
+                         source.sourceLocation()
+                               .getLineNumber(),
+                         source.sourceLocation()
+                               .getColumnNumber() );
+            wrdsSourceValid = false;
+        }
+
+
+        return wrdsSourceValid;
     }
 
 
