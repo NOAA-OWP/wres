@@ -2584,6 +2584,20 @@ public class Project
      */
     public Integer getLastLead(Feature feature) throws CalculationException
     {
+        // Lead duration pool windows are canonical: see #63407-31
+        // If they are present, always return the maximum declared
+        // lead duration, which is required to be present. 
+        // See #56213 also, which proposes to remove data-dependent
+        // pools as far as possible       
+        if ( Objects.nonNull( this.getProjectConfig().getPair().getLeadTimesPoolingWindow() ) )
+        {
+            // The maximum lead duration has been declared, because
+            // lead duration pooling windows have been declared,
+            // so this will return the declared maximum lead duration
+            return this.getMaximumLead();
+        }
+        
+        // Now dealing with data-dependent pools: see #63407-31 and #56213
         boolean leadIsMissing = !this.lastLeads.containsKey( feature );
         Integer lastLead;
 
@@ -2613,6 +2627,12 @@ public class Project
                 message += script.toString();
                 throw new CalculationException( message);
             }
+
+            // #63407- 
+            LOGGER.debug( "Created a last lead time of {} {} for feature '{}'.",
+                          lastLead,
+                          TimeHelper.LEAD_RESOLUTION,
+                          ConfigHelper.getFeatureDescription( feature ) );
 
             this.lastLeads.put(feature, lastLead);
         }

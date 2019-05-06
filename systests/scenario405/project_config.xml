@@ -26,7 +26,7 @@
         <feature locationId="ARCT2" />
         <feature locationId="BLUO2" />
         <feature locationId="BADID" />
-        <leadHours minimum="1" maximum="24" />
+        <leadHours minimum="0" maximum="24" />
 
         <leadTimesPoolingWindow>
             <period>6</period>

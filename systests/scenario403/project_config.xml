@@ -58,7 +58,7 @@
         <feature locationId="GLOO2" />
         
         <!-- The evaluation is restricted to the first 48 hours. -->
-        <leadHours minimum="1" maximum="48" />
+        <leadHours minimum="0" maximum="48" />
         
         <!-- The time scale at which to perform the evaluation, which is a 24-hour mean. -->
         <desiredTimeScale>
