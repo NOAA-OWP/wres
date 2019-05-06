@@ -22,5 +22,5 @@
     <fetch_size>50000</fetch_size>
     <maximum_copies>10000</maximum_copies>
     <update_frequency>1</update_frequency>
-    <update_progress_monitor>true</update_progress_monitor>
+    <update_progress_monitor>false</update_progress_monitor>
 </wresconfig>
