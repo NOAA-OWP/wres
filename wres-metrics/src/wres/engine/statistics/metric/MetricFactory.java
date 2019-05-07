@@ -59,6 +59,7 @@ import wres.engine.statistics.metric.singlevalued.MeanAbsoluteError;
 import wres.engine.statistics.metric.singlevalued.MeanError;
 import wres.engine.statistics.metric.singlevalued.MeanSquareError;
 import wres.engine.statistics.metric.singlevalued.MeanSquareErrorSkillScore;
+import wres.engine.statistics.metric.singlevalued.MedianError;
 import wres.engine.statistics.metric.singlevalued.QuantileQuantileDiagram;
 import wres.engine.statistics.metric.singlevalued.RootMeanSquareError;
 import wres.engine.statistics.metric.singlevalued.SumOfSquareError;
@@ -316,7 +317,7 @@ public final class MetricFactory
     {
         return MetricFactory.ofSingleValuedMultiVectorCollection( ForkJoinPool.commonPool(), metric );
     }
-    
+
     /**
      * <p>Returns a {@link MetricCollection} of metrics that consume {@link DiscreteProbabilityPairs} and produce
      * {@link DoubleScoreStatistic}.</p>
@@ -783,6 +784,8 @@ public final class MetricFactory
                 return MeanAbsoluteError.of();
             case MEAN_ERROR:
                 return MeanError.of();
+            case MEDIAN_ERROR:
+                return MedianError.of();
             case SAMPLE_SIZE:
                 return SampleSize.of();
             case INDEX_OF_AGREEMENT:
@@ -873,8 +876,8 @@ public final class MetricFactory
             default:
                 throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         }
-    }    
-    
+    }
+
     /**
      * Returns a {@link Metric} that consumes {@link DiscreteProbabilityPairs} and produces {@link DoubleScoreStatistic}.
      * 

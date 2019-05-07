@@ -80,7 +80,7 @@ public final class MeanErrorTest
         SingleValuedPairs input =
                 SingleValuedPairs.of( Arrays.asList(), SampleMetadata.of() );
  
-        DoubleScoreStatistic actual = meanError.apply( input );
+        DoubleScoreStatistic actual = this.meanError.apply( input );
 
         assertTrue( actual.getData().isNaN() );
     }
@@ -93,7 +93,7 @@ public final class MeanErrorTest
     @Test
     public void testGetName()
     {
-        assertTrue( meanError.getName().equals( MetricConstants.MEAN_ERROR.toString() ) );
+        assertTrue( this.meanError.getName().equals( MetricConstants.MEAN_ERROR.toString() ) );
     }
 
     /**
@@ -103,7 +103,7 @@ public final class MeanErrorTest
     @Test
     public void testIsDecomposable()
     {
-        assertFalse( meanError.isDecomposable() );
+        assertFalse( this.meanError.isDecomposable() );
     }
 
     /**
@@ -113,7 +113,7 @@ public final class MeanErrorTest
     @Test
     public void testIsSkillScore()
     {
-        assertFalse( meanError.isSkillScore() );
+        assertFalse( this.meanError.isSkillScore() );
     }
 
     /**
@@ -123,7 +123,7 @@ public final class MeanErrorTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( meanError.getScoreOutputGroup() == ScoreGroup.NONE );
+        assertTrue( this.meanError.getScoreOutputGroup() == ScoreGroup.NONE );
     }
 
     /**
@@ -134,10 +134,10 @@ public final class MeanErrorTest
     @Test
     public void testApplyExceptionOnNullInput()
     {
-        exception.expect( SampleDataException.class );
-        exception.expectMessage( "Specify non-null input to the 'MEAN ERROR'." );
+        this.exception.expect( SampleDataException.class );
+        this.exception.expectMessage( "Specify non-null input to the 'MEAN ERROR'." );
         
-        meanError.apply( null );
+        this.meanError.apply( null );
     }    
   
 }

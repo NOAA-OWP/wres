@@ -2,25 +2,27 @@ package wres.engine.statistics.metric.singlevalued;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
+import wres.engine.statistics.metric.FunctionFactory;
 
 /**
- * The mean error applies to continuous variables and is the average signed difference between a single-valued
- * predictand and a verifying observation. It measures the first-order bias of the predictand.
+ * The median error applies to continuous variables and is the median signed difference 
+ * between a single-valued predictand and a verifying observation. It measures the 
+ * median bias of the predictand.
  * 
  * @author james.brown@hydrosolved.com
  */
-public class MeanError extends DoubleErrorScore<SingleValuedPairs>
+public class MedianError extends DoubleErrorScore<SingleValuedPairs>
 {
-    
+
     /**
      * Returns an instance.
      * 
      * @return an instance
      */
-    
-    public static MeanError of()
+
+    public static MedianError of()
     {
-        return new MeanError();
+        return new MedianError();
     }
 
     @Override
@@ -32,7 +34,7 @@ public class MeanError extends DoubleErrorScore<SingleValuedPairs>
     @Override
     public MetricConstants getID()
     {
-        return MetricConstants.MEAN_ERROR;
+        return MetricConstants.MEDIAN_ERROR;
     }
 
     @Override
@@ -45,9 +47,9 @@ public class MeanError extends DoubleErrorScore<SingleValuedPairs>
      * Hidden constructor.
      */
 
-    private MeanError()
+    private MedianError()
     {
-        super();
+        super( FunctionFactory.error(), FunctionFactory.median() );
     }
 
 }
