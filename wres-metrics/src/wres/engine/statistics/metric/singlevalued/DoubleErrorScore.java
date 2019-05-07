@@ -1,17 +1,19 @@
 package wres.engine.statistics.metric.singlevalued;
 
 import java.util.Objects;
+import java.util.function.ToDoubleFunction;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MissingValues;
 import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.engine.statistics.metric.DoubleErrorFunction;
-import wres.engine.statistics.metric.MetricCalculationException;
+import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.OrdinaryScore;
 
 /**
@@ -27,7 +29,19 @@ public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Ordi
      * The error function.
      */
 
-    DoubleErrorFunction function;
+    final DoubleErrorFunction errorFunction;
+
+    /**
+     * The error accumulator function.
+     */
+
+    final ToDoubleFunction<VectorOfDoubles> errorAccumulator;
+
+    /**
+     * Partial message on null input.
+     */
+
+    private static final String NULL_INPUT_STRING = "Cannot construct the error score '";
 
     @Override
     public DoubleScoreStatistic apply( final S s )
@@ -36,11 +50,7 @@ public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Ordi
         {
             throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
-        if ( Objects.isNull( function ) )
-        {
-            throw new MetricCalculationException( "Override or specify a non-null error function for the '" + toString()
-                                                  + "'." );
-        }
+
         //Metadata
         DatasetIdentifier id = null;
         if ( s.hasBaseline() )
@@ -49,17 +59,19 @@ public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Ordi
         }
         final StatisticMetadata metOut =
                 StatisticMetadata.of( s.getMetadata(),
-                                    this.getID(),
-                                    MetricConstants.MAIN,
-                                    this.hasRealUnits(),
-                                    s.getRawData().size(),
-                                    id );
+                                      this.getID(),
+                                      MetricConstants.MAIN,
+                                      this.hasRealUnits(),
+                                      s.getRawData().size(),
+                                      id );
 
         //Compute the atomic errors in a stream
         double doubleScore = MissingValues.MISSING_DOUBLE;
         if ( !s.getRawData().isEmpty() )
         {
-            doubleScore = s.getRawData().stream().mapToDouble( function ).average().getAsDouble();
+            double[] doubles = s.getRawData().stream().mapToDouble( this.getErrorFunction() ).toArray();
+            VectorOfDoubles wrappedDoubles = VectorOfDoubles.of( doubles );
+            doubleScore = this.getErrorAccumulator().applyAsDouble( wrappedDoubles );
         }
         return DoubleScoreStatistic.of( doubleScore, metOut );
     }
@@ -77,30 +89,81 @@ public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Ordi
     }
 
     /**
-     * Hidden constructor for a delegated implementation, i.e. where the concrete implementation overrides 
-     * {@link #apply(SingleValuedPairs)}.
+     * Construct an error score with a default error function {@link FunctionFactory#error()}
+     * and a default accumulator {@link FunctionFactory#mean()}.
      */
 
-    protected DoubleErrorScore()
+    DoubleErrorScore()
     {
         super();
 
-        this.function = null;
+        this.errorFunction = FunctionFactory.error();
+        this.errorAccumulator = FunctionFactory.mean();
     }
 
     /**
-     * Hidden constructor. If the input function is null, the concrete implementation must override 
-     * {@link #apply(SingleValuedPairs)}.
+     * Construct an error score with a default accumulator {@link FunctionFactory#mean()}.
      * 
      * @param function the error function
+     * @throws NullPointerException if the error function is null
      */
 
-    protected DoubleErrorScore( DoubleErrorFunction function )
+    DoubleErrorScore( DoubleErrorFunction function )
     {
         super();
 
-        // Function can be null if calculation is delegated
-        this.function = function;
+        Objects.requireNonNull( function,
+                                NULL_INPUT_STRING + this.getName()
+                                          + "' with a null error function." );
+
+        this.errorFunction = function;
+        this.errorAccumulator = FunctionFactory.mean();
+    }
+
+    /**
+     * Construct an error score.
+     * 
+     * @param function the error function
+     * @param errorAccumulator the error accumulator function 
+     * @throws NullPointerException if either input is null
+     */
+
+    DoubleErrorScore( DoubleErrorFunction function, ToDoubleFunction<VectorOfDoubles> errorAccumulator )
+    {
+        super();
+
+        Objects.requireNonNull( function,
+                                NULL_INPUT_STRING + this.getName()
+                                          + "' with a null error function." );
+
+        Objects.requireNonNull( errorAccumulator,
+                                NULL_INPUT_STRING + this.getName()
+                                                  + "' with a null accumulator function." );
+
+        this.errorFunction = function;
+        this.errorAccumulator = errorAccumulator;
+    }
+
+    /**
+     * Returns the error function, not to be exposed.
+     * 
+     * @return the error function for internal use
+     */
+
+    private DoubleErrorFunction getErrorFunction()
+    {
+        return this.errorFunction;
+    }
+
+    /**
+     * Returns the error accumulator, not to be exposed.
+     * 
+     * @return the error accumulator for internal use
+     */
+
+    private ToDoubleFunction<VectorOfDoubles> getErrorAccumulator()
+    {
+        return this.errorAccumulator;
     }
 
 }

@@ -13,8 +13,7 @@ import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
-import wres.engine.statistics.metric.MetricCalculationException;
-import wres.engine.statistics.metric.MetricParameterException;
+import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
 /**
@@ -42,7 +41,6 @@ public final class DoubleErrorScoreTest
 
     /**
      * Checks that the baseline is set correctly.
-     * @throws MetricParameterException if the metric could not be constructed 
      */
 
     @Test
@@ -85,15 +83,19 @@ public final class DoubleErrorScoreTest
     }
 
     /**
-     * Tests for an expected exception on building a {@link DoubleErrorScore} with a missing function.
-     * @throws MetricParameterException if the metric could not be constructed
+     * Tests for an expected exception on building a {@link DoubleErrorScore} with a null 
+     * error function.
      */
 
     @Test
-    public void testExceptionOnMissingFunction()
+    public void testExceptionOnNullErrorFunction()
     {
         class ExceptionCheck extends DoubleErrorScore<SingleValuedPairs>
         {
+            private ExceptionCheck()
+            {
+                super( null );
+            }
 
             @Override
             public boolean isSkillScore()
@@ -114,16 +116,96 @@ public final class DoubleErrorScoreTest
             }
         }
 
-        exception.expect( MetricCalculationException.class );
-        exception.expectMessage( "Override or specify a non-null error function for the 'MEAN ERROR'." );
+        exception.expect( NullPointerException.class );
+        exception.expectMessage( "Cannot construct the error score 'MEAN ERROR' with a null error function." );
 
         new ExceptionCheck().apply( MetricTestDataFactory.getSingleValuedPairsOne() );
     }
 
     /**
+     * Tests for an expected exception on building a {@link DoubleErrorScore} with a null 
+     * accumulation function.
+     */
+
+    @Test
+    public void testExceptionOnNullAccumulationFunction()
+    {
+        class ExceptionCheck extends DoubleErrorScore<SingleValuedPairs>
+        {
+            private ExceptionCheck()
+            {
+                super( FunctionFactory.error(), null );
+            }
+
+            @Override
+            public boolean isSkillScore()
+            {
+                return false;
+            }
+
+            @Override
+            public MetricConstants getID()
+            {
+                return MetricConstants.MEAN_ERROR;
+            }
+
+            @Override
+            public boolean hasRealUnits()
+            {
+                return false;
+            }
+        }
+
+        exception.expect( NullPointerException.class );
+        exception.expectMessage( "Cannot construct the error score 'MEAN ERROR' with a null "
+                                 + "accumulator function." );
+
+        new ExceptionCheck().apply( MetricTestDataFactory.getSingleValuedPairsOne() );
+    }
+    
+    /**
+     * Tests for an expected exception on building a {@link DoubleErrorScore} with a null 
+     * error function and a non-null accumulator function.
+     */
+
+    @Test
+    public void testExceptionOnNullErrorFunctionAndNonNullAccumulatorFunction()
+    {
+        class ExceptionCheck extends DoubleErrorScore<SingleValuedPairs>
+        {
+            private ExceptionCheck()
+            {
+                super( null, FunctionFactory.mean() );
+            }
+
+            @Override
+            public boolean isSkillScore()
+            {
+                return false;
+            }
+
+            @Override
+            public MetricConstants getID()
+            {
+                return MetricConstants.MEAN_ERROR;
+            }
+
+            @Override
+            public boolean hasRealUnits()
+            {
+                return false;
+            }
+        }
+
+        exception.expect( NullPointerException.class );
+        exception.expectMessage( "Cannot construct the error score 'MEAN ERROR' with a null error function." );
+
+        new ExceptionCheck().apply( MetricTestDataFactory.getSingleValuedPairsOne() );
+    }    
+
+    /**
      * Tests for an expected exception on calling {@link DoubleErrorScore#apply(SingleValuedPairs)} with null 
      * input.
-     * @throws MetricParameterException if the metric could not be constructed
      */
 
     @Test

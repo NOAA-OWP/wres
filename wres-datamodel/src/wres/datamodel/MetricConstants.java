@@ -54,18 +54,18 @@ public enum MetricConstants
      */
 
     BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE( SampleDataGroup.ENSEMBLE, StatisticGroup.BOXPLOT_PER_PAIR ),
-    
+
     /**
      * Identifier for a box plot of errors.
      */
 
-    BOX_PLOT_OF_ERRORS( SampleDataGroup.SINGLE_VALUED, StatisticGroup.BOXPLOT_PER_POOL ),   
-    
+    BOX_PLOT_OF_ERRORS( SampleDataGroup.SINGLE_VALUED, StatisticGroup.BOXPLOT_PER_POOL ),
+
     /**
      * Identifier for a box plot of errors as a percentage of the left value.
      */
 
-    BOX_PLOT_OF_PERCENTAGE_ERRORS( SampleDataGroup.SINGLE_VALUED, StatisticGroup.BOXPLOT_PER_POOL ),       
+    BOX_PLOT_OF_PERCENTAGE_ERRORS( SampleDataGroup.SINGLE_VALUED, StatisticGroup.BOXPLOT_PER_POOL ),
 
     /**
      * Identifier for coefficient of determination.
@@ -90,7 +90,7 @@ public enum MetricConstants
      */
 
     CONTINGENCY_TABLE( new SampleDataGroup[] { SampleDataGroup.DICHOTOMOUS,
-                                                SampleDataGroup.MULTICATEGORY },
+                                               SampleDataGroup.MULTICATEGORY },
             StatisticGroup.MATRIX ),
 
     /**
@@ -154,6 +154,12 @@ public enum MetricConstants
     MEAN_SQUARE_ERROR_SKILL_SCORE( SampleDataGroup.SINGLE_VALUED, StatisticGroup.DOUBLE_SCORE ),
 
     /**
+     * Identifier for a Median Error.
+     */
+
+    MEDIAN_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticGroup.DOUBLE_SCORE ),
+
+    /**
      * Identifier for a Peirce Skill Score.
      */
 
@@ -213,7 +219,7 @@ public enum MetricConstants
      */
 
     SAMPLE_SIZE( new SampleDataGroup[] { SampleDataGroup.SINGLE_VALUED,
-                                          SampleDataGroup.ENSEMBLE },
+                                         SampleDataGroup.ENSEMBLE },
             StatisticGroup.DOUBLE_SCORE, ScoreGroup.UNIVARIATE_STATISTIC ),
 
     /**
@@ -670,13 +676,13 @@ public enum MetricConstants
          */
 
         MATRIX,
-        
+
         /**
          * Metrics that produce a {@link BoxPlotStatistic} for each pair within a pool.
          */
 
         BOXPLOT_PER_PAIR,
-        
+
         /**
          * Metrics that produce a {@link BoxPlotStatistic} for each pool of pairs.
          */
@@ -928,13 +934,13 @@ public enum MetricConstants
          */
 
         TRUE_NEGATIVES,
-        
+
         /**
          * Identifier for error as a percentage of the verifying value.
          */
-        
+
         ERROR_PERCENT_OF_VERIFYING_VALUE;
-        
+
         /**
          * Returns a string representation.
          * 
