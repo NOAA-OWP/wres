@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -65,7 +66,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
     private static final String DEFAULT_GRID_TEMPLATE = "lcc_grid_template.nc";
 
     private static final Object WINDOW_LOCK = new Object();
-    private static final Map<TimeWindow, TimeWindowWriter> WRITERS = new ConcurrentHashMap<>();
+    // Guarded by WINDOW_LOCK
+    private static final Map<TimeWindow, TimeWindowWriter> WRITERS = new HashMap<>();
 
     private static final Map<Object, Integer> VECTOR_COORDINATES = new ConcurrentHashMap<>();
     private static final int VALUE_SAVE_LIMIT = 500;
@@ -82,13 +84,15 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
 
     /**
      * Set of paths that this writer actually wrote to
+     * Guarded by WINDOW_LOCK
      */
     private final Set<Path> pathsWrittenTo = new ConcurrentSkipListSet<>();
 
     /**
      * Writing tasks submitted
+     * Guarded by WINDOW_LOCK
      */
-    private final List<Future<Set<Path>>> writingTasksSubmitted = new CopyOnWriteArrayList<>();
+    private final List<Future<Set<Path>>> writingTasksSubmitted = new ArrayList<>();
 
     /**
      * Returns an instance of the writer. 
@@ -240,32 +244,32 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
 
         LOGGER.debug( "About to wait for writing tasks to finish from {}", this );
 
-        try
-        {
-            // Figure out which paths were written to. These should all be
-            // complete by this point, right?
-            for ( Future<Set<Path>> writingTaskResult : this.writingTasksSubmitted )
-            {
-                Set<Path> oneSetOfPaths = writingTaskResult.get();
-                LOGGER.debug( "Some paths written to by {}: {}", this, oneSetOfPaths );
-                this.pathsWrittenTo.addAll( oneSetOfPaths );
-            }
-        }
-        catch ( InterruptedException ie )
-        {
-            LOGGER.warn( "Interrupted while getting paths from netcdf writers.", ie );
-            Thread.currentThread().interrupt();
-        }
-        catch ( ExecutionException ee )
-        {
-            String message = "Failed to get a path from netcdf writer for " + this.destinationConfig;
-            throw new RuntimeException( message, ee );
-        }
-
-        LOGGER.debug( "About to close writers from {}", this );
-
         synchronized ( NetcdfOutputWriter.WINDOW_LOCK )
         {
+            try
+            {
+                // Figure out which paths were written to. These should all be
+                // complete by this point, right?
+                for ( Future<Set<Path>> writingTaskResult : this.writingTasksSubmitted )
+                {
+                    Set<Path> oneSetOfPaths = writingTaskResult.get();
+                    LOGGER.debug( "Some paths written to by {}: {}", this, oneSetOfPaths );
+                    this.pathsWrittenTo.addAll( oneSetOfPaths );
+                }
+            }
+            catch ( InterruptedException ie )
+            {
+                LOGGER.warn( "Interrupted while getting paths from netcdf writers.", ie );
+                Thread.currentThread().interrupt();
+            }
+            catch ( ExecutionException ee )
+            {
+                String message = "Failed to get a path from netcdf writer for " + this.destinationConfig;
+                throw new RuntimeException( message, ee );
+            }
+
+            LOGGER.debug( "About to close writers from {}", this );
+
             if ( NetcdfOutputWriter.WRITERS.isEmpty() )
             {
                 return;
