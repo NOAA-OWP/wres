@@ -150,6 +150,7 @@ public final class SystemSettings extends XMLReader
                         break;
                     case "data_directory":
                         this.setDataDirectory( reader );
+                        break;
                     default:
                         LOGGER.debug( "The tag '{}' was skipped because it's "
                                       + "not used in configuration.", tagName );
