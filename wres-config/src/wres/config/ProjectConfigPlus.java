@@ -179,10 +179,7 @@ public class ProjectConfigPlus
             final JAXBElement<ProjectConfig> wrappedConfig = jaxbUnmarshaller.unmarshal(xmlSource, ProjectConfig.class);
             projectConfig = wrappedConfig.getValue();
 
-            if ( LOGGER.isInfoEnabled() )
-            {
-                LOGGER.info( "Unmarshalled project configuration from " + origin );
-            }
+            LOGGER.info( "Unmarshalled project configuration from {}", origin );
 
             if (projectConfig == null
                 || projectConfig.getInputs() == null
