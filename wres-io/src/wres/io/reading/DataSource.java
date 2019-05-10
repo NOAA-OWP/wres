@@ -4,8 +4,10 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
+import java.util.StringJoiner;
 
 import wres.config.generated.DataSourceConfig;
+import wres.io.config.ConfigHelper;
 import wres.io.config.LeftOrRightOrBaseline;
 
 class DataSource
@@ -53,9 +55,9 @@ class DataSource
      */
 
     static DataSource of( DataSourceConfig.Source source,
-                                  DataSourceConfig context,
-                                  Set<LeftOrRightOrBaseline> links,
-                                  Path path )
+                          DataSourceConfig context,
+                          Set<LeftOrRightOrBaseline> links,
+                          Path path )
     {
         return new DataSource( source, context, links, path );
     }
@@ -109,7 +111,7 @@ class DataSource
     }
 
     /**
-     * Evaluates the data source path.
+     * Returns the data source path.
      *
      * @return the path
      */
@@ -117,6 +119,19 @@ class DataSource
     Path getSourcePath()
     {
         return this.path;
+    }
+    
+    /**
+     * Returns <code>true</code> if the data source path is not null, otherwise
+     * <code>false</code>. The path may not be available for some services,
+     * for which the system knows the path.
+     *
+     * @return true if the path is available, otherwise false
+     */
+
+    boolean hasSourcePath()
+    {
+        return Objects.nonNull( this.path );
     }
 
     /**
@@ -155,10 +170,24 @@ class DataSource
     @Override
     public String toString()
     {
-        return "Loading '" + this.getSourcePath()
-               + "', and additionally linking to '"
-               + this.getLinks()
-               + "'.";
+        // Improved for #63493
+        
+        StringJoiner joiner = new StringJoiner( ";", "(", ")" );
+
+        joiner.add( "Path: '" + this.getSourcePath() + "'" );
+        joiner.add( " Type: '" + this.getContext().getType() + "'" );
+
+        if ( Objects.nonNull( this.getSource().getFormat() ) )
+        {
+            joiner.add( " Format: '" + this.getSource().getFormat() + "'" );
+        }
+
+        if ( !this.getLinks().isEmpty() )
+        {
+            joiner.add( " Links to other contexts: '" + this.getLinks() );
+        }
+
+        return joiner.toString();
     }
 
 }
