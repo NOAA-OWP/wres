@@ -112,6 +112,12 @@ public class SourceLoader
         // Proceed with files
         List<Future<List<IngestResult>>> savingFiles = new ArrayList<>();
 
+        if ( !source.hasSourcePath() )
+        {
+            throw new FileNotFoundException( "Found a file data source with an invalid path: "
+                                             + source );
+        }
+
         File sourceFile = source.getSourcePath().toFile();
 
         if ( !sourceFile.exists() )
@@ -158,6 +164,15 @@ public class SourceLoader
 
     private Future<List<IngestResult>> loadNonFileSource( DataSource source )
     {
+        // See #63493. This method of identification, which is tied to 
+        // source format, does not work well. The format should not designate
+        // whether a source originates from a file or from a service. 
+        // Also, there is an absence of consistency in whether a service-like
+        // source requires that the URI is declared. For example, at the time
+        // of writing, it is required for WRDS, but not for USGS NWIS.
+        // As a result, expect some miss-identification of sources as 
+        // originating from services vs. files.
+        
         URI sourceUri = source.getSource().getValue();
 
         if ( sourceUri != null
@@ -197,6 +212,7 @@ public class SourceLoader
         }
 
         // Null signifies the source was a file-ish source.
+        // TODO: except it doesn't really or consistencly. See #63493, for example
         return null;
     }
 

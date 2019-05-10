@@ -1219,27 +1219,28 @@ public class Validation
      * 
      * @param projectConfigPlus the project configuration
      * @param inputConfig the input configuration
+     * @param helper a helper string for context
      * @return true if the time aggregation function is valid, given the inputConfig
-     */    
-    
+     */
+
     private static boolean isDesiredTimeScaleSumValid( ProjectConfigPlus projectConfigPlus,
-                                                             TimeScaleConfig inputConfig,
-                                                             String helper )
+                                                       TimeScaleConfig inputConfig,
+                                                       String helper )
     {
         boolean returnMe = true;
         // Existing aggregation cannot be an instant
         if ( TimeScale.of( inputConfig ).isInstantaneous() )
         {
             returnMe = false;
-            String message = " When using a desired time aggregation of "
-                             + TimeScaleFunction.TOTAL
-                             + ", the existing time aggregation on the {} cannot be instantaneous.";
 
             LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                         + message,
+                         + " When using a desired time aggregation of {}, "
+                         + "the existing time aggregation on the {} cannot "
+                         + "be instantaneous.",
                          projectConfigPlus.getOrigin(),
                          inputConfig.sourceLocation().getLineNumber(),
                          inputConfig.sourceLocation().getColumnNumber(),
+                         TimeScaleFunction.TOTAL,
                          helper );
         }
 
@@ -1248,18 +1249,17 @@ public class Validation
                          .equals( TimeScaleFunction.TOTAL ) )
         {
             returnMe = false;
-            String message = " When using a desired time aggregation of "
-                             + TimeScaleFunction.TOTAL
-                             + ", the existing time aggregation on the {} must also be a "
-                             + TimeScaleFunction.TOTAL
-                             + ".";
 
             LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                         + message,
+                         + " When using a desired time aggregation of {}, "
+                         + "the existing time aggregation on the {} "
+                         + "must also be a {}.",
                          projectConfigPlus.getOrigin(),
                          inputConfig.sourceLocation().getLineNumber(),
                          inputConfig.sourceLocation().getColumnNumber(),
-                         helper );
+                         TimeScaleFunction.TOTAL,
+                         helper,
+                         TimeScaleFunction.TOTAL );
         }
         return returnMe;
     }    
@@ -1695,7 +1695,10 @@ public class Validation
         sourceValid = Validation.isDateConfigValid( projectConfigPlus, source )
                       && sourceValid;
 
-        if ( source.getFormat() != null && source.getFormat().equals( Format.S_3 ) )
+        sourceValid = Validation.isURIDefinedInSourceWhenExpected( projectConfigPlus, source )
+                      && sourceValid;
+
+        if ( source.getFormat() == Format.S_3 )
         {
             sourceValid = Validation.isS3SourceValid( projectConfigPlus, source )
                           && sourceValid;
@@ -1710,6 +1713,48 @@ public class Validation
         }
 
         return sourceValid;
+    }
+    
+    /**
+     * <p>Returns <code>true</code> if the source has a URI when expected, otherwise
+     * <code>false</code>. A URI is expected unless the format is {@link Format#S_3}
+     * of {@link Format#USGS}.
+     * 
+     * <p> TODO: a URI should be defined in all circumstances: see #63493-18
+     * 
+     * @param projectConfigPlus the project declaration
+     * @param source the source to inspect
+     * @return true if the source has a URI when a URI is expected, otherwise false
+     */
+
+    private static boolean isURIDefinedInSourceWhenExpected( ProjectConfigPlus projectConfigPlus,
+                                                             DataSourceConfig.Source source )
+    {
+        Objects.requireNonNull( projectConfigPlus );
+
+        Objects.requireNonNull( source );
+
+        boolean result = true;
+
+        Format format = source.getFormat();
+
+        // Null or empty URIs accepted in limited circumstances for now
+        // See #63493, notably #63493-18. In future, we will require a URI always
+        // TODO: remove the conditionality on format when the declared format disappears
+        if ( Objects.isNull( source.getValue() )
+             || source.getValue().toString().isBlank() && format != Format.S_3 && format != Format.USGS )
+        {
+            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE +
+                         " A source has an invalid URI: please add a valid URI, which cannot be empty.",
+                         projectConfigPlus,
+                         source.sourceLocation().getLineNumber(),
+                         source.sourceLocation().getColumnNumber(),
+                         format );
+
+            result = false;
+        }
+
+        return result;
     }
 
     private static boolean isWRDSSourceValid( ProjectConfigPlus projectConfigPlus,
@@ -1834,7 +1879,7 @@ public class Validation
             if (LOGGER.isWarnEnabled())
             {
                 LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + "A file name pattern is required for S3 data sources.",
+                             + " A file name pattern is required for S3 data sources.",
                              projectConfigPlus,
                              source.sourceLocation()
                                              .getLineNumber(),
