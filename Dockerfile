@@ -13,17 +13,18 @@ RUN yum install -y \
     bind-license-9.9.4-73.el7_6 \
     dbus-1.10.24-13.el7_6 \
     dbus-libs-1.10.24-13.el7_6 \
-    device-mapper-1.02.149-10.el7_6.3 \
-    device-mapper-event-libs-1.02.149-10.el7_6.3 \
-    glibc-2.17-260.el7_6.4 \
-    glibc-common-2.17-260.el7_6.4 \
+    device-mapper-1.02.149-10.el7_6.7 \
+    device-mapper-event-libs-1.02.149-10.el7_6.7 \
+    device-mapper-libs-1.02.149-10.el7_6.7 \
+    glibc-2.17-260.el7_6.5 \
+    glibc-common-2.17-260.el7_6.5 \
     krb5-libs-1.15.1-37.el7_6 \
     libblkid-2.23.2-59.el7_6.1 \
-    libgcc-4.8.5-36.el7_6.1 \
+    libgcc-4.8.5-36.el7_6.2 \
     libmount-2.23.2-59.el7_6.1 \
     libsmartcols-2.23.2-59.el7_6.1 \
     libssh2-1.4.3-12.el7_6.2 \
-    libstdc++-4.8.5-36.el7_6.1 \
+    libstdc++-4.8.5-36.el7_6.2 \
     libuuid-2.23.2-59.el7_6.1 \
     nss-3.36.0-7.1.el7_6 \
     nss-pem-1.0.3-5.el7_6.1 \
@@ -35,8 +36,8 @@ RUN yum install -y \
     python-2.7.5-77.el7_6 \
     python-libs-2.7.5-77.el7_6 \
     shadow-utils-4.1.5.1-25.el7_6.1 \
-    systemd-219-62.el7_6.5 \
-    systemd-libs-219-62.el7_6.5 \
+    systemd-219-62.el7_6.6 \
+    systemd-libs-219-62.el7_6.6 \
     tzdata-2019a-1.el7 \
     tzdata-java-2019a-1.el7 \
     util-linux-2.23.2-59.el7_6.1
