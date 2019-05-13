@@ -431,12 +431,13 @@ public final class NetCDF {
         return NetCDF.isNWMData( Strings.getFileName(file.getLocation()) );
     }
 
+    // TODO: Introduce logic that takes advantage of new attributes in NWM 1.2+
     private static boolean isNWMData(String filename)
     {
         return NetCDF.NWM_NAME_PATTERN.matcher( filename ).matches();
     }
 
-
+    // TODO: Introduce logic that takes advantage of new attributes in NWM 1.2+
     private static String getNWMCategory(NetcdfFile file)
     {
         return Strings.extractWord( Paths.get(file.getLocation()).getFileName().toString(),
