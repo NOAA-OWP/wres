@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- An example of an evaluation of single-valued, operational flow forecasts applying a time
+<!-- 
+     An example of an evaluation of single-valued, operational flow forecasts applying a time
      series metric, such as time-to-peak-error.  Such evaluations are inherently different than
      other evaluations which most often yield results per lead time or other temporal pooling
      window.  In this case, the forecast time series is treated as a whole, the peak identified,
@@ -12,7 +13,8 @@
     <!-- Specify in the input data in the inputs tag. -->
     <inputs>
     
-        <!-- Observations are provided in a PI-timeseries file as hourly streamflow. Though the 
+        <!-- 
+             Observations are provided in a PI-timeseries file as hourly streamflow. Though the 
              path below is relative, for most executions of WRES, it will need to be an absolute
              path starting from the directory /mnt/wres_share/... on the WRES Deployment
              Platform. 
@@ -23,7 +25,8 @@
             <variable>DISCHARGE</variable>
         </left>
         
-        <!-- The forecasts are provided in multiple PI-timeseries XML files, each specified
+        <!-- 
+             The forecasts are provided in multiple PI-timeseries XML files, each specified
              separately.
         -->
         <right>
@@ -36,10 +39,12 @@
         </right>
     </inputs>
 
-    <!-- Pairing options are specified within the pair tag.  The evaluation is largely 
+    <!-- 
+         Pairing options are specified within the pair tag.  The evaluation is largely 
          performed on the evaluation data without any further rescaling and noting that
          pooling windows do not impact time series evaluation metrics, such as the
-         time-to-peak error. -->
+         time-to-peak error. 
+    -->
     <pair>
         <unit>CMS</unit>
     </pair>
@@ -47,7 +52,15 @@
     <!-- Metrics and options associated with the metrics are specified in the metrics tag. -->
     <metrics>
     
-        <!-- JAMES: Please explain.
+        <!-- 
+             Thresholds are used to restrict the range of outputs for which timing 
+             errors will be computed. Here, the thresholds will select those portions of 
+             the paired time series whose "left and right" (i.e. observed and forecast)
+             values are "greater than" 183 CMS and, separately, are greater than 184 
+             CMS. Thus, three sets of results should be expected, one for all data,
+             which is the default threshold, and one for each of the prescribed 
+             thresholds of 183 CMS and 184 CMS. The measurement units are defined 
+             in the "unit" declaration, above. 
         -->
         <thresholds>
             <type>value</type>
@@ -56,7 +69,21 @@
             <operator>greater than</operator>
         </thresholds>   
         
-        <!-- JAMES: Please explain.
+        <!-- 
+             A timeSeriesMetric is a metric that operates on a time-ordered list of
+             pairs, i.e. a paired time series. Currently, timeSeriesMetric are defined
+             separately from regular metric, because they require a time-ordered list
+             of pairs. For this reason, instances of timeSeriesMetric cannot be mixed
+             with regular metric (each declaration must include one or the other). 
+             The "time to peak error" is one example of a timeSeriesMetric. It measures 
+             the duration, in decimal hours, between the "left" or observed peak value 
+             and the "right" or forecast peak value (right minus left). A negative value 
+             indicates that the right/predicted value occurs too early. There is one
+             time to peak error for each paired time series. Additionally, summary 
+             statistics may be computed from the collection of errors. For example, 
+             if there are ten paired time series, there will be ten time to peak errors,
+             and these errors may be summarized with a mean or a median (etc.). The
+             required summary statistics are declared as summaryStatistics.
         -->
         <timeSeriesMetric>
             <name>time to peak error</name>
@@ -70,7 +97,13 @@
             </summaryStatistics>
         </timeSeriesMetric>
         
-        <!-- JAMES: Please explain.
+        <!-- 
+             This is another example of a timeSeriesMetric. In this case, each
+             timing error is expressed as a fraction of the duration between
+             the start of the paired time-series and the time of the observed
+             peak. Thus, emphasis is placed on large timing errors that occur 
+             at early forecast lead times, rather than small timing errors that
+             occur at late forecast lead times. 
         -->
         <timeSeriesMetric>
             <name>time to peak relative error</name>
