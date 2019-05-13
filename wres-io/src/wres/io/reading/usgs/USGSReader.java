@@ -31,6 +31,8 @@ public class USGSReader extends BasicSource
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( USGSReader.class );
 
+    // Records begin in 2007, but those values are very rare; most come into existence in 2008 (at the earliest).
+    // This can probably be far more recent.
     public static final String EARLIEST_DATE = "2008-01-01T00:00:00Z";
 
     // There's a chance this operation will output the time in the wrong format
@@ -125,7 +127,7 @@ public class USGSReader extends BasicSource
         return results;
     }
 
-    private void seriesEvaluated(final TimeSeries series) throws IOException
+    private void seriesEvaluated(final TimeSeries series)
     {
         if ( series.isPopulated())
         {

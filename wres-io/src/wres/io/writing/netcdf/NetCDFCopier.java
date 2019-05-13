@@ -333,6 +333,7 @@ public class NetCDFCopier implements Closeable
                 this.getWriter().addVariableAttribute( name, new Attribute("proj4", proj4.getStringValue()) );
             }
 
+            this.getWriter().addVariableAttribute( name, new Attribute("coordinates", "time lat lon") );
         }
 
         for (Entry<String, Object> keyValue : attributes.entrySet())
