@@ -19,14 +19,14 @@
     </pair>
 
     <metrics>
-        <metric> <name>mean error</name> </metric>
+        <metric><name>mean error</name></metric>
         <metric><name>pearson correlation coefficient</name></metric>
         <metric><name>mean absolute error</name></metric>
         <metric><name>bias fraction</name></metric>
         <metric><name>coefficient of determination</name></metric>
         <metric><name>root mean square error</name></metric>
         <metric><name>mean square error</name></metric>
-        <metric> <name>sample size</name> </metric>
+        <metric><name>sample size</name></metric>
     </metrics>
     <outputs>
         <destination type="pairs" decimalFormat="0.000000" />
