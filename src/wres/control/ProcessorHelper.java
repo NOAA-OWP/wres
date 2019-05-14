@@ -78,7 +78,7 @@ class ProcessorHelper
     {
 
         final ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
-        ProgressMonitor.setShowStepDescription( true );
+        ProgressMonitor.setShowStepDescription( false );
         ProgressMonitor.resetMonitor();
 
         // Create output directory prior to ingest, fails early when it fails.
