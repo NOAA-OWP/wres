@@ -28,7 +28,7 @@
         </leadTimesPoolingWindow>
     </pair>
     <metrics>
-        <metric> <name>sample size</name> </metric>
+        <metric><name>sample size</name></metric>
     </metrics>
     <outputs>
         <destination type="pairs" decimalFormat="0.000000" />

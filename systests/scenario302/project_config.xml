@@ -29,8 +29,8 @@
     </pair>
 
     <metrics>
-        <metric> <name>mean error</name> </metric>
-        <metric> <name>sample size</name> </metric>
+        <metric><name>mean error</name></metric>
+        <metric><name>sample size</name></metric>
     </metrics>
     <outputs>
         <destination type="numeric" decimalFormat="0.000000" />
