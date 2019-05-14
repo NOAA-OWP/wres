@@ -54,7 +54,9 @@
         <!-- The evaluation is restricted to the first 48 hours.  With 24-hour data, this will
              yield either one or two lead times for evaluation.  In this specific case there
              was only one because of the temporal offset identified in order to allow for the
-             forecasts and observation to align. 
+             forecasts and observation to align.  In general, it may be more useful to evaluate
+             a longer period of lead durations, setting minimum to be "0" hours and maximum to
+             be "120", "240", or even longer depending on the objectives of the evaluation.
         -->
         <leadHours minimum="1" maximum="48" />
 
