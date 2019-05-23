@@ -25,6 +25,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Format;
 import wres.config.generated.ProjectConfig;
@@ -33,6 +34,9 @@ import wres.io.concurrency.IngestSaver;
 import wres.io.config.ConfigHelper;
 import wres.io.config.LeftOrRightOrBaseline;
 import wres.io.data.caching.DataSources;
+import wres.io.data.details.SourceCompletedDetails;
+import wres.io.data.details.SourceDetails;
+import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
 import wres.util.NetCDF;
 import wres.util.Strings;
@@ -51,13 +55,17 @@ public class SourceLoader
      * The project configuration indicating what data to use
      */
     private final ProjectConfig projectConfig;
-    
+    private final DatabaseLockManager lockManager;
+
     /**
      * @param projectConfig the project configuration
+     * @param lockManager the tool to manage ingest locks, shared per ingest
      */
-    public SourceLoader( ProjectConfig projectConfig )
+    public SourceLoader( ProjectConfig projectConfig,
+                         DatabaseLockManager lockManager )
     {
         this.projectConfig = projectConfig;
+        this.lockManager = lockManager;
     }
 
     /**
@@ -77,7 +85,7 @@ public class SourceLoader
         // A link is required for each context in which the source appears within
         // a project. A context means LeftOrRightOrBaseline.
         Set<DataSource> sources = SourceLoader.createSourcesToLoadAndLink( projectConfig );
-        
+
         LOGGER.debug( "Created these sources to load and link: {}", sources );
 
         // Load each source and create any additional links required
@@ -118,7 +126,7 @@ public class SourceLoader
                                              + source );
         }
 
-        File sourceFile = source.getSourcePath().toFile();
+        File sourceFile = Paths.get( source.getUri() ).toFile();
 
         if ( !sourceFile.exists() )
         {
@@ -139,7 +147,11 @@ public class SourceLoader
         }
         else if ( sourceFile.isFile() )
         {
-            savingFiles.addAll( SourceLoader.saveFile( source, this.projectConfig ) );
+            List<Future<List<IngestResult>>> futureResults =
+                    SourceLoader.ingestFile( source,
+                                             this.projectConfig,
+                                             this.lockManager );
+            savingFiles.addAll( futureResults );
         }
         else
         {
@@ -155,8 +167,8 @@ public class SourceLoader
      * 
      * TODO: create links for a non-file source when it appears in more than 
      * one context, i.e. {@link LeftOrRightOrBaseline}. 
-     * See {@link #saveFile(DataSource, ProjectConfig)} for how this is done 
-     * with a file source.
+     * See {@link #ingestData(DataSource, ProjectConfig, DatabaseLockManager)}
+     * for how this is done with a file source.
      * 
      * @param source the data source
      * @return a single future list of results or null if source was file-like
@@ -172,16 +184,17 @@ public class SourceLoader
         // of writing, it is required for WRDS, but not for USGS NWIS.
         // As a result, expect some miss-identification of sources as 
         // originating from services vs. files.
-        
-        URI sourceUri = source.getSource().getValue();
+
+        URI sourceUri = source.getSource()
+                              .getValue();
 
         if ( sourceUri != null
              && sourceUri.getScheme() != null
              && sourceUri.getHost() != null )
         {
             WebSource webSource = WebSource.of( projectConfig,
-                                                source.getContext(),
-                                                source.getSource() );
+                                                source,
+                                                this.lockManager );
             return Executor.submit( webSource );
         }
         else if ( source.getSource().getFormat() == Format.USGS)
@@ -191,131 +204,223 @@ public class SourceLoader
                 throw new IllegalArgumentException( "USGS data cannot be used to supply forecasts." );
             }
 
+            // Should use the uri containing usgs.gov instead of faking a name.
+            DataSource fakeDataSource = DataSource.of( source.getSource(),
+                                                       source.getContext(),
+                                                       source.getLinks(),
+                                                       URI.create( "usgs" ) );
             return Executor.submit(
                     IngestSaver.createTask()
                                .withProject( this.projectConfig )
-                               .withDataSourceConfig( source.getContext() )
-                               .withFilePath( URI.create( "usgs" ) )
+                               .withDataSource( fakeDataSource )
+                               .withLockManager( this.lockManager )
+                               .withoutHash()
                                .build()
             );
         }
         else if ( source.getSource().getFormat() == Format.S_3 )
         {
+            // Should use the uri containing usgs.gov instead of faking a name
+            DataSource fakeDataSource = DataSource.of( source.getSource(),
+                                                       source.getContext(),
+                                                       source.getLinks(),
+                                                       URI.create( "s3" ) );
             return Executor.submit(
                     IngestSaver.createTask()
                                .withProject( this.projectConfig )
-                               .withDataSourceConfig( source.getContext() )
-                               .withFilePath( URI.create( "s3" ) )
-                               .withSourceConfig( source.getSource() )
+                               .withDataSource( fakeDataSource )
+                               .withLockManager( this.lockManager )
+                               .withoutHash()
                                .build()
             );
         }
+        else
+        {
+            // At this point we should have a file, but check first.
+            if ( sourceUri == null )
+            {
+                throw new ProjectConfigException( source.getSource(),
+                                                  "Unable to use the source "
+                                                  + "because no URI was "
+                                                  + "specified." );
+            }
 
-        // Null signifies the source was a file-ish source.
-        // TODO: except it doesn't really or consistencly. See #63493, for example
-        return null;
+            // Null signifies the source was a file-ish source.
+            return null;
+        }
     }
 
-    /**
-     * Returns a list of future ingest results, possibly empty.
-     *
-     * @param source the data source
-     * @param projectConfig the project configuration
-     * @return a list of ingest results, possibly empty
-     */
-    private static List<Future<List<IngestResult>>> saveFile( DataSource source,
-                                                              ProjectConfig projectConfig )
-    {
-        Path sourcePath = source.getSourcePath();
-        String absolutePath = sourcePath.toAbsolutePath().toString();
 
+    /**
+     * Ingest data where the hash is known in advance. This is one of the two
+     * innermost versions of the ingestData method.
+     * @param source the source to ingest
+     * @param projectConfig the project configuration causing the ingest
+     * @param lockManager the lock manager to use
+     * @param hash the hash of the source data
+     * @return a list of future lists of ingest results, possibly empty
+     */
+
+    private static List<Future<List<IngestResult>>> ingestData( DataSource source,
+                                                                ProjectConfig projectConfig,
+                                                                DatabaseLockManager lockManager,
+                                                                String hash )
+    {
+        Objects.requireNonNull( source );
+        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( lockManager );
+
+        if ( hash == null || hash.isBlank() )
+        {
+            throw new IllegalArgumentException( "This ingestData must be called "
+                                                + "only when the hash is "
+                                                + "already known, the hash "
+                                                + "must be non-null and not "
+                                                + "blank." );
+        }
 
         List<Future<List<IngestResult>>> tasks = new ArrayList<>();
 
-        FileEvaluation checkIngest = shouldIngest( sourcePath.toUri(),
+        IngestSaver ingestSaver = IngestSaver.createTask()
+                                             .withProject( projectConfig )
+                                             .withDataSource( source )
+                                             .withHash( hash )
+                                             .withProgressMonitoring()
+                                             .withLockManager( lockManager )
+                                             .build();
+
+        Future<List<IngestResult>> task = Executor.submit( ingestSaver );
+        tasks.add( task );
+
+        // Additional links required?
+        // If so, create a fake ingest result for each source type to link.
+        // The context is provided by the corresponding data source declaration.
+
+        // TODO (JBr): it smells that we do not mutate wres.Source and wres.ProjectSource
+        // atomically. Instead, we delegate the mutation of wres.ProjectSource to
+        // Operations, which we notify here with a fake Future. The SourceLoader needs
+        // to become responsible for both.
+        for ( LeftOrRightOrBaseline nextLink : source.getLinks() )
+        {
+            // Get the context for the link
+            DataSourceConfig dataSourceconfig = SourceLoader.getDataSourceConfig( projectConfig, nextLink );
+            DataSource anotherDataSource = source.withContext( dataSourceconfig );
+
+            // Fake a future, return result immediately.
+            tasks.add( IngestResult.fakeFutureSingleItemListFrom( projectConfig,
+                                                                  anotherDataSource,
+                                                                  hash ) );
+        }
+
+        return Collections.unmodifiableList( tasks );
+    }
+
+
+    /**
+     * Ingest data where the the source is known to be a file, but the hash is
+     * not yet known. This method uses the more generic ingestData method after
+     * computing the hash.
+     *
+     * @param source the source to ingest, must be a file
+     * @param projectConfig the project configuration causing the ingest
+     * @param lockManager the lock manager to use
+     * @return a list of future lists of ingest results, possibly empty
+     */
+    private static List<Future<List<IngestResult>>> ingestFile( DataSource source,
+                                                                ProjectConfig projectConfig,
+                                                                DatabaseLockManager lockManager )
+    {
+        Objects.requireNonNull( source );
+        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( lockManager );
+
+        URI sourceUri = source.getUri();
+        List<Future<List<IngestResult>>> tasks = new ArrayList<>();
+        FileEvaluation checkIngest = shouldIngest( source.getUri(),
                                                    source.getSource(),
-                                                   source.getContext().getVariable().getValue() );
+                                                   source.getContext().getVariable().getValue(),
+                                                   lockManager );
 
         if ( checkIngest.shouldIngest() )
         {
-            if ( ConfigHelper.isForecast( source.getContext() ) )
+            // When there is an archive, shouldIngest() will be true however
+            // the hash will not yet have been computed, because the inner
+            // source identities are what is important, and those inner sources
+            // will be hashed later in the process.
+            if ( checkIngest.getHash() == null )
             {
-                LOGGER.trace( "Loading {} as forecast data...", absolutePath );
+                IngestSaver ingestSaver = IngestSaver.createTask()
+                                                     .withProject( projectConfig )
+                                                     .withDataSource( source )
+                                                     .withoutHash()
+                                                     .withProgressMonitoring()
+                                                     .withLockManager( lockManager )
+                                                     .build();
+                Future<List<IngestResult>> future = Executor.submit( ingestSaver );
+                tasks.add( future );
             }
             else
             {
-                LOGGER.trace( "Loading {} as Observation data...", absolutePath );
+                List<Future<List<IngestResult>>> futureList =
+                        SourceLoader.ingestData( source,
+                                                 projectConfig,
+                                                 lockManager,
+                                                 checkIngest.getHash() );
+                tasks.addAll( futureList );
             }
-
-            tasks.add( Executor.submit( IngestSaver.createTask()
-                                                   .withFilePath( sourcePath.toUri() )
-                                                   .withProject( projectConfig )
-                                                   .withDataSourceConfig( source.getContext() )
-                                                   .withSourceConfig( source.getSource() )
-                                                   .withHash( checkIngest.getHash() )
-                                                   .withProgressMonitoring()
-                                                   .build() ) );
-
-            // Additional links required?
-            // If so, create a fake ingest result for each source type to link.
-            // The context is provided by the corresponding data source declaration.
-
-            // TODO (JBr): it smells that we do not mutate wres.Source and wres.ProjectSource
-            // atomically. Instead, we delegate the mutation of wres.ProjectSource to 
-            // Operations, which we notify here with a fake Future. The SourceLoader needs
-            // to become responsible for both. 
-            for ( LeftOrRightOrBaseline nextLink : source.getLinks() )
-            {
-                // Get the context for the link
-                DataSourceConfig dataSourceconfig = SourceLoader.getDataSourceConfig( projectConfig, nextLink );
-
-                // Fake a future, return result immediately.
-                tasks.add( IngestResult.fakeFutureSingleItemListFrom( projectConfig,
-                                                                      dataSourceconfig,
-                                                                      sourcePath.toUri(),
-                                                                      checkIngest.getHash() ) );
-            }
-
         }
         else
         {
             if ( checkIngest.isValid() )
             {
+                // When the ingest requires retry and also is not in progress,
+                // throw an exception: some process trying to ingest the source
+                // died during ingest and data needs to be cleaned out.
+                if ( !checkIngest.ingestMarkedComplete()
+                     && !checkIngest.ingestInProgress() )
+                {
+                    throw new IllegalStateException( "Another WRES instance"
+                                                     + " started to ingest "
+                                                     + checkIngest.hash
+                                                     + " but did not finish." );
+                }
+
                 LOGGER.debug( "Data will not be loaded from '{}'. That data is already in the database",
-                              absolutePath );
+                              sourceUri );
 
                 // Fake a future, return result immediately.
                 tasks.add( IngestResult.fakeFutureSingleItemListFrom( projectConfig,
-                                                                      source.getContext(),
-                                                                      sourcePath.toUri(),
-                                                                      checkIngest.getHash() ) );
-                
+                                                                      source,
+                                                                      checkIngest.getHash(),
+                                                                      !checkIngest.ingestMarkedComplete() ) );
+
                 // Additional links required? The source already exists, but the links may not
                 for ( LeftOrRightOrBaseline nextLink : source.getLinks() )
                 {
                     // Get the context for the link
                     DataSourceConfig dataSourceconfig = SourceLoader.getDataSourceConfig( projectConfig, nextLink );
+                    DataSource anotherDataSource = source.withContext( dataSourceconfig );
 
                     // Fake a future, return result immediately.
                     tasks.add( IngestResult.fakeFutureSingleItemListFrom( projectConfig,
-                                                                          dataSourceconfig,
-                                                                          sourcePath.toUri(),
+                                                                          anotherDataSource,
                                                                           checkIngest.getHash() ) );
                 }
             }
             else
             {
-                LOGGER.warn( "Data will not be loaded from invalid file '{}'",
-                             absolutePath );
+                LOGGER.warn( "Data will not be loaded from invalid URI '{}'",
+                             sourceUri );
             }
         }
 
-        LOGGER.trace( "saveFile returning tasks {} for filePath {}",
+        LOGGER.trace( "ingestData returning tasks {} for URI {}",
                       tasks,
-                      sourcePath );
+                      sourceUri );
 
         return Collections.unmodifiableList( tasks );
     }
+
 
     /**
      * Helper that returns the data source context from a project for a specified type
@@ -359,7 +464,8 @@ public class SourceLoader
      */
     private static FileEvaluation shouldIngest( final URI filePath,
                                                 final DataSourceConfig.Source source,
-                                                final String variableName)
+                                                final String variableName,
+                                                DatabaseLockManager lockManager )
     {
         Format specifiedFormat = source.getFormat();
         Format pathFormat = ReaderFactory.getFiletype( filePath );
@@ -367,15 +473,18 @@ public class SourceLoader
         // Archives perform their own ingest verification
         if ( pathFormat == Format.ARCHIVE )
         {
-            LOGGER.debug( "The file at '{}' will be ingested because it has " +
+            LOGGER.debug( "The data at '{}' will be marked as ingested because it has " +
                           "determined that it is an archive that will need to " +
                           "be further evaluated.",
                           filePath);
-            return new FileEvaluation( true, true, null );
+            return new FileEvaluation( true, true, null, false, false );
         }
 
         boolean ingest = specifiedFormat == null ||
                          specifiedFormat.equals( pathFormat );
+        boolean anotherTaskStartedIngest = false;
+        boolean ingestMarkedComplete = false;
+        boolean ingestInProgress = false;
 
         String hash;
 
@@ -393,28 +502,39 @@ public class SourceLoader
                     hash = Strings.getMD5Checksum( filePath );
                 }
 
-                ingest = !dataExists( hash );
+                anotherTaskStartedIngest = anotherTaskIsResponsibleForSource( hash );
+
+                if ( anotherTaskStartedIngest )
+                {
+                    ingestMarkedComplete = anotherTaskReportsSourceCompleted( hash );
+
+                    if ( !ingestMarkedComplete )
+                    {
+                        LOGGER.debug( "Another task is responsible for {} but has not yet finished it.", hash );
+                        ingestInProgress = ingestInProgress( hash, lockManager );
+                        LOGGER.debug( "Is another task currently ingesting {}? {}",
+                                      hash, ingestInProgress );
+                    }
+                }
 
                 // Added in debugging #58715-116
-                LOGGER.trace( "Determined that a source with URI {} and hash {} has the "
-                              + "following status of existing within the database: {}.",
-                              filePath,
-                              hash,
-                              !ingest );
-                
+                if ( LOGGER.isDebugEnabled() )
+                {
+                    LOGGER.debug( "Determined that a source with URI {} and "
+                                  + "hash {} has the following status of "
+                                  + "completely existing within the database: "
+                                  + "{}, and status of another task claiming "
+                                  + "responsibility: {}",
+                                  filePath,
+                                  hash,
+                                  ingestMarkedComplete,
+                                  anotherTaskStartedIngest );
+                }
             }
             catch ( IOException | SQLException e )
             {
                 throw new PreIngestException( "Could not determine whether to ingest '"
                                               +  filePath + "'", e );
-            }
-
-            if (!ingest)
-            {
-                LOGGER.debug( "The file at '{}' will not be ingested because " +
-                              "the data is already registered as being in " +
-                              "the system.",
-                              filePath);
             }
         }
         else
@@ -425,23 +545,78 @@ public class SourceLoader
                           filePath,
                           specifiedFormat,
                           pathFormat );
-            return new FileEvaluation( false, false, null );
+            return new FileEvaluation( false,
+                                       false,
+                                       null,
+                                       false,
+                                       false );
         }
 
-        return new FileEvaluation( true, ingest, hash );
+        return new FileEvaluation( true, !anotherTaskStartedIngest, hash, ingestMarkedComplete, ingestInProgress );
+    }
+
+    /**
+     * Determines if the indicated data is currently being ingested by a task
+     * in another process.
+     * @param hash The hash of the data that some task might be ingesting, known
+     *             to exist already.
+     * @return true if a task is detected to be ingesting, false otherwise
+     * @throws SQLException When communication with the database fails.
+     */
+    private static boolean ingestInProgress( String hash,
+                                             DatabaseLockManager lockManager )
+            throws SQLException
+    {
+        SourceDetails sourceDetails = DataSources.getExistingSource( hash );
+        Integer sourceId = sourceDetails.getId();
+        return lockManager.isSourceLocked( sourceId );
     }
 
     /**
      * Determines if the indicated data already exists within the database
      * @param hash The hash of the file that might need to be ingested
-     * @return Whether or not the indicated data is already in the database
+     * @return Whether or not another task has claimed responsibility for data
      * @throws SQLException Thrown if communcation with the database failed in
      * some way
      */
-    private static boolean dataExists( String hash )
+    private static boolean anotherTaskIsResponsibleForSource( String hash )
             throws SQLException
     {
         return DataSources.hasSource( hash );
+    }
+
+
+    /**
+     * Returns true when another task has reported the data ingest complete,
+     * false otherwise.
+     * @param hash the data to look for
+     * @return Whether the data has been completely ingested.
+     * @throws SQLException when query fails
+     * @throws NullPointerException when the caller failed to verify that a
+     * task already claimed the hash passed in by calling
+     * anotherTaskIsResponsibleForSource()
+     */
+    private static boolean anotherTaskReportsSourceCompleted( String hash )
+            throws SQLException
+    {
+        SourceDetails details = DataSources.getExistingSource( hash );
+        SourceCompletedDetails completedDetails = new SourceCompletedDetails( details );
+        return completedDetails.wasCompleted();
+    }
+
+    public List<Future<List<IngestResult>>> retry( IngestResult ingestResult )
+    {
+        if ( !ingestResult.requiresRetry() )
+        {
+            throw new IllegalArgumentException( "Only IngestResult instances claiming to need retry should be passed." );
+        }
+
+        LOGGER.info( "Attempting retry of {}.", ingestResult );
+
+        return SourceLoader.ingestData( ingestResult.getDataSource(),
+                                        this.projectConfig,
+                                        this.lockManager,
+                                        ingestResult.getHash() );
     }
 
     /**
@@ -453,14 +628,20 @@ public class SourceLoader
         private final boolean isValid;
         private final boolean shouldIngest;
         private final String hash;
+        private final boolean ingestMarkedComplete;
+        private final boolean ingestInProgress;
 
         FileEvaluation( boolean isValid,
                         boolean shouldIngest,
-                        String hash )
+                        String hash,
+                        boolean ingestMarkedComplete,
+                        boolean ingestInProgress )
         {
             this.isValid = isValid;
             this.shouldIngest = shouldIngest;
             this.hash = hash;
+            this.ingestMarkedComplete = ingestMarkedComplete;
+            this.ingestInProgress = ingestInProgress;
         }
 
         public boolean isValid()
@@ -477,7 +658,17 @@ public class SourceLoader
         {
             return this.hash;
         }
-    }   
+
+        public boolean ingestMarkedComplete()
+        {
+            return this.ingestMarkedComplete;
+        }
+
+        public boolean ingestInProgress()
+        {
+            return this.ingestInProgress;
+        }
+    }
 
     /**
      * <p>Evaluates a project and creates a {@link DataSource} for each 
@@ -526,26 +717,34 @@ public class SourceLoader
         {
             // Evaluate the path, which is null for a source that is not file-like
             Path path = SourceLoader.evaluatePath( nextSource.getKey() );
-            
-            DataSource source = DataSource.of( nextSource.getKey(),
-                                               nextSource.getValue().getLeft(),
-                                               nextSource.getValue().getRight(),
-                                               path );
-            
+
             // If there is a file-like source, test for a directory and decompose it as required
             if( Objects.nonNull( path ) )
             {
+                DataSource source = DataSource.of( nextSource.getKey(),
+                                                   nextSource.getValue()
+                                                             .getLeft(),
+                                                   nextSource.getValue()
+                                                             .getRight(),
+                                                   path.toUri() );
+
                 returnMe.addAll( SourceLoader.decomposeFileSource( source ) );
             }
             // Not a file-like source
             else
             {
+                DataSource source = DataSource.of( nextSource.getKey(),
+                                                   nextSource.getValue()
+                                                             .getLeft(),
+                                                   nextSource.getValue()
+                                                             .getRight(),
+                                                   nextSource.getKey()
+                                                             .getValue() );
                 returnMe.add( source );
             }
         }
-        
-        return Collections.unmodifiableSet( returnMe );
 
+        return Collections.unmodifiableSet( returnMe );
     }
 
     /**
@@ -553,7 +752,7 @@ public class SourceLoader
      * if the declared source represents a directory, walk the tree and find sources 
      * that match any prescribed pattern. Return a {@link DataSource}
      * 
-     * @param source the source to decompose
+     * @param dataSource the source to decompose
      * @return the set of decomposed sources
      */
     
@@ -562,7 +761,7 @@ public class SourceLoader
         Objects.requireNonNull( dataSource );
         
         // Look at the path to see whether it maps to a directory
-        Path sourcePath = dataSource.getSourcePath();
+        Path sourcePath = Paths.get( dataSource.getUri() );
 
         File file = sourcePath.toFile();
         
@@ -601,7 +800,7 @@ public class SourceLoader
                         returnMe.add( DataSource.of( dataSource.getSource(),
                                                      dataSource.getContext(),
                                                      dataSource.getLinks(),
-                                                     path ) );
+                                                     path.toUri() ) );
                     }
                     // Skip and log a warning if this is a normal file (e.g. not a directory) 
                     else if ( testFile.isFile() )

@@ -1,17 +1,17 @@
 package wres.io.concurrency;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.DataSourceConfig;
 import wres.config.generated.ProjectConfig;
 import wres.io.reading.BasicSource;
+import wres.io.reading.DataSource;
 import wres.io.reading.IngestResult;
 import wres.io.reading.ReaderFactory;
+import wres.system.DatabaseLockManager;
 import wres.system.ProgressMonitor;
 
 /**
@@ -28,136 +28,117 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
         return new IngestBuilder(  );
     }
 
+    public enum HashStatus
+    {
+        ALREADY_HASHED,
+        NOT_YET_HASHED
+    }
+
     public static class IngestBuilder
     {
-        private final URI filepath;
         private final ProjectConfig projectConfig;
-        private final DataSourceConfig dataSourceConfig;
-        private final DataSourceConfig.Source sourceConfig;
+        private final DataSource dataSource;
         private final String hash;
+        private final HashStatus hashStatus;
         private final boolean monitorProgress;
-        private final boolean isRemote;
+        private final DatabaseLockManager lockManager;
 
         private IngestBuilder()
         {
-            this.filepath = null;
+            this.dataSource = null;
             this.projectConfig = null;
-            this.dataSourceConfig = null;
-            this.sourceConfig = null;
             this.hash = null;
+            this.hashStatus = null;
             this.monitorProgress = false;
-            this.isRemote = false;
+            this.lockManager = null;
         }
 
-        public IngestBuilder withFilePath( final URI filepath )
-        {
-            return new IngestBuilder(
-                    filepath,
-                    this.projectConfig,
-                    this.dataSourceConfig,
-                    this.sourceConfig,
-                    this.hash,
-                    this.monitorProgress,
-                    this.isRemote
-            );
-        }
 
         public IngestBuilder withProject(final ProjectConfig projectConfig)
         {
             return new IngestBuilder(
-                    this.filepath,
                     projectConfig,
-                    this.dataSourceConfig,
-                    this.sourceConfig,
+                    this.dataSource,
                     this.hash,
+                    this.hashStatus,
                     this.monitorProgress,
-                    this.isRemote
+                    this.lockManager
             );
         }
 
-        public IngestBuilder withDataSourceConfig(final DataSourceConfig dataSourceConfig)
+        public IngestBuilder withDataSource( DataSource dataSource )
         {
             return new IngestBuilder(
-                    this.filepath,
                     this.projectConfig,
-                    dataSourceConfig,
-                    this.sourceConfig,
+                    dataSource,
                     this.hash,
+                    this.hashStatus,
                     this.monitorProgress,
-                    this.isRemote
-            );
-        }
-
-        public IngestBuilder withSourceConfig(final DataSourceConfig.Source sourceConfig)
-        {
-            return new IngestBuilder(
-                    this.filepath,
-                    this.projectConfig,
-                    this.dataSourceConfig,
-                    sourceConfig,
-                    this.hash,
-                    this.monitorProgress,
-                    this.isRemote
+                    this.lockManager
             );
         }
 
         public IngestBuilder withHash(final String hash)
         {
             return new IngestBuilder(
-                    this.filepath,
                     this.projectConfig,
-                    this.dataSourceConfig,
-                    this.sourceConfig,
+                    this.dataSource,
                     hash,
+                    HashStatus.ALREADY_HASHED,
                     this.monitorProgress,
-                    this.isRemote
+                    this.lockManager
+            );
+        }
+
+        public IngestBuilder withoutHash()
+        {
+            return new IngestBuilder(
+                    this.projectConfig,
+                    this.dataSource,
+                    null,
+                    HashStatus.NOT_YET_HASHED,
+                    this.monitorProgress,
+                    this.lockManager
             );
         }
 
         public IngestBuilder withProgressMonitoring()
         {
             return new IngestBuilder(
-                    this.filepath,
                     this.projectConfig,
-                    this.dataSourceConfig,
-                    this.sourceConfig,
+                    this.dataSource,
                     this.hash,
+                    this.hashStatus,
                     true,
-                    this.isRemote
+                    this.lockManager
             );
         }
 
-        // The 'isRemote' indicator doesn't really drive behavior; other methods are used to determine this
-        @Deprecated(forRemoval = true)
-        public IngestBuilder isRemote()
+        public IngestBuilder withLockManager( DatabaseLockManager lockManager )
         {
             return new IngestBuilder(
-                    this.filepath,
                     this.projectConfig,
-                    this.dataSourceConfig,
-                    this.sourceConfig,
+                    this.dataSource,
                     this.hash,
+                    this.hashStatus,
                     this.monitorProgress,
-                    true
+                    lockManager
             );
         }
 
-        private IngestBuilder(
-                final URI filepath,
-                final ProjectConfig projectConfig,
-                final DataSourceConfig dataSourceConfig,
-                final DataSourceConfig.Source sourceConfig,
-                final String hash,
-                final boolean monitorProgress,
-                final boolean isRemote)
+        private IngestBuilder( ProjectConfig projectConfig,
+                               DataSource dataSource,
+                               String hash,
+                               HashStatus hashStatus,
+                               boolean monitorProgress,
+                               DatabaseLockManager lockManager )
         {
-            this.filepath = filepath;
             this.projectConfig = projectConfig;
-            this.dataSourceConfig = dataSourceConfig;
-            this.sourceConfig = sourceConfig;
+            this.dataSource = dataSource;
             this.hash = hash;
+            this.hashStatus = hashStatus;
             this.monitorProgress = monitorProgress;
-            this.isRemote = isRemote;
+            this.lockManager = lockManager;
         }
 
         private void validate()
@@ -167,11 +148,47 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
                 throw new IllegalArgumentException( "Data cannot be ingested from a nonexistent project." );
             }
 
-            if (this.dataSourceConfig == null)
+            if ( this.dataSource == null )
             {
                 throw new IllegalArgumentException(
                         "Data cannot be ingested from a nonexistent data source configuration"
                 );
+            }
+
+            // The purpose of hashStatus is to make the caller to consider
+            // whether or not the hash of the data has already been computed,
+            // and if so, to specify it, and if not, to not specify it. There
+            // will be less ambiguity about what a null hash means. The reason
+            // an enum is created instead of a boolean is that a primitive
+            // boolean must be true or false, and the enum allows more relevant
+            // language.
+
+            if ( this.hashStatus == null )
+            {
+                throw new IllegalArgumentException(
+                        "The caller must declare whether or not the source has "
+                        + "already been hashed by specifying withHash() or by "
+                        + "specifying withoutHash()." );
+            }
+
+            // The following two are unlikely due to the way .withHash and
+            // .withoutHash are exposed above, but for even more clarity these
+            // are left here.
+            if ( this.hashStatus == HashStatus.ALREADY_HASHED
+                 && ( this.hash == null || this.hash.isBlank() ) )
+            {
+                throw new IllegalArgumentException( "When the source has been hashed, the hash must be specified." );
+            }
+
+            if ( this.hashStatus == HashStatus.NOT_YET_HASHED
+                 && this.hash != null )
+            {
+                throw new IllegalArgumentException( "When the source has not been hashed, the hash must not be specified." );
+            }
+
+            if ( this.lockManager == null )
+            {
+                throw new IllegalArgumentException( "The lock manager must be specified." );
             }
         }
 
@@ -179,12 +196,11 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
         {
             validate();
             IngestSaver saver = new IngestSaver(
-                    this.filepath,
                     this.projectConfig,
-                    this.dataSourceConfig,
-                    this.sourceConfig,
+                    this.dataSource,
                     this.hash,
-                    this.isRemote
+                    this.hashStatus,
+                    this.lockManager
             );
 
             if (this.monitorProgress)
@@ -197,26 +213,23 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
         }
     }
 
-    private final URI filepath;
     private final ProjectConfig projectConfig;
-    private final DataSourceConfig dataSourceConfig;
-    private final DataSourceConfig.Source sourceConfig;
+    private final DataSource dataSource;
     private final String hash;
-    private final boolean isRemote;
+    private final HashStatus hashStatus;
+    private final DatabaseLockManager lockManager;
 
-    private IngestSaver( URI filepath,
-                        ProjectConfig projectConfig,
-                        DataSourceConfig dataSourceConfig,
-                        DataSourceConfig.Source sourceConfig,
-                        final String hash,
-                         final boolean isRemote)
+    private IngestSaver( ProjectConfig projectConfig,
+                         DataSource dataSource,
+                         String hash,
+                         HashStatus hashStatus,
+                         DatabaseLockManager lockManager )
     {
-        this.filepath = filepath;
         this.projectConfig = projectConfig;
-        this.dataSourceConfig = dataSourceConfig;
-        this.sourceConfig = sourceConfig;
+        this.dataSource = dataSource;
         this.hash = hash;
-        this.isRemote = isRemote;
+        this.hashStatus = hashStatus;
+        this.lockManager = lockManager;
     }
 
 
@@ -224,11 +237,14 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
     public List<IngestResult> execute() throws IOException
     {
         BasicSource source = ReaderFactory.getReader( this.projectConfig,
-                                                      this.filepath );
-        source.setDataSourceConfig( this.dataSourceConfig );
-        source.setSourceConfig( this.sourceConfig );
-        source.setHash( this.hash );
-        source.setIsRemote( this.isRemote );
+                                                      this.dataSource,
+                                                      this.lockManager );
+
+        if ( this.hashStatus == HashStatus.ALREADY_HASHED )
+        {
+            source.setHash( this.hash );
+        }
+
         return source.save();
     }
 

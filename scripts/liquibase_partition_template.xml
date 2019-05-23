@@ -1,0 +1,17 @@
+    <changeSet id="wres.TimeSeriesValue_NAMEHERE - Create TimeSeriesValue partition NAMEHERE."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_NAMEHERE"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_NAMEHERE
+            (
+                CHECK ( HIGH_CHECK_HERE AND LOW_CHECK_HERE )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>

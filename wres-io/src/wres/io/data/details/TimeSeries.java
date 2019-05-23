@@ -2,13 +2,13 @@ package wres.io.data.details;
 
 import java.sql.SQLException;
 import java.time.Duration;
-import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 import wres.datamodel.metadata.TimeScale;
 import wres.datamodel.metadata.TimeScale.TimeScaleFunction;
 import wres.io.utilities.DataScripter;
-import wres.io.utilities.Database;
 
 /**
  * Defines details about a forecasted time series
@@ -26,14 +26,8 @@ public class TimeSeries
     /**
      * Mapping between the number of a forecast value partition and its name
      */
-    private static final HashMap<Integer, String> TIMESERIESVALUE_PARTITION_NAMES =
-            new HashMap<>();
-
-    /**
-     * The lock used to protect access to the mapping of partition numbers to
-     * names
-     */
-    private static final Object PARTITION_LOCK = new Object();
+    private static final Map<Integer, String> TIMESERIESVALUE_PARTITION_NAMES =
+            new ConcurrentHashMap<>();
 
     /**
      * The ID of the ensemble for the time series. A time series without
@@ -66,10 +60,6 @@ public class TimeSeries
      * The ID of the initial source of the data for the time series
      */
     private final Integer sourceID;
-
-    private int highestLead;
-
-    private int lowestLead;
 
     /**
      * The string representation of the date and time of when the forecast
@@ -286,83 +276,46 @@ public class TimeSeries
     /**
      * Either creates or returns the name of the partition of where values
      * for this timeseries should be saved based on lead time
+     * Must be kept in sync with liquibase scripts.
      * TODO: Move to a more appropriate location
      * @param lead The lead time of this time series where values of interest
      *             should be saved
      * @return The name of the partition where values for the indicated lead time
      * should be saved.
-     * @throws SQLException Thrown if an error occurs when trying to create the
-     * partition in the database
      */
-    public static String getTimeSeriesValuePartition( int lead) throws SQLException
+    public static String getTimeSeriesValuePartition( int lead )
     {
-        Integer partitionNumber = lead / TimeSeries.TIMESERIESVALUE_PARTITION_SPAN;
+        int partitionNumber = lead / TimeSeries.TIMESERIESVALUE_PARTITION_SPAN;
 
-        String name;
+        String name = TIMESERIESVALUE_PARTITION_NAMES.get( partitionNumber );
 
-        synchronized ( TIMESERIESVALUE_PARTITION_NAMES )
+        if ( name == null )
         {
-            if (!TIMESERIESVALUE_PARTITION_NAMES.containsKey( partitionNumber))
+            String partitionNumberWord;
+
+            // Sometimes the lead times are negative, but the dash is not a
+            // valid character in a name in sql, so we replace with a word.
+            if ( partitionNumber < -10 )
             {
-
-                String partitionNumberWord = partitionNumber.toString();
-
-                String highCheck;
-                String lowCheck;
-
-                // Sometimes the lead times are negative, but the dash is not a
-                // valid character in a name in sql, so we replace with a word.
-                if ( partitionNumber < 0 )
-                {
-                    partitionNumberWord = "Negative_"
-                                          + Math.abs( partitionNumber );
-                    lowCheck = "lead > " + (partitionNumber - 1) * TIMESERIESVALUE_PARTITION_SPAN;
-                    highCheck = "lead <= " + partitionNumber * TIMESERIESVALUE_PARTITION_SPAN;
-				}
-				else if ( partitionNumber == 0)
-                {
-                    highCheck = "lead < " + TIMESERIESVALUE_PARTITION_SPAN;
-                    lowCheck = "lead > " + -TIMESERIESVALUE_PARTITION_SPAN;
-                }
-                else
-                {
-                    lowCheck = "lead >= " + partitionNumber * TIMESERIESVALUE_PARTITION_SPAN;
-                    highCheck = "lead < " + (partitionNumber + 1) * TIMESERIESVALUE_PARTITION_SPAN;
-                }
-
-                name = "wres.TimeSeriesValue_Lead_" + partitionNumberWord;
-
-                DataScripter script = new DataScripter();
-                script.addLine("CREATE TABLE IF NOT EXISTS ", name);
-                script.addLine("(");
-                script.addTab().addLine("CHECK ( ", highCheck, " AND ", lowCheck, " )");
-                script.addLine(") INHERITS (wres.TimeSeriesValue);");
-                script.addLine("ALTER TABLE ", name, " ALTER COLUMN lead SET STATISTICS 2000;");
-                script.addLine("ALTER TABLE ", name, " ALTER COLUMN timeseries_id SET STATISTICS 2000;");
-                script.addLine("ALTER TABLE ", name, " SET (autovacuum_enabled = FALSE, toast.autovacuum_enabled = FALSE);");
-                script.addLine("ALTER TABLE ", name, " OWNER TO wres;");
-
-                synchronized (PARTITION_LOCK)
-                {
-                    script.execute();
-                }
-
-                Database.saveIndex( name,
-                                    "TimeSeriesValue_Lead_"
-                                    + partitionNumberWord + "_Lead_idx",
-                                    "lead" );
-
-                Database.saveIndex(name,
-                                   "TimeSeriesValue_Lead_"
-								   + partitionNumberWord + "_TimeSeries_idx",
-                                   "timeseries_id");
-
-                TimeSeries.TIMESERIESVALUE_PARTITION_NAMES.put( partitionNumber, name);
+                partitionNumberWord = "Below_Negative_10";
+            }
+            else if ( partitionNumber > 150 )
+            {
+                partitionNumberWord = "Above_150";
+            }
+            else if ( partitionNumber < 0 )
+            {
+                partitionNumberWord = "Negative_"
+                                      + Math.abs( partitionNumber );
             }
             else
             {
-                name = TimeSeries.TIMESERIESVALUE_PARTITION_NAMES.get( partitionNumber);
+                partitionNumberWord = Integer.toString( partitionNumber );
             }
+
+            name = "wres.TimeSeriesValue_Lead_" + partitionNumberWord;
+
+            TimeSeries.TIMESERIESVALUE_PARTITION_NAMES.putIfAbsent( partitionNumber, name);
         }
 
         return name;

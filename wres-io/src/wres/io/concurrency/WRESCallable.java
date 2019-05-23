@@ -1,5 +1,7 @@
 package wres.io.concurrency;
 
+import java.io.IOException;
+import java.sql.SQLException;
 import java.util.concurrent.Callable;
 
 /**
@@ -8,7 +10,7 @@ import java.util.concurrent.Callable;
 public abstract class WRESCallable<V> extends WRESTask implements Callable<V>
 {
     @Override
-    public final V call () throws Exception
+    public final V call()
     {
         try
         {
@@ -27,9 +29,9 @@ public abstract class WRESCallable<V> extends WRESTask implements Callable<V>
         catch(Exception e)
         {
             this.executeOnError( e );
-            throw e;
+            throw new WRESRunnableException( "Callable task failed", e );
         }
     }
 
-    protected abstract V execute() throws Exception;
+    protected abstract V execute() throws IOException, SQLException;
 }

@@ -7,6 +7,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -15,6 +16,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +33,8 @@ import wres.config.generated.ProjectConfig;
 import wres.control.Control;
 import wres.io.Operations;
 import wres.io.config.ConfigHelper;
+import wres.system.DatabaseConnectionSupplier;
+import wres.system.DatabaseLockManager;
 import wres.system.ProgressMonitor;
 import wres.util.Strings;
 
@@ -160,17 +164,27 @@ final class MainFunctions
 	private static Integer cleanDatabase(final String[] args)
 	{
         Integer result;
+        Supplier<Connection> connectionSupplier = new DatabaseConnectionSupplier();
+        DatabaseLockManager lockManager = new DatabaseLockManager( connectionSupplier );
+
         try
         {
+            lockManager.lockExclusive( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
             Operations.cleanDatabase();
             result = SUCCESS;
+            lockManager.unlockExclusive( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
         }
-        catch ( IOException | SQLException e )
+        catch ( SQLException e )
         {
             LOGGER.error( "While cleaning the database", e );
             MainFunctions.addException( e );
             result = FAILURE;
         }
+        finally
+        {
+            lockManager.shutdown();
+        }
+
         return result;
 	}
 
@@ -211,15 +225,27 @@ final class MainFunctions
 	private static Integer refreshDatabase(final String[] args)
 	{
         Integer result = FAILURE;
-        try {
+
+        Supplier<Connection> connectionSupplier = new DatabaseConnectionSupplier();
+        DatabaseLockManager lockManager = new DatabaseLockManager( connectionSupplier );
+
+        try
+        {
+            lockManager.lockExclusive( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
             Operations.refreshDatabase();
             result = SUCCESS;
+            lockManager.unlockExclusive( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
         }
         catch (final Exception e)
         {
             MainFunctions.addException( e );
             LOGGER.error(Strings.getStackTrace(e));
         }
+        finally
+        {
+            lockManager.shutdown();
+        }
+
         return result;
 	}
 
@@ -232,17 +258,25 @@ final class MainFunctions
             String projectPath = args[0];
 
             ProjectConfig projectConfig;
+            Supplier<Connection> connectionSupplier = new DatabaseConnectionSupplier();
+            DatabaseLockManager lockManager = new DatabaseLockManager( connectionSupplier );
 
             try
             {
+                lockManager.lockShared( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
                 projectConfig = ConfigHelper.read(projectPath);
-                Operations.ingest(projectConfig);
+                Operations.ingest( projectConfig, lockManager );
                 result = SUCCESS;
+                lockManager.unlockShared( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
             }
-            catch ( IOException e )
+            catch ( IOException | SQLException e )
             {
                 MainFunctions.addException( e );
                 LOGGER.error(Strings.getStackTrace(e));
+            }
+            finally
+            {
+                lockManager.shutdown();
             }
         }
         else

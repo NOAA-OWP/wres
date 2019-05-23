@@ -29,7 +29,7 @@ public class OffsetEvaluator extends WRESCallable<Integer>
     }
 
     @Override
-    protected Integer execute() throws Exception
+    protected Integer execute() throws SQLException
     {
         DataScripter script;
 
@@ -44,7 +44,10 @@ public class OffsetEvaluator extends WRESCallable<Integer>
         return script.retrieve( "offset" );
     }
 
-    private DataScripter formScript() throws CalculationException
+    /**
+     * @throws CalculationException
+     */
+    private DataScripter formScript()
     {
         DataScripter script = new DataScripter(  );
 

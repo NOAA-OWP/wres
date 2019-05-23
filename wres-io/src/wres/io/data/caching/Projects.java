@@ -20,6 +20,7 @@ import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
 import wres.io.config.LeftOrRightOrBaseline;
 import wres.io.project.Project;
+import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
@@ -341,10 +342,14 @@ public class Projects
 
                 if (sourceID == null)
                 {
-                    throw new IOException( "The id for a source file that must "
-                                           + "be linked to this project could "
-                                           + "not be determined. The data "
-                                           + "ingest cannot continue." );
+                    throw new IngestException( "The id for source data '"
+                                               + ingestResult.getHash()
+                                               + "' that must be linked to "
+                                               + "project "
+                                               + details.getId()
+                                               + " could not be determined. The"
+                                               + " data ingest cannot "
+                                               + "continue.");
                 }
 
                 copyStatement.add( details.getId() + delimiter

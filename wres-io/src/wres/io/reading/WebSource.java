@@ -39,10 +39,11 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DateCondition;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.IngestSaver;
+import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Features;
 import wres.io.data.details.FeatureDetails;
+import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
-import wres.util.Strings;
 
 /**
  * Takes a single web source and splits it into week-long chunks, creates an
@@ -60,8 +61,8 @@ class WebSource implements Callable<List<IngestResult>>
             + "source for forecasts.";
 
     private final ProjectConfig projectConfig;
-    private final DataSourceConfig dataSourceConfig;
-    private final DataSourceConfig.Source sourceConfig;
+    private final DataSource dataSource;
+    private final DatabaseLockManager lockManager;
     private final URI baseUri;
     private final OffsetDateTime now;
 
@@ -70,24 +71,25 @@ class WebSource implements Callable<List<IngestResult>>
     private final CountDownLatch startGettingResults;
 
     static WebSource of( ProjectConfig projectConfig,
-                         DataSourceConfig dataSourceConfig,
-                         DataSourceConfig.Source sourceConfig )
+                         DataSource dataSource,
+                         DatabaseLockManager lockManager )
     {
         return new WebSource( projectConfig,
-                              dataSourceConfig,
-                              sourceConfig,
+                              dataSource,
+                              lockManager,
                               OffsetDateTime.now() );
     }
 
     WebSource( ProjectConfig projectConfig,
-               DataSourceConfig dataSourceConfig,
-               DataSourceConfig.Source sourceConfig,
+               DataSource dataSource,
+               DatabaseLockManager lockManager,
                OffsetDateTime now )
     {
         this.projectConfig = projectConfig;
-        this.dataSourceConfig = dataSourceConfig;
-        this.sourceConfig = sourceConfig;
-        this.baseUri = sourceConfig.getValue();
+        this.dataSource = dataSource;
+        this.baseUri = dataSource.getSource()
+                                 .getValue();
+        this.lockManager = lockManager;
 
         if ( this.baseUri.getScheme() == null
              || !this.baseUri.getScheme().startsWith( "http" ) )
@@ -97,7 +99,7 @@ class WebSource implements Callable<List<IngestResult>>
         }
 
         ThreadFactory webClientFactory = new BasicThreadFactory.Builder()
-                .namingPattern( "WebSource Ingest Executor" )
+                .namingPattern( "WebSource Ingest" )
                 .build();
 
         // Because we use a latch and queue below, no need to make this queue
@@ -129,12 +131,17 @@ class WebSource implements Callable<List<IngestResult>>
 
     private DataSourceConfig getDataSourceConfig()
     {
-        return this.dataSourceConfig;
+        return this.dataSource.getContext();
     }
 
     private DataSourceConfig.Source getSourceConfig()
     {
-        return this.sourceConfig;
+        return this.dataSource.getSource();
+    }
+
+    private DatabaseLockManager getLockManager()
+    {
+        return this.lockManager;
     }
 
     private URI getBaseUri()
@@ -181,17 +188,27 @@ class WebSource implements Callable<List<IngestResult>>
                                                  issuedRange,
                                                  featureDetails );
 
+                    DataSource dataSource =
+                            DataSource.of( this.getSourceConfig(),
+                                           this.getDataSourceConfig(),
+                                           // The following is not exactly
+                                           // correct because the same
+                                           // source may exist in another
+                                           // left/right/baseline, not just
+                                           // the instance this one came from.
+                                           Set.of( ConfigHelper.getLeftOrRightOrBaseline( this.getProjectConfig(),
+                                                                                          this.getDataSourceConfig() ) ),
+                                                           wrdsUri );
                     // TODO: hash contents, not the URL
-                    String hash = Strings.getMD5Checksum( wrdsUri.toString()
-                                                                 .getBytes() );
+                    // Should already be happening... double check that we use
+                    // and save the data hash not the URL hash.
+
                     IngestSaver ingestSaver =
                             IngestSaver.createTask()
-                                       .withFilePath( wrdsUri )
+                                       .withDataSource( dataSource )
                                        .withProject( this.getProjectConfig() )
-                                       .withDataSourceConfig( this.getDataSourceConfig() )
-                                       .withSourceConfig( this.getSourceConfig() )
-                                       .withHash( hash )
-                                       .isRemote()
+                                       .withoutHash()
+                                       .withLockManager( this.getLockManager() )
                                        .build();
 
                     Future<List<IngestResult>> future =

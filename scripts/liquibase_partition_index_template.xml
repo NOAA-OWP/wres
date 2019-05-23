@@ -1,0 +1,36 @@
+    <changeSet id="wres.TimeSeriesValue_NAMEHERE - Add lead index."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+          <tableExists tableName="TimeSeriesValue_NAMEHERE"
+                       schemaName="wres" />
+              <not>
+                  <indexExists tableName="TimeSeriesValue_NAMEHERE"
+                               schemaName="wres"
+                               indexName="TimeSeriesValue_NAMEHERE_lead_idx" />
+              </not>
+        </preConditions>
+        <createIndex tableName="TimeSeriesValue_NAMEHERE"
+                     schemaName="wres"
+                     indexName="TimeSeriesValue_NAMEHERE_lead_idx">
+            <column name="lead" />
+        </createIndex>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_NAMEHERE - Add timeseries_id index."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+          <tableExists tableName="TimeSeriesValue_NAMEHERE"
+                       schemaName="wres" />
+              <not>
+                  <indexExists tableName="TimeSeriesValue_NAMEHERE"
+                               schemaName="wres"
+                               indexName="TimeSeriesValue_NAMEHERE_TimeSeries_idx" />
+              </not>
+        </preConditions>
+        <createIndex tableName="TimeSeriesValue_NAMEHERE"
+                     schemaName="wres"
+                     indexName="TimeSeriesValue_NAMEHERE_TimeSeries_idx">
+            <column name="timeseries_id" />
+        </createIndex>
+    </changeSet>

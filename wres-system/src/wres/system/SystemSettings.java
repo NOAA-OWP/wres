@@ -462,7 +462,7 @@ public final class SystemSettings extends XMLReader
         return SystemSettings.instance.databaseConfiguration.getQueryTimeout();
     }
 
-    public static Connection getRawDatabaseConnection() throws SQLException
+    static Connection getRawDatabaseConnection() throws SQLException
     {
         return instance.databaseConfiguration.getRawConnection(null);
     }

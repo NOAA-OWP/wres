@@ -18,15 +18,19 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +44,7 @@ import wres.io.concurrency.WRESCallable;
 import wres.io.concurrency.ZippedPIXMLIngest;
 import wres.io.config.ConfigHelper;
 import wres.io.utilities.DataScripter;
-import wres.io.utilities.Database;
+import wres.system.DatabaseLockManager;
 import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
 import wres.util.Strings;
@@ -54,20 +58,30 @@ public class ZippedSource extends BasicSource {
     private static final Logger LOGGER = LoggerFactory.getLogger(ZippedSource.class);
 
     private final ThreadPoolExecutor readerService = createReaderService();
-
     private final Queue<Future<List<IngestResult>>> tasks = new LinkedList<>();
-
+    // After submitting N tasks, call get() on one task prior to next submission
+    private final CountDownLatch startGettingOnTasks = new CountDownLatch( SystemSettings.maximumArchiveThreads() );
     private final Queue<URI> savedFiles = new LinkedList<>();
+    private final DatabaseLockManager lockManager;
 
     private ThreadPoolExecutor createReaderService()
     {
+        ThreadFactory zippedSourceFactory = new BasicThreadFactory.Builder()
+                .namingPattern( "ZippedSource Ingest" )
+                .build();
+        BlockingQueue<Runnable>
+                zippedSourceQueue = new ArrayBlockingQueue<>( SystemSettings.maximumArchiveThreads() );
         ThreadPoolExecutor executor = new ThreadPoolExecutor(SystemSettings.maximumArchiveThreads(),
                                                              SystemSettings.maximumArchiveThreads(),
                                                              SystemSettings.poolObjectLifespan(),
                                                              TimeUnit.MILLISECONDS,
-                                                             new ArrayBlockingQueue<>( SystemSettings.maximumArchiveThreads() * 2 ) );
+                                                             zippedSourceQueue,
+                                                             zippedSourceFactory );
 
-        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        // Abort policy, but ought never be hit because we throttle submission
+        // of tasks to the count of maximum threads and wait to submit another
+        // until after one has get() return.
+        executor.setRejectedExecutionHandler( new ThreadPoolExecutor.AbortPolicy() );
 
         return executor;
     }
@@ -81,10 +95,11 @@ public class ZippedSource extends BasicSource {
     {
         LOGGER.trace( "Added Future {} to this.tasks", result );
         this.tasks.add(result);
+        this.startGettingOnTasks.countDown();
     }
 
     @Override
-    public List<IngestResult> save() throws IOException
+    public List<IngestResult> save()
     {
         return issue();
     }
@@ -103,13 +118,16 @@ public class ZippedSource extends BasicSource {
 	/**
 	 * Constructor that sets the filename
      * @param projectConfig the project config causing this ingest
-	 * @param filename The name of the source file
+     * @param dataSource details of the data source
+     * @param lockManager The lock manager to use.
 	 */
     ZippedSource ( ProjectConfig projectConfig,
-                   URI filename )
+                   DataSource dataSource,
+                   DatabaseLockManager lockManager )
 	{
-        super( projectConfig );
-	    this.setFilename(filename);
+        super( projectConfig,
+               dataSource );
+        this.lockManager = lockManager;
     }
 
     private List<IngestResult> issue()
@@ -140,6 +158,16 @@ public class ZippedSource extends BasicSource {
                     }
                 }
 
+                if ( this.startGettingOnTasks.await( 0, TimeUnit.MILLISECONDS ) )
+                {
+                    // Ensure that exceptions propagate by calling get after
+                    // the first N tasks have been submitted, where N is the
+                    // count of simultaneous tasks to be processed.
+                    Future<List<IngestResult>> earlierTask = this.getIngestTask();
+                    List<IngestResult> zippedResult = earlierTask.get();
+                    result.addAll( zippedResult );
+                }
+
                 archivedSource = archive.getNextTarEntry();
                 //ProgressMonitor.completeStep();
             }
@@ -164,27 +192,6 @@ public class ZippedSource extends BasicSource {
                 ingestTask = this.getIngestTask();
             }
 
-            // TODO: This class should NEVER be trying to perform work from the database queue.
-            ingestTask = Database.getStoredIngestTask();
-
-            while (ingestTask != null)
-            {
-                List<IngestResult> innerResult = ingestTask.get();
-
-                if ( innerResult != null )
-                {
-                    result.addAll( innerResult );
-                }
-                else if ( LOGGER.isDebugEnabled() )
-                {
-                    LOGGER.debug( "A null value was returned in the "
-                                  + "ZippedSource class (2). See also "
-                                  + "Database class? Task: {}", ingestTask );
-                }
-
-                ingestTask = Database.getStoredIngestTask();
-            }
-
             for ( URI filename : this.savedFiles)
             {
                 Path path = Paths.get( filename );
@@ -201,13 +208,13 @@ public class ZippedSource extends BasicSource {
         catch ( InterruptedException ie )
         {
             LOGGER.warn( "Interrupted while ingesting a zipped source from {}.",
-                         filename, ie );
+                         dataSource, ie );
             Thread.currentThread().interrupt();
         }
         catch ( ExecutionException | IOException e )
         {
-            throw new PreIngestException( "Failed to process a zipped source",
-                                          e );
+            throw new PreIngestException( "Failed to process a zipped source from "
+                                          + dataSource, e );
         }
 
         LOGGER.debug("Finished parsing '{}'", this.getFilename());
@@ -221,7 +228,7 @@ public class ZippedSource extends BasicSource {
         int bytesRead = (int)source.getSize();
         URI archivedFileName = this.getFilename().resolve( source.getName() );
         Format sourceType = ReaderFactory.getFiletype( archivedFileName );
-        DataSourceConfig.Source originalSource = this.getSourceConfig();
+        DataSourceConfig.Source originalSource = this.dataSource.getSource();
 
         byte[] content = new byte[bytesRead];
 
@@ -257,6 +264,11 @@ public class ZippedSource extends BasicSource {
 
         Pair<Boolean, String> checkIngest =
                 this.shouldIngest( archivedFileName, originalSource, content );
+
+        DataSource innerDataSource = DataSource.of( dataSource.getSource(),
+                                                    dataSource.getContext(),
+                                                    dataSource.getLinks(),
+                                                    archivedFileName );
         if ( !checkIngest.getLeft() )
         {
             LOGGER.trace( "'{}' is not being ingested because was already found", source );
@@ -272,8 +284,7 @@ public class ZippedSource extends BasicSource {
             // Fake a future, return result immediately.
             Future<List<IngestResult>> ingest =
                     IngestResult.fakeFutureSingleItemListFrom( projectConfig,
-                                                               dataSourceConfig,
-                                                               archivedFileName,
+                                                               innerDataSource,
                                                                checkIngest.getRight() );
             this.addIngestTask( ingest );
             return bytesRead;
@@ -281,7 +292,7 @@ public class ZippedSource extends BasicSource {
         else
         {
             String message = "The file '{}' will now be ingested as a set of ";
-            if (ConfigHelper.isForecast( this.getDataSourceConfig() ))
+            if (ConfigHelper.isForecast( this.getDataSource().getContext() ))
             {
                 message += "forecasts.";
             }
@@ -296,12 +307,10 @@ public class ZippedSource extends BasicSource {
 
         if ( sourceType == Format.PI_XML )
         {
-            ingest = new ZippedPIXMLIngest(archivedFileName,
-                                           content,
-                                           this.getDataSourceConfig(),
-                                           originalSource,
-                                           this.getProjectConfig() );
-
+            ingest = new ZippedPIXMLIngest( this.getProjectConfig(),
+                                            innerDataSource,
+                                            content,
+                                            this.getLockManager() );
             ingest.setOnComplete( ProgressMonitor.onThreadCompleteHandler());
             ProgressMonitor.increment();
             this.addIngestTask(ingest);
@@ -313,14 +322,15 @@ public class ZippedSource extends BasicSource {
             try ( FileOutputStream stream = new FileOutputStream( tempFile ) )
             {
                 stream.write(content);
-                this.savedFiles.add( tempFile.toURI() );
+                URI tempFileLocation = tempFile.toURI();
+                this.savedFiles.add( tempFileLocation );
 
                 ProgressMonitor.increment();
                 Future<List<IngestResult>> task = Executor.submit(
                         IngestSaver.createTask()
-                                   .withFilePath( tempFile.toURI() )
                                    .withProject( this.getProjectConfig() )
-                                   .withDataSourceConfig( this.getDataSourceConfig() )
+                                   .withDataSource( innerDataSource )
+                                   .withoutHash()
                                    .withProgressMonitoring()
                                    .build()
                 );
@@ -400,7 +410,8 @@ public class ZippedSource extends BasicSource {
         script.addLine("SELECT EXISTS (");
         script.addLine("     SELECT 1");
 
-        if (ConfigHelper.isForecast(dataSourceConfig))
+        if ( ConfigHelper.isForecast( this.getDataSource()
+                                          .getContext() ) )
         {
             script.addLine("     FROM wres.TimeSeries TS");
             script.addLine("     INNER JOIN wres.TimeSeriesSource SL");
@@ -422,9 +433,14 @@ public class ZippedSource extends BasicSource {
 
         script.addLine("     WHERE S.hash = '", contentHash, "'" );
 
-        script.addLine("         AND V.variable_name = '", this.dataSourceConfig.getVariable().getValue(), "'");
+        script.addLine("         AND V.variable_name = '", this.getSpecifiedVariableName(), "'");
         script.addLine(");");
 
         return script.retrieve( "exists" );
+    }
+
+    private DatabaseLockManager getLockManager()
+    {
+        return this.lockManager;
     }
 }

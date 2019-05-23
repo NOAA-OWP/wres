@@ -1,14 +1,17 @@
 package wres.io.reading.commaseparated;
 
 import java.io.IOException;
-import java.net.URI;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.StringJoiner;
+import java.util.concurrent.CountDownLatch;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,13 +22,17 @@ import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
+import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
 import wres.io.data.details.TimeSeries;
 import wres.io.reading.BasicSource;
+import wres.io.reading.DataSource;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.reading.IngestedValues;
+import wres.io.reading.SourceCompleter;
 import wres.io.utilities.DataProvider;
+import wres.system.DatabaseLockManager;
 import wres.util.LRUContainer;
 import wres.util.Strings;
 import wres.util.TimeHelper;
@@ -39,6 +46,8 @@ public class CSVSource extends BasicSource
 
     private static final int TIME_SERIES_LIMIT = 60;
 
+    private final DatabaseLockManager lockManager;
+    private final Set<Pair<CountDownLatch,CountDownLatch>> latches = new HashSet<>();
     private SourceDetails sourceDetails;
 
     /**
@@ -49,13 +58,15 @@ public class CSVSource extends BasicSource
     /**
      * Constructor that sets the filename
      * @param projectConfig the ProjectConfig causing ingest
-     * @param filename The name of the source file
+     * @param dataSource the data source information
+     * @param lockManager The lock manager to use.
      */
     public CSVSource( ProjectConfig projectConfig,
-                      URI filename )
+                      DataSource dataSource,
+                      DatabaseLockManager lockManager )
     {
-        super( projectConfig );
-        this.setFilename(filename);
+        super( projectConfig, dataSource );
+        this.lockManager = lockManager;
     }
 
     @Override
@@ -70,8 +81,21 @@ public class CSVSource extends BasicSource
             throw new IOException( "Metadata about the file at '" + this.getFilename() + "' could not be created.", e );
         }
 
+        boolean sourceCompleted;
+
         if (sourceDetails.performedInsert())
         {
+            try
+            {
+                lockManager.lockSource( sourceDetails.getId() );
+            }
+            catch ( SQLException se )
+            {
+                throw new IngestException( "Unable to lock to ingest source id "
+                                           + sourceDetails.getId() + " named "
+                                           + this.getFilename(), se );
+            }
+
             DataProvider data;
 
             if (this.getSourceConfig().isHasHeader())
@@ -92,14 +116,22 @@ public class CSVSource extends BasicSource
             }
 
             this.parseObservations( data );
+            SourceCompleter sourceCompleter = new SourceCompleter( sourceDetails.getId(),
+                                                                   this.lockManager );
+            sourceCompleter.complete( this.latches );
+            sourceCompleted = true;
+        }
+        else
+        {
+            sourceCompleted = this.wasCompleted( this.sourceDetails );
         }
 
         return IngestResult.singleItemListFrom(
                 this.getProjectConfig(),
-                this.getDataSourceConfig(),
+                this.getDataSource(),
                 this.getHash(),
-                this.getFilename(),
-                !sourceDetails.performedInsert()
+                !sourceDetails.performedInsert(),
+                !sourceCompleted
         );
     }
 
@@ -120,8 +152,21 @@ public class CSVSource extends BasicSource
             throw new IOException( "Metadata about the file at '" + this.getFilename() + "' could not be created.", e );
         }
 
+        boolean sourceCompleted;
+
         if (sourceDetails.performedInsert())
         {
+            try
+            {
+                lockManager.lockSource( sourceDetails.getId() );
+            }
+            catch ( SQLException se )
+            {
+                throw new IngestException( "Unable to lock to ingest source id "
+                                           + sourceDetails.getId() + " named "
+                                           + this.getFilename(), se );
+            }
+
             DataProvider data;
 
             if (this.getSourceConfig().isHasHeader())
@@ -131,7 +176,7 @@ public class CSVSource extends BasicSource
             else
             {
                 data = DataProvider.fromCSV(
-                        this.filename,
+                        this.getFilename(),
                         DELIMITER,
                         "start_date",
                         "value_date",
@@ -146,14 +191,22 @@ public class CSVSource extends BasicSource
             }
 
             parseTimeSeries( data );
+            SourceCompleter sourceCompleter = new SourceCompleter( sourceDetails.getId(),
+                                                                   this.lockManager );
+            sourceCompleter.complete( this.latches );
+            sourceCompleted = true;
+        }
+        else
+        {
+            sourceCompleted = this.wasCompleted( this.sourceDetails );
         }
 
         return IngestResult.singleItemListFrom(
                 this.getProjectConfig(),
-                this.getDataSourceConfig(),
+                this.getDataSource(),
                 this.getHash(),
-                this.getFilename(),
-                !sourceDetails.performedInsert()
+                !sourceDetails.performedInsert(),
+                !sourceCompleted
         );
     }
 
@@ -176,7 +229,11 @@ public class CSVSource extends BasicSource
 
                 currentTimeSeries = formTimeSeries( data, ensembleId);
 
-                IngestedValues.addTimeSeriesValue( currentTimeSeries.getTimeSeriesID(), lead, value );
+                Pair<CountDownLatch,CountDownLatch> synchronizer =
+                        IngestedValues.addTimeSeriesValue( currentTimeSeries.getTimeSeriesID(),
+                                                           lead,
+                                                           value );
+                this.latches.add( synchronizer );
             }
             catch (SQLException e)
             {
@@ -250,12 +307,14 @@ public class CSVSource extends BasicSource
                                        this.getFilename(), e );
             }
 
-            IngestedValues.observed( value )
-                          .at(valueDate)
-                          .measuredIn( measurementUnitId )
-                          .forVariableAndFeatureID( variableFeatureId )
-                          .inSource( this.sourceDetails.getId() )
-                          .add();
+            Pair<CountDownLatch,CountDownLatch> synchronizer =
+                    IngestedValues.observed( value )
+                                  .at(valueDate)
+                                  .measuredIn( measurementUnitId )
+                                  .forVariableAndFeatureID( variableFeatureId )
+                                  .inSource( this.sourceDetails.getId() )
+                                  .add();
+            this.latches.add( synchronizer );
         }
     }
 
@@ -445,6 +504,31 @@ public class CSVSource extends BasicSource
         this.encounteredTimeSeries.add(timeSeries);
 
         return timeSeries;
+    }
+
+
+    /**
+     * Discover whether the source was completely ingested
+     * @param sourceDetails the source to query
+     * @throws IngestException when discovery fails due to SQLException
+     * @return true if the source has been marked as completed, false otherwise
+     */
+
+    private boolean wasCompleted( SourceDetails sourceDetails )
+            throws IngestException
+    {
+        SourceCompletedDetails completed = new SourceCompletedDetails( sourceDetails );
+
+        try
+        {
+            return completed.wasCompleted();
+        }
+        catch ( SQLException se )
+        {
+            throw new IngestException( "Failed discover whether source "
+                                       + sourceDetails + " was completed.",
+                                       se );
+        }
     }
 
     @Override

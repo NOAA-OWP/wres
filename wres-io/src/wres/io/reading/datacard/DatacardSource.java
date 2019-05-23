@@ -2,7 +2,6 @@ package wres.io.reading.datacard;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -13,9 +12,13 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,12 +32,16 @@ import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
+import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
 import wres.io.reading.BasicSource;
+import wres.io.reading.DataSource;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.reading.IngestedValues;
 import wres.io.reading.InvalidInputDataException;
+import wres.io.reading.SourceCompleter;
+import wres.system.DatabaseLockManager;
 import wres.util.Strings;
 
 /**
@@ -45,19 +52,24 @@ public class DatacardSource extends BasicSource
 {
 	private static final Double[] IGNORABLE_VALUES = {-998.0, -999.0, -9999.0};
 
+    private final DatabaseLockManager lockManager;
+    private final Set<Pair<CountDownLatch, CountDownLatch>> latches = new HashSet<>();
+
     private String currentLocationId;
 
     private boolean inChargeOfIngest;
 
 	/**
      * @param projectConfig the ProjectConfig causing ingest
-	 * @param filename the file name
+     * @param dataSource the data source information
+	 * @param lockManager The lock manager to use.
 	 */
     public DatacardSource( ProjectConfig projectConfig,
-                           URI filename)
+                           DataSource dataSource,
+                           DatabaseLockManager lockManager )
     {
-        super( projectConfig );
-		setFilename(filename);
+        super( projectConfig, dataSource );
+        this.lockManager = lockManager;
 	}
 
     private void setTimeInterval(String interval)
@@ -114,14 +126,30 @@ public class DatacardSource extends BasicSource
             throw new IngestException( "While retrieving source ID:", se );
         }
 
+        SourceCompletedDetails completedDetails = new SourceCompletedDetails( this.currentSourceID );
+
         if ( !this.inChargeOfIngest )
         {
-            // Yield to another ingester task, say it was already found.
+            boolean wasCompleted;
+
+            try
+            {
+                wasCompleted = completedDetails.wasCompleted();
+            }
+            catch ( SQLException se )
+            {
+                throw new IngestException( "Failed to check if source "
+                                           + this.getFilename()
+                                           + " was completed using id "
+                                           + this.currentSourceID + ".", se );
+            }
+
+            // Yield to another ingester task, say it was already started.
             return IngestResult.singleItemListFrom( this.getProjectConfig(),
-                                                    this.getDataSourceConfig(),
+                                                    this.getDataSource(),
                                                     this.getHash(),
-                                                    this.getFilename(),
-                                                    true );
+                                                    true,
+                                                    !wasCompleted );
         }
 
 		Path path = Paths.get(getFilename());
@@ -307,15 +335,17 @@ public class DatacardSource extends BasicSource
 
                         utcDateTime = utcDateTime.plusHours( timeInterval );
 
-                        IngestedValues.observed( actualValue )
-                                      .at( utcDateTime )
-                                      .measuredIn( this.getMeasurementID() )
-                                      // Default is missing time scale: see #59536
-                                      .scaleOf( null )
-                                      .scaledBy( TimeScale.TimeScaleFunction.UNKNOWN )
-                                      .inSource( this.getSourceID() )
-                                      .forVariableAndFeatureID( this.getVariableFeatureID() )
-                                      .add();
+                        Pair<CountDownLatch,CountDownLatch> synchronizer =
+                                IngestedValues.observed( actualValue )
+                                              .at( utcDateTime )
+                                              .measuredIn( this.getMeasurementID() )
+                                              // Default is missing time scale: see #59536
+                                              .scaleOf( null )
+                                              .scaledBy( TimeScale.TimeScaleFunction.UNKNOWN )
+                                              .inSource( this.getSourceID() )
+                                              .forVariableAndFeatureID( this.getVariableFeatureID() )
+                                              .add();
+                        this.latches.add( synchronizer );
                     }
                     else
 					{
@@ -332,10 +362,24 @@ public class DatacardSource extends BasicSource
 
 		LOGGER.debug("Finished Parsing '{}'", this.getFilename());
 
+        try
+        {
+            SourceCompleter sourceCompleter = new SourceCompleter( this.currentSourceID,
+                                                                   this.lockManager );
+            sourceCompleter.complete( this.latches );
+        }
+        catch ( IngestException e )
+        {
+            throw new IngestException( "Failed to mark source "
+                                       + this.getFilename()
+                                       + " as completed using id "
+                                       + this.currentSourceID + ".", e );
+        }
+
         return IngestResult.singleItemListFrom( this.getProjectConfig(),
-                                                this.getDataSourceConfig(),
+                                                this.getDataSource(),
                                                 this.getHash(),
-                                                this.getFilename(),
+                                                false,
                                                 false );
 	}
 
@@ -398,6 +442,9 @@ public class DatacardSource extends BasicSource
                 {
                     // Now we have the definitive answer from the database.
                     wasThisReaderTheOneThatInserted = true;
+
+                    // We should mark that the ingest is ongoing. #50933
+                    this.lockManager.lockSource( sourceDetails.getId() );
 
                     // Now that ball is in our court we should put in cache
                     DataSources.put( sourceDetails );
