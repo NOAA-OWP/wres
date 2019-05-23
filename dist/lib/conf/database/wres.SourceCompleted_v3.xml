@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.6.xsd"
+                   objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="wres.SourceCompleted - Add index."
+               author="Jesse Bickel">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="SourceCompleted" schemaName="wres" />
+            <not>
+                <indexExists tableName="SourceCompleted" schemaName="wres"
+                             indexName="sourcecompleted_source_idx" />
+            </not>
+        </preConditions>
+        <!-- There is already a unique constraint on the foreign column, so
+             there should be no need to re-enforce uniqueness here, however, we
+             can use a unique index -->
+        <createIndex tableName="SourceCompleted" schemaName="wres"
+                     indexName="sourcecompleted_source_idx"
+                     unique="true">
+            <column name="source_id" />
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

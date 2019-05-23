@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -361,8 +360,8 @@ class GridManager
 
                         if ( builder.getRowCount() >= SystemSettings.getMaximumCopies())
                         {
-                            Future copy = builder.build().copy( "wres.NetcdfCoordinate", true );
-                            this.copyQueue.add( copy );
+                            //Future copy = builder.build().copy( "wres.NetcdfCoordinate", true );
+                            //this.copyQueue.add( copy );
                             LOGGER.trace("Job to copy {} coordinates for {} dispatched.",
                                          SystemSettings.getMaximumCopies(),
                                          this.metadata);
@@ -372,15 +371,17 @@ class GridManager
 
                 if (builder.getRowCount() > 0)
                 {
-                    Future copy = builder.build().copy( "wres.NetcdfCoordinate", true );
-                    this.copyQueue.add( copy );
+                    //Future copy = builder.build().copy( "wres.NetcdfCoordinate", true );
+                    //this.copyQueue.add( copy );
                     LOGGER.trace("Job to copy the last coordinates for {} dispatched.", this.metadata);
                 }
             }
+            /*
             catch ( ExecutionException e )
             {
                 throw new IOException( "Grid data could not be read and saved.", e );
             }
+            */
         }
 
         private void addX(final DataBuilder builder, final Variable xCoordinates, final int index) throws IOException

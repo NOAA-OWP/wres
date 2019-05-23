@@ -2,7 +2,6 @@ package wres.io.reading.nwm;
 
 import java.io.IOException;
 import java.net.SocketTimeoutException;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.SQLException;
@@ -14,11 +13,14 @@ import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
 
 import wres.config.generated.ProjectConfig;
-import wres.io.concurrency.WRESRunnable;
+import wres.io.concurrency.WRESCallable;
 import wres.io.data.caching.DataSources;
+import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
 import wres.io.reading.BasicSource;
+import wres.io.reading.DataSource;
 import wres.io.reading.IngestResult;
+import wres.system.DatabaseLockManager;
 import wres.system.ProgressMonitor;
 import wres.util.NetCDF;
 
@@ -31,31 +33,36 @@ public class NWMSource extends BasicSource
     private static final Logger LOGGER = LoggerFactory.getLogger(NWMSource.class);
     private static final int MAXIMUM_OPEN_ATTEMPTS = 5;
 
+    private final DatabaseLockManager lockManager;
+
     private boolean alreadyFound;
 
 	/**
      *
      * @param projectConfig the ProjectConfig causing ingest
-	 * @param filename the file name
+	 * @param dataSource the data source information
+     * @param lockManager The lock manager to use.
 	 */
-	public NWMSource( ProjectConfig projectConfig, URI filename )
+	public NWMSource( ProjectConfig projectConfig,
+                      DataSource dataSource,
+                      DatabaseLockManager lockManager )
     {
-        super( projectConfig );
-		this.setFilename(filename);
+        super( projectConfig, dataSource );
+        this.lockManager = lockManager;
 	}
 
 	@Override
 	public List<IngestResult> save() throws IOException
 	{
-	    String hash;
 	    int tryCount = 0;
 
+        List<IngestResult> saved;
 
 	    while (true)
         {
             try ( NetcdfFile source = NetcdfFile.open( this.getFilename().toString() ) )
             {
-                hash = saveNetCDF( source );
+                saved = saveNetCDF( source );
                 break;
             }
             catch (IOException exception)
@@ -72,12 +79,7 @@ public class NWMSource extends BasicSource
             }
         }
 
-
-		return IngestResult.singleItemListFrom( this.getProjectConfig(),
-												this.getDataSourceConfig(),
-												hash,
-												this.getFilename(),
-												this.alreadyFound );
+		return saved;
 	}
 
 	@Override
@@ -86,14 +88,15 @@ public class NWMSource extends BasicSource
 		return NWMSource.LOGGER;
 	}
 
-    private String saveNetCDF( NetcdfFile source ) throws IOException
+    private List<IngestResult> saveNetCDF( NetcdfFile source ) throws IOException
 	{
 		Variable var = NetCDF.getVariable(source, this.getSpecifiedVariableName());
 		String hash = this.getHash();
 
 		if (var != null)
         {
-			WRESRunnable saver;
+			WRESCallable<List<IngestResult>> saver;
+
 			if(NetCDF.isGridded( var ))
             {
                 Integer gridProjectionId;
@@ -110,7 +113,7 @@ public class NWMSource extends BasicSource
                     );
                 }
 
-                hash = NetCDF.getGriddedUniqueIdentifier( source, this.filename );
+                hash = NetCDF.getGriddedUniqueIdentifier( source, this.getFilename() );
 
                 try
                 {
@@ -118,9 +121,18 @@ public class NWMSource extends BasicSource
 
                     if(sourceDetails != null && Files.exists( Paths.get( sourceDetails.getSourcePath()) ))
                     {
-                        this.setFilename( sourceDetails.getSourcePath() );
+                        // Was setting the file name important? Seems as though
+                        // the filename should be immutable.
+                        //this.setFilename( sourceDetails.getSourcePath() );
                         this.alreadyFound = true;
-                        return hash;
+                        SourceCompletedDetails completedDetails =
+                                new SourceCompletedDetails( sourceDetails );
+                        boolean completed = completedDetails.wasCompleted();
+                        return IngestResult.singleItemListFrom( this.getProjectConfig(),
+                                                                this.getDataSource(),
+                                                                hash,
+                                                                !this.alreadyFound,
+                                                                !completed );
                     }
                 }
                 catch ( SQLException e )
@@ -128,19 +140,23 @@ public class NWMSource extends BasicSource
                     throw new IOException( "Could not check to see if gridded data is already present.", e );
                 }
 
-                saver = new GriddedNWMValueSaver( this.getFilename(), hash, gridProjectionId);
+                saver = new GriddedNWMValueSaver( this.getProjectConfig(),
+                                                  this.getDataSource(),
+                                                  hash,
+                                                  gridProjectionId );
             }
 			else
             {
-                saver = new VectorNWMValueSaver( this.getFilename(),
+                saver = new VectorNWMValueSaver( this.getProjectConfig(),
+                                                 this.getDataSource(),
                                                  this.getHash(),
-                                                 this.dataSourceConfig );
+                                                 this.getLockManager() );
             }
 
 			saver.setOnRun(ProgressMonitor.onThreadStartHandler());
 			saver.setOnComplete( ProgressMonitor.onThreadCompleteHandler());
 
-            saver.run();
+            return saver.call();
         }
         else
         {
@@ -149,7 +165,10 @@ public class NWMSource extends BasicSource
                                    "' did not contain the " +
                                    "requested variable.");
         }
-
-        return hash;
 	}
+
+	private DatabaseLockManager getLockManager()
+    {
+        return this.lockManager;
+    }
 }

@@ -1,16 +1,15 @@
 package wres.io.reading;
 
-import java.nio.file.Path;
+import java.net.URI;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
 
 import wres.config.generated.DataSourceConfig;
-import wres.io.config.ConfigHelper;
 import wres.io.config.LeftOrRightOrBaseline;
 
-class DataSource
+public class DataSource
 {
     /**
      * The context in which this source is declared.
@@ -32,10 +31,10 @@ class DataSource
     private final Set<LeftOrRightOrBaseline> links;
 
     /**
-     * Optional evaluated path.
+     * URI of the source.
      */
 
-    private Path path;
+    private final URI uri;
 
     /**
      * Create a data source to load into <code>wres.Source</code>, with optional links to
@@ -50,16 +49,17 @@ class DataSource
      * @param source the source to load
      * @param context the context in which the source appears
      * @param links the optional links to create
-     * @param path the evaluated path to the source, which may be null for a service source
+     * @param uri the uri for the source
      * @throws NullPointerException if any input is null
+     * @return The newly created DataSource.
      */
 
-    static DataSource of( DataSourceConfig.Source source,
-                          DataSourceConfig context,
-                          Set<LeftOrRightOrBaseline> links,
-                          Path path )
+    public static DataSource of( DataSourceConfig.Source source,
+                                 DataSourceConfig context,
+                                 Set<LeftOrRightOrBaseline> links,
+                                 URI uri )
     {
-        return new DataSource( source, context, links, path );
+        return new DataSource( source, context, links, uri );
     }
 
     /**
@@ -67,24 +67,23 @@ class DataSource
      * @param source the source
      * @param context the context in which the source appears
      * @param links the links
-     * @param path the optional path
+     * @param uri the uri
      */
 
     private DataSource( DataSourceConfig.Source source,
                         DataSourceConfig context,
                         Set<LeftOrRightOrBaseline> links,
-                        Path path )
+                        URI uri )
     {
         Objects.requireNonNull( source );
-
         Objects.requireNonNull( context );
-
         Objects.requireNonNull( links );
+        Objects.requireNonNull( uri );
 
         this.source = source;
         this.context = context;
         this.links = Collections.unmodifiableSet( links );
-        this.path = path;
+        this.uri = uri;
     }
 
     /**
@@ -93,7 +92,7 @@ class DataSource
      * @return the type of link
      */
 
-    Set<LeftOrRightOrBaseline> getLinks()
+    public Set<LeftOrRightOrBaseline> getLinks()
     {
         // Rendered immutable on construction
         return this.links;
@@ -105,7 +104,7 @@ class DataSource
      * @return the source
      */
 
-    DataSourceConfig.Source getSource()
+    public DataSourceConfig.Source getSource()
     {
         return this.source;
     }
@@ -116,9 +115,9 @@ class DataSource
      * @return the path
      */
 
-    Path getSourcePath()
+    public URI getUri()
     {
-        return this.path;
+        return this.uri;
     }
     
     /**
@@ -131,7 +130,7 @@ class DataSource
 
     boolean hasSourcePath()
     {
-        return Objects.nonNull( this.path );
+        return Objects.nonNull( this.getUri() );
     }
 
     /**
@@ -140,9 +139,19 @@ class DataSource
      * @return the context
      */
 
-    DataSourceConfig getContext()
+    public DataSourceConfig getContext()
     {
         return this.context;
+    }
+
+    /**
+     * Returns the variable specified for this source, null if unspecified
+     * @return the variable
+     */
+    public DataSourceConfig.Variable getVariable()
+    {
+        return this.getContext()
+                   .getVariable();
     }
 
     @Override
@@ -158,13 +167,13 @@ class DataSource
         return in.source.equals( this.source )
                && in.getLinks().equals( this.getLinks() )
                && in.getContext().equals( this.getContext() )
-               && in.getSourcePath().equals( this.getSourcePath() );
+               && in.getUri().equals( this.getUri() );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( this.source, this.getLinks(), this.getContext(), this.getSourcePath() );
+        return Objects.hash( this.source, this.getLinks(), this.getContext(), this.getUri() );
     }
 
     @Override
@@ -174,7 +183,7 @@ class DataSource
         
         StringJoiner joiner = new StringJoiner( ";", "(", ")" );
 
-        joiner.add( "Path: '" + this.getSourcePath() + "'" );
+        joiner.add( "URI: '" + this.getUri() + "'" );
         joiner.add( " Type: '" + this.getContext().getType() + "'" );
 
         if ( Objects.nonNull( this.getSource().getFormat() ) )
@@ -190,4 +199,16 @@ class DataSource
         return joiner.toString();
     }
 
+    /**
+     * Return a copy of this except with a different DataSourceConfig
+     * @param dataSourceConfig the DataSourceConfig to use.
+     * @return a DataSource exactly the same as this, but with context from args
+     */
+    DataSource withContext( DataSourceConfig dataSourceConfig )
+    {
+        return DataSource.of( this.getSource(),
+                              dataSourceConfig,
+                              this.getLinks(),
+                              this.getUri() );
+    }
 }

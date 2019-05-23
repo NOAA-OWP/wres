@@ -12,6 +12,7 @@ import wres.io.reading.nwm.NWMSource;
 import wres.io.reading.s3.S3Reader;
 import wres.io.reading.usgs.USGSReader;
 import wres.io.reading.wrds.WRDSSource;
+import wres.system.DatabaseLockManager;
 import wres.util.NetCDF;
 import wres.util.Strings;
 
@@ -23,10 +24,11 @@ public class ReaderFactory {
     private ReaderFactory(){}
 
     public static BasicSource getReader( ProjectConfig projectConfig,
-                                         URI filename )
+                                         DataSource dataSource,
+                                         DatabaseLockManager lockManager )
             throws IOException
 	{
-        Format typeOfFile = getFiletype( filename );
+        Format typeOfFile = getFiletype( dataSource.getUri() );
 
 		BasicSource source;
 
@@ -34,37 +36,49 @@ public class ReaderFactory {
         {
 			case DATACARD:
                 source = new DatacardSource( projectConfig,
-                                             filename );
+                                             dataSource,
+                                             lockManager );
 				break;
             case ARCHIVE:
                 source = new ZippedSource( projectConfig,
-                                           filename );
+                                           dataSource,
+                                           lockManager );
 				break;
             case NET_CDF:
                 source = new NWMSource( projectConfig,
-                                        filename );
+                                        dataSource,
+                                        lockManager );
 				break;
 			case PI_XML:
                 source = new FEWSSource( projectConfig,
-                                         filename );
+                                         dataSource,
+                                         lockManager );
 				break;
             case USGS:
-                source = new USGSReader( projectConfig );
+                source = new USGSReader( projectConfig,
+                                         dataSource,
+                                         lockManager );
                 break;
             case S_3:
-                source = S3Reader.getReader( projectConfig );
+                source = S3Reader.getReader( projectConfig,
+                                             dataSource,
+                                             lockManager );
                 break;
             case WRDS:
-                source = new WRDSSource(projectConfig, filename );
+                source = new WRDSSource( projectConfig,
+                                         dataSource,
+                                         lockManager );
                 break;
             case CSV:
-                source = new CSVSource( projectConfig, filename );
+                source = new CSVSource( projectConfig,
+                                        dataSource,
+                                        lockManager );
                 break;
 			default:
-				String message = "The file '%s' is not a valid data file.";
-				throw new IOException(String.format(message, filename));
+				String message = "The uri '%s' is not a valid source of data.";
+				throw new IOException(String.format(message, dataSource.getUri()));
 		}
-		
+
 		return source;
 	}
 	

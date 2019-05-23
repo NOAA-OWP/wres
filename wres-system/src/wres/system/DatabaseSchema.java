@@ -1,5 +1,6 @@
 package wres.system;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
@@ -26,14 +27,43 @@ import liquibase.exception.DatabaseException;
 import liquibase.exception.LiquibaseException;
 import liquibase.resource.FileSystemResourceAccessor;
 
-public class DatabaseSchema
+class DatabaseSchema implements Closeable
 {
-    public DatabaseSchema(final String databaseName)
+    private final String databaseName;
+    private final DatabaseLockManager lockManager;
+
+    DatabaseSchema( final String databaseName,
+                    DatabaseLockManager lockManager )
     {
         this.databaseName = databaseName;
+        this.lockManager = lockManager;
+
+        try
+        {
+            // The companion unlockExclusive is in the close() method which
+            // must be called in a "finally" block when this succeeds.
+            this.lockManager.lockExclusive( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
+        }
+        catch ( SQLException | DatabaseLockFailed e )
+        {
+            Error error = new ExceptionInInitializerError( "Failed to mark database as undergoing changes." );
+            error.initCause( e );
+            throw error;
+        }
     }
 
-    public void createDatabase(final Connection connection) throws SQLException
+
+    /**
+     * The application should not be able to create a database on postgres.
+     * Even if the application tried, it shouldn't be allowed to by the roles
+     * set up by the dba.
+     * For embedded db, H2 supports database creation using special jdbc string.
+     * @param connection the connection to use
+     * @throws SQLException when queries fail
+     */
+
+    @Deprecated
+    void createDatabase( final Connection connection ) throws SQLException
     {
         boolean databaseExists = false;
         boolean canAddDatabase = false;
@@ -85,14 +115,15 @@ public class DatabaseSchema
     }
 
     // Left public for unit testing
-    public String getChangelogURL()
+    String getChangelogURL()
     {
         URL changelogURL = this.getClass().getClassLoader().getResource( "database/db.changelog-master.xml" );
         Objects.requireNonNull( changelogURL, "The definition for the WRES data model could not be found.");
         return changelogURL.getPath();
     }
 
-    public void applySchema(final Connection connection) throws SQLException, IOException
+    void applySchema( final Connection connection )
+            throws SQLException, IOException
     {
         this.removePriorLocks( connection );
         Database database = null;
@@ -125,6 +156,7 @@ public class DatabaseSchema
             throw new SQLException( "The WRES could not be properly initialized.", e);
         }
 
+
         this.moveSchema( connection, "partitions", "wres" );
 
         // Allow other users to apply liquibase changes...
@@ -141,7 +173,7 @@ public class DatabaseSchema
         }
     }
 
-    private void removePriorLocks(final Connection connection) throws SQLException, IOException
+    private void removePriorLocks( final Connection connection ) throws SQLException, IOException
     {
         // Determine whether or not the changeloglock exists in the database
         String script = "SELECT EXISTS (" + System.lineSeparator();
@@ -320,5 +352,17 @@ public class DatabaseSchema
         }
     }
 
-    private final String databaseName;
+    @Override
+    public void close()
+    {
+        try
+        {
+            this.lockManager.unlockExclusive( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
+        }
+        catch ( SQLException se )
+        {
+            throw new IllegalStateException( "Unable to unlock using "
+                                             + DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
+        }
+    }
 }
