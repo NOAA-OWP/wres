@@ -362,12 +362,17 @@ public final class PIXMLReader extends XMLReader
                 LOGGER.trace( "NaN encountered." );
             }
 
-            OffsetDateTime offsetDateTime = OffsetDateTime.of( dateTime, this.getZoneOffset() )
-                                                          .withOffsetSameInstant( ZoneOffset.UTC );
+            if ( this.inChargeOfIngest )
+            {
+                OffsetDateTime offsetDateTime =
+                        OffsetDateTime.of( dateTime, this.getZoneOffset() )
+                                      .withOffsetSameInstant( ZoneOffset.UTC );
 
-            Pair<CountDownLatch,CountDownLatch> observationSynchronizer =
-                    this.addObservedEvent( offsetDateTime, this.getValueToSave( value ) );
-            this.latches.add( observationSynchronizer );
+                Pair<CountDownLatch, CountDownLatch> observationSynchronizer =
+                        this.addObservedEvent( offsetDateTime,
+                                               this.getValueToSave( value ) );
+                this.latches.add( observationSynchronizer );
+            }
         }
 	}
 
