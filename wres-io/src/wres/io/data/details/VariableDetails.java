@@ -26,7 +26,6 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 
 	private String variableName = null;
 	private Integer variableID = null;
-	private String variablePositionPartitionName;
 	private boolean performedInsert;
 
 	/**
@@ -40,28 +39,6 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 			this.variableID = null;
 		}
         this.variableName = variableName;
-	}
-
-	public String getVariableFeaturePartitionName()
-	{
-		if (this.variablePositionPartitionName == null)
-		{
-			this.variablePositionPartitionName = "wres.VARIABLEFEATURE_VARIABLE_" + this.getId().toString();
-		}
-		return this.variablePositionPartitionName;
-	}
-
-	@Override
-	protected void update( DataProvider databaseResults ) throws SQLException
-	{
-		super.update( databaseResults );
-		DataScripter script = new DataScripter(  );
-		script.addLine("CREATE TABLE IF NOT EXISTS ", this.getVariableFeaturePartitionName(), "(");
-		script.addTab().addLine("CHECK (variable_id = ", this.getId(), ")");
-		script.addLine(") INHERITS (wres.VariableFeature);");
-		script.addLine("ALTER TABLE ", this.getVariableFeaturePartitionName(), " OWNER TO wres;");
-
-		script.execute();
 	}
 
     @Override
