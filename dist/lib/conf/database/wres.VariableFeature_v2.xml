@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.6.xsd"
+                   objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="wres.VariableFeature - Remove child tables."
+               author="Jesse Bickel"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="VariableFeature_variable_1" schemaName="wres" />
+        </preConditions>
+        <sql>
+            DROP TABLE wres.VariableFeature_Variable_1;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_2;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_3;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_4;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_5;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_6;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_7;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_8;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_9;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_10;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_12;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_13;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_14;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_15;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_16;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_17;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_18;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_19;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_20;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_21;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_22;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_23;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_24;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_25;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_26;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_27;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_28;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_29;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_30;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_31;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_32;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_33;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_34;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_35;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_36;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_37;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_38;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_39;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_40;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_41;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_42;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_43;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_44;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_45;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_46;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_47;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_48;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_49;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_50;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_51;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_52;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_53;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_54;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_55;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_56;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_57;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_58;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_59;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_60;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_61;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_62;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_63;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_64;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_65;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_66;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_67;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_68;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_69;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_70;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_71;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_72;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_73;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_74;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_75;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_76;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_77;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_78;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_79;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_80;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_81;
+            DROP TABLE IF EXISTS wres.VariableFeature_Variable_82;
+        </sql>
+        <!-- Most dbs should have only a handful of variables at this point -->
+    </changeSet>
+</databaseChangeLog>
