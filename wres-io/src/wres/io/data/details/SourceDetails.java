@@ -156,6 +156,8 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
 	{
         DataScripter script = new DataScripter();
         script.setUseTransaction( true );
+        script.retryOnSqlState( "40001" );
+        script.retryOnSqlState( "23505" );
         script.setHighPriority( true );
 
         script.addLine( "INSERT INTO wres.Source ( path, output_time, lead, hash, is_point_data )" );

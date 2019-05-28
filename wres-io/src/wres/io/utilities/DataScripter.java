@@ -2,7 +2,10 @@ package wres.io.utilities;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Future;
 
 import wres.util.functional.ExceptionalConsumer;
@@ -13,6 +16,7 @@ public class DataScripter extends ScriptBuilder
     private boolean isHighPriority = false;
     private final List<Object> arguments = new ArrayList<>(  );
     private boolean useTransaction;
+    private Set<String> sqlStatesToRetry = Collections.emptySet();
 
     public DataScripter()
     {
@@ -49,6 +53,22 @@ public class DataScripter extends ScriptBuilder
     public void addArgument(final Object argument)
     {
         this.arguments.add(argument);
+    }
+
+
+    /**
+     * Add a SQLSTATE that causes indefinite retry of the query
+     * @param sqlState The SQLSTATE to retry.
+     */
+
+    public void retryOnSqlState( String sqlState )
+    {
+        if ( this.sqlStatesToRetry.equals( Collections.emptySet() ) )
+        {
+            this.sqlStatesToRetry = new HashSet<>( 2 );
+        }
+
+        this.sqlStatesToRetry.add( sqlState );
     }
 
     /**
@@ -192,6 +212,14 @@ public class DataScripter extends ScriptBuilder
         if (!this.arguments.isEmpty())
         {
             query.setParameters( this.arguments.toArray() );
+        }
+
+        if ( !this.sqlStatesToRetry.isEmpty() )
+        {
+            for ( String sqlState : sqlStatesToRetry )
+            {
+                query = query.retryOnSqlState( sqlState );
+            }
         }
 
         return query;

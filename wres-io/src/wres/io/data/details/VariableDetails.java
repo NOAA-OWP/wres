@@ -16,11 +16,6 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( VariableDetails.class );
 
-	/**
-	 * Prevents asynchronous saving of identical variables
-	 */
-	private static final Object VARIABLE_SAVE_LOCK = new Object();
-
 	public static VariableDetails from (DataProvider data)
 	{
 	    VariableDetails details = new VariableDetails();
@@ -32,6 +27,7 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 	private String variableName = null;
 	private Integer variableID = null;
 	private String variablePositionPartitionName;
+	private boolean performedInsert;
 
 	/**
 	 * Sets the name of the variable. The ID of the variable is invalidated if its name changes
@@ -104,45 +100,65 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 
 	@Override
 	protected DataScripter getInsertSelect()
-			throws SQLException
 	{
-        DataScripter script = new DataScripter(  );
+        DataScripter script = new DataScripter();
+        script.setUseTransaction( true );
+        script.retryOnSqlState( "40001" );
+        script.retryOnSqlState( "23505" );
+        script.setHighPriority( true );
 
-		script.addLine("WITH new_variable_id AS");
-		script.addLine("(");
-		script.addTab().addLine("INSERT INTO wres.Variable(variable_name)");
-		script.addTab().addLine("SELECT ?");
-
-		script.addArgument(this.variableName);
-
-		script.addTab().addLine("WHERE NOT EXISTS (");
-		script.addTab(  2  ).addLine("SELECT 1");
-		script.addTab(  2  ).addLine("FROM wres.Variable");
-		script.addTab(  2  ).addLine("WHERE variable_name = ?");
-
-        script.addArgument(this.variableName);
-
-		script.addTab().addLine(")");
-		script.addTab().addLine("RETURNING variable_id");
-		script.addLine(")");
-		script.addLine("SELECT variable_id");
-		script.addLine("FROM new_variable_id");
-		script.addLine();
-		script.addLine("UNION");
-		script.addLine();
-		script.addLine("SELECT variable_id");
-		script.addLine("FROM wres.Variable");
-		script.addLine("WHERE variable_name = ?;");
+        script.addLine( "INSERT INTO wres.Variable ( variable_name )" );
+        script.addTab().addLine( "SELECT ?" );
 
         script.addArgument( this.variableName );
+
+        script.addTab().addLine( "WHERE NOT EXISTS" );
+        script.addTab().addLine( "(" );
+        script.addTab( 2 ).addLine( "SELECT 1" );
+        script.addTab( 2 ).addLine( "FROM wres.Variable" );
+        script.addTab( 2 ).addLine( "WHERE variable_name = ?" );
+
+        script.addArgument( this.variableName );
+
+        script.addTab().addLine( ");" );
 
 		return script;
 	}
 
+    @Override
+    public void save() throws SQLException
+    {
+        LOGGER.trace( "save() started for {}.", this.variableName );
+        DataScripter script = this.getInsertSelect();
+        this.performedInsert = script.execute() > 0;
+
+        LOGGER.trace( "save() performed insert for {}? {}.",
+                      this.variableName,
+                      this.performedInsert );
+
+        DataScripter scriptWithId = new DataScripter();
+        scriptWithId.setHighPriority( true );
+        scriptWithId.setUseTransaction( false );
+        scriptWithId.add( "SELECT " ).addLine( this.getIDName() );
+        scriptWithId.addLine( "FROM wres.Variable" );
+        scriptWithId.addLine( "WHERE variable_name = ? " );
+        scriptWithId.addArgument( this.variableName );
+
+        try ( DataProvider data = scriptWithId.getData() )
+        {
+            this.variableID = data.getInt( this.getIDName() );
+        }
+
+        LOGGER.trace( "Did I create Variable ID {}? {}",
+                      this.variableID,
+                      this.performedInsert );
+    }
+
 	@Override
 	protected Object getSaveLock()
 	{
-		return VariableDetails.VARIABLE_SAVE_LOCK;
+        // JFB: No need to lock, let the insert race be won/lost at DB.
+        return new Object();
 	}
 
 	@Override

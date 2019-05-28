@@ -5,10 +5,16 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,6 +53,12 @@ public class Query
      * A set of parameters to use for batch execution
      */
     private Collection<Object[]> batchParameters;
+
+
+    /**
+     * A set of SQLStates that should cause indefinite retry.
+     */
+    private Set<String> sqlStatesToRetry = Collections.emptySet();
 
     /**
      * Constructor
@@ -113,6 +125,64 @@ public class Query
         }
 
         this.batchParameters = batchParameters;
+        return this;
+    }
+
+
+    /**
+     * Add a SQLState that should cause indefinite retry instead of SQLException
+     * @param sqlStateToRetry The sqlState to tolerate, five digit alphanumeric
+     * @return The updated {@link Query}
+     * @throws IllegalArgumentException When sqlState isn't 5 digit alphanumeric
+     * @throws NullPointerException When sqlState is null
+     */
+
+    Query retryOnSqlState( String sqlStateToRetry )
+    {
+        Objects.requireNonNull( sqlStateToRetry );
+
+        if ( sqlStateToRetry.length() != 5
+             || sqlStateToRetry.getBytes().length != 5 )
+        {
+            throw new IllegalArgumentException( "Valid SQLSTATE String is exactly five digits and five bytes. "
+                                                + sqlStateToRetry + " is "
+                                                + sqlStateToRetry.length()
+                                                + " digits and "
+                                                + sqlStateToRetry.getBytes().length );
+        }
+
+        char[] sqlStateCharacters = {
+                '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+                'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
+                // There is no 'I' in SQLSTATE codes.
+                'J', 'K', 'L', 'M', 'N',
+                // There is no 'O' in SQLSTATE codes.
+                'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
+        };
+        // To guarantee that the search will work in a moment.
+        Arrays.sort( sqlStateCharacters );
+
+        for ( char c : sqlStateToRetry.toUpperCase()
+                                      .toCharArray() )
+        {
+            if ( Arrays.binarySearch( sqlStateCharacters, c ) < 0 )
+            {
+                throw new IllegalArgumentException(
+                        "Valid SQLSTATE String only contains particular Roman letters and Arabic numbers, not "
+                        + c + ". Please correct argument "
+                        + sqlStateToRetry );
+            }
+        }
+
+        if ( this.sqlStatesToRetry.equals( Collections.emptySet() ) )
+        {
+            // Set to two because the only callers known (as of 2019-05-23) will
+            // use exactly two conditions: unique constraint violation and
+            // serialization failure.
+            this.sqlStatesToRetry = new HashSet<>( 2 );
+        }
+
+        this.sqlStatesToRetry.add( sqlStateToRetry );
         return this;
     }
 
@@ -183,6 +253,14 @@ public class Query
             }
             catch ( SQLException exception )
             {
+                String sqlState = exception.getSQLState();
+
+                LOGGER.debug( "SQLState: {}, Connection: {}, this: {}",
+                              sqlState,
+                              connection,
+                              this,
+                              exception );
+
                 // If the connection doesn't automatically rollback any changes, do so manually before
                 // rethrowing the error
                 if ( !connection.getAutoCommit() )
@@ -190,24 +268,17 @@ public class Query
                     connection.rollback();
                 }
 
-                if ( LOGGER.isDebugEnabled() )
+                // In the case of specified retry conditions, retry.
+                if ( this.sqlStatesToRetry.contains( sqlState.toUpperCase() ) )
                 {
-                    LOGGER.debug( "SQLState: {}; ErrorCode: {}",
-                                  exception.getSQLState(),
-                                  exception.getErrorCode() );
-                }
-
-                // In the case of serialization failure, retry the query.
-                if ( this.forceTransaction &&
-                     exception.getSQLState()
-                              .equalsIgnoreCase( "40001" ) )
-                {
-                    LOGGER.debug( "Got SQLState 40001, retrying {}", this );
+                    LOGGER.debug( "Got SQLState {}, retrying {}",
+                                  sqlState,
+                                  this );
                     continue;
                 }
 
-                String message = "The script:" + NEWLINE;
-                message += this.script + NEWLINE + NEWLINE;
+                String message = "The Query: " + NEWLINE;
+                message += this + NEWLINE + NEWLINE;
                 message += "Failed.";
 
                 // Throw a new version of the exception with the script attached to it for easier debugging
@@ -310,6 +381,14 @@ public class Query
             }
             catch ( SQLException exception )
             {
+                String sqlState = exception.getSQLState();
+
+                LOGGER.debug( "SQLState: {}, Connection: {}, this: {}",
+                                  sqlState,
+                                  connection,
+                                  this,
+                                  exception );
+
                 // If the connection doesn't automatically rollback any changes, do so manually before
                 // rethrowing the error
                 if ( !connection.getAutoCommit() )
@@ -317,19 +396,12 @@ public class Query
                     connection.rollback();
                 }
 
-                if ( LOGGER.isDebugEnabled() )
+                // In the case of specified retry conditions, retry.
+                if ( this.sqlStatesToRetry.contains( sqlState.toUpperCase() ) )
                 {
-                    LOGGER.debug( "SQLState: {}; ErrorCode: {}",
-                                  exception.getSQLState(),
-                                  exception.getErrorCode() );
-                }
-
-                // In the case of serialization failure, retry the query.
-                if ( this.forceTransaction &&
-                     exception.getSQLState()
-                              .equalsIgnoreCase( "40001" ) )
-                {
-                    LOGGER.debug( "Got SQLState 40001, retrying {}", this );
+                    LOGGER.debug( "Got SQLState {}, retrying {}",
+                                  sqlState,
+                                  this );
                     continue;
                 }
 
@@ -584,5 +656,17 @@ public class Query
 
             private String query;
         }.init( this.script );
+    }
+
+    @Override
+    public String toString()
+    {
+        return new ToStringBuilder( this )
+                .append( "script", script )
+                .append( "forceTransaction", forceTransaction )
+                .append( "parameters", parameters )
+                .append( "batchParameters", batchParameters )
+                .append( "sqlStatesToRetry", sqlStatesToRetry )
+                .toString();
     }
 }
