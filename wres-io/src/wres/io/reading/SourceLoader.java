@@ -524,11 +524,13 @@ public class SourceLoader
                                   + "hash {} has the following status of "
                                   + "completely existing within the database: "
                                   + "{}, and status of another task claiming "
-                                  + "responsibility: {}",
+                                  + "responsibility: {}, and status of another "
+                                  + "task currently ingesting: {}",
                                   filePath,
                                   hash,
                                   ingestMarkedComplete,
-                                  anotherTaskStartedIngest );
+                                  anotherTaskStartedIngest,
+                                  ingestInProgress );
                 }
             }
             catch ( IOException | SQLException e )
