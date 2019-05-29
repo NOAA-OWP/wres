@@ -383,13 +383,12 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
     @Override
     protected DataScripter getInsertSelect()
     {
-        DataScripter script = new DataScripter(  );
+        DataScripter script = new DataScripter();
         this.addInsert( script );
-        script.addLine();
-        script.addLine("UNION");
-        script.addLine();
-        this.addSelect(script);
-
+        script.setUseTransaction( true );
+        script.retryOnSqlState( "40001" );
+        script.retryOnSqlState( "23505" );
+        script.setHighPriority( true );
         return script;
     }
 
@@ -400,8 +399,6 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
         // from the previous field, along with a newline
         boolean lineAdded = false;
 
-        script.addLine( "WITH new_feature AS" );
-        script.addLine("(");
         script.addTab().addLine("INSERT INTO wres.Feature (");
 
         if (this.getComid() != null)
@@ -737,19 +734,6 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
 
         script.addLine();
         script.addTab().addLine(")");
-        script.addTab().addLine("RETURNING feature_id,");
-        script.addTab(  2  ).addLine("comid,");
-        script.addTab(  2  ).addLine("lid,");
-        script.addTab(  2  ).addLine("gage_id,");
-        script.addTab(  2  ).addLine("region,");
-        script.addTab(  2  ).addLine("state,");
-        script.addTab(  2  ).addLine("huc,");
-        script.addTab(  2  ).addLine("feature_name,");
-        script.addTab(  2  ).addLine("latitude,");
-        script.addTab(  2  ).addLine("longitude");
-        script.addLine(")");
-        script.addLine("SELECT *");
-        script.add("FROM new_feature");
     }
 
     private void addSelect(final DataScripter script)
@@ -815,9 +799,30 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
     }
 
     @Override
+    public void save() throws SQLException
+    {
+        DataScripter script = this.getInsertSelect();
+        boolean performedInsert = script.execute() > 0;
+
+        DataScripter scriptWithId = new DataScripter();
+        scriptWithId.setHighPriority( true );
+        scriptWithId.setUseTransaction( false );
+        this.addSelect( scriptWithId );
+
+        try ( DataProvider data = scriptWithId.getData() )
+        {
+            this.featureId = data.getInt( this.getIDName() );
+        }
+
+        LOGGER.trace( "Did I create Feature ID {}? {}",
+                      this.featureId,
+                      performedInsert );
+    }
+
+    @Override
     protected Object getSaveLock()
     {
-        return FeatureDetails.FEATURE_SAVE_LOCK;
+        return new Object();
     }
 
     @Override
