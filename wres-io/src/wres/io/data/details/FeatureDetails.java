@@ -811,7 +811,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
 
         try ( DataProvider data = scriptWithId.getData() )
         {
-            this.featureId = data.getInt( this.getIDName() );
+            this.update( data );
         }
 
         LOGGER.trace( "Did I create Feature ID {}? {}",
