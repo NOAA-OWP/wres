@@ -804,14 +804,21 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
         DataScripter script = this.getInsertSelect();
         boolean performedInsert = script.execute() > 0;
 
-        DataScripter scriptWithId = new DataScripter();
-        scriptWithId.setHighPriority( true );
-        scriptWithId.setUseTransaction( false );
-        this.addSelect( scriptWithId );
-
-        try ( DataProvider data = scriptWithId.getData() )
+        if ( performedInsert )
         {
-            this.update( data );
+            this.featureId = script.getInsertedId();
+        }
+        else
+        {
+            DataScripter scriptWithId = new DataScripter();
+            scriptWithId.setHighPriority( true );
+            scriptWithId.setUseTransaction( false );
+            this.addSelect( scriptWithId );
+
+            try ( DataProvider data = scriptWithId.getData() )
+            {
+                this.update( data );
+            }
         }
 
         LOGGER.trace( "Did I create Feature ID {}? {}",
