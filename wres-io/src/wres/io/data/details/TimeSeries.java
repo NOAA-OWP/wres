@@ -187,8 +187,7 @@ public class TimeSeries
 	}
 	
 	/**
-	 * Creates or returns the entry in the database representing this time
-     * series
+	 * Creates a new entry in the database representing this time series
 	 * @throws SQLException Thrown if successful communication with the database
      * could not be established.
 	 */
@@ -205,9 +204,7 @@ public class TimeSeries
             scalePeriod = (int) this.getTimeScale().getPeriod().toMinutes();
             scaleFunction = this.getTimeScale().getFunction();
         }
-        
-		script.addLine("WITH new_timeseries AS");
-        script.addLine("(");
+
         script.addTab().addLine("INSERT INTO wres.TimeSeries (");
         script.addTab(  2  ).addLine("variablefeature_id,");
         script.addTab(  2  ).addLine("ensemble_id,");
@@ -216,61 +213,37 @@ public class TimeSeries
         script.addTab(  2  ).addLine("scale_period,");
         script.addTab(  2  ).addLine("scale_function");
         script.addTab().addLine(")");
-        script.addTab().addLine("SELECT ", this.variableFeatureID, ",");
-        script.addTab(  2  ).addLine(this.ensembleID, ",");
-		script.addTab(  2  ).addLine(this.measurementUnitID, ",");
-		script.addTab(  2  ).addLine("'", this.initializationDate, "',");
-		script.addTab(  2  ).addLine( scalePeriod, ",");
-		script.addTab(  2  ).addLine("'", scaleFunction.name(), "'");
-		script.addTab().addLine("WHERE NOT EXISTS (");
-		script.addTab(  2  ).addLine("SELECT 1");
-		script.addTab(  2  ).addLine("FROM wres.TimeSeries TS");
-		script.addTab(  2  ).addLine("INNER JOIN wres.TimeSeriesSource TSS");
-		script.addTab(   3   ).addLine("ON TSS.timeseries_id = TS.timeseries_id");
-		script.addTab(  2  ).addLine("WHERE TS.variablefeature_id = ", this.variableFeatureID);
-		script.addTab(   3   ).addLine("AND TS.ensemble_id = ", this.ensembleID);
-		script.addTab(   3   ).addLine("AND TS.initialization_date = '", this.initializationDate, "'");
-        script.addTab(   3   ).addLine("AND TS.measurementunit_id = ", this.measurementUnitID);
-        script.addTab(   3   ).addLine("AND TSS.source_id = ", this.sourceID);
-        script.addTab(   3   ).addLine("AND TS.scale_period = ", scalePeriod);
-        script.addTab(   3   ).addLine("AND TS.scale_function = '", scaleFunction.name(), "'");
-        script.addTab().addLine(")");
-		script.addTab().addLine("RETURNING timeseries_id");
-        script.addLine("),");
-        // Only create the forecast source as part of the transaction that has
-        // created the timeseries id. This strategy does not apply to NWM data.
-        script.addLine("new_timeseriessource AS");
-        script.addLine("(");
-        script.addTab().addLine("INSERT INTO wres.TimeSeriesSource (timeseries_id, source_id)");
-        script.addTab().addLine("SELECT timeseries_id, ", this.sourceID);
-        script.addTab().addLine("FROM new_timeseries");
-        script.addTab().addLine("WHERE timeseries_id IS NOT NULL");
-        // Note: timeseriessource.timeseries_id is fk to timeseries.timeseries_id
-        script.addTab().addLine("RETURNING timeseries_id");
-        script.addLine(")");
-        script.addLine("SELECT timeseries_id AS timeseries_id, TRUE as wasInserted");
-        script.addLine("FROM new_timeseriessource");
-		script.addLine();
-		script.addLine("UNION");
-		script.addLine();
-        script.addLine("SELECT TS.timeseries_id, FALSE as wasInserted");
-		script.addLine("FROM wres.TimeSeries TS");
-		script.addLine("INNER JOIN wres.TimeSeriesSource TSS");
-		script.addTab().addLine("ON TSS.timeseries_id = TS.timeseries_id");
-		script.addLine("WHERE TS.variablefeature_id = ", this.variableFeatureID);
-		script.addTab().addLine("AND TS.ensemble_id = ", this.ensembleID);
-		script.addTab().addLine("AND TS.initialization_date = '", this.initializationDate, "'");
-        script.addTab().addLine("AND TS.measurementunit_id = ", this.measurementUnitID);
-        script.addTab().addLine("AND TS.scale_period = ", scalePeriod);
-        script.addTab().addLine("AND TS.scale_function = '", scaleFunction.name(), "'");
-        script.addTab().addLine("AND EXISTS (");
-        script.addTab(  2  ).addLine("SELECT 1");
-        script.addTab(  2  ).addLine("FROM wres.TimeSeriesSource TSS");
-        script.addTab(  2  ).addLine("WHERE TSS.timeseries_id = TS.timeseries_id");
-        script.addTab(   3   ).addLine("AND TSS.source_id = ", this.sourceID);
-        script.addLine(");");
+        script.addTab().addLine( "VALUES ( ?, ?, ?, (?)::timestamp without time zone, ?, (?)::scale_function );" );
+        script.addArgument( this.variableFeatureID );
+        script.addArgument( this.ensembleID );
+        script.addArgument( this.measurementUnitID );
+        script.addArgument( this.initializationDate );
+        script.addArgument( scalePeriod );
+        script.addArgument( scaleFunction.name() );
 
-        this.timeSeriesID = script.retrieve( "timeseries_id" );
+        int rowsModified = script.execute();
+        int insertedId = script.getInsertedId();
+
+        if ( rowsModified != 1 )
+        {
+            throw new IllegalStateException( "Failed to insert a row using "
+                                             + script );
+        }
+
+        if ( script.getInsertedId() <= 0 )
+        {
+            throw new IllegalStateException( "Failed to get inserted id using"
+                                             + script );
+        }
+
+        this.timeSeriesID = insertedId;
+
+        DataScripter scriptTwo = new DataScripter();
+        scriptTwo.addLine( "INSERT INTO wres.TimeSeriesSource ( timeseries_id, source_id )" );
+        scriptTwo.addTab( 1 ).addLine( "VALUES ( ?, ? );" );
+        scriptTwo.addArgument( this.timeSeriesID );
+        scriptTwo.addArgument( this.sourceID );
+        scriptTwo.execute();
     }
 
     /**

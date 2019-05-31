@@ -17,6 +17,7 @@ public class DataScripter extends ScriptBuilder
     private final List<Object> arguments = new ArrayList<>(  );
     private boolean useTransaction;
     private Set<String> sqlStatesToRetry = Collections.emptySet();
+    private int insertedId;
 
     public DataScripter()
     {
@@ -79,7 +80,11 @@ public class DataScripter extends ScriptBuilder
      */
     public int execute(Object... parameters) throws SQLException
     {
-        return Database.execute( this.formQuery().setParameters( parameters ), this.isHighPriority );
+        Query query = this.formQuery()
+                          .setParameters( parameters );
+        int rowsModified = Database.execute( query, this.isHighPriority );
+        this.insertedId = query.getInsertedId();
+        return rowsModified;
     }
 
     /**
@@ -91,7 +96,11 @@ public class DataScripter extends ScriptBuilder
      */
     public int execute(List<Object[]> parameters) throws SQLException
     {
-        return Database.execute( this.formQuery().setBatchParameters( parameters ), this.isHighPriority );
+        Query query = this.formQuery()
+                          .setBatchParameters( parameters );
+        int rowsModified = Database.execute( query, this.isHighPriority );
+        this.insertedId = query.getInsertedId();
+        return rowsModified;
     }
 
     /**
@@ -101,7 +110,10 @@ public class DataScripter extends ScriptBuilder
      */
     public int execute() throws SQLException
     {
-        return Database.execute( this.formQuery(), this.isHighPriority );
+        Query query = this.formQuery();
+        int rowsModified = Database.execute( query, this.isHighPriority );
+        this.insertedId = query.getInsertedId();
+        return rowsModified;
     }
 
     /**
@@ -198,6 +210,18 @@ public class DataScripter extends ScriptBuilder
     public <U> List<U> interpret( ExceptionalFunction<DataProvider, U, SQLException> interpretor) throws SQLException
     {
         return Database.interpret( this.formQuery(), interpretor, this.isHighPriority );
+    }
+
+
+    /**
+     * Get the first available id of the first inserted row from a previous
+     * invocation of "execute" on this instance. 0 if none available.
+     * @return The id of the first inserted row or 0 if none was available.
+     */
+
+    public int getInsertedId()
+    {
+        return this.insertedId;
     }
 
     /**
