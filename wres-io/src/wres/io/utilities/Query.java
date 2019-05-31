@@ -18,6 +18,8 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.sql.Statement.RETURN_GENERATED_KEYS;
+
 import wres.system.SystemSettings;
 
 /**
@@ -59,6 +61,13 @@ public class Query
      * A set of SQLStates that should cause indefinite retry.
      */
     private Set<String> sqlStatesToRetry = Collections.emptySet();
+
+    /**
+     * A surrogate int key created by an insert, available to read only after
+     * running "execute" that returns rows affected.
+     */
+
+    private int insertedId;
 
     /**
      * Constructor
@@ -472,6 +481,8 @@ public class Query
      */
     private int executeWithParameters(final Connection connection) throws SQLException
     {
+        int modifiedRows;
+
         // We need to make sure that the statement is cleaned up after execution
         try(PreparedStatement preparedStatement = this.prepareStatement( connection ))
         {
@@ -484,8 +495,32 @@ public class Query
                 );
             }
 
-            return preparedStatement.getUpdateCount();
+            modifiedRows = preparedStatement.getUpdateCount();
+
+            // When rows have been modified, attempt to get the first
+            // auto-generated int key from the first row inserted.
+            if ( modifiedRows > 0 )
+            {
+                try ( ResultSet keySet = preparedStatement.getGeneratedKeys() )
+                {
+                    if ( keySet.next() )
+                    {
+                        this.insertedId = keySet.getInt( 1 );
+                        LOGGER.debug( "Found an inserted id for Query {}.", this );
+                    }
+                    else
+                    {
+                        LOGGER.debug( "Found no inserted id for Query {}.", this );
+                    }
+                }
+            }
+            else
+            {
+                LOGGER.debug( "No modified rows for Query {}.", this );
+            }
         }
+
+        return modifiedRows;
     }
 
     /**
@@ -575,7 +610,8 @@ public class Query
     private PreparedStatement prepareStatement(final Connection connection) throws SQLException
     {
         // All system-wide database connection settings should be added here
-        PreparedStatement statement = connection.prepareStatement( this.script );
+        PreparedStatement statement = connection.prepareStatement( this.script,
+                                                                   RETURN_GENERATED_KEYS );
         statement.setQueryTimeout( SystemSettings.getQueryTimeout() );
 
         // If we have a basic array of parameters, we can just add them directly to the statement
@@ -658,6 +694,11 @@ public class Query
         }.init( this.script );
     }
 
+    int getInsertedId()
+    {
+        return this.insertedId;
+    }
+
     @Override
     public String toString()
     {
@@ -667,6 +708,7 @@ public class Query
                 .append( "parameters", parameters )
                 .append( "batchParameters", batchParameters )
                 .append( "sqlStatesToRetry", sqlStatesToRetry )
+                .append( "insertedId", insertedId )
                 .toString();
     }
 }
