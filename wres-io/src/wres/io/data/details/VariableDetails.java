@@ -113,17 +113,24 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
                       this.variableName,
                       this.performedInsert );
 
-        DataScripter scriptWithId = new DataScripter();
-        scriptWithId.setHighPriority( true );
-        scriptWithId.setUseTransaction( false );
-        scriptWithId.add( "SELECT " ).addLine( this.getIDName() );
-        scriptWithId.addLine( "FROM wres.Variable" );
-        scriptWithId.addLine( "WHERE variable_name = ? " );
-        scriptWithId.addArgument( this.variableName );
-
-        try ( DataProvider data = scriptWithId.getData() )
+        if ( this.performedInsert )
         {
-            this.variableID = data.getInt( this.getIDName() );
+            this.variableID = script.getInsertedId();
+        }
+        else
+        {
+            DataScripter scriptWithId = new DataScripter();
+            scriptWithId.setHighPriority( true );
+            scriptWithId.setUseTransaction( false );
+            scriptWithId.add( "SELECT " ).addLine( this.getIDName() );
+            scriptWithId.addLine( "FROM wres.Variable" );
+            scriptWithId.addLine( "WHERE variable_name = ? " );
+            scriptWithId.addArgument( this.variableName );
+
+            try ( DataProvider data = scriptWithId.getData() )
+            {
+                this.variableID = data.getInt( this.getIDName() );
+            }
         }
 
         LOGGER.trace( "Did I create Variable ID {}? {}",

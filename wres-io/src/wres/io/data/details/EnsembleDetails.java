@@ -267,42 +267,49 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
         DataScripter script = this.getInsertSelect();
         boolean performedInsert = script.execute() > 0;
 
-        DataScripter scriptWithId = new DataScripter();
-        scriptWithId.setHighPriority( true );
-        scriptWithId.setUseTransaction( false );
-        scriptWithId.addLine( "SELECT ensemble_id" );
-        scriptWithId.addLine( "FROM wres.Ensemble" );
-        scriptWithId.addLine( "WHERE ensemble_name = ?" );
-
-        scriptWithId.addArgument( this.ensembleName );
-
-        scriptWithId.addTab().add( "AND ensemblemember_id " );
-
-        if ( this.ensembleMemberIndex == null)
+        if ( performedInsert )
         {
-            scriptWithId.addLine( "IS NULL" );
+            this.ensembleID = script.getInsertedId();
         }
         else
         {
-            scriptWithId.addLine( "= ?" );
-            scriptWithId.addArgument( this.getEnsembleMemberIndex() );
-        }
+            DataScripter scriptWithId = new DataScripter();
+            scriptWithId.setHighPriority( true );
+            scriptWithId.setUseTransaction( false );
+            scriptWithId.addLine( "SELECT ensemble_id" );
+            scriptWithId.addLine( "FROM wres.Ensemble" );
+            scriptWithId.addLine( "WHERE ensemble_name = ?" );
 
-        scriptWithId.addTab().add( "AND qualifier_id " );
+            scriptWithId.addArgument( this.ensembleName );
 
-        if ( this.qualifierID == null )
-        {
-            scriptWithId.add( "IS NULL;" );
-        }
-        else
-        {
-            scriptWithId.add( "= ?;" );
-            scriptWithId.addArgument( this.getQualifierID() );
-        }
+            scriptWithId.addTab().add( "AND ensemblemember_id " );
 
-        try ( DataProvider data = scriptWithId.getData() )
-        {
-            this.ensembleID = data.getInt( this.getIDName() );
+            if ( this.ensembleMemberIndex == null )
+            {
+                scriptWithId.addLine( "IS NULL" );
+            }
+            else
+            {
+                scriptWithId.addLine( "= ?" );
+                scriptWithId.addArgument( this.getEnsembleMemberIndex() );
+            }
+
+            scriptWithId.addTab().add( "AND qualifier_id " );
+
+            if ( this.qualifierID == null )
+            {
+                scriptWithId.add( "IS NULL;" );
+            }
+            else
+            {
+                scriptWithId.add( "= ?;" );
+                scriptWithId.addArgument( this.getQualifierID() );
+            }
+
+            try ( DataProvider data = scriptWithId.getData() )
+            {
+                this.ensembleID = data.getInt( this.getIDName() );
+            }
         }
 
         LOGGER.trace( "Did I create Ensemble ID {}? {}",

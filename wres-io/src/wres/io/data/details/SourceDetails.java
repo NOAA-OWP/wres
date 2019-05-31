@@ -194,17 +194,24 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
         DataScripter script = this.getInsertSelect();
         this.performedInsert = script.execute() > 0;
 
-        DataScripter scriptWithId = new DataScripter();
-        scriptWithId.setHighPriority( true );
-        scriptWithId.setUseTransaction( false );
-        scriptWithId.add( "SELECT " ).addLine( this.getIDName() );
-        scriptWithId.addLine( "FROM wres.Source" );
-        scriptWithId.addLine( "WHERE hash = ? " );
-        scriptWithId.addArgument( this.hash );
-
-        try ( DataProvider data = scriptWithId.getData() )
+        if ( this.performedInsert )
         {
-            this.sourceID = data.getInt( this.getIDName() );
+            this.sourceID = script.getInsertedId();
+        }
+        else
+        {
+            DataScripter scriptWithId = new DataScripter();
+            scriptWithId.setHighPriority( true );
+            scriptWithId.setUseTransaction( false );
+            scriptWithId.add( "SELECT " ).addLine( this.getIDName() );
+            scriptWithId.addLine( "FROM wres.Source" );
+            scriptWithId.addLine( "WHERE hash = ? " );
+            scriptWithId.addArgument( this.hash );
+
+            try ( DataProvider data = scriptWithId.getData() )
+            {
+                this.sourceID = data.getInt( this.getIDName() );
+            }
         }
 
         LOGGER.trace( "Did I create Source ID {}? {}",
