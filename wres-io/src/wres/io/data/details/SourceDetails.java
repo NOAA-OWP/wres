@@ -196,7 +196,9 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
 
         if ( this.performedInsert )
         {
-            this.sourceID = script.getInsertedId();
+            this.sourceID = script.getInsertedIds()
+                                  .get( 0 )
+                                  .intValue();
         }
         else
         {

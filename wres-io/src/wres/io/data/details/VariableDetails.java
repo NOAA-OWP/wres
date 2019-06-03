@@ -115,7 +115,9 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 
         if ( this.performedInsert )
         {
-            this.variableID = script.getInsertedId();
+            this.variableID = script.getInsertedIds()
+                                    .get( 0 )
+                                    .intValue();
         }
         else
         {

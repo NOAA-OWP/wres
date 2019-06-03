@@ -806,7 +806,9 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
 
         if ( performedInsert )
         {
-            this.featureId = script.getInsertedId();
+            this.featureId = script.getInsertedIds()
+                                   .get( 0 )
+                                   .intValue();
         }
         else
         {

@@ -222,7 +222,9 @@ public class TimeSeries
         script.addArgument( scaleFunction.name() );
 
         int rowsModified = script.execute();
-        int insertedId = script.getInsertedId();
+        int insertedId = script.getInsertedIds()
+                               .get( 0 )
+                               .intValue();
 
         if ( rowsModified != 1 )
         {
@@ -230,7 +232,7 @@ public class TimeSeries
                                              + script );
         }
 
-        if ( script.getInsertedId() <= 0 )
+        if ( script.getInsertedIds().size() <= 0 )
         {
             throw new IllegalStateException( "Failed to get inserted id using"
                                              + script );
