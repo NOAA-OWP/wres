@@ -5,10 +5,11 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.Timer;
@@ -52,9 +53,9 @@ public class Query
     private Object[] parameters;
 
     /**
-     * A set of parameters to use for batch execution
+     * A list of parameters to use for batch execution
      */
-    private Collection<Object[]> batchParameters;
+    private List<Object[]> batchParameters;
 
 
     /**
@@ -67,7 +68,7 @@ public class Query
      * running "execute" that returns rows affected.
      */
 
-    private int insertedId;
+    private List<Long> insertedIds = Collections.emptyList();
 
     /**
      * Constructor
@@ -124,7 +125,7 @@ public class Query
      * @return The updated {@link Query}
      * @throws IllegalArgumentException Thrown if standard parameters have already been set; the two are not compatible
      */
-    Query setBatchParameters(final Collection<Object[]> batchParameters)
+    Query setBatchParameters(final List<Object[]> batchParameters)
     {
         if (this.parameters != null)
         {
@@ -501,16 +502,18 @@ public class Query
             // auto-generated int key from the first row inserted.
             if ( modifiedRows > 0 )
             {
+                this.insertedIds = new ArrayList<>();
+
                 try ( ResultSet keySet = preparedStatement.getGeneratedKeys() )
                 {
-                    if ( keySet.next() )
+                    while ( keySet.next() )
                     {
-                        this.insertedId = keySet.getInt( 1 );
-                        LOGGER.debug( "Found an inserted id for Query {}.", this );
+                        this.insertedIds.add( keySet.getLong( 1 ) );
                     }
-                    else
+
+                    if ( this.insertedIds.size() > 0 )
                     {
-                        LOGGER.debug( "Found no inserted id for Query {}.", this );
+                        LOGGER.debug( "Found an inserted id for Query {}.", this );
                     }
                 }
             }
@@ -694,9 +697,9 @@ public class Query
         }.init( this.script );
     }
 
-    int getInsertedId()
+    List<Long> getInsertedIds()
     {
-        return this.insertedId;
+        return this.insertedIds;
     }
 
     @Override
@@ -708,7 +711,7 @@ public class Query
                 .append( "parameters", parameters )
                 .append( "batchParameters", batchParameters )
                 .append( "sqlStatesToRetry", sqlStatesToRetry )
-                .append( "insertedId", insertedId )
+                .append( "insertedIds", insertedIds )
                 .toString();
     }
 }

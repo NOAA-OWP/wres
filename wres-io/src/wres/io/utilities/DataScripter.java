@@ -17,7 +17,7 @@ public class DataScripter extends ScriptBuilder
     private final List<Object> arguments = new ArrayList<>(  );
     private boolean useTransaction;
     private Set<String> sqlStatesToRetry = Collections.emptySet();
-    private int insertedId;
+    private List<Long> insertedIds;
 
     public DataScripter()
     {
@@ -83,7 +83,7 @@ public class DataScripter extends ScriptBuilder
         Query query = this.formQuery()
                           .setParameters( parameters );
         int rowsModified = Database.execute( query, this.isHighPriority );
-        this.insertedId = query.getInsertedId();
+        this.insertedIds = query.getInsertedIds();
         return rowsModified;
     }
 
@@ -99,7 +99,7 @@ public class DataScripter extends ScriptBuilder
         Query query = this.formQuery()
                           .setBatchParameters( parameters );
         int rowsModified = Database.execute( query, this.isHighPriority );
-        this.insertedId = query.getInsertedId();
+        this.insertedIds = query.getInsertedIds();
         return rowsModified;
     }
 
@@ -112,7 +112,7 @@ public class DataScripter extends ScriptBuilder
     {
         Query query = this.formQuery();
         int rowsModified = Database.execute( query, this.isHighPriority );
-        this.insertedId = query.getInsertedId();
+        this.insertedIds = query.getInsertedIds();
         return rowsModified;
     }
 
@@ -214,14 +214,14 @@ public class DataScripter extends ScriptBuilder
 
 
     /**
-     * Get the first available id of the first inserted row from a previous
+     * Get the first available id of the each inserted row from a previous
      * invocation of "execute" on this instance. 0 if none available.
      * @return The id of the first inserted row or 0 if none was available.
      */
 
-    public int getInsertedId()
+    public List<Long> getInsertedIds()
     {
-        return this.insertedId;
+        return this.insertedIds;
     }
 
     /**

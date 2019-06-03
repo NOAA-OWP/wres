@@ -269,7 +269,9 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 
         if ( performedInsert )
         {
-            this.ensembleID = script.getInsertedId();
+            this.ensembleID = script.getInsertedIds()
+                                    .get( 0 )
+                                    .intValue();
         }
         else
         {
