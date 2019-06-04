@@ -380,6 +380,7 @@ public class Projects
             long currentMillis = startMillis;
             long sleepMillis = Duration.ofSeconds( 1 )
                                        .toMillis();
+            boolean projectSourceRowsFound = false;
 
             while ( currentMillis < endMillis )
             {
@@ -395,6 +396,7 @@ public class Projects
                         // member, therefore 2 or more rows (greater than 1).
                         LOGGER.debug( "wres.ProjectSource rows present for {}",
                                       detailsId );
+                        projectSourceRowsFound = true;
                         break;
                     }
                     else
@@ -412,6 +414,13 @@ public class Projects
                 }
 
                 currentMillis = System.currentTimeMillis();
+            }
+
+            if ( !projectSourceRowsFound )
+            {
+                throw new IngestException( "Another WRES instance failed to "
+                                           + "complete ingest that this "
+                                           + "evaluation depends on." );
             }
         }
 
