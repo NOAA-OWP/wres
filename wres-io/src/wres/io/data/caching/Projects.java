@@ -3,6 +3,7 @@ package wres.io.data.caching;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -319,15 +320,13 @@ public class Projects
                                      finalRightHashes,
                                      finalBaselineHashes );
         Project details = detailsResult.getLeft();
+        int detailsId = details.getId();
 
         if ( detailsResult.getRight() )
         {
-            if ( LOGGER.isDebugEnabled() )
-            {
-                LOGGER.debug( "Found that this Thread is responsible for "
-                              + "wres.ProjectSource rows for project {}",
-                              details.getId() );
-            }
+            LOGGER.debug( "Found that this Thread is responsible for "
+                          + "wres.ProjectSource rows for project {}",
+                          detailsId );
 
             // If we just created the Project, we are responsible for relating
             // project to source. Otherwise we trust it is present.
@@ -361,11 +360,59 @@ public class Projects
             LOGGER.trace( "Full copy statement: {}", allCopyValues );
             Database.copy( copyHeader, allCopyValues, delimiter );
         }
-        else if ( LOGGER.isDebugEnabled() )
+        else
         {
             LOGGER.debug( "Found that this Thread is NOT responsible for "
                           + "wres.ProjectSource rows for project {}",
-                          details.getId() );
+                          detailsId );
+            DataScripter scripter = new DataScripter();
+            scripter.addLine( "SELECT COUNT( source_id )" );
+            scripter.addLine( "FROM wres.ProjectSource" );
+            scripter.addLine( "WHERE project_id = ?" );
+            scripter.addArgument( detailsId );
+
+            // Need to wait here until the data is available. How long to wait?
+            // Start with 30ish seconds, error out after that. We might actually
+            // wait longer than 30 seconds.
+            long startMillis = System.currentTimeMillis();
+            long endMillis = startMillis + Duration.ofSeconds( 30 )
+                                                   .toMillis();
+            long currentMillis = startMillis;
+            long sleepMillis = Duration.ofSeconds( 1 )
+                                       .toMillis();
+
+            while ( currentMillis < endMillis )
+            {
+                try ( DataProvider dataProvider = scripter.getData() )
+                {
+                    long count = dataProvider.getLong( "count" );
+
+                    if ( count > 1 )
+                    {
+                        // We assume that the projectsource rows are made
+                        // in a single transaction here. We further assume that
+                        // each project will have at least a left and right
+                        // member, therefore 2 or more rows (greater than 1).
+                        LOGGER.debug( "wres.ProjectSource rows present for {}",
+                                      detailsId );
+                        break;
+                    }
+                    else
+                    {
+                        LOGGER.debug( "wres.ProjectSource rows missing for {}",
+                                      detailsId );
+                        Thread.sleep( sleepMillis );
+                    }
+                }
+                catch ( InterruptedException ie )
+                {
+                    LOGGER.warn( "Interrupted while waiting for wres.ProjectSource rows.", ie );
+                    Thread.currentThread().interrupt();
+                    // No need to rethrow, the evaluation will fail.
+                }
+
+                currentMillis = System.currentTimeMillis();
+            }
         }
 
         return details;
