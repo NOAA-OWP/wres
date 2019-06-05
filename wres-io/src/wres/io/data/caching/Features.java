@@ -741,30 +741,45 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
             {
                 DataScripter script = new DataScripter(  );
                 script.setHighPriority( true );
-
-                script.addLine("WITH new_variablefeature_id AS");
-                script.addLine("(");
+                script.retryOnSqlState( "40001" );
+                script.retryOnSqlState( "23505" );
+                script.setUseTransaction( true );
                 script.addTab().addLine("INSERT INTO wres.VariableFeature (variable_id, feature_id)");
-                script.addTab().addLine("SELECT ", variableId, ", ", featureDetails.getId());
+                script.addTab().addLine( "SELECT ?, ?" );
+                script.addArgument( variableId );
+                script.addArgument( featureDetails.getId() );
                 script.addTab().addLine("WHERE NOT EXISTS (");
                 script.addTab(  2  ).addLine("SELECT 1");
                 script.addTab(  2  ).addLine("FROM wres.VariableFeature VF");
-                script.addTab(  2  ).addLine("WHERE VF.variable_id = ", variableId);
-                script.addTab(   3   ).addLine("AND VF.feature_id = ", featureDetails.getId());
+                script.addTab(  2  ).addLine( "WHERE VF.variable_id = ?" );
+                script.addArgument( variableId );
+                script.addTab(   3   ).addLine( "AND VF.feature_id = ?" );
+                script.addArgument( featureDetails.getId() );
                 script.addTab().addLine(")");
-                script.addTab().addLine("RETURNING variablefeature_id");
-                script.addLine(")");
-                script.addLine("SELECT variablefeature_id");
-                script.addLine("FROM new_variablefeature_id");
-                script.addLine();
-                script.addLine("UNION");
-                script.addLine();
-                script.addLine("SELECT variablefeature_id");
-                script.addLine("FROM wres.VariableFeature VF");
-                script.addLine("WHERE VF.variable_id = ", variableId);
-                script.addTab().addLine("AND VF.feature_id = ", featureDetails.getId(), ";");
+                int rowsModified = script.execute();
 
-                id = script.retrieve( "variablefeature_id" );
+                if ( rowsModified == 1 )
+                {
+                    id = script.getInsertedIds()
+                               .get( 0 )
+                               .intValue();
+                }
+                else if ( rowsModified < 1 )
+                {
+                    DataScripter scriptExistingId = new DataScripter();
+                    scriptExistingId.addLine( "SELECT variablefeature_id" );
+                    scriptExistingId.addLine( "FROM wres.VariableFeature VF" );
+                    scriptExistingId.addLine( "WHERE VF.variable_id = ?" );
+                    scriptExistingId.addArgument( variableId );
+                    scriptExistingId.addTab().addLine( "AND VF.feature_id = ?;" );
+                    scriptExistingId.addArgument( featureDetails.getId() );
+                    id = scriptExistingId.retrieve( "variablefeature_id" );
+                }
+                else
+                {
+                    throw new IllegalStateException( "Expected only 0 or 1 row modified by "
+                                                     + script );
+                }
 
                 featureDetails.addVariableFeature( variableId, id );
             }
@@ -776,24 +791,26 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
     public static void addNHDPlusVariableFeatures(Integer variableId)
             throws SQLException
     {
-        synchronized ( Features.POSITION_LOCK )
-        {
-            DataScripter script = new DataScripter(  );
-            script.addLine("INSERT INTO wres.VariableFeature (variable_id, feature_id)");
-            script.addLine("SELECT ", variableId, ", F.feature_id");
-            script.addLine("FROM wres.Feature F");
-            script.addLine("WHERE F.comid IS NOT NULL");
-            script.addTab().addLine("AND F.comid != -999");
-            script.addTab().addLine("AND NOT EXISTS (");
-            script.addTab(  2  ).addLine("SELECT 1");
-            script.addTab(  2  ).addLine("FROM wres.VariableFeature VF");
-            script.addTab(  2  ).addLine("WHERE VF.variable_id = ", variableId);
-            script.addTab(   3   ).addLine("AND VF.feature_id = F.feature_id");
-            script.addTab().addLine(");");
-            script.execute();
-        }
+        DataScripter script = new DataScripter();
+        script.retryOnSqlState( "40001" );
+        script.retryOnSqlState( "23505" );
+        script.setUseTransaction( true );
+        script.addLine( "INSERT INTO wres.VariableFeature ( variable_id, feature_id )" );
+        script.addLine( "SELECT ?, F.feature_id" );
+        script.addArgument( variableId );
+        script.addLine( "FROM wres.Feature F" );
+        script.addLine( "WHERE F.comid IS NOT NULL" );
+        script.addTab().addLine( "AND F.comid != -999" );
+        script.addTab().addLine( "AND NOT EXISTS (" );
+        script.addTab(  2  ).addLine( "SELECT 1" );
+        script.addTab(  2  ).addLine( "FROM wres.VariableFeature VF" );
+        script.addTab(  2  ).addLine( "WHERE VF.variable_id = ?" );
+        script.addArgument( variableId );
+        script.addTab(   3   ).addLine( "AND VF.feature_id = F.feature_id" );
+        script.addTab().addLine(");");
+        script.execute();
     }
-	
+
 	@Override
 	protected int getMaxDetails() {
 		return MAX_DETAILS;
