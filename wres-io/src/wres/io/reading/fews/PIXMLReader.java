@@ -418,6 +418,9 @@ public final class PIXMLReader extends XMLReader
 		this.scalePeriod = null;
 		this.scaleFunction = TimeScale.TimeScaleFunction.UNKNOWN;
 		this.timeStep = null;
+        this.startDate = null;
+        this.endDate = null;
+        this.forecastDate = null;
 
 		//	Scrape all pertinent information from the header
 		while (reader.hasNext())
@@ -469,6 +472,10 @@ public final class PIXMLReader extends XMLReader
                 {
                     this.startDate = PIXMLReader.parseDateTime( reader );
 				}
+                else if (localName.equalsIgnoreCase("endDate"))
+                {
+                    this.endDate = PIXMLReader.parseDateTime( reader );
+                }
 				else if (XMLHelper.tagIs(reader, "creationDate")) {
 					creationDate = XMLHelper.getXMLText(reader);
 				}
@@ -482,14 +489,29 @@ public final class PIXMLReader extends XMLReader
 				}
 				else if ( localName.equalsIgnoreCase("forecastDate") )
 				{
-					if (!this.isForecast)
+                    this.forecastDate = PIXMLReader.parseDateTime( reader );
+
+                    if ( !this.isForecast )
 					{
-						throw new IngestException("The file '" + this.getFilename() +
-											  "' cannot be ingested as an "
-											  + "observation since it is a forecast.");
-					}
-					this.forecastDate = PIXMLReader.parseDateTime( reader );
-				}
+                        // End date should have been parsed already.
+                        // Special case information in #64534.
+                        if ( this.endDate != null
+                             && ( this.forecastDate.isEqual( this.endDate )
+                                  || this.forecastDate.isAfter( this.endDate ) ) )
+                        {
+                            LOGGER.debug( "Special case: <forecastDate> is {}",
+                                          "present, but >= <endDate>." );
+                        }
+                        else
+                        {
+                            throw new IngestException( "The data at '"
+                                                       + this.getFilename() +
+                                                       "' cannot be ingested as"
+                                                       + " an observation since"
+                                                       + " it is a forecast." );
+                        }
+                    }
+                }
 				else if ( localName.equalsIgnoreCase( "type" ))
                 {
                     // See #59438
@@ -530,7 +552,7 @@ public final class PIXMLReader extends XMLReader
 
     private void parseForecastHeaderElements( XMLStreamReader reader,
                                               String localName )
-            throws XMLStreamException, InvalidInputDataException
+            throws XMLStreamException
     {
         if ( localName.equalsIgnoreCase("ensembleId") ||
 			 localName.equalsIgnoreCase( "ensembleMemberId" ) )
@@ -561,10 +583,6 @@ public final class PIXMLReader extends XMLReader
             {
                 currentEnsembleMemberID = Integer.parseInt( member );
             }
-        }
-        else if ( localName.equalsIgnoreCase("forecastDate") )
-        {
-            this.forecastDate = PIXMLReader.parseDateTime( reader );
         }
     }
 
@@ -928,9 +946,16 @@ public final class PIXMLReader extends XMLReader
 	private String creationTime = null;
 
 	/**
-	 * The date and time of the first value forecasted
-	 */
+     * The date and time of the first value forecasted, as reported by header
+     * of most recently parsed time series.
+     */
     private LocalDateTime startDate = null;
+
+    /**
+     * The date and time of the last value forecasted, as reported by header
+     * of most recently parsed time series.
+     */
+    private LocalDateTime endDate = null;
 
     /**
      * The date and time that forecasting began
@@ -941,7 +966,7 @@ public final class PIXMLReader extends XMLReader
 	 * Indicates whether or not the data is for forecasts. Default is True
 	 */
 	private Boolean isForecast;
-	
+
 	/**
 	 * Basic details about the current ensemble for a current forecast
 	 */
