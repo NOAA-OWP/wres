@@ -3,8 +3,10 @@ package wres.io.utilities;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -506,14 +508,32 @@ public class Query
 
                 try ( ResultSet keySet = preparedStatement.getGeneratedKeys() )
                 {
-                    while ( keySet.next() )
-                    {
-                        this.insertedIds.add( keySet.getLong( 1 ) );
-                    }
+                    ResultSetMetaData metaData = keySet.getMetaData();
+                    int columnType = metaData.getColumnType( 1 );
+                    LOGGER.debug( "Column type of keys returned: {}",
+                                  columnType );
 
-                    if ( this.insertedIds.size() > 0 )
+                    if ( columnType == Types.BIGINT
+                         || columnType == Types.INTEGER
+                         || columnType == Types.SMALLINT
+                         || columnType == Types.TINYINT )
                     {
-                        LOGGER.debug( "Found an inserted id for Query {}.", this );
+                        while ( keySet.next() )
+                        {
+                            // All ints from tiny to big can fit in a long
+                            this.insertedIds.add( keySet.getLong( 1 ) );
+                        }
+
+                        if ( this.insertedIds.size() > 0 )
+                        {
+                            LOGGER.debug( "Found an inserted id for Query {}.",
+                                          this );
+                        }
+                    }
+                    else
+                    {
+                        LOGGER.debug( "No integer values returned for {}",
+                                      this );
                     }
                 }
             }
