@@ -24,7 +24,7 @@ public class CommaSeparatedUtilities
 
     /**
      * Returns a default header from the {@link SampleMetadata} to which additional information may be appended. Does
-     * not include the valid time information and is therefore deprecated for removal once #57932 is complete, to 
+     * not include the valid time information and is therefore deprecated for removal once #57932 is complete, to
      * be replaced with {@link #getTimeWindowHeaderFromSampleMetadata(SampleMetadata, ChronoUnit)} in all circumstances,
      * including for pairs and statistics.
      *

@@ -1,11 +1,13 @@
 package wres.io;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,6 +20,7 @@ import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.slf4j.LoggerFactory;
 
@@ -25,6 +28,7 @@ import wres.config.FeaturePlus;
 import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
+import wres.io.concurrency.ZippedPIXMLIngest;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
@@ -39,11 +43,11 @@ import wres.io.data.details.TimeSeries;
 import wres.io.project.Project;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
-import wres.io.reading.IngestedValues;
 import wres.io.reading.SourceLoader;
 import wres.io.retrieval.DataGenerator;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
+import wres.system.DatabaseLockManager;
 import wres.io.utilities.NoDataException;
 import wres.io.writing.netcdf.NetCDFCopier;
 import wres.system.ProgressMonitor;
@@ -375,23 +379,16 @@ public final class Operations {
     /**
      * Ingests for an evaluation project and returns state regarding the same.
      * @param projectConfig the projectConfig for the evaluation
+     * @param lockManager The lock manager to use.
      * @return the {@link Project} (state about this evaluation)
      * @throws IOException when anything goes wrong
      * @throws IllegalStateException when another process already holds lock.
      */
-    public static Project ingest( ProjectConfig projectConfig )
+    public static Project ingest( ProjectConfig projectConfig,
+                                  DatabaseLockManager lockManager )
             throws IOException
     {
-        Database.lockForMutation();
-
-        try
-        {
-            return Operations.doIngestWork( projectConfig );
-        }
-        finally
-        {
-            Database.releaseLockForMutation();
-        }
+        return Operations.doIngestWork( projectConfig, lockManager );
     }
 
     /**
@@ -401,40 +398,14 @@ public final class Operations {
      * @return the projectdetails object from ingesting this project
      * @throws IOException when anything goes wrong
      */
-    private static Project doIngestWork( ProjectConfig projectConfig )
+    private static Project doIngestWork( ProjectConfig projectConfig,
+                                         DatabaseLockManager lockManager )
             throws IOException
     {
-        boolean orphansDeleted;
-        try
-        {
-            orphansDeleted = Database.removeOrphanedData();
-        }
-        catch ( SQLException e )
-        {
-            throw new IOException( "Ingest failed when attempting to remove orphaned data.", e );
-        }
-
-        // If data had been removed, it needs to be officially vacuumed up and
-        // statistics need to be reevaluated.
-        if (orphansDeleted)
-        {
-            LOGGER.info("Since previously incomplete data was removed, the "
-                        + "state of the database will now be refreshed.");
-            try
-            {
-                Database.refreshStatistics( true );
-            }
-            catch ( SQLException se )
-            {
-                throw new IOException( "Failed to refresh statistics.", se );
-            }
-        }
-
         Project result = null;
-
         List<IngestResult> projectSources = new ArrayList<>();
+        SourceLoader loader = new SourceLoader( projectConfig, lockManager );
 
-        SourceLoader loader = new SourceLoader( projectConfig);
         try
         {
             List<Future<List<IngestResult>>> ingestions = loader.load();
@@ -466,8 +437,6 @@ public final class Operations {
         {
             List<IngestResult> leftovers = Database.completeAllIngestTasks();
 
-            IngestedValues.complete();
-
             if ( LOGGER.isDebugEnabled() )
             {
                 LOGGER.debug( leftovers.size() + " indirect ingest results" );
@@ -476,6 +445,106 @@ public final class Operations {
         }
 
         LOGGER.debug( "Here are the files ingested: {}", projectSources );
+
+        // Are there any sources that need to be retried?
+        List<IngestResult> retriesNeeded = projectSources.stream()
+                                                         .filter( IngestResult::requiresRetry )
+                                                         .collect( Collectors.toUnmodifiableList() );
+
+        // With 9 retries and an additional 2 seconds per retry, max sleep will
+        // be 90 seconds.
+        final int RETRY_LIMIT = 10;
+        final Duration RETRY_WAIT_PER_ATTEMPT = Duration.ofSeconds( 2 );
+
+        List<IngestResult> retriesFinished =
+                new ArrayList<>( retriesNeeded.size() );
+
+        try
+        {
+            int retriesAttempted = 0;
+
+            while ( retriesNeeded.size() > 0 && retriesAttempted < RETRY_LIMIT )
+            {
+                List<IngestResult> doRetryOnThese =
+                        new ArrayList<>( retriesNeeded.size() );
+                doRetryOnThese.addAll( retriesNeeded );
+
+                List<Future<List<IngestResult>>> retriedIngests =
+                        Collections.emptyList();
+                List<IngestResult> retriesFinishedThisIteration =
+                        new ArrayList<>( retriesNeeded.size() );
+
+                // On second and following retries, back off a bit.
+                // On the first (0th) attempt, no waiting. After that, a little
+                // more time with each iteration.
+                Thread.sleep( RETRY_WAIT_PER_ATTEMPT.toMillis() * retriesAttempted );
+
+                for ( IngestResult ingestResult : doRetryOnThese )
+                {
+                    retriedIngests = loader.retry( ingestResult );
+                }
+
+                for ( Future<List<IngestResult>> futureRetriedIngest : retriedIngests )
+                {
+                    List<IngestResult> retried = futureRetriedIngest.get();
+                    retriesFinishedThisIteration.addAll( retried );
+                }
+
+                retriesAttempted++;
+                retriesNeeded = retriesFinishedThisIteration.stream()
+                                                            .filter( IngestResult::requiresRetry )
+                                                            .collect( Collectors.toUnmodifiableList() );
+                retriesFinished.addAll( retriesFinishedThisIteration );
+            }
+        }
+        catch ( InterruptedException ie )
+        {
+            LOGGER.warn( "Interrupted during ingest.", ie );
+            Thread.currentThread().interrupt();
+        }
+        catch ( ExecutionException ee )
+        {
+            String message = "An ingest task could not be completed.";
+            throw new IngestException( message, ee );
+        }
+
+        for ( IngestResult retryResult : retriesFinished )
+        {
+            // In the case where a zipped source is retried, it will be a temp
+            // file on the filesystem somewhere, and needs to be cleaned up after
+            // it has been saved.
+            URI resultUri = retryResult.getDataSource()
+                                       .getUri();
+            if ( resultUri.getRawPath()
+                          .contains( ZippedPIXMLIngest.TEMP_FILE_PREFIX ) )
+            {
+                Path tempFile = Paths.get( resultUri );
+
+                try
+                {
+                    Files.delete( tempFile );
+                    LOGGER.info( "Deleted temporary zipped source {}",
+                                 tempFile );
+                }
+                catch ( IOException ioe )
+                {
+                    LOGGER.warn( "Failed to delete temporary file {}",
+                                 tempFile,
+                                 ioe );
+                }
+            }
+        }
+
+        if ( !retriesNeeded.isEmpty() )
+        {
+            throw new IngestException( "Could not finish ingest because the "
+                                       + "following sources required retries "
+                                       + "but the retry limit of " + RETRY_LIMIT
+                                       + " attempts was reached: "
+                                       + retriesNeeded + ". Another WRES "
+                                       + "instance may still be ingesting this "
+                                       + "data. Please contact the WRES team." );
+        }
 
         List<IngestResult> safeToShareResults =
                 Collections.unmodifiableList( projectSources );
@@ -487,18 +556,12 @@ public final class Operations {
 
             if ( Operations.shouldAnalyze( safeToShareResults ) )
             {
-                Database.addNewIndexes();
                 Database.refreshStatistics( false );
             }
         }
-        catch ( InterruptedException ie )
+        catch ( SQLException se )
         {
-            LOGGER.warn( "Interrupted while finalizing ingest.", ie );
-            Thread.currentThread().interrupt();
-        }
-        catch ( SQLException | ExecutionException e )
-        {
-            throw new IngestException( "Failed to finalize ingest.", e );
+            throw new IngestException( "Failed to finalize ingest.", se );
         }
 
         if ( result == null )
@@ -526,21 +589,6 @@ public final class Operations {
     public static void shutdown()
     {
         LOGGER.info("Shutting down the IO layer...");
-
-        try
-        {
-            Database.addNewIndexes();
-        }
-        catch ( InterruptedException ie )
-        {
-            LOGGER.warn( "Interrupted while adding indices during shutdown.", ie );
-            Thread.currentThread().interrupt();
-        }
-        catch ( SQLException | ExecutionException e )
-        {
-            LOGGER.warn( "Failed to add indices while shutting down.", e );
-        }
-
         Executor.complete();
         Database.shutdown();
     }
@@ -553,20 +601,6 @@ public final class Operations {
     public static void forceShutdown( long timeOut, TimeUnit timeUnit )
     {
         LOGGER.info( "Forcefully shutting down the IO module..." );
-
-        try
-        {
-            Database.addNewIndexes();
-        }
-        catch ( InterruptedException ie )
-        {
-            LOGGER.warn( "Interrupted while adding indices during shutdown.", ie );
-            Thread.currentThread().interrupt();
-        }
-        catch ( SQLException | ExecutionException e )
-        {
-            LOGGER.warn( "Failed to add indices while shutting down.", e );
-        }
 
         List<Runnable> executorTasks =
                 Executor.forceShutdown( timeOut / 2, timeUnit );
@@ -603,18 +637,18 @@ public final class Operations {
         }
     }
 
+
     /**
      * Removes all loaded user information from the database
-     * @throws IOException when locking for changes fails
+     * Assumes that the caller has already gotten an exclusive lock for modify.
      * @throws SQLException when cleaning or refreshing stats fails
      */
-    public static void cleanDatabase() throws IOException, SQLException
+
+    public static void cleanDatabase() throws SQLException
     {
-        Database.lockForMutation();
         Database.clean();
         Database.refreshStatistics( true );
-        Database.releaseLockForMutation();
-        
+
         // Nuke the application cache: see #61206
         Operations.invalidateCache();
     }
@@ -657,30 +691,13 @@ public final class Operations {
 
     /**
      * Updates the statistics and removes all dead rows from the database
+     * Assumes caller has already obtained exclusive lock on database.
      * @throws SQLException if the orphaned data could not be removed or the refreshing of statistics fails
      */
     public static void refreshDatabase() throws SQLException
     {
-        try
-        {
-            Database.lockForMutation();
-        }
-        catch ( IOException e )
-        {
-            throw new SQLException( "Database mutation could not be locked for statistical refresh.", e );
-        }
-
         Database.removeOrphanedData();
         Database.refreshStatistics(true);
-
-        try
-        {
-            Database.releaseLockForMutation();
-        }
-        catch ( IOException e )
-        {
-            throw new SQLException( "The lock for database mutation could not be properly released.", e );
-        }
     }
 
     /**

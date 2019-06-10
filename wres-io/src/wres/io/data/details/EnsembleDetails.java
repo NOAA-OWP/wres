@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.io.data.details.EnsembleDetails.EnsembleKey;
+import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 
 /**
@@ -29,9 +30,6 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 
     private static final Logger
             LOGGER = LoggerFactory.getLogger( EnsembleDetails.class);
-
-    // Lock that will prevent the saving of the ensemble multiple times in a row
-    private static final Object ENSEMBLE_SAVE_LOCK = new Object();
 	
 	/**
 	 The name of the ensemble being represented
@@ -197,12 +195,13 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 
 	@Override
 	protected DataScripter getInsertSelect()
-			throws SQLException
 	{
-		DataScripter script = new DataScripter(  );
+        DataScripter script = new DataScripter();
+        script.setUseTransaction( true );
+        script.retryOnSqlState( "40001" );
+        script.retryOnSqlState( "23505" );
+        script.setHighPriority( true );
 
-		script.addLine("WITH new_ensemble AS");
-		script.addLine("(");
 		script.addTab().addLine("INSERT INTO wres.Ensemble(ensemble_name, qualifier_id, ensemblemember_id)");
 		script.addTab().addLine("SELECT ?, ?, ?");
 
@@ -258,50 +257,72 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
         }
 
 		script.addTab().addLine(")");
-		script.addTab().addLine("RETURNING ensemble_id");
-		script.addLine(")");
-		script.addLine("SELECT ensemble_id");
-		script.addLine("FROM new_ensemble");
-		script.addLine();
-		script.addLine("UNION");
-		script.addLine();
-		script.addLine("SELECT ensemble_id");
-		script.addLine("FROM wres.Ensemble");
-		script.addLine("WHERE ensemble_name = ?");
-
-        script.addArgument(this.ensembleName);
-
-		script.addTab().add("AND ensemblemember_id ");
-
-        if ( this.ensembleMemberIndex == null)
-        {
-            script.addLine("IS NULL");
-        }
-        else
-        {
-            script.addLine("= ?");
-            script.addArgument( this.getEnsembleMemberIndex() );
-        }
-
-		script.addTab().add("AND qualifier_id ");
-
-        if (this.qualifierID == null)
-        {
-            script.add("IS NULL;");
-        }
-        else
-        {
-            script.add("= ?;");
-            script.addArgument( this.getQualifierID() );
-        }
 
         return script;
 	}
 
+    @Override
+    public void save() throws SQLException
+    {
+        DataScripter script = this.getInsertSelect();
+        boolean performedInsert = script.execute() > 0;
+
+        if ( performedInsert )
+        {
+            this.ensembleID = script.getInsertedIds()
+                                    .get( 0 )
+                                    .intValue();
+        }
+        else
+        {
+            DataScripter scriptWithId = new DataScripter();
+            scriptWithId.setHighPriority( true );
+            scriptWithId.setUseTransaction( false );
+            scriptWithId.addLine( "SELECT ensemble_id" );
+            scriptWithId.addLine( "FROM wres.Ensemble" );
+            scriptWithId.addLine( "WHERE ensemble_name = ?" );
+
+            scriptWithId.addArgument( this.ensembleName );
+
+            scriptWithId.addTab().add( "AND ensemblemember_id " );
+
+            if ( this.ensembleMemberIndex == null )
+            {
+                scriptWithId.addLine( "IS NULL" );
+            }
+            else
+            {
+                scriptWithId.addLine( "= ?" );
+                scriptWithId.addArgument( this.getEnsembleMemberIndex() );
+            }
+
+            scriptWithId.addTab().add( "AND qualifier_id " );
+
+            if ( this.qualifierID == null )
+            {
+                scriptWithId.add( "IS NULL;" );
+            }
+            else
+            {
+                scriptWithId.add( "= ?;" );
+                scriptWithId.addArgument( this.getQualifierID() );
+            }
+
+            try ( DataProvider data = scriptWithId.getData() )
+            {
+                this.ensembleID = data.getInt( this.getIDName() );
+            }
+        }
+
+        LOGGER.trace( "Did I create Ensemble ID {}? {}",
+                      this.ensembleID,
+                      performedInsert );
+    }
+
 	@Override
     protected Object getSaveLock()
     {
-        return EnsembleDetails.ENSEMBLE_SAVE_LOCK;
+        return new Object();
     }
 
     @Override
@@ -317,7 +338,7 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
                ", Qualifier: " + this.getQualifierID() +
                ", Member: " + this.getEnsembleMemberIndex() + "}";
     }
-	
+
 	public static class EnsembleKey implements Comparable<EnsembleKey>
 	{
         private final String ensembleName;

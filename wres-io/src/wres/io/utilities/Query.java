@@ -3,14 +3,25 @@ package wres.io.utilities;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Collection;
+import java.sql.Types;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static java.sql.Statement.RETURN_GENERATED_KEYS;
 
 import wres.system.SystemSettings;
 
@@ -44,9 +55,22 @@ public class Query
     private Object[] parameters;
 
     /**
-     * A set of parameters to use for batch execution
+     * A list of parameters to use for batch execution
      */
-    private Collection<Object[]> batchParameters;
+    private List<Object[]> batchParameters;
+
+
+    /**
+     * A set of SQLStates that should cause indefinite retry.
+     */
+    private Set<String> sqlStatesToRetry = Collections.emptySet();
+
+    /**
+     * A surrogate int key created by an insert, available to read only after
+     * running "execute" that returns rows affected.
+     */
+
+    private List<Long> insertedIds = Collections.emptyList();
 
     /**
      * Constructor
@@ -103,7 +127,7 @@ public class Query
      * @return The updated {@link Query}
      * @throws IllegalArgumentException Thrown if standard parameters have already been set; the two are not compatible
      */
-    Query setBatchParameters(final Collection<Object[]> batchParameters)
+    Query setBatchParameters(final List<Object[]> batchParameters)
     {
         if (this.parameters != null)
         {
@@ -113,6 +137,64 @@ public class Query
         }
 
         this.batchParameters = batchParameters;
+        return this;
+    }
+
+
+    /**
+     * Add a SQLState that should cause indefinite retry instead of SQLException
+     * @param sqlStateToRetry The sqlState to tolerate, five digit alphanumeric
+     * @return The updated {@link Query}
+     * @throws IllegalArgumentException When sqlState isn't 5 digit alphanumeric
+     * @throws NullPointerException When sqlState is null
+     */
+
+    Query retryOnSqlState( String sqlStateToRetry )
+    {
+        Objects.requireNonNull( sqlStateToRetry );
+
+        if ( sqlStateToRetry.length() != 5
+             || sqlStateToRetry.getBytes().length != 5 )
+        {
+            throw new IllegalArgumentException( "Valid SQLSTATE String is exactly five digits and five bytes. "
+                                                + sqlStateToRetry + " is "
+                                                + sqlStateToRetry.length()
+                                                + " digits and "
+                                                + sqlStateToRetry.getBytes().length );
+        }
+
+        char[] sqlStateCharacters = {
+                '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+                'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
+                // There is no 'I' in SQLSTATE codes.
+                'J', 'K', 'L', 'M', 'N',
+                // There is no 'O' in SQLSTATE codes.
+                'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
+        };
+        // To guarantee that the search will work in a moment.
+        Arrays.sort( sqlStateCharacters );
+
+        for ( char c : sqlStateToRetry.toUpperCase()
+                                      .toCharArray() )
+        {
+            if ( Arrays.binarySearch( sqlStateCharacters, c ) < 0 )
+            {
+                throw new IllegalArgumentException(
+                        "Valid SQLSTATE String only contains particular Roman letters and Arabic numbers, not "
+                        + c + ". Please correct argument "
+                        + sqlStateToRetry );
+            }
+        }
+
+        if ( this.sqlStatesToRetry.equals( Collections.emptySet() ) )
+        {
+            // Set to two because the only callers known (as of 2019-05-23) will
+            // use exactly two conditions: unique constraint violation and
+            // serialization failure.
+            this.sqlStatesToRetry = new HashSet<>( 2 );
+        }
+
+        this.sqlStatesToRetry.add( sqlStateToRetry );
         return this;
     }
 
@@ -183,6 +265,14 @@ public class Query
             }
             catch ( SQLException exception )
             {
+                String sqlState = exception.getSQLState();
+
+                LOGGER.debug( "SQLState: {}, Connection: {}, this: {}",
+                              sqlState,
+                              connection,
+                              this,
+                              exception );
+
                 // If the connection doesn't automatically rollback any changes, do so manually before
                 // rethrowing the error
                 if ( !connection.getAutoCommit() )
@@ -190,24 +280,17 @@ public class Query
                     connection.rollback();
                 }
 
-                if ( LOGGER.isDebugEnabled() )
+                // In the case of specified retry conditions, retry.
+                if ( this.sqlStatesToRetry.contains( sqlState.toUpperCase() ) )
                 {
-                    LOGGER.debug( "SQLState: {}; ErrorCode: {}",
-                                  exception.getSQLState(),
-                                  exception.getErrorCode() );
-                }
-
-                // In the case of serialization failure, retry the query.
-                if ( this.forceTransaction &&
-                     exception.getSQLState()
-                              .equalsIgnoreCase( "40001" ) )
-                {
-                    LOGGER.debug( "Got SQLState 40001, retrying {}", this );
+                    LOGGER.debug( "Got SQLState {}, retrying {}",
+                                  sqlState,
+                                  this );
                     continue;
                 }
 
-                String message = "The script:" + NEWLINE;
-                message += this.script + NEWLINE + NEWLINE;
+                String message = "The Query: " + NEWLINE;
+                message += this + NEWLINE + NEWLINE;
                 message += "Failed.";
 
                 // Throw a new version of the exception with the script attached to it for easier debugging
@@ -310,6 +393,14 @@ public class Query
             }
             catch ( SQLException exception )
             {
+                String sqlState = exception.getSQLState();
+
+                LOGGER.debug( "SQLState: {}, Connection: {}, this: {}",
+                                  sqlState,
+                                  connection,
+                                  this,
+                                  exception );
+
                 // If the connection doesn't automatically rollback any changes, do so manually before
                 // rethrowing the error
                 if ( !connection.getAutoCommit() )
@@ -317,19 +408,12 @@ public class Query
                     connection.rollback();
                 }
 
-                if ( LOGGER.isDebugEnabled() )
+                // In the case of specified retry conditions, retry.
+                if ( this.sqlStatesToRetry.contains( sqlState.toUpperCase() ) )
                 {
-                    LOGGER.debug( "SQLState: {}; ErrorCode: {}",
-                                  exception.getSQLState(),
-                                  exception.getErrorCode() );
-                }
-
-                // In the case of serialization failure, retry the query.
-                if ( this.forceTransaction &&
-                     exception.getSQLState()
-                              .equalsIgnoreCase( "40001" ) )
-                {
-                    LOGGER.debug( "Got SQLState 40001, retrying {}", this );
+                    LOGGER.debug( "Got SQLState {}, retrying {}",
+                                  sqlState,
+                                  this );
                     continue;
                 }
 
@@ -400,6 +484,8 @@ public class Query
      */
     private int executeWithParameters(final Connection connection) throws SQLException
     {
+        int modifiedRows;
+
         // We need to make sure that the statement is cleaned up after execution
         try(PreparedStatement preparedStatement = this.prepareStatement( connection ))
         {
@@ -412,8 +498,52 @@ public class Query
                 );
             }
 
-            return preparedStatement.getUpdateCount();
+            modifiedRows = preparedStatement.getUpdateCount();
+
+            // When rows have been modified, attempt to get the first
+            // auto-generated int key from the first row inserted.
+            if ( modifiedRows > 0 )
+            {
+                this.insertedIds = new ArrayList<>();
+
+                try ( ResultSet keySet = preparedStatement.getGeneratedKeys() )
+                {
+                    ResultSetMetaData metaData = keySet.getMetaData();
+                    int columnType = metaData.getColumnType( 1 );
+                    LOGGER.debug( "Column type of keys returned: {}",
+                                  columnType );
+
+                    if ( columnType == Types.BIGINT
+                         || columnType == Types.INTEGER
+                         || columnType == Types.SMALLINT
+                         || columnType == Types.TINYINT )
+                    {
+                        while ( keySet.next() )
+                        {
+                            // All ints from tiny to big can fit in a long
+                            this.insertedIds.add( keySet.getLong( 1 ) );
+                        }
+
+                        if ( this.insertedIds.size() > 0 )
+                        {
+                            LOGGER.debug( "Found an inserted id for Query {}.",
+                                          this );
+                        }
+                    }
+                    else
+                    {
+                        LOGGER.debug( "No integer values returned for {}",
+                                      this );
+                    }
+                }
+            }
+            else
+            {
+                LOGGER.debug( "No modified rows for Query {}.", this );
+            }
         }
+
+        return modifiedRows;
     }
 
     /**
@@ -503,7 +633,8 @@ public class Query
     private PreparedStatement prepareStatement(final Connection connection) throws SQLException
     {
         // All system-wide database connection settings should be added here
-        PreparedStatement statement = connection.prepareStatement( this.script );
+        PreparedStatement statement = connection.prepareStatement( this.script,
+                                                                   RETURN_GENERATED_KEYS );
         statement.setQueryTimeout( SystemSettings.getQueryTimeout() );
 
         // If we have a basic array of parameters, we can just add them directly to the statement
@@ -584,5 +715,23 @@ public class Query
 
             private String query;
         }.init( this.script );
+    }
+
+    List<Long> getInsertedIds()
+    {
+        return this.insertedIds;
+    }
+
+    @Override
+    public String toString()
+    {
+        return new ToStringBuilder( this )
+                .append( "script", script )
+                .append( "forceTransaction", forceTransaction )
+                .append( "parameters", parameters )
+                .append( "batchParameters", batchParameters )
+                .append( "sqlStatesToRetry", sqlStatesToRetry )
+                .append( "insertedIds", insertedIds )
+                .toString();
     }
 }

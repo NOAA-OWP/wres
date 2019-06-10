@@ -14,12 +14,16 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,11 +37,14 @@ import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
+import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
 import wres.io.data.details.TimeSeries;
+import wres.io.reading.SourceCompleter;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestedValues;
 import wres.io.reading.InvalidInputDataException;
+import wres.system.DatabaseLockManager;
 import wres.system.xml.XMLHelper;
 import wres.system.xml.XMLReader;
 import wres.util.Strings;
@@ -61,31 +68,40 @@ public final class PIXMLReader extends XMLReader
                                .withZone( ZoneId.of( "UTC" ) );
 
     private DataSourceConfig.Source sourceConfig;
+    private final DatabaseLockManager lockManager;
+    private final Set<Pair<CountDownLatch,CountDownLatch>> latches = new HashSet<>();
+
 
     // Start by assuming we must ingest
     private boolean inChargeOfIngest = true;
+    private boolean ingestFullyCompleted = false;
 
 	/**
 	 * Constructor for a reader that may be for forecasts or observations
 	 * @param filename The path to the file to read
 	 * @param hash the hash code for the source
+	 * @param lockManager The lock manager to use.
      * @throws IOException when an attempt to get the file from classpath fails.
 	 */
     PIXMLReader( URI filename,
-				 String hash )
+                 String hash,
+                 DatabaseLockManager lockManager )
             throws IOException
 	{
 		super(filename);
 		this.hash = hash;
+        this.lockManager = lockManager;
 	}
 
     public PIXMLReader( URI filename,
                         InputStream inputStream,
-                        String hash )
+                        String hash,
+                        DatabaseLockManager lockManager )
             throws IOException
 	{
 		super(filename, inputStream);
 		this.hash = hash;
+        this.lockManager = lockManager;
 	}
 
 	@Override
@@ -327,11 +343,12 @@ public final class PIXMLReader extends XMLReader
 
             if ( this.inChargeOfIngest  )
             {
-                IngestedValues.addTimeSeriesValue(
-                        timeseriesID,
-                        leadTimeInHours,
-                        this.getValueToSave( value )
+                Pair<CountDownLatch,CountDownLatch> synchronizer =
+                        IngestedValues.addTimeSeriesValue( timeseriesID,
+                                                           leadTimeInHours,
+                                                           this.getValueToSave( value )
                 );
+                this.latches.add( synchronizer );
             }
             else
             {
@@ -345,31 +362,38 @@ public final class PIXMLReader extends XMLReader
                 LOGGER.trace( "NaN encountered." );
             }
 
-            OffsetDateTime offsetDateTime = OffsetDateTime.of( dateTime, this.getZoneOffset() )
-                                                          .withOffsetSameInstant( ZoneOffset.UTC );
+            if ( this.inChargeOfIngest )
+            {
+                OffsetDateTime offsetDateTime =
+                        OffsetDateTime.of( dateTime, this.getZoneOffset() )
+                                      .withOffsetSameInstant( ZoneOffset.UTC );
 
-            this.addObservedEvent( offsetDateTime, this.getValueToSave( value ) );
+                Pair<CountDownLatch, CountDownLatch> observationSynchronizer =
+                        this.addObservedEvent( offsetDateTime,
+                                               this.getValueToSave( value ) );
+                this.latches.add( observationSynchronizer );
+            }
         }
 	}
-	
+
 	/**
 	 * Adds measurement information to the current insert script in the form of observation data
 	 * @param observedTime The time when the measurement was taken
 	 * @param observedValue The value retrieved from the XML
 	 * @throws SQLException Any possible error encountered while trying to retrieve the variable position id or the id of the measurement uni
 	 */
-	private void addObservedEvent(OffsetDateTime observedTime, Double observedValue)
-			throws SQLException
-	{
-	    IngestedValues.observed( observedValue )
-                      .at(observedTime)
-                      .forVariableAndFeatureID( this.getVariableFeatureID() )
-                      .measuredIn( this.getMeasurementID() )
-                      .inSource( this.getSourceID() )
-                      .scaleOf( this.scalePeriod )
-                      .scaledBy( this.scaleFunction )
-                      .add();
-	}
+    private Pair<CountDownLatch,CountDownLatch> addObservedEvent(OffsetDateTime observedTime, Double observedValue)
+            throws SQLException, IngestException
+    {
+        return IngestedValues.observed( observedValue )
+                             .at(observedTime)
+                             .forVariableAndFeatureID( this.getVariableFeatureID() )
+                             .measuredIn( this.getMeasurementID() )
+                             .inSource( this.getSourceID() )
+                             .scaleOf( this.scalePeriod )
+                             .scaledBy( this.scaleFunction )
+                             .add();
+    }
 
 
 	/**
@@ -394,6 +418,9 @@ public final class PIXMLReader extends XMLReader
 		this.scalePeriod = null;
 		this.scaleFunction = TimeScale.TimeScaleFunction.UNKNOWN;
 		this.timeStep = null;
+        this.startDate = null;
+        this.endDate = null;
+        this.forecastDate = null;
 
 		//	Scrape all pertinent information from the header
 		while (reader.hasNext())
@@ -445,6 +472,10 @@ public final class PIXMLReader extends XMLReader
                 {
                     this.startDate = PIXMLReader.parseDateTime( reader );
 				}
+                else if (localName.equalsIgnoreCase("endDate"))
+                {
+                    this.endDate = PIXMLReader.parseDateTime( reader );
+                }
 				else if (XMLHelper.tagIs(reader, "creationDate")) {
 					creationDate = XMLHelper.getXMLText(reader);
 				}
@@ -458,14 +489,29 @@ public final class PIXMLReader extends XMLReader
 				}
 				else if ( localName.equalsIgnoreCase("forecastDate") )
 				{
-					if (!this.isForecast)
+                    this.forecastDate = PIXMLReader.parseDateTime( reader );
+
+                    if ( !this.isForecast )
 					{
-						throw new IngestException("The file '" + this.getFilename() +
-											  "' cannot be ingested as an "
-											  + "observation since it is a forecast.");
-					}
-					this.forecastDate = PIXMLReader.parseDateTime( reader );
-				}
+                        // End date should have been parsed already.
+                        // Special case information in #64534.
+                        if ( this.endDate != null
+                             && ( this.forecastDate.isEqual( this.endDate )
+                                  || this.forecastDate.isAfter( this.endDate ) ) )
+                        {
+                            LOGGER.debug( "Special case: <forecastDate> is {}",
+                                          "present, but >= <endDate>." );
+                        }
+                        else
+                        {
+                            throw new IngestException( "The data at '"
+                                                       + this.getFilename() +
+                                                       "' cannot be ingested as"
+                                                       + " an observation since"
+                                                       + " it is a forecast." );
+                        }
+                    }
+                }
 				else if ( localName.equalsIgnoreCase( "type" ))
                 {
                     // See #59438
@@ -506,7 +552,7 @@ public final class PIXMLReader extends XMLReader
 
     private void parseForecastHeaderElements( XMLStreamReader reader,
                                               String localName )
-            throws XMLStreamException, InvalidInputDataException
+            throws XMLStreamException
     {
         if ( localName.equalsIgnoreCase("ensembleId") ||
 			 localName.equalsIgnoreCase( "ensembleMemberId" ) )
@@ -537,10 +583,6 @@ public final class PIXMLReader extends XMLReader
             {
                 currentEnsembleMemberID = Integer.parseInt( member );
             }
-        }
-        else if ( localName.equalsIgnoreCase("forecastDate") )
-        {
-            this.forecastDate = PIXMLReader.parseDateTime( reader );
         }
     }
 
@@ -725,6 +767,9 @@ public final class PIXMLReader extends XMLReader
                     // Now we have the definitive answer from the database.
                     wasThisReaderTheOneThatInserted = true;
 
+                    // We should mark that the ingest is ongoing. #50933
+                    this.lockManager.lockSource( sourceDetails.getId() );
+
                     // Now that ball is in our court we should put in cache
                     DataSources.put( sourceDetails );
                     // // Older, implicit way:
@@ -806,6 +851,70 @@ public final class PIXMLReader extends XMLReader
         return val;
     }
 
+
+    /**
+     * Mark this source as having been completely parsed and ingested
+     * successfully so that any other task (in- or out-of-process) can know
+     * that it was done.
+     * @throws IngestException when marking complete fails
+     */
+
+    @Override
+    protected void completeParsing() throws IngestException
+    {
+        URI uri = this.getFilename();
+
+        if ( this.inChargeOfIngest )
+        {
+            LOGGER.debug( "Because this task is in charge of ingest, mark source complete for {}.",
+                          this );
+            SourceCompleter sourceCompleter = new SourceCompleter( this.currentSourceID,
+                                                                   this.lockManager );
+            // Unsafe publication?
+            sourceCompleter.complete( this.latches );
+            this.ingestFullyCompleted = true;
+        }
+        else
+        {
+            LOGGER.debug( "This task is not in charge of ingest, do not mark source complete for {}, check to see that it *was* marked complete.",
+                          this );
+
+            try
+            {
+                SourceCompletedDetails completedDetails =
+                        new SourceCompletedDetails( this.currentSourceID );
+                this.ingestFullyCompleted = completedDetails.wasCompleted();
+            }
+            catch ( SQLException se )
+            {
+                throw new IngestException( "Failed to check if source " + uri
+                                           + " was completed using id "
+                                           + this.currentSourceID + ".", se );
+            }
+
+            if ( this.ingestFullyCompleted )
+            {
+                LOGGER.debug( "source_id {} completed successfully by another task {}",
+                              this.currentSourceID, this );
+            }
+            else
+            {
+                LOGGER.debug( "source_id {} was NOT completed successfully by another task {}",
+                             this.currentSourceID, this );
+            }
+        }
+    }
+
+    public boolean inChargeOfIngest()
+    {
+        return this.inChargeOfIngest;
+    }
+
+    public boolean ingestFullyCompleted()
+    {
+        return this.ingestFullyCompleted;
+    }
+
     private LocalDateTime getStartDate()
 	{
 		return this.startDate;
@@ -837,9 +946,16 @@ public final class PIXMLReader extends XMLReader
 	private String creationTime = null;
 
 	/**
-	 * The date and time of the first value forecasted
-	 */
+     * The date and time of the first value forecasted, as reported by header
+     * of most recently parsed time series.
+     */
     private LocalDateTime startDate = null;
+
+    /**
+     * The date and time of the last value forecasted, as reported by header
+     * of most recently parsed time series.
+     */
+    private LocalDateTime endDate = null;
 
     /**
      * The date and time that forecasting began
@@ -850,7 +966,7 @@ public final class PIXMLReader extends XMLReader
 	 * Indicates whether or not the data is for forecasts. Default is True
 	 */
 	private Boolean isForecast;
-	
+
 	/**
 	 * Basic details about the current ensemble for a current forecast
 	 */

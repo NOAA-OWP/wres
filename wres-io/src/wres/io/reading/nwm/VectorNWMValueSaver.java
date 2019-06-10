@@ -1,7 +1,6 @@
 package wres.io.reading.nwm;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
@@ -9,14 +8,17 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 
 import javax.validation.constraints.NotNull;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,9 +26,9 @@ import ucar.ma2.Array;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
 
-import wres.config.generated.DataSourceConfig;
+import wres.config.generated.ProjectConfig;
 import wres.datamodel.metadata.TimeScale;
-import wres.io.concurrency.WRESRunnable;
+import wres.io.concurrency.WRESCallable;
 import wres.io.concurrency.WRESRunnableException;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
@@ -34,14 +36,19 @@ import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
+import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
+import wres.io.reading.DataSource;
+import wres.io.reading.IngestResult;
 import wres.io.reading.IngestedValues;
+import wres.io.reading.SourceCompleter;
 import wres.io.utilities.DataScripter;
+import wres.system.DatabaseLockManager;
 import wres.util.NetCDF;
 import wres.util.Strings;
 import wres.util.TimeHelper;
 
-class VectorNWMValueSaver extends WRESRunnable
+class VectorNWMValueSaver extends WRESCallable<List<IngestResult>>
 {
 
     private static final Logger LOGGER =
@@ -206,9 +213,12 @@ class VectorNWMValueSaver extends WRESRunnable
         return lock;
     }
 
+    private final ProjectConfig projectConfig;
     private final Path filePath;
     private NetcdfFile source;
-    private final DataSourceConfig dataSourceConfig;
+    private final DataSource dataSource;
+    private final DatabaseLockManager lockManager;
+    private final Set<Pair<CountDownLatch, CountDownLatch>> latches = new HashSet<>();
 
     private Duration lead;
     private Variable variable;
@@ -220,20 +230,25 @@ class VectorNWMValueSaver extends WRESRunnable
     private boolean inChargeOfIngest;
     private Integer ensembleId;
 
-    VectorNWMValueSaver( URI filename,
+    VectorNWMValueSaver( ProjectConfig projectConfig,
+                         DataSource dataSource,
                          String hash,
-                         DataSourceConfig dataSourceConfig)
+                         DatabaseLockManager lockManager )
     {
-        Objects.requireNonNull( filename, "The passed filename is either null or empty." );
+        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( dataSource );
+        Objects.requireNonNull( lockManager );
 
         if (!Strings.hasValue( hash ))
         {
             throw new IllegalArgumentException( "An empty or null hash was passed to the ingestor" );
         }
 
-        this.filePath = Paths.get( filename );
+        this.projectConfig = projectConfig;
+        this.filePath = Paths.get( dataSource.getUri() );
         this.hash = hash;
-        this.dataSourceConfig = dataSourceConfig;
+        this.dataSource = dataSource;
+        this.lockManager = lockManager;
     }
 
     /**
@@ -311,6 +326,9 @@ class VectorNWMValueSaver extends WRESRunnable
                     // Now we have the definitive answer from the database.
                     wasThisReaderTheOneThatInserted = true;
 
+                    // We should mark that the ingest is ongoing. #50933
+                    this.lockManager.lockSource( sourceDetails.getId() );
+
                     // Now that ball is in our court we should put in cache
                     DataSources.put( sourceDetails );
                 }
@@ -363,7 +381,7 @@ class VectorNWMValueSaver extends WRESRunnable
     }
 
     @Override
-    protected void execute ()
+    protected List<IngestResult> execute ()
     {
         try
         {
@@ -371,6 +389,29 @@ class VectorNWMValueSaver extends WRESRunnable
             this.read();
 
             LOGGER.debug("Finished Parsing '{}'", this.filePath);
+
+            SourceCompletedDetails completedDetails =
+                    new SourceCompletedDetails( this.sourceID );
+            boolean completedIngest;
+
+            if ( this.inChargeOfIngest )
+            {
+                SourceCompleter sourceCompleter = new SourceCompleter( this.sourceID,
+                                                                       this.lockManager );
+                // Unsafe publication?
+                sourceCompleter.complete( this.latches );
+                completedIngest = true;
+            }
+            else
+            {
+                completedIngest = completedDetails.wasCompleted();
+            }
+
+            return IngestResult.singleItemListFrom( this.projectConfig,
+                                                    this.dataSource,
+                                                    this.hash,
+                                                    this.inChargeOfIngest,
+                                                    !completedIngest );
         }
         catch (SQLException | IOException e )
         {
@@ -417,22 +458,27 @@ class VectorNWMValueSaver extends WRESRunnable
             return;
         }
 
+        // Synchronizer/handle that signifies "one waiting" left, "done" right.
+        Pair<CountDownLatch,CountDownLatch> synchronizer;
+
         // If this is a forecast, we need to link the lead time, the value,
         // and the id for the appropriate time series together
         if (this.isForecast())
         {
-            IngestedValues.addTimeSeriesValue( spatioVariableID, TimeHelper.durationToLead(this.getLead()), value );
+            synchronizer = IngestedValues.addTimeSeriesValue( spatioVariableID, TimeHelper.durationToLead(this.getLead()), value );
+            this.latches.add( synchronizer );
         }
         else
         {
-            IngestedValues.observed( value )
-                          .measuredIn( this.getMeasurementUnitID() )
-                          .at(NetCDF.getTime(this.getSource()))
-                          .inSource( this.getSourceID() )
-                          .forVariableAndFeatureID( spatioVariableID )
-                          .scaleOf( this.getTimeScalePeriod() )
-                          .scaledBy( this.getTimeScaleFunction() )
-                          .add();
+            synchronizer = IngestedValues.observed( value )
+                                         .measuredIn( this.getMeasurementUnitID() )
+                                         .at(NetCDF.getTime(this.getSource()))
+                                         .inSource( this.getSourceID() )
+                                         .forVariableAndFeatureID( spatioVariableID )
+                                         .scaleOf( this.getTimeScalePeriod() )
+                                         .scaledBy( this.getTimeScaleFunction() )
+                                         .add();
+            this.latches.add( synchronizer );
         }
     }
 
@@ -491,7 +537,7 @@ class VectorNWMValueSaver extends WRESRunnable
      */
     private boolean isForecast()
     {
-        return ConfigHelper.isForecast( this.dataSourceConfig );
+        return ConfigHelper.isForecast( this.dataSource.getContext() );
     }
 
 
@@ -516,7 +562,8 @@ class VectorNWMValueSaver extends WRESRunnable
         if (this.variable == null)
         {
             this.variable = NetCDF.getVariable(this.getSource(),
-                                               this.dataSourceConfig
+                                               this.dataSource
+                                                       .getContext()
                                                        .getVariable()
                                                        .getValue());
         }

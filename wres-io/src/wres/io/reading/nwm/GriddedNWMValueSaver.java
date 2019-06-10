@@ -10,14 +10,20 @@ import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
+import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ucar.nc2.NetcdfFile;
 
+import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Downloader;
-import wres.io.concurrency.WRESRunnable;
+import wres.io.concurrency.WRESCallable;
+import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
+import wres.io.reading.DataSource;
+import wres.io.reading.IngestResult;
 import wres.system.SystemSettings;
 import wres.util.NetCDF;
 import wres.util.TimeHelper;
@@ -26,24 +32,34 @@ import wres.util.TimeHelper;
  * Executes the database copy operation for every value in the passed in string
  * @author Christopher Tubbs
  */
-public class GriddedNWMValueSaver extends WRESRunnable
+public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(GriddedNWMValueSaver.class);
 
+    private ProjectConfig projectConfig;
+    private DataSource dataSource;
     private URI fileName;
     private NetcdfFile source;
     private final String hash;
     private final int gridProjectionId;
 
-	GriddedNWMValueSaver( URI fileName, final String hash, final int gridProjectionId )
+	GriddedNWMValueSaver( ProjectConfig projectConfig,
+                          DataSource dataSource,
+                          final String hash,
+                          final int gridProjectionId )
     {
-        this.fileName = fileName;
+        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( dataSource );
+        Objects.requireNonNull( hash );
+        this.projectConfig = projectConfig;
+        this.dataSource = dataSource;
+        this.fileName = dataSource.getUri();
         this.hash = hash;
         this.gridProjectionId = gridProjectionId;
     }
 
 	@Override
-    public void execute() throws IOException, SQLException
+    public List<IngestResult> execute() throws IOException, SQLException
     {
         this.ensureFileIsLocal();
 
@@ -67,6 +83,26 @@ public class GriddedNWMValueSaver extends WRESRunnable
                 throw new IOException( "Information about the gridded data source at " +
                                        this.fileName + " could not be ingested." );
             }
+
+            SourceCompletedDetails completedDetails =
+                    new SourceCompletedDetails( griddedSource );
+			boolean complete;
+
+			if ( griddedSource.performedInsert() )
+            {
+                completedDetails.markCompleted();
+                complete = true;
+            }
+			else
+            {
+                complete = completedDetails.wasCompleted();
+            }
+
+			return IngestResult.singleItemListFrom( this.projectConfig,
+                                                    this.dataSource,
+                                                    this.hash,
+                                                    !griddedSource.performedInsert(),
+                                                    !complete );
 		}
         finally
 		{

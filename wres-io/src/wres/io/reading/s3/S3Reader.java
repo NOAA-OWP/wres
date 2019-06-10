@@ -8,6 +8,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 
 import com.amazonaws.ClientConfiguration;
@@ -24,27 +25,40 @@ import wres.io.config.LeftOrRightOrBaseline;
 import wres.io.data.caching.DataSources;
 import wres.io.data.details.SourceDetails;
 import wres.io.reading.BasicSource;
+import wres.io.reading.DataSource;
 import wres.io.reading.IngestResult;
 import wres.io.utilities.Database;
+import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
 import wres.util.FutureQueue;
 
 public abstract class S3Reader extends BasicSource
 {
+    protected final DatabaseLockManager lockManager;
+
     /**
      * Get a reader that may be used to access an object store
      * @param projectConfig The configuration for a project
+     * @param dataSource The data source derived from the project.
+     * @param lockManager The lock manager to use.
      * @return An object store reader
      */
-    public static S3Reader getReader(ProjectConfig projectConfig)
+
+    public static S3Reader getReader( ProjectConfig projectConfig,
+                                      DataSource dataSource,
+                                      DatabaseLockManager lockManager )
     {
         // We only have one reader; add more when more are created.
-        return new NWCALReader( projectConfig );
+        return new NWCALReader( projectConfig, dataSource, lockManager );
     }
 
-    S3Reader (ProjectConfig projectConfig)
+    S3Reader( ProjectConfig projectConfig,
+              DataSource dataSource,
+              DatabaseLockManager lockManager )
     {
-        super(projectConfig);
+        super( projectConfig, dataSource );
+        Objects.requireNonNull( lockManager );
+        this.lockManager = lockManager;
     }
 
     @Override
@@ -72,6 +86,13 @@ public abstract class S3Reader extends BasicSource
             try
             {
                 boolean isVector = true;
+                DataSource innerDataSource = DataSource.of( this.getDataSource()
+                                                                .getSource(),
+                                                            this.getDataSource()
+                                                                .getContext(),
+                                                            this.getDataSource()
+                                                                .getLinks(),
+                                                            tagAndKey.getKey() );
 
                 SourceDetails source = DataSources.getExistingSource( tagAndKey.getEtag() );
                 boolean fileExists = source != null;
@@ -84,6 +105,7 @@ public abstract class S3Reader extends BasicSource
                 if (!isVector)
                 {
                     fileExists = Files.exists( Paths.get( SystemSettings.getNetCDFStorePath(), tagAndKey.getKey().toString() ));
+                    // Does this mean the URI changed to something else?
                 }
 
                 if ( fileExists )
@@ -91,15 +113,17 @@ public abstract class S3Reader extends BasicSource
                     results.add(
                             IngestResult.from(
                                     this.getProjectConfig(),
-                                    this.getDataSourceConfig(),
+                                    innerDataSource,
                                     tagAndKey.getEtag(),
-                                    tagAndKey.getKey(),
                                     true
                             )
                     );
                 }
                 else
                 {
+                    // No need to lock here nor discover if this is the one
+                    // to ingest, because this is outside/above that level of
+                    // ingest. The inner reader will do those steps.
                     toIngest.add( tagAndKey );
                 }
             }
@@ -117,13 +141,20 @@ public abstract class S3Reader extends BasicSource
             for (ETagKey tagKey : toIngest)
             {
 
+                DataSource innerDataSource = DataSource.of( this.getDataSource()
+                                                                .getSource(),
+                                                            this.getDataSource()
+                                                                .getContext(),
+                                                            this.getDataSource()
+                                                                .getLinks(),
+                                                            tagKey.getKey() );
+
                 WRESCallable<List<IngestResult>> saver = IngestSaver.createTask()
-                                                                    .withFilePath( tagKey.getKey() )
+                                                                    .withDataSource( innerDataSource )
                                                                     .withProject( this.getProjectConfig() )
-                                                                    .withDataSourceConfig( this.getDataSourceConfig() )
                                                                     .withHash( tagKey.getEtag() )
-                                                                    .isRemote()
                                                                     .withProgressMonitoring()
+                                                                    .withLockManager( this.lockManager )
                                                                     .build();
 
                 ingestTasks.add( Database.ingest(saver));

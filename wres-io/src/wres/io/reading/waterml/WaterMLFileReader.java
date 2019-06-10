@@ -2,7 +2,6 @@ package wres.io.reading.waterml;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.SQLException;
@@ -19,6 +18,7 @@ import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
 import wres.io.reading.BasicSource;
+import wres.io.reading.DataSource;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 
@@ -33,10 +33,9 @@ public class WaterMLFileReader extends BasicSource
     private static final DeserializationFeature DESERIALIZATION_FEATURE =
             DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 
-    protected WaterMLFileReader( ProjectConfig projectConfig, URI filename )
+    protected WaterMLFileReader( ProjectConfig projectConfig, DataSource dataSource )
     {
-        super( projectConfig );
-        this.setFilename( filename );
+        super( projectConfig, dataSource );
     }
 
     @Override
@@ -77,9 +76,8 @@ public class WaterMLFileReader extends BasicSource
 
         return IngestResult.singleItemListFrom(
                 this.getProjectConfig(),
-                this.getDataSourceConfig(),
+                this.getDataSource(),
                 this.getHash(),
-                this.getFilename(),
                 wasFoundInCache
         );
     }

@@ -7,6 +7,7 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -21,9 +22,11 @@ import wres.io.concurrency.Executor;
 import wres.io.data.caching.Features;
 import wres.io.data.details.FeatureDetails;
 import wres.io.reading.BasicSource;
+import wres.io.reading.DataSource;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.reading.waterml.timeseries.TimeSeries;
+import wres.system.DatabaseLockManager;
 import wres.system.ProgressMonitor;
 import wres.util.TimeHelper;
 
@@ -43,9 +46,15 @@ public class USGSReader extends BasicSource
      */
     private static final int FEATURE_REQUEST_LIMIT = 100;
 
-    public USGSReader( ProjectConfig projectConfig )
+    private final DatabaseLockManager lockManager;
+
+    public USGSReader( ProjectConfig projectConfig,
+                       DataSource dataSource,
+                       DatabaseLockManager lockManager )
     {
-        super( projectConfig );
+        super( projectConfig, dataSource );
+        Objects.requireNonNull( lockManager );
+        this.lockManager = lockManager;
     }
 
     @Override
@@ -80,7 +89,8 @@ public class USGSReader extends BasicSource
         {
             USGSRegionSaver saver = new USGSRegionSaver( details,
                                                          this.getProjectConfig(),
-                                                         this.getDataSourceConfig() );
+                                                         this.getDataSource(),
+                                                         this.getLockManager() );
             saver.setOnRun( ProgressMonitor.onThreadStartHandler() );
             saver.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
             saver.setOnUpdate( this::seriesEvaluated );
@@ -198,6 +208,11 @@ public class USGSReader extends BasicSource
         }
 
         return requestBlocks;
+    }
+
+    private DatabaseLockManager getLockManager()
+    {
+        return this.lockManager;
     }
 
     @Override

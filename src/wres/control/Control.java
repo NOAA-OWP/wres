@@ -3,6 +3,8 @@ package wres.control;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -34,6 +36,8 @@ import wres.control.ProcessorHelper.ExecutorServices;
 import wres.io.concurrency.Executor;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
+import wres.system.DatabaseConnectionSupplier;
+import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
 
 /**
@@ -213,9 +217,15 @@ public class Control implements Function<String[], Integer>,
                                                       thresholdQueue,
                                                       metricQueue,
                                                       productQueue );
-        
+
+        Supplier<Connection> connectionSupplier = new DatabaseConnectionSupplier();
+        DatabaseLockManager lockManager = new DatabaseLockManager( connectionSupplier );
+
         try
         {
+            // Mark the WRES as doing an evaluation.
+            lockManager.lockShared( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
+
             // Reduce our set of executors to one object
             ExecutorServices executors = new ExecutorServices( featureExecutor,
                                                                pairExecutor,
@@ -234,11 +244,13 @@ public class Control implements Function<String[], Integer>,
             // Process the configuration
             Set<Path> innerPathsWrittenTo =
                     ProcessorHelper.processProjectConfig( projectConfigPlus,
-                                                          executors );
+                                                          executors,
+                                                          lockManager );
             this.pathsWrittenTo.addAll( innerPathsWrittenTo );
             LOGGER.info( "Wrote the following output: {}", this.pathsWrittenTo );
+            lockManager.unlockShared( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
         }
-        catch ( WresProcessingException | IOException | NoDataException internalException )
+        catch ( WresProcessingException | IOException | NoDataException | SQLException internalException )
         {
             String message = "Could not complete project execution";
             LOGGER.error( "{} due to:", message, internalException );
@@ -261,6 +273,7 @@ public class Control implements Function<String[], Integer>,
             shutDownGracefully( thresholdExecutor );
             shutDownGracefully( pairExecutor );
             shutDownGracefully( featureExecutor );
+            lockManager.shutdown();
         }
     }
 

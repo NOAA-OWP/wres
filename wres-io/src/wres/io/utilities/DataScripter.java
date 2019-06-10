@@ -2,7 +2,10 @@ package wres.io.utilities;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Future;
 
 import wres.util.functional.ExceptionalConsumer;
@@ -13,6 +16,8 @@ public class DataScripter extends ScriptBuilder
     private boolean isHighPriority = false;
     private final List<Object> arguments = new ArrayList<>(  );
     private boolean useTransaction;
+    private Set<String> sqlStatesToRetry = Collections.emptySet();
+    private List<Long> insertedIds;
 
     public DataScripter()
     {
@@ -51,6 +56,22 @@ public class DataScripter extends ScriptBuilder
         this.arguments.add(argument);
     }
 
+
+    /**
+     * Add a SQLSTATE that causes indefinite retry of the query
+     * @param sqlState The SQLSTATE to retry.
+     */
+
+    public void retryOnSqlState( String sqlState )
+    {
+        if ( this.sqlStatesToRetry.equals( Collections.emptySet() ) )
+        {
+            this.sqlStatesToRetry = new HashSet<>( 2 );
+        }
+
+        this.sqlStatesToRetry.add( sqlState );
+    }
+
     /**
      * Executes the built script with the given parameters
      * @param parameters The values to use as parameters to the built script
@@ -59,7 +80,11 @@ public class DataScripter extends ScriptBuilder
      */
     public int execute(Object... parameters) throws SQLException
     {
-        return Database.execute( this.formQuery().setParameters( parameters ), this.isHighPriority );
+        Query query = this.formQuery()
+                          .setParameters( parameters );
+        int rowsModified = Database.execute( query, this.isHighPriority );
+        this.insertedIds = query.getInsertedIds();
+        return rowsModified;
     }
 
     /**
@@ -71,7 +96,11 @@ public class DataScripter extends ScriptBuilder
      */
     public int execute(List<Object[]> parameters) throws SQLException
     {
-        return Database.execute( this.formQuery().setBatchParameters( parameters ), this.isHighPriority );
+        Query query = this.formQuery()
+                          .setBatchParameters( parameters );
+        int rowsModified = Database.execute( query, this.isHighPriority );
+        this.insertedIds = query.getInsertedIds();
+        return rowsModified;
     }
 
     /**
@@ -81,7 +110,10 @@ public class DataScripter extends ScriptBuilder
      */
     public int execute() throws SQLException
     {
-        return Database.execute( this.formQuery(), this.isHighPriority );
+        Query query = this.formQuery();
+        int rowsModified = Database.execute( query, this.isHighPriority );
+        this.insertedIds = query.getInsertedIds();
+        return rowsModified;
     }
 
     /**
@@ -180,6 +212,18 @@ public class DataScripter extends ScriptBuilder
         return Database.interpret( this.formQuery(), interpretor, this.isHighPriority );
     }
 
+
+    /**
+     * Get the first available id of the each inserted row from a previous
+     * invocation of "execute" on this instance. 0 if none available.
+     * @return The id of the first inserted row or 0 if none was available.
+     */
+
+    public List<Long> getInsertedIds()
+    {
+        return this.insertedIds;
+    }
+
     /**
      * Creates the query to run in the database based on the configured settings
      * @return The query to run
@@ -192,6 +236,14 @@ public class DataScripter extends ScriptBuilder
         if (!this.arguments.isEmpty())
         {
             query.setParameters( this.arguments.toArray() );
+        }
+
+        if ( !this.sqlStatesToRetry.isEmpty() )
+        {
+            for ( String sqlState : sqlStatesToRetry )
+            {
+                query = query.retryOnSqlState( sqlState );
+            }
         }
 
         return query;

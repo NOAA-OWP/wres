@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 import wres.io.data.details.SourceDetails;
 import wres.io.utilities.DataBuilder;
 import wres.io.utilities.DataProvider;
-import wres.io.utilities.DatabaseConnectionSupplier;
+import wres.system.DatabaseConnectionSupplier;
 import wres.io.utilities.TestDatabase;
 import wres.system.SystemSettings;
 

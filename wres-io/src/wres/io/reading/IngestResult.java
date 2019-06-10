@@ -1,16 +1,11 @@
 package wres.io.reading;
 
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import wres.config.generated.DataSourceConfig;
 import wres.io.config.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
@@ -24,53 +19,119 @@ import wres.io.config.ConfigHelper;
 public class IngestResult
 {
     private final LeftOrRightOrBaseline leftOrRightOrBaseline;
+    private final DataSource dataSource;
     private final String hash;
-    private final URI name;
     private final boolean foundAlready;
+    private final boolean requiresRetry;
 
     private IngestResult( LeftOrRightOrBaseline leftOrRightOrBaseline,
+                          DataSource dataSource,
                           String hash,
-                          URI name,
-                          boolean foundAlready )
+                          boolean foundAlready,
+                          boolean requiresRetry )
     {
         Objects.requireNonNull( hash, "Ingester must include a hash." );
         Objects.requireNonNull( leftOrRightOrBaseline, "Ingester must include left/right/baseline" );
+        Objects.requireNonNull( dataSource, "Ingester must include datasource information." );
         this.leftOrRightOrBaseline = leftOrRightOrBaseline;
         this.hash = hash;
-        this.name = name;
+        this.dataSource = dataSource;
         this.foundAlready = foundAlready;
+        this.requiresRetry = requiresRetry;
+    }
+
+    public static IngestResult of( LeftOrRightOrBaseline leftOrRightOrBaseline,
+                                   DataSource dataSource,
+                                   String hash,
+                                   boolean foundAlready,
+                                   boolean requiresRetry )
+    {
+        return new IngestResult( leftOrRightOrBaseline, dataSource, hash, foundAlready, requiresRetry );
     }
 
     public static IngestResult of( LeftOrRightOrBaseline leftOrRightOrBaseline,
                                    String hash,
-                                   URI name,
+                                   DataSource dataSource,
                                    boolean foundAlready )
     {
-        return new IngestResult( leftOrRightOrBaseline, hash, name, foundAlready );
+        return IngestResult.of( leftOrRightOrBaseline, dataSource, hash, foundAlready, false );
+    }
+
+
+    /**
+     * Get an IngestResult using the configuration elements, for convenience
+     * @param projectConfig the ProjectConfig causing the ingest
+     * @param dataSource the data source information
+     * @param hash the hash of the data
+     * @param foundAlready true if found in the database, false otherwise
+     * @param requiresRetry true if this requires retry, false otherwise
+     * @return the IngestResult
+     */
+    public static IngestResult from( ProjectConfig projectConfig,
+                                     DataSource dataSource,
+                                     String hash,
+                                     boolean foundAlready,
+                                     boolean requiresRetry )
+    {
+        LeftOrRightOrBaseline leftOrRightOrBaseline =
+                ConfigHelper.getLeftOrRightOrBaseline( projectConfig,
+                                                       dataSource.getContext() );
+        return IngestResult.of( leftOrRightOrBaseline,
+                                dataSource,
+                                hash,
+                                foundAlready,
+                                requiresRetry );
     }
 
     /**
      * Get an IngestResult using the configuration elements, for convenience
      * @param projectConfig the ProjectConfig causing the ingest
-     * @param dataSourceConfig the config element ingesting for
+     * @param dataSource the data source information
      * @param hash the hash of the data
-     * @param name the name
      * @param foundAlready true if found in the database, false otherwise
      * @return the IngestResult
      */
     public static IngestResult from( ProjectConfig projectConfig,
-                                     DataSourceConfig dataSourceConfig,
+                                     DataSource dataSource,
                                      String hash,
-                                     URI name,
                                      boolean foundAlready )
     {
         LeftOrRightOrBaseline leftOrRightOrBaseline =
                 ConfigHelper.getLeftOrRightOrBaseline( projectConfig,
-                                                       dataSourceConfig );
+                                                       dataSource.getContext() );
         return IngestResult.of( leftOrRightOrBaseline,
+                                dataSource,
                                 hash,
-                                name,
-                                foundAlready );
+                                foundAlready,
+                                false );
+    }
+
+
+
+    /**
+     * List with a single IngestResult from the given config, hash, foundAlready
+     * <br>
+     * For convenience (since this will be done all over the various ingesters).
+     * @param projectConfig the ProjectConfig causing the ingest
+     * @param dataSource the data source information
+     * @param hash the hash of the data
+     * @param foundAlready true if found in the database, false otherwise
+     * @param requiresRetry true if this requires retry, false otherwise
+     * @return a list with a single IngestResult in it
+     */
+
+    public static List<IngestResult> singleItemListFrom( ProjectConfig projectConfig,
+                                                         DataSource dataSource,
+                                                         String hash,
+                                                         boolean foundAlready,
+                                                         boolean requiresRetry )
+    {
+        IngestResult ingestResult = IngestResult.from( projectConfig,
+                                                       dataSource,
+                                                       hash,
+                                                       foundAlready,
+                                                       requiresRetry );
+        return List.of( ingestResult );
     }
 
 
@@ -79,29 +140,23 @@ public class IngestResult
      * <br>
      * For convenience (since this will be done all over the various ingesters).
      * @param projectConfig the ProjectConfig causing the ingest
-     * @param dataSourceConfig the config element ingesting for
+     * @param dataSource the data source information
      * @param hash the hash of the data
-     * @param name the name
      * @param foundAlready true if found in the database, false otherwise
      * @return a list with a single IngestResult in it
      */
 
     public static List<IngestResult> singleItemListFrom( ProjectConfig projectConfig,
-                                                         DataSourceConfig dataSourceConfig,
+                                                         DataSource dataSource,
                                                          String hash,
-                                                         URI name,
                                                          boolean foundAlready )
     {
-        List<IngestResult> result = new ArrayList<>( 1 );
-
         IngestResult ingestResult = IngestResult.from( projectConfig,
-                                                       dataSourceConfig,
+                                                       dataSource,
                                                        hash,
-                                                       name,
-                                                       foundAlready );
-        result.add( ingestResult );
-
-        return Collections.unmodifiableList( result );
+                                                       foundAlready,
+                                                       false );
+        return List.of( ingestResult );
     }
 
 
@@ -109,23 +164,47 @@ public class IngestResult
      * Wrap a single item list of "already-found-in-database" ingest result in
      * a Future for easy consumption by the ingest classes.
      * @param projectConfig the project configuration
-     * @param dataSourceConfig the data source configuration
+     * @param dataSource the data source information
      * @param hash the hash of the individual source
-     * @param name the name
+     * @param requiresRetry true if this requires retry, false otherwise
      * @return an immediately-returning Future
      */
 
     public static Future<List<IngestResult>> fakeFutureSingleItemListFrom( ProjectConfig projectConfig,
-                                                                           DataSourceConfig dataSourceConfig,
-                                                                           URI name,
+                                                                           DataSource dataSource,
+                                                                           String hash,
+                                                                           boolean requiresRetry )
+    {
+        return FakeFutureListOfIngestResults.from( projectConfig,
+                                                   dataSource,
+                                                   hash,
+                                                   requiresRetry );
+    }
+
+
+    /**
+     * Wrap a single item list of "already-found-in-database" ingest result in
+     * a Future for easy consumption by the ingest classes.
+     * @param projectConfig the project configuration
+     * @param dataSource the data source information
+     * @param hash the hash of the individual source
+     * @return an immediately-returning Future
+     */
+
+    public static Future<List<IngestResult>> fakeFutureSingleItemListFrom( ProjectConfig projectConfig,
+                                                                           DataSource dataSource,
                                                                            String hash )
     {
         return FakeFutureListOfIngestResults.from( projectConfig,
-                                                   dataSourceConfig,
-                                                   name,
-                                                   hash );
+                                                   dataSource,
+                                                   hash,
+                                                   false );
     }
 
+    public DataSource getDataSource()
+    {
+        return this.dataSource;
+    }
 
     public LeftOrRightOrBaseline getLeftOrRightOrBaseline()
     {
@@ -142,11 +221,16 @@ public class IngestResult
         return this.foundAlready;
     }
 
+    public boolean requiresRetry()
+    {
+        return this.requiresRetry;
+    }
+
     @Override
     public String toString()
     {
-        return "Name:" + this.name + ", hash: " + this.getHash() + ", "
-               + "db cache hit? " + this.wasFoundAlready() + ", "
+        return "DataSource:" + this.dataSource + ", hash: " + this.getHash() + ", "
+               + "another party ingested? " + this.wasFoundAlready() + ", "
                + "l/r/b: " + getLeftOrRightOrBaseline().value();
     }
 
@@ -166,15 +250,15 @@ public class IngestResult
         }
 
         public static FakeFutureListOfIngestResults from( ProjectConfig projectConfig,
-                                                          DataSourceConfig dataSourceConfig,
-                                                          URI name,
-                                                          String hash )
+                                                          DataSource dataSource,
+                                                          String hash,
+                                                          boolean requiresRetry )
         {
             IngestResult results = IngestResult.from( projectConfig,
-                                                      dataSourceConfig,
+                                                      dataSource,
                                                       hash,
-                                                      name,
-                                                      true );
+                                                      true,
+                                                      requiresRetry );
             return new FakeFutureListOfIngestResults( results );
         }
 

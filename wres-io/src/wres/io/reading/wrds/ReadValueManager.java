@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.CountDownLatch;
 
 import com.fasterxml.jackson.databind.JsonMappingException;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -32,7 +33,6 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import wres.config.generated.DataSourceConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.metadata.TimeScale;
 import wres.io.data.caching.DataSources;
@@ -41,12 +41,16 @@ import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
 import wres.io.data.details.FeatureDetails;
+import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
 import wres.io.data.details.TimeSeries;
+import wres.io.reading.DataSource;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.reading.IngestedValues;
 import wres.io.reading.PreIngestException;
+import wres.io.reading.SourceCompleter;
+import wres.system.DatabaseLockManager;
 import wres.util.TimeHelper;
 
 public class ReadValueManager
@@ -57,59 +61,91 @@ public class ReadValueManager
     private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
     private static final String MD5SUM_OF_EMPTY_STRING = "68b329da9893e34099c7d8ad5cb9c940";
 
-    private final URI location;
     private final ProjectConfig projectConfig;
-    private final DataSourceConfig dataSourceConfig;
+    private final DataSource dataSource;
+    private final DatabaseLockManager lockManager;
+    private final Set<Pair<CountDownLatch,CountDownLatch>> latches = new HashSet<>();
 
     ReadValueManager( final ProjectConfig projectConfig,
-                      final DataSourceConfig datasourceConfig,
-                      final URI location )
+                      final DataSource datasource,
+                      DatabaseLockManager lockManager )
     {
-        this.location = location;
         this.projectConfig = projectConfig;
-        this.dataSourceConfig = datasourceConfig;
+        this.dataSource = datasource;
+        this.lockManager = lockManager;
     }
 
     public List<IngestResult> save() throws IOException
     {
         InputStream forecastData;
         Instant now = Instant.now();
+        URI location = this.getLocation();
 
-        if ( this.location.getScheme().equals( "file" ) )
+        if ( location.getScheme()
+                     .equals( "file" ) )
         {
-            forecastData = this.getFromFile( this.location );
+            forecastData = this.getFromFile( location );
         }
-        else if ( this.location.getScheme().startsWith( "http" ) )
+        else if ( location.getScheme()
+                          .toLowerCase()
+                          .startsWith( "http" ) )
         {
-            Pair<Integer,InputStream> response = this.getFromWeb( this.location );
+            Pair<Integer,InputStream> response = this.getFromWeb( location );
             int httpStatus = response.getLeft();
 
             if ( httpStatus >= 400 && httpStatus < 500 )
             {
                 LOGGER.warn( "Treating HTTP response code {} as no data found from URI {}",
                              httpStatus,
-                             this.location );
+                             location );
 
                 try
                 {
-                    SourceDetails details = DataSources.get( this.location,
-                                                             now.toString(),
-                                                             null,
-                                                             MD5SUM_OF_EMPTY_STRING );
+                    // Cannot trust the DataSources.get() method to accurately
+                    // report performedInsert(). Use other means here.
+                    SourceDetails.SourceKey sourceKey =
+                            new SourceDetails.SourceKey( location,
+                                                         now.toString(),
+                                                         null,
+                                                         MD5SUM_OF_EMPTY_STRING.toUpperCase() );
+
+                    SourceDetails details = this.createSourceDetails( sourceKey );
+                    details.save();
                     boolean foundAlready = !details.performedInsert();
+
+                    LOGGER.debug( "Found {}? {}", details, foundAlready );
+
+                    if ( !foundAlready )
+                    {
+                        this.lockManager.lockSource( details.getId() );
+                        SourceCompletedDetails completedDetails =
+                                createSourceCompletedDetails( details );
+                        completedDetails.markCompleted();
+                        // A special case here, where we don't use
+                        // source completer because we know there are no data
+                        // rows to be inserted, therefore there will be no
+                        // coordination with the use of synchronizers/latches.
+                        // Therefore, plain lock and unlock here.
+                        this.lockManager.unlockSource( details.getId() );
+
+                        LOGGER.debug( "Empty source id {} marked complete.",
+                                     details.getId() );
+                    }
+
                     return IngestResult.singleItemListFrom(
                             this.projectConfig,
-                            this.dataSourceConfig,
-                            MD5SUM_OF_EMPTY_STRING,
-                            this.location,
-                            foundAlready
+                            this.dataSource,
+                            MD5SUM_OF_EMPTY_STRING.toUpperCase(),
+                            foundAlready,
+                            false
                     );
                 }
                 catch ( SQLException e )
                 {
                     throw new IngestException( "Source metadata for '"
-                                               + this.location +
-                                               "' could not be stored in or retrieved from the database." );
+                                               + location +
+                                               "' could not be stored in or retrieved from the database.",
+                                               e );
                 }
             }
             else
@@ -121,7 +157,7 @@ public class ReadValueManager
         {
             throw new UnsupportedOperationException( "Only file and http(s) "
                                                      + "are supported. Got: "
-                                                     + this.location );
+                                                     + location );
         }
 
         // It is conceivable that we could tee/pipe the data to both
@@ -147,22 +183,35 @@ public class ReadValueManager
                                  .toUpperCase();
 
         boolean foundAlready;
+        boolean completed;
         SourceDetails source;
+        SourceCompletedDetails completedDetails;
 
         try
         {
-            source = DataSources.get( this.location, now.toString(), null, hash );
+            source = DataSources.get( location, now.toString(), null, hash );
             foundAlready = !source.performedInsert();
         }
         catch ( SQLException e )
         {
-            throw new IngestException( "Source metadata about '" + this.location +
+            throw new IngestException( "Source metadata about '" + location +
                                        "' could not be stored or retrieved from the database." );
         }
 
         if ( !foundAlready )
         {
             LOGGER.debug( "{} is responsible for source {}", this, hash );
+
+            try
+            {
+                this.lockManager.lockSource( source.getId() );
+            }
+            catch ( SQLException se )
+            {
+                throw new IngestException( "Failed to lock for source id "
+                                              + source.getId(), se );
+            }
+
             ObjectMapper mapper = new ObjectMapper();
 
             try
@@ -180,51 +229,53 @@ public class ReadValueManager
             {
                 throw new PreIngestException( "Failed to parse the response body"
                                               + " from WRDS url "
-                                              + this.location,
+                                              + location,
                                               jme );
             }
-            catch ( SQLException e )
+            catch ( IngestException e )
             {
                 throw new IngestException( "Values from WRDS url "
-                                           + this.location
+                                           + location
                                            + " could not be ingested.",
                                            e );
             }
+
+            SourceCompleter completer = createSourceCompleter( source.getId(),
+                                                               this.lockManager );
+            completer.complete( this.latches );
+            completed = true;
         }
         else
         {
-            // For the time being, WRES assumes that "foundAlready" means that
-            // some other Thread (in or out of process) will have successfully
-            // completed ingest by the time this evaluation begins. This may not
-            // be true and eventually WRES software will need some kind of check
-            // before beginning evaluation. For the time being, the heavy-handed
-            // ingest lock provides assurance that no other process can do
-            // ingest at all, therefore the (1) ingest lock combined with an
-            // assumption (2) that a failed ingest will cause no evaluation to
-            // proceed without orphaned data removal, combined with an
-            // assumption (3) that evaluation will not start until all readers
-            // have read, parsed, and inserted/copied data, these three
-            // provide some confidence that this source will be present and
-            // ready for evaluation when retrieval begins.
-            // This still is not enough to prevent process B seeing the db as
-            // corrupt while process A performs a liquibase migration on the db.
-            // But that's a separate issue.
-            // In any case, this is working well-enough for now.
             LOGGER.debug( "{} yields for source {}", this, hash );
+
+            completedDetails = new SourceCompletedDetails( source.getId() );
+
+            try
+            {
+                completed = completedDetails.wasCompleted();
+            }
+            catch ( SQLException se )
+            {
+                throw new IngestException( "Unable to ask if source with url "
+                                           + this.dataSource.getUri() + " and source id "
+                                           + source.getId() + " was completed.",
+                                           se );
+            }
         }
 
         return IngestResult.singleItemListFrom(
                 this.projectConfig,
-                this.dataSourceConfig,
+                this.dataSource,
                 hash,
-                this.location,
-                foundAlready
+                foundAlready,
+                !completed
         );
     }
 
-    private void read(final Forecast forecast, final int sourceId) throws SQLException
+    private void read( Forecast forecast, int sourceId ) throws IngestException
     {
-
+        URI location = this.getLocation();
         List<DataPoint> dataPointsList;
 
         if ( forecast.getMembers() != null
@@ -235,13 +286,15 @@ public class ReadValueManager
         }
         else
         {
-            LOGGER.warn("The forecast '{}' from '{}' did not have data to save.", forecast, this.location);
+            LOGGER.warn( "The forecast '{}' from '{}' did not have data to save.",
+                         forecast, location );
             return;
         }
 
         if ( dataPointsList.size() < 2 )
         {
-            LOGGER.warn( "Fewer than two values present in the first forecast '{}' from '{}'.", forecast, this.location );
+            LOGGER.warn( "Fewer than two values present in the first forecast '{}' from '{}'.",
+                         forecast, location );
             return;
         }
 
@@ -251,9 +304,22 @@ public class ReadValueManager
         OffsetDateTime startTime = this.getStartTime( forecast, timeDuration );
 
         // Get the time scale information, if available
-        TimeScale timeScale = TimeScaleFromParameterCodes.getTimeScale( forecast.getParameterCodes(), this.location );
+        TimeScale timeScale = TimeScaleFromParameterCodes.getTimeScale( forecast.getParameterCodes(), location );
 
-        TimeSeries timeSeries = this.getTimeSeries( forecast, sourceId, startTime, timeScale );
+        TimeSeries timeSeries;
+        try
+        {
+            timeSeries = this.getTimeSeries( forecast, sourceId, startTime, timeScale );
+        }
+        catch ( SQLException se )
+        {
+            throw new IngestException( "Failed to get TimeSeries info for "
+                                       + "forecast=" + forecast
+                                       + " source=" + sourceId
+                                       + " startTime=" + startTime
+                                       + " timeScale=" + timeScale,
+                                       se );
+        }
 
         // Before ingest, validate the timeseries as being a timeseries in the
         // sense that a timeseries is a sequence of values in time.
@@ -262,9 +328,24 @@ public class ReadValueManager
         for (DataPoint dataPoint : dataPointsList)
         {
             Duration between = Duration.between( startTime, dataPoint.getTime());
-
             int lead = ( int ) TimeHelper.durationToLongUnits( between, TimeHelper.LEAD_RESOLUTION );
-            IngestedValues.addTimeSeriesValue( timeSeries.getTimeSeriesID(), lead, dataPoint.getValue() );
+
+            try
+            {
+                Pair<CountDownLatch,CountDownLatch> synchronizer =
+                        IngestedValues.addTimeSeriesValue( timeSeries.getTimeSeriesID(),
+                                                           lead,
+                                                           dataPoint.getValue() );
+                this.latches.add( synchronizer );
+            }
+            catch ( SQLException se )
+            {
+                throw new IngestException( "Failed to ingest values when adding "
+                                           + "timeSeries=" + timeSeries
+                                           + " lead=" + lead
+                                           + " dataPoint=" + dataPoint,
+                                           se );
+            }
         }
     }
 
@@ -429,8 +510,44 @@ public class ReadValueManager
         }
     }
 
+    /**
+     * This method facilitates testing, Pattern 1 at
+     * https://github.com/mockito/mockito/wiki/Mocking-Object-Creation
+     * @param sourceKey the first arg to SourceDetails
+     * @return a SourceDetails
+     */
+
+    SourceDetails createSourceDetails( SourceDetails.SourceKey sourceKey )
+    {
+        return new SourceDetails( sourceKey );
+    }
+
+    /**
+     * This method facilitates testing, Pattern 1 at
+     * https://github.com/mockito/mockito/wiki/Mocking-Object-Creation
+     * @param sourceId the first arg to SourceCompleter
+     * @param lockManager the second arg to SourceCompleter
+     * @return a SourceCompleter
+     */
+    SourceCompleter createSourceCompleter( int sourceId,
+                                           DatabaseLockManager lockManager )
+    {
+        return new SourceCompleter( sourceId, lockManager );
+    }
+
+    /**
+     * This method facilitates testing, Pattern 1 at
+     * https://github.com/mockito/mockito/wiki/Mocking-Object-Creation
+     * @param sourceDetails the first arg to SourceCompletedDetails
+     * @return a SourceCompleter
+     */
+    SourceCompletedDetails createSourceCompletedDetails( SourceDetails sourceDetails )
+    {
+        return new SourceCompletedDetails( sourceDetails );
+    }
+
     private URI getLocation()
     {
-        return this.location;
+        return this.dataSource.getUri();
     }
 }

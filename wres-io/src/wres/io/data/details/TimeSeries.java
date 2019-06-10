@@ -2,13 +2,13 @@ package wres.io.data.details;
 
 import java.sql.SQLException;
 import java.time.Duration;
-import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 import wres.datamodel.metadata.TimeScale;
 import wres.datamodel.metadata.TimeScale.TimeScaleFunction;
 import wres.io.utilities.DataScripter;
-import wres.io.utilities.Database;
 
 /**
  * Defines details about a forecasted time series
@@ -26,14 +26,8 @@ public class TimeSeries
     /**
      * Mapping between the number of a forecast value partition and its name
      */
-    private static final HashMap<Integer, String> TIMESERIESVALUE_PARTITION_NAMES =
-            new HashMap<>();
-
-    /**
-     * The lock used to protect access to the mapping of partition numbers to
-     * names
-     */
-    private static final Object PARTITION_LOCK = new Object();
+    private static final Map<Integer, String> TIMESERIESVALUE_PARTITION_NAMES =
+            new ConcurrentHashMap<>();
 
     /**
      * The ID of the ensemble for the time series. A time series without
@@ -66,10 +60,6 @@ public class TimeSeries
      * The ID of the initial source of the data for the time series
      */
     private final Integer sourceID;
-
-    private int highestLead;
-
-    private int lowestLead;
 
     /**
      * The string representation of the date and time of when the forecast
@@ -197,8 +187,7 @@ public class TimeSeries
 	}
 	
 	/**
-	 * Creates or returns the entry in the database representing this time
-     * series
+	 * Creates a new entry in the database representing this time series
 	 * @throws SQLException Thrown if successful communication with the database
      * could not be established.
 	 */
@@ -215,9 +204,7 @@ public class TimeSeries
             scalePeriod = (int) this.getTimeScale().getPeriod().toMinutes();
             scaleFunction = this.getTimeScale().getFunction();
         }
-        
-		script.addLine("WITH new_timeseries AS");
-        script.addLine("(");
+
         script.addTab().addLine("INSERT INTO wres.TimeSeries (");
         script.addTab(  2  ).addLine("variablefeature_id,");
         script.addTab(  2  ).addLine("ensemble_id,");
@@ -226,143 +213,84 @@ public class TimeSeries
         script.addTab(  2  ).addLine("scale_period,");
         script.addTab(  2  ).addLine("scale_function");
         script.addTab().addLine(")");
-        script.addTab().addLine("SELECT ", this.variableFeatureID, ",");
-        script.addTab(  2  ).addLine(this.ensembleID, ",");
-		script.addTab(  2  ).addLine(this.measurementUnitID, ",");
-		script.addTab(  2  ).addLine("'", this.initializationDate, "',");
-		script.addTab(  2  ).addLine( scalePeriod, ",");
-		script.addTab(  2  ).addLine("'", scaleFunction.name(), "'");
-		script.addTab().addLine("WHERE NOT EXISTS (");
-		script.addTab(  2  ).addLine("SELECT 1");
-		script.addTab(  2  ).addLine("FROM wres.TimeSeries TS");
-		script.addTab(  2  ).addLine("INNER JOIN wres.TimeSeriesSource TSS");
-		script.addTab(   3   ).addLine("ON TSS.timeseries_id = TS.timeseries_id");
-		script.addTab(  2  ).addLine("WHERE TS.variablefeature_id = ", this.variableFeatureID);
-		script.addTab(   3   ).addLine("AND TS.ensemble_id = ", this.ensembleID);
-		script.addTab(   3   ).addLine("AND TS.initialization_date = '", this.initializationDate, "'");
-        script.addTab(   3   ).addLine("AND TS.measurementunit_id = ", this.measurementUnitID);
-        script.addTab(   3   ).addLine("AND TSS.source_id = ", this.sourceID);
-        script.addTab(   3   ).addLine("AND TS.scale_period = ", scalePeriod);
-        script.addTab(   3   ).addLine("AND TS.scale_function = '", scaleFunction.name(), "'");
-        script.addTab().addLine(")");
-		script.addTab().addLine("RETURNING timeseries_id");
-        script.addLine("),");
-        // Only create the forecast source as part of the transaction that has
-        // created the timeseries id. This strategy does not apply to NWM data.
-        script.addLine("new_timeseriessource AS");
-        script.addLine("(");
-        script.addTab().addLine("INSERT INTO wres.TimeSeriesSource (timeseries_id, source_id)");
-        script.addTab().addLine("SELECT timeseries_id, ", this.sourceID);
-        script.addTab().addLine("FROM new_timeseries");
-        script.addTab().addLine("WHERE timeseries_id IS NOT NULL");
-        // Note: timeseriessource.timeseries_id is fk to timeseries.timeseries_id
-        script.addTab().addLine("RETURNING timeseries_id");
-        script.addLine(")");
-        script.addLine("SELECT timeseries_id AS timeseries_id, TRUE as wasInserted");
-        script.addLine("FROM new_timeseriessource");
-		script.addLine();
-		script.addLine("UNION");
-		script.addLine();
-        script.addLine("SELECT TS.timeseries_id, FALSE as wasInserted");
-		script.addLine("FROM wres.TimeSeries TS");
-		script.addLine("INNER JOIN wres.TimeSeriesSource TSS");
-		script.addTab().addLine("ON TSS.timeseries_id = TS.timeseries_id");
-		script.addLine("WHERE TS.variablefeature_id = ", this.variableFeatureID);
-		script.addTab().addLine("AND TS.ensemble_id = ", this.ensembleID);
-		script.addTab().addLine("AND TS.initialization_date = '", this.initializationDate, "'");
-        script.addTab().addLine("AND TS.measurementunit_id = ", this.measurementUnitID);
-        script.addTab().addLine("AND TS.scale_period = ", scalePeriod);
-        script.addTab().addLine("AND TS.scale_function = '", scaleFunction.name(), "'");
-        script.addTab().addLine("AND EXISTS (");
-        script.addTab(  2  ).addLine("SELECT 1");
-        script.addTab(  2  ).addLine("FROM wres.TimeSeriesSource TSS");
-        script.addTab(  2  ).addLine("WHERE TSS.timeseries_id = TS.timeseries_id");
-        script.addTab(   3   ).addLine("AND TSS.source_id = ", this.sourceID);
-        script.addLine(");");
+        script.addTab().addLine( "VALUES ( ?, ?, ?, (?)::timestamp without time zone, ?, (?)::scale_function );" );
+        script.addArgument( this.variableFeatureID );
+        script.addArgument( this.ensembleID );
+        script.addArgument( this.measurementUnitID );
+        script.addArgument( this.initializationDate );
+        script.addArgument( scalePeriod );
+        script.addArgument( scaleFunction.name() );
 
-        this.timeSeriesID = script.retrieve( "timeseries_id" );
+        int rowsModified = script.execute();
+        int insertedId = script.getInsertedIds()
+                               .get( 0 )
+                               .intValue();
+
+        if ( rowsModified != 1 )
+        {
+            throw new IllegalStateException( "Failed to insert a row using "
+                                             + script );
+        }
+
+        if ( script.getInsertedIds().size() <= 0 )
+        {
+            throw new IllegalStateException( "Failed to get inserted id using"
+                                             + script );
+        }
+
+        this.timeSeriesID = insertedId;
+
+        DataScripter scriptTwo = new DataScripter();
+        scriptTwo.addLine( "INSERT INTO wres.TimeSeriesSource ( timeseries_id, source_id )" );
+        scriptTwo.addTab( 1 ).addLine( "VALUES ( ?, ? );" );
+        scriptTwo.addArgument( this.timeSeriesID );
+        scriptTwo.addArgument( this.sourceID );
+        scriptTwo.execute();
     }
 
     /**
      * Either creates or returns the name of the partition of where values
      * for this timeseries should be saved based on lead time
+     * Must be kept in sync with liquibase scripts.
      * TODO: Move to a more appropriate location
      * @param lead The lead time of this time series where values of interest
      *             should be saved
      * @return The name of the partition where values for the indicated lead time
      * should be saved.
-     * @throws SQLException Thrown if an error occurs when trying to create the
-     * partition in the database
      */
-    public static String getTimeSeriesValuePartition( int lead) throws SQLException
+    public static String getTimeSeriesValuePartition( int lead )
     {
-        Integer partitionNumber = lead / TimeSeries.TIMESERIESVALUE_PARTITION_SPAN;
+        int partitionNumber = lead / TimeSeries.TIMESERIESVALUE_PARTITION_SPAN;
 
-        String name;
+        String name = TIMESERIESVALUE_PARTITION_NAMES.get( partitionNumber );
 
-        synchronized ( TIMESERIESVALUE_PARTITION_NAMES )
+        if ( name == null )
         {
-            if (!TIMESERIESVALUE_PARTITION_NAMES.containsKey( partitionNumber))
+            String partitionNumberWord;
+
+            // Sometimes the lead times are negative, but the dash is not a
+            // valid character in a name in sql, so we replace with a word.
+            if ( partitionNumber < -10 )
             {
-
-                String partitionNumberWord = partitionNumber.toString();
-
-                String highCheck;
-                String lowCheck;
-
-                // Sometimes the lead times are negative, but the dash is not a
-                // valid character in a name in sql, so we replace with a word.
-                if ( partitionNumber < 0 )
-                {
-                    partitionNumberWord = "Negative_"
-                                          + Math.abs( partitionNumber );
-                    lowCheck = "lead > " + (partitionNumber - 1) * TIMESERIESVALUE_PARTITION_SPAN;
-                    highCheck = "lead <= " + partitionNumber * TIMESERIESVALUE_PARTITION_SPAN;
-				}
-				else if ( partitionNumber == 0)
-                {
-                    highCheck = "lead < " + TIMESERIESVALUE_PARTITION_SPAN;
-                    lowCheck = "lead > " + -TIMESERIESVALUE_PARTITION_SPAN;
-                }
-                else
-                {
-                    lowCheck = "lead >= " + partitionNumber * TIMESERIESVALUE_PARTITION_SPAN;
-                    highCheck = "lead < " + (partitionNumber + 1) * TIMESERIESVALUE_PARTITION_SPAN;
-                }
-
-                name = "wres.TimeSeriesValue_Lead_" + partitionNumberWord;
-
-                DataScripter script = new DataScripter();
-                script.addLine("CREATE TABLE IF NOT EXISTS ", name);
-                script.addLine("(");
-                script.addTab().addLine("CHECK ( ", highCheck, " AND ", lowCheck, " )");
-                script.addLine(") INHERITS (wres.TimeSeriesValue);");
-                script.addLine("ALTER TABLE ", name, " ALTER COLUMN lead SET STATISTICS 2000;");
-                script.addLine("ALTER TABLE ", name, " ALTER COLUMN timeseries_id SET STATISTICS 2000;");
-                script.addLine("ALTER TABLE ", name, " SET (autovacuum_enabled = FALSE, toast.autovacuum_enabled = FALSE);");
-                script.addLine("ALTER TABLE ", name, " OWNER TO wres;");
-
-                synchronized (PARTITION_LOCK)
-                {
-                    script.execute();
-                }
-
-                Database.saveIndex( name,
-                                    "TimeSeriesValue_Lead_"
-                                    + partitionNumberWord + "_Lead_idx",
-                                    "lead" );
-
-                Database.saveIndex(name,
-                                   "TimeSeriesValue_Lead_"
-								   + partitionNumberWord + "_TimeSeries_idx",
-                                   "timeseries_id");
-
-                TimeSeries.TIMESERIESVALUE_PARTITION_NAMES.put( partitionNumber, name);
+                partitionNumberWord = "Below_Negative_10";
+            }
+            else if ( partitionNumber > 150 )
+            {
+                partitionNumberWord = "Above_150";
+            }
+            else if ( partitionNumber < 0 )
+            {
+                partitionNumberWord = "Negative_"
+                                      + Math.abs( partitionNumber );
             }
             else
             {
-                name = TimeSeries.TIMESERIESVALUE_PARTITION_NAMES.get( partitionNumber);
+                partitionNumberWord = Integer.toString( partitionNumber );
             }
+
+            name = "wres.TimeSeriesValue_Lead_" + partitionNumberWord;
+
+            TimeSeries.TIMESERIESVALUE_PARTITION_NAMES.putIfAbsent( partitionNumber, name);
         }
 
         return name;
