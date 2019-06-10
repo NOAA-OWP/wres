@@ -336,14 +336,6 @@ class VectorNWMValueSaver extends WRESRunnable
         // Get the ID for the source file
         this.getSourceID();
 
-        // If this is a forecast file, we also need to attach the source
-        // to the time series it belongs to, but only if this is the instance
-        // in charge of ingest.
-        if ( this.isForecast() && this.inChargeOfIngest )
-        {
-            this.addTimeSeriesSource();
-        }
-
     }
 
     private void addTimeSeriesSource() throws IOException, SQLException
@@ -871,6 +863,17 @@ class VectorNWMValueSaver extends WRESRunnable
     {
         Variable var = this.getVariable();
 
+        // Ensure that metadata for this file is added linked to the appropriate
+        // time series
+        this.addSource();
+
+        if ( !this.inChargeOfIngest )
+        {
+            LOGGER.debug( "This VectorNWMValueSaver yields for source {}",
+                          this.hash );
+            return;
+        }
+
         // Find the factor with which to scale all read values
         double scaleFactor = NetCDF.getScaleFactor(var);
 
@@ -887,15 +890,12 @@ class VectorNWMValueSaver extends WRESRunnable
         // IDs for its spatial and variable identifiers
         Map<Integer, Integer> variableIndices = this.getIndexMapping();
 
-        // Ensure that metadata for this file is added linked to the appropriate
-        // time series
-        this.addSource();
-
-        if ( !this.inChargeOfIngest )
+        // If this is a forecast file, we also need to attach the source
+        // to the time series it belongs to, but only if this is the instance
+        // in charge of ingest.
+        if ( this.isForecast() )
         {
-            LOGGER.debug( "This VectorNWMValueSaver yields for source {}",
-                          this.hash );
-            return;
+            this.addTimeSeriesSource();
         }
 
         // Read in all values from the variable; the cost of multiple reads from the disk outweighs
@@ -922,6 +922,7 @@ class VectorNWMValueSaver extends WRESRunnable
                 }
                 else
                 {
+                    // TODO: Double check to make sure that the CDM isn't already doing this
                     value = (value * scaleFactor) + offset;
                 }
 

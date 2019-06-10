@@ -264,18 +264,6 @@ public class NetCDFCopier implements Closeable
         }
     }
 
-    public void addGlobalAttribute(String name, Number value) throws IOException
-    {
-        Attribute newAttribute = new Attribute( name, value );
-        this.addGlobalAttribute( newAttribute );
-    }
-
-    public void addGlobalAttribute(String name, String value) throws IOException
-    {
-        Attribute newAttribute = new Attribute(name, value);
-       this.addGlobalAttribute( newAttribute );
-    }
-
     void addVariable( String name,
                              DataType dataType,
                              List<String> dimensionNames,

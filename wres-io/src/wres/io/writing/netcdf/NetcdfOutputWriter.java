@@ -635,7 +635,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
             return origin;
         }
 
-        private Integer getVectorCoordinate( Integer value, String vectorVariableName )
+        private Integer getVectorCoordinate( Integer vectorIdentifier, String vectorVariableName )
                 throws IOException
         {
             synchronized ( VECTOR_COORDINATES )
@@ -658,7 +658,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                     }
                 }
 
-                return VECTOR_COORDINATES.get( value );
+                return VECTOR_COORDINATES.get( vectorIdentifier );
             }
         }
 
