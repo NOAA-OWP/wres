@@ -46,6 +46,7 @@ import wres.io.writing.SharedStatisticsWriters;
 import wres.io.writing.SharedStatisticsWriters.SharedWritersBuilder;
 import wres.io.writing.commaseparated.pairs.PairsWriter;
 import wres.io.writing.netcdf.NetcdfOutputWriter;
+import wres.system.DatabaseLockManager;
 import wres.system.ProgressMonitor;
 
 /**
@@ -63,7 +64,8 @@ class ProcessorHelper
     /**
      * Processes a {@link ProjectConfigPlus} using a prescribed {@link ExecutorService} for each of the pairs, 
      * thresholds and metrics.
-     * 
+     *
+     * Assumes that a shared lock for evaluation has already been obtained.
      * @param projectConfigPlus the project configuration
      * @param executors the executors
      * @throws IOException when an issue occurs during ingest
@@ -73,10 +75,10 @@ class ProcessorHelper
      */
 
     static Set<Path> processProjectConfig( final ProjectConfigPlus projectConfigPlus,
-                                           final ExecutorServices executors )
+                                           final ExecutorServices executors,
+                                           DatabaseLockManager lockManager )
             throws IOException
     {
-
         final ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
         ProgressMonitor.setShowStepDescription( false );
         ProgressMonitor.resetMonitor();
@@ -96,7 +98,7 @@ class ProcessorHelper
         LOGGER.debug( "Beginning ingest for project {}...", projectConfigPlus );
 
         // Need to ingest first
-        Project project = Operations.ingest( projectConfig );
+        Project project = Operations.ingest( projectConfig, lockManager );
         Operations.prepareForExecution( project );
 
         LOGGER.debug( "Finished ingest for project {}...", projectConfigPlus );

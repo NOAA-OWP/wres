@@ -26,7 +26,7 @@ import static org.junit.Assert.assertTrue;
 
 import wres.config.generated.ProjectConfig;
 import wres.io.project.Project;
-import wres.io.utilities.DatabaseConnectionSupplier;
+import wres.system.DatabaseConnectionSupplier;
 import wres.io.utilities.TestDatabase;
 import wres.system.SystemSettings;
 

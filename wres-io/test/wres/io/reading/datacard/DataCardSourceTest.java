@@ -8,8 +8,11 @@ import static org.powermock.api.mockito.PowerMockito.when;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.function.Supplier;
 
 import org.junit.Before;
 import org.junit.Ignore;
@@ -30,8 +33,11 @@ import wres.config.generated.Feature;
 import wres.config.generated.Format;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
+import wres.io.config.LeftOrRightOrBaseline;
 import wres.io.data.caching.DataSources;
 import wres.io.project.Project;
+import wres.io.reading.DataSource;
+import wres.system.DatabaseLockManager;
 
 
 @RunWith( PowerMockRunner.class )
@@ -89,6 +95,9 @@ public class DataCardSourceTest
 	@Mock DataSources mockDataSources;
 	@Mock
     Project mockProject;
+    @Mock
+    Connection mockConnection;
+    DatabaseLockManager fakeLockManager;
 
 	@Before
     public void setup() throws Exception
@@ -103,6 +112,9 @@ public class DataCardSourceTest
 
         when(mockDataSources.hasID( any() ) ).thenReturn( true );
         when(mockDataSources.getID( any() ) ).thenReturn( 0 );
+
+        Supplier<Connection> connectionProducer = () -> { return mockConnection; };
+        fakeLockManager = new DatabaseLockManager( connectionProducer );
     }
 
 	@Test
@@ -180,10 +192,15 @@ public class DataCardSourceTest
         String filePath = current + "/testinput/datacard/short_HOPR1SNE.QME.OBS";
         URI fileUri = new URI( filePath );
 
-        // TODO: Modify the other classes (CopyExecutor, Database, etc) rather than the datacard source to get truer results
-        source = PowerMockito.spy( new DatacardSource( projectConfig, fileUri ) );
+        DataSource dataSource = DataSource.of( confSource,
+                                               config,
+                                               Set.of( LeftOrRightOrBaseline.LEFT,
+                                                       LeftOrRightOrBaseline.RIGHT ),
+                                               fileUri );
 
-        source.setDataSourceConfig(config);
+        // TODO: Modify the other classes (CopyExecutor, Database, etc) rather than the datacard source to get truer results
+        source = PowerMockito.spy( new DatacardSource( projectConfig, dataSource, fakeLockManager ) );
+
         Whitebox.setInternalState( source, "VariableFeatureID", 123 );
         Whitebox.setInternalState( source, "currentMeasurementUnitID", 456 );
         Whitebox.setInternalState( source, "currentSourceID", 789 );
@@ -271,10 +288,15 @@ public class DataCardSourceTest
         String filePath = current + "/testinput/datacard/short_CCRN6.MAP06_short_record";
         URI fileUri = new URI( filePath );
 
-        // TODO: Modify the other classes (CopyExecutor, Database, etc) rather than the datacard source to get truer results
-        source = PowerMockito.spy( new DatacardSource( projectConfig, fileUri ) );
+        DataSource dataSource = DataSource.of( confSource,
+                                               config,
+                                               Set.of( LeftOrRightOrBaseline.LEFT,
+                                                       LeftOrRightOrBaseline.RIGHT ),
+                                               fileUri );
 
-        source.setDataSourceConfig(config);
+        // TODO: Modify the other classes (CopyExecutor, Database, etc) rather than the datacard source to get truer results
+        source = PowerMockito.spy( new DatacardSource( projectConfig, dataSource, fakeLockManager ) );
+
         Whitebox.setInternalState( source, "variablePositionID", 123 );
         Whitebox.setInternalState( source, "currentMeasurementUnitID", 456 );
         Whitebox.setInternalState( source, "currentSourceID", 789 );

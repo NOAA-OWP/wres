@@ -10,9 +10,12 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.CountDownLatch;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -21,11 +24,11 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DurationUnit;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.metadata.TimeScale;
@@ -37,15 +40,18 @@ import wres.io.data.caching.USGSParameters;
 import wres.io.data.caching.Variables;
 import wres.io.data.details.FeatureDetails;
 import wres.io.data.details.SourceDetails;
+import wres.io.reading.DataSource;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.reading.IngestedValues;
 import wres.io.reading.PreIngestException;
+import wres.io.reading.SourceCompleter;
 import wres.io.reading.waterml.Response;
 import wres.io.reading.waterml.timeseries.TimeSeries;
 import wres.io.reading.waterml.timeseries.TimeSeriesValue;
 import wres.io.reading.waterml.timeseries.TimeSeriesValues;
 import wres.io.reading.waterml.variable.Variable;
+import wres.system.DatabaseLockManager;
 import wres.io.utilities.OutOfAttemptsException;
 import wres.io.utilities.WebRetryStrategy;
 import wres.util.functional.ExceptionalConsumer;
@@ -120,7 +126,9 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
     private Map<String, Integer> variableFeatureIDs;
     private final Collection<FeatureDetails> region;
     private final ProjectConfig projectConfig;
-    private final DataSourceConfig dataSourceConfig;
+    private final DataSource dataSource;
+    private final DatabaseLockManager lockManager;
+    private final Set<Pair<CountDownLatch, CountDownLatch>> latches = new HashSet<>();
     private String operationStartTime;
     private URI requestURL;
 
@@ -132,12 +140,6 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
     private String parameterCode;
 
     private USGSParameters.USGSParameter parameter;
-    
-    
-    /**
-     * Indicates that the data saved by this instance originates from the
-     * {@link INSTANTANEOUS_VALUE} endpoint and is, therefore, instantaneous.
-     */
 
     // There's a chance this operation will output the time in the wrong format
     private static final String LATEST_DATE = TimeHelper.convertDateToString(
@@ -183,15 +185,21 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
      * 
      * @param region the region to consider
      * @param projectConfig the project declaration
-     * @param dataSourceConfig the data source declaration
+     * @param dataSource the data source declaration
+     * @param lockManager the lock manager to use
      * @throws NullPointerException if any input is null
      */
 
     USGSRegionSaver( final Collection<FeatureDetails> region,
                      final ProjectConfig projectConfig,
-                     final DataSourceConfig dataSourceConfig )
+                     DataSource dataSource,
+                     DatabaseLockManager lockManager )
     {
-        this( region, projectConfig, dataSourceConfig, USGSEndpoint.INSTANTANEOUS_VALUE );
+        this( region,
+              projectConfig,
+              dataSource,
+              USGSEndpoint.INSTANTANEOUS_VALUE,
+              lockManager );
     }
 
     /**
@@ -199,32 +207,33 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
      * 
      * @param region the region to consider
      * @param projectConfig the project declaration
-     * @param dataSourceConfig the data source declaration
+     * @param dataSource the data source information
      * @param endpoint the service endpoint
+     * @param lockManager the lock manager to use
      * @throws NullPointerException if any input is null
      */
 
     USGSRegionSaver( final Collection<FeatureDetails> region,
                      final ProjectConfig projectConfig,
-                     final DataSourceConfig dataSourceConfig,
-                     final USGSEndpoint endpoint )
+                     DataSource dataSource,
+                     final USGSEndpoint endpoint,
+                     DatabaseLockManager lockManager )
     {
         Objects.requireNonNull( region );
-        
         Objects.requireNonNull( projectConfig );
-        
-        Objects.requireNonNull( dataSourceConfig );
-        
+        Objects.requireNonNull( dataSource );
         Objects.requireNonNull( endpoint );
-        
+        Objects.requireNonNull( lockManager );
+
         this.region = region;
-        this.dataSourceConfig = dataSourceConfig;
+        this.dataSource = dataSource;
         this.projectConfig = projectConfig;
         this.endpoint = endpoint;
+        this.lockManager = lockManager;
     }
-    
+
     @Override
-    protected IngestResult execute() throws Exception
+    protected IngestResult execute() throws IOException
     {
         // This is saved as the output time for the source
         this.operationStartTime = TimeHelper.convertDateToString( OffsetDateTime.now() );
@@ -235,10 +244,10 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
             // Request observation data from USGS
             response = this.load();
         }
-        catch ( Exception ie )
+        catch ( IngestException ie )
         {
             String errorString = String.format( "A USGS Request failed. The URL was: %s", this.requestURL );
-            throw new IOException( errorString, ie );
+            throw new IngestException( errorString, ie );
         }
 
         LOGGER.debug("NWIS Data was loaded from {}", this.requestURL);
@@ -252,13 +261,16 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
 
         IngestResult result = null;
 
+        DataSource innerDataSource = DataSource.of( this.dataSource.getSource(),
+                                                    this.dataSource.getContext(),
+                                                    this.dataSource.getLinks(),
+                                                    this.requestURL );
         if (response.wasAlreadyRequested())
         {
             result = IngestResult.from( this.projectConfig,
-                                            this.dataSourceConfig,
-                                            response.hash,
-                                            this.requestURL,
-                                            true );
+                                        innerDataSource,
+                                        response.hash,
+                                        true );
             LOGGER.debug("We've already seen this data before.");
         }
         else
@@ -288,9 +300,8 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
                 if ( amountSaved > 0 )
                 {
                     result = IngestResult.from( this.projectConfig,
-                                                this.dataSourceConfig,
+                                                innerDataSource,
                                                 response.hash,
-                                                this.requestURL,
                                                 false );
 
                     LOGGER.debug( "Data for {} different locations have been saved.",
@@ -308,6 +319,13 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
         {
             throw new IngestException( "No data from any USGS features could "
                                        + "be saved for evaluation." );
+        }
+
+        if ( !response.alreadyRequested )
+        {
+            SourceCompleter sourceCompleter =
+                    new SourceCompleter( response.sourceId, this.getLockManager() );
+            sourceCompleter.complete( this.latches );
         }
 
         return result;
@@ -392,17 +410,24 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
             }
 
             SourceDetails usgsDetails = new SourceDetails( sourceKey );
-
             usgsDetails.save();
 
-            if ( !usgsDetails.performedInsert() )
+            int sourceId = usgsDetails.getId();
+
+            if ( usgsDetails.performedInsert() )
+            {
+                // Signal that this source is currently under ingest.
+                this.getLockManager()
+                    .lockSource( sourceId );
+            }
+            else
             {
                 LOGGER.debug( "The data for '{}' had been previously ingested.", requestURL );
             }
 
             return new WebResponse( usgsResponse,
                                     !usgsDetails.performedInsert(),
-                                    usgsDetails.getId(),
+                                    sourceId,
                                     responseHash );
         }
         catch ( SQLException e )
@@ -531,7 +556,9 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
     {
         // TODO: '\\d{5}' will probably match on "My Variable: 9238238942397' since it has 5 digits
         // Test with "^\\d{5}$", meaning have the string contain ONLY those 5 digits
-        return this.dataSourceConfig.getVariable().getValue().matches( "\\d{5}" );
+        return this.dataSource.getVariable()
+                              .getValue()
+                              .matches( "\\d{5}" );
     }
 
     private String getParameterCode() throws SQLException, IngestException
@@ -544,9 +571,11 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
                 // If this is new, parameter will be set to null, but we still
                 // get the parameter code
                 this.parameter = USGSParameters.getParameterByCode(
-                        this.dataSourceConfig.getVariable().getValue()
+                        this.dataSource.getVariable()
+                                       .getValue()
                 );
-                this.parameterCode = this.dataSourceConfig.getVariable().getValue();
+                this.parameterCode = this.dataSource.getVariable()
+                                                    .getValue();
             }
             else
             {
@@ -562,7 +591,8 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
     {
         if (this.parameter == null)
         {
-            String variableName = this.dataSourceConfig.getVariable().getValue();
+            String variableName = this.dataSource.getVariable()
+                                                 .getValue();
 
             // If someone enters a variable of the form "Discharge, cubic feet per second",
             // we should go ahead and try to find the data by the description of the variable
@@ -572,27 +602,29 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
             }
             else
             {
-                String unit = this.dataSourceConfig.getVariable().getUnit();
+                String unit = this.dataSource.getVariable()
+                                             .getUnit();
 
-                if (unit != null && this.dataSourceConfig.getExistingTimeScale() == null)
+                if (unit != null && this.dataSource.getContext()
+                                                   .getExistingTimeScale() == null)
                 {
                     this.parameter = USGSParameters.getParameter( variableName, unit );
                 }
                 else if ( unit != null )
                 {
                     String aggregation;
-                    if ( this.dataSourceConfig
-                             .getExistingTimeScale()
-                             .getUnit() == DurationUnit.SECONDS )
+                    if ( this.dataSource.getContext()
+                                        .getExistingTimeScale()
+                                        .getUnit() == DurationUnit.SECONDS )
                     {
                         aggregation = "instant";
                     }
                     else
                     {
-                        aggregation = this.dataSourceConfig
-                                          .getExistingTimeScale()
-                                          .getFunction()
-                                          .value();
+                        aggregation = this.dataSource.getContext()
+                                                     .getExistingTimeScale()
+                                                     .getFunction()
+                                                     .value();
                     }
 
                     this.parameter = USGSParameters.getParameter( variableName,
@@ -628,8 +660,11 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
                 this.startDate = earliest.toString();
             }
 
-            if (this.dataSourceConfig.getExistingTimeScale() != null &&
-                this.dataSourceConfig.getExistingTimeScale().getUnit() == DurationUnit.DAYS)
+            if ( this.dataSource.getContext()
+                                .getExistingTimeScale() != null
+                 && this.dataSource.getContext()
+                                   .getExistingTimeScale()
+                                   .getUnit() == DurationUnit.DAYS )
             {
                 this.startDate = TimeHelper.convertStringDateTimeToDate( this.startDate );
             }
@@ -657,8 +692,11 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
             }
 
 
-            if (this.dataSourceConfig.getExistingTimeScale() != null &&
-                this.dataSourceConfig.getExistingTimeScale().getUnit() == DurationUnit.DAYS)
+            if ( this.dataSource.getContext()
+                                .getExistingTimeScale() != null
+                 && this.dataSource.getContext()
+                                   .getExistingTimeScale()
+                                   .getUnit() == DurationUnit.DAYS )
             {
                 // No time or time zone information is allowed
                 this.endDate = TimeHelper.convertStringDateTimeToDate( this.endDate );
@@ -672,15 +710,19 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
                 OffsetDateTime dateTime = OffsetDateTime.parse( this.endDate );
                 dateTime = dateTime.withOffsetSameInstant( ZoneOffset.UTC );
 
-                if (this.dataSourceConfig.getExistingTimeScale() != null)
+                if ( this.dataSource.getContext()
+                                    .getExistingTimeScale() != null )
                 {
                     dateTime = dateTime.plus(
-                            this.dataSourceConfig.getExistingTimeScale().getPeriod(),
+                            this.dataSource.getContext()
+                                           .getExistingTimeScale()
+                                           .getPeriod(),
                             ChronoUnit.valueOf(
-                                    this.dataSourceConfig.getExistingTimeScale()
-                                                         .getUnit()
-                                                         .value()
-                                                         .toUpperCase()
+                                    this.dataSource.getContext()
+                                                   .getExistingTimeScale()
+                                                   .getUnit()
+                                                   .value()
+                                                   .toUpperCase()
                             )
                     );
                 }
@@ -739,7 +781,8 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
     {
         if (this.variableID == null)
         {
-            this.variableID = Variables.getVariableID( this.dataSourceConfig.getVariable().getValue() );
+            this.variableID = Variables.getVariableID( this.dataSource.getVariable()
+                                                                      .getValue() );
         }
 
         return this.variableID;
@@ -777,14 +820,16 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
             LOGGER.info("{}{}{}", NEWLINE, this.requestURL, NEWLINE );
         }
 
-        IngestedValues.observed(value)
-                      .at( observationTime )
-                      .forVariableAndFeatureID( this.getVariableFeatureID( gageID ) )
-                      .measuredIn( this.getParameter().getMeasurementUnitID() )
-                      .inSource( sourceID )
-                      .scaleOf( period )
-                      .scaledBy( function )
-                      .add();
+        Pair<CountDownLatch,CountDownLatch> synchronizer =
+                IngestedValues.observed(value)
+                              .at( observationTime )
+                              .forVariableAndFeatureID( this.getVariableFeatureID( gageID ) )
+                              .measuredIn( this.getParameter().getMeasurementUnitID() )
+                              .inSource( sourceID )
+                              .scaleOf( period )
+                              .scaledBy( function )
+                              .add();
+        this.latches.add( synchronizer );
     }
 
     private int saveResponse(Response usgsResponse, int sourceID) throws IOException
@@ -883,6 +928,11 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
         {
             this.onUpdate.accept( series );
         }
+    }
+
+    private DatabaseLockManager getLockManager()
+    {
+        return this.lockManager;
     }
 
     @Override

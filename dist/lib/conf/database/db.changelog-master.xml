@@ -50,4 +50,10 @@
     <include file="wres.Source_v4.xml" relativeToChangelogFile="true" />
     <include file="wres.timeseries_v3.xml" relativeToChangelogFile="true" />
     <include file="wres.observation_v3.xml" relativeToChangelogFile="true" />
+    <include file="wres.SourceCompleted_v1.xml" relativeToChangelogFile="true" />
+    <include file="wres.SourceCompleted_v2.xml" relativeToChangelogFile="true" />
+    <include file="wres.SourceCompleted_v3.xml" relativeToChangelogFile="true" />
+    <include file="wres.TimeSeriesValue_generated_partitions_v1.xml" relativeToChangelogFile="true" />
+    <include file="wres.TimeSeriesValue_generated_partitions_v2.xml" relativeToChangelogFile="true" />
+    <include file="wres.VariableFeature_v2.xml" relativeToChangelogFile="true" />
 </databaseChangeLog>

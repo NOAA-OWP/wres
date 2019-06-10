@@ -120,6 +120,7 @@ public class USGSParameters
             this.name = lineParts[2].replaceAll( "\"", "" );
             this.measurementUnit = lineParts[3].replaceAll("\"", "");
             this.aggregation = lineParts[4].replaceAll("\"", "");
+            this.measurementUnitID = Integer.parseInt( lineParts[5].replaceAll("\"", "") );
         }
 
         /**
@@ -134,6 +135,21 @@ public class USGSParameters
             this.measurementUnit = data.getString("measurement_unit");
             this.aggregation = data.getString("aggregation");
             this.measurementUnitID = data.getInt( "measurementunit_id" );
+        }
+
+        private USGSParameter( String name,
+                               String description,
+                               String parameterCode,
+                               String measurementUnit,
+                               String aggregation,
+                               int measurementUnitID )
+        {
+            this.name = name;
+            this.description = description;
+            this.parameterCode = parameterCode;
+            this.measurementUnit = measurementUnit;
+            this.aggregation = aggregation;
+            this.measurementUnitID = measurementUnitID;
         }
 
         @Override
@@ -222,34 +238,34 @@ public class USGSParameters
         /**
          * The human and configuration friendly name specified for and by the WRES
          */
-        private String name;
+        private final String name;
 
         /**
          * The USGS description for the parameter
          */
-        private String description;
+        private final String description;
 
         /**
          * The five digit parameter code
          */
-        private String parameterCode;
+        private final String parameterCode;
 
         /**
          * Some description for how the data was accumulated
          */
-        private String aggregation;
+        private final String aggregation;
 
         /**
          * The name of the unit of measurement that USGS says the data is measured in
          * <br><br>
          * There's a chance that the unit that USGS uses isn't mapped to a unit utilized by the WRES
          */
-        private String measurementUnit;
+        private final String measurementUnit;
 
         /**
          * The WRES ID for the unit of measurement that USGS measures the data in
          */
-        private Integer measurementUnitID;
+        private final int measurementUnitID;
     }
 
     /**
@@ -427,6 +443,8 @@ public class USGSParameters
             final String measurementUnit)
             throws SQLException
     {
+        final String aggregation = "None";
+
         synchronized ( USGSParameters.PARAMETER_LOCK )
         {
             // USGS often gives complex names to their parameters, often of the name: "Simple name, some description"
@@ -437,33 +455,57 @@ public class USGSParameters
                     MeasurementUnits.getMeasurementUnitID( measurementUnit );
 
             DataScripter script = new DataScripter();
+            script.retryOnSqlState( "40001" );
+            script.retryOnSqlState( "23505" );
+            script.setUseTransaction( true );
             script.addLine( "INSERT INTO wres.USGSParameter(" );
+            script.addTab().addLine( "measurementunit_id," );
+            script.addTab().addLine( "aggregation," );
             script.addTab().addLine( "name," );
             script.addTab().addLine( "description," );
             script.addTab().addLine( "parameter_code," );
-            script.addTab().addLine( "measurement_unit," );
-            script.addTab().addLine( "measurementunit_id" );
+            script.addTab().addLine( "measurement_unit" );
             script.addLine( ")" );
-            script.addLine( "VALUES (" );
-            script.addTab().addLine( "'", usgsName, "'," );
-            script.addTab().addLine( "'", description, "'," );
-            script.addTab().addLine( "'", code, "'," );
-            script.addTab().addLine( "'", measurementUnitId, "'," );
-            script.addTab().addLine( "'None'" );
-            script.addLine( ")" );
-            script.add( "RETURNING *;" );
+            script.addLine( "SELECT ?, ?, ?, ?, ?, ?" );
+            // Do measurementUnitId first because Query's attempt to get
+            // inserted ids will fail if it's not a long.
+            script.addArgument( measurementUnitId );
+            // It might be possible to use the litany at usgs instead:
+            // https://help.waterdata.usgs.gov/code/stat_cd_nm_query?stat_nm_cd=%250%25&fmt=html
+            script.addArgument( aggregation );
+            script.addArgument( usgsName );
+            script.addArgument( description );
+            script.addArgument( code );
+            script.addArgument( measurementUnit );
+            script.addLine( "WHERE NOT EXISTS (" );
+            script.addTab().addLine( "SELECT 1");
+            script.addTab().addLine( "FROM wres.USGSParameter" );
+            script.addTab().addLine( "WHERE name = ?" );
+            script.addArgument( usgsName );
+            script.addTab( 2 ).addLine( "AND description = ?" );
+            script.addArgument( description );
+            script.addTab( 2 ).addLine( "AND parameter_code = ?" );
+            script.addArgument( code );
+            script.addTab( 2 ).addLine( "AND measurement_unit = ?" );
+            script.addArgument( measurementUnit );
+            script.addTab( 2 ).addLine( "AND measurementunit_id = ?" );
+            script.addArgument( measurementUnitId );
+            script.addTab( 2 ).addLine( "AND aggregation = ?" );
+            script.addArgument( aggregation );
+            script.addLine( ");" );
 
-            List<USGSParameter> newParameter =
-                    script.interpret( USGSParameter::new );
+            script.execute();
 
-            USGSParameter parameter = null;
+            // There is no surrogate key, the table has only the values above.
+            USGSParameter parameter = new USGSParameter( name,
+                                                         description,
+                                                         code,
+                                                         measurementUnit,
+                                                         aggregation,
+                                                         measurementUnitId );
 
-            if ( !newParameter.isEmpty() )
-            {
-                parameter = newParameter.get( 0 );
-                USGSParameters.getParameterStore()
-                              .putIfAbsent( parameter.getKey(), parameter );
-            }
+            USGSParameters.getParameterStore()
+                          .putIfAbsent( parameter.getKey(), parameter );
 
             return parameter;
         }

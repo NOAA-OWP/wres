@@ -5,7 +5,7 @@ package wres.util;
  * such as a function being unable to interact with factors needed to perform
  * psuedo-mathematical computations
  */
-public class CalculationException extends Exception
+public class CalculationException extends RuntimeException
 {
     public CalculationException( String message, Throwable cause)
     {

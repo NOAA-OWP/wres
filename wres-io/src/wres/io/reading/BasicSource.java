@@ -31,15 +31,18 @@ public abstract class BasicSource
     protected static final double EPSILON = 0.0000001;
 
     protected final ProjectConfig projectConfig;
+    protected final DataSource dataSource;
 
-    protected BasicSource( ProjectConfig projectConfig )
+    protected BasicSource( ProjectConfig projectConfig,
+                           DataSource dataSource )
     {
         this.projectConfig = projectConfig;
+        this.dataSource = dataSource;
     }
 
     public List<IngestResult> save() throws IOException
     {
-        if ( ConfigHelper.isForecast( this.dataSourceConfig ))
+        if ( ConfigHelper.isForecast( this.dataSource.getContext() ))
         {
             return this.saveForecast();
         }
@@ -76,16 +79,7 @@ public abstract class BasicSource
      */
 	public URI getFilename()
 	{
-		return filename;
-	}
-
-    /**
-     * Sets the name of the file containing the data to read
-     * @param name The name of the file to read
-     */
-	protected void setFilename ( URI name )
-	{
-		filename = name;
+        return this.dataSource.getUri() ;
 	}
 
     /**
@@ -101,30 +95,16 @@ public abstract class BasicSource
 	}
 
     /**
-     * Loads the specification for the data source
-     * @param dataSourceConfig the outer data source config, such as "right"
-     */
-	public void setDataSourceConfig (DataSourceConfig dataSourceConfig)
-	{
-		this.dataSourceConfig = dataSourceConfig;
-	}
-
-    /**
      * @return The configured specification indicating what to ingest and how
      */
-	protected DataSourceConfig getDataSourceConfig ()
-	{
-		return this.dataSourceConfig;
-	}
-
-    public void setSourceConfig ( DataSourceConfig.Source sourceConfig )
+    protected DataSourceConfig getDataSourceConfig ()
     {
-        this.sourceConfig = sourceConfig;
+        return this.dataSource.getContext();
     }
 
     protected DataSourceConfig.Source getSourceConfig()
     {
-        return this.sourceConfig;
+        return this.dataSource.getSource();
     }
 
     protected ProjectConfig getProjectConfig()
@@ -132,15 +112,10 @@ public abstract class BasicSource
         return this.projectConfig;
     }
 
-    public void setIsRemote(final boolean isRemote)
+    protected DataSource getDataSource()
     {
-        this.isRemote = isRemote;
+        return this.dataSource;
     }
-
-    /**
-     * The name of the file containing the given source data
-     */
-	protected URI filename;
 
     /**
      * The MD5 hash of the given file
@@ -158,55 +133,56 @@ public abstract class BasicSource
      */
 	protected String getSpecifiedVariableName()
     {
-        String variableName = null;
-
-        if (dataSourceConfig != null) {
-            variableName = dataSourceConfig.getVariable().getValue();
+        DataSourceConfig.Variable variable = this.getDataSource()
+                                                 .getContext()
+                                                 .getVariable();
+        if ( variable != null )
+        {
+            return variable.getValue();
         }
 
-        return variableName;
+        return null;
     }
 
     /**
      * @return The suggested measurement unit of the variable to ingest.
      * This should be ignored within data sources that define their own measurement unit.
+     * null if not found.
+     *
+     * Should likely be eliminated, due to every important dataset including the
+     * units already, also redundant/confusing "unit" available on both the
+     * "variable" tag and the "source" tag can be eliminated. See #55969, #62847
      */
     protected String getSpecifiedVariableUnit()
     {
-        String unit = null;
+        DataSourceConfig.Source sourceConfig = this.getDataSource()
+                                                   .getSource();
 
-        if ( this.getSourceConfig() != null )
+        if ( sourceConfig != null )
         {
-            DataSourceConfig.Source source = this.getSourceConfig();
-
-            if ( source.getUnit() != null && !source.getUnit().isEmpty() ) {
-                unit = source.getUnit();
-            }
+            return sourceConfig.getUnit();
         }
 
-        return unit;
+        return null;
     }
 
     /**
      * @return The specific location ID given by the source tag within the
      * data source configuration. This should be ignored in data sources that
      * define their own locations.
+     * null if not found.
      */
     protected String getSpecifiedLocationID()
     {
-        String locationID = null;
+        DataSourceConfig.Source source  = this.getDataSource()
+                                              .getSource();
 
-        if ( this.getSourceConfig() != null )
+        if ( source.getLocationId() != null && !source.getLocationId().isEmpty() )
         {
-            DataSourceConfig.Source source = this.getSourceConfig();
-
-            if ( source.getLocationId() != null && !source.getLocationId().isEmpty() )
-            {
-                locationID = source.getLocationId();
-            }
+            return source.getLocationId();
         }
 
-        return locationID;
+        return null;
     }
 
 
@@ -221,18 +197,16 @@ public abstract class BasicSource
     {
         String missingValue = null;
 
-        if ( this.getSourceConfig() != null )
+        DataSourceConfig.Source source = this.getDataSource()
+                                             .getSource();
+
+        if ( source.getMissingValue() != null && !source.getMissingValue().isEmpty() )
         {
-            DataSourceConfig.Source source = this.getSourceConfig();
+            missingValue = source.getMissingValue();
 
-            if ( source.getMissingValue() != null && !source.getMissingValue().isEmpty() )
+            if ( missingValue.lastIndexOf( '.' ) + 6 < missingValue.length() )
             {
-                missingValue = source.getMissingValue();
-
-                if ( missingValue.lastIndexOf( '.' ) + 6 < missingValue.length() )
-                {
-                    missingValue = missingValue.substring( 0, missingValue.lastIndexOf( '.' ) + 6 );
-                }
+                missingValue = missingValue.substring( 0, missingValue.lastIndexOf( '.' ) + 6 );
             }
         }
 
@@ -253,23 +227,6 @@ public abstract class BasicSource
     {
         this.hash = hash;
     }
-
-    /**
-     * The configuration of the data source indicating that this file might
-     * need to be ingested
-     */
-	protected DataSourceConfig dataSourceConfig;
-
-    /**
-     * The precise configuration of the data source indicating that this file
-     * might need to be ingested
-     */
-    private DataSourceConfig.Source sourceConfig;
-
-    /**
-     * Whether or not the data is held remotely
-     */
-	private boolean isRemote;
 
 	protected abstract Logger getLogger();
 }

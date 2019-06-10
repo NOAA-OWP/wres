@@ -1,10 +1,8 @@
-package wres.io.utilities;
+package wres.system;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.function.Supplier;
-
-import wres.system.SystemSettings;
 
 public class DatabaseConnectionSupplier implements Supplier<Connection>
 {

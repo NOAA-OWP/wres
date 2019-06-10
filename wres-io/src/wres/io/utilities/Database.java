@@ -10,7 +10,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
@@ -35,7 +34,6 @@ import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
-import wres.util.FormattedStopwatch;
 import wres.util.FutureQueue;
 import wres.util.Strings;
 import wres.util.functional.ExceptionalConsumer;
@@ -50,11 +48,6 @@ public final class Database {
     private Database(){}
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Database.class);
-
-	private static final Integer MUTATION_LOCK_KEY = 126357;
-
-	private static final DatabaseLockManager DATABASE_LOCK_MANAGER =
-            new DatabaseLockManager( new DatabaseConnectionSupplier() );
 
 	/**
 	 * The standard priority set of connections to the database
@@ -113,18 +106,10 @@ public final class Database {
 			new LinkedBlockingQueue<>();
 
 	/**
-	 * @return Either the first value in the ingest queue or null if none exist
-	 */
-    public static Future<List<IngestResult>> getStoredIngestTask()
-    {
-		return storedIngestTasks.poll();
-	}
-
-	/**
 	 * Adds a task to the ingest queue
 	 * @param task The ingest task to add to the queue
 	 */
-	public static void storeIngestTask(Future task)
+	private static void storeIngestTask(Future task)
 	{
 		Database.storedIngestTasks.add(task);
 	}
@@ -156,142 +141,6 @@ public final class Database {
 		return result;
 	}
 
-
-	/**
-	 * Loads the metadata for each saved index and reinstates them within the
-	 * database
-     * TODO: It might be appropriate to move this out into another class
-     * @throws SQLException when script execution or gets from resultsets fail
-     * @throws InterruptedException when an underlying task is interrupted
-     * @throws ExecutionException when an underlying task throws an exception
-	 */
-
-	public static void addNewIndexes() throws SQLException,
-            InterruptedException, ExecutionException
-	{
-	    final boolean isHighPriority = false;
-
-	    try
-        {
-            // Remove queued indexes for tables that don't exist
-            ScriptBuilder script = new ScriptBuilder(  );
-            script.addLine("DELETE FROM wres.IndexQueue IQ");
-            script.addLine("WHERE NOT EXISTS (");
-            script.addTab().addLine("SELECT 1");
-            script.addTab().addLine("FROM INFORMATION_SCHEMA.TABLES T");
-            script.addTab().addLine("WHERE LOWER(T.table_schema || '.' || T.table_name) = LOWER(IQ.table_name)");
-            script.addLine(");");
-
-            Database.execute( Query.withScript( script.toString() ), isHighPriority );
-        }
-        catch ( SQLException e )
-        {
-            // We don't rethrow here because it just means that there was some
-            // garbage floating around that we don't care about
-            LOGGER.warn( "Invalid dynamic indexes could not be removed from the queue." );
-        }
-
-	    // TODO: See if a FutureQueue would work
-        LinkedList<Future<?>> indexTasks = new LinkedList<>();
-
-        // If we're tracing, we want to have a stopwatch we can start and stop
-        FormattedStopwatch watch = null;
-
-        if (LOGGER.isTraceEnabled())
-		{
-			watch = new FormattedStopwatch();
-			watch.start();
-		}
-
-        try(DataProvider data = Database.getData( Query.withScript( "SELECT * FROM wres.IndexQueue;" ), isHighPriority ))
-        {
-            while ( data.next() )
-            {
-                ScriptBuilder script = new ScriptBuilder(  );
-                script.addLine("CREATE INDEX IF NOT EXISTS ", data.getString( "index_name" ));
-                script.addTab().addLine("ON ", data.getString( "table_name" ));
-                script.addTab().addLine("USING ", data.getString( "method" ));
-                script.addTab().addLine(data.getString("column_definition"), ";");
-
-                indexTasks.add(Database.issue( Query.withScript( script.toString() ), isHighPriority ));
-
-                script = new ScriptBuilder(  );
-                script.addLine("DELETE FROM wres.IndexQueue");
-                script.add("WHERE indexqueue_id = ", data.getInt( "indexqueue_id" ), ";");
-
-                indexTasks.add(Database.issue( Query.withScript( script.toString() ), isHighPriority ));
-            }
-        }
-
-        // If there's at least one command to add an index, tell the client
-        if (indexTasks.peek() != null)
-        {
-            LOGGER.info("Restoring Indices...");
-            ProgressMonitor.setSteps( (long)indexTasks.size() );
-        }
-
-		Future<?> task;
-
-        // Complete each index creation task
-		while ((task = indexTasks.poll()) != null)
-        {
-            task.get();
-            ProgressMonitor.completeStep();
-        }
-
-		// If we're tracing and a stopwatch was created express the amount of time that has elapsed
-        if (LOGGER.isTraceEnabled() && watch != null)
-        {
-            watch.stop();
-            LOGGER.trace("It took {} to restore all indexes in the database.",
-                         watch.getFormattedDuration());
-        }
-	}
-
-    /**
-     * Saves metadata about an index that needs to be added to the database
-     * @param tableName The name of the table that the index will belong to
-     * @param indexName The name of the index to instate
-     * @param indexDefinition The definition of the index
-     * @throws SQLException when query fails
-     */
-	public static void saveIndex(String tableName, String indexName, String indexDefinition)
-            throws SQLException
-    {
-        // Index definitions are wrapped in parenthesis, so ensure it has both a front and a back
-		if (!indexDefinition.startsWith("("))
-		{
-			indexDefinition = "(" + indexDefinition;
-		}
-
-		if (!indexDefinition.endsWith(")"))
-        {
-            indexDefinition += ")";
-        }
-
-		// Create the insert script
-        ScriptBuilder script = new ScriptBuilder(  );
-		script.addLine("INSERT INTO wres.IndexQueue (table_name, index_name, column_definition, method)");
-		script.addLine("VALUES (");
-		script.addTab().addLine("'", tableName, "',");
-		script.addTab().addLine("'", indexName, "',");
-		script.addTab().addLine("'", indexDefinition, "',");
-		script.addTab().addLine("'btree'");
-		script.add(");");
-
-		try
-        {
-            Database.execute( Query.withScript( script.toString() ), false);
-		}
-		catch ( SQLException e )
-		{
-		    // Whether or not this is a failure state is debatable
-            String message = "Could not store metadata about the index '"
-                             + indexName + "' in the database.";
-            // Decorate with some additional information, propagate.
-            throw new SQLException( message, e );
-		}
-    }
 
 	/**
 	 * Creates a new thread executor
@@ -426,7 +275,6 @@ public final class Database {
 		// Close out our database connection pools
         CONNECTION_POOL.close();
         HIGH_PRIORITY_CONNECTION_POOL.close();
-        DATABASE_LOCK_MANAGER.shutdown();
 	}
 
 
@@ -462,7 +310,6 @@ public final class Database {
         abandoned.addAll( abandonedMore );
         CONNECTION_POOL.close();
         HIGH_PRIORITY_CONNECTION_POOL.close();
-        DATABASE_LOCK_MANAGER.shutdown();
         return abandoned;
     }
 
@@ -486,12 +333,12 @@ public final class Database {
         LOGGER.debug("Retrieving a high priority database connection...");
         return HIGH_PRIORITY_CONNECTION_POOL.getConnection();
     }
-	
+
 	/**
 	 * Returns the connection to the connection pool.
 	 * @param connection The connection to return
 	 */
-	public static void returnConnection(Connection connection)
+	private static void returnConnection( Connection connection )
 	{
 	    if (connection != null) {
 	        // The implementation of the C3P0 Connection option returns the
@@ -668,28 +515,6 @@ public final class Database {
 	public static void refreshStatistics(boolean vacuum)
             throws SQLException
 	{
-	    // If we plan to reclaim dead tuples, we want to first make sure that all indexes planned
-        // for addition have been properly added
-        if (vacuum)
-        {
-            try
-            {
-                Database.addNewIndexes();
-            }
-            catch ( InterruptedException ie )
-            {
-                LOGGER.warn( "Interrupted while refreshing database statistics.",
-                             ie );
-                Thread.currentThread().interrupt();
-            }
-            catch ( ExecutionException ee )
-            {
-                // This might not actually be a SQLException underneath, but
-                // for now, translate to one until we figure out a better way.
-                throw new SQLException( "Could not add indices.", ee );
-            }
-        }
-
         List<String> sql = new ArrayList<>();
 
         final String optionalVacuum;
@@ -1112,7 +937,7 @@ public final class Database {
     {
         WRESCallable<V> queryToSubmit = new WRESCallable<V>() {
             @Override
-            protected V execute() throws Exception
+            protected V execute() throws SQLException
             {
                 return Database.retrieve( this.query, this.label, this.isHighPriority );
             }
@@ -1204,6 +1029,7 @@ public final class Database {
     /**
      * Removes all user data from the database
      * TODO: This should probably accept an object or list to allow for the removal of business logic
+	 * Assumes that locking has already been done at a higher level by caller(s)
      * @throws SQLException Thrown if successful communication with the
      * database could not be established
      */
@@ -1215,14 +1041,20 @@ public final class Database {
 
 		for (String partition : partitions)
         {
-            builder.append("DROP TABLE ").append( partition).append(";").append(NEWLINE);
+            builder.append( "TRUNCATE TABLE " )
+				   .append( partition)
+				   .append( ";" )
+				   .append( NEWLINE );
         }
 
         partitions = Database.getPartitionTables( "variablefeature_variable%" );
 
         for (String partition : partitions)
         {
-            builder.append("DROP TABLE ").append( partition).append(";").append(NEWLINE);
+            builder.append( "TRUNCATE TABLE " )
+				   .append( partition )
+				   .append( ";" )
+				   .append( NEWLINE );
         }
 
 		builder.append("TRUNCATE wres.TimeSeriesSource;").append(NEWLINE);
@@ -1259,52 +1091,6 @@ public final class Database {
         return Database.CONNECTION_POOL;
     }
 
-
-    /**
-     * Lock the database for mutation so that we can do clean up accurately
-     * or ingest without another process cleaning up while this process ingests.
-     *
-     * Try once to get the lock. If it fails, fail quickly.
-     *
-     * @throws IOException when db communication fails
-     * @throws IllegalStateException when lock could not be acquired
-     */
-
-    public static void lockForMutation() throws IOException
-    {
-        try
-        {
-            DATABASE_LOCK_MANAGER.lock( MUTATION_LOCK_KEY );
-            LOGGER.info( "Successfully acquired database change privileges." );
-        }
-        catch ( SQLException se )
-        {
-            throw new IOException( "Could not acquire database change privileges.",
-                                   se );
-        }
-    }
-
-
-    /**
-     * Release the lock for database mutation. The lock should also be released
-     * automatically by postgres if our process dies.
-     * @throws IOException when db communication fails
-     * @throws IllegalStateException when lock could not be released
-     */
-
-    public static void releaseLockForMutation() throws IOException
-    {
-        try
-        {
-            DATABASE_LOCK_MANAGER.unlock( MUTATION_LOCK_KEY );
-            LOGGER.info( "Successfully released database change privileges." );
-        }
-        catch ( SQLException se )
-        {
-            throw new IOException( "Could not release database change privileges.",
-                                   se );
-        }
-    }
 
     /**
      * For system-level monitoring information, return the number of tasks in

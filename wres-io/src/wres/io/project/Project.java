@@ -2509,6 +2509,8 @@ public class Project
     {
         DataScripter script = new DataScripter();
         script.setUseTransaction( true );
+        script.retryOnSqlState( "40001" );
+        script.retryOnSqlState( "23505" );
         script.setHighPriority( true );
 
         script.addLine("INSERT INTO wres.Project (project_name, input_code)");
@@ -2534,17 +2536,26 @@ public class Project
         DataScripter saveScript = this.getInsertSelectStatement();
         this.performedInsert = saveScript.execute() > 0;
 
-        DataScripter scriptWithId = new DataScripter();
-        scriptWithId.setHighPriority( true );
-        scriptWithId.setUseTransaction( false );
-        scriptWithId.addLine( "SELECT project_id" );
-        scriptWithId.addLine( "FROM wres.Project P" );
-        scriptWithId.addLine( "WHERE P.input_code = ?;" );
-        scriptWithId.addArgument( this.getInputCode() );
-
-        try ( DataProvider data = scriptWithId.getData() )
+        if ( this.performedInsert )
         {
-            this.projectID = data.getInt( this.getIDName() );
+            this.projectID = saveScript.getInsertedIds()
+                                       .get( 0 )
+                                       .intValue();
+        }
+        else
+        {
+            DataScripter scriptWithId = new DataScripter();
+            scriptWithId.setHighPriority( true );
+            scriptWithId.setUseTransaction( false );
+            scriptWithId.addLine( "SELECT project_id" );
+            scriptWithId.addLine( "FROM wres.Project P" );
+            scriptWithId.addLine( "WHERE P.input_code = ?;" );
+            scriptWithId.addArgument( this.getInputCode() );
+
+            try ( DataProvider data = scriptWithId.getData() )
+            {
+                this.projectID = data.getInt( this.getIDName() );
+            }
         }
 
         if ( LOGGER.isTraceEnabled() )

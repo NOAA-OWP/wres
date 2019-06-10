@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -12,6 +13,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpRequest;
@@ -25,6 +27,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockserver.integration.ClientAndServer.startClientAndServer;
@@ -44,13 +47,17 @@ import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
+import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
 import wres.io.data.details.TimeSeries;
+import wres.io.reading.DataSource;
 import wres.io.reading.IngestResult;
 import wres.io.reading.PreIngestException;
+import wres.io.reading.SourceCompleter;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.Database;
-import wres.io.utilities.DatabaseConnectionSupplier;
+import wres.system.DatabaseConnectionSupplier;
+import wres.system.DatabaseLockManager;
 
 
 @RunWith( PowerMockRunner.class )
@@ -3334,6 +3341,15 @@ public class WRDSSourceTest
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
+    @Mock
+    DatabaseLockManager fakeLockManager;
+    @Mock
+    SourceCompletedDetails mockSourceCompletedDetails;
+    @Mock
+    SourceCompleter mockSourceCompleter;
+    @Mock
+    SourceDetails mockSourceDetails;
+
     @BeforeClass
     public static void createFakeServer()
     {
@@ -3346,11 +3362,9 @@ public class WRDSSourceTest
         // Needed only if there are more @Tests added:
         //WRDSSourceTest.mockServer.reset();
 
-        SourceDetails mockSourceDetails;
         DataProvider mockDataProvider;
         DatabaseConnectionSupplier mockDatabaseConnectionSupplier;
 
-        mockSourceDetails = mock( SourceDetails.class );
         when( mockSourceDetails.performedInsert() ).thenReturn( true );
         PowerMockito.mockStatic( DataSources.class );
         Mockito.when( DataSources.get( any( URI.class ),
@@ -3358,6 +3372,14 @@ public class WRDSSourceTest
                                        any(),
                                        anyString() ) )
                .thenReturn( mockSourceDetails );
+
+
+        Mockito.doNothing()
+               .when( this.mockSourceCompletedDetails )
+               .markCompleted();
+        Mockito.when( this.mockSourceCompletedDetails.wasCompleted() )
+               .thenReturn( true );
+
 
         PowerMockito.mockStatic( Ensembles.class );
         Mockito.when( Ensembles.getDefaultEnsembleID() )
@@ -3396,7 +3418,6 @@ public class WRDSSourceTest
         PowerMockito.mockStatic( Features.class );
         Mockito.when( Features.getVariableFeatureByFeature( any(), eq( FAKE_VARIABLE_ID ) ) )
                .thenReturn( FAKE_FEATURE_ID );
-
     }
 
     @Test
@@ -3478,8 +3499,33 @@ public class WRDSSourceTest
                                                          null,
                                                          null );
 
-        WRDSSource wrdsSource = new WRDSSource( projectConfig, fakeAhpsUri );
-        wrdsSource.setDataSourceConfig( config );
+        DataSource dataSource = DataSource.of( confSource,
+                                               config,
+                                               Set.of( LeftOrRightOrBaseline.LEFT,
+                                                       LeftOrRightOrBaseline.RIGHT ),
+                                               fakeAhpsUri );
+
+        // Spy seems needed to make new instances within the classes under test.
+        // See https://github.com/mockito/mockito/wiki/Mocking-Object-Creation
+        WRDSSource wrdsSource = Mockito.spy(
+                new WRDSSource( projectConfig,
+                                dataSource,
+                                this.fakeLockManager ) );
+
+        ReadValueManager readValueManager = Mockito.spy(
+                new ReadValueManager( projectConfig,
+                                      dataSource,
+                                      this.fakeLockManager ) );
+        Mockito.doReturn( this.mockSourceCompleter )
+               .when( readValueManager )
+               .createSourceCompleter( 0, this.fakeLockManager );
+
+        Mockito.doReturn( readValueManager )
+               .when( wrdsSource )
+               .createReadValueManager( projectConfig,
+                                        dataSource,
+                                        this.fakeLockManager );
+
         List<IngestResult> ingestResults = wrdsSource.save();
 
         WRDSSourceTest.mockServer.verify( request().withMethod( "GET" )
@@ -3576,8 +3622,13 @@ public class WRDSSourceTest
                                                          null,
                                                          null );
 
-        WRDSSource wrdsSource = new WRDSSource( projectConfig, fakeAhpsUri );
-        wrdsSource.setDataSourceConfig( config );
+        DataSource dataSource = DataSource.of( confSource,
+                                               config,
+                                               Set.of( LeftOrRightOrBaseline.LEFT,
+                                                       LeftOrRightOrBaseline.RIGHT ),
+                                               fakeAhpsUri );
+
+        WRDSSource wrdsSource = new WRDSSource( projectConfig, dataSource, this.fakeLockManager );
 
         // Expect a PreIngestException during attempt to save invalid data
         exception.expect( PreIngestException.class );
@@ -3671,8 +3722,34 @@ public class WRDSSourceTest
                                                          null,
                                                          null );
 
-        WRDSSource wrdsSource = new WRDSSource( projectConfig, fakeAhpsUri );
-        wrdsSource.setDataSourceConfig( config );
+        DataSource dataSource = DataSource.of( confSource,
+                                               config,
+                                               Set.of( LeftOrRightOrBaseline.LEFT,
+                                                       LeftOrRightOrBaseline.RIGHT ),
+                                               fakeAhpsUri );
+        ReadValueManager readValueManager = Mockito.spy(
+                new ReadValueManager( projectConfig,
+                                      dataSource,
+                                      this.fakeLockManager ) );
+        Mockito.doReturn( this.mockSourceCompletedDetails )
+               .when( readValueManager )
+               .createSourceCompletedDetails( any( SourceDetails.class ) );
+        Mockito.doReturn( this.mockSourceCompleter )
+               .when( readValueManager )
+               .createSourceCompleter( anyInt(), any( DatabaseLockManager.class ) );
+        Mockito.doReturn( this.mockSourceDetails )
+               .when( readValueManager )
+               .createSourceDetails( any( SourceDetails.SourceKey.class ) );
+        WRDSSource wrdsSource = Mockito.spy(
+                new WRDSSource( projectConfig,
+                                dataSource,
+                                this.fakeLockManager ) );
+        Mockito.doReturn( readValueManager )
+               .when( wrdsSource )
+               .createReadValueManager( projectConfig,
+                                        dataSource,
+                                        this.fakeLockManager );
+
         List<IngestResult> ingestResults = wrdsSource.save();
 
         WRDSSourceTest.mockServer.verify( request().withMethod( "GET" )

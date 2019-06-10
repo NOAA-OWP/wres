@@ -11,6 +11,7 @@ import java.sql.Statement;
 import java.util.Map;
 import java.util.Properties;
 import java.util.TreeMap;
+import java.util.function.Supplier;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
@@ -130,31 +131,56 @@ final class DatabaseSettings
 			LOGGER.debug( "Db settings after applying system property overrides: {}",
                           this );
 
-            DatabaseSchema schema = new DatabaseSchema(this.getDatabaseName());
-
-            String rootDatabaseName = null;
-
-            // TODO: If we're in a postgresql instance, the default db is postgres. We'll need to add other
-            // defaults for other types
-            if (this.getDatabaseType().equalsIgnoreCase( "postgresql" ))
-            {
-                rootDatabaseName = "postgres";
-            }
-
-            try (Connection connection = this.getRawConnection( this.getConnectionString( rootDatabaseName ) ))
-            {
-                schema.createDatabase( connection );
-            }
-
-            try (Connection connection = this.getRawConnection( this.getConnectionString( this.getDatabaseName() ) ))
-            {
-                schema.applySchema( connection );
-            }
-
             testConnection();
 
-			cleanPriorRuns();
-		}
+			// TODO: move liquibase migration out of static initialization.
+
+            // Stop-gap measure between always-migrate and never-migrate.
+            boolean attemptToMigrate = true;
+            String attemptToMigrateSetting = System.getProperty( "wres.attemptToMigrate" );
+
+            if ( attemptToMigrateSetting != null
+                 && !attemptToMigrateSetting.isBlank() )
+            {
+                if ( attemptToMigrateSetting.toLowerCase()
+                                            .equals( "true" ) )
+                {
+                    attemptToMigrate = true;
+                }
+                else if ( attemptToMigrateSetting.toLowerCase()
+                                                 .equals( "false" ) )
+                {
+                    attemptToMigrate = false;
+                }
+                else
+                {
+                    LOGGER.warn( "Value for wres.attemptToMigrate must be 'true' or 'false', not '{}'",
+                                 attemptToMigrateSetting );
+                }
+            }
+
+            if ( attemptToMigrate )
+            {
+                ConnectionSupplier connectionSupplier =
+                        new ConnectionSupplier( this.getDatabaseName() );
+                DatabaseLockManager lockManager =
+                        new DatabaseLockManager( connectionSupplier );
+
+                try ( DatabaseSchema schema = new DatabaseSchema( this.getDatabaseName(),
+                                                                  lockManager );
+                      Connection connection = this.getRawConnection( this.getConnectionString(
+                              this.getDatabaseName() ) ) )
+                {
+                    schema.applySchema( connection );
+                }
+                finally
+                {
+                    lockManager.shutdown();
+                }
+
+                cleanPriorRuns();
+            }
+        }
 		catch ( XMLStreamException | SQLException | IOException e )
 		{
 			throw new ExceptionInInitializerError( e );
@@ -763,4 +789,29 @@ final class DatabaseSettings
             }
         }
 	}
+
+    /**
+     * To create a DatabaseLockManager we need to supply connections.
+     */
+	private final class ConnectionSupplier implements Supplier<Connection>
+    {
+        private final String rootDbName;
+        private ConnectionSupplier( String rootDbName )
+        {
+            this.rootDbName = rootDbName;
+        }
+
+        @Override
+        public Connection get()
+        {
+            try
+            {
+                return getRawConnection( getConnectionString( rootDbName ) );
+            }
+            catch ( SQLException se )
+            {
+                throw new IllegalStateException( "Unable to get connection.", se );
+            }
+        }
+    }
 }

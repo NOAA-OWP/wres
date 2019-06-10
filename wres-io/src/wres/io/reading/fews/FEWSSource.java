@@ -1,7 +1,6 @@
 package wres.io.reading.fews;
 
 import java.io.IOException;
-import java.net.URI;
 import java.sql.SQLException;
 import java.util.List;
 
@@ -11,9 +10,13 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
+import wres.io.data.details.SourceCompletedDetails;
+import wres.io.data.details.SourceDetails;
 import wres.io.reading.BasicSource;
+import wres.io.reading.DataSource;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
+import wres.system.DatabaseLockManager;
 
 /**
  * @author Christopher Tubbs
@@ -22,45 +25,55 @@ import wres.io.reading.IngestResult;
 public class FEWSSource extends BasicSource
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( FEWSSource.class );
+    private final DatabaseLockManager lockManager;
 
 	/**
      * Constructor that sets the filename
      * @param projectConfig the ProjectConfig causing ingest
-	 * @param filename The name of the source file
+     * @param dataSource the data source information
+     * @param lockManager the tool to manage ingest locks, shared per ingest
 	 */
     public FEWSSource( ProjectConfig projectConfig,
-                       URI filename )
+                       DataSource dataSource,
+                       DatabaseLockManager lockManager )
     {
-        super( projectConfig );
-		this.setFilename(filename);
-		//this.setHash();
+        super( projectConfig, dataSource );
+		this.lockManager = lockManager;
 	}
 
     @Override
     public List<IngestResult> save() throws IOException
     {
-        boolean wasFoundInCache;
+        boolean anotherTaskInChargeOfIngest;
+        boolean ingestFullyCompleted;
+
         try
         {
             if ( !DataSources.hasSource( this.getHash() ) )
             {
                 PIXMLReader sourceReader = new PIXMLReader( this.getFilename(),
-                                                            this.getHash() );
+                                                            this.getHash(),
+                                                            this.getLockManager() );
                 sourceReader.setDataSourceConfig( this.getDataSourceConfig() );
                 sourceReader.setSourceConfig( this.getSourceConfig() );
                 sourceReader.parse();
-                wasFoundInCache = false;
+                anotherTaskInChargeOfIngest = !sourceReader.inChargeOfIngest();
+                ingestFullyCompleted = sourceReader.ingestFullyCompleted();
             }
             else
             {
-                wasFoundInCache = true;
+                anotherTaskInChargeOfIngest = true;
+                SourceDetails sourceDetails = DataSources.getExistingSource( this.getHash() );
+                SourceCompletedDetails completedDetails =
+                        new SourceCompletedDetails( sourceDetails );
+                ingestFullyCompleted = completedDetails.wasCompleted();
             }
         }
         catch ( SQLException se )
         {
             String message = "While saving the";
 
-            if (ConfigHelper.isForecast( this.dataSourceConfig ))
+            if (ConfigHelper.isForecast( this.getDataSourceConfig() ))
             {
                 message += " forecast ";
             }
@@ -76,14 +89,18 @@ public class FEWSSource extends BasicSource
             throw new IngestException( message, se );
         }
 
-
         LOGGER.debug("Finished Parsing '{}'", this.getFilename());
 
         return IngestResult.singleItemListFrom( this.getProjectConfig(),
-                                                this.getDataSourceConfig(),
+                                                this.getDataSource(),
                                                 this.getHash(),
-                                                this.getFilename(),
-                                                wasFoundInCache );
+                                                anotherTaskInChargeOfIngest,
+                                                !ingestFullyCompleted );
+    }
+
+    private DatabaseLockManager getLockManager()
+    {
+        return this.lockManager;
     }
 
     @Override

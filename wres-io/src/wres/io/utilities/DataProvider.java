@@ -16,16 +16,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.StringJoiner;
-import java.util.concurrent.Future;
 
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonValue;
 
-import wres.io.concurrency.CopyExecutor;
-import wres.io.concurrency.WRESRunnable;
-import wres.system.ProgressMonitor;
 import wres.util.functional.ExceptionalConsumer;
 import wres.util.functional.ExceptionalFunction;
 
@@ -527,11 +523,11 @@ public interface DataProvider extends AutoCloseable
      * <br>
      * The position of the provider will be at the end of the dataset after function completion
      * @param table Fully qualified table name to copy data into
-     * @return A future representing data being asynchronously copied into the database
+     * @throws CopyException When the copy fails.
      */
-    default Future<?> copy(final String table)
+    default void copy( final String table ) throws CopyException
     {
-        return this.copy( table, false );
+        this.copy( table, false );
     }
 
     /**
@@ -540,9 +536,10 @@ public interface DataProvider extends AutoCloseable
      * The position of the provider will be at the end of the dataset after function completion
      * @param table Fully qualified table name to copy data into
      * @param showProgress Whether or not to show progress during the copy operation
-     * @return A future representing data being asynchronously copied into the database
+     * @throws CopyException When the copy fails.
      */
-    default Future<?> copy( final String table, final boolean showProgress)
+    default void copy( final String table, final boolean showProgress )
+            throws CopyException
     {
         final String delimiter = "|";
         final String NULL = "\\N";
@@ -569,19 +566,12 @@ public interface DataProvider extends AutoCloseable
             lineJoiner.add( valueJoiner.toString() );
         }
 
-        WRESRunnable copier = new CopyExecutor(
-                definitionJoiner.toString(),
-                lineJoiner.toString(),
-                delimiter
-        );
-
-        if (showProgress)
-        {
-            copier.setOnRun( ProgressMonitor.onThreadStartHandler() );
-            copier.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
-        }
-
-        return Database.execute( copier );
+        // Until we can figure out how to get exceptions to propagate from
+        // submitting to the Database executor, run synchronously in caller's
+        // Thread.
+        Database.copy( definitionJoiner.toString(),
+                       lineJoiner.toString(),
+                       delimiter );
     }
 
     /**

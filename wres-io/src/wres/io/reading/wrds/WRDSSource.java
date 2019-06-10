@@ -1,7 +1,6 @@
 package wres.io.reading.wrds;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -10,8 +9,10 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
 import wres.io.reading.BasicSource;
+import wres.io.reading.DataSource;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
+import wres.system.DatabaseLockManager;
 
 /**
  * Ingests JSON data from the WRDS schema from either the service or JSON files on the file system
@@ -30,10 +31,14 @@ public class WRDSSource extends BasicSource
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( WRDSSource.class );
 
-    public WRDSSource( ProjectConfig projectConfig, final URI filename )
+    private final DatabaseLockManager lockManager;
+
+    public WRDSSource( ProjectConfig projectConfig,
+                       DataSource dataSource,
+                       DatabaseLockManager lockManager )
     {
-        super( projectConfig );
-        this.setFilename( filename );
+        super( projectConfig, dataSource );
+        this.lockManager = lockManager;
     }
 
     @Override
@@ -44,10 +49,9 @@ public class WRDSSource extends BasicSource
             return this.saveObservation();
         }
 
-        ReadValueManager reader = new ReadValueManager( this.getProjectConfig(),
-                                                        this.getDataSourceConfig(),
-                                                        this.getFilename() );
-
+        ReadValueManager reader = createReadValueManager( this.getProjectConfig(),
+                                                          this.getDataSource(),
+                                                          this.lockManager );
         return reader.save();
     }
 
@@ -61,5 +65,12 @@ public class WRDSSource extends BasicSource
     protected Logger getLogger()
     {
         return WRDSSource.LOGGER;
+    }
+
+    ReadValueManager createReadValueManager( ProjectConfig projectConfig,
+                                             DataSource dataSource,
+                                             DatabaseLockManager lockManager )
+    {
+        return new ReadValueManager( projectConfig, dataSource, lockManager );
     }
 }

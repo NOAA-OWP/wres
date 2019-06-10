@@ -32,6 +32,8 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
+import wres.io.reading.DataSource;
+import wres.system.DatabaseLockManager;
 import wres.util.TimeHelper;
 
 /**
@@ -566,9 +568,11 @@ class NWCALReader extends S3Reader
      */
     private static final DateTimeFormatter DATE_PREFIX_FORMAT = DateTimeFormatter.ofPattern( "yyyyMMdd" );
 
-    NWCALReader( ProjectConfig projectConfig )
+    NWCALReader( ProjectConfig projectConfig,
+                 DataSource dataSource,
+                 DatabaseLockManager lockManager )
     {
-        super( projectConfig );
+        super( projectConfig, dataSource, lockManager );
     }
 
     @Override
@@ -599,8 +603,9 @@ class NWCALReader extends S3Reader
         LocalDate latest;
 
         // Get the earliest date to get data from
-        if ((ConfigHelper.isForecast( this.dataSourceConfig ) && earliestIssue.isBefore( LocalDateTime.MAX)) ||
-            earliestIssue.isBefore( earliestValidDate ))
+        if ( ( ConfigHelper.isForecast( this.getDataSourceConfig() )
+               && earliestIssue.isBefore( LocalDateTime.MAX ) )
+             || earliestIssue.isBefore( earliestValidDate ))
         {
             earliest = earliestIssue.toLocalDate();
         }
