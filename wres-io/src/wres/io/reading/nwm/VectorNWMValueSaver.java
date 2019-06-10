@@ -354,6 +354,14 @@ class VectorNWMValueSaver extends WRESCallable<List<IngestResult>>
         // Get the ID for the source file
         this.getSourceID();
 
+        // If this is a forecast file, we also need to attach the source
+        // to the time series it belongs to, but only if this is the instance
+        // in charge of ingest.
+        if ( this.isForecast() && this.inChargeOfIngest )
+        {
+            this.addTimeSeriesSource();
+        }
+
     }
 
     private void addTimeSeriesSource() throws IOException, SQLException
@@ -910,17 +918,6 @@ class VectorNWMValueSaver extends WRESCallable<List<IngestResult>>
     {
         Variable var = this.getVariable();
 
-        if ( !this.inChargeOfIngest )
-        {
-            LOGGER.debug( "This VectorNWMValueSaver yields for source {}",
-                          this.hash );
-            return;
-        }
-
-        // Ensure that metadata for this file is added linked to the appropriate
-        // time series
-        this.addSource();
-
         // Find the factor with which to scale all read values
         double scaleFactor = NetCDF.getScaleFactor(var);
 
@@ -937,12 +934,15 @@ class VectorNWMValueSaver extends WRESCallable<List<IngestResult>>
         // IDs for its spatial and variable identifiers
         Map<Integer, Integer> variableIndices = this.getIndexMapping();
 
-        // If this is a forecast file, we also need to attach the source
-        // to the time series it belongs to, but only if this is the instance
-        // in charge of ingest.
-        if ( this.isForecast() )
+        // Ensure that metadata for this file is added linked to the appropriate
+        // time series
+        this.addSource();
+
+        if ( !this.inChargeOfIngest )
         {
-            this.addTimeSeriesSource();
+            LOGGER.debug( "This VectorNWMValueSaver yields for source {}",
+                          this.hash );
+            return;
         }
 
         // Read in all values from the variable; the cost of multiple reads from the disk outweighs
@@ -969,7 +969,6 @@ class VectorNWMValueSaver extends WRESCallable<List<IngestResult>>
                 }
                 else
                 {
-                    // TODO: Double check to make sure that the CDM isn't already doing this
                     value = (value * scaleFactor) + offset;
                 }
 
