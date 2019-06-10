@@ -40,6 +40,7 @@ import wres.io.data.caching.UnitConversions;
 import wres.io.data.caching.Variables;
 import wres.io.data.details.FeatureDetails;
 import wres.io.data.details.TimeSeries;
+import wres.io.removal.IncompleteIngest;
 import wres.io.project.Project;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
@@ -696,7 +697,7 @@ public final class Operations {
      */
     public static void refreshDatabase() throws SQLException
     {
-        Database.removeOrphanedData();
+        IncompleteIngest.removeOrphanedData();
         Database.refreshStatistics(true);
     }
 

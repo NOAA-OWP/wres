@@ -8,9 +8,10 @@ import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -30,11 +31,11 @@ import com.mchange.v2.c3p0.ComboPooledDataSource;
 
 import wres.io.concurrency.WRESCallable;
 import wres.io.concurrency.WRESRunnable;
+import wres.io.data.details.TimeSeries;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
-import wres.util.FutureQueue;
 import wres.util.Strings;
 import wres.util.functional.ExceptionalConsumer;
 import wres.util.functional.ExceptionalFunction;
@@ -595,184 +596,25 @@ public final class Database {
 	}
 
     /**
-     * Get all partition tables matching the given pattern
-     * TODO: Evaluate how strongly coupled this is to business logic and remove it if it isn't appropriate here
-     * @param tablePattern A pattern that will match the name of all partition tables of interest
+     * Get all partition table names.
+     * Needs to be kept in sync with assumptions about liquibase scripts and
+     * presence/absence of partition tables.
      * @return The names of all partition tables
-     * @throws SQLException Thrown if the query could not complete
      */
-	private static Collection<String> getPartitionTables(final String tablePattern) throws SQLException
+    public static Set<String> getPartitionTables()
     {
-        ScriptBuilder script = new ScriptBuilder(  );
+        Set<String> partitionTables = new HashSet<>( 163 );
 
-        script.addLine("SELECT N.nspname || '.' || C.relname AS table_name" );
-        script.addLine( "FROM pg_catalog.pg_class C" );
-        script.addLine( "INNER JOIN pg_catalog.pg_namespace N" );
-        script.addTab().addLine( "ON N.oid = C.relnamespace" );
-        script.addLine( "WHERE relchecks > 0" );
-        script.addTab().addLine( "AND (N.nspname = 'wres')" );
-
-        if (tablePattern != null)
+        // Assumes that there is a fixed quantity of partition tables already.
+        // Assumes that the step is 1200, step at half that to hit all tables
+        // at least once without worrying about the exact edges.
+        for ( int i = -15000; i < 183000; i += 600 )
         {
-            script.addTab().addLine( "AND C.relname LIKE '", tablePattern, "'" );
+            String partitionName = TimeSeries.getTimeSeriesValuePartition( i );
+            partitionTables.add( partitionName );
         }
 
-        script.addTab().addLine( "AND relkind = 'r';" );
-
-        try
-        {
-            return Database.interpret(
-                    Query.withScript(script.toString()),
-                    tableRow -> tableRow.getString( "table_name" ),
-                    false
-            );
-        }
-        catch ( SQLException e )
-        {
-            throw new SQLException(
-                    "A list of partition tables to evaluate "
-                    + "could not be loaded.",
-                    e );
-        }
-    }
-
-    /**
-     * Removes all data from the database that isn't properly linked to a project
-     * TODO: Remove the business logic from this class
-     * @return Whether or not values were removed
-     * @throws SQLException Thrown when one of the required scripts could not complete
-     */
-    @SuppressWarnings( "unchecked" )
-	public static boolean removeOrphanedData() throws SQLException
-    {
-        try
-        {
-            if (!Database.thereAreOrphanedValues())
-            {
-                return false;
-            }
-
-            // Can't lock for mutation here because we'd also need to unlock, but this
-            // operation will occur alongside other operations that need that lock.
-
-            LOGGER.info("Incomplete data has been detected. Incomplete data "
-                        + "will now be removed to ensure that all data operated "
-                        + "upon is valid.");
-
-            Collection<String> partitionTables = Database.getPartitionTables( "timeseriesvalue_lead%" );
-
-            // We aren't actually going to collect the results so raw types are fine.
-            FutureQueue removalQueue = new FutureQueue(  );
-
-            for (String partition : partitionTables)
-            {
-                ScriptBuilder valueRemover = new ScriptBuilder();
-                valueRemover.addLine( "DELETE FROM ", partition, " P" );
-                valueRemover.addLine( "WHERE NOT EXISTS (");
-                valueRemover.addTab().addLine( "SELECT 1");
-                valueRemover.addTab().addLine( "FROM wres.TimeSeriesSource TSS");
-                valueRemover.addTab().addLine( "INNER JOIN wres.ProjectSource PS");
-                valueRemover.addTab(  2  ).addLine( "ON PS.source_id = TSS.source_id");
-                valueRemover.addTab().addLine( "WHERE TSS.timeseries_id = P.timeseries_id");
-                valueRemover.addTab(  2  ).addLine( "AND (TSS.lead IS NULL OR TSS.lead = P.lead)");
-                valueRemover.add(");");
-
-                removalQueue.add(Database.issue( Query.withScript( valueRemover.toString() ), false));
-
-                LOGGER.debug("Started task to remove orphaned values in {}...", partition);
-            }
-
-            ScriptBuilder removalScript = new ScriptBuilder(  );
-            removalScript.addLine("DELETE FROM wres.Observation O");
-            removalScript.addLine("WHERE NOT EXISTS (");
-            removalScript.addTab().addLine("SELECT 1");
-            removalScript.addTab().addLine("FROM wres.ProjectSource PS");
-            removalScript.addTab().addLine("WHERE PS.source_id = O.source_id");
-            removalScript.add(");");
-
-            removalQueue.add(Database.issue( Query.withScript( removalScript.toString() ), false));
-
-            LOGGER.debug("Started task to remove orphaned observations...");
-
-            try
-            {
-                removalQueue.loop();
-            }
-            catch ( ExecutionException e )
-            {
-                throw new SQLException( "Orphaned observed and forecasted values could not be removed.", e );
-            }
-
-            removalScript = new ScriptBuilder(  );
-
-            removalScript.addLine("DELETE FROM wres.TimeSeriesSource TSS");
-            removalScript.addLine("WHERE NOT EXISTS (");
-            removalScript.addTab().addLine("SELECT 1");
-            removalScript.addTab().addLine("FROM wres.ProjectSource PS");
-            removalScript.addTab().addLine("WHERE PS.source_id = TSS.source_id");
-            removalScript.addLine(");");
-
-            LOGGER.debug("Removing orphaned TimeSeriesSource Links...");
-            Database.execute( Query.withScript( removalScript.toString() ), false);
-
-            LOGGER.debug("Removed orphaned TimeSeriesSource Links");
-
-            removalScript = new ScriptBuilder(  );
-
-            removalScript.addLine("DELETE FROM wres.TimeSeries TS");
-            removalScript.addLine("WHERE NOT EXISTS (");
-            removalScript.addTab().addLine("SELECT 1");
-            removalScript.addTab().addLine("FROM wres.TimeSeriesSource TSS");
-            removalScript.addTab().addLine("WHERE TS.timeseries_id = TS.timeseries_id");
-            removalScript.add(");");
-
-            removalQueue.add(Database.issue( Query.withScript( removalScript.toString() ), false));
-
-            LOGGER.debug("Added Task to remove orphaned time series...");
-
-            removalScript = new ScriptBuilder(  );
-
-            removalScript.addLine("DELETE FROM wres.Source S");
-            removalScript.addLine("WHERE NOT EXISTS (");
-            removalScript.addTab().addLine("SELECT 1");
-            removalScript.addTab().addLine("FROM wres.ProjectSource PS");
-            removalScript.addTab().addLine("WHERE PS.source_id = S.source_id");
-            removalScript.add(");");
-
-            removalQueue.add(Database.issue( Query.withScript( removalScript.toString() ), false));
-
-            LOGGER.debug("Added task to remove orphaned sources...");
-
-            removalScript = new ScriptBuilder(  );
-
-            removalScript.addLine("DELETE FROM wres.Project P");
-            removalScript.addLine("WHERE NOT EXISTS (");
-            removalScript.addTab().addLine("SELECT 1");
-            removalScript.addTab().addLine("FROM wres.ProjectSource PS");
-            removalScript.addTab().addLine("WHERE PS.project_id = P.project_id");
-            removalScript.add(");");
-
-            LOGGER.debug("Added task to remove orphaned projects...");
-
-            removalQueue.add(Database.issue( Query.withScript( removalScript.toString() ), false));
-
-            try
-            {
-                removalQueue.loop();
-            }
-            catch ( ExecutionException e )
-            {
-                throw new SQLException( "Orphaned forecast, project, and source metadata could not be removed.", e );
-            }
-
-            LOGGER.info("Incomplete data has been removed from the system.");
-        }
-        catch ( SQLException | ExecutionException databaseError )
-        {
-            throw new SQLException( "Orphaned data could not be removed", databaseError );
-        }
-
-        return true;
+        return Collections.unmodifiableSet( partitionTables );
     }
 
     /**
@@ -1000,36 +842,9 @@ public final class Database {
     }
 
     /**
-     * Checks to see if the database contains orphaned data
-     * TODO: Remove business logic
-     * @return True if orphaned data exists within the database; false otherwise
-     * @throws SQLException Thrown if the query used to detect orphaned data failed
-     */
-    private static boolean thereAreOrphanedValues() throws SQLException
-    {
-        ScriptBuilder scriptBuilder = new ScriptBuilder(  );
-
-        scriptBuilder.addLine("SELECT EXISTS (");
-        scriptBuilder.addTab().addLine("SELECT 1");
-        scriptBuilder.addTab().addLine("FROM wres.Source S");
-        scriptBuilder.addTab().addLine("WHERE NOT EXISTS (");
-        scriptBuilder.addTab(  2  ).addLine("SELECT 1");
-        scriptBuilder.addTab(  2  ).addLine("FROM wres.ProjectSource PS");
-        scriptBuilder.addTab(  2  ).addLine("WHERE PS.source_id = S.source_id");
-        scriptBuilder.addTab().addLine(")");
-        scriptBuilder.addLine(") AS orphans_exist;");
-
-        Boolean thereAreOrphans = Database.retrieve(
-                Query.withScript( scriptBuilder.toString() ), "orphans_exist", false
-        );
-
-        return thereAreOrphans != null && thereAreOrphans;
-    }
-
-    /**
      * Removes all user data from the database
      * TODO: This should probably accept an object or list to allow for the removal of business logic
-	 * Assumes that locking has already been done at a higher level by caller(s)
+     * Assumes that locking has already been done at a higher level by caller(s)
      * @throws SQLException Thrown if successful communication with the
      * database could not be established
      */
@@ -1037,22 +852,12 @@ public final class Database {
     {
 		StringBuilder builder = new StringBuilder();
 
-		Collection<String> partitions = Database.getPartitionTables( "timeseriesvalue_lead%" );
+        Set<String> partitions = Database.getPartitionTables();
 
 		for (String partition : partitions)
         {
             builder.append( "TRUNCATE TABLE " )
 				   .append( partition)
-				   .append( ";" )
-				   .append( NEWLINE );
-        }
-
-        partitions = Database.getPartitionTables( "variablefeature_variable%" );
-
-        for (String partition : partitions)
-        {
-            builder.append( "TRUNCATE TABLE " )
-				   .append( partition )
 				   .append( ";" )
 				   .append( NEWLINE );
         }
