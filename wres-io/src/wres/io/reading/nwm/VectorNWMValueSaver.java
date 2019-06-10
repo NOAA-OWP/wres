@@ -910,16 +910,16 @@ class VectorNWMValueSaver extends WRESCallable<List<IngestResult>>
     {
         Variable var = this.getVariable();
 
-        // Ensure that metadata for this file is added linked to the appropriate
-        // time series
-        this.addSource();
-
         if ( !this.inChargeOfIngest )
         {
             LOGGER.debug( "This VectorNWMValueSaver yields for source {}",
                           this.hash );
             return;
         }
+
+        // Ensure that metadata for this file is added linked to the appropriate
+        // time series
+        this.addSource();
 
         // Find the factor with which to scale all read values
         double scaleFactor = NetCDF.getScaleFactor(var);
