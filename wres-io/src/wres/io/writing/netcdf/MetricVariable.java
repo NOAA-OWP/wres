@@ -216,6 +216,8 @@ class MetricVariable
     private final String timeScaleFunction;
 
     // TODO: make these longs
+    // Chris Tubbs: We can only write Netcdf-3, and Netcdf-3 doesn't support longs. Keeping them
+    // as 'int's here helps us avoid potential value conversion issues down the line
     private final int earliestLead;
     private final int latestLead;
     private final int sampleSize;

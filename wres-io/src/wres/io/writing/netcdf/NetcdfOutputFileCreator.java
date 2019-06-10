@@ -70,6 +70,9 @@ class NetcdfOutputFileCreator
                                         metricVariable.getAttributes() );
                 }
 
+                // The writer isn't manually closed or held within a try-with-resources because the
+                // copier that created it also closes it when it closes. This is done to ensure that the writer
+                // is correctly flushed if not done prior
                 NetcdfFileWriter writer = copier.write();
 
                 ArrayInt.D1 duration = new ArrayInt.D1( 1, false );
