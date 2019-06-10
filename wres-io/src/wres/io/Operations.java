@@ -732,22 +732,29 @@ public final class Operations {
             // is an improvement that can be made, but this should cover the
             // common case of a single file in the args.
             String project = "";
+
             List<String> commandsAcceptingFiles = Arrays.asList( "execute",
                                                                  "ingest" );
 
+            // The two operations that might perform a project related operation are 'execute' and 'ingest';
+            // these are the only cases where we might be interested in a project configuration
             if ( commandsAcceptingFiles.contains( arguments[0].toLowerCase() ) )
             {
+
+                // Go ahead and assign the second argument as the project;
+                // if this instance is in server mode,
+                // this will be the raw project text and a file path will not be involved
+                project = arguments[1];
+
+                // Look through the arguments to find the path to a file;
+                // this is more than likely our project configuration
                 for ( String arg : arguments )
                 {
                     Path path = Paths.get( arg );
 
-                    if ( path.toFile()
-                             .isFile() )
+                    if ( path.toFile().isFile() )
                     {
-                        project = String.join( System.lineSeparator(),
-                                               Files.readAllLines( path ) );
-
-                        // Since this is an xml column, only go for first file.
+                        project = String.join( System.lineSeparator(), Files.readAllLines( path ) );
                         break;
                     }
                 }
@@ -778,16 +785,17 @@ public final class Operations {
             script.addTab().addLine("?");
             script.addLine(");");
 
-            script.execute( String.join(" ", arguments),
-                            version,
-                          project,
-                          System.getProperty( "user.name" ),
-                          // Let server find and report username
-                          // Let server find and report network address
-                          startTimestamp,
-                          runTime,
-                          failed,
-                          error );
+            script.execute(
+                    String.join(" ", arguments),
+                    version,
+                    project,
+                    System.getProperty( "user.name" ),
+                    // Let server find and report network address
+                    startTimestamp,
+                    runTime,
+                    failed,
+                    error
+            );
         }
         catch ( SQLException | IOException e )
         {
