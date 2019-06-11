@@ -1,5 +1,6 @@
 package wres.engine.statistics.metric.discreteprobability;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -94,11 +95,7 @@ public final class RelativeOperatingCharacteristicScoreTest
         //Check the results       
         final DoubleScoreStatistic actual = rocScore.apply( input );
         final DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.6785714285714286, m1 );
-        assertTrue( "Actual: " + actual.getData()
-                    + ". Expected: "
-                    + expected.getData()
-                    + ".",
-                    actual.equals( expected ) );
+        assertEquals( expected, actual );
     }
 
     /**
@@ -139,21 +136,15 @@ public final class RelativeOperatingCharacteristicScoreTest
         //Check the results       
         DoubleScoreStatistic actual = rocScore.apply( input );
         DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.75, m1 );
-        assertTrue( "Actual: " + actual.getData()
-                    + ". Expected: "
-                    + expected.getData()
-                    + ".",
-                    actual.equals( expected ) );
+        
+        assertEquals( expected, actual );
 
         //Check against a baseline
         DiscreteProbabilityPairs inputBase = DiscreteProbabilityPairs.of( values, values, meta, meta );
         DoubleScoreStatistic actualBase = rocScore.apply( inputBase );
         DoubleScoreStatistic expectedBase = DoubleScoreStatistic.of( 0.0, m1 );
-        assertTrue( "Actual: " + actualBase.getData()
-                    + ". Expected: "
-                    + expectedBase.getData()
-                    + ".",
-                    actualBase.equals( expectedBase ) );
+        
+        assertEquals( expectedBase, actualBase );
     }
 
     /**
@@ -195,11 +186,8 @@ public final class RelativeOperatingCharacteristicScoreTest
         //Check the results       
         DoubleScoreStatistic actual = rocScore.apply( input );
         DoubleScoreStatistic expected = DoubleScoreStatistic.of( Double.NaN, m1 );
-        assertTrue( "Actual: " + actual.getData()
-                    + ". Expected: "
-                    + expected.getData()
-                    + ".",
-                    actual.equals( expected ) );
+        
+        assertEquals( expected, actual );
     }
 
     /**

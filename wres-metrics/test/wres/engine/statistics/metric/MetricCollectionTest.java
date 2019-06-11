@@ -1,5 +1,6 @@
 package wres.engine.statistics.metric;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.InvocationTargetException;
@@ -101,21 +102,9 @@ public class MetricCollectionTest
 
         final BiPredicate<Double, Double> testMe = FunctionFactory.doubleEquals();
 
-        assertTrue( "Expected value: " + expectedFirst
-                    + ". Actual value: "
-                    + actualFirst
-                    + ".",
-                    testMe.test( actualFirst, expectedFirst ) );
-        assertTrue( "Expected value: " + expectedSecond
-                    + ". Actual value: "
-                    + actualSecond
-                    + ".",
-                    testMe.test( actualSecond, expectedSecond ) );
-        assertTrue( "Expected value: " + expectedThird
-                    + ". Actual value: "
-                    + actualThird
-                    + ".",
-                    testMe.test( actualThird, expectedThird ) );
+        assertTrue( testMe.test( actualFirst, expectedFirst ) );
+        assertTrue( testMe.test( actualSecond, expectedSecond ) );
+        assertTrue( testMe.test( actualThird, expectedThird ) );
     }
 
     /**
@@ -168,31 +157,11 @@ public class MetricCollectionTest
 
         final BiPredicate<Double, Double> testMe = FunctionFactory.doubleEquals();
 
-        assertTrue( "Expected value: " + expectedFirst
-                    + ". Actual value: "
-                    + actualFirst
-                    + ".",
-                    testMe.test( actualFirst, expectedFirst ) );
-        assertTrue( "Expected value: " + expectedSecond
-                    + ". Actual value: "
-                    + actualSecond
-                    + ".",
-                    testMe.test( actualSecond, expectedSecond ) );
-        assertTrue( "Expected value: " + expectedThird
-                    + ". Actual value: "
-                    + actualThird
-                    + ".",
-                    testMe.test( actualThird, expectedThird ) );
-        assertTrue( "Expected value: " + expectedFourth
-                    + ". Actual value: "
-                    + actualFourth
-                    + ".",
-                    testMe.test( actualFourth, expectedFourth ) );
-        assertTrue( "Expected value: " + expectedFifth
-                    + ". Actual value: "
-                    + actualFifth
-                    + ".",
-                    testMe.test( actualFifth, expectedFifth ) );
+        assertTrue( testMe.test( actualFirst, expectedFirst ) );
+        assertTrue( testMe.test( actualSecond, expectedSecond ) );
+        assertTrue( testMe.test( actualThird, expectedThird ) );
+        assertTrue( testMe.test( actualFourth, expectedFourth ) );
+        assertTrue( testMe.test( actualFifth, expectedFifth ) );
     }
 
     /**
@@ -233,16 +202,8 @@ public class MetricCollectionTest
 
         final BiPredicate<Double, Double> testMe = FunctionFactory.doubleEquals();
 
-        assertTrue( "Expected value: " + expectedFirst
-                    + ". Actual value: "
-                    + actualFirst
-                    + ".",
-                    testMe.test( expectedFirst, actualFirst ) );
-        assertTrue( "Expected value: " + expectedSecond
-                    + ". Actual value: "
-                    + actualSecond
-                    + ".",
-                    testMe.test( expectedFirst, actualFirst ) );
+        assertTrue( testMe.test( expectedFirst, actualFirst ) );
+        assertTrue( testMe.test( expectedSecond, actualSecond ) );
     }
 
     /**
@@ -283,16 +244,8 @@ public class MetricCollectionTest
 
         final BiPredicate<Double, Double> testMe = FunctionFactory.doubleEquals();
 
-        assertTrue( "Expected value: " + expectedFirst
-                    + ". Actual value: "
-                    + actualFirst
-                    + ".",
-                    testMe.test( expectedFirst, actualFirst ) );
-        assertTrue( "Expected value: " + expectedSecond
-                    + ". Actual value: "
-                    + actualSecond
-                    + ".",
-                    testMe.test( expectedFirst, actualFirst ) );
+        assertTrue( testMe.test( expectedFirst, actualFirst ) );
+        assertTrue( testMe.test( expectedSecond, actualSecond ) );
     }
 
     /**
@@ -328,11 +281,7 @@ public class MetricCollectionTest
 
         final BiPredicate<Double, Double> testMe = FunctionFactory.doubleEquals();
 
-        assertTrue( "Expected value: " + expectedFirst
-                    + ". Actual value: "
-                    + actualFirst
-                    + ".",
-                    testMe.test( actualFirst, expectedFirst ) );
+        assertTrue( testMe.test( actualFirst, expectedFirst ) );
     }
 
     /**
@@ -632,35 +581,15 @@ public class MetricCollectionTest
 
         final BiPredicate<Double, Double> testMe = FunctionFactory.doubleEquals();
 
-        assertTrue( "Expected value: " + expectedFirst
-                    + ". Actual value: "
-                    + actualFirst
-                    + ".",
-                    testMe.test( actualFirst, expectedFirst ) );
+        assertTrue( testMe.test( actualFirst, expectedFirst ) );
 
-        assertTrue( "Expected value: " + expectedSecond
-                    + ". Actual value: "
-                    + actualSecond
-                    + ".",
-                    testMe.test( actualSecond, expectedSecond ) );
+        assertTrue( testMe.test( actualSecond, expectedSecond ) );
 
-        assertTrue( "Expected value: " + expectedThird
-                    + ". Actual value: "
-                    + actualThird
-                    + ".",
-                    testMe.test( actualThird, expectedThird ) );
+        assertTrue( testMe.test( actualThird, expectedThird ) );
 
-        assertTrue( "Expected value: " + expectedFourth
-                    + ". Actual value: "
-                    + actualFourth
-                    + ".",
-                    testMe.test( actualFourth, expectedFourth ) );
+        assertTrue( testMe.test( actualFourth, expectedFourth ) );
 
-        assertTrue( "Expected value: " + expectedFifth
-                    + ". Actual value: "
-                    + actualFifth
-                    + ".",
-                    testMe.test( actualFifth, expectedFifth ) );
+        assertTrue( testMe.test( actualFifth, expectedFifth ) );
 
     }
 
@@ -696,9 +625,7 @@ public class MetricCollectionTest
         ListOfStatistics<DoubleScoreStatistic> expected =
                 ListOfStatistics.of( Arrays.asList( DoubleScoreStatistic.of( 0.9999999910148981, outM ) ) );
         //Check them   
-        assertTrue( "Difference between the actual and expected output when ignoring some metrics in the "
-                    + "collection.",
-                    actual.equals( expected ) );
+        assertEquals( expected, actual );
     }
 
     @After

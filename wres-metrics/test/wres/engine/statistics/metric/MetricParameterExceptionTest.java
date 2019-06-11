@@ -15,6 +15,12 @@ public final class MetricParameterExceptionTest
 {
 
     /**
+     * Expected exception message.
+     */
+    
+    private static final String TEST_EXCEPTION = "Test exception.";
+
+    /**
      * Constructs and tests a {@link MetricParameterException}.
      */
 
@@ -23,14 +29,14 @@ public final class MetricParameterExceptionTest
     {
         assertTrue( Objects.nonNull( new MetricParameterException() ) );
         
-        MetricParameterException f = new MetricParameterException("Test exception.");
+        MetricParameterException f = new MetricParameterException(TEST_EXCEPTION);
         assertTrue( Objects.nonNull( f ) );
-        assertTrue( f.getMessage().equals( "Test exception." ) );
+        assertTrue( f.getMessage().equals( TEST_EXCEPTION ) );
         
         MetricParameterException g = new MetricParameterException(f.getMessage(), f);
         
         assertTrue( Objects.nonNull( f ) );
-        assertTrue( g.getMessage().equals( "Test exception." ) );
+        assertTrue( g.getMessage().equals( TEST_EXCEPTION ) );
         assertTrue( g.getCause().equals( f ) );
     }
 }

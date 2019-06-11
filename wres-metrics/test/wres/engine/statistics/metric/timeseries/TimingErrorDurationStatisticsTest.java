@@ -1,6 +1,6 @@
 package wres.engine.statistics.metric.timeseries;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -35,6 +35,18 @@ import wres.engine.statistics.metric.MetricTestDataFactory;
 public final class TimingErrorDurationStatisticsTest
 {
 
+    /**
+     * Streamflow for metadata.
+     */
+    
+    private static final String STREAMFLOW = "Streamflow";
+    
+    /**
+     * Duration for metadata.
+     */
+    
+    private static final String DURATION = "DURATION";
+   
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
@@ -60,11 +72,11 @@ public final class TimingErrorDurationStatisticsTest
         StatisticMetadata m1 =
                 StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
                                                                  .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
-                                                                                                       "Streamflow" ) )
+                                                                                                       STREAMFLOW ) )
                                                                  .setTimeWindow( timeWindow )
                                                                  .build(),
                                       input.getBasisTimes().size(),
-                                      MeasurementUnit.of( "DURATION" ),
+                                      MeasurementUnit.of( DURATION ),
                                       MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
                                       MetricConstants.MEAN );
         // Build a metric
@@ -78,40 +90,29 @@ public final class TimingErrorDurationStatisticsTest
         // Expected, which uses identifier of MetricConstants.MAIN for convenience
         DurationScoreStatistic expected = DurationScoreStatistic.of( expectedSource, m1 );
 
-        assertTrue( "Actual: " + actual.getComponent( MetricConstants.MEAN )
-                    + ". Expected: "
-                    + expected.getData()
-                    + ".",
-                    actual.equals( expected ) );
+        assertEquals( expected, actual );
 
         // Check some additional statistics
         // Maximum error = 12
         DurationScoreStatistic max = TimingErrorDurationStatistics.of( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
                                                                        Collections.singleton( MetricConstants.MAXIMUM ) )
                                                                   .apply( peakError.apply( input ) );
-        assertTrue( "Actual: " + max.getComponent( MetricConstants.MAXIMUM ).getData()
-                    + ". Expected: "
-                    + Duration.ofHours( 12 )
-                    + ".",
-                    max.getComponent( MetricConstants.MAXIMUM ).getData().equals( Duration.ofHours( 12 ) ) );
+
+        assertEquals( Duration.ofHours( 12 ), max.getComponent( MetricConstants.MAXIMUM ).getData() );
+
         // Minimum error = -6
         DurationScoreStatistic min = TimingErrorDurationStatistics.of( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
                                                                        Collections.singleton( MetricConstants.MINIMUM ) )
                                                                   .apply( peakError.apply( input ) );
-        assertTrue( "Actual: " + min.getComponent( MetricConstants.MINIMUM ).getData()
-                    + ". Expected: "
-                    + Duration.ofHours( -6 )
-                    + ".",
-                    min.getComponent( MetricConstants.MINIMUM ).getData().equals( Duration.ofHours( -6 ) ) );
+
+        assertEquals( Duration.ofHours( -6 ), min.getComponent( MetricConstants.MINIMUM ).getData() );
+
         // Mean absolute error = 9
         DurationScoreStatistic meanAbs = TimingErrorDurationStatistics.of( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
                                                                            Collections.singleton( MetricConstants.MEAN_ABSOLUTE ) )
                                                                       .apply( peakError.apply( input ) );
-        assertTrue( "Actual: " + meanAbs.getComponent( MetricConstants.MEAN_ABSOLUTE ).getData()
-                    + ". Expected: "
-                    + Duration.ofHours( 9 )
-                    + ".",
-                    meanAbs.getComponent( MetricConstants.MEAN_ABSOLUTE ).getData().equals( Duration.ofHours( 9 ) ) );
+
+        assertEquals( Duration.ofHours( 9 ), meanAbs.getComponent( MetricConstants.MEAN_ABSOLUTE ).getData() );
     }
 
     /**
@@ -136,11 +137,11 @@ public final class TimingErrorDurationStatisticsTest
         StatisticMetadata m1 =
                 StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
                                                                  .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
-                                                                                                       "Streamflow" ) )
+                                                                                                       STREAMFLOW ) )
                                                                  .setTimeWindow( timeWindow )
                                                                  .build(),
                                       input.getBasisTimes().size(),
-                                      MeasurementUnit.of( "DURATION" ),
+                                      MeasurementUnit.of( DURATION ),
                                       MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
                                       null );
 
@@ -169,7 +170,8 @@ public final class TimingErrorDurationStatisticsTest
 
         // Expected, which uses identifier of MetricConstants.MAIN for convenience
         DurationScoreStatistic expected = DurationScoreStatistic.of( expectedSource, m1 );
-        assertTrue( "Actual and expected results differ.", actual.equals( expected ) );
+        
+        assertEquals(expected, actual );
     }
 
     /**
@@ -192,11 +194,11 @@ public final class TimingErrorDurationStatisticsTest
         StatisticMetadata m1 =
                 StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
                                                                  .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
-                                                                                                       "Streamflow" ) )
+                                                                                                       STREAMFLOW ) )
                                                                  .setTimeWindow( timeWindow )
                                                                  .build(),
                                       input.getBasisTimes().size(),
-                                      MeasurementUnit.of( "DURATION" ),
+                                      MeasurementUnit.of( DURATION ),
                                       MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
                                       MetricConstants.MEAN );
 
@@ -217,7 +219,7 @@ public final class TimingErrorDurationStatisticsTest
         // Expected, which uses identifier of MetricConstants.MAIN for convenience
         DurationScoreStatistic expected = DurationScoreStatistic.of( expectedSource, m1 );
 
-        assertTrue( "Actual and expected results differ.", actual.equals( expected ) );
+        assertEquals( expected, actual );
     }
 
     /**

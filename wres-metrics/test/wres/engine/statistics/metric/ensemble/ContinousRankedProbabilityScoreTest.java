@@ -1,5 +1,6 @@
 package wres.engine.statistics.metric.ensemble;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -73,11 +74,7 @@ public final class ContinousRankedProbabilityScoreTest
         //Check the results       
         final DoubleScoreStatistic actual = crps.apply( input );
         final DoubleScoreStatistic expected = DoubleScoreStatistic.of( 7.63, m1 );
-        assertTrue( "Actual: " + actual.getData()
-                    + ". Expected: "
-                    + expected.getData()
-                    + ".",
-                    actual.equals( expected ) );
+        assertEquals( expected, actual );
     }
 
     /**
@@ -108,11 +105,7 @@ public final class ContinousRankedProbabilityScoreTest
         //Check the results       
         DoubleScoreStatistic actual = crps.apply( input );
         DoubleScoreStatistic expected = DoubleScoreStatistic.of( 8.734401927437641, m1 );
-        assertTrue( "Actual: " + actual.getData()
-                    + ". Expected: "
-                    + expected.getData()
-                    + ".",
-                    actual.equals( expected ) );
+        assertEquals( expected, actual );
 
     }
 
@@ -138,11 +131,7 @@ public final class ContinousRankedProbabilityScoreTest
         //Check the results       
         DoubleScoreStatistic actual = crps.apply( input );
         DoubleScoreStatistic expected = DoubleScoreStatistic.of( 13.36, m1 );
-        assertTrue( "Actual: " + actual.getData()
-                    + ". Expected: "
-                    + expected.getData()
-                    + ".",
-                    actual.equals( expected ) );
+        assertEquals( expected, actual );
     }
 
     /**
@@ -169,11 +158,7 @@ public final class ContinousRankedProbabilityScoreTest
         //Check the results       
         DoubleScoreStatistic actual = crps.apply( input );
         DoubleScoreStatistic expected = DoubleScoreStatistic.of( 4.56, m1 );
-        assertTrue( "Actual: " + actual.getData()
-                    + ". Expected: "
-                    + expected.getData()
-                    + ".",
-                    actual.equals( expected ) );
+        assertEquals( expected, actual );
     }
 
 

@@ -1,5 +1,6 @@
 package wres.engine.statistics.metric.singlevalued;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
@@ -74,11 +75,7 @@ public final class MeanSquareErrorSkillScoreTest
         //Check the results
         final DoubleScoreStatistic actual = msess.apply( input );
         final DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.8007025335093799, m1 );
-        assertTrue( "Actual: " + actual.getData()
-                    + ". Expected: "
-                    + expected.getData()
-                    + ".",
-                    actual.equals( expected ) );
+        assertEquals( expected, actual );
     }
 
     /**

@@ -39,6 +39,12 @@ import wres.engine.statistics.metric.MetricParameterException;
 public final class BoxPlotErrorByForecastTest
 {
 
+    /**
+     * Units used in testing.
+     */
+    
+    private static final String MM_DAY = "MM/DAY";
+
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
@@ -69,7 +75,7 @@ public final class BoxPlotErrorByForecastTest
                                            Instant.MAX,
                                            Duration.ofHours( 24 ) );
         final TimeWindow timeWindow1 = window;
-        final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "MM/DAY" ) )
+        final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
                                                                .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
                                                                                                      "MAP" ) )
                                                                .setTimeWindow( timeWindow1 )
@@ -78,13 +84,13 @@ public final class BoxPlotErrorByForecastTest
         final TimeWindow timeWindow = window;
 
         final StatisticMetadata m1 =
-                StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "MM/DAY" ) )
+                StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
                                                                  .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
                                                                                                        "MAP" ) )
                                                                  .setTimeWindow( timeWindow )
                                                                  .build(),
                                       input.getRawData().size(),
-                                      MeasurementUnit.of( "MM/DAY" ),
+                                      MeasurementUnit.of( MM_DAY ),
                                       MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
                                       MetricConstants.MAIN );
 
@@ -123,7 +129,7 @@ public final class BoxPlotErrorByForecastTest
                                            Instant.MAX,
                                            Duration.ofHours( 24 ) );
         final TimeWindow timeWindow1 = window;
-        final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "MM/DAY" ) )
+        final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
                                                                .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
                                                                                                      "MAP" ) )
                                                                .setTimeWindow( timeWindow1 )
@@ -132,13 +138,13 @@ public final class BoxPlotErrorByForecastTest
         final TimeWindow timeWindow = window;
 
         final StatisticMetadata m1 =
-                StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "MM/DAY" ) )
+                StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
                                                                  .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
                                                                                                        "MAP" ) )
                                                                  .setTimeWindow( timeWindow )
                                                                  .build(),
                                       input.getRawData().size(),
-                                      MeasurementUnit.of( "MM/DAY" ),
+                                      MeasurementUnit.of( MM_DAY ),
                                       MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
                                       MetricConstants.MAIN );
 
