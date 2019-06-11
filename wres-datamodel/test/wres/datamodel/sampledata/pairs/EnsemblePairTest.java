@@ -2,9 +2,9 @@ package wres.datamodel.sampledata.pairs;
 
 import org.junit.Test;
 
-import wres.datamodel.sampledata.pairs.EnsemblePair;
-
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -49,8 +49,6 @@ public class EnsemblePairTest
                     firstPair.equals(secondPair));
         assertFalse("Expect second pair to not equal first pair",
                     secondPair.equals(firstPair));
-        assertTrue("Expect different hashcodes from different pairs",
-                   firstPair.hashCode() != secondPair.hashCode());
     }
 
     @Test
@@ -70,8 +68,6 @@ public class EnsemblePairTest
                     emptyPair.equals(nonEmptyPair));
         assertFalse("Expect nonEmpty array pair to not equal empty",
                     nonEmptyPair.equals(emptyPair));
-        assertTrue("Expect different hashcodes from different pairs",
-                   emptyPair.hashCode() != nonEmptyPair.hashCode());
     }
 
     @Test
@@ -91,8 +87,6 @@ public class EnsemblePairTest
                     firstPair.equals(secondPair));
         assertFalse("Expect second pair to not equal first pair",
                     secondPair.equals(firstPair));
-        assertTrue("Expect different hashcodes from different pairs",
-                   firstPair.hashCode() != secondPair.hashCode());
     }
 
     @Test
@@ -105,8 +99,7 @@ public class EnsemblePairTest
                    firstPair.compareTo(firstPair) == 0);
         assertTrue("Expect a pair to equal itself",
                    firstPair.equals(firstPair));
-        assertTrue("Expect a hashcode to be the same for same pair",
-                   firstPair.hashCode() == firstPair.hashCode());
+        assertEquals( firstPair.hashCode(), firstPair.hashCode() );
     }
 
     @Test
@@ -116,7 +109,6 @@ public class EnsemblePairTest
         EnsemblePair thePair =
                 EnsemblePair.of(3.0, theArr);
         Integer notAPair = 4;
-        assertFalse("Expect a fancyPair to not equal a non-fancyPair",
-                    thePair.equals(notAPair));
+        assertNotEquals( thePair, notAPair );
     }
 }

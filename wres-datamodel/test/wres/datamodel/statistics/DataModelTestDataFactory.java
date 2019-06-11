@@ -38,6 +38,18 @@ public final class DataModelTestDataFactory
 {
 
     /**
+     * Second time for testing.
+     */
+    
+    private static final String SECOND_TIME = "2010-12-31T11:59:59Z";
+    
+    /**
+     * First time for testing.
+     */
+    
+    private static final String FIRST_TIME = "1985-01-01T00:00:00Z";
+
+    /**
      * Returns a {@link ListOfStatistics} of {@link ScoreStatistic} comprising the CRPSS for selected
      * thresholds and forecast lead times. Reads the input data from
      * testinput/wres/datamodel/metric/getScalarMetricOutputOne.xml.
@@ -71,8 +83,8 @@ public final class DataModelTestDataFactory
             {
                 //Set the lead time
                 final double leadTime = ( (Double) d.next().getKey() );
-                final TimeWindow timeWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                             Instant.parse( "2010-12-31T11:59:59Z" ),
+                final TimeWindow timeWindow = TimeWindow.of( Instant.parse( FIRST_TIME ),
+                                                             Instant.parse( SECOND_TIME ),
                                                              Duration.ofHours( (int) leadTime ) );
                 final MetricResultByThreshold t =
                         (MetricResultByThreshold) data.getResult( timeWindow.getLatestLeadDuration().toHours() );
@@ -139,8 +151,8 @@ public final class DataModelTestDataFactory
         //Iterate through the lead times
         for ( int leadTime : leadTimes )
         {
-            final TimeWindow timeWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                         Instant.parse( "2010-12-31T11:59:59Z" ),
+            final TimeWindow timeWindow = TimeWindow.of( Instant.parse( FIRST_TIME ),
+                                                         Instant.parse( SECOND_TIME ),
                                                          Duration.ofHours( leadTime ) );
 
             // Add first result
@@ -241,8 +253,8 @@ public final class DataModelTestDataFactory
             {
                 //Set the lead time
                 final double leadTime = (Double) d.next().getKey();
-                final TimeWindow timeWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                             Instant.parse( "2010-12-31T11:59:59Z" ),
+                final TimeWindow timeWindow = TimeWindow.of( Instant.parse( FIRST_TIME ),
+                                                             Instant.parse( SECOND_TIME ),
                                                              Duration.ofHours( (int) leadTime ) );
                 final MetricResultByThreshold t =
                         (MetricResultByThreshold) data.getResult( timeWindow.getLatestLeadDuration().toHours() );
@@ -285,5 +297,11 @@ public final class DataModelTestDataFactory
         }
         return builder.build();
     }
+    
+    /**
+     * Do not construct.
+     */
+    
+    private DataModelTestDataFactory() {}
 
 }

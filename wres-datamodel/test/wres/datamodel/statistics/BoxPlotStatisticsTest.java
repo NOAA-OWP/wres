@@ -48,7 +48,7 @@ public final class BoxPlotStatisticsTest
                                                      MetricConstants.MAIN );
 
         List<BoxPlotStatistic> mva = new ArrayList<>();
-        VectorOfDoubles pa = VectorOfDoubles.of( new double[] { 0.0, 0.5, 1.0 } );
+        VectorOfDoubles pa = VectorOfDoubles.of( 0.0, 0.5, 1.0 );
         for ( int i = 0; i < 10; i++ )
         {
             mva.add( BoxPlotStatistic.of( pa, VectorOfDoubles.of( 1, 2, 3 ), m1, 1, MetricDimension.OBSERVED_VALUE ) );
@@ -95,7 +95,7 @@ public final class BoxPlotStatisticsTest
                                                            MetricConstants.MAIN );
         List<BoxPlotStatistic> mva = new ArrayList<>();
         List<BoxPlotStatistic> mvb = new ArrayList<>();
-        VectorOfDoubles pa = VectorOfDoubles.of( new double[] { 0.0, 0.5, 1.0 } );
+        VectorOfDoubles pa = VectorOfDoubles.of( 0.0, 0.5, 1.0 );
         for ( int i = 0; i < 10; i++ )
         {
             mva.add( BoxPlotStatistic.of( pa, VectorOfDoubles.of( 1, 2, 3 ), m1, 1, MetricDimension.OBSERVED_VALUE ) );
@@ -103,7 +103,7 @@ public final class BoxPlotStatisticsTest
         }
 
         List<BoxPlotStatistic> mvc = new ArrayList<>();
-        VectorOfDoubles pb = VectorOfDoubles.of( new double[] { 0.0, 0.25, 0.5, 1.0 } );
+        VectorOfDoubles pb = VectorOfDoubles.of( 0.0, 0.25, 0.5, 1.0 );
         for ( int i = 0; i < 10; i++ )
         {
             mvc.add( BoxPlotStatistic.of( pb,
@@ -210,7 +210,7 @@ public final class BoxPlotStatisticsTest
                                                      MetricConstants.MAIN );
 
         List<BoxPlotStatistic> mva = new ArrayList<>();
-        VectorOfDoubles pa = VectorOfDoubles.of( new double[] { 0.0, 0.5, 1.0 } );
+        VectorOfDoubles pa = VectorOfDoubles.of( 0.0, 0.5, 1.0 );
         for ( int i = 0; i < 10; i++ )
         {
             mva.add( BoxPlotStatistic.of( pa, VectorOfDoubles.of( 1, 2, 3 ), m1, 1, MetricDimension.OBSERVED_VALUE ) );

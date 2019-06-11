@@ -9,8 +9,6 @@ import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.SampleMetadata;
-import wres.datamodel.sampledata.pairs.DiscreteProbabilityPair;
-import wres.datamodel.sampledata.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.sampledata.pairs.DiscreteProbabilityPairs.DiscreteProbabilityPairsBuilder;
 
 /**

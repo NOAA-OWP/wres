@@ -1,6 +1,8 @@
 package wres.datamodel;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -50,6 +52,31 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 public final class DataFactoryTest
 {
 
+    /**
+     * Expected exception on null input.
+     */
+    
+    private static final String EXPECTED_EXCEPTION_ON_NULL = 
+            "Specify input configuration with a non-null identifier to map.";
+
+    /**
+     * Location for metadata.
+     */
+    
+    private static final String DRRC2 = "DRRC2";
+
+    /**
+     * Second time for testing.
+     */
+    
+    private static final String SECOND_TIME = "1986-01-01T00:00:00Z";
+
+    /**
+     * First time for testing.
+     */
+    
+    private static final String FIRST_TIME = "1985-01-01T00:00:00Z";
+
     @Rule
     public final ExpectedException exception = ExpectedException.none();
     
@@ -63,7 +90,7 @@ public final class DataFactoryTest
     public void constructionOfPairsTest()
     {
 
-        final Location l = Location.of( "DRRC2" );
+        final Location l = Location.of( DRRC2 );
         final SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of(),
                                                          DatasetIdentifier.of( l, "SQIN", "HEFS" ) );
         final List<DichotomousPair> input = new ArrayList<>();
@@ -72,10 +99,10 @@ public final class DataFactoryTest
 
         final List<DiscreteProbabilityPair> dInput = new ArrayList<>();
         dInput.add( DiscreteProbabilityPair.of( 0.0, 1.0 ) );
-        final Location l2 = Location.of( "DRRC2" );
+        final Location l2 = Location.of( DRRC2 );
         final SampleMetadata m2 = SampleMetadata.of( MeasurementUnit.of(),
                                                          DatasetIdentifier.of( l2, "SQIN", "HEFS" ) );
-        final Location l3 = Location.of( "DRRC2" );
+        final Location l3 = Location.of( DRRC2 );
         final SampleMetadata m3 = SampleMetadata.of( MeasurementUnit.of(),
                                                          DatasetIdentifier.of( l3, "SQIN", "ESP" ) );
         assertNotNull( DiscreteProbabilityPairs.of( dInput, m2 ) );
@@ -198,11 +225,18 @@ public final class DataFactoryTest
     {
         boolean one = true;
         boolean two = false;
-        final DichotomousPair bools = DichotomousPair.of( one, two );
+        
+        DichotomousPair bools = DichotomousPair.of( one, two );
+        
         one = false;
         two = true;
-        assertEquals( true, bools.getLeft() );
-        assertEquals( false, bools.getRight() );
+        
+        DichotomousPair boolsTwo = DichotomousPair.of( one, two );
+        
+        assertNotEquals(bools, boolsTwo );
+        
+        assertTrue( bools.getLeft() );
+        assertFalse( bools.getRight() );
     }
 
     @Test
@@ -239,58 +273,49 @@ public final class DataFactoryTest
                                                       Threshold.of( OneOrTwoDoubles.of( 1.0 ),
                                                                                Operator.GREATER,
                                                                                ThresholdDataType.LEFT ) );
-        assertTrue( "Expected equality.",
-                    first.compareTo( second ) == 0 && second.compareTo( first ) == 0 && first.equals( second ) );
+        assertTrue( first.compareTo( second ) == 0 && second.compareTo( first ) == 0 && first.equals( second ) );
         //Test inequality and anticommutativity 
         //Earliest date
-        Pair<TimeWindow, Threshold> third = Pair.of( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+        Pair<TimeWindow, Threshold> third = Pair.of( TimeWindow.of( Instant.parse( FIRST_TIME ),
                                                                     Instant.MAX ),
                                                      Threshold.of( OneOrTwoDoubles.of( 1.0 ),
                                                                               Operator.GREATER,
                                                                               ThresholdDataType.LEFT ) );
-        assertTrue( "Expected greater than.", third.compareTo( first ) > 0 );
-        assertTrue( "Expected anticommutativity.",
-                    Math.abs( first.compareTo( third ) ) == Math.abs( third.compareTo( first ) ) );
+        assertTrue( third.compareTo( first ) > 0 );
+        assertTrue( first.compareTo( third ) + third.compareTo( first ) == 0 );
         //Latest date
-        Pair<TimeWindow, Threshold> fourth = Pair.of( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                     Instant.parse( "1986-01-01T00:00:00Z" ) ),
+        Pair<TimeWindow, Threshold> fourth = Pair.of( TimeWindow.of( Instant.parse( FIRST_TIME ),
+                                                                     Instant.parse( SECOND_TIME ) ),
                                                       Threshold.of( OneOrTwoDoubles.of( 1.0 ),
                                                                                Operator.GREATER,
                                                                                ThresholdDataType.LEFT ) );
-        assertTrue( "Expected greater than.", third.compareTo( fourth ) > 0 );
-        assertTrue( "Expected anticommutativity.",
-                    Math.abs( third.compareTo( fourth ) ) == Math.abs( fourth.compareTo( third ) ) );
+        assertTrue( third.compareTo( fourth ) > 0 );
+        assertTrue( third.compareTo( fourth ) + fourth.compareTo( third ) == 0 );
         //Valid time
-        Pair<TimeWindow, Threshold> fifth = Pair.of( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                    Instant.parse( "1986-01-01T00:00:00Z" ),
-                                                                    Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                    Instant.parse( "1986-01-01T00:00:00Z" ) ),
+        Pair<TimeWindow, Threshold> fifth = Pair.of( TimeWindow.of( Instant.parse( FIRST_TIME ),
+                                                                    Instant.parse( SECOND_TIME ),
+                                                                    Instant.parse( FIRST_TIME ),
+                                                                    Instant.parse( SECOND_TIME ) ),
                                                      Threshold.of( OneOrTwoDoubles.of( 1.0 ),
                                                                               Operator.GREATER,
                                                                               ThresholdDataType.LEFT ) );
-        assertTrue( "Expected greater than.", fourth.compareTo( fifth ) < 0 );
-        assertTrue( "Expected anticommutativity.",
-                    Math.abs( fourth.compareTo( fifth ) ) == Math.abs( fifth.compareTo( fourth ) ) );
+        assertTrue( fourth.compareTo( fifth ) < 0 );
+        assertTrue( fourth.compareTo( fifth ) + fifth.compareTo( fourth ) == 0 );
         //Threshold
-        Pair<TimeWindow, Threshold> sixth = Pair.of( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                    Instant.parse( "1986-01-01T00:00:00Z" ),
-                                                                    Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                    Instant.parse( "1986-01-01T00:00:00Z" ) ),
+        Pair<TimeWindow, Threshold> sixth = Pair.of( TimeWindow.of( Instant.parse( FIRST_TIME ),
+                                                                    Instant.parse( SECOND_TIME ),
+                                                                    Instant.parse( FIRST_TIME ),
+                                                                    Instant.parse( SECOND_TIME ) ),
                                                      Threshold.of( OneOrTwoDoubles.of( 0.0 ),
                                                                               Operator.GREATER,
                                                                               ThresholdDataType.LEFT ) );
-        assertTrue( "Expected greater than.", fifth.compareTo( sixth ) > 0 );
-        assertTrue( "Expected anticommutativity.",
-                    Math.abs( fifth.compareTo( sixth ) ) == Math.abs( sixth.compareTo( fifth ) ) );
+        assertTrue( fifth.compareTo( sixth ) > 0 );
+        assertTrue( fifth.compareTo( sixth )  +  sixth.compareTo( fifth ) == 0 );
+        
         //Check nullity contract
-        try
-        {
-            first.compareTo( null );
-            fail( "Expected null pointer on comparing." );
-        }
-        catch ( NullPointerException e )
-        {
-        }
+        exception.expect( NullPointerException.class );
+        first.compareTo( null );
+
     }
 
     /**
@@ -317,50 +342,56 @@ public final class DataFactoryTest
                                                                                Operator.GREATER,
                                                                                ThresholdDataType.LEFT ) );
         //Reflexive
-        assertEquals( "Expected reflexive equality.", first, first );
+        assertEquals( first, first );
+        
         //Symmetric 
-        assertTrue( "Expected symmetric equality.", first.equals( second ) && second.equals( first ) );
+        assertTrue( first.equals( second ) && second.equals( first ) );
+        
         //Transitive 
-        assertTrue( "Expected transitive equality.",
-                    zeroeth.equals( first ) && first.equals( second ) && zeroeth.equals( second ) );
+        assertTrue( zeroeth.equals( first ) && first.equals( second ) && zeroeth.equals( second ) );
+        
         //Nullity
-        assertTrue( "Expected inequality on null.", !first.equals( null ) );
+        assertNotNull( first );
+        
         //Check hashcode
-        assertEquals( "Expected equal hashcodes.", first.hashCode(), second.hashCode() );
+        assertEquals( first.hashCode(), second.hashCode() );
 
         //Test inequalities
         //Earliest date
-        Pair<TimeWindow, Threshold> third = Pair.of( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+        Pair<TimeWindow, Threshold> third = Pair.of( TimeWindow.of( Instant.parse( FIRST_TIME ),
                                                                     Instant.MAX ),
                                                      Threshold.of( OneOrTwoDoubles.of( 1.0 ),
                                                                               Operator.GREATER,
                                                                               ThresholdDataType.LEFT ) );
-        assertTrue( "Expected inequality.", !third.equals( first ) );
+        assertNotEquals( third, first );
+        
         //Latest date
-        Pair<TimeWindow, Threshold> fourth = Pair.of( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                     Instant.parse( "1986-01-01T00:00:00Z" ) ),
+        Pair<TimeWindow, Threshold> fourth = Pair.of( TimeWindow.of( Instant.parse( FIRST_TIME ),
+                                                                     Instant.parse( SECOND_TIME ) ),
                                                       Threshold.of( OneOrTwoDoubles.of( 1.0 ),
                                                                                Operator.GREATER,
                                                                                ThresholdDataType.LEFT ) );
-        assertTrue( "Expected inequality.", !third.equals( fourth ) );
+        assertNotEquals( third,fourth );
+        
         //Valid time
-        Pair<TimeWindow, Threshold> fifth = Pair.of( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                    Instant.parse( "1986-01-01T00:00:00Z" ),
-                                                                    Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                    Instant.parse( "1986-01-01T00:00:00Z" ) ),
+        Pair<TimeWindow, Threshold> fifth = Pair.of( TimeWindow.of( Instant.parse( FIRST_TIME ),
+                                                                    Instant.parse( SECOND_TIME ),
+                                                                    Instant.parse( FIRST_TIME ),
+                                                                    Instant.parse( SECOND_TIME ) ),
                                                      Threshold.of( OneOrTwoDoubles.of( 1.0 ),
                                                                               Operator.GREATER,
                                                                               ThresholdDataType.LEFT ) );
-        assertTrue( "Expected inequality.", !fourth.equals( fifth ) );
+        assertNotEquals( fourth, fifth );
+        
         //Threshold
-        Pair<TimeWindow, Threshold> sixth = Pair.of( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                    Instant.parse( "1986-01-01T00:00:00Z" ),
-                                                                    Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                    Instant.parse( "1986-01-01T00:00:00Z" ) ),
+        Pair<TimeWindow, Threshold> sixth = Pair.of( TimeWindow.of( Instant.parse( FIRST_TIME ),
+                                                                    Instant.parse( SECOND_TIME ),
+                                                                    Instant.parse( FIRST_TIME ),
+                                                                    Instant.parse( SECOND_TIME ) ),
                                                      Threshold.of( OneOrTwoDoubles.of( 0.0 ),
                                                                               Operator.GREATER,
                                                                               ThresholdDataType.LEFT ) );
-        assertTrue( "Expected inequality.", !fifth.equals( sixth ) );
+        assertNotEquals( fifth, sixth );
     }
 
     /**
@@ -375,33 +406,25 @@ public final class DataFactoryTest
                                                        null,
                                                        null,
                                                        ThresholdOperator.GREATER_THAN );
-        assertTrue( "Failed to convert '" + ThresholdOperator.GREATER_THAN
-                    + "'.",
-                    DataFactory.getThresholdOperator( first ) == Operator.GREATER );
+        assertTrue( DataFactory.getThresholdOperator( first ) == Operator.GREATER );
 
         ThresholdsConfig second = new ThresholdsConfig( null,
                                                         null,
                                                         null,
                                                         ThresholdOperator.LESS_THAN );
-        assertTrue( "Failed to convert '" + ThresholdOperator.LESS_THAN
-                    + "'.",
-                    DataFactory.getThresholdOperator( second ) == Operator.LESS );
+        assertTrue( DataFactory.getThresholdOperator( second ) == Operator.LESS );
 
         ThresholdsConfig third = new ThresholdsConfig( null,
                                                        null,
                                                        null,
                                                        ThresholdOperator.GREATER_THAN_OR_EQUAL_TO );
-        assertTrue( "Failed to convert '" + ThresholdOperator.GREATER_THAN_OR_EQUAL_TO
-                    + "'.",
-                    DataFactory.getThresholdOperator( third ) == Operator.GREATER_EQUAL );
+        assertTrue( DataFactory.getThresholdOperator( third ) == Operator.GREATER_EQUAL );
 
         ThresholdsConfig fourth = new ThresholdsConfig( null,
                                                         null,
                                                         null,
                                                         ThresholdOperator.LESS_THAN_OR_EQUAL_TO );
-        assertTrue( "Failed to convert '" + ThresholdOperator.LESS_THAN_OR_EQUAL_TO
-                    + "'.",
-                    DataFactory.getThresholdOperator( fourth ) == Operator.LESS_EQUAL );
+        assertTrue( DataFactory.getThresholdOperator( fourth ) == Operator.LESS_EQUAL );
 
         //Test exception cases
         exception.expect( NullPointerException.class );
@@ -443,7 +466,7 @@ public final class DataFactoryTest
     public void testGetMetricNameThrowsNPEWhenInputIsNull()
     {
         exception.expect( NullPointerException.class );
-        exception.expectMessage( "Specify input configuration with a non-null identifier to map." );
+        exception.expectMessage( EXPECTED_EXCEPTION_ON_NULL );
 
         DataFactory.getMetricName( (MetricConfigName) null );
     }
@@ -477,7 +500,7 @@ public final class DataFactoryTest
     public void testGetTimeSeriesMetricNameThrowsNPEWhenInputIsNull()
     {
         exception.expect( NullPointerException.class );
-        exception.expectMessage( "Specify input configuration with a non-null identifier to map." );
+        exception.expectMessage( EXPECTED_EXCEPTION_ON_NULL );
 
         DataFactory.getMetricName( (TimeSeriesMetricConfigName) null );
     }    
@@ -506,7 +529,7 @@ public final class DataFactoryTest
     public void testGetThresholdDataTypeThrowsNPEWhenInputIsNull()
     {
         exception.expect( NullPointerException.class );
-        exception.expectMessage( "Specify input configuration with a non-null identifier to map." );
+        exception.expectMessage( EXPECTED_EXCEPTION_ON_NULL );
 
         DataFactory.getThresholdDataType( null );
     }  
@@ -534,7 +557,7 @@ public final class DataFactoryTest
     public void testGetThresholdGroupThrowsNPEWhenInputIsNull()
     {
         exception.expect( NullPointerException.class );
-        exception.expectMessage( "Specify input configuration with a non-null identifier to map." );
+        exception.expectMessage( EXPECTED_EXCEPTION_ON_NULL );
 
         DataFactory.getThresholdGroup( null );
     }      
