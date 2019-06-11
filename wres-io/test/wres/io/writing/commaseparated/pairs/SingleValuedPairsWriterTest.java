@@ -408,7 +408,7 @@ public final class SingleValuedPairsWriterTest
             writer.accept( pairs );
 
             // Assert the expected results
-            assertEquals( writer.get(), Collections.singleton( pathToFile ) );
+            assertEquals( writer.get(), pathToFile );
 
             // If all succeeded, remove the file, otherwise leave to help debugging
             Files.deleteIfExists( pathToFile );

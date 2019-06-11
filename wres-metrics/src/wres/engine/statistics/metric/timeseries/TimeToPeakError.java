@@ -76,10 +76,10 @@ public class TimeToPeakError extends TimingError
 
         // Create output metadata
         StatisticMetadata meta = StatisticMetadata.of( s.getMetadata(),
-                                                             s.getBasisTimes().size(),
-                                                             MeasurementUnit.of( "DURATION" ),
-                                                             this.getID(),
-                                                             MetricConstants.MAIN );
+                                                       s.getBasisTimes().size(),
+                                                       MeasurementUnit.of( "DURATION" ),
+                                                       this.getID(),
+                                                       MetricConstants.MAIN );
 
         return PairedStatistic.of( returnMe, meta );
     }

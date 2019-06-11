@@ -81,12 +81,12 @@ public class TimeToPeakRelativeError extends TimingError
 
             // Compute the denominator
             Duration denominator = Duration.between( next.getEarliestBasisTime(), peak.getLeft() );
-            
+
             // Add the relative time-to-peak error against the basis time
             // If the horizon is zero, the relative error is undefined
             // TODO: consider how to represent a NaN outcome within the framework of Duration, rather
             // than swallowing the outcome here
-            
+
             if ( !denominator.isZero() )
             {
                 // Numerator seconds as a big decimal w/ nanos
@@ -102,10 +102,10 @@ public class TimeToPeakRelativeError extends TimingError
 
                 // Fractional seconds
                 BigDecimal seconds = fraction.multiply( BigDecimal.valueOf( 60.0 * 60.0 ) );
-                
+
                 // Nearest whole second
-                seconds = seconds.setScale(0, RoundingMode.HALF_UP);
-                
+                seconds = seconds.setScale( 0, RoundingMode.HALF_UP );
+
                 returnMe.add( Pair.of( next.getEarliestBasisTime(),
                                        Duration.ofSeconds( seconds.longValue() ) ) );
             }
