@@ -10,9 +10,7 @@ import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Collections;
 import java.util.Objects;
-import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
@@ -45,7 +43,7 @@ import wres.util.TimeHelper;
  */
 
 public abstract class PairsWriter<S extends Pair<?,?>, T extends Pairs<S> & TimeSeries<S>>
-        implements Consumer<T>, Supplier<Set<Path>>, Closeable
+        implements Consumer<T>, Supplier<Path>, Closeable
 {
 
     /**
@@ -182,9 +180,9 @@ public abstract class PairsWriter<S extends Pair<?,?>, T extends Pairs<S> & Time
      */
 
     @Override
-    public Set<Path> get()
+    public Path get()
     {
-        return Collections.singleton( pathToPairs );
+        return pathToPairs;
     }
 
     /**

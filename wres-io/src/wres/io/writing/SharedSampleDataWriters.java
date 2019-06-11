@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.text.DecimalFormat;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
@@ -19,16 +20,17 @@ import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfEnsemblePairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.io.writing.commaseparated.pairs.EnsemblePairsWriter;
-import wres.io.writing.commaseparated.pairs.PairsWriter;
 import wres.io.writing.commaseparated.pairs.SingleValuedPairsWriter;
 
 /**
- * A temporary class intended to store parameterized types of {@link PairsWriter}. Currently, wres-io creates 
- * some friction by exposing the wildcard type of {@link SampleData}, rather than a non-wildcard type. This class 
- * resolves that friction by providing access to parameterized types of writing on request.
+ * A temporary class intended to host pairs writers. Currently, wres-io creates 
+ * some friction by exposing the wildcard type of {@link SampleData}, rather than 
+ * a non-wildcard type. This class resolves that friction by providing access to 
+ * parameterized types of writing on request.
  * 
- * TODO: remove this class in favor of the direct application of a parameterized {@link PairsWriter} once 
- * the wres-io uses non-wildcard types of {@link SampleData}.
+ * TODO: remove this class in favor of the direct application of a parameterized 
+ * {@link SingleValuedPairsWriter} or {@link EnsemblePairsWriter} once the wres-io 
+ * uses non-wildcard types of {@link SampleData}.
  * 
  * @author james.brown@hydrosolved.com
  */
@@ -72,8 +74,7 @@ public class SharedSampleDataWriters implements Consumer<SampleData<?>>, Supplie
     @Override
     public Set<Path> get()
     {
-        Set<Path> returnMe = new HashSet<>( singleValuedWriter.get() );
-        returnMe.addAll( ensembleWriter.get() );
+        Set<Path> returnMe = new HashSet<>( Arrays.asList( singleValuedWriter.get(), ensembleWriter.get() ) );
 
         return Collections.unmodifiableSet( returnMe );
     }
