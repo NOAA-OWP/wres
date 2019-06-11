@@ -59,6 +59,12 @@ import wres.datamodel.thresholds.ThresholdsByMetric;
 public final class MetricConfigHelperTest
 {
 
+    /**
+     * Test thresholds.
+     */
+    
+    private static final String TEST_THRESHOLDS = "0.1,0.2,0.3";
+
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
@@ -85,7 +91,7 @@ public final class MetricConfigHelperTest
         List<ThresholdsConfig> thresholds = new ArrayList<>();
         thresholds.add( new ThresholdsConfig( ThresholdType.PROBABILITY,
                                               ThresholdDataType.LEFT,
-                                              "0.1,0.2,0.3",
+                                              TEST_THRESHOLDS,
                                               ThresholdOperator.GREATER_THAN ) );
 
         defaultMockedConfig =
@@ -244,7 +250,7 @@ public final class MetricConfigHelperTest
         List<ThresholdsConfig> thresholds = new ArrayList<>();
         thresholds.add( new ThresholdsConfig( ThresholdType.PROBABILITY,
                                               ThresholdDataType.LEFT,
-                                              "0.1,0.2,0.3",
+                                              TEST_THRESHOLDS,
                                               ThresholdOperator.GREATER_THAN ) );
 
         ProjectConfig mockedConfigWithNullDimension =
@@ -397,7 +403,7 @@ public final class MetricConfigHelperTest
         // Test with probability thresholds
         @SuppressWarnings( "unchecked" )
         Set<Threshold> actual = (Set<Threshold>) method.invoke( null,
-                                                                "0.1,0.2,0.3",
+                                                                TEST_THRESHOLDS,
                                                                 Operator.BETWEEN,
                                                                 ThresholdConstants.ThresholdDataType.LEFT,
                                                                 true,
@@ -415,7 +421,7 @@ public final class MetricConfigHelperTest
         // Test with value thresholds
         @SuppressWarnings( "unchecked" )
         Set<Threshold> actualValue = (Set<Threshold>) method.invoke( null,
-                                                                     "0.1,0.2,0.3",
+                                                                     TEST_THRESHOLDS,
                                                                      Operator.BETWEEN,
                                                                      ThresholdConstants.ThresholdDataType.LEFT,
                                                                      false,

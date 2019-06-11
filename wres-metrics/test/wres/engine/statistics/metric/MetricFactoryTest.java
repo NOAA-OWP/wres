@@ -70,6 +70,12 @@ import wres.engine.statistics.metric.timeseries.TimeToPeakRelativeError;
  */
 public final class MetricFactoryTest
 {
+    /**
+     * Expected error message.
+     */
+
+    private static final String UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN = 
+            "Unrecognized metric for identifier. 'MAIN'.";
 
     /**
      * Mocked single-valued configuration.
@@ -114,7 +120,7 @@ public final class MetricFactoryTest
 
         // Unrecognized metric
         exception.expect( IllegalArgumentException.class );
-        exception.expectMessage( "Unrecognized metric for identifier. 'MAIN'." );
+        exception.expectMessage( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN );
         MetricFactory.ofSingleValuedScore( MetricConstants.MAIN );
     }
 
@@ -131,7 +137,7 @@ public final class MetricFactoryTest
 
         // Unrecognized metric
         exception.expect( IllegalArgumentException.class );
-        exception.expectMessage( "Unrecognized metric for identifier. 'MAIN'." );
+        exception.expectMessage( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN );
         MetricFactory.ofSingleValuedScoreCollectable( MetricConstants.MAIN );
     }
 
@@ -147,7 +153,7 @@ public final class MetricFactoryTest
 
         // Unrecognized metric
         exception.expect( IllegalArgumentException.class );
-        exception.expectMessage( "Unrecognized metric for identifier. 'MAIN'." );
+        exception.expectMessage( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN );
         MetricFactory.ofDiscreteProbabilityScore( MetricConstants.MAIN );
     }
 
@@ -165,7 +171,7 @@ public final class MetricFactoryTest
 
         // Unrecognized metric
         exception.expect( IllegalArgumentException.class );
-        exception.expectMessage( "Unrecognized metric for identifier. 'MAIN'." );
+        exception.expectMessage( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN );
         MetricFactory.ofDichotomousScore( MetricConstants.MAIN );
     }
 
@@ -179,7 +185,7 @@ public final class MetricFactoryTest
 
         // Unrecognized metric
         exception.expect( IllegalArgumentException.class );
-        exception.expectMessage( "Unrecognized metric for identifier. 'MAIN'." );
+        exception.expectMessage( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN );
         MetricFactory.ofMulticategoryScore( MetricConstants.MAIN );
     }
 
@@ -195,7 +201,7 @@ public final class MetricFactoryTest
 
         // Unrecognized metric
         exception.expect( IllegalArgumentException.class );
-        exception.expectMessage( "Unrecognized metric for identifier. 'MAIN'." );
+        exception.expectMessage( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN );
         MetricFactory.ofEnsembleScore( MetricConstants.MAIN );
     }
 
@@ -209,7 +215,7 @@ public final class MetricFactoryTest
 
         // Unrecognized metric
         exception.expect( IllegalArgumentException.class );
-        exception.expectMessage( "Unrecognized metric for identifier. 'MAIN'." );
+        exception.expectMessage( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN );
         MetricFactory.ofDichotomousMatrix( MetricConstants.MAIN );
     }
 
@@ -223,7 +229,7 @@ public final class MetricFactoryTest
 
         // Unrecognized metric
         exception.expect( IllegalArgumentException.class );
-        exception.expectMessage( "Unrecognized metric for identifier. 'MAIN'." );
+        exception.expectMessage( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN );
         MetricFactory.ofSingleValuedMultiVector( MetricConstants.MAIN );
     }
 
@@ -239,7 +245,7 @@ public final class MetricFactoryTest
 
         // Unrecognized metric
         exception.expect( IllegalArgumentException.class );
-        exception.expectMessage( "Unrecognized metric for identifier. 'MAIN'." );
+        exception.expectMessage( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN );
         MetricFactory.ofDiscreteProbabilityMultiVector( MetricConstants.MAIN );
     }
 
@@ -253,7 +259,7 @@ public final class MetricFactoryTest
 
         // Unrecognized metric
         exception.expect( IllegalArgumentException.class );
-        exception.expectMessage( "Unrecognized metric for identifier. 'MAIN'." );
+        exception.expectMessage( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN );
         MetricFactory.ofEnsembleMultiVector( MetricConstants.MAIN );
     }
 
@@ -268,7 +274,7 @@ public final class MetricFactoryTest
 
         // Unrecognized metric
         exception.expect( IllegalArgumentException.class );
-        exception.expectMessage( "Unrecognized metric for identifier. 'MAIN'." );
+        exception.expectMessage( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN );
         MetricFactory.ofEnsembleBoxPlot( MetricConstants.MAIN );
     }
 
@@ -283,7 +289,7 @@ public final class MetricFactoryTest
 
         // Unrecognized metric
         exception.expect( IllegalArgumentException.class );
-        exception.expectMessage( "Unrecognized metric for identifier. 'MAIN'." );
+        exception.expectMessage( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN );
         MetricFactory.ofSingleValuedTimeSeries( MetricConstants.MAIN );
     }
 

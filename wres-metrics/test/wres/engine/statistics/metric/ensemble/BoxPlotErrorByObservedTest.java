@@ -39,6 +39,11 @@ import wres.engine.statistics.metric.MetricParameterException;
  */
 public final class BoxPlotErrorByObservedTest
 {
+    /**
+     * Units used in testing.
+     */
+
+    private static final String MM_DAY = "MM/DAY";
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
@@ -70,7 +75,7 @@ public final class BoxPlotErrorByObservedTest
                                            Instant.MAX,
                                            Duration.ofHours( 24 ) );
         final TimeWindow timeWindow1 = window;
-        SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "MM/DAY" ) )
+        SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
                                                          .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
                                                                                                "MAP" ) )
                                                          .setTimeWindow( timeWindow1 )
@@ -80,13 +85,13 @@ public final class BoxPlotErrorByObservedTest
         final TimeWindow timeWindow = window;
 
         final StatisticMetadata m1 =
-                StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "MM/DAY" ) )
+                StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
                                                                  .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
                                                                                                        "MAP" ) )
                                                                  .setTimeWindow( timeWindow )
                                                                  .build(),
                                       input.getRawData().size(),
-                                      MeasurementUnit.of( "MM/DAY" ),
+                                      MeasurementUnit.of( MM_DAY ),
                                       MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
                                       MetricConstants.MAIN );
 

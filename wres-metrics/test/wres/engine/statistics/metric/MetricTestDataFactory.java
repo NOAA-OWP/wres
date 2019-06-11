@@ -44,6 +44,107 @@ public final class MetricTestDataFactory
 {
 
     /**
+     * Streamflow for metadata.
+     */
+    private static final String STREAMFLOW = "Streamflow";
+    
+    /**
+     * Units for metadata.
+     */
+    
+    private static final String MM_DAY = "MM/DAY";
+    
+    /**
+     * Location for metadata.
+     */
+    
+    private static final String DRRC2 = "DRRC2";
+    
+    /**
+     * Fourteenth time.
+     */
+    
+    private static final String FOURTEENTH_TIME = "2551-03-19T09:00:00Z";
+    
+    /**
+     * Thirteenth time.
+     */
+    
+    private static final String THIRTEENTH_TIME = "2551-03-19T06:00:00Z";
+    
+    /**
+     * Twelfth time.
+     */
+    
+    private static final String TWELFTH_TIME = "2551-03-19T03:00:00Z";
+    
+    /**
+     * Eleventh time.
+     */
+    
+    private static final String ELEVENTH_TIME = "2551-03-19T00:00:00Z";
+    
+    /**
+     * Tenth time.
+     */
+    
+    private static final String TENTH_TIME = "2551-03-18T21:00:00Z";
+    
+    /**
+     * Ninth time.
+     */
+    
+    private static final String NINTH_TIME = "2551-03-18T18:00:00Z";
+    
+    /**
+     * Eight time.
+     */
+    
+    private static final String EIGHTH_TIME = "2551-03-18T15:00:00Z";
+    
+    /**
+     * Seventh time.
+     */
+    
+    private static final String SEVENTH_TIME = "2551-03-18T12:00:00Z";
+    
+    /**
+     * Sixth time.
+     */
+    
+    private static final String SIXTH_TIME = "1985-01-02T18:00:00Z";
+    
+    /**
+     * Fifth time.
+     */
+    
+    private static final String FIFTH_TIME = "1985-01-02T12:00:00Z";
+    
+    /**
+     * Fourth time.
+     */
+    
+    private static final String FOURTH_TIME = "1985-01-02T06:00:00Z";
+    
+    /**
+     * Third time.
+     */
+    
+    private static final String THIRD_TIME = "1985-01-02T00:00:00Z";
+    
+    /**
+     * Second time.
+     */
+    
+    private static final String SECOND_TIME = "2010-12-31T11:59:59Z";
+    
+    /**
+     * First time.
+     */
+    
+    private static final String FIRST_TIME = "1985-01-01T00:00:00Z";
+
+    /**
      * Returns a set of single-valued pairs without a baseline.
      * 
      * @return single-valued pairs
@@ -100,11 +201,11 @@ public final class MetricTestDataFactory
         baseline.add( SingleValuedPair.of( 93.2, 94.8 ) );
 
         final SampleMetadata main = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                       DatasetIdentifier.of( getLocation( "DRRC2" ),
+                                                       DatasetIdentifier.of( getLocation( DRRC2 ),
                                                                              "SQIN",
                                                                              "HEFS" ) );
         final SampleMetadata base = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                       DatasetIdentifier.of( getLocation( "DRRC2" ),
+                                                       DatasetIdentifier.of( getLocation( DRRC2 ),
                                                                              "SQIN",
                                                                              "ESP" ) );
         return SingleValuedPairs.of( values, baseline, main, base );
@@ -132,7 +233,7 @@ public final class MetricTestDataFactory
         }
 
         final SampleMetadata meta = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                       DatasetIdentifier.of( getLocation( "DRRC2" ),
+                                                       DatasetIdentifier.of( getLocation( DRRC2 ),
                                                                              "SQIN",
                                                                              "HEFS" ) );
         return SingleValuedPairs.of( values, meta );
@@ -159,11 +260,11 @@ public final class MetricTestDataFactory
             }
         }
 
-        final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                 Instant.parse( "2010-12-31T11:59:59Z" ),
+        final TimeWindow window = TimeWindow.of( Instant.parse( FIRST_TIME ),
+                                                 Instant.parse( SECOND_TIME ),
                                                  Duration.ofHours( 1 ) );
         final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                               .setIdentifier( DatasetIdentifier.of( getLocation( "DRRC2" ),
+                                                               .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
                                                                                                      "SQIN",
                                                                                                      "HEFS" ) )
                                                                .setTimeWindow( window )
@@ -207,10 +308,10 @@ public final class MetricTestDataFactory
             }
         }
 
-        final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                 Instant.parse( "2010-12-31T11:59:59Z" ),
+        final TimeWindow window = TimeWindow.of( Instant.parse( FIRST_TIME ),
+                                                 Instant.parse( SECOND_TIME ),
                                                  Duration.ofHours( 24 ) );
-        final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "MM/DAY" ) )
+        final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
                                                                .setIdentifier( DatasetIdentifier.of( getLocation( "103.1" ),
                                                                                                      "QME",
                                                                                                      "NVE" ) )
@@ -232,10 +333,10 @@ public final class MetricTestDataFactory
 
         final List<SingleValuedPair> values = new ArrayList<>();
         values.add( SingleValuedPair.of( 22.9, 22.8 ) );
-        final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                 Instant.parse( "2010-12-31T11:59:59Z" ),
+        final TimeWindow window = TimeWindow.of( Instant.parse( FIRST_TIME ),
+                                                 Instant.parse( SECOND_TIME ),
                                                  Duration.ofHours( 24 ) );
-        final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "MM/DAY" ) )
+        final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
                                                                .setIdentifier( DatasetIdentifier.of( getLocation( "A" ),
                                                                                                      "MAP" ) )
                                                                .setTimeWindow( window )
@@ -253,11 +354,11 @@ public final class MetricTestDataFactory
     {
         //Construct some single-valued pairs
         final SampleMetadata main = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                       DatasetIdentifier.of( getLocation( "DRRC2" ),
+                                                       DatasetIdentifier.of( getLocation( DRRC2 ),
                                                                              "SQIN",
                                                                              "HEFS" ) );
         final SampleMetadata base = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                       DatasetIdentifier.of( getLocation( "DRRC2" ),
+                                                       DatasetIdentifier.of( getLocation( DRRC2 ),
                                                                              "SQIN",
                                                                              "ESP" ) );
         return SingleValuedPairs.of( Collections.emptyList(), Collections.emptyList(), main, base );
@@ -329,16 +430,16 @@ public final class MetricTestDataFactory
                                    Instant.parse( "2551-03-18T09:00:00Z" ),
                                    SingleValuedPair.of( 517.67, 103.00 ) ) );
         listOfPairs.add( Event.of( basisTime,
-                                   Instant.parse( "2551-03-18T12:00:00Z" ),
+                                   Instant.parse( SEVENTH_TIME ),
                                    SingleValuedPair.of( 548.33, 107.00 ) ) );
         listOfPairs.add( Event.of( basisTime,
-                                   Instant.parse( "2551-03-18T15:00:00Z" ),
+                                   Instant.parse( EIGHTH_TIME ),
                                    SingleValuedPair.of( 567.67, 109.00 ) ) );
         listOfPairs.add( Event.of( basisTime,
-                                   Instant.parse( "2551-03-18T18:00:00Z" ),
+                                   Instant.parse( NINTH_TIME ),
                                    SingleValuedPair.of( 585.67, 113.00 ) ) );
         listOfPairs.add( Event.of( basisTime,
-                                   Instant.parse( "2551-03-18T21:00:00Z" ),
+                                   Instant.parse( TENTH_TIME ),
                                    SingleValuedPair.of( 602.33, 127.00 ) ) );
 
         // Add second time-series
@@ -353,52 +454,52 @@ public final class MetricTestDataFactory
                                    Instant.parse( "2551-03-18T09:00:00Z" ),
                                    SingleValuedPair.of( 517.67, 139.00 ) ) );
         listOfPairs.add( Event.of( basisTimeTwo,
-                                   Instant.parse( "2551-03-18T12:00:00Z" ),
+                                   Instant.parse( SEVENTH_TIME ),
                                    SingleValuedPair.of( 548.33, 149.00 ) ) );
         listOfPairs.add( Event.of( basisTimeTwo,
-                                   Instant.parse( "2551-03-18T15:00:00Z" ),
+                                   Instant.parse( EIGHTH_TIME ),
                                    SingleValuedPair.of( 567.67, 151.00 ) ) );
         listOfPairs.add( Event.of( basisTimeTwo,
-                                   Instant.parse( "2551-03-18T18:00:00Z" ),
+                                   Instant.parse( NINTH_TIME ),
                                    SingleValuedPair.of( 585.67, 157.00 ) ) );
         listOfPairs.add( Event.of( basisTimeTwo,
-                                   Instant.parse( "2551-03-18T21:00:00Z" ),
+                                   Instant.parse( TENTH_TIME ),
                                    SingleValuedPair.of( 602.33, 163.00 ) ) );
         listOfPairs.add( Event.of( basisTimeTwo,
-                                   Instant.parse( "2551-03-19T00:00:00Z" ),
+                                   Instant.parse( ELEVENTH_TIME ),
                                    SingleValuedPair.of( 616.33, 167.00 ) ) );
         listOfPairs.add( Event.of( basisTimeTwo,
-                                   Instant.parse( "2551-03-19T03:00:00Z" ),
+                                   Instant.parse( TWELFTH_TIME ),
                                    SingleValuedPair.of( 638.33, 173.00 ) ) );
         listOfPairs.add( Event.of( basisTimeTwo,
-                                   Instant.parse( "2551-03-19T06:00:00Z" ),
+                                   Instant.parse( THIRTEENTH_TIME ),
                                    SingleValuedPair.of( 653.00, 179.00 ) ) );
         listOfPairs.add( Event.of( basisTimeTwo,
-                                   Instant.parse( "2551-03-19T09:00:00Z" ),
+                                   Instant.parse( FOURTEENTH_TIME ),
                                    SingleValuedPair.of( 670.33, 181.00 ) ) );
 
         // Add third time-series
-        Instant basisTimeThree = Instant.parse( "2551-03-18T12:00:00Z" );
+        Instant basisTimeThree = Instant.parse( SEVENTH_TIME );
         listOfPairs.add( Event.of( basisTimeThree,
-                                   Instant.parse( "2551-03-18T15:00:00Z" ),
+                                   Instant.parse( EIGHTH_TIME ),
                                    SingleValuedPair.of( 567.67, 191.00 ) ) );
         listOfPairs.add( Event.of( basisTimeThree,
-                                   Instant.parse( "2551-03-18T18:00:00Z" ),
+                                   Instant.parse( NINTH_TIME ),
                                    SingleValuedPair.of( 585.67, 193.00 ) ) );
         listOfPairs.add( Event.of( basisTimeThree,
-                                   Instant.parse( "2551-03-18T21:00:00Z" ),
+                                   Instant.parse( TENTH_TIME ),
                                    SingleValuedPair.of( 602.33, 197.00 ) ) );
         listOfPairs.add( Event.of( basisTimeThree,
-                                   Instant.parse( "2551-03-19T00:00:00Z" ),
+                                   Instant.parse( ELEVENTH_TIME ),
                                    SingleValuedPair.of( 616.33, 199.00 ) ) );
         listOfPairs.add( Event.of( basisTimeThree,
-                                   Instant.parse( "2551-03-19T03:00:00Z" ),
+                                   Instant.parse( TWELFTH_TIME ),
                                    SingleValuedPair.of( 638.33, 211.00 ) ) );
         listOfPairs.add( Event.of( basisTimeThree,
-                                   Instant.parse( "2551-03-19T06:00:00Z" ),
+                                   Instant.parse( THIRTEENTH_TIME ),
                                    SingleValuedPair.of( 653.00, 223.00 ) ) );
         listOfPairs.add( Event.of( basisTimeThree,
-                                   Instant.parse( "2551-03-19T09:00:00Z" ),
+                                   Instant.parse( FOURTEENTH_TIME ),
                                    SingleValuedPair.of( 670.33, 227.00 ) ) );
         listOfPairs.add( Event.of( basisTimeThree,
                                    Instant.parse( "2551-03-19T12:00:00Z" ),
@@ -414,15 +515,15 @@ public final class MetricTestDataFactory
                                    SingleValuedPair.of( 756.33, 241.00 ) ) );
 
         // Add third time-series
-        Instant basisTimeFour = Instant.parse( "2551-03-19T00:00:00Z" );
+        Instant basisTimeFour = Instant.parse( ELEVENTH_TIME );
         listOfPairs.add( Event.of( basisTimeFour,
-                                   Instant.parse( "2551-03-19T03:00:00Z" ),
+                                   Instant.parse( TWELFTH_TIME ),
                                    SingleValuedPair.of( 638.33, 251.00 ) ) );
         listOfPairs.add( Event.of( basisTimeFour,
-                                   Instant.parse( "2551-03-19T06:00:00Z" ),
+                                   Instant.parse( THIRTEENTH_TIME ),
                                    SingleValuedPair.of( 653.00, 257.00 ) ) );
         listOfPairs.add( Event.of( basisTimeFour,
-                                   Instant.parse( "2551-03-19T09:00:00Z" ),
+                                   Instant.parse( FOURTEENTH_TIME ),
                                    SingleValuedPair.of( 670.33, 263.00 ) ) );
         listOfPairs.add( Event.of( basisTimeFour,
                                    Instant.parse( "2551-03-19T12:00:00Z" ),
@@ -494,17 +595,17 @@ public final class MetricTestDataFactory
             }
         }
 
-        final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                 Instant.parse( "2010-12-31T11:59:59Z" ),
+        final TimeWindow window = TimeWindow.of( Instant.parse( FIRST_TIME ),
+                                                 Instant.parse( SECOND_TIME ),
                                                  Duration.ofHours( 24 ) );
         final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                               .setIdentifier( DatasetIdentifier.of( getLocation( "DRRC2" ),
+                                                               .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
                                                                                                      "SQIN",
                                                                                                      "HEFS" ) )
                                                                .setTimeWindow( window )
                                                                .build();
         final SampleMetadata baseMeta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                                   .setIdentifier( DatasetIdentifier.of( getLocation( "DRRC2" ),
+                                                                   .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
                                                                                                          "SQIN",
                                                                                                          "ESP" ) )
                                                                    .setTimeWindow( window )
@@ -550,18 +651,18 @@ public final class MetricTestDataFactory
         values.add( EnsemblePair.of( Double.NaN,
                                      new double[] { Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN } ) );
 
-        final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                 Instant.parse( "2010-12-31T11:59:59Z" ),
+        final TimeWindow window = TimeWindow.of( Instant.parse( FIRST_TIME ),
+                                                 Instant.parse( SECOND_TIME ),
                                                  Duration.ofHours( 24 ) );
         final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                               .setIdentifier( DatasetIdentifier.of( getLocation( "DRRC2" ),
+                                                               .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
                                                                                                      "SQIN",
                                                                                                      "HEFS" ) )
                                                                .setTimeWindow( window )
                                                                .build();
 
         final SampleMetadata baseMeta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                                   .setIdentifier( DatasetIdentifier.of( getLocation( "DRRC2" ),
+                                                                   .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
                                                                                                          "SQIN",
                                                                                                          "ESP" ) )
                                                                    .setTimeWindow( window )
@@ -603,11 +704,11 @@ public final class MetricTestDataFactory
             }
         }
 
-        final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                 Instant.parse( "2010-12-31T11:59:59Z" ),
+        final TimeWindow window = TimeWindow.of( Instant.parse( FIRST_TIME ),
+                                                 Instant.parse( SECOND_TIME ),
                                                  Duration.ofHours( 24 ) );
         final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                               .setIdentifier( DatasetIdentifier.of( getLocation( "DRRC2" ),
+                                                               .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
                                                                                                      "SQIN",
                                                                                                      "HEFS" ) )
                                                                .setTimeWindow( window )
@@ -630,11 +731,11 @@ public final class MetricTestDataFactory
         final List<EnsemblePair> values = new ArrayList<>();
         values.add( EnsemblePair.of( 22.9, new double[] { 22.8, 23.9 } ) );
 
-        final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                 Instant.parse( "2010-12-31T11:59:59Z" ),
+        final TimeWindow window = TimeWindow.of( Instant.parse( FIRST_TIME ),
+                                                 Instant.parse( SECOND_TIME ),
                                                  Duration.ofHours( 24 ) );
-        final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "MM/DAY" ) )
-                                                               .setIdentifier( DatasetIdentifier.of( getLocation( "DRRC2" ),
+        final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
+                                                               .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
                                                                                                      "MAP" ) )
                                                                .setTimeWindow( window )
                                                                .build();
@@ -650,11 +751,11 @@ public final class MetricTestDataFactory
     public static EnsemblePairs getEnsemblePairsFour()
     {
         //Construct some ensemble pairs
-        final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                 Instant.parse( "2010-12-31T11:59:59Z" ),
+        final TimeWindow window = TimeWindow.of( Instant.parse( FIRST_TIME ),
+                                                 Instant.parse( SECOND_TIME ),
                                                  Duration.ofHours( 24 ) );
-        final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "MM/DAY" ) )
-                                                               .setIdentifier( DatasetIdentifier.of( getLocation( "DRRC2" ),
+        final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
+                                                               .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
                                                                                                      "MAP" ) )
                                                                .setTimeWindow( window )
                                                                .build();
@@ -694,7 +795,7 @@ public final class MetricTestDataFactory
         }
 
         final SampleMetadata meta = SampleMetadata.of( MeasurementUnit.of(),
-                                                       DatasetIdentifier.of( getLocation( "DRRC2" ),
+                                                       DatasetIdentifier.of( getLocation( DRRC2 ),
                                                                              "SQIN",
                                                                              "HEFS" ) );
         return DichotomousPairs.ofDichotomousPairs( values, meta ); //Construct the pairs
@@ -767,7 +868,7 @@ public final class MetricTestDataFactory
         }
 
         final SampleMetadata meta = SampleMetadata.of( MeasurementUnit.of(),
-                                                       DatasetIdentifier.of( getLocation( "DRRC2" ),
+                                                       DatasetIdentifier.of( getLocation( DRRC2 ),
                                                                              "SQIN",
                                                                              "HEFS" ) );
         return MulticategoryPairs.ofMulticategoryPairs( values, meta ); //Construct the pairs
@@ -791,7 +892,7 @@ public final class MetricTestDataFactory
         values.add( DiscreteProbabilityPair.of( 1, 1.0 / 5.0 ) );
 
         final SampleMetadata meta = SampleMetadata.of( MeasurementUnit.of(),
-                                                       DatasetIdentifier.of( getLocation( "DRRC2" ),
+                                                       DatasetIdentifier.of( getLocation( DRRC2 ),
                                                                              "SQIN",
                                                                              "HEFS" ) );
         return DiscreteProbabilityPairs.of( values, meta );
@@ -821,11 +922,11 @@ public final class MetricTestDataFactory
         baseline.add( DiscreteProbabilityPair.of( 0, 4.0 / 5.0 ) );
         baseline.add( DiscreteProbabilityPair.of( 1, 1.0 / 5.0 ) );
         final SampleMetadata main = SampleMetadata.of( MeasurementUnit.of(),
-                                                       DatasetIdentifier.of( getLocation( "DRRC2" ),
+                                                       DatasetIdentifier.of( getLocation( DRRC2 ),
                                                                              "SQIN",
                                                                              "HEFS" ) );
         final SampleMetadata base = SampleMetadata.of( MeasurementUnit.of(),
-                                                       DatasetIdentifier.of( getLocation( "DRRC2" ),
+                                                       DatasetIdentifier.of( getLocation( DRRC2 ),
                                                                              "SQIN",
                                                                              "ESP" ) );
         return DiscreteProbabilityPairs.of( values, baseline, main, base );
@@ -1219,7 +1320,7 @@ public final class MetricTestDataFactory
         values.add( DiscreteProbabilityPair.of( 0, 1.0 / 5.0 ) );
 
         final SampleMetadata meta = SampleMetadata.of( MeasurementUnit.of(),
-                                                       DatasetIdentifier.of( getLocation( "DRRC2" ),
+                                                       DatasetIdentifier.of( getLocation( DRRC2 ),
                                                                              "SQIN",
                                                                              "HEFS" ) );
         return DiscreteProbabilityPairs.of( values, meta );
@@ -1237,7 +1338,7 @@ public final class MetricTestDataFactory
         TimeSeriesOfSingleValuedPairsBuilder builder =
                 new TimeSeriesOfSingleValuedPairsBuilder();
         // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
-        Instant firstId = Instant.parse( "1985-01-01T00:00:00Z" );
+        Instant firstId = Instant.parse( FIRST_TIME );
         List<Event<SingleValuedPair>> firstValues = new ArrayList<>();
         // Add some values
         firstValues.add( Event.of( firstId, Instant.parse( "1985-01-01T06:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
@@ -1245,21 +1346,21 @@ public final class MetricTestDataFactory
         firstValues.add( Event.of( firstId, Instant.parse( "1985-01-01T18:00:00Z" ), SingleValuedPair.of( 5, 1 ) ) );
 
         // Add another time-series
-        Instant secondId = Instant.parse( "1985-01-02T00:00:00Z" );
+        Instant secondId = Instant.parse( THIRD_TIME );
         List<Event<SingleValuedPair>> secondValues = new ArrayList<>();
         // Add some values
-        secondValues.add( Event.of( secondId, Instant.parse( "1985-01-02T06:00:00Z" ), SingleValuedPair.of( 10, 1 ) ) );
-        secondValues.add( Event.of( secondId, Instant.parse( "1985-01-02T12:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
-        secondValues.add( Event.of( secondId, Instant.parse( "1985-01-02T18:00:00Z" ), SingleValuedPair.of( 1, 10 ) ) );
+        secondValues.add( Event.of( secondId, Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 10, 1 ) ) );
+        secondValues.add( Event.of( secondId, Instant.parse( FIFTH_TIME ), SingleValuedPair.of( 1, 1 ) ) );
+        secondValues.add( Event.of( secondId, Instant.parse( SIXTH_TIME ), SingleValuedPair.of( 1, 10 ) ) );
 
         // Create some default metadata for the time-series
-        final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                 Instant.parse( "1985-01-02T00:00:00Z" ),
+        final TimeWindow window = TimeWindow.of( Instant.parse( FIRST_TIME ),
+                                                 Instant.parse( THIRD_TIME ),
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 18 ) );
         final SampleMetadata metaData = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
                                                                    .setIdentifier( DatasetIdentifier.of( getLocation( "A" ),
-                                                                                                         "Streamflow" ) )
+                                                                                                         STREAMFLOW ) )
                                                                    .setTimeWindow( window )
                                                                    .build();
         // Build the time-series
@@ -1281,7 +1382,7 @@ public final class MetricTestDataFactory
         TimeSeriesOfSingleValuedPairsBuilder builder =
                 new TimeSeriesOfSingleValuedPairsBuilder();
         // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
-        Instant firstId = Instant.parse( "1985-01-01T00:00:00Z" );
+        Instant firstId = Instant.parse( FIRST_TIME );
         List<Event<SingleValuedPair>> firstValues = new ArrayList<>();
         // Add some values
         firstValues.add( Event.of( firstId, Instant.parse( "1985-01-01T06:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
@@ -1289,13 +1390,13 @@ public final class MetricTestDataFactory
         firstValues.add( Event.of( firstId, Instant.parse( "1985-01-01T18:00:00Z" ), SingleValuedPair.of( 5, 1 ) ) );
 
         // Create some default metadata for the time-series
-        final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                 Instant.parse( "1985-01-01T00:00:00Z" ),
+        final TimeWindow window = TimeWindow.of( Instant.parse( FIRST_TIME ),
+                                                 Instant.parse( FIRST_TIME ),
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 18 ) );
         final SampleMetadata metaData = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
                                                                    .setIdentifier( DatasetIdentifier.of( getLocation( "A" ),
-                                                                                                         "Streamflow" ) )
+                                                                                                         STREAMFLOW ) )
                                                                    .setTimeWindow( window )
                                                                    .build();
         // Build the time-series
@@ -1318,21 +1419,21 @@ public final class MetricTestDataFactory
         // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
 
         // Add another time-series
-        Instant secondId = Instant.parse( "1985-01-02T00:00:00Z" );
+        Instant secondId = Instant.parse( THIRD_TIME );
         List<Event<SingleValuedPair>> secondValues = new ArrayList<>();
         // Add some values
-        secondValues.add( Event.of( secondId, Instant.parse( "1985-01-02T06:00:00Z" ), SingleValuedPair.of( 10, 1 ) ) );
-        secondValues.add( Event.of( secondId, Instant.parse( "1985-01-02T12:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
-        secondValues.add( Event.of( secondId, Instant.parse( "1985-01-02T18:00:00Z" ), SingleValuedPair.of( 1, 10 ) ) );
+        secondValues.add( Event.of( secondId, Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 10, 1 ) ) );
+        secondValues.add( Event.of( secondId, Instant.parse( FIFTH_TIME ), SingleValuedPair.of( 1, 1 ) ) );
+        secondValues.add( Event.of( secondId, Instant.parse( SIXTH_TIME ), SingleValuedPair.of( 1, 10 ) ) );
 
         // Create some default metadata for the time-series
-        final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-02T00:00:00Z" ),
-                                                 Instant.parse( "1985-01-02T00:00:00Z" ),
+        final TimeWindow window = TimeWindow.of( Instant.parse( THIRD_TIME ),
+                                                 Instant.parse( THIRD_TIME ),
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 18 ) );
         final SampleMetadata metaData = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
                                                                    .setIdentifier( DatasetIdentifier.of( getLocation( "A" ),
-                                                                                                         "Streamflow" ) )
+                                                                                                         STREAMFLOW ) )
                                                                    .setTimeWindow( window )
                                                                    .build();
         // Build the time-series
@@ -1359,7 +1460,7 @@ public final class MetricTestDataFactory
                                                  Instant.MAX );
         final SampleMetadata metaData = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
                                                                    .setIdentifier( DatasetIdentifier.of( getLocation( "A" ),
-                                                                                                         "Streamflow" ) )
+                                                                                                         STREAMFLOW ) )
                                                                    .setTimeWindow( window )
                                                                    .build();
         // Build the time-series
@@ -1382,26 +1483,26 @@ public final class MetricTestDataFactory
         // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
 
         // Add another time-series
-        Instant secondId = Instant.parse( "1985-01-02T00:00:00Z" );
+        Instant secondId = Instant.parse( THIRD_TIME );
         List<Event<SingleValuedPair>> secondValues = new ArrayList<>();
 
         // Add some values
-        secondValues.add( Event.of( secondId, Instant.parse( "1985-01-02T06:00:00Z" ), SingleValuedPair.of( 10, 1 ) ) );
-        secondValues.add( Event.of( secondId, Instant.parse( "1985-01-02T12:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
+        secondValues.add( Event.of( secondId, Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 10, 1 ) ) );
+        secondValues.add( Event.of( secondId, Instant.parse( FIFTH_TIME ), SingleValuedPair.of( 1, 1 ) ) );
         secondValues.add( Event.of( secondId,
-                                    Instant.parse( "1985-01-02T18:00:00Z" ),
+                                    Instant.parse( SIXTH_TIME ),
                                     SingleValuedPair.of( 10, 10 ) ) );
         secondValues.add( Event.of( secondId, Instant.parse( "1985-01-03T00:00:00Z" ), SingleValuedPair.of( 2, 10 ) ) );
         secondValues.add( Event.of( secondId, Instant.parse( "1985-01-03T06:00:00Z" ), SingleValuedPair.of( 4, 7 ) ) );
 
         // Create some default metadata for the time-series
-        final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-02T00:00:00Z" ),
-                                                 Instant.parse( "1985-01-02T00:00:00Z" ),
+        final TimeWindow window = TimeWindow.of( Instant.parse( THIRD_TIME ),
+                                                 Instant.parse( THIRD_TIME ),
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 30 ) );
         final SampleMetadata metaData = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
                                                                    .setIdentifier( DatasetIdentifier.of( getLocation( "A" ),
-                                                                                                         "Streamflow" ) )
+                                                                                                         STREAMFLOW ) )
                                                                    .setTimeWindow( window )
                                                                    .build();
         // Build the time-series

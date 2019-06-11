@@ -59,6 +59,12 @@ import wres.engine.statistics.metric.MetricTestDataFactory;
  */
 public final class MetricProcessorByTimeEnsemblePairsTest
 {
+    /**
+     * Test source.
+     */
+
+    private static final String TEST_SOURCE =
+            "testinput/metricProcessorEnsemblePairsByTimeTest/testApplyWithValueThresholds.xml";
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
@@ -174,7 +180,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
     public void testApplyWithValueThresholds()
             throws IOException, MetricParameterException, InterruptedException
     {
-        String configPath = "testinput/metricProcessorEnsemblePairsByTimeTest/testApplyWithValueThresholds.xml";
+        String configPath = TEST_SOURCE;
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<EnsemblePairs, StatisticsForProject> processor =
@@ -425,7 +431,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
     {
         exception.expect( MetricConfigException.class );
         exception.expectMessage( "Cannot configure 'BRIER SCORE' without thresholds to define the events: "
-                + "add one or more thresholds to the configuration." );
+                                 + "add one or more thresholds to the configuration." );
 
         MetricsConfig metrics =
                 new MetricsConfig( null,
@@ -632,7 +638,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
     public void testApplyWithValueThresholdsAndMissings()
             throws IOException, MetricParameterException, InterruptedException
     {
-        String configPath = "testinput/metricProcessorEnsemblePairsByTimeTest/testApplyWithValueThresholds.xml";
+        String configPath = TEST_SOURCE;
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<EnsemblePairs, StatisticsForProject> processor =
@@ -839,7 +845,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
     public void testApplyWithValueThresholdsAndNoData()
             throws IOException, MetricParameterException, InterruptedException
     {
-        String configPath = "testinput/metricProcessorEnsemblePairsByTimeTest/testApplyWithValueThresholds.xml";
+        String configPath = TEST_SOURCE;
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<EnsemblePairs, StatisticsForProject> processor =

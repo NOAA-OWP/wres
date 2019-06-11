@@ -78,6 +78,49 @@ import wres.engine.statistics.metric.MetricTestDataFactory;
 public final class MetricProcessorByTimeSingleValuedPairsTest
 {
 
+    /**
+     * Test source.
+     */
+
+    private static final String TEST_SOURCE =
+            "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyWithThresholds.xml";
+
+    /**
+     * Streamflow for metadata.
+     */
+
+    private static final String STREAMFLOW = "Streamflow";
+
+    /**
+     * Duration for metadata.
+     */
+
+    private static final String DURATION = "DURATION";
+
+    /**
+     * Location for metadata.
+     */
+
+    private static final String DRRC2 = "DRRC2";
+
+    /**
+     * A date for testing.
+     */
+
+    private static final String SECOND_DATE = "1985-01-02T00:00:00Z";
+
+    /**
+     * Another date for testing.
+     */
+
+    private static final String FIRST_DATE = "1985-01-01T00:00:00Z";
+
+    /**
+     * Test thresholds.
+     */
+
+    private static final String TEST_THRESHOLDS = "0.1,0.2,0.3";
+
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
@@ -125,22 +168,14 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                 Slicer.filter( results.getBoxPlotStatisticsPerPool(), MetricConstants.BOX_PLOT_OF_ERRORS );
 
         //Test contents
-        assertTrue( "Unexpected difference in " + MetricConstants.BIAS_FRACTION,
-                    bias.getData().get( 0 ).getData().equals( 1.6666666666666667 ) );
-        assertTrue( "Unexpected difference in " + MetricConstants.COEFFICIENT_OF_DETERMINATION,
-                    cod.getData().get( 0 ).getData().equals( 1.0 ) );
-        assertTrue( "Unexpected difference in " + MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
-                    rho.getData().get( 0 ).getData().equals( 1.0 ) );
-        assertTrue( "Unexpected difference in " + MetricConstants.MEAN_ABSOLUTE_ERROR,
-                    mae.getData().get( 0 ).getData().equals( 5.0 ) );
-        assertTrue( "Unexpected difference in " + MetricConstants.MEAN_ERROR,
-                    me.getData().get( 0 ).getData().equals( 5.0 ) );
-        assertTrue( "Unexpected difference in " + MetricConstants.ROOT_MEAN_SQUARE_ERROR,
-                    rmse.getData().get( 0 ).getData().equals( 5.0 ) );
-        assertTrue( "Unexpected difference in " + MetricConstants.VOLUMETRIC_EFFICIENCY,
-                    ve.getData().get( 0 ).getData().equals( -0.6666666666666666 ) );
-        assertTrue( "Unexpected difference in " + MetricConstants.BOX_PLOT_OF_ERRORS,
-                    bpe.getData().get( 0 ).getData().get( 0 ).getData().equals( VectorOfDoubles.of( 5, 5, 5, 5, 5 ) ) );
+        assertEquals( Double.valueOf( 1.6666666666666667 ), bias.getData().get( 0 ).getData() );
+        assertEquals( Double.valueOf( 1.0 ), cod.getData().get( 0 ).getData() );
+        assertEquals( Double.valueOf( 1.0 ), rho.getData().get( 0 ).getData() );
+        assertEquals( Double.valueOf( 5.0 ), mae.getData().get( 0 ).getData() );
+        assertEquals( Double.valueOf( 5.0 ), me.getData().get( 0 ).getData() );
+        assertEquals( Double.valueOf( 5.0 ), rmse.getData().get( 0 ).getData() );
+        assertEquals( Double.valueOf( -0.6666666666666666 ), ve.getData().get( 0 ).getData() );
+        assertEquals( VectorOfDoubles.of( 5, 5, 5, 5, 5 ), bpe.getData().get( 0 ).getData().get( 0 ).getData() );
     }
 
     /**
@@ -159,7 +194,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
     @Test
     public void testApplyWithThresholds() throws IOException, MetricParameterException, InterruptedException
     {
-        String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyWithThresholds.xml";
+        String configPath = TEST_SOURCE;
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<SingleValuedPairs, StatisticsForProject> processor =
@@ -173,7 +208,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                      Instant.MAX,
                                                      Duration.ofHours( i ) );
             final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                                   .setIdentifier( DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                   .setIdentifier( DatasetIdentifier.of( Location.of( DRRC2 ),
                                                                                                          "SQIN",
                                                                                                          "HEFS" ) )
                                                                    .setTimeWindow( window )
@@ -204,7 +239,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         StatisticMetadata expectedMeta =
                 StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                         DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                         DatasetIdentifier.of( Location.of( DRRC2 ),
                                                                                "SQIN",
                                                                                "HEFS" ),
                                                          expectedWindow,
@@ -253,9 +288,12 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                         StatisticGroup.set() );
 
         //Check for the expected number of metrics
-        assertTrue( "Unexpected number of metrics.",
-                    processor.metrics.size() == SampleDataGroup.SINGLE_VALUED.getMetrics().size()
-                                                + SampleDataGroup.DICHOTOMOUS.getMetrics().size() );
+        int actual = SampleDataGroup.SINGLE_VALUED.getMetrics().size()
+                     + SampleDataGroup.DICHOTOMOUS.getMetrics().size();
+        int expected =
+                processor.metrics.size();
+
+        assertEquals( expected, actual );
     }
 
     /**
@@ -305,15 +343,15 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         //Build the expected output
         List<Pair<Instant, Duration>> expectedFirst = new ArrayList<>();
         List<Pair<Instant, Duration>> expectedSecond = new ArrayList<>();
-        expectedFirst.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( -6 ) ) );
-        expectedSecond.add( Pair.of( Instant.parse( "1985-01-02T00:00:00Z" ), Duration.ofHours( 12 ) ) );
+        expectedFirst.add( Pair.of( Instant.parse( FIRST_DATE ), Duration.ofHours( -6 ) ) );
+        expectedSecond.add( Pair.of( Instant.parse( SECOND_DATE ), Duration.ofHours( 12 ) ) );
         // Metadata for the output
-        TimeWindow firstWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                Instant.parse( "1985-01-01T00:00:00Z" ),
+        TimeWindow firstWindow = TimeWindow.of( Instant.parse( FIRST_DATE ),
+                                                Instant.parse( FIRST_DATE ),
                                                 Duration.ofHours( 6 ),
                                                 Duration.ofHours( 18 ) );
-        TimeWindow secondWindow = TimeWindow.of( Instant.parse( "1985-01-02T00:00:00Z" ),
-                                                 Instant.parse( "1985-01-02T00:00:00Z" ),
+        TimeWindow secondWindow = TimeWindow.of( Instant.parse( SECOND_DATE ),
+                                                 Instant.parse( SECOND_DATE ),
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 18 ) );
 
@@ -324,21 +362,21 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                                         DatasetIdentifier.of( Location.of( "A" ),
-                                                                                              "Streamflow" ),
+                                                                                              STREAMFLOW ),
                                                                         firstWindow,
                                                                         thresholds ),
                                                      1,
-                                                     MeasurementUnit.of( "DURATION" ),
+                                                     MeasurementUnit.of( DURATION ),
                                                      MetricConstants.TIME_TO_PEAK_ERROR,
                                                      MetricConstants.MAIN );
 
         StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                                         DatasetIdentifier.of( Location.of( "A" ),
-                                                                                              "Streamflow" ),
+                                                                                              STREAMFLOW ),
                                                                         secondWindow,
                                                                         thresholds ),
                                                      1,
-                                                     MeasurementUnit.of( "DURATION" ),
+                                                     MeasurementUnit.of( DURATION ),
                                                      MetricConstants.TIME_TO_PEAK_ERROR,
                                                      MetricConstants.MAIN );
 
@@ -347,7 +385,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         inList.add( PairedStatistic.of( expectedSecond, m2 ) );
         ListOfStatistics<PairedStatistic<Instant, Duration>> expected = ListOfStatistics.of( inList );
 
-        assertTrue( "Actual output differs from expected output for time-series metrics. ", actual.equals( expected ) );
+        assertEquals( expected, actual );
     }
 
     /**
@@ -404,16 +442,16 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         //Build the expected output
         List<Pair<Instant, Duration>> expectedFirst = new ArrayList<>();
         List<Pair<Instant, Duration>> expectedSecond = new ArrayList<>();
-        expectedFirst.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( -6 ) ) );
-        expectedSecond.add( Pair.of( Instant.parse( "1985-01-02T00:00:00Z" ), Duration.ofHours( 12 ) ) );
+        expectedFirst.add( Pair.of( Instant.parse( FIRST_DATE ), Duration.ofHours( -6 ) ) );
+        expectedSecond.add( Pair.of( Instant.parse( SECOND_DATE ), Duration.ofHours( 12 ) ) );
 
         // Metadata for the output
-        TimeWindow firstWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                Instant.parse( "1985-01-01T00:00:00Z" ),
+        TimeWindow firstWindow = TimeWindow.of( Instant.parse( FIRST_DATE ),
+                                                Instant.parse( FIRST_DATE ),
                                                 Duration.ofHours( 6 ),
                                                 Duration.ofHours( 18 ) );
-        TimeWindow secondWindow = TimeWindow.of( Instant.parse( "1985-01-02T00:00:00Z" ),
-                                                 Instant.parse( "1985-01-02T00:00:00Z" ),
+        TimeWindow secondWindow = TimeWindow.of( Instant.parse( SECOND_DATE ),
+                                                 Instant.parse( SECOND_DATE ),
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 18 ) );
 
@@ -427,7 +465,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         SampleMetadata source = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                    DatasetIdentifier.of( Location.of( "A" ),
-                                                                         "Streamflow" ) );
+                                                                         STREAMFLOW ) );
 
         List<PairedStatistic<Instant, Duration>> inList = new ArrayList<>();
 
@@ -436,7 +474,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                                  firstWindow,
                                                                                  firstThreshold ),
                                                               1,
-                                                              MeasurementUnit.of( "DURATION" ),
+                                                              MeasurementUnit.of( DURATION ),
                                                               MetricConstants.TIME_TO_PEAK_ERROR,
                                                               MetricConstants.MAIN ) ) );
 
@@ -445,7 +483,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                                  firstWindow,
                                                                                  secondThreshold ),
                                                               0,
-                                                              MeasurementUnit.of( "DURATION" ),
+                                                              MeasurementUnit.of( DURATION ),
                                                               MetricConstants.TIME_TO_PEAK_ERROR,
                                                               MetricConstants.MAIN ) ) );
 
@@ -454,7 +492,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                                  secondWindow,
                                                                                  firstThreshold ),
                                                               1,
-                                                              MeasurementUnit.of( "DURATION" ),
+                                                              MeasurementUnit.of( DURATION ),
                                                               MetricConstants.TIME_TO_PEAK_ERROR,
                                                               MetricConstants.MAIN ) ) );
 
@@ -463,14 +501,13 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                                  secondWindow,
                                                                                  secondThreshold ),
                                                               1,
-                                                              MeasurementUnit.of( "DURATION" ),
+                                                              MeasurementUnit.of( DURATION ),
                                                               MetricConstants.TIME_TO_PEAK_ERROR,
                                                               MetricConstants.MAIN ) ) );
 
         ListOfStatistics<PairedStatistic<Instant, Duration>> expected = ListOfStatistics.of( inList );
 
-        assertTrue( "Actual output differs from expected output for time-series metrics. ",
-                    actual.equals( expected ) );
+        assertEquals( expected, actual );
     }
 
     /**
@@ -521,8 +558,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         expectedSource.put( MetricConstants.MEAN_ABSOLUTE, Duration.ofHours( 9 ) );
 
         //Metadata
-        TimeWindow combinedWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                   Instant.parse( "1985-01-02T00:00:00Z" ),
+        TimeWindow combinedWindow = TimeWindow.of( Instant.parse( FIRST_DATE ),
+                                                   Instant.parse( SECOND_DATE ),
                                                    Duration.ofHours( 6 ),
                                                    Duration.ofHours( 18 ) );
         final TimeWindow timeWindow = combinedWindow;
@@ -534,11 +571,11 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         StatisticMetadata scoreMeta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                                                DatasetIdentifier.of( Location.of( "A" ),
-                                                                                                     "Streamflow" ),
+                                                                                                     STREAMFLOW ),
                                                                                timeWindow,
                                                                                thresholds ),
                                                             2,
-                                                            MeasurementUnit.of( "DURATION" ),
+                                                            MeasurementUnit.of( DURATION ),
                                                             MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
                                                             null );
 
@@ -548,8 +585,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         ListOfStatistics<DurationScoreStatistic> expectedScores = ListOfStatistics.of( scoreInList );
 
-        assertTrue( "Actual output differs from expected output for time-series metrics. ",
-                    actualScores.equals( expectedScores ) );
+        assertEquals( expectedScores, actualScores );
     }
 
     /**
@@ -569,7 +605,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
     public void testApplyWithThresholdsFromSource()
             throws IOException, MetricParameterException, InterruptedException
     {
-        String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyWithThresholds.xml";
+        String configPath = TEST_SOURCE;
 
         // Define the external thresholds to use
         Map<MetricConstants, Set<Threshold>> canonical = new EnumMap<>( MetricConstants.class );
@@ -611,7 +647,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                      Instant.MAX,
                                                      Duration.ofHours( i ) );
             final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                                   .setIdentifier( DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                   .setIdentifier( DatasetIdentifier.of( Location.of( DRRC2 ),
                                                                                                          "SQIN",
                                                                                                          "HEFS" ) )
                                                                    .setTimeWindow( window )
@@ -640,7 +676,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                                           ThresholdDataType.LEFT ) );
 
         StatisticMetadata expectedMeta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                                  DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                                  DatasetIdentifier.of( Location.of( DRRC2 ),
                                                                                                         "SQIN",
                                                                                                         "HEFS" ),
                                                                                   expectedWindow,
@@ -687,7 +723,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
     @Test
     public void testApplyWithThresholdsAndNoData() throws IOException, MetricParameterException, InterruptedException
     {
-        String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyWithThresholds.xml";
+        String configPath = TEST_SOURCE;
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<SingleValuedPairs, StatisticsForProject> processor =
@@ -701,7 +737,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                      Instant.MAX,
                                                      Duration.ofHours( i ) );
             final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                                   .setIdentifier( DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                   .setIdentifier( DatasetIdentifier.of( Location.of( DRRC2 ),
                                                                                                          "SQIN",
                                                                                                          "HEFS" ) )
                                                                    .setTimeWindow( window )
@@ -731,7 +767,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                                           MeasurementUnit.of( "CMS" ) ) );
 
         StatisticMetadata expectedMeta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                                  DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                                  DatasetIdentifier.of( Location.of( DRRC2 ),
                                                                                                         "SQIN",
                                                                                                         "HEFS" ),
                                                                                   expectedWindow,
@@ -818,11 +854,11 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         StatisticMetadata scoreMeta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                                                DatasetIdentifier.of( Location.of( "A" ),
-                                                                                                     "Streamflow" ),
+                                                                                                     STREAMFLOW ),
                                                                                timeWindow,
                                                                                thresholds ),
                                                             0,
-                                                            MeasurementUnit.of( "DURATION" ),
+                                                            MeasurementUnit.of( DURATION ),
                                                             MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
                                                             null );
 
@@ -832,10 +868,9 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         ListOfStatistics<DurationScoreStatistic> expectedScores = ListOfStatistics.of( scoreInList );
 
-        assertTrue( "Actual output differs from expected output for time-series metrics. ",
-                    actualScores.equals( expectedScores ) );
+        assertEquals( expectedScores, actualScores );
     }
-    
+
     /**
      * Tests the construction of a {@link MetricProcessorByTimeSingleValuedPairs} and application of
      * {@link MetricProcessorByTimeSingleValuedPairs#apply(SingleValuedPairs)} to 
@@ -851,7 +886,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
     @Test
     public void testApplyWithMissingPairsForRemoval() throws IOException, MetricParameterException, InterruptedException
     {
-        String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyWithThresholds.xml";
+        String configPath = TEST_SOURCE;
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<SingleValuedPairs, StatisticsForProject> processor =
@@ -863,13 +898,13 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                  Instant.MAX,
                                                  Duration.ZERO );
         final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                               .setIdentifier( DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                               .setIdentifier( DatasetIdentifier.of( Location.of( DRRC2 ),
                                                                                                      "SQIN",
                                                                                                      "AHPS" ) )
                                                                .setTimeWindow( window )
                                                                .build();
         processor.apply( SingleValuedPairs.of( pairs.getRawData(), meta ) );
-        
+
         // Check the sample size
         Double size = Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
                                      sampleMeta -> sampleMeta.getMetricID() == MetricConstants.SAMPLE_SIZE
@@ -880,9 +915,9 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                             .getData()
                             .get( 0 )
                             .getData();
-                
+
         assertTrue( FunctionFactory.doubleEquals().test( 10.0, size ) );
-    }      
+    }
 
     /**
      * Tests that the {@link MetricProcessorByTimeSingleValuedPairs#apply(SingleValuedPairs)} throws an expected
@@ -918,7 +953,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
     {
         exception.expect( MetricConfigException.class );
         exception.expectMessage( "Cannot configure 'FREQUENCY BIAS' without thresholds to define the "
-                + "events: add one or more thresholds to the configuration." );
+                                 + "events: add one or more thresholds to the configuration." );
 
         MetricsConfig metrics =
                 new MetricsConfig( null,
@@ -958,7 +993,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         List<ThresholdsConfig> thresholds = new ArrayList<>();
         thresholds.add( new ThresholdsConfig( ThresholdType.PROBABILITY,
                                               wres.config.generated.ThresholdDataType.LEFT,
-                                              "0.1,0.2,0.3",
+                                              TEST_THRESHOLDS,
                                               ThresholdOperator.GREATER_THAN ) );
 
         // Check discrete probability metric
@@ -1033,7 +1068,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         List<ThresholdsConfig> thresholds = new ArrayList<>();
         thresholds.add( new ThresholdsConfig( ThresholdType.PROBABILITY,
                                               wres.config.generated.ThresholdDataType.LEFT,
-                                              "0.1,0.2,0.3",
+                                              TEST_THRESHOLDS,
                                               ThresholdOperator.GREATER_THAN ) );
 
         // Check discrete probability metric
@@ -1077,7 +1112,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         List<ThresholdsConfig> thresholds = new ArrayList<>();
         thresholds.add( new ThresholdsConfig( ThresholdType.PROBABILITY,
                                               wres.config.generated.ThresholdDataType.LEFT,
-                                              "0.1,0.2,0.3",
+                                              TEST_THRESHOLDS,
                                               ThresholdOperator.GREATER_THAN ) );
 
         // Check discrete probability metric

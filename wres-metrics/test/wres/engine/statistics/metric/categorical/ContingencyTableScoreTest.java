@@ -31,6 +31,13 @@ import wres.engine.statistics.metric.MetricTestDataFactory;
 public final class ContingencyTableScoreTest
 {
 
+    /**
+     * Expected warning.
+     */
+    
+    private static final String SPECIFY_NON_NULL_INPUT_TO_THE_THREAT_SCORE = 
+            "Specify non-null input to the 'THREAT SCORE'.";
+
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
@@ -191,7 +198,7 @@ public final class ContingencyTableScoreTest
     public void testExceptionOnNullInput()
     {
         exception.expect( SampleDataException.class );
-        exception.expectMessage( "Specify non-null input to the 'THREAT SCORE'." );
+        exception.expectMessage( SPECIFY_NON_NULL_INPUT_TO_THE_THREAT_SCORE );
 
         cs.apply( (DichotomousPairs) null );
     }
@@ -204,7 +211,7 @@ public final class ContingencyTableScoreTest
     public void testExceptionOnNullInputInternal()
     {
         exception.expect( SampleDataException.class );
-        exception.expectMessage( "Specify non-null input to the 'THREAT SCORE'." );
+        exception.expectMessage( SPECIFY_NON_NULL_INPUT_TO_THE_THREAT_SCORE );
 
         cs.is2x2ContingencyTable( (MatrixStatistic) null, cs );
     }
@@ -218,7 +225,7 @@ public final class ContingencyTableScoreTest
     public void testExceptionOnNullInputInternalForLargeTable()
     {
         exception.expect( SampleDataException.class );
-        exception.expectMessage( "Specify non-null input to the 'THREAT SCORE'." );
+        exception.expectMessage( SPECIFY_NON_NULL_INPUT_TO_THE_THREAT_SCORE );
 
         cs.isContingencyTable( (MatrixStatistic) null, cs );
     }
@@ -277,7 +284,7 @@ public final class ContingencyTableScoreTest
     public void testExceptionOnNullMetric()
     {
         exception.expect( SampleDataException.class );
-        exception.expectMessage( "Specify non-null input to the 'THREAT SCORE'." );
+        exception.expectMessage( SPECIFY_NON_NULL_INPUT_TO_THE_THREAT_SCORE );
 
         cs.is2x2ContingencyTable( MatrixStatistic.of( new double[][] { { 1.0 } }, meta ), null );
     }
@@ -290,7 +297,7 @@ public final class ContingencyTableScoreTest
     public void testExceptionOnNullMetricForLargeTable()
     {
         exception.expect( SampleDataException.class );
-        exception.expectMessage( "Specify non-null input to the 'THREAT SCORE'." );
+        exception.expectMessage( SPECIFY_NON_NULL_INPUT_TO_THE_THREAT_SCORE );
 
         cs.isContingencyTable( MatrixStatistic.of( new double[][] { { 1.0, 1.0 }, { 1.0, 1.0 } }, meta ),
                                null );
