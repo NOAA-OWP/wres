@@ -30,6 +30,43 @@ import wres.datamodel.time.BasicTimeSeries.BasicTimeSeriesBuilder;
 public final class BasicTimeSeriesTest
 {
 
+    /**
+     * Expected exception.
+     */
+    
+    private static final String WHILE_ATTEMPTING_TO_MODIFY_AN_IMMUTABLE_TIME_SERIES = 
+            "While attempting to modify an immutable time-series.";
+
+    /**
+     * Fifth time for testing.
+     */
+    
+    private static final String FIFTH_TIME = "1985-01-05T00:00:00Z";
+
+    /**
+     * Fourth time for testing.
+     */
+    
+    private static final String FOURTH_TIME = "1985-01-04T00:00:00Z";
+
+    /**
+     * Third time for testing.
+     */
+    
+    private static final String THIRD_TIME = "1985-01-03T00:00:00Z";
+
+    /**
+     * Second time for testing.
+     */
+    
+    private static final String SECOND_TIME = "1985-01-02T00:00:00Z";
+
+    /**
+     * First time for testing.
+     */
+    
+    private static final String FIRST_TIME = "1985-01-01T00:00:00Z";
+
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
@@ -45,13 +82,13 @@ public final class BasicTimeSeriesTest
     {
         BasicTimeSeriesBuilder<Double> b = new BasicTimeSeriesBuilder<>();
         List<Event<Double>> first = new ArrayList<>();
-        Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        first.add( Event.of( firstBasisTime, Instant.parse( "1985-01-02T00:00:00Z" ), 1.0 ) );
-        first.add( Event.of( firstBasisTime, Instant.parse( "1985-01-03T00:00:00Z" ), 2.0 ) );
+        Instant firstBasisTime = Instant.parse( FIRST_TIME );
+        first.add( Event.of( firstBasisTime, Instant.parse( SECOND_TIME ), 1.0 ) );
+        first.add( Event.of( firstBasisTime, Instant.parse( THIRD_TIME ), 2.0 ) );
         List<Event<Double>> second = new ArrayList<>();
-        Instant secondBasisTime = Instant.parse( "1985-01-03T00:00:00Z" );
-        second.add( Event.of( secondBasisTime, Instant.parse( "1985-01-04T00:00:00Z" ), 3.0 ) );
-        second.add( Event.of( secondBasisTime, Instant.parse( "1985-01-05T00:00:00Z" ), 4.0 ) );
+        Instant secondBasisTime = Instant.parse( THIRD_TIME );
+        second.add( Event.of( secondBasisTime, Instant.parse( FOURTH_TIME ), 3.0 ) );
+        second.add( Event.of( secondBasisTime, Instant.parse( FIFTH_TIME ), 4.0 ) );
 
         defaultTimeSeries = (BasicTimeSeries<Double>) b.addTimeSeries( first )
                                                        .addTimeSeries( second )
@@ -71,17 +108,17 @@ public final class BasicTimeSeriesTest
 
         // Expected events
         List<Event<Double>> expected = new ArrayList<>();
-        expected.add( Event.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                Instant.parse( "1985-01-02T00:00:00Z" ),
+        expected.add( Event.of( Instant.parse( FIRST_TIME ),
+                                Instant.parse( SECOND_TIME ),
                                 1.0 ) );
-        expected.add( Event.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                Instant.parse( "1985-01-03T00:00:00Z" ),
+        expected.add( Event.of( Instant.parse( FIRST_TIME ),
+                                Instant.parse( THIRD_TIME ),
                                 2.0 ) );
-        expected.add( Event.of( Instant.parse( "1985-01-03T00:00:00Z" ),
-                                Instant.parse( "1985-01-04T00:00:00Z" ),
+        expected.add( Event.of( Instant.parse( THIRD_TIME ),
+                                Instant.parse( FOURTH_TIME ),
                                 3.0 ) );
-        expected.add( Event.of( Instant.parse( "1985-01-03T00:00:00Z" ),
-                                Instant.parse( "1985-01-05T00:00:00Z" ),
+        expected.add( Event.of( Instant.parse( THIRD_TIME ),
+                                Instant.parse( FIFTH_TIME ),
                                 4.0 ) );
 
         assertTrue( actual.equals( expected ) );
@@ -119,8 +156,8 @@ public final class BasicTimeSeriesTest
 
         // Expected durations
         List<Instant> expected = new ArrayList<>();
-        expected.add( Instant.parse( "1985-01-01T00:00:00Z" ) );
-        expected.add( Instant.parse( "1985-01-03T00:00:00Z" ) );
+        expected.add( Instant.parse( FIRST_TIME ) );
+        expected.add( Instant.parse( THIRD_TIME ) );
 
         assertTrue( actual.equals( expected ) );
     }
@@ -132,7 +169,7 @@ public final class BasicTimeSeriesTest
     @Test
     public void testGetEarliestBasisTime()
     {
-        assertTrue( Instant.parse( "1985-01-01T00:00:00Z" ).equals( defaultTimeSeries.getEarliestBasisTime() ) );
+        assertTrue( Instant.parse( FIRST_TIME ).equals( defaultTimeSeries.getEarliestBasisTime() ) );
     }
 
     /**
@@ -142,7 +179,7 @@ public final class BasicTimeSeriesTest
     @Test
     public void testGetLatestBasisTime()
     {
-        assertTrue( Instant.parse( "1985-01-03T00:00:00Z" ).equals( defaultTimeSeries.getLatestBasisTime() ) );
+        assertTrue( Instant.parse( THIRD_TIME ).equals( defaultTimeSeries.getLatestBasisTime() ) );
     }
 
     /**
@@ -181,8 +218,8 @@ public final class BasicTimeSeriesTest
         //Build a time-series with one basis time
         List<Event<SingleValuedPair>> first = new ArrayList<>();
         BasicTimeSeriesBuilder<SingleValuedPair> b = new BasicTimeSeriesBuilder<>();
-        Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        first.add( Event.of( firstBasisTime, Instant.parse( "1985-01-02T00:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
+        Instant firstBasisTime = Instant.parse( FIRST_TIME );
+        first.add( Event.of( firstBasisTime, Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
 
         TimeSeries<SingleValuedPair> ts = b.addTimeSeries( first ).build();
         Duration benchmark = Duration.ofDays( 1 );
@@ -192,9 +229,9 @@ public final class BasicTimeSeriesTest
                     ts.getRegularDuration().equals( benchmark ) );
 
         //Add more data and test again
-        first.add( Event.of( firstBasisTime, Instant.parse( "1985-01-03T00:00:00Z" ), SingleValuedPair.of( 2, 2 ) ) );
-        first.add( Event.of( firstBasisTime, Instant.parse( "1985-01-04T00:00:00Z" ), SingleValuedPair.of( 3, 3 ) ) );
-        first.add( Event.of( firstBasisTime, Instant.parse( "1985-01-05T00:00:00Z" ), SingleValuedPair.of( 4, 4 ) ) );
+        first.add( Event.of( firstBasisTime, Instant.parse( THIRD_TIME ), SingleValuedPair.of( 2, 2 ) ) );
+        first.add( Event.of( firstBasisTime, Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 3, 3 ) ) );
+        first.add( Event.of( firstBasisTime, Instant.parse( FIFTH_TIME ), SingleValuedPair.of( 4, 4 ) ) );
 
         BasicTimeSeriesBuilder<SingleValuedPair> c = new BasicTimeSeriesBuilder<>();
         TimeSeries<SingleValuedPair> tsSecond = c.addTimeSeries( first ).build();
@@ -222,8 +259,8 @@ public final class BasicTimeSeriesTest
         //Build a time-series with one basis time
         List<Event<SingleValuedPair>> values = new ArrayList<>();
         BasicTimeSeriesBuilder<SingleValuedPair> b = new BasicTimeSeriesBuilder<>();
-        Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        values.add( Event.of( basisTime, Instant.parse( "1985-01-02T00:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
+        Instant basisTime = Instant.parse( FIRST_TIME );
+        values.add( Event.of( basisTime, Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
 
         b.addTimeSeries( values );
 
@@ -231,9 +268,9 @@ public final class BasicTimeSeriesTest
         assertFalse( "Expected a time-series with one basis time.", b.build().hasMultipleTimeSeries() );
 
         //Add another time-series
-        Instant nextBasisTime = Instant.parse( "1985-01-02T00:00:00Z" );
+        Instant nextBasisTime = Instant.parse( SECOND_TIME );
         b.addTimeSeries( Arrays.asList( Event.of( nextBasisTime,
-                                                      Instant.parse( "1985-01-02T00:00:00Z" ),
+                                                      Instant.parse( SECOND_TIME ),
                                                       SingleValuedPair.of( 1, 1 ) ) ) );
 
         assertTrue( "Expected a time-series with multiple basis times.", b.build().hasMultipleTimeSeries() );
@@ -249,13 +286,13 @@ public final class BasicTimeSeriesTest
         //Build a time-series with two basis times
         List<Event<SingleValuedPair>> values = new ArrayList<>();
         BasicTimeSeriesBuilder<SingleValuedPair> b = new BasicTimeSeriesBuilder<>();
-        Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        values.add( Event.of( basisTime, Instant.parse( "1985-01-02T00:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
+        Instant basisTime = Instant.parse( FIRST_TIME );
+        values.add( Event.of( basisTime, Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
         b.addTimeSeries( values );
 
-        Instant nextBasisTime = Instant.parse( "1985-01-02T00:00:00Z" );
+        Instant nextBasisTime = Instant.parse( SECOND_TIME );
         b.addTimeSeries( Arrays.asList( Event.of( nextBasisTime,
-                                                      Instant.parse( "1985-01-02T00:00:00Z" ),
+                                                      Instant.parse( SECOND_TIME ),
                                                       SingleValuedPair.of( 1, 1 ) ) ) );
         TimeSeries<SingleValuedPair> pairs = b.build();
 
@@ -280,10 +317,10 @@ public final class BasicTimeSeriesTest
         //Build a time-series with two basis times
         List<Event<SingleValuedPair>> values = new ArrayList<>();
         BasicTimeSeriesBuilder<SingleValuedPair> b = new BasicTimeSeriesBuilder<>();
-        Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        values.add( Event.of( basisTime, Instant.parse( "1985-01-02T00:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
-        values.add( Event.of( basisTime, Instant.parse( "1985-01-03T00:00:00Z" ), SingleValuedPair.of( 2, 2 ) ) );
-        values.add( Event.of( basisTime, Instant.parse( "1985-01-04T00:00:00Z" ), SingleValuedPair.of( 3, 3 ) ) );
+        Instant basisTime = Instant.parse( FIRST_TIME );
+        values.add( Event.of( basisTime, Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
+        values.add( Event.of( basisTime, Instant.parse( THIRD_TIME ), SingleValuedPair.of( 2, 2 ) ) );
+        values.add( Event.of( basisTime, Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 3, 3 ) ) );
 
         b.addTimeSeries( values );
         //Check dataset count
@@ -308,7 +345,7 @@ public final class BasicTimeSeriesTest
         exception.expectMessage( "No more events to iterate." );
 
         Iterator<Event<Double>> noneSuchElement = defaultTimeSeries.timeIterator().iterator();
-        noneSuchElement.forEachRemaining( a -> a.equals( null ) );
+        noneSuchElement.forEachRemaining( Objects::isNull );
         noneSuchElement.next();
     }
 
@@ -323,7 +360,7 @@ public final class BasicTimeSeriesTest
         exception.expectMessage( "No more basis times to iterate." );
 
         Iterator<TimeSeries<Double>> noneSuchBasis = defaultTimeSeries.basisTimeIterator().iterator();
-        noneSuchBasis.forEachRemaining( a -> a.equals( null ) );
+        noneSuchBasis.forEachRemaining( Objects::isNull );
         noneSuchBasis.next();
     }
 
@@ -338,7 +375,7 @@ public final class BasicTimeSeriesTest
         exception.expectMessage( "No more durations to iterate." );
 
         Iterator<TimeSeries<Double>> noneSuchDuration = defaultTimeSeries.durationIterator().iterator();
-        noneSuchDuration.forEachRemaining( a -> a.equals( null ) );
+        noneSuchDuration.forEachRemaining( Objects::isNull );
         noneSuchDuration.next();
     }
 
@@ -351,7 +388,7 @@ public final class BasicTimeSeriesTest
     public void testTimeIteratorThrowsExceptionOnAttemptToMutate()
     {
         exception.expect( UnsupportedOperationException.class );
-        exception.expectMessage( "While attempting to modify an immutable time-series." );
+        exception.expectMessage( WHILE_ATTEMPTING_TO_MODIFY_AN_IMMUTABLE_TIME_SERIES );
 
         Iterator<Event<Double>> immutableTimeSeries = defaultTimeSeries.timeIterator().iterator();
         immutableTimeSeries.next();
@@ -367,7 +404,7 @@ public final class BasicTimeSeriesTest
     public void testDurationIteratorThrowsExceptionOnAttemptToMutate()
     {
         exception.expect( UnsupportedOperationException.class );
-        exception.expectMessage( "While attempting to modify an immutable time-series." );
+        exception.expectMessage( WHILE_ATTEMPTING_TO_MODIFY_AN_IMMUTABLE_TIME_SERIES );
 
         Iterator<TimeSeries<Double>> immutableTimeSeries = defaultTimeSeries.durationIterator().iterator();
         immutableTimeSeries.next();
@@ -383,7 +420,7 @@ public final class BasicTimeSeriesTest
     public void testBasisTimeIteratorThrowsExceptionOnAttemptToMutate()
     {
         exception.expect( UnsupportedOperationException.class );
-        exception.expectMessage( "While attempting to modify an immutable time-series." );
+        exception.expectMessage( WHILE_ATTEMPTING_TO_MODIFY_AN_IMMUTABLE_TIME_SERIES );
 
         Iterator<TimeSeries<Double>> immutableTimeSeries = defaultTimeSeries.basisTimeIterator().iterator();
         immutableTimeSeries.next();
@@ -401,7 +438,7 @@ public final class BasicTimeSeriesTest
         exception.expectMessage( "One or more time-series has null values." );
 
         List<Event<Double>> withNulls = new ArrayList<>();
-        withNulls.add( Event.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+        withNulls.add( Event.of( Instant.parse( FIRST_TIME ),
                                  Instant.parse( "1985-01-01T01:00:00Z" ),
                                  1.0 ) );
         withNulls.add( null );
