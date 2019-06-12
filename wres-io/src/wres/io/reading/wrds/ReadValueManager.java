@@ -184,6 +184,7 @@ public class ReadValueManager
 
         boolean foundAlready;
         boolean completed;
+        boolean dataSaved = false;
         SourceDetails source;
         SourceCompletedDetails completedDetails;
 
@@ -222,7 +223,8 @@ public class ReadValueManager
                 for ( Forecast forecast : response.getForecasts() )
                 {
                     LOGGER.debug( "Parsing {}", forecast );
-                    this.read( forecast, source.getId() );
+                    boolean saved = this.read( forecast, source.getId() );
+                    dataSaved = dataSaved || saved;
                 }
             }
             catch ( JsonMappingException jme )
@@ -242,7 +244,31 @@ public class ReadValueManager
 
             SourceCompleter completer = createSourceCompleter( source.getId(),
                                                                this.lockManager );
-            completer.complete( this.latches );
+
+            // See #64922, there are two special cases where "read()" will
+            // return before any data is saved. Tolerate that situation.
+            if ( dataSaved )
+            {
+                completer.complete( this.latches );
+            }
+            else if ( this.latches.isEmpty() )
+            {
+                Pair<CountDownLatch,CountDownLatch> fakeLatches
+                        = Pair.of( new CountDownLatch( 0 ),
+                                   new CountDownLatch( 0 ) );
+                // Satisfy the completer when there is no data saved by passing
+                // fake latches.
+                Set<Pair<CountDownLatch,CountDownLatch>> fakeSet
+                        = Set.of( fakeLatches );
+                completer.complete( fakeSet );
+            }
+            else
+            {
+                throw new IllegalStateException( "When no data was saved, no "
+                                                 + "coordinating latches should"
+                                                 + " exist." );
+            }
+
             completed = true;
         }
         else
@@ -273,7 +299,14 @@ public class ReadValueManager
         );
     }
 
-    private void read( Forecast forecast, int sourceId ) throws IngestException
+    /**
+     *
+     * @param forecast
+     * @param sourceId
+     * @return true when data was saved, false otherwise.
+     * @throws IngestException
+     */
+    private boolean read( Forecast forecast, int sourceId ) throws IngestException
     {
         URI location = this.getLocation();
         List<DataPoint> dataPointsList;
@@ -288,14 +321,14 @@ public class ReadValueManager
         {
             LOGGER.warn( "The forecast '{}' from '{}' did not have data to save.",
                          forecast, location );
-            return;
+            return false;
         }
 
         if ( dataPointsList.size() < 2 )
         {
             LOGGER.warn( "Fewer than two values present in the first forecast '{}' from '{}'.",
                          forecast, location );
-            return;
+            return false;
         }
 
         Duration timeDuration = Duration.between( dataPointsList.get( 0 ).getTime(),
@@ -347,6 +380,7 @@ public class ReadValueManager
                                            se );
             }
         }
+        return true;
     }
 
 
