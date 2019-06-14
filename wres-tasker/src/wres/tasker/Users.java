@@ -27,7 +27,7 @@ class Users
      */
     static String getDatabaseName( String user )
     {
-        return USER_PROPERTIES.getProperty( "database.name." + user );
+        return USER_PROPERTIES.getProperty( "database.name." + user.toLowerCase() );
     }
 
     /**
@@ -37,7 +37,7 @@ class Users
      */
     static String getDatabaseHost( String user )
     {
-        return USER_PROPERTIES.getProperty( "database.host." + user );
+        return USER_PROPERTIES.getProperty( "database.host." + user.toLowerCase() );
     }
 
     /**
@@ -48,7 +48,7 @@ class Users
 
     static String getDatabaseUser( String user )
     {
-        return USER_PROPERTIES.getProperty( "database.user." + user );
+        return USER_PROPERTIES.getProperty( "database.user." + user.toLowerCase() );
     }
 
 
