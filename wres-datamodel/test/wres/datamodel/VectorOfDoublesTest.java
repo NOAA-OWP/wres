@@ -3,6 +3,7 @@ package wres.datamodel;
 import org.junit.Test;
 
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 public class VectorOfDoublesTest
@@ -62,7 +63,6 @@ public class VectorOfDoublesTest
         double[] doubles = { 1.0, 2.0 };
         VectorOfDoubles vec = VectorOfDoubles.of( doubles );
         Boolean thisIsABoolean = true;
-        assertFalse( "Expect a Boolean to not equal an array",
-                     vec.equals( thisIsABoolean ) );
+        assertNotEquals( thisIsABoolean, vec );
     }
 }
