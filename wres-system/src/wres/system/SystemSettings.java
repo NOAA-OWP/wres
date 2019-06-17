@@ -12,6 +12,7 @@ import javax.xml.stream.XMLStreamReader;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +45,8 @@ public final class SystemSettings extends XMLReader
 			LOGGER.warn("Using default system settings due to problem reading config:", ioe);
             instance = new SystemSettings();
         }
+
+		LOGGER.info( "{}", instance );
 	}
 
     private DatabaseSettings databaseConfiguration = null;
@@ -603,37 +606,27 @@ public final class SystemSettings extends XMLReader
         }
     }
 
-	@Override
-	public String toString()
-	{
-		String stringRep = "System Configuration:";
-		stringRep += System.lineSeparator();
-		stringRep += System.lineSeparator();
-		stringRep += "Maximum # of Threads:\t";
-		stringRep += String.valueOf(maximumThreadCount);
-		stringRep += System.lineSeparator();
-		stringRep += "Lifespan of pooled objects (in ms):\t";
-		stringRep += String.valueOf(poolObjectLifespan);
-		stringRep += System.lineSeparator();
-		stringRep += "Most amount of rows that can be loaded from the database at once:\t";
-		stringRep += String.valueOf(fetchSize);
-		stringRep += System.lineSeparator();
-        stringRep += "Default chart width:\t";
-        stringRep += String.valueOf(defaultChartWidth);
-        stringRep += System.lineSeparator();
-        stringRep += "Default chart height:\t";
-        stringRep += String.valueOf(defaultChartHeight);
-        stringRep += System.lineSeparator();
-
-		if (databaseConfiguration != null)
-		{
-			stringRep += System.lineSeparator();
-			stringRep += databaseConfiguration.toString();
-			stringRep += System.lineSeparator();
-		}
-		
-		return stringRep;
-	}
+    @Override
+    public String toString()
+    {
+        return new ToStringBuilder( this )
+                .append( "databaseConfiguration", databaseConfiguration )
+                .append( "maximumThreadCount", maximumThreadCount )
+                .append( "poolObjectLifespan", poolObjectLifespan )
+                .append( "fetchSize", fetchSize )
+                .append( "maximumCopies", maximumCopies )
+                .append( "defaultChartWidth", defaultChartWidth )
+                .append( "defaultChartHeight", defaultChartHeight )
+                .append( "netcdfCachePeriod", netcdfCachePeriod )
+                .append( "minimumCachedNetcdf", minimumCachedNetcdf )
+                .append( "maximumCachedNetcdf", maximumCachedNetcdf )
+                .append( "hardNetcdfCacheLimit", hardNetcdfCacheLimit )
+                .append( "netcdfStorePath", netcdfStorePath )
+                .append( "maximumArchiveThreads", maximumArchiveThreads )
+                .append( "maximumWebClientThreads", maximumWebClientThreads )
+                .append( "dataDirectory", dataDirectory )
+                .toString();
+    }
 
     @Override
     protected Logger getLogger()
