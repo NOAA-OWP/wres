@@ -17,8 +17,10 @@ import java.util.function.BiFunction;
 import java.util.function.DoublePredicate;
 import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
+import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 import java.util.function.ToDoubleFunction;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import wres.datamodel.metadata.StatisticMetadata;
@@ -435,7 +437,7 @@ public final class Slicer
      * @return a composed function
      */
 
-    public static Function<EnsemblePair, EnsemblePair>
+    public static UnaryOperator<EnsemblePair>
             leftAndEachOfRight( DoublePredicate predicate )
     {
         return pair -> {
@@ -611,7 +613,7 @@ public final class Slicer
      */
 
     public static EnsemblePairs filter( EnsemblePairs input,
-                                        Function<EnsemblePair, EnsemblePair> mapper,
+                                        UnaryOperator<EnsemblePair> mapper,
                                         DoublePredicate applyToClimatology )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
@@ -902,7 +904,7 @@ public final class Slicer
      */
 
     public static TimeSeriesOfEnsemblePairs filterByTraceIndex( TimeSeriesOfEnsemblePairs input,
-                                                                Predicate<Integer> traceIndex )
+                                                                IntPredicate traceIndex )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 

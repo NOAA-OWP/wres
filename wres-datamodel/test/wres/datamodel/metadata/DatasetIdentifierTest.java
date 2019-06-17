@@ -3,8 +3,6 @@ package wres.datamodel.metadata;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -24,7 +22,6 @@ public class DatasetIdentifierTest
      * Test {@link DatasetIdentifier#equals(Object)}.
      */
 
-    @SuppressWarnings( { "unlikely-arg-type", "unused" } )
     @Test
     public void testEquals()
     {
@@ -141,7 +138,7 @@ public class DatasetIdentifierTest
         assertNotEquals( b3, b5 );
 
         // Null check
-        assertNotNull( m1 );
+        assertNotEquals( null, m1 );
 
         // Other type check
         assertNotEquals( Double.valueOf( 2 ), m1 );

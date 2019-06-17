@@ -1,10 +1,12 @@
 package wres.datamodel.thresholds;
 
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -17,6 +19,9 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
  */
 public final class OneOrTwoThresholdsTest
 {
+    
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
 
     /**
      * Constructs a {@link OneOrTwoThresholds} and confirms that the {@link OneOrTwoThresholds#first()} returns the 
@@ -92,7 +97,7 @@ public final class OneOrTwoThresholdsTest
                         thresholds.equals( otherThresholds ) );
         }
         // Nullity
-        assertFalse( "The threshold does not meet the equals contract for nullity.", thresholds.equals( null ) );
+        assertNotEquals( null, thresholds );
 
         // Check unequal cases
         OneOrTwoThresholds unequalOnFirst =
@@ -172,8 +177,7 @@ public final class OneOrTwoThresholdsTest
                                                                                    ThresholdDataType.LEFT ) );
 
         // Anticommutative
-        assertTrue( "Expected anticommutative behaviour.",
-                    Math.abs( third.compareTo( first ) ) == Math.abs( first.compareTo( third ) ) );
+        assertTrue( third.compareTo( first ) + first.compareTo( third ) == 0 );
         // Reflexive
         assertTrue( "Expected reflexive comparability.", first.compareTo( first ) == 0 );
         // Symmetric 
@@ -251,16 +255,11 @@ public final class OneOrTwoThresholdsTest
      */
 
     @Test
-    public void testExceptions()
+    public void testExceptionOnConstructionWithNulInput()
     {
-        try
-        {
-            OneOrTwoThresholds.of( null, null );
-            fail( "Expected an exception on building a thresholds with a null first threshold." );
-        }
-        catch ( NullPointerException e )
-        {
-        }
+        exception.expect( NullPointerException.class );
+
+        OneOrTwoThresholds.of( null, null );
     }
 
 }
