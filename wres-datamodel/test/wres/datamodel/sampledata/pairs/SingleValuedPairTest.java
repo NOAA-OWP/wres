@@ -1,11 +1,11 @@
 package wres.datamodel.sampledata.pairs;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
-
-import wres.datamodel.sampledata.pairs.SingleValuedPair;
 
 public class SingleValuedPairTest
 {
@@ -51,8 +51,7 @@ public class SingleValuedPairTest
                 firstPair.compareTo(firstPair) == 0);
         assertTrue("Expect a pair to equal itself",
                    firstPair.equals(firstPair));
-        assertTrue("Expect a pair's hashcode to be consistent",
-                   firstPair.hashCode() == firstPair.hashCode());
+        assertEquals( firstPair.hashCode(), firstPair.hashCode() );
     }
 
     @Test
@@ -60,7 +59,6 @@ public class SingleValuedPairTest
     {
         SingleValuedPair thePair = SingleValuedPair.of(1.0, 2.0);
         Integer iAmAnInteger = 5;
-        assertFalse("Expect a pair to not equal another type",
-                    thePair.equals(iAmAnInteger));
+        assertNotEquals( iAmAnInteger, thePair );
     }
 }

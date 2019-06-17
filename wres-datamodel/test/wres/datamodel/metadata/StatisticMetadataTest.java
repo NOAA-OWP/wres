@@ -1,6 +1,8 @@
 package wres.datamodel.metadata;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.time.Instant;
@@ -24,6 +26,10 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 public class StatisticMetadataTest
 {
 
+    private static final String OTHER_TEST_DIMENSION = "SOME_DIM";
+    private static final String TEST_DIMENSION = "OTHER_DIM";
+    private static final String DRRC3 = "DRRC3";
+
     /**
      * Test {@link StatisticMetadata#equals(Object)}.
      */
@@ -38,8 +44,8 @@ public class StatisticMetadataTest
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT ) );
 
-        Location locationBase = Location.of( "DRRC3" );
-        SampleMetadata base = SampleMetadata.of( MeasurementUnit.of( "SOME_DIM" ),
+        Location locationBase = Location.of( DRRC3 );
+        SampleMetadata base = SampleMetadata.of( MeasurementUnit.of( OTHER_TEST_DIMENSION ),
                                                  DatasetIdentifier.of( locationBase,
                                                                        "SQIN",
                                                                        "HEFS" ),
@@ -57,22 +63,22 @@ public class StatisticMetadataTest
                                                          MetricConstants.BIAS_FRACTION,
                                                          null );
         // Reflexive
-        assertTrue( "Unexpected inequality between two metadata instances.", first.equals( first ) );
+        assertTrue( first.equals( first ) );
         // Symmetric
-        assertTrue( "Unexpected inequality between two metadata instances.", first.equals( second ) );
-        assertTrue( "Unexpected inequality between two metadata instances.", second.equals( first ) );
+        assertTrue( first.equals( second ) );
+        assertTrue( second.equals( first ) );
         // Transitive
         StatisticMetadata secondT = StatisticMetadata.of( base,
                                                           1,
                                                           MeasurementUnit.of( "CMS" ),
                                                           MetricConstants.BIAS_FRACTION,
                                                           null );
-        assertTrue( "Unexpected inequality between two metadata instances.", second.equals( secondT ) );
-        assertTrue( "Unexpected inequality between two metadata instances.", first.equals( secondT ) );
+        assertTrue( second.equals( secondT ) );
+        assertTrue( first.equals( secondT ) );
         // Consistent
         for ( int i = 0; i < 20; i++ )
         {
-            assertTrue( "Unexpected inequality between two metadata instances.", first.equals( second ) );
+            assertTrue( first.equals( second ) );
         }
 
         // Unequal
@@ -81,30 +87,30 @@ public class StatisticMetadataTest
                                                         MeasurementUnit.of( "CMS" ),
                                                         MetricConstants.BIAS_FRACTION,
                                                         null );
-        assertFalse( "Unexpected equality between two metadata instances.", first.equals( third ) );
+        assertFalse( first.equals( third ) );
         StatisticMetadata fourth = StatisticMetadata.of( base,
                                                          1,
                                                          MeasurementUnit.of( "CFS" ),
                                                          MetricConstants.BIAS_FRACTION,
                                                          null );
-        assertFalse( "Unexpected equality between two metadata instances.", first.equals( fourth ) );
+        assertFalse( first.equals( fourth ) );
         StatisticMetadata fifth = StatisticMetadata.of( base,
                                                         1,
                                                         MeasurementUnit.of( "CMS" ),
                                                         MetricConstants.COEFFICIENT_OF_DETERMINATION,
                                                         null );
-        assertFalse( "Unexpected equality between two metadata instances.", first.equals( fifth ) );
+        assertFalse( first.equals( fifth ) );
         StatisticMetadata sixth = StatisticMetadata.of( base,
                                                         1,
                                                         MeasurementUnit.of( "CMS" ),
                                                         MetricConstants.BIAS_FRACTION,
                                                         MetricConstants.NONE );
-        assertFalse( "Unexpected equality between two metadata instances.", first.equals( sixth ) );
+        assertFalse( first.equals( sixth ) );
         // Unequal input dimensions
-        Location seventhLocation = Location.of( "DRRC3" );
+        Location seventhLocation = Location.of( DRRC3 );
         final TimeWindow timeWindow = firstWindow;
         StatisticMetadata seventh =
-                StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "OTHER_DIM" ) )
+                StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( TEST_DIMENSION ) )
                                                                  .setIdentifier( DatasetIdentifier.of( seventhLocation,
                                                                                                        "SQIN",
                                                                                                        "HEFS" ) )
@@ -114,11 +120,11 @@ public class StatisticMetadataTest
                                       MeasurementUnit.of( "CMS" ),
                                       MetricConstants.BIAS_FRACTION,
                                       null );
-        assertFalse( "Unexpected equality between two metadata instances.", third.equals( seventh ) );
+        assertFalse( third.equals( seventh ) );
         // Null check
-        assertFalse( "Unexpected equality between two metadata instances.", first.equals( null ) );
+        assertNotEquals( null, first );
         // Other type check
-        assertFalse( "Unexpected equality between two metadata instances.", first.equals( Double.valueOf( 2 ) ) );
+        assertNotEquals( Double.valueOf( 2 ) , first );
     }
 
     /**
@@ -128,8 +134,8 @@ public class StatisticMetadataTest
     @Test
     public void testMinimumEquals()
     {
-        Location locationBase = Location.of( "DRRC3" );
-        SampleMetadata base = SampleMetadata.of( MeasurementUnit.of( "SOME_DIM" ),
+        Location locationBase = Location.of( DRRC3 );
+        SampleMetadata base = SampleMetadata.of( MeasurementUnit.of( OTHER_TEST_DIMENSION ),
                                                  DatasetIdentifier.of( locationBase,
                                                                        "SQIN",
                                                                        "HEFS" ) );
@@ -144,12 +150,12 @@ public class StatisticMetadataTest
                                                          MetricConstants.BIAS_FRACTION,
                                                          null );
         // Not equal according to stricter equals
-        assertFalse( "Unexpected inequality between two metadata instances.", first.equals( second ) );
+        assertFalse( first.equals( second ) );
         // Reflexive
-        assertTrue( "Unexpected inequality between two metadata instances.", first.minimumEquals( first ) );
+        assertTrue( first.minimumEquals( first ) );
         // Symmetric
-        assertTrue( "Unexpected inequality between two metadata instances.", first.minimumEquals( second ) );
-        assertTrue( "Unexpected inequality between two metadata instances.", second.minimumEquals( first ) );
+        assertTrue( first.minimumEquals( second ) );
+        assertTrue( second.minimumEquals( first ) );
         // Transitive
         StatisticMetadata secondT = StatisticMetadata.of( base,
                                                           1,
@@ -157,29 +163,29 @@ public class StatisticMetadataTest
                                                           MetricConstants.BIAS_FRACTION,
                                                           null );
 
-        assertTrue( "Unexpected inequality between two metadata instances.", second.minimumEquals( secondT ) );
-        assertTrue( "Unexpected inequality between two metadata instances.", first.minimumEquals( secondT ) );
+        assertTrue( second.minimumEquals( secondT ) );
+        assertTrue( first.minimumEquals( secondT ) );
         // Unequal
         StatisticMetadata third = StatisticMetadata.of( base,
                                                         2,
                                                         MeasurementUnit.of( "CMS" ),
                                                         MetricConstants.COEFFICIENT_OF_DETERMINATION,
                                                         null );
-        assertFalse( "Unexpected equality between two metadata instances.", first.minimumEquals( third ) );
+        assertFalse( first.minimumEquals( third ) );
         StatisticMetadata fourth = StatisticMetadata.of( base,
                                                          2,
                                                          MeasurementUnit.of( "CMS" ),
                                                          MetricConstants.COEFFICIENT_OF_DETERMINATION,
                                                          MetricConstants.NONE );
-        assertFalse( "Unexpected equality between two metadata instances.", third.minimumEquals( fourth ) );
+        assertFalse( third.minimumEquals( fourth ) );
         StatisticMetadata fifth = StatisticMetadata.of( base,
                                                         2,
                                                         MeasurementUnit.of( "CFS" ),
                                                         MetricConstants.COEFFICIENT_OF_DETERMINATION,
                                                         MetricConstants.NONE );
-        assertFalse( "Unexpected equality between two metadata instances.", fourth.minimumEquals( fifth ) );
-        Location secondLocation = Location.of( "DRRC3" );
-        SampleMetadata baseSecond = SampleMetadata.of( MeasurementUnit.of( "OTHER_DIM" ),
+        assertFalse( fourth.minimumEquals( fifth ) );
+        Location secondLocation = Location.of( DRRC3 );
+        SampleMetadata baseSecond = SampleMetadata.of( MeasurementUnit.of( TEST_DIMENSION ),
                                                        DatasetIdentifier.of( secondLocation,
                                                                              "SQIN",
                                                                              "HEFS" ) );
@@ -189,7 +195,7 @@ public class StatisticMetadataTest
                                                         MeasurementUnit.of( "CMS" ),
                                                         MetricConstants.BIAS_FRACTION,
                                                         null );
-        assertFalse( "Unexpected equality between two metadata instances.", first.minimumEquals( sixth ) );
+        assertFalse( first.minimumEquals( sixth ) );
 
     }
 
@@ -209,8 +215,8 @@ public class StatisticMetadataTest
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT ) );
 
-        Location baseLocation = Location.of( "DRRC3" );
-        SampleMetadata base = SampleMetadata.of( MeasurementUnit.of( "SOME_DIM" ),
+        Location baseLocation = Location.of( DRRC3 );
+        SampleMetadata base = SampleMetadata.of( MeasurementUnit.of( OTHER_TEST_DIMENSION ),
                                                  DatasetIdentifier.of( baseLocation,
                                                                        "SQIN",
                                                                        "HEFS" ),
@@ -226,15 +232,15 @@ public class StatisticMetadataTest
                                                          MeasurementUnit.of( "CMS" ),
                                                          MetricConstants.BIAS_FRACTION,
                                                          null );
-        assertTrue( "Unexpected inequality between two metadata hashcodes.", first.hashCode() == first.hashCode() );
-        assertTrue( "Unexpected inequality between two metadata hashcodes.", first.hashCode() == second.hashCode() );
+        assertEquals( first.hashCode(), first.hashCode() );
+        assertEquals( first.hashCode(), second.hashCode() );
         StatisticMetadata secondT = StatisticMetadata.of( base,
                                                           1,
                                                           MeasurementUnit.of( "CMS" ),
                                                           MetricConstants.BIAS_FRACTION,
                                                           null );
-        assertTrue( "Unexpected inequality between two metadata hashcodes.", second.hashCode() == secondT.hashCode() );
-        assertTrue( "Unexpected inequality between two metadata hashcodes.", first.hashCode() == secondT.hashCode() );
+        assertTrue( second.hashCode() == secondT.hashCode() );
+        assertTrue( first.hashCode() == secondT.hashCode() );
         // Consistent
         for ( int i = 0; i < 20; i++ )
         {
@@ -247,30 +253,30 @@ public class StatisticMetadataTest
                                                         MeasurementUnit.of( "CMS" ),
                                                         MetricConstants.BIAS_FRACTION,
                                                         null );
-        assertFalse( "Unexpected equality between two metadata hashcodes.", first.hashCode() == third.hashCode() );
+        assertFalse( first.hashCode() == third.hashCode() );
         StatisticMetadata fourth = StatisticMetadata.of( base,
                                                          1,
                                                          MeasurementUnit.of( "CFS" ),
                                                          MetricConstants.BIAS_FRACTION,
                                                          null );
-        assertFalse( "Unexpected equality between two metadata hashcodes.", first.hashCode() == fourth.hashCode() );
+        assertFalse( first.hashCode() == fourth.hashCode() );
         StatisticMetadata fifth = StatisticMetadata.of( base,
                                                         1,
                                                         MeasurementUnit.of( "CMS" ),
                                                         MetricConstants.COEFFICIENT_OF_DETERMINATION,
                                                         null );
-        assertFalse( "Unexpected equality between two metadata hashcodes.", first.hashCode() == fifth.hashCode() );
+        assertFalse( first.hashCode() == fifth.hashCode() );
         StatisticMetadata sixth = StatisticMetadata.of( base,
                                                         1,
                                                         MeasurementUnit.of( "CMS" ),
                                                         MetricConstants.BIAS_FRACTION,
                                                         MetricConstants.NONE );
-        assertFalse( "Unexpected equality between two metadata hashcodes.", first.hashCode() == sixth.hashCode() );
+        assertFalse( first.hashCode() == sixth.hashCode() );
         // Unequal input dimensions
-        Location seventhLocation = Location.of( "DRRC3" );
+        Location seventhLocation = Location.of( DRRC3 );
         final TimeWindow timeWindow = firstWindow;
         StatisticMetadata seventh =
-                StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "OTHER_DIM" ) )
+                StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( TEST_DIMENSION ) )
                                                                  .setIdentifier( DatasetIdentifier.of( seventhLocation,
                                                                                                        "SQIN",
                                                                                                        "HEFS" ) )
@@ -280,10 +286,9 @@ public class StatisticMetadataTest
                                       MeasurementUnit.of( "CMS" ),
                                       MetricConstants.BIAS_FRACTION,
                                       null );
-        assertFalse( "Unexpected equality between two metadata hashcodes.", third.hashCode() == seventh.hashCode() );
+        assertFalse( third.hashCode() == seventh.hashCode() );
         // Other type check
-        assertFalse( "Unexpected equality between two metadata hashcodes.",
-                     first.hashCode() == Double.valueOf( 2 ).hashCode() );
+        assertFalse( first.hashCode() == Double.valueOf( 2 ).hashCode() );
     }
 
 }

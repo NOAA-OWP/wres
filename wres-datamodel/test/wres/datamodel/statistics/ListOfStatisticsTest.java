@@ -2,6 +2,7 @@ package wres.datamodel.statistics;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -101,7 +102,7 @@ public final class ListOfStatisticsTest
     public void testBuildUsingBuilderWithMultipleThreads()
     {
         ListOfStatisticsBuilder<DoubleScoreStatistic> builder =
-                new ListOfStatisticsBuilder<DoubleScoreStatistic>();
+                new ListOfStatisticsBuilder<>();
 
         // Initialize 100 futures that add results to the builder
         SortedSet<Double> expectedOutput = new TreeSet<>();
@@ -133,7 +134,7 @@ public final class ListOfStatisticsTest
         }
 
         // Build and validate
-        SortedSet<Double> actualOutput = Slicer.discover( builder.build(), output -> output.getData() );
+        SortedSet<Double> actualOutput = Slicer.discover( builder.build(), DoubleScoreStatistic::getData );
 
         assertEquals( actualOutput, expectedOutput );
     }
@@ -217,7 +218,6 @@ public final class ListOfStatisticsTest
      * Tests the {@link ListOfStatistics#equals(Object)}.
      */
 
-    @SuppressWarnings( "unlikely-arg-type" )
     @Test
     public void testEquals()
     {
@@ -250,7 +250,7 @@ public final class ListOfStatisticsTest
         }
 
         // Different non-null type
-        assertFalse( "Unexpected equality.", first.equals( metadata ) );
+        assertFalse( "Unexpected equality.", Objects.isNull( metadata ) );
 
         // Check unequal cases
 
@@ -261,7 +261,7 @@ public final class ListOfStatisticsTest
         assertFalse( "Expected unequal data.", first.equals( fourth ) );
 
         // Unequal on null type
-        assertFalse( "Expected unequal outputs.", first.equals( null ) );
+        assertNotEquals( null, first );
 
     }
 
@@ -342,16 +342,17 @@ public final class ListOfStatisticsTest
                                                                                                    MetricConstants.MAIN ) ) ) );
 
         StringBuilder expected = new StringBuilder();
-        expected.append( "{([-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
-                + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT0S,"
+        
+        String start = "{([-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
+                + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT0S,";
+        
+        expected.append( start
                          + "PT0S],> 1.0,DIMENSIONLESS,DIMENSIONLESS,0,BIAS FRACTION,MAIN): 0.1}" )
                 .append( System.lineSeparator() )
-                .append( "{([-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
-                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT0S,"
+                .append( start
                          + "PT0S],> 2.0,DIMENSIONLESS,DIMENSIONLESS,0,BIAS FRACTION,MAIN): 0.2}" )
                 .append( System.lineSeparator() )
-                .append( "{([-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
-                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT0S,"
+                .append( start
                          + "PT0S],> 3.0,DIMENSIONLESS,DIMENSIONLESS,0,BIAS FRACTION,MAIN): 0.3}" );
 
         assertEquals( expected.toString(), listOfOutputs.toString() );

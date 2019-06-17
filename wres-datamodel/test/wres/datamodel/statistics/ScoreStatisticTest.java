@@ -1,5 +1,7 @@
 package wres.datamodel.statistics;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -23,9 +25,8 @@ public final class ScoreStatisticTest
      * Constructs a {@link DoubleScoreStatistic} and tests for equality with another {@link DoubleScoreStatistic}.
      */
 
-    @SuppressWarnings( "unlikely-arg-type" )
     @Test
-    public void test1Equals()
+    public void testEquals()
     {
         final Location l1 = Location.of( "A" );
         final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
@@ -56,17 +57,17 @@ public final class ScoreStatisticTest
                                                            MetricConstants.MAIN );
         final ScoreStatistic<Double, DoubleScoreStatistic> s = DoubleScoreStatistic.of( 1.0, m1 );
         final ScoreStatistic<Double, DoubleScoreStatistic> t = DoubleScoreStatistic.of( 1.0, m1 );
-        assertTrue( "Expected equal outputs.", s.equals( t ) );
-        assertTrue( "Expected non-equal outputs.", !s.equals( null ) );
-        assertTrue( "Expected non-equal outputs.", !s.equals( Double.valueOf( 1.0 ) ) );
-        assertTrue( "Expected non-equal outputs.", !s.equals( DoubleScoreStatistic.of( 2.0, m1 ) ) );
-        assertTrue( "Expected non-equal outputs.", !s.equals( DoubleScoreStatistic.of( 1.0, m2 ) ) );
+        assertTrue( s.equals( t ) );
+        assertNotEquals( null, s );
+        assertNotEquals( Double.valueOf( 1.0 ), s );
+        assertTrue( !s.equals( DoubleScoreStatistic.of( 2.0, m1 ) ) );
+        assertTrue( !s.equals( DoubleScoreStatistic.of( 1.0, m2 ) ) );
         final ScoreStatistic<Double, DoubleScoreStatistic> q = DoubleScoreStatistic.of( 1.0, m2 );
         final ScoreStatistic<Double, DoubleScoreStatistic> r = DoubleScoreStatistic.of( 1.0, m3 );
-        assertTrue( "Expected non-equal outputs.", !s.equals( q ) );
-        assertTrue( "Expected equal outputs.", q.equals( q ) );
-        assertTrue( "Expected non-equal outputs.", !q.equals( s ) );
-        assertTrue( "Expected non-equal outputs.", !q.equals( r ) );
+        assertTrue( !s.equals( q ) );
+        assertEquals( q, q );
+        assertTrue( !q.equals( s ) );
+        assertTrue( !q.equals( r ) );
     }
 
     /**
@@ -74,7 +75,7 @@ public final class ScoreStatisticTest
      */
 
     @Test
-    public void test2ToString()
+    public void testToString()
     {
         final Location l1 = Location.of( "A" );
         final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
@@ -95,7 +96,7 @@ public final class ScoreStatisticTest
      */
 
     @Test
-    public void test3GetMetadata()
+    public void testGetMetadata()
     {
         final Location l1 = Location.of( "A" );
         final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
@@ -125,7 +126,7 @@ public final class ScoreStatisticTest
      */
 
     @Test
-    public void test4HashCode()
+    public void testHashCode()
     {
         final Location l1 = Location.of( "A" );
         final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),

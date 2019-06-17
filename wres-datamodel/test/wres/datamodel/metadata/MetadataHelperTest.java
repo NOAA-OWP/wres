@@ -24,6 +24,7 @@ import wres.datamodel.metadata.TimeScale.TimeScaleFunction;
 public final class MetadataHelperTest
 {
 
+    private static final String DRRC2 = "DRRC2";
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
@@ -33,25 +34,25 @@ public final class MetadataHelperTest
     @Test
     public void unionOf()
     {
-        Location l1 = Location.of( "DRRC2" );
+        Location l1 = Location.of( DRRC2 );
         SampleMetadata m1 = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
                                                        .setIdentifier( DatasetIdentifier.of( l1, "SQIN", "HEFS" ) )
                                                        .setTimeWindow( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                                       Instant.parse( "1985-12-31T23:59:59Z" ) ) )
                                                        .build();
-        Location l2 = Location.of( "DRRC2" );
+        Location l2 = Location.of( DRRC2 );
         SampleMetadata m2 = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
                                                        .setIdentifier( DatasetIdentifier.of( l2, "SQIN", "HEFS" ) )
                                                        .setTimeWindow( TimeWindow.of( Instant.parse( "1986-01-01T00:00:00Z" ),
                                                                                       Instant.parse( "1986-12-31T23:59:59Z" ) ) )
                                                        .build();
-        Location l3 = Location.of( "DRRC2" );
+        Location l3 = Location.of( DRRC2 );
         SampleMetadata m3 = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
                                                        .setIdentifier( DatasetIdentifier.of( l3, "SQIN", "HEFS" ) )
                                                        .setTimeWindow( TimeWindow.of( Instant.parse( "1987-01-01T00:00:00Z" ),
                                                                                       Instant.parse( "1988-01-01T00:00:00Z" ) ) )
                                                        .build();
-        Location benchmarkLocation = Location.of( "DRRC2" );
+        Location benchmarkLocation = Location.of( DRRC2 );
         SampleMetadata benchmark = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
                                                               .setIdentifier( DatasetIdentifier.of( benchmarkLocation,
                                                                                                     "SQIN",

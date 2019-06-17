@@ -1,19 +1,20 @@
 package wres.datamodel.sampledata.pairs;
 
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.SampleMetadata;
-import wres.datamodel.sampledata.pairs.MulticategoryPair;
-import wres.datamodel.sampledata.pairs.MulticategoryPairs;
+import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.MulticategoryPairs.MulticategoryPairsBuilder;
 
 /**
@@ -25,11 +26,27 @@ public final class MulticategoryPairsTest
 {
 
     /**
+     * Location for testing.
+     */
+    
+    private final Location l1 = Location.of( "DRRC2" );
+
+    /**
+     * Metadata for testing.
+     */
+    
+    private final SampleMetadata meta = SampleMetadata.of( MeasurementUnit.of(),
+                                                           DatasetIdentifier.of( l1, "SQIN", "HEFS" ) );
+       
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
+
+    /**
      * Tests the {@link MulticategoryPairs}.
      */
 
     @Test
-    public void test1MulticategoryPairs()
+    public void testMulticategoryPairs()
     {
         final List<MulticategoryPair> values = new ArrayList<>();
 
@@ -39,9 +56,7 @@ public final class MulticategoryPairsTest
         {
             values.add( MulticategoryPair.of( new boolean[] { true }, new boolean[] { true } ) );
         }
-        final Location l1 = Location.of( "DRRC2" );
-        final SampleMetadata meta = SampleMetadata.of( MeasurementUnit.of(),
-                                                           DatasetIdentifier.of( l1, "SQIN", "HEFS" ) );
+
         MulticategoryPairs p = (MulticategoryPairs) b.addData( values ).setMetadata( meta ).build();
 
         //Check category count
@@ -70,90 +85,37 @@ public final class MulticategoryPairsTest
         p = b.build();
         assertTrue( "Expected non-null metadata.", p.getMetadata().equals( t ) );
 
-        //Check the exceptions
-        //Duplicate prediction
-        try
-        {
-            values.clear();
-            values.add( MulticategoryPair.of( new boolean[] { true, false, false },
-                                              new boolean[] { true, false, true } ) );
-            final MulticategoryPairsBuilder c = new MulticategoryPairsBuilder();
-            c.addData( values ).setMetadata( meta ).build();
-            fail( "Expected a checked exception on invalid inputs: duplicate predicted outcome." );
-        }
-        catch ( final Exception e )
-        {
-        }
-        //Duplicate observation
-        try
-        {
-            values.clear();
-            values.add( MulticategoryPair.of( new boolean[] { true, true, false },
-                                              new boolean[] { true, false, false } ) );
-            final MulticategoryPairsBuilder c = new MulticategoryPairsBuilder();
-            c.addData( values ).setMetadata( meta ).build();
-            fail( "Expected a checked exception on invalid inputs: duplicate observed outcome." );
-        }
-        catch ( final Exception e )
-        {
-        }
-        //Null pair
-        try
-        {
-            values.clear();
-            values.add( null );
-            final MulticategoryPairsBuilder c = new MulticategoryPairsBuilder();
-            c.addData( values ).setMetadata( meta ).build();
-            fail( "Expected a checked exception on invalid inputs: null pair." );
-        }
-        catch ( final Exception e )
-        {
-        }
-        //Inputs with varying number of categories across pairs
-        try
-        {
-            final MulticategoryPairsBuilder c = new MulticategoryPairsBuilder();
-            values.clear();
-            values.add( MulticategoryPair.of( new boolean[] { true, false, false },
-                                              new boolean[] { true, false, false } ) );
-            values.add( MulticategoryPair.of( new boolean[] { true, false, false, false },
-                                              new boolean[] { true, false, false,
-                                                              false } ) );
-            c.addData( values ).setMetadata( meta ).build();
-            fail( "Expected a checked exception on invalid inputs: one or more pairs with a varying number of "
-                  + "categories." );
-        }
-        catch ( final Exception e )
-        {
-        }
-        //Inputs where the observations have more categories
-        try
-        {
-            final MulticategoryPairsBuilder c = new MulticategoryPairsBuilder();
-            values.clear();
-            values.add( MulticategoryPair.of( new boolean[] { true, false, false },
-                                              new boolean[] { false, true, false, false } ) );
-            c.addData( values ).setMetadata( meta ).build();
-            fail( "Expected a checked exception on invalid inputs: observations and predictions have "
-                  + "different numbers of categories." );
-        }
-        catch ( final Exception e )
-        {
-        }
+    }
 
-        //No exception
-        try
-        {
-            values.clear();
-            final MulticategoryPairsBuilder c = new MulticategoryPairsBuilder();
-            values.add( MulticategoryPair.of( new boolean[] { true, false }, new boolean[] { true, false } ) );
-            c.addData( values ).setMetadata( meta ).build();
-        }
-        catch ( final Exception e )
-        {
-            fail( "Unexpected exception on valid inputs." );
-        }
+    @Test
+    public void testExceptionOnConstructionWithNullPair()
+    {
+        final List<MulticategoryPair> values = Arrays.asList( (MulticategoryPair) null );
+
+        MulticategoryPairsBuilder c = new MulticategoryPairsBuilder();
+
+        exception.expect( SampleDataException.class );
+
+        c.addData( values ).setMetadata( meta ).build();
 
     }
+
+    @Test
+    public void testExceptionOnConstructionWithInconsistentCategoryCount()
+    {
+        final List<MulticategoryPair> values = new ArrayList<>();
+
+        MulticategoryPairsBuilder c = new MulticategoryPairsBuilder();
+
+        values.add( MulticategoryPair.of( new boolean[] { true, false, false },
+                                          new boolean[] { true, false, false } ) );
+        values.add( MulticategoryPair.of( new boolean[] { true, false, false, false },
+                                          new boolean[] { true, false, false,
+                                                          false } ) );
+        exception.expect( SampleDataException.class );
+
+        c.addData( values ).setMetadata( meta ).build();
+    }
+
 
 }

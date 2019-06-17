@@ -2,13 +2,15 @@ package wres.datamodel.sampledata.pairs;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metadata.SampleMetadata;
@@ -23,14 +25,17 @@ import wres.datamodel.sampledata.pairs.SingleValuedPairs.SingleValuedPairsBuilde
 public final class SingleValuedPairsTest
 {
 
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
+    
     /**
      * Tests the {@link SingleValuedPairs}.
      */
 
     @Test
-    public void testSingleValuedPairs()
+    public void testSingleValuedPairsWithOnePair()
     {
-        final List<SingleValuedPair> values = Arrays.asList( SingleValuedPair.of( 1, 1) );
+        final List<SingleValuedPair> values = Arrays.asList( SingleValuedPair.of( 1, 1 ) );
         final SingleValuedPairsBuilder b = new SingleValuedPairsBuilder();
 
         final SampleMetadata meta = SampleMetadata.of();
@@ -39,18 +44,19 @@ public final class SingleValuedPairsTest
         //Check dataset count
         assertFalse( "Expected a dataset without a baseline [false," + p.hasBaseline() + "].", p.hasBaseline() );
         p = (SingleValuedPairs) b.addDataForBaseline( values ).setMetadataForBaseline( meta ).build(); //Add another
+
         //Check that a returned dataset contains the expected number of pairs
         assertTrue( "Expected a main dataset with 1 pairs [1," + p.getRawData().size() + "].",
                     p.getRawData().size() == 1 );
     }
-    
-    
+
+
     /**
      * Tests the {@link SingleValuedPairs}.
      */
 
     @Test
-    public void test1SingleValuedPairs()
+    public void testSingleValuedPairsWithTenPairs()
     {
         final List<SingleValuedPair> values = new ArrayList<>();
         final SingleValuedPairsBuilder b = new SingleValuedPairsBuilder();
@@ -74,35 +80,29 @@ public final class SingleValuedPairsTest
         b.setMetadata( meta );
         p = b.build();
         assertTrue( "Expected equal metadata.", p.getMetadata().equals( meta ) );
+    }
 
-        //Test the exceptions
-        //Null pair
-        try
-        {
-            values.clear();
-            values.add( null );
-            final SingleValuedPairsBuilder c = new SingleValuedPairsBuilder();
-            c.addData( values ).setMetadata( meta ).build();
-            fail( "Expected a checked exception on invalid inputs: null pair." );
-        }
-        catch ( final Exception e )
-        {
-        }
+    @Test
+    public void testExceptionOnConstructionWithNullPair()
+    {
+        List<SingleValuedPair> values = Arrays.asList( (SingleValuedPair) null );
+        SingleValuedPairsBuilder c = new SingleValuedPairsBuilder();
+        
+        exception.expect( SampleDataException.class );
+        
+        c.addData( values ).setMetadata( SampleMetadata.of() ).build();
+    }
 
-        //Only non-finite climatology
-        try
-        {
-            values.clear();
-            values.add( SingleValuedPair.of( 1, 1 ) );
-            VectorOfDoubles climatology = VectorOfDoubles.of( new double[] { Double.NaN } );
-            final SingleValuedPairsBuilder c = new SingleValuedPairsBuilder();
-            c.addData( values ).setMetadata( meta ).setClimatology( climatology ).build();
-            fail( "Expected a checked exception on invalid inputs: all climatology data missing." );
-        }
-        catch ( final SampleDataException e )
-        {
-        }
-
+    @Test
+    public void testExceptionOnConstructionWithNaNInClimatology()
+    {
+        List<SingleValuedPair> values = Collections.singletonList( SingleValuedPair.of( 1, 1 ) );
+        VectorOfDoubles climatology = VectorOfDoubles.of( Double.NaN );
+        SingleValuedPairsBuilder c = new SingleValuedPairsBuilder();
+        
+        exception.expect( SampleDataException.class );
+        
+        c.addData( values ).setMetadata( SampleMetadata.of() ).setClimatology( climatology ).build();
     }
 
 }
