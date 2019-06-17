@@ -2,10 +2,12 @@ package wres.datamodel.thresholds;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metadata.MeasurementUnit;
@@ -20,6 +22,11 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
  */
 public final class ThresholdTest
 {
+
+    private static final String THRESHOLD_LABEL = "a threshold";
+
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
 
     /**
      * Tests {@link Threshold#hashCode()}.
@@ -41,7 +48,7 @@ public final class ThresholdTest
                                                  .setDataType( ThresholdDataType.LEFT )
                                                  .build();
 
-        assertEquals( "Expected equal hash codes.", first.hashCode(), second.hashCode() );
+        assertEquals( first.hashCode(), second.hashCode() );
 
         // One probability threshold
         Threshold third =
@@ -57,7 +64,7 @@ public final class ThresholdTest
                                       .setDataType( ThresholdDataType.LEFT )
                                       .build();
 
-        assertEquals( "Expected equal hash codes.", third.hashCode(), fourth.hashCode() );
+        assertEquals( third.hashCode(), fourth.hashCode() );
 
         // One threshold with probability
         Threshold fifth =
@@ -75,7 +82,7 @@ public final class ThresholdTest
                                       .setDataType( ThresholdDataType.LEFT )
                                       .build();
 
-        assertEquals( "Expected equal hash codes.", fifth.hashCode(), sixth.hashCode() );
+        assertEquals( fifth.hashCode(), sixth.hashCode() );
 
         // One threshold with probability and all data
         Threshold seventh =
@@ -91,7 +98,7 @@ public final class ThresholdTest
                                       .setDataType( ThresholdDataType.LEFT )
                                       .build();
 
-        assertEquals( "Expected equal hash codes.", seventh.hashCode(), eighth.hashCode() );
+        assertEquals( seventh.hashCode(), eighth.hashCode() );
 
         // Two thresholds
         Threshold ninth =
@@ -105,7 +112,7 @@ public final class ThresholdTest
                                       .setDataType( ThresholdDataType.LEFT )
                                       .build();
 
-        assertEquals( "Expected equal hash codes.", ninth.hashCode(), tenth.hashCode() );
+        assertEquals( ninth.hashCode(), tenth.hashCode() );
 
         // Two thresholds and probabilities
         Threshold eleventh =
@@ -121,7 +128,7 @@ public final class ThresholdTest
                                       .setDataType( ThresholdDataType.LEFT )
                                       .build();
 
-        assertEquals( "Expected equal hash codes.", eleventh.hashCode(), twelfth.hashCode() );
+        assertEquals( eleventh.hashCode(), twelfth.hashCode() );
 
         Threshold thirteenth =
                 new ThresholdBuilder().setValues( OneOrTwoDoubles.of( 0.0, 0.1 ) )
@@ -140,7 +147,7 @@ public final class ThresholdTest
                                       .setUnits( MeasurementUnit.of( "CMS" ) )
                                       .build();
 
-        assertEquals( "Expected equal hash codes.", thirteenth.hashCode(), fourteenth.hashCode() );
+        assertEquals( thirteenth.hashCode(), fourteenth.hashCode() );
 
     }
 
@@ -161,7 +168,7 @@ public final class ThresholdTest
                                                  .setDataType( ThresholdDataType.LEFT )
                                                  .build();
 
-        assertTrue( "Expected equal values.", first.compareTo( second ) == 0 );
+        assertTrue( first.compareTo( second ) == 0 );
 
         // Different conditions
         Threshold third = new ThresholdBuilder().setValues( OneOrTwoDoubles.of( 0.0 ) )
@@ -169,7 +176,7 @@ public final class ThresholdTest
                                                 .setDataType( ThresholdDataType.LEFT )
                                                 .build();
 
-        assertFalse( "Expected unequal values.", first.compareTo( third ) == 0 );
+        assertFalse( first.compareTo( third ) == 0 );
 
         // One has real values, the other probability values
         Threshold fourth =
@@ -183,8 +190,8 @@ public final class ThresholdTest
                                       .setDataType( ThresholdDataType.LEFT )
                                       .build();
 
-        assertFalse( "Expected unequal values.", fourth.compareTo( fifth ) == 0 );
-        assertFalse( "Expected unequal values.", fifth.compareTo( fourth ) == 0 );
+        assertFalse( fourth.compareTo( fifth ) == 0 );
+        assertFalse( fifth.compareTo( fourth ) == 0 );
 
         // Both have real values, one has probability values
         Threshold sixth =
@@ -194,8 +201,8 @@ public final class ThresholdTest
                                       .setDataType( ThresholdDataType.LEFT )
                                       .build();
 
-        assertFalse( "Expected unequal values.", fourth.compareTo( sixth ) == 0 );
-        assertFalse( "Expected unequal values.", sixth.compareTo( fourth ) == 0 );
+        assertFalse( fourth.compareTo( sixth ) == 0 );
+        assertFalse( sixth.compareTo( fourth ) == 0 );
 
         // Different ordinary values
         Threshold seventh =
@@ -204,10 +211,10 @@ public final class ThresholdTest
                                       .setDataType( ThresholdDataType.LEFT )
                                       .build();
 
-        assertFalse( "Expected unequal values.", fourth.compareTo( seventh ) == 0 );
+        assertFalse( fourth.compareTo( seventh ) == 0 );
 
         // Equal probability values
-        assertTrue( "Expected equal values.", fifth.compareTo( fifth ) == 0 );
+        assertTrue( fifth.compareTo( fifth ) == 0 );
 
         // Unequal probability values
         Threshold eighth =
@@ -216,7 +223,7 @@ public final class ThresholdTest
                                       .setDataType( ThresholdDataType.LEFT )
                                       .build();
 
-        assertFalse( "Expected unequal values.", fifth.compareTo( eighth ) == 0 );
+        assertFalse( fifth.compareTo( eighth ) == 0 );
 
         // One has a label, the other not
         Threshold ninth =
@@ -226,8 +233,8 @@ public final class ThresholdTest
                                       .setLabel( "A" )
                                       .build();
 
-        assertFalse( "Expected unequal values.", eighth.compareTo( ninth ) == 0 );
-        assertFalse( "Expected unequal values.", ninth.compareTo( eighth ) == 0 );
+        assertFalse( eighth.compareTo( ninth ) == 0 );
+        assertFalse( ninth.compareTo( eighth ) == 0 );
 
         // Unequal labels
         Threshold tenth =
@@ -237,20 +244,18 @@ public final class ThresholdTest
                                       .setLabel( "B" )
                                       .build();
 
-        assertFalse( "Expected unequal values.", ninth.compareTo( tenth ) == 0 );
-        assertFalse( "Expected unequal values.", tenth.compareTo( ninth ) == 0 );
+        assertFalse( ninth.compareTo( tenth ) == 0 );
+        assertFalse( tenth.compareTo( ninth ) == 0 );
 
         // Equal labels
-        assertTrue( "Expected equal values.", tenth.compareTo( tenth ) == 0 );
+        assertTrue( tenth.compareTo( tenth ) == 0 );
 
         // Anticommutative
-        assertTrue( "Expected anticommutative behaviour.",
-                    Math.abs( third.compareTo( first ) ) == Math.abs( first.compareTo( third ) ) );
+        assertTrue( third.compareTo( first ) + first.compareTo( third ) == 0 );
         // Reflexive
-        assertTrue( "Expected reflexive comparability.", first.compareTo( first ) == 0 );
+        assertTrue( first.compareTo( first ) == 0 );
         // Symmetric 
-        assertTrue( "Expected symmetric comparability.",
-                    first.compareTo( second ) == 0 && second.compareTo( first ) == 0 );
+        assertTrue( first.compareTo( second ) == 0 && second.compareTo( first ) == 0 );
 
         // Transitive 
         Threshold eleventh =
@@ -266,9 +271,8 @@ public final class ThresholdTest
                                       .setDataType( ThresholdDataType.LEFT )
                                       .build();
 
-        assertTrue( "Expected transitive behaviour.",
-                    twelfth.compareTo( eleventh ) > 0 && eleventh.compareTo( first ) > 0
-                                                      && twelfth.compareTo( first ) > 0 );
+        assertTrue( twelfth.compareTo( eleventh ) > 0 && eleventh.compareTo( first ) > 0
+                    && twelfth.compareTo( first ) > 0 );
 
         // Equal ordinary values for a between condition
         Threshold thirteenth =
@@ -282,7 +286,7 @@ public final class ThresholdTest
                                       .setDataType( ThresholdDataType.LEFT )
                                       .build();
 
-        assertTrue( "Expected equal values.", thirteenth.compareTo( fourteenth ) == 0 );
+        assertTrue( thirteenth.compareTo( fourteenth ) == 0 );
 
         // Unequal ordinary values for between condition
         Threshold fifteenth =
@@ -291,7 +295,7 @@ public final class ThresholdTest
                                       .setDataType( ThresholdDataType.LEFT )
                                       .build();
 
-        assertFalse( "Expected unequal values.", thirteenth.compareTo( fifteenth ) == 0 );
+        assertFalse( thirteenth.compareTo( fifteenth ) == 0 );
 
         // Equal probability values for a between condition
         Threshold sixteenth =
@@ -305,7 +309,7 @@ public final class ThresholdTest
                                       .setDataType( ThresholdDataType.LEFT )
                                       .build();
 
-        assertTrue( "Expected equal values.", sixteenth.compareTo( seventeenth ) == 0 );
+        assertTrue( sixteenth.compareTo( seventeenth ) == 0 );
 
         // Unequal ordinary values for between condition
         Threshold eighteenth =
@@ -314,7 +318,7 @@ public final class ThresholdTest
                                       .setDataType( ThresholdDataType.LEFT )
                                       .build();
 
-        assertFalse( "Expected unequal values.", sixteenth.compareTo( eighteenth ) == 0 );
+        assertFalse( sixteenth.compareTo( eighteenth ) == 0 );
 
         Threshold nineteenth =
                 new ThresholdBuilder().setValues( OneOrTwoDoubles.of( 23.0, 57.0 ) )
@@ -332,9 +336,9 @@ public final class ThresholdTest
                                       .setUnits( MeasurementUnit.of( "CMS" ) )
                                       .build();
 
-        assertFalse( "Expected unequal values.", sixteenth.compareTo( nineteenth ) == 0 );
+        assertFalse( sixteenth.compareTo( nineteenth ) == 0 );
 
-        assertTrue( "Expected equal values.", nineteenth.compareTo( twentieth ) == 0 );
+        assertTrue( nineteenth.compareTo( twentieth ) == 0 );
 
         // One has units, the other not
         Threshold twentyFirst =
@@ -344,8 +348,8 @@ public final class ThresholdTest
                                       .setUnits( MeasurementUnit.of( "CMS" ) )
                                       .build();
 
-        assertFalse( "Expected unequal values.", eighth.compareTo( twentyFirst ) == 0 );
-        assertFalse( "Expected unequal values.", twentyFirst.compareTo( eighth ) == 0 );
+        assertFalse( eighth.compareTo( twentyFirst ) == 0 );
+        assertFalse( twentyFirst.compareTo( eighth ) == 0 );
 
         // Different units
         Threshold twentySecond =
@@ -355,7 +359,7 @@ public final class ThresholdTest
                                       .setUnits( MeasurementUnit.of( "CFS" ) )
                                       .build();
 
-        assertFalse( "Expected unequal values.", twentyFirst.compareTo( twentySecond ) == 0 );
+        assertFalse( twentyFirst.compareTo( twentySecond ) == 0 );
 
         // Different data types
         Threshold twentyThird =
@@ -365,18 +369,7 @@ public final class ThresholdTest
                                       .setUnits( MeasurementUnit.of( "CFS" ) )
                                       .build();
 
-        assertFalse( "Expected unequal values.", twentySecond.compareTo( twentyThird ) == 0 );
-
-        //Nullity
-        //Check nullity contract
-        try
-        {
-            first.compareTo( null );
-            fail( "Expected null pointer on comparing." );
-        }
-        catch ( NullPointerException e )
-        {
-        }
+        assertFalse( twentySecond.compareTo( twentyThird ) == 0 );
     }
 
     /**
@@ -416,7 +409,7 @@ public final class ThresholdTest
         assertTrue( "Expected transitive equality.",
                     left.equals( right ) && left.equals( otherLeft ) && otherLeft.equals( right ) );
         //Nullity
-        assertTrue( "Expected inequality on null.", !left.equals( null ) );
+        assertNotEquals( null, left );
 
         //Check equiality with a label
         Threshold leftPlusLabel =
@@ -445,7 +438,7 @@ public final class ThresholdTest
         // Unequal lower probability
         Threshold fullDiffLowerProb = new ThresholdBuilder().setValues( OneOrTwoDoubles.of( 0.0, 0.5 ) )
                                                             .setProbabilities( OneOrTwoDoubles.of( 0.15,
-                                                                                                              0.7 ) )
+                                                                                                   0.7 ) )
                                                             .setCondition( Operator.BETWEEN )
                                                             .setDataType( ThresholdDataType.LEFT )
                                                             .setLabel( "A" )
@@ -460,7 +453,7 @@ public final class ThresholdTest
         // Unequal upper probability
         Threshold fullDiffUpperProb = new ThresholdBuilder().setValues( OneOrTwoDoubles.of( 0.00, 0.5 ) )
                                                             .setProbabilities( OneOrTwoDoubles.of( 0.1,
-                                                                                                              0.77 ) )
+                                                                                                   0.77 ) )
                                                             .setCondition( Operator.BETWEEN )
                                                             .setDataType( ThresholdDataType.LEFT )
                                                             .setLabel( "A" )
@@ -480,12 +473,12 @@ public final class ThresholdTest
                                                         .setDataType( ThresholdDataType.LEFT )
                                                         .setLabel( "B" )
                                                         .build();
-        assertFalse( "Expected unequal thresholds.", full.equals( fullDiffLower ) );
-        assertFalse( "Expected unequal thresholds.", full.equals( fullDiffUpper ) );
-        assertFalse( "Expected unequal thresholds.", full.equals( fullDiffLowerProb ) );
-        assertFalse( "Expected unequal thresholds.", full.equals( fullDiffUpperProb ) );
-        assertFalse( "Expected unequal thresholds.", full.equals( fullDiffCondition ) );
-        assertFalse( "Expected unequal thresholds.", full.equals( fullDiffLabel ) );
+        assertFalse( full.equals( fullDiffLower ) );
+        assertFalse( full.equals( fullDiffUpper ) );
+        assertFalse( full.equals( fullDiffLowerProb ) );
+        assertFalse( full.equals( fullDiffUpperProb ) );
+        assertFalse( full.equals( fullDiffCondition ) );
+        assertFalse( full.equals( fullDiffLabel ) );
 
         // Differences based on real vs. probability thresholds
         Threshold noProbs = new ThresholdBuilder().setValues( OneOrTwoDoubles.of( 0.0 ) )
@@ -497,8 +490,8 @@ public final class ThresholdTest
                                       .setCondition( Operator.GREATER )
                                       .setDataType( ThresholdDataType.LEFT )
                                       .build();
-        assertFalse( "Expected unequal thresholds.", noProbs.equals( withProbs ) );
-        assertFalse( "Expected unequal thresholds.", withProbs.equals( noProbs ) );
+        assertFalse( noProbs.equals( withProbs ) );
+        assertFalse( withProbs.equals( noProbs ) );
 
         Threshold bothRealNoProbs = new ThresholdBuilder().setValues( OneOrTwoDoubles.of( 0.0, 0.5 ) )
                                                           .setCondition( Operator.BETWEEN )
@@ -508,13 +501,13 @@ public final class ThresholdTest
 
         Threshold bothRealBothProbs = new ThresholdBuilder().setValues( OneOrTwoDoubles.of( 0.0, 0.5 ) )
                                                             .setProbabilities( OneOrTwoDoubles.of( 0.1,
-                                                                                                              0.7 ) )
+                                                                                                   0.7 ) )
                                                             .setCondition( Operator.BETWEEN )
                                                             .setDataType( ThresholdDataType.LEFT )
                                                             .setLabel( "A" )
                                                             .build();
 
-        assertFalse( "Expected unequal thresholds.", bothRealNoProbs.equals( bothRealBothProbs ) );
+        assertFalse( bothRealNoProbs.equals( bothRealBothProbs ) );
 
         // Differences on labels
         Threshold withLabel =
@@ -523,8 +516,8 @@ public final class ThresholdTest
                                       .setDataType( ThresholdDataType.LEFT )
                                       .setLabel( "B" )
                                       .build();
-        assertFalse( "Expected unequal thresholds.", noProbs.equals( withProbs ) );
-        assertFalse( "Expected unequal thresholds.", noProbs.equals( withLabel ) );
+        assertFalse( noProbs.equals( withProbs ) );
+        assertFalse( noProbs.equals( withLabel ) );
 
         // Differences on units
         Threshold cfs =
@@ -550,9 +543,9 @@ public final class ThresholdTest
                                       .setDataType( ThresholdDataType.LEFT )
                                       .build();
 
-        assertFalse( "Expected unequal units.", cfs.equals( cms ) );
-        assertTrue( "Expected equal units.", cfs.equals( cfs ) );
-        assertFalse( "Expected unequal units.", cfs.equals( noUnits ) );
+        assertFalse( cfs.equals( cms ) );
+        assertTrue( cfs.equals( cfs ) );
+        assertFalse( cfs.equals( noUnits ) );
 
         // Different data types
         Threshold noUnitsRightData =
@@ -561,7 +554,7 @@ public final class ThresholdTest
                                       .setCondition( Operator.BETWEEN )
                                       .setDataType( ThresholdDataType.RIGHT )
                                       .build();
-        assertFalse( "Expected unequal data types.", noUnits.equals( noUnitsRightData ) );
+        assertFalse( noUnits.equals( noUnitsRightData ) );
 
     }
 
@@ -576,16 +569,16 @@ public final class ThresholdTest
                                                     .setProbabilities( OneOrTwoDoubles.of( 0.0, 0.7 ) )
                                                     .setCondition( Operator.BETWEEN )
                                                     .setDataType( ThresholdDataType.LEFT )
-                                                    .setLabel( "a threshold" )
+                                                    .setLabel( THRESHOLD_LABEL )
                                                     .build();
 
         // Test accessors
-        assertTrue( "Unexpected threshold.", threshold.getValues().first().equals( 0.0 ) );
-        assertTrue( "Unexpected upper threshold.", threshold.getValues().second().equals( 0.5 ) );
-        assertTrue( "Unexpected probability threshold.", threshold.getProbabilities().first().equals( 0.0 ) );
-        assertTrue( "Unexpected upper probability threshold.", threshold.getProbabilities().second().equals( 0.7 ) );
-        assertTrue( "Unexpected condition.", threshold.getCondition() == Operator.BETWEEN );
-        assertTrue( "Unexpected label.", threshold.getLabel().equals( "a threshold" ) );
+        assertTrue( threshold.getValues().first().equals( 0.0 ) );
+        assertTrue( threshold.getValues().second().equals( 0.5 ) );
+        assertTrue( threshold.getProbabilities().first().equals( 0.0 ) );
+        assertTrue( threshold.getProbabilities().second().equals( 0.7 ) );
+        assertTrue( threshold.getCondition() == Operator.BETWEEN );
+        assertTrue( threshold.getLabel().equals( THRESHOLD_LABEL ) );
     }
 
     /**
@@ -608,11 +601,9 @@ public final class ThresholdTest
                                       .setDataType( ThresholdDataType.LEFT )
                                       .build();
 
-        assertTrue( "Unexpected inequality in string representations.",
-                    allData.toString().equals( "All data" ) );
+        assertTrue( allData.toString().equals( "All data" ) );
 
-        assertTrue( "Unexpected inequality in string representations.",
-                    allDataProb.toString().equals( "All data" ) );
+        assertTrue( allDataProb.toString().equals( "All data" ) );
 
         // One value threshold, no label
         Threshold oneValPlusLabel = new ThresholdBuilder().setValues( OneOrTwoDoubles.of( 0.0 ) )
@@ -621,8 +612,7 @@ public final class ThresholdTest
                                                           .setUnits( MeasurementUnit.of( "CMS" ) )
                                                           .build();
 
-        assertTrue( "Unexpected inequality in string representations.",
-                    oneValPlusLabel.toString().equals( "> 0.0 CMS" ) );
+        assertTrue( oneValPlusLabel.toString().equals( "> 0.0 CMS" ) );
 
         // One probability and value threshold
         Threshold oneValOneProb = new ThresholdBuilder().setValues( OneOrTwoDoubles.of( 0.0 ) )
@@ -631,8 +621,7 @@ public final class ThresholdTest
                                                         .setDataType( ThresholdDataType.LEFT )
                                                         .build();
 
-        assertTrue( "Unexpected inequality in string representations.",
-                    oneValOneProb.toString().equals( "> 0.0 [Pr = 0.0]" ) );
+        assertTrue( oneValOneProb.toString().equals( "> 0.0 [Pr = 0.0]" ) );
 
         // One probability threshold
         Threshold oneProb = new ThresholdBuilder()
@@ -641,7 +630,7 @@ public final class ThresholdTest
                                                   .setDataType( ThresholdDataType.LEFT )
                                                   .build();
 
-        assertTrue( "Unexpected inequality in string representations.", oneProb.toString().equals( "Pr > 0.0" ) );
+        assertTrue( oneProb.toString().equals( "Pr > 0.0" ) );
 
         // Pair of probability thresholds
         Threshold twoProb = new ThresholdBuilder()
@@ -650,8 +639,7 @@ public final class ThresholdTest
                                                   .setDataType( ThresholdDataType.LEFT )
                                                   .build();
 
-        assertTrue( "Unexpected inequality in string representations.",
-                    twoProb.toString().equals( "Pr >= 0.0 AND < 0.5" ) );
+        assertTrue( twoProb.toString().equals( "Pr >= 0.0 AND < 0.5" ) );
 
         // Pair of value thresholds
         Threshold twoVal = new ThresholdBuilder()
@@ -660,20 +648,18 @@ public final class ThresholdTest
                                                  .setDataType( ThresholdDataType.LEFT )
                                                  .build();
 
-        assertTrue( "Unexpected inequality in string representations.",
-                    twoVal.toString().equals( ">= 0.0 AND < 0.5" ) );
+        assertTrue( twoVal.toString().equals( ">= 0.0 AND < 0.5" ) );
 
         // All components
         Threshold threshold = new ThresholdBuilder().setValues( OneOrTwoDoubles.of( 0.0, 0.5 ) )
                                                     .setProbabilities( OneOrTwoDoubles.of( 0.0, 0.7 ) )
                                                     .setCondition( Operator.BETWEEN )
                                                     .setDataType( ThresholdDataType.LEFT )
-                                                    .setLabel( "a threshold" )
+                                                    .setLabel( THRESHOLD_LABEL )
                                                     .setUnits( MeasurementUnit.of( "CMS" ) )
                                                     .build();
 
-        assertTrue( "Unexpected inequality in string representations.",
-                    threshold.toString().equals( ">= 0.0 CMS [Pr = 0.0] AND < 0.5 CMS [Pr = 0.7] (a threshold)" ) );
+        assertTrue( threshold.toString().equals( ">= 0.0 CMS [Pr = 0.0] AND < 0.5 CMS [Pr = 0.7] (a threshold)" ) );
 
         // Test additional conditions
         Threshold less = new ThresholdBuilder().setProbabilities( OneOrTwoDoubles.of( 0.5 ) )
@@ -681,14 +667,14 @@ public final class ThresholdTest
                                                .setDataType( ThresholdDataType.LEFT )
                                                .build();
 
-        assertTrue( "Unexpected inequality in string representations.", less.toString().equals( "Pr < 0.5" ) );
+        assertTrue( less.toString().equals( "Pr < 0.5" ) );
 
         Threshold lessEqual = new ThresholdBuilder().setProbabilities( OneOrTwoDoubles.of( 0.5 ) )
                                                     .setCondition( Operator.LESS_EQUAL )
                                                     .setDataType( ThresholdDataType.LEFT )
                                                     .build();
 
-        assertTrue( "Unexpected inequality in string representations.", lessEqual.toString().equals( "Pr <= 0.5" ) );
+        assertTrue( lessEqual.toString().equals( "Pr <= 0.5" ) );
 
         Threshold greaterEqual = new ThresholdBuilder().setProbabilities( OneOrTwoDoubles.of( 0.5 ) )
                                                        .setCondition( Operator.GREATER_EQUAL )
@@ -696,14 +682,14 @@ public final class ThresholdTest
                                                        .setDataType( ThresholdDataType.LEFT )
                                                        .build();
 
-        assertTrue( "Unexpected inequality in string representations.", greaterEqual.toString().equals( "Pr >= 0.5" ) );
+        assertTrue( greaterEqual.toString().equals( "Pr >= 0.5" ) );
 
         Threshold equal = new ThresholdBuilder().setProbabilities( OneOrTwoDoubles.of( 0.5 ) )
                                                 .setCondition( Operator.EQUAL )
                                                 .setDataType( ThresholdDataType.LEFT )
                                                 .build();
 
-        assertTrue( "Unexpected inequality in string representations.", equal.toString().equals( "Pr = 0.5" ) );
+        assertTrue( equal.toString().equals( "Pr = 0.5" ) );
 
     }
 
@@ -719,11 +705,10 @@ public final class ThresholdTest
                                                     .setProbabilities( OneOrTwoDoubles.of( 0.0, 0.7 ) )
                                                     .setCondition( Operator.BETWEEN )
                                                     .setDataType( ThresholdDataType.LEFT )
-                                                    .setLabel( "a threshold" )
+                                                    .setLabel( THRESHOLD_LABEL )
                                                     .build();
 
-        assertTrue( "Unexpected inequality in string representations.",
-                    threshold.toStringSafe().equals( "GTE_0.0_Pr_EQ_0.0_AND_LT_0.5_Pr_EQ_0.7_a_threshold" ) );
+        assertTrue( threshold.toStringSafe().equals( "GTE_0.0_Pr_EQ_0.0_AND_LT_0.5_Pr_EQ_0.7_a_threshold" ) );
 
     }
 
@@ -739,15 +724,13 @@ public final class ThresholdTest
                                                     .setProbabilities( OneOrTwoDoubles.of( 0.0, 0.7 ) )
                                                     .setCondition( Operator.BETWEEN )
                                                     .setDataType( ThresholdDataType.LEFT )
-                                                    .setLabel( "a threshold" )
+                                                    .setLabel( THRESHOLD_LABEL )
                                                     .setUnits( MeasurementUnit.of( "CMS" ) )
                                                     .build();
 
-        assertTrue( "Unexpected inequality in string representations.",
-                    threshold.toString().equals( ">= 0.0 CMS [Pr = 0.0] AND < 0.5 CMS [Pr = 0.7] (a threshold)" ) );
+        assertTrue( threshold.toString().equals( ">= 0.0 CMS [Pr = 0.0] AND < 0.5 CMS [Pr = 0.7] (a threshold)" ) );
 
-        assertTrue( "Unexpected inequality in string representations.",
-                    threshold.toStringWithoutUnits().equals( ">= 0.0 [Pr = 0.0] AND < 0.5 [Pr = 0.7] (a threshold)" ) );
+        assertTrue( threshold.toStringWithoutUnits().equals( ">= 0.0 [Pr = 0.0] AND < 0.5 [Pr = 0.7] (a threshold)" ) );
     }
 
     /**
@@ -763,9 +746,9 @@ public final class ThresholdTest
                                                    .setDataType( ThresholdDataType.LEFT )
                                                    .build();
 
-        assertTrue( "Expected value to fall within threshold.", realVals.test( 0.25 ) );
-        assertFalse( "Expected value to fall outside threshold.", realVals.test( 0.55 ) );
-        assertFalse( "Expected value to fall outside threshold.", realVals.test( -0.1 ) );
+        assertTrue( realVals.test( 0.25 ) );
+        assertFalse( realVals.test( 0.55 ) );
+        assertFalse( realVals.test( -0.1 ) );
 
         // Operator.BETWEEN probabilities
         Threshold probs = new ThresholdBuilder().setProbabilities( OneOrTwoDoubles.of( 0.0, 0.5 ) )
@@ -773,9 +756,9 @@ public final class ThresholdTest
                                                 .setDataType( ThresholdDataType.LEFT )
                                                 .build();
 
-        assertTrue( "Expected value to fall within threshold.", probs.test( 0.25 ) );
-        assertFalse( "Expected value to fall outside threshold.", probs.test( 0.55 ) );
-        assertFalse( "Expected value to fall outside threshold.", probs.test( -0.1 ) );
+        assertTrue( probs.test( 0.25 ) );
+        assertFalse( probs.test( 0.55 ) );
+        assertFalse( probs.test( -0.1 ) );
 
         // Operator.GREATER
         Threshold greater = new ThresholdBuilder().setValues( OneOrTwoDoubles.of( 0.0 ) )
@@ -783,8 +766,8 @@ public final class ThresholdTest
                                                   .setDataType( ThresholdDataType.LEFT )
                                                   .build();
 
-        assertTrue( "Expected value to fall above threshold.", greater.test( 0.25 ) );
-        assertFalse( "Expected value to fall below threshold.", greater.test( -0.1 ) );
+        assertTrue( greater.test( 0.25 ) );
+        assertFalse( greater.test( -0.1 ) );
 
         // Operator.LESS
         Threshold less = new ThresholdBuilder().setValues( OneOrTwoDoubles.of( 0.0 ) )
@@ -792,8 +775,8 @@ public final class ThresholdTest
                                                .setDataType( ThresholdDataType.LEFT )
                                                .build();
 
-        assertFalse( "Expected value to fall above threshold.", less.test( 0.25 ) );
-        assertTrue( "Expected value to fall below threshold.", less.test( -0.1 ) );
+        assertFalse( less.test( 0.25 ) );
+        assertTrue( less.test( -0.1 ) );
 
         // Operator.LESS_EQUAL
         Threshold lessEqual = new ThresholdBuilder().setValues( OneOrTwoDoubles.of( 0.0 ) )
@@ -801,8 +784,8 @@ public final class ThresholdTest
                                                     .setDataType( ThresholdDataType.LEFT )
                                                     .build();
 
-        assertFalse( "Expected value to fall above threshold.", lessEqual.test( 0.25 ) );
-        assertTrue( "Expected value to fall on threshold.", lessEqual.test( -0.0 ) );
+        assertFalse( lessEqual.test( 0.25 ) );
+        assertTrue( lessEqual.test( -0.0 ) );
 
         // Operator.GREATER_EQUAL
         Threshold greaterEqual = new ThresholdBuilder().setValues( OneOrTwoDoubles.of( 0.0 ) )
@@ -811,8 +794,8 @@ public final class ThresholdTest
                                                        .setDataType( ThresholdDataType.LEFT )
                                                        .build();
 
-        assertTrue( "Expected value to fall on threshold.", greaterEqual.test( -0.0 ) );
-        assertFalse( "Expected value to fall below threshold.", greaterEqual.test( -0.1 ) );
+        assertTrue( greaterEqual.test( -0.0 ) );
+        assertFalse( greaterEqual.test( -0.1 ) );
 
         // Operator.EQUAL
         Threshold equal = new ThresholdBuilder().setValues( OneOrTwoDoubles.of( 0.0 ) )
@@ -820,8 +803,8 @@ public final class ThresholdTest
                                                 .setDataType( ThresholdDataType.LEFT )
                                                 .build();
 
-        assertTrue( "Expected value to fall on threshold.", equal.test( -0.0 ) );
-        assertFalse( "Expected value to fall below threshold.", equal.test( -0.1 ) );
+        assertTrue( equal.test( -0.0 ) );
+        assertFalse( equal.test( -0.1 ) );
 
     }
 
@@ -838,7 +821,7 @@ public final class ThresholdTest
                                                    .setDataType( ThresholdDataType.LEFT )
                                                    .build();
 
-        assertTrue( "Expected finite threshold.", realVals.isFinite() );
+        assertTrue( realVals.isFinite() );
 
         // Infinite threshold lower bound
         Threshold infiniteLower =
@@ -847,7 +830,7 @@ public final class ThresholdTest
                                       .setDataType( ThresholdDataType.LEFT )
                                       .build();
 
-        assertFalse( "Expected infinite threshold.", infiniteLower.isFinite() );
+        assertFalse( infiniteLower.isFinite() );
 
         // Infinite threshold upper bound
         Threshold infiniteUpper =
@@ -856,195 +839,174 @@ public final class ThresholdTest
                                       .setDataType( ThresholdDataType.LEFT )
                                       .build();
 
-        assertFalse( "Expected infinite threshold.", infiniteUpper.isFinite() );
+        assertFalse( infiniteUpper.isFinite() );
 
         // Infinite threshold lower bound probability
         Threshold infiniteLowerprob =
                 new ThresholdBuilder().setProbabilities( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY,
-                                                                                        0.5 ) )
+                                                                             0.5 ) )
                                       .setCondition( Operator.BETWEEN )
                                       .setDataType( ThresholdDataType.LEFT )
                                       .build();
 
-        assertFalse( "Expected infinite threshold.", infiniteLowerprob.isFinite() );
+        assertFalse( infiniteLowerprob.isFinite() );
 
         // Infinite threshold upper bound probability
         Threshold infiniteUpperProb =
                 new ThresholdBuilder().setProbabilities( OneOrTwoDoubles.of( 0.0,
-                                                                                        Double.POSITIVE_INFINITY ) )
+                                                                             Double.POSITIVE_INFINITY ) )
                                       .setCondition( Operator.BETWEEN )
                                       .setDataType( ThresholdDataType.LEFT )
                                       .build();
 
-        assertFalse( "Expected infinite threshold.", infiniteUpperProb.isFinite() );
+        assertFalse( infiniteUpperProb.isFinite() );
 
     }
-
-    /**
-     * Tests for exceptional cases associated with the construction and user of a {@link Threshold}.
-     */
 
     @Test
-    public void testExceptions()
+    public void testExceptionOnConstructionWithoutCondition()
     {
-        // Check for construction without condition
-        try
-        {
-            new ThresholdBuilder().build();
-            fail( "Expected exception on constructing without condition." );
-        }
-        catch ( NullPointerException e )
-        {
-        }
-        // Check for construction without thresholds
-        try
-        {
-            new ThresholdBuilder().setCondition( Operator.GREATER ).setDataType( ThresholdDataType.LEFT ).build();
-            fail( "Expected exception on constructing with all null thresholds." );
-        }
-        catch ( IllegalArgumentException e )
-        {
-        }
-        // Invalid probability threshold low
-        try
-        {
-            new ThresholdBuilder().setProbabilities( OneOrTwoDoubles.of( -1.0 ) )
-                                  .setCondition( Operator.GREATER )
-                                  .setDataType( ThresholdDataType.LEFT )
-                                  .build();
-            fail( "Expected exception on constructing with invalid probability." );
-        }
-        catch ( IllegalArgumentException e )
-        {
-        }
-        // Invalid probability threshold high
-        try
-        {
-            new ThresholdBuilder().setProbabilities( OneOrTwoDoubles.of( 2.0 ) )
-                                  .setCondition( Operator.GREATER )
-                                  .setDataType( ThresholdDataType.LEFT )
-                                  .build();
-            fail( "Expected exception on constructing with invalid probability." );
-        }
-        catch ( IllegalArgumentException e )
-        {
-        }
-        // Label with an infinite threshold
-        try
-        {
-            new ThresholdBuilder().setProbabilities( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ) )
-                                  .setCondition( Operator.GREATER )
-                                  .setDataType( ThresholdDataType.LEFT )
-                                  .setLabel( "A" )
-                                  .build();
-            fail( "Expected exception on constructing an infinite threshold with a label." );
-        }
-        catch ( IllegalArgumentException e )
-        {
-        }
-        // Inappropriate conditions for the thresholds available
-        try
-        {
-            new ThresholdBuilder().setProbabilities( OneOrTwoDoubles.of( 0.0, 1.0 ) )
-                                  .setCondition( Operator.GREATER )
-                                  .setDataType( ThresholdDataType.LEFT )
-                                  .build();
-            fail( "Expected exception on constructing a threshold with an incorrect condition." );
-        }
-        catch ( IllegalArgumentException e )
-        {
-        }
-        try
-        {
-            new ThresholdBuilder().setValues( OneOrTwoDoubles.of( 0.0, 1.0 ) )
-                                  .setCondition( Operator.GREATER )
-                                  .setDataType( ThresholdDataType.LEFT )
-                                  .build();
-            fail( "Expected exception on constructing a threshold with an incorrect condition." );
-        }
-        catch ( IllegalArgumentException e )
-        {
-        }
-        // Partially defined between condition
-        try
-        {
-            new ThresholdBuilder().setValues( OneOrTwoDoubles.of( 0.0 ) )
-                                  .setCondition( Operator.BETWEEN )
-                                  .setDataType( ThresholdDataType.LEFT )
-                                  .build();
-            fail( "Expected exception on constructing a threshold with a missing upper bound." );
-        }
-        catch ( IllegalArgumentException e )
-        {
-        }
-        try
-        {
-            new ThresholdBuilder().setProbabilities( OneOrTwoDoubles.of( 0.0 ) )
-                                  .setCondition( Operator.BETWEEN )
-                                  .setDataType( ThresholdDataType.LEFT )
-                                  .build();
-            fail( "Expected exception on constructing a probability threshold with a missing upper bound." );
-        }
-        catch ( IllegalArgumentException e )
-        {
-        }
-        // Invalid threshold values
-        try
-        {
-            new ThresholdBuilder().setValues( OneOrTwoDoubles.of( 1.0, 0.0 ) )
-                                  .setCondition( Operator.BETWEEN )
-                                  .setDataType( ThresholdDataType.LEFT )
-                                  .build();
-            fail( "Expected exception on constructing a threshold with lower bound above the upper bound." );
-        }
-        catch ( IllegalArgumentException e )
-        {
-        }
-        try
-        {
-            new ThresholdBuilder().setProbabilities( OneOrTwoDoubles.of( 1.0, 0.0 ) )
-                                  .setCondition( Operator.BETWEEN )
-                                  .setDataType( ThresholdDataType.LEFT )
-                                  .build();
-            fail( "Expected exception on constructing a threshold with lower bound above the upper bound." );
-        }
-        catch ( IllegalArgumentException e )
-        {
-        }
-        try
-        {
-            new ThresholdBuilder().setProbabilities( OneOrTwoDoubles.of( 0.0, 2.0 ) )
-                                  .setCondition( Operator.BETWEEN )
-                                  .setDataType( ThresholdDataType.LEFT )
-                                  .build();
-            fail( "Expected exception on constructing a probability threshold with an invalid upper bound." );
-        }
-        catch ( IllegalArgumentException e )
-        {
-        }
-        try
-        {
-            new ThresholdBuilder().setProbabilities( OneOrTwoDoubles.of( 0.0 ) )
-                                  .setCondition( Operator.LESS )
-                                  .setDataType( ThresholdDataType.LEFT )
-                                  .build();
-            fail( "Expected exception on constructing a probability threshold with an invalid operator on the "
-                  + "lower bound." );
-        }
-        catch ( IllegalArgumentException e )
-        {
-        }
-        try
-        {
-            new ThresholdBuilder().setProbabilities( OneOrTwoDoubles.of( 1.0 ) )
-                                  .setCondition( Operator.GREATER )
-                                  .setDataType( ThresholdDataType.LEFT )
-                                  .build();
-            fail( "Expected exception on constructing a probability threshold with an invalid operator on the "
-                  + "upper bound." );
-        }
-        catch ( IllegalArgumentException e )
-        {
-        }
+        exception.expect( NullPointerException.class );
+        new ThresholdBuilder().build();
+
     }
+
+    @Test
+    public void testExceptionOnConstructionWithNullThresholds()
+    {
+        exception.expect( IllegalArgumentException.class );
+        new ThresholdBuilder().setCondition( Operator.GREATER ).setDataType( ThresholdDataType.LEFT ).build();
+    }
+
+    @Test
+    public void testExceptionOnConstructionWithNegativeProbability()
+    {
+        exception.expect( IllegalArgumentException.class );
+        new ThresholdBuilder().setProbabilities( OneOrTwoDoubles.of( -1.0 ) )
+                              .setCondition( Operator.GREATER )
+                              .setDataType( ThresholdDataType.LEFT )
+                              .build();
+    }
+
+    @Test
+    public void testExceptionOnConstructionWithProbabilityGreaterThanOne()
+    {
+        exception.expect( IllegalArgumentException.class );
+        new ThresholdBuilder().setProbabilities( OneOrTwoDoubles.of( 2.0 ) )
+                              .setCondition( Operator.GREATER )
+                              .setDataType( ThresholdDataType.LEFT )
+                              .build();
+    }
+
+    @Test
+    public void testExceptionOnConstructionOfAnInfiniteThresholdWithALabel()
+    {
+        exception.expect( IllegalArgumentException.class );
+        new ThresholdBuilder().setProbabilities( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ) )
+                              .setCondition( Operator.GREATER )
+                              .setDataType( ThresholdDataType.LEFT )
+                              .setLabel( "A" )
+                              .build();
+    }
+
+    @Test
+    public void testExceptionOnConstructionOfAThresholdThatChecksForProbabilitiesGreaterThanOne()
+    {
+        exception.expect( IllegalArgumentException.class );
+        new ThresholdBuilder().setProbabilities( OneOrTwoDoubles.of( 0.0, 1.0 ) )
+                              .setCondition( Operator.GREATER )
+                              .setDataType( ThresholdDataType.LEFT )
+                              .build();
+    }
+
+    @Test
+    public void testExceptionOnConstructionOfATwoSidedThresholdWithoutABetweenCondition()
+    {
+        exception.expect( IllegalArgumentException.class );
+        new ThresholdBuilder().setValues( OneOrTwoDoubles.of( 0.0, 1.0 ) )
+                              .setCondition( Operator.GREATER )
+                              .setDataType( ThresholdDataType.LEFT )
+                              .build();
+    }
+
+    @Test
+    public void testExceptionOnConstructionOfAProbabilityThresholdWithAMissingUpperBound()
+    {
+        exception.expect( IllegalArgumentException.class );
+        new ThresholdBuilder().setProbabilities( OneOrTwoDoubles.of( 0.0 ) )
+                              .setCondition( Operator.BETWEEN )
+                              .setDataType( ThresholdDataType.LEFT )
+                              .build();
+    }
+
+    @Test
+    public void testExceptionOnConstructionOfAValueThresholdWithAMissingUpperBound()
+    {
+        exception.expect( IllegalArgumentException.class );
+        new ThresholdBuilder().setValues( OneOrTwoDoubles.of( 0.0 ) )
+                              .setCondition( Operator.BETWEEN )
+                              .setDataType( ThresholdDataType.LEFT )
+                              .build();
+    }
+
+    @Test
+    public void testExceptionOnConstructionOfAValueThresholdWithALowerBoundAboveTheUpperBound()
+    {
+        exception.expect( IllegalArgumentException.class );
+        new ThresholdBuilder().setValues( OneOrTwoDoubles.of( 1.0, 0.0 ) )
+                              .setCondition( Operator.BETWEEN )
+                              .setDataType( ThresholdDataType.LEFT )
+                              .build();
+    }
+
+    @Test
+    public void testExceptionOnConstructionOfAProbabilityThresholdWithALowerBoundAboveTheUpperBound()
+    {
+        exception.expect( IllegalArgumentException.class );
+        new ThresholdBuilder().setProbabilities( OneOrTwoDoubles.of( 1.0, 0.0 ) )
+                              .setCondition( Operator.BETWEEN )
+                              .setDataType( ThresholdDataType.LEFT )
+                              .build();
+    }
+
+    @Test
+    public void testExceptionOnConstructionOfAProbabilityThresholdWithAnUpperBoundAboveOne()
+    {
+        exception.expect( IllegalArgumentException.class );
+        new ThresholdBuilder().setProbabilities( OneOrTwoDoubles.of( 0.0, 2.0 ) )
+                              .setCondition( Operator.BETWEEN )
+                              .setDataType( ThresholdDataType.LEFT )
+                              .build();
+    }
+
+    @Test
+    public void testExceptionOnConstructionOfAProbabilityThresholdWithALowerBoundBelowZero()
+    {
+        exception.expect( IllegalArgumentException.class );
+        new ThresholdBuilder().setProbabilities( OneOrTwoDoubles.of( 0.0 ) )
+                              .setCondition( Operator.LESS )
+                              .setDataType( ThresholdDataType.LEFT )
+                              .build();
+
+    }
+
+    @Test
+    public void testExceptionOnConstructionOfAProbabilityThresholdWithASingleBoundAboveOne()
+    {
+        exception.expect( IllegalArgumentException.class );
+        new ThresholdBuilder().setProbabilities( OneOrTwoDoubles.of( 1.0 ) )
+                              .setCondition( Operator.GREATER )
+                              .setDataType( ThresholdDataType.LEFT )
+                              .build();
+    }
+
+    @Test
+    public void testExceptionOnComparingWithNullInput()
+    {
+        exception.expect( NullPointerException.class );
+        Threshold threshold = Threshold.of( OneOrTwoDoubles.of( 1.0 ), Operator.GREATER, ThresholdDataType.LEFT );
+
+        threshold.compareTo( null );
+    }
+
 }
