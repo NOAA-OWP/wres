@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
@@ -46,6 +47,8 @@ class ClimatologyBuilder
     {
         DateRange(String beginning, String end)
         {
+            Objects.requireNonNull( beginning );
+            Objects.requireNonNull( end );
             this.startDate = beginning;
             this.endDate = end;
         }
@@ -54,6 +57,8 @@ class ClimatologyBuilder
         {
             this.startDate = data.getString( "start_date" );
             this.endDate = data.getString( "end_date" );
+            Objects.requireNonNull( this.startDate );
+            Objects.requireNonNull( this.endDate );
         }
 
         private final String startDate;
@@ -260,6 +265,10 @@ class ClimatologyBuilder
                          DataSourceConfig dataSourceConfig,
                          String earliestDate )
         {
+            Objects.requireNonNull( feature );
+            Objects.requireNonNull( project );
+            Objects.requireNonNull( dataSourceConfig );
+            Objects.requireNonNull( earliestDate );
             this.feature = feature;
             this.project = project;
             this.dataSourceConfig = dataSourceConfig;
