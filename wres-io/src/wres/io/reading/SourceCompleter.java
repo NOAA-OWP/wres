@@ -45,20 +45,19 @@ public class SourceCompleter
      *
      * Ensure that ingest of a given sourceId is complete, either by verifying
      * that another task has finished it or by finishing it right here and now.
+     *
+     * Due to #64922 (empty WRDS AHPS data sources) and #65049 (empty CSV
+     * data sources), this class tolerates an empty Set of latches and logs a
+     * warning (prior behavior was to throw IllegalArgumentException).
+     *
      * @param latches the latches to use to coordinate with other ingest tasks
      * @throws IngestException when unable to mark the source complete
      * @throws NullPointerException when latches is null
-     * @throws IllegalArgumentException when latches is empty
      */
 
     public void complete( Set<Pair<CountDownLatch,CountDownLatch>> latches )
             throws IngestException
     {
-        if ( latches.isEmpty() )
-        {
-            throw new IllegalArgumentException( "Expected coordinating latches to exist!" );
-        }
-
         // Make sure the ingest is actually complete by sending
         // a signal that we sit and await the ingest of values prior to
         // marking them complete.
@@ -69,71 +68,80 @@ public class SourceCompleter
                      .countDown();
         }
 
-        try
+        if ( !latches.isEmpty() )
         {
-            Duration eachWait = Duration.ofMillis( 100 / latches.size() );
-
-            for ( Pair<CountDownLatch, CountDownLatch> latchPair : latches )
+            try
             {
-                // Wait a moment for another task to save my data before
-                // doing it myself.
-                boolean dataFinished = latchPair.getRight()
-                                                .await( eachWait.toMillis(),
-                                                        TimeUnit.MILLISECONDS );
-                if ( !dataFinished )
+                Duration eachWait = Duration.ofMillis( 100 / latches.size() );
+
+                for ( Pair<CountDownLatch, CountDownLatch> latchPair : latches )
                 {
-                    LOGGER.debug(
-                            "Sick of waiting for another task, saving data myself! {}, {}",
-                            this.sourceId, latchPair );
-                    boolean thisFlushed = IngestedValues.flush( latchPair );
-
-                    // It is still necessary to double-check that the data has
-                    // actually been written, because even if we call flush(),
-                    // there is no guarantee that this was the task that wrote.
-                    // However, because we called flush, we or someone must be
-                    // doing the write at this point. Wait indefinitely for it.
-                    // On the other hand, if the other task died while
-                    // attempting the copy, we cannot sit here and wait forever.
-                    // If we truly completed it, await() call would return
-                    // immediately. If we did not successfully complete, then we
-                    // should be ready to give up after a time to break
-                    // deadlock.
-                    if ( !thisFlushed )
+                    // Wait a moment for another task to save my data before
+                    // doing it myself.
+                    boolean dataFinished = latchPair.getRight()
+                                                    .await( eachWait.toMillis(),
+                                                            TimeUnit.MILLISECONDS );
+                    if ( !dataFinished )
                     {
-                        boolean done = latchPair.getRight()
-                                                .await( PATIENCE_LEVEL.toMillis(),
-                                                        TimeUnit.MILLISECONDS );
+                        LOGGER.debug( "Sick of waiting for another task, saving data myself! {}, {}",
+                                      this.sourceId, latchPair );
+                        boolean thisFlushed = IngestedValues.flush( latchPair );
 
-                        // This is uncomfortable for sure, and a better way
-                        // should be found than making an assumption that the
-                        // other task failed. The thing we are working around is
-                        // that get() may be called on this task prior to get()
-                        // on the task responsible for marking completed, while
-                        // that other task has had an exception that does not
-                        // propagate.
-                        if ( !done )
+                        // It is still necessary to double-check that the data has
+                        // actually been written, because even if we call flush(),
+                        // there is no guarantee that this was the task that wrote.
+                        // However, because we called flush, we or someone must be
+                        // doing the write at this point. Wait indefinitely for it.
+                        // On the other hand, if the other task died while
+                        // attempting the copy, we cannot sit here and wait forever.
+                        // If we truly completed it, await() call would return
+                        // immediately. If we did not successfully complete, then we
+                        // should be ready to give up after a time to break
+                        // deadlock.
+                        if ( !thisFlushed )
                         {
-                            throw new IngestException( "Another task did not "
-                                                       + "ingest and complete "
-                                                       + latchPair
-                                                       + " within "
-                                                       + PATIENCE_LEVEL
-                                                       + ", therefore assuming "
-                                                       + "it failed." );
+                            boolean done = latchPair.getRight()
+                                                    .await( PATIENCE_LEVEL.toMillis(),
+                                                            TimeUnit.MILLISECONDS );
+
+                            // This is uncomfortable for sure, and a better way
+                            // should be found than making an assumption that the
+                            // other task failed. The thing we are working around is
+                            // that get() may be called on this task prior to get()
+                            // on the task responsible for marking completed, while
+                            // that other task has had an exception that does not
+                            // propagate.
+                            if ( !done )
+                            {
+                                throw new IngestException(
+                                        "Another task did not "
+                                        + "ingest and complete "
+                                        + latchPair
+                                        + " within "
+                                        + PATIENCE_LEVEL
+                                        + ", therefore assuming "
+                                        + "it failed." );
+                            }
                         }
                     }
                 }
             }
+            catch ( InterruptedException ie )
+            {
+                String message =
+                        "Interrupted while waiting for another task to ingest data for source "
+                        + this.sourceId + ".";
+                LOGGER.warn( message, ie );
+                Thread.currentThread().interrupt();
+                // Additionally throw exception to ensure we don't accidentally mark
+                // this source as completed a few lines down.
+                throw new IngestException( message, ie );
+            }
         }
-        catch ( InterruptedException ie )
+        else
         {
-            String message = "Interrupted while waiting for another task to ingest data for source "
-                             + this.sourceId + ".";
-            LOGGER.warn( message, ie );
-            Thread.currentThread().interrupt();
-            // Additionally throw exception to ensure we don't accidentally mark
-            // this source as completed a few lines down.
-            throw new IngestException( message, ie );
+            LOGGER.warn( "A data source with no data may have been found. Please check your dataset. (Technical info: source_id={})",
+                         this.sourceId );
         }
 
         // This is used to avoid throwing an exception from finally
