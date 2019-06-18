@@ -26,7 +26,7 @@ class SupplySampleData implements Supplier<SampleData<?>>
      */
     
     private static final Logger LOGGER =
-            LoggerFactory.getLogger( ProduceStatisticsFromSampleData.class );
+            LoggerFactory.getLogger( SupplySampleData.class );
 
     /**
      * The future sample data.
