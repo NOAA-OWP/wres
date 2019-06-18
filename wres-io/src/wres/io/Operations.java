@@ -813,46 +813,18 @@ public final class Operations {
      * @return A set of {@link wres.config.FeaturePlus Features}
      * @throws SQLException Thrown if information about the features could not
      * be retrieved from the database
-     * @throws IOException Thrown if IO operations prevented the set from being
-     * created
      * @throws NoDataException if there are no features to process
      */
     public static Set<FeaturePlus> decomposeFeatures( Project project )
-            throws SQLException, IOException
+            throws SQLException
     {
         Set<FeaturePlus> atomicFeatures = new TreeSet<>( Comparator.comparing(
-                ConfigHelper::getFeatureDescription ));
+                ConfigHelper::getFeatureDescription ) );
 
         for (FeatureDetails details : project.getFeatures())
         {
-            // Check if the feature has any intersecting values
-            Feature feature = details.toFeature();
-
-            boolean hasLeadOffset;
-
-            try
-            {
-                hasLeadOffset = project.getLeadOffset( feature ) != null;
-            }
-            catch ( CalculationException e )
-            {
-                throw new IOException( "It could not be determined whether or "
-                                       + "not left and right hand data intersect at " +
-                                       ConfigHelper.getFeatureDescription( feature ) );
-            }
-
-            if ( project.usesGriddedData( project.getRight() ) ||
-                 hasLeadOffset)
-            {
-                Feature resolvedFeature = details.toFeature();
-                atomicFeatures.add( FeaturePlus.of ( resolvedFeature ));
-            }
-            else
-            {
-                LOGGER.info( "The location '{}' will not be evaluated because "
-                             + "it doesn't have any intersecting data between "
-                             + "left and right inputs.", details );
-            }
+            Feature resolvedFeature = details.toFeature();
+            atomicFeatures.add( FeaturePlus.of ( resolvedFeature ) );
         }
 
         // Nothing to process, which is exceptional behavior

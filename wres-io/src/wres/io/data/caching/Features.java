@@ -17,6 +17,7 @@ import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.FeatureDetails;
 import wres.io.project.Project;
+import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.util.NotImplementedException;
 import wres.util.Strings;
@@ -112,14 +113,15 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 
 		return exists;
 	}
-	
+
 	/**
 	 * Returns the ID of a Feature from the global cache based on a full Feature specification
 	 * @param detail The full specification for a Feature
 	 * @return The ID for the specified feature
 	 * @throws SQLException Thrown if the ID could not be retrieved from the Database
 	 */
-    private static Integer getFeatureID(FeatureDetails detail) throws SQLException
+    public static Integer getFeatureID( FeatureDetails detail )
+            throws SQLException
 	{
 	    LOGGER.trace("getFeatureID - args {}", detail);
 		return getCache().getID(detail);
@@ -144,7 +146,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         return Features.getFeatureID( new FeatureDetails.FeatureKey( comid, lid, gageID, huc, null, null ));
     }
 
-    public static Integer getFeatureID(Feature feature) throws SQLException
+    private static Integer getFeatureID( Feature feature ) throws SQLException
     {
         FeatureDetails details = new FeatureDetails(  );
         details.setLid( feature.getLocationId() );
@@ -160,6 +162,54 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 
         return getFeatureID( details );
     }
+
+
+    /**
+     * Given a db row id, find the FeatureDetails object for it.
+     * Tries to find in the cache and if it is not there, reaches to the db.
+     * @param featureId the db-instance-specific surrogate key for the feature
+     * @return the existing or new FeatureDetails
+     * @throws SQLException when communication with the database fails.
+     */
+
+    public static FeatureDetails.FeatureKey getFeatureKey( int featureId )
+            throws SQLException
+    {
+        LOGGER.trace( "getFeatureKey called with {}", featureId );
+        for ( Map.Entry<FeatureDetails.FeatureKey,Integer> cacheEntry :
+                Features.getCache()
+                        .getKeyIndex()
+                        .entrySet() )
+        {
+            if ( cacheEntry.getValue() == featureId )
+            {
+                LOGGER.trace( "getFeatureKey found in cache id {}: {}",
+                              featureId, cacheEntry );
+                return cacheEntry.getKey();
+            }
+        }
+
+        LOGGER.trace( "getFeatureKey is going to reach out to db for key {}",
+                      featureId );
+        // Not found above, gotta find it.
+        DataScripter dataScripter = new DataScripter();
+        dataScripter.addLine( "SELECT lid, comid, huc, gage_id, longitude, latitude" );
+        dataScripter.addLine( "FROM wres.Feature" );
+        dataScripter.addLine( "WHERE feature_id = ?" );
+        dataScripter.addArgument( featureId );
+
+        try ( DataProvider dataProvider = dataScripter.getData() )
+        {
+            String lid = dataProvider.getString( "lid" );
+            Integer comid = dataProvider.getInt( "comid" );
+            String gageId = dataProvider.getString( "gage_id" );
+            String huc = dataProvider.getString( "huc" );
+            Float longitude = dataProvider.getFloat( "longitude" );
+            Float latitude = dataProvider.getFloat( "latitude" );
+            return new FeatureDetails.FeatureKey( comid, lid, huc, gageId, longitude, latitude );
+        }
+    }
+
 
     public static FeatureDetails getDetails(Feature feature) throws SQLException
     {
@@ -370,10 +420,10 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         return details;
     }
 
-    public static List<FeatureDetails> getGriddedDetails(Project details)
+    public static Set<FeatureDetails> getGriddedDetails( Project details )
             throws SQLException
     {
-        List<FeatureDetails> features;
+        Set<FeatureDetails> features;
 
         if (details.getProjectConfig().getPair().getFeature().size() > 0)
         {
@@ -387,7 +437,8 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         return features;
     }
 
-    private static List<FeatureDetails> getAllGriddedFeatures(ProjectConfig projectConfig) throws SQLException
+    private static Set<FeatureDetails> getAllGriddedFeatures( ProjectConfig projectConfig )
+            throws SQLException
     {
         // We need a new solution for decomposing gridded features; we can't
         // and shouldn't hold ~17,000,000 of these objects in memory at once
@@ -405,7 +456,8 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
      * @return The list of feature details to use for evaluation
      * @throws SQLException Thrown if an issue is encountered while running the script in the database
      */
-    private static List<FeatureDetails> getSpecifiedGriddedFeatures(ProjectConfig projectConfig) throws SQLException
+    private static Set<FeatureDetails> getSpecifiedGriddedFeatures( ProjectConfig projectConfig )
+            throws SQLException
     {
         DataScripter script = new DataScripter(  );
 
@@ -508,7 +560,9 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         return Features.getDetails( null, null, gageID, null );
     }
 
-    private static List<FeatureDetails> getDetailsByCoordinates(final Float longitude, final Float latitude, final Float range)
+    private static Set<FeatureDetails> getDetailsByCoordinates( Float longitude,
+                                                                Float latitude,
+                                                                Float range )
             throws SQLException
     {
         Double radianLatitude = Math.toRadians( latitude );
@@ -544,7 +598,8 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         return Features.getDetailsFromDatabase( script );
     }
 
-    private static List<FeatureDetails> getDetailsByGeometry( Feature feature ) throws SQLException
+    private static Set<FeatureDetails> getDetailsByGeometry( Feature feature )
+            throws SQLException
     {
         DataScripter script = new DataScripter(  );
 
@@ -601,7 +656,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         return Features.getDetailsFromDatabase( script );
     }
 
-    private static List<FeatureDetails> getDetailsByHUC(String huc)
+    private static Set<FeatureDetails> getDetailsByHUC( String huc )
             throws SQLException
     {
         DataScripter script = new DataScripter(  );
@@ -613,7 +668,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         return Features.getDetailsFromDatabase( script );
     }
 
-    private static List<FeatureDetails> getDetailsByRegion( String region)
+    private static Set<FeatureDetails> getDetailsByRegion( String region )
             throws SQLException
     {
         DataScripter script = new DataScripter(  );
@@ -625,7 +680,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         return Features.getDetailsFromDatabase( script );
     }
 
-    private static List<FeatureDetails> getDetailsByState(String state)
+    private static Set<FeatureDetails> getDetailsByState( String state )
             throws SQLException
     {
         DataScripter script = new DataScripter(  );
@@ -637,13 +692,14 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         return Features.getDetailsFromDatabase( script );
     }
 
-    private static List<FeatureDetails> getDetailsFromDatabase(DataScripter script) throws SQLException
+    private static Set<FeatureDetails> getDetailsFromDatabase( DataScripter script )
+            throws SQLException
     {
         List<FeatureDetails> features = script.interpret( FeatureDetails::new );
 
         features.forEach( Features.getCache()::add );
 
-        return features;
+        return new HashSet<>( features );
     }
 
     public static Integer getVariableFeatureIDByLID(String lid, Integer variableID)
