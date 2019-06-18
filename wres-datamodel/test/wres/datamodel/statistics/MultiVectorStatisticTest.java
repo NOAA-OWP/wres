@@ -1,12 +1,15 @@
 package wres.datamodel.statistics;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.Map;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
@@ -25,13 +28,15 @@ import wres.datamodel.metadata.StatisticMetadata;
 public final class MultiVectorStatisticTest
 {
 
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
+
     /**
      * Constructs a {@link MultiVectorStatistic} and tests for equality with another {@link MultiVectorStatistic}.
      */
 
-    @SuppressWarnings( "unlikely-arg-type" )
     @Test
-    public void test1Equals()
+    public void testEquals()
     {
         final Location l1 = Location.of( "A" );
         final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
@@ -60,9 +65,9 @@ public final class MultiVectorStatisticTest
                                                            MeasurementUnit.of(),
                                                            MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
                                                            MetricConstants.MAIN );
-        Map<MetricDimension, double[]> mva = new HashMap<>();
-        Map<MetricDimension, double[]> mvb = new HashMap<>();
-        Map<MetricDimension, double[]> mvc = new HashMap<>();
+        Map<MetricDimension, double[]> mva = new EnumMap<>( MetricDimension.class );
+        Map<MetricDimension, double[]> mvb = new EnumMap<>( MetricDimension.class );
+        Map<MetricDimension, double[]> mvc = new EnumMap<>( MetricDimension.class );
         mva.put( MetricDimension.PROBABILITY_OF_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
         mva.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
         mvb.put( MetricDimension.PROBABILITY_OF_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
@@ -71,17 +76,17 @@ public final class MultiVectorStatisticTest
         mvc.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4, 0.5 } );
         final MultiVectorStatistic s = MultiVectorStatistic.ofMultiVectorOutput( mva, m1 );
         final MultiVectorStatistic t = MultiVectorStatistic.ofMultiVectorOutput( mvb, m1 );
-        assertTrue( "Expected equal outputs.", s.equals( t ) );
-        assertTrue( "Expected non-equal outputs.", !s.equals( null ) );
-        assertTrue( "Expected non-equal outputs.", !s.equals( Double.valueOf( 1.0 ) ) );
-        assertTrue( "Expected non-equal outputs.", !s.equals( MultiVectorStatistic.ofMultiVectorOutput( mvc, m1 ) ) );
-        assertTrue( "Expected non-equal outputs.", !s.equals( MultiVectorStatistic.ofMultiVectorOutput( mvc, m2 ) ) );
+        assertTrue( s.equals( t ) );
+        assertNotEquals( null, s );
+        assertNotEquals( Double.valueOf( 1.0 ), s );
+        assertTrue( !s.equals( MultiVectorStatistic.ofMultiVectorOutput( mvc, m1 ) ) );
+        assertTrue( !s.equals( MultiVectorStatistic.ofMultiVectorOutput( mvc, m2 ) ) );
         final MultiVectorStatistic q = MultiVectorStatistic.ofMultiVectorOutput( mva, m2 );
         final MultiVectorStatistic r = MultiVectorStatistic.ofMultiVectorOutput( mvb, m3 );
-        assertTrue( "Expected equal outputs.", q.equals( q ) );
-        assertTrue( "Expected non-equal outputs.", !s.equals( q ) );
-        assertTrue( "Expected non-equal outputs.", !q.equals( s ) );
-        assertTrue( "Expected non-equal outputs.", !q.equals( r ) );
+        assertTrue( q.equals( q ) );
+        assertFalse( s.equals( q ) );
+        assertFalse( q.equals( s ) );
+        assertFalse( q.equals( r ) );
     }
 
     /**
@@ -89,7 +94,7 @@ public final class MultiVectorStatisticTest
      */
 
     @Test
-    public void test2GetMetadata()
+    public void testGetMetadata()
     {
         final Location l1 = Location.of( "A" );
         final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
@@ -109,7 +114,7 @@ public final class MultiVectorStatisticTest
                                                            MeasurementUnit.of(),
                                                            MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
                                                            MetricConstants.MAIN );
-        Map<MetricDimension, double[]> mva = new HashMap<>();
+        Map<MetricDimension, double[]> mva = new EnumMap<>( MetricDimension.class );
         mva.put( MetricDimension.PROBABILITY_OF_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
         mva.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
         final MultiVectorStatistic q = MultiVectorStatistic.ofMultiVectorOutput( mva, m1 );
@@ -122,7 +127,7 @@ public final class MultiVectorStatisticTest
      */
 
     @Test
-    public void test3HashCode()
+    public void testHashCode()
     {
         final Location l1 = Location.of( "A" );
         final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
@@ -151,10 +156,10 @@ public final class MultiVectorStatisticTest
                                                            MeasurementUnit.of(),
                                                            MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
                                                            MetricConstants.MAIN );
-        
-        Map<MetricDimension, double[]> mva = new HashMap<>();
-        Map<MetricDimension, double[]> mvb = new HashMap<>();
-        Map<MetricDimension, double[]> mvc = new HashMap<>();
+
+        Map<MetricDimension, double[]> mva = new EnumMap<>( MetricDimension.class );
+        Map<MetricDimension, double[]> mvb = new EnumMap<>( MetricDimension.class );
+        Map<MetricDimension, double[]> mvc = new EnumMap<>( MetricDimension.class );
         mva.put( MetricDimension.PROBABILITY_OF_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
         mva.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
         mvb.put( MetricDimension.PROBABILITY_OF_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
@@ -173,7 +178,7 @@ public final class MultiVectorStatisticTest
      */
 
     @Test
-    public void test4Accessors()
+    public void testAccessors()
     {
         final Location l1 = Location.of( "A" );
         final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
@@ -184,7 +189,7 @@ public final class MultiVectorStatisticTest
                                                            MeasurementUnit.of(),
                                                            MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
                                                            MetricConstants.MAIN );
-        Map<MetricDimension, double[]> mva = new HashMap<>();
+        Map<MetricDimension, double[]> mva = new EnumMap<>( MetricDimension.class );
         mva.put( MetricDimension.PROBABILITY_OF_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
         mva.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
         final MultiVectorStatistic s = MultiVectorStatistic.ofMultiVectorOutput( mva, m1 );
@@ -197,12 +202,9 @@ public final class MultiVectorStatisticTest
         assertTrue( "Expected a map of data.", !s.getData().isEmpty() );
     }
 
-    /**
-     * Attempts to construct a {@link MultiVectorStatistic} and checks for exceptions on invalid inputs.
-     */
 
     @Test
-    public void test5Exceptions()
+    public void testExceptionOnNullData()
     {
         final Location l1 = Location.of( "A" );
         final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
@@ -213,37 +215,52 @@ public final class MultiVectorStatisticTest
                                                            MeasurementUnit.of(),
                                                            MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
                                                            MetricConstants.MAIN );
-        Map<MetricDimension, VectorOfDoubles> mva = new HashMap<>();
+        Map<MetricDimension, VectorOfDoubles> mva = new EnumMap<>( MetricDimension.class );
         mva.put( MetricDimension.PROBABILITY_OF_DETECTION,
-                 VectorOfDoubles.of( new double[] { 0.1, 0.2, 0.3, 0.4 } ) );
+                 VectorOfDoubles.of( 0.1, 0.2, 0.3, 0.4 ) );
         mva.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION,
-                 VectorOfDoubles.of( new double[] { 0.1, 0.2, 0.3, 0.4 } ) );
-        try
-        {
-            MultiVectorStatistic.of( mva, null );
-            fail( "Expected an exception on null metadata." );
-        }
-        catch ( StatisticException e )
-        {
-        }
-        try
-        {
-            MultiVectorStatistic.of( null, m1 );
-            fail( "Expected an exception on null input data." );
-        }
-        catch ( StatisticException e )
-        {
-        }
-        try
-        {
-            mva.clear();
-            MultiVectorStatistic.of( mva, m1 );
-            fail( "Expected an exception on empty inputs." );
-        }
-        catch ( StatisticException e )
-        {
-        }
+                 VectorOfDoubles.of( 0.1, 0.2, 0.3, 0.4 ) );
+
+        exception.expect( StatisticException.class );
+
+        MultiVectorStatistic.of( null, m1 );
+
     }
 
+    @Test
+    public void testExceptionOnNullMetadata()
+    {
+
+        Map<MetricDimension, VectorOfDoubles> mva = new EnumMap<>( MetricDimension.class );
+        mva.put( MetricDimension.PROBABILITY_OF_DETECTION,
+                 VectorOfDoubles.of( 0.1, 0.2, 0.3, 0.4 ) );
+        mva.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION,
+                 VectorOfDoubles.of( 0.1, 0.2, 0.3, 0.4 ) );
+
+        exception.expect( StatisticException.class );
+
+        MultiVectorStatistic.of( mva, null );
+
+    }
+
+    @Test
+    public void testExceptionOnEnptyData()
+    {
+        final Location l1 = Location.of( "A" );
+        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( l1,
+                                                                                                    "B",
+                                                                                                    "C" ) ),
+                                                           10,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
+                                                           MetricConstants.MAIN );
+        Map<MetricDimension, VectorOfDoubles> mva = new EnumMap<>( MetricDimension.class );
+
+        exception.expect( StatisticException.class );
+
+        MultiVectorStatistic.of( mva, m1 );
+
+    }
 
 }
