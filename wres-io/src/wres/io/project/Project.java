@@ -6,7 +6,6 @@ import java.time.Duration;
 import java.time.MonthDay;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -214,7 +213,7 @@ public class Project
     /**
      * The set of all features pertaining to the project
      */
-    private Collection<FeatureDetails> features;
+    private Set<FeatureDetails> features;
 
     /**
      * The ID for the variable on the left side of the input
@@ -344,9 +343,21 @@ public class Project
      */
     public void prepareForExecution() throws SQLException, IOException, CalculationException
     {
+        LOGGER.trace( "prepareForExecution() entered" );
         // Sets and validates the time-scale information from the declaration and ingested sources
         // Also sets the desired time step of the output
         this.setDesiredTimeScaleAndTimeStep();
+
+        // Check for features that potentially have intersecting values.
+        // The query in getIntersectingFeatures checks that there is some data
+        // for each feature on each side, but does not guarantee pairs.
+        synchronized ( Project.FEATURE_LOCK )
+        {
+            LOGGER.debug( "Features so far: {}", this.features );
+            this.features = this.getIntersectingFeatures();
+            LOGGER.debug( "Features after getting intersecting features: {}",
+                          this.features );
+        }
 
         if (!ConfigHelper.isSimulation( this.getRight() ) &&
             !ProjectConfigs.hasTimeSeriesMetrics( this.getProjectConfig() ) &&
@@ -356,6 +367,35 @@ public class Project
         }
     }
 
+
+    /**
+     * Get a set of features for this project with intersecting data.
+     * Does not check if the data is pairable, simply checks that there is data
+     * on each of the left and right for this variable at a given feature.
+     * @return The Set of FeatureDetails with some data on each side
+     */
+
+    private Set<FeatureDetails> getIntersectingFeatures() throws SQLException
+    {
+        Set<FeatureDetails> intersectingFeatures = new HashSet<>( this.features.size() );
+        DataScripter script = ProjectScriptGenerator.createIntersectingFeaturesScript( this );
+
+        try ( DataProvider dataProvider = script.buffer() )
+        {
+            while ( dataProvider.next() )
+            {
+                int featureId = dataProvider.getInt( "feature_id" );
+                FeatureDetails.FeatureKey key =
+                        Features.getFeatureKey( featureId );
+                FeatureDetails featureDetail = new FeatureDetails( key );
+                intersectingFeatures.add( featureDetail );
+            }
+        }
+
+        return Collections.unmodifiableSet( intersectingFeatures );
+    }
+
+
     /**
      * Returns the set of FeaturesDetails for the project. If none have been
      * created yet, then it is evaluated. If there is no specification within
@@ -364,18 +404,22 @@ public class Project
      * @throws SQLException Thrown if details about the project's features
      * cannot be retrieved from the database
      */
-    public Collection<FeatureDetails> getFeatures() throws SQLException
+    public Set<FeatureDetails> getFeatures() throws SQLException
     {
         synchronized ( Project.FEATURE_LOCK )
         {
             if ( this.features == null )
             {
+                LOGGER.debug( "getFeatures(): no features found, populating." );
                 this.populateFeatures();
             }
-            return this.features;
         }
+
+        return Collections.unmodifiableSet( this.features );
     }
-    
+
+
+
     /**
      * Returns the desired time scale associated with the project, which 
      * is either the user-declared time scale (canonically) or the Least 
@@ -1008,6 +1052,7 @@ public class Project
      */
     private void populateFeatures() throws SQLException
     {
+        LOGGER.trace( "populateFeatures entered for {}", this );
         synchronized ( Project.FEATURE_LOCK )
         {
             if ( this.usesGriddedData( this.getRight() ) )
@@ -1963,20 +2008,18 @@ public class Project
      * </p>
      * @param feature The feature to find the offset for
      * @return The needed offset to match the first valid window with observations
-     * @throws IOException Thrown if tasks used to evaluate all lead offsets
-     * could not be executed
-     * @throws IOException Thrown if the population of all lead offsets is
-     * interrupted
      * @throws SQLException Thrown if offsets cannot be populated due to the
      * system being unable to determine what locations to retrieve offsets from.
      * @throws CalculationException Thrown if lead offsets cannot be calculated
      */
     public Integer getLeadOffset(Feature feature)
-            throws IOException, SQLException, CalculationException
+            throws SQLException
     {
         if (ConfigHelper.isSimulation( this.getRight() ) ||
                 ProjectConfigs.hasTimeSeriesMetrics( this.projectConfig ))
         {
+            LOGGER.debug( "getLeadOffset Returning 0 for {} (timeseries metrics)",
+                          feature );
             return 0;
         }
         else if (this.usesGriddedData( this.getRight() ))
@@ -1986,6 +2029,8 @@ public class Project
             // If the default minimum was hit, return 0 instead.
             if (offset == Integer.MIN_VALUE)
             {
+                LOGGER.debug( "getLeadOffset Returning 0 for {} (gridded data on right)",
+                              feature );
                 return 0;
             }
 
@@ -1994,10 +2039,6 @@ public class Project
                     this.getScale().getUnit().value(),
                     this.getScale().getPeriod()
             );
-        }
-        else if (this.leadOffsets.isEmpty())
-        {
-            this.populateLeadOffsets();
         }
 
         return this.leadOffsets.get( feature );
@@ -2022,6 +2063,8 @@ public class Project
      */
     private void populateLeadOffsets() throws IOException, SQLException, CalculationException
     {
+        LOGGER.trace( "populateLeadOffsets() entered" );
+
         FormattedStopwatch timer = null;
 
         if (LOGGER.isDebugEnabled())
@@ -2030,35 +2073,37 @@ public class Project
             timer.start();
         }
 
-        DataScripter script = ProjectScriptGenerator.formVariableFeatureLoadScript(this);
+        DataScripter script = ProjectScriptGenerator.formVariableFeatureLoadScript( this );
+
+        LOGGER.trace( "Running variablefeature load script: {}", script );
 
         Map<FeatureDetails.FeatureKey, Future<Integer>> futureOffsets = new LinkedHashMap<>(  );
 
         try (DataProvider data = script.buffer())
         {
-            LOGGER.trace("Variable feature metadata loaded...");
+            LOGGER.trace( "Variable feature metadata loaded... {}", data );
 
             while (data.next())
             {
+                int obsVariableFeatureId = data.getInt( "observation_feature" );
+                int fcVariableFeatureId = data.getInt("forecast_feature");
+                int featureId = data.getValue("feature_id");
+
                 OffsetEvaluator evaluator = new OffsetEvaluator(
                         this,
-                        data.getInt( "observation_feature" ),
-                        data.getInt("forecast_feature")
+                        obsVariableFeatureId,
+                        fcVariableFeatureId
                 );
 
                 // TODO: Add DataProvider constructor for the key
-                FeatureDetails.FeatureKey key = new FeatureDetails.FeatureKey(
-                        data.getValue("comid"),
-                        data.getValue("lid"),
-                        data.getValue("gage_id"),
-                        data.getValue("huc"),
-                        data.getValue("longitude"),
-                        data.getValue("latitude")
+                FeatureDetails.FeatureKey key = Features.getFeatureKey(
+                        featureId
                 );
 
                 futureOffsets.put( key, Executor.submit( evaluator ));
 
-                LOGGER.trace( "A task has been created to find the offset for {}.", key );
+                LOGGER.trace( "A task has been created to find the offset for {} using obsVFI {}, fcVFI {}, featureID {}.",
+                              key, obsVariableFeatureId, fcVariableFeatureId, featureId );
             }
         }
         catch ( SQLException e )
@@ -2733,11 +2778,20 @@ public class Project
                         feature
                 );
 
-                this.initialObservationDates.put(feature, script.retrieve( "zero_date" ));
+                LOGGER.trace( "Script to get observations for {}: {}", feature,
+                              script );
+                String zeroDate = script.retrieve( "zero_date" );
+                if ( zeroDate == null )
+                {
+                    throw new NullPointerException( "Earliest date for feature "
+                                                    + feature
+                                                    + " was null." );
+                }
+                this.initialObservationDates.put( feature, zeroDate );
             }
         }
 
-        return this.initialObservationDates.get( feature);
+        return this.initialObservationDates.get( feature );
     }
 
     public String getInitialForecastDate( DataSourceConfig sourceConfig, Feature feature) throws SQLException

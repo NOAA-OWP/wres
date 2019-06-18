@@ -12,6 +12,7 @@ import wres.config.generated.Feature;
 import wres.config.generated.Polygon;
 import wres.io.config.ConfigHelper;
 import wres.io.config.LeftOrRightOrBaseline;
+import wres.io.data.caching.Features;
 import wres.io.data.caching.Variables;
 import wres.io.data.details.FeatureDetails;
 import wres.io.utilities.DataScripter;
@@ -28,12 +29,108 @@ final class ProjectScriptGenerator
     // Since this class is only used for helper functions, we don't want anything to instantiate it
     private ProjectScriptGenerator(){}
 
+
     /**
      * Creates a script that retrieves a mapping between forecasted and observed features
      * @param project The project whose variables and features to load
      * @throws SQLException Thrown when the ID for the left or right variables cannot be loaded
      */
-    static DataScripter formVariableFeatureLoadScript(final Project project) throws SQLException
+
+    static DataScripter formVariableFeatureLoadScript( final Project project )
+            throws SQLException
+    {
+        DataScripter scripter = new DataScripter();
+        scripter.addLine( "SELECT o.variablefeature_id observation_feature, fc.variablefeature_id forecast_feature, o.feature_id" );
+        scripter.addLine( "FROM" );
+        scripter.addLine( "(" );
+        scripter.addTab().addLine( "SELECT VF.feature_id, VF.variablefeature_id" );
+        scripter.addTab().addLine( "FROM wres.variablefeature VF" );
+        scripter.addTab().addLine( "WHERE VF.variable_id = ?" );
+        scripter.addArgument( project.getLeftVariableID() );
+        scripter.addTab( 2 ).addLine( "AND VF.feature_id IN" );
+        scripter.addTab( 2 ).addLine( "(" );
+
+        boolean firstLineOfObsWritten = false;
+
+        for ( FeatureDetails featureDetails : project.getFeatures() )
+        {
+            if ( firstLineOfObsWritten )
+            {
+                scripter.addTab( 3 ).addLine( ",?" );
+            }
+            else
+            {
+                scripter.addTab( 3 ).addLine( "?" );
+            }
+
+            // FeatureDetails instance does not always have an id.
+            Integer featureId = Features.getFeatureID( featureDetails );
+
+            if ( featureId == null )
+            {
+                throw new NullPointerException( "A FeatureDetails without an id encountered! "
+                                                + featureDetails );
+            }
+
+            scripter.addArgument( featureId );
+            firstLineOfObsWritten = true;
+        }
+
+        scripter.addTab( 2 ).addLine( ")" );
+        scripter.addLine( ") as o" );
+
+        scripter.addLine( "INNER JOIN" );
+
+        scripter.addLine( "(" );
+        scripter.addTab().addLine( "SELECT VF.feature_id, VF.variablefeature_id" );
+        scripter.addTab().addLine( "FROM wres.variablefeature VF" );
+        scripter.addTab().addLine( "WHERE VF.variable_id = ?" );
+        scripter.addArgument( project.getRightVariableID() );
+        scripter.addTab( 2 ).addLine( "AND VF.feature_id IN" );
+        scripter.addTab( 2 ).addLine( "(" );
+
+        boolean firstLineOfForecastsWritten = false;
+
+        for ( FeatureDetails featureDetails : project.getFeatures() )
+        {
+            if ( firstLineOfForecastsWritten )
+            {
+                scripter.addTab( 3 ).addLine( ",?" );
+            }
+            else
+            {
+                scripter.addTab( 3 ).addLine( "?" );
+            }
+
+            // FeatureDetails instance does not always have an id.
+            Integer featureId = Features.getFeatureID( featureDetails );
+
+            if ( featureId == null )
+            {
+                throw new NullPointerException( "A FeatureDetails without an id encountered! "
+                                                + featureDetails );
+            }
+
+            scripter.addArgument( featureId );
+            firstLineOfForecastsWritten = true;
+        }
+
+        scripter.addTab( 2 ).addLine( ")" );
+        scripter.addLine( ") as fc" );
+
+        scripter.addLine( "ON fc.feature_id = o.feature_id" );
+        return scripter;
+    }
+
+
+    /**
+     * Creates a script that retrieves a mapping between forecasted and observed features
+     * @param project The project whose variables and features to load
+     * @throws SQLException Thrown when the ID for the left or right variables cannot be loaded
+     */
+
+    static DataScripter createIntersectingFeaturesScript( Project project )
+            throws SQLException
     {
         // First, select all forecasted variable feature IDs, feature IDs, and feature metadata
         //    Whose variable is used as right hand data and located within the confines of the project's
@@ -42,14 +139,12 @@ final class ProjectScriptGenerator
         //    Whose variable is used as left hand data and located within the confines of the project's
         //    feature specification that are used within this project
         // Then join the two resulting data sets based on their shared feature ids and return
-        //    - The observed location's corresponding variable feature ID
-        //    - The forecasted location's corresponding variable feature ID
         //    - Metadata about the shared feature that may be used for identification
-        DataScripter script = new DataScripter(  );
+        DataScripter script = new DataScripter();
 
         script.addLine( "WITH forecast_features AS" );
         script.addLine( "(");
-        script.addTab().addLine("SELECT VF.variablefeature_id, F.feature_id, comid, gage_id, lid, huc, latitude, longitude");
+        script.addTab().addLine( "SELECT VF.feature_id" );
         script.addTab().addLine("FROM wres.VariableFeature VF");
         script.addTab().addLine("INNER JOIN wres.Feature F");
         script.addTab(  2  ).addLine("ON F.feature_id = VF.feature_id");
@@ -250,27 +345,43 @@ final class ProjectScriptGenerator
 
         script.addTab(  2  ).addLine("AND EXISTS (");
         script.addTab(   3   ).addLine("SELECT 1");
-        script.addTab(   3   ).addLine("FROM wres.TimeSeries TS");
-        script.addTab(   3   ).addLine("INNER JOIN wres.TimeSeriesSource TSS");
-        script.addTab(    4    ).addLine("ON TS.timeseries_id = TSS.timeseries_id");
-        script.addTab(   3   ).addLine("INNER JOIN wres.ProjectSource PS");
-        script.addTab(    4    ).addLine("ON PS.source_id = TSS.source_id");
-        script.addTab(   3   ).addLine( "WHERE PS.project_id = ", project.getId());
-        script.addTab(    4    ).addLine("AND PS.member = 'right'");
-        script.addTab(    4    ).addLine("AND TS.variablefeature_id = VF.variablefeature_id");
-        script.addTab(    4    ).addLine("AND EXISTS (");
-        script.addTab(     5     ).addLine("SELECT 1");
-        script.addTab(     5     ).addLine("FROM wres.TimeSeriesValue TSV");
-        script.addTab(     5     ).addLine("WHERE TSV.timeseries_id = TS.timeseries_id");
-        script.addTab(    4    ).addLine(")");
+
+        if ( ConfigHelper.isForecast( project.getRight() ) )
+        {
+            script.addTab(   3   ).addLine( "FROM wres.TimeSeries TS" );
+            script.addTab(   3   ).addLine( "INNER JOIN wres.TimeSeriesSource TSS" );
+            script.addTab(    4    ).addLine( "ON TS.timeseries_id = TSS.timeseries_id" );
+            script.addTab(   3   ).addLine( "INNER JOIN wres.ProjectSource PS" );
+            script.addTab(    4    ).addLine( "ON PS.source_id = TSS.source_id" );
+            script.addTab(   3   ).addLine( "WHERE PS.project_id = ",
+                                            project.getId() );
+            script.addTab(    4    ).addLine( "AND PS.member = 'right'" );
+            script.addTab(    4    ).addLine( "AND TS.variablefeature_id = VF.variablefeature_id" );
+            script.addTab(    4    ).addLine( "AND EXISTS (" );
+            script.addTab(     5     ).addLine( "SELECT 1" );
+            script.addTab(     5     ).addLine( "FROM wres.TimeSeriesValue TSV" );
+            script.addTab(     5     ).addLine( "WHERE TSV.timeseries_id = TS.timeseries_id" );
+            script.addTab(    4    ).addLine( ")" );
+        }
+        else
+        {
+            script.addTab(   3   ).addLine( "FROM wres.Observation O" );
+            script.addTab(   3   ).addLine( "INNER JOIN wres.ProjectSource PS" );
+            script.addTab(    4    ).addLine( "ON PS.source_id = O.source_id" );
+            script.addTab(   3   ).addLine( "WHERE PS.project_id = ",
+                                            project.getId() );
+            script.addTab(    4    ).addLine( "AND PS.member = 'right'" );
+            script.addTab(    4    ).addLine( "AND O.variablefeature_id = VF.variablefeature_id" );
+        }
+
         script.addTab(   3   ).addLine(")");
-        script.addTab().addLine("GROUP BY VF.variablefeature_id, F.feature_id");
+        script.addTab().addLine( "GROUP BY VF.feature_id" );
         script.add(")");
 
         script.addLine( "," );
         script.addLine( "observation_features AS " );
         script.addLine( "(" );
-        script.addTab().addLine("SELECT VF.variablefeature_id, VF.feature_id");
+        script.addTab().addLine( "SELECT VF.feature_id" );
         script.addTab().addLine("FROM wres.VariableFeature VF");
         script.addTab().addLine("INNER JOIN wres.Feature F");
         script.addTab(  2  ).addLine("ON F.feature_id = VF.feature_id");
@@ -471,17 +582,10 @@ final class ProjectScriptGenerator
         script.addTab(    4    ).addLine("AND PS.member = 'left'");
         script.addTab(    4    ).addLine("AND O.variablefeature_id = VF.variablefeature_id");
         script.addTab(  2  ).addLine(")");
-        script.addTab(  2  ).addLine("GROUP BY VF.variablefeature_id, VF.feature_id");
+        script.addTab(  2  ).addLine( "GROUP BY VF.feature_id" );
         script.addLine(")");
 
-        script.addLine("SELECT FP.variablefeature_id AS forecast_feature,");
-        script.addTab().addLine( "O.variablefeature_id AS observation_feature," );
-        script.addTab().addLine("FP.comid,");
-        script.addTab().addLine("FP.gage_id,");
-        script.addTab().addLine("FP.huc,");
-        script.addTab().addLine("FP.lid,");
-        script.addTab().addLine("FP.latitude,");
-        script.addTab().addLine("FP.longitude");
+        script.addLine( "SELECT FP.feature_id" );
         script.addLine("FROM forecast_features FP");
         script.addLine("INNER JOIN observation_features O");
         script.addTab().addLine("ON O.feature_id = FP.feature_id");

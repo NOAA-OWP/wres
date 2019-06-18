@@ -16,6 +16,7 @@ import java.util.concurrent.Future;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
@@ -42,6 +43,8 @@ import wres.util.TimeHelper;
  */
 abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger( SampleDataIterator.class );
+
     /**
      * Shortcut term used to create a new line in generated text
      */
@@ -348,18 +351,32 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
      * @throws CalculationException Thrown if the frequency, period, or offset for lead bounds could not be calculated
      */
     Pair<Duration, Duration> getLeadBoundsForDefaultLeadTimesPoolingWindows( final int sampleNumber )
-            throws CalculationException
     {
         Duration beginning;
         Duration end;
-
         Duration offset;
+
         try
         {
-            offset = Duration.of( this.getProject().getLeadOffset( this.getFeature() ).longValue(),
-                                  TimeHelper.LEAD_RESOLUTION );
+            Feature feature = this.getFeature();
+            Project project = this.getProject();
+            Integer rawOffset = project.getLeadOffset( feature );
+            if ( rawOffset != null )
+            {
+                offset = Duration.of( rawOffset.longValue(),
+                                      TimeHelper.LEAD_RESOLUTION );
+            }
+            else
+            {
+                // Null offset found should mean no data will be found. Rather
+                // than break the iteration, set a 0 offset, which should be
+                // inert.
+                LOGGER.warn( "No offset found for feature {}, there should be no statistics for this feature.",
+                             feature );
+                offset = Duration.ZERO;
+            }
         }
-        catch ( IOException | SQLException e )
+        catch ( SQLException e )
         {
             throw new CalculationException( "The offset between observed values and "
                                             + "forecasted values are needed to determine "
