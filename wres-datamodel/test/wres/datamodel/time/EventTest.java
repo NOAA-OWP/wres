@@ -1,6 +1,7 @@
 package wres.datamodel.time;
 
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.time.Duration;
@@ -18,6 +19,13 @@ import org.junit.rules.ExpectedException;
 public final class EventTest
 {
 
+    private static final String EVENT_VALUE = "someValue";
+    private static final String FIFTH_TIME = "1985-01-05T12:00:00Z";
+    private static final String FOURTH_TIME = "1985-01-04T12:00:00Z";
+    private static final String THIRD_TIME = "1984-12-31T00:00:00Z";
+    private static final String SECOND_TIME = "1985-01-02T00:00:00Z";
+    private static final String FIRST_TIME = "1985-01-01T00:00:00Z";
+    
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
@@ -28,9 +36,9 @@ public final class EventTest
     @Test
     public void testGetTime()
     {
-        Event<String> event = Event.of( Instant.parse( "1985-01-05T12:00:00Z" ), "someValue" );
+        Event<String> event = Event.of( Instant.parse( FIFTH_TIME ), EVENT_VALUE );
         assertTrue( "The event has an unexpected time.",
-                    Instant.parse( "1985-01-05T12:00:00Z" ).equals( event.getTime() ) );
+                    Instant.parse( FIFTH_TIME ).equals( event.getTime() ) );
     }
 
     /**
@@ -40,8 +48,8 @@ public final class EventTest
     @Test
     public void testGetValue()
     {
-        Event<String> event = Event.of( Instant.parse( "1985-01-05T12:00:00Z" ), "someValue" );
-        assertTrue( "The event has an unexpected time.", "someValue".equals( event.getValue() ) );
+        Event<String> event = Event.of( Instant.parse( FIFTH_TIME ), EVENT_VALUE );
+        assertTrue( "The event has an unexpected time.", EVENT_VALUE.equals( event.getValue() ) );
     }
 
     /**
@@ -51,15 +59,15 @@ public final class EventTest
     @Test
     public void testGetReferenceTime()
     {
-        Event<String> event = Event.of( Instant.parse( "1985-01-05T12:00:00Z" ), "someValue" );
+        Event<String> event = Event.of( Instant.parse( FIFTH_TIME ), EVENT_VALUE );
         assertTrue( "The event has an unexpected reference time.",
-                    Instant.parse( "1985-01-05T12:00:00Z" ).equals( event.getReferenceTime() ) );
+                    Instant.parse( FIFTH_TIME ).equals( event.getReferenceTime() ) );
 
-        Event<String> eventTwo = Event.of( Instant.parse( "1985-01-04T12:00:00Z" ),
-                                           Instant.parse( "1985-01-05T12:00:00Z" ),
-                                           "someValue" );
+        Event<String> eventTwo = Event.of( Instant.parse( FOURTH_TIME ),
+                                           Instant.parse( FIFTH_TIME ),
+                                           EVENT_VALUE );
         assertTrue( "The event has an unexpected reference time.",
-                    Instant.parse( "1985-01-04T12:00:00Z" ).equals( eventTwo.getReferenceTime() ) );
+                    Instant.parse( FOURTH_TIME ).equals( eventTwo.getReferenceTime() ) );
 
     }
     
@@ -70,13 +78,13 @@ public final class EventTest
     @Test
     public void testGetDuration()
     {
-        Event<String> event = Event.of( Instant.parse( "1985-01-05T12:00:00Z" ), "someValue" );
+        Event<String> event = Event.of( Instant.parse( FIFTH_TIME ), EVENT_VALUE );
         assertTrue( "The event has an unexpected duration.",
                     Duration.ZERO.equals( event.getDuration() ) );
 
-        Event<String> eventTwo = Event.of( Instant.parse( "1985-01-04T12:00:00Z" ),
-                                           Instant.parse( "1985-01-05T12:00:00Z" ),
-                                           "someValue" );
+        Event<String> eventTwo = Event.of( Instant.parse( FOURTH_TIME ),
+                                           Instant.parse( FIFTH_TIME ),
+                                           EVENT_VALUE );
         
         assertTrue( "The event has an unexpected duration.",
                     Duration.ofDays( 1 ).equals( eventTwo.getDuration() ) );
@@ -92,15 +100,15 @@ public final class EventTest
     {
         // Reflexive 
         Event<String> event = Event.of( null,
-                                        Instant.parse( "1985-01-05T12:00:00Z" ),
-                                        "someValue" );
+                                        Instant.parse( FIFTH_TIME ),
+                                        EVENT_VALUE );
         assertTrue( "The event does not meet the equals contract for reflexivity.", event.equals( event ) );
         // Symmetric
-        Event<String> otherEvent = Event.of( Instant.parse( "1985-01-05T12:00:00Z" ), "someValue" );
+        Event<String> otherEvent = Event.of( Instant.parse( FIFTH_TIME ), EVENT_VALUE );
         assertTrue( "The event does not meet the equals contract for symmetry.",
                     event.equals( otherEvent ) && otherEvent.equals( event ) );
         // Transitive
-        Event<String> oneMoreEvent = Event.of( Instant.parse( "1985-01-05T12:00:00Z" ), "someValue" );
+        Event<String> oneMoreEvent = Event.of( Instant.parse( FIFTH_TIME ), EVENT_VALUE );
         assertTrue( "The event does not meet the equals contract for transitivity.",
                     event.equals( otherEvent ) && otherEvent.equals( oneMoreEvent ) && event.equals( oneMoreEvent ) );
         // Consistent
@@ -109,15 +117,15 @@ public final class EventTest
             assertTrue( "The event does not meet the equals contract for consistency.", event.equals( otherEvent ) );
         }
         // Nullity
-        assertFalse( "The event does not meet the equals contract for nullity.", event.equals( null ) );
+        assertNotEquals( null, event );
         // Check unequal cases for time and value
-        Event<String> unequalOnTime = Event.of( Instant.parse( "1985-01-06T12:00:00Z" ), "someValue" );
+        Event<String> unequalOnTime = Event.of( Instant.parse( "1985-01-06T12:00:00Z" ), EVENT_VALUE );
         assertFalse( "Expected the event to differ on time.", event.equals( unequalOnTime ) );
-        Event<String> unequalOnValue = Event.of( Instant.parse( "1985-01-05T12:00:00Z" ), "otherValue" );
+        Event<String> unequalOnValue = Event.of( Instant.parse( FIFTH_TIME ), "otherValue" );
         assertFalse( "Expected the event to differ on value.", event.equals( unequalOnValue ) );
         Event<String> unequalOnReferenceTime = Event.of( Instant.parse( "1985-01-04T11:00:00Z" ),
-                                                         Instant.parse( "1985-01-05T12:00:00Z" ),
-                                                         "someValue" );
+                                                         Instant.parse( FIFTH_TIME ),
+                                                         EVENT_VALUE );
         assertFalse( "Expected the event to differ on reference time.", event.equals( unequalOnReferenceTime ) );
     }
 
@@ -129,8 +137,8 @@ public final class EventTest
     public void testHashCode()
     {
         // Consistent with equals
-        Event<String> event = Event.of( Instant.parse( "1985-01-05T12:00:00Z" ), "someValue" );
-        Event<String> otherEvent = Event.of( Instant.parse( "1985-01-05T12:00:00Z" ), "someValue" );
+        Event<String> event = Event.of( Instant.parse( FIFTH_TIME ), EVENT_VALUE );
+        Event<String> otherEvent = Event.of( Instant.parse( FIFTH_TIME ), EVENT_VALUE );
         assertTrue( "The hashcode of the event is inconsistent with equals.",
                     event.equals( otherEvent ) && event.hashCode() == otherEvent.hashCode() );
         // Consistent when called repeatedly
@@ -148,7 +156,7 @@ public final class EventTest
     @Test
     public void testToString()
     {
-        Event<String> event = Event.of( Instant.parse( "1985-01-05T12:00:00Z" ), "someValue" );
+        Event<String> event = Event.of( Instant.parse( FIFTH_TIME ), EVENT_VALUE );
         assertTrue( "Unexpected string representation of an event.",
                     "(1985-01-05T12:00:00Z,1985-01-05T12:00:00Z,someValue)".equals( event.toString() ) );
     }
@@ -160,12 +168,12 @@ public final class EventTest
     @Test
     public void testCompareTo()
     {
-        Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
+        Instant basisTime = Instant.parse( FIRST_TIME );
 
-        Event<String> event = Event.of( basisTime, Instant.parse( "1985-01-01T00:00:00Z" ), "someValue" );
-        Event<String> isEqual = Event.of( basisTime, Instant.parse( "1985-01-01T00:00:00Z" ), "someValue" );
-        Event<String> isLess = Event.of( basisTime, Instant.parse( "1985-01-02T00:00:00Z" ), "someValue" );
-        Event<String> isGreater = Event.of( basisTime, Instant.parse( "1984-12-31T00:00:00Z" ), "someValue" );
+        Event<String> event = Event.of( basisTime, Instant.parse( FIRST_TIME ), EVENT_VALUE );
+        Event<String> isEqual = Event.of( basisTime, Instant.parse( FIRST_TIME ), EVENT_VALUE );
+        Event<String> isLess = Event.of( basisTime, Instant.parse( SECOND_TIME ), EVENT_VALUE );
+        Event<String> isGreater = Event.of( basisTime, Instant.parse( THIRD_TIME ), EVENT_VALUE );
 
         assertTrue( event.compareTo( isEqual ) == 0 );
         assertTrue( event.compareTo( isLess ) < 0 );
@@ -173,10 +181,10 @@ public final class EventTest
 
         Instant validTime = Instant.parse( "1985-01-01T01:00:00Z" );
 
-        Event<String> eventTwo = Event.of( Instant.parse( "1985-01-01T00:00:00Z" ), validTime, "someValue" );
-        Event<String> isEqualTwo = Event.of( Instant.parse( "1985-01-01T00:00:00Z" ), validTime, "someValue" );
-        Event<String> isLessTwo = Event.of( Instant.parse( "1985-01-02T00:00:00Z" ), validTime, "someValue" );
-        Event<String> isGreaterTwo = Event.of( Instant.parse( "1984-12-31T00:00:00Z" ), validTime, "someValue" );
+        Event<String> eventTwo = Event.of( Instant.parse( FIRST_TIME ), validTime, EVENT_VALUE );
+        Event<String> isEqualTwo = Event.of( Instant.parse( FIRST_TIME ), validTime, EVENT_VALUE );
+        Event<String> isLessTwo = Event.of( Instant.parse( SECOND_TIME ), validTime, EVENT_VALUE );
+        Event<String> isGreaterTwo = Event.of( Instant.parse( THIRD_TIME ), validTime, EVENT_VALUE );
 
         assertTrue( eventTwo.compareTo( isEqualTwo ) == 0 );
         assertTrue( eventTwo.compareTo( isLessTwo ) < 0 );
@@ -192,7 +200,7 @@ public final class EventTest
     {
         exception.expect( NullPointerException.class );
 
-        Event.of( null, "someValue" );
+        Event.of( null, EVENT_VALUE );
     }
 
     /**
@@ -204,7 +212,7 @@ public final class EventTest
     {
         exception.expect( NullPointerException.class );
 
-        Event.of( Instant.parse( "1985-01-01T00:00:00Z" ), null );
+        Event.of( Instant.parse( FIRST_TIME ), null );
     }
 
     /**
@@ -216,7 +224,7 @@ public final class EventTest
     {
         exception.expect( NullPointerException.class );
 
-        Event.of( Instant.parse( "1985-01-01T00:00:00Z" ), "someEvent" ).compareTo( null );
+        Event.of( Instant.parse( FIRST_TIME ), "someEvent" ).compareTo( null );
     }
 
 }

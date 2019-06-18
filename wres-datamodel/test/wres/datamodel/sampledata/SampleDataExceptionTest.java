@@ -13,6 +13,8 @@ import org.junit.Test;
 public final class SampleDataExceptionTest
 {
 
+    private static final String TEST_EXCEPTION_MESSAGE = "Test exception.";
+
     /**
      * Constructs and tests a {@link SampleDataException}.
      */
@@ -24,17 +26,17 @@ public final class SampleDataExceptionTest
         
         assertNotNull( new SampleDataException() );
         
-        SampleDataException f = new SampleDataException( "Test exception." );
+        SampleDataException f = new SampleDataException( TEST_EXCEPTION_MESSAGE );
         
         assertNotNull( f );
         
-        assertEquals( "Test exception.", f.getMessage() );
+        assertEquals( TEST_EXCEPTION_MESSAGE, f.getMessage() );
         
         SampleDataException g = new SampleDataException( f.getMessage(), e );        
         
         assertNotNull( g );
         
-        assertEquals( "Test exception.", g.getMessage() );
+        assertEquals( TEST_EXCEPTION_MESSAGE, g.getMessage() );
 
         assertEquals( e, g.getCause() );
     }
