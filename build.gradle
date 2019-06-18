@@ -429,7 +429,9 @@ project(':wres-config')
             // -Xinject-code to allow for wres.config.generated.ProjectConfig 
             // to implement java.lang.Comparable. See discussion in #44996
 
-            args = ['-Xinject-code', '-Xinheritance', '-Xannotate', '-immutable', '-Xlocator', '-Xequals', '-XhashCode' ]
+            args = [ '-Xinject-code', '-Xinheritance', '-Xannotate',
+                     '-immutable', '-Xlocator', '-Xequals', '-XhashCode',
+                     '-XtoString' ]
             // May help in future with #37380:
             //args = ['-Xinheritance', '-Xannotate', '-immutable', '-Xlocator', '-Xdv']
             producesDir = "${xsdDir}"
