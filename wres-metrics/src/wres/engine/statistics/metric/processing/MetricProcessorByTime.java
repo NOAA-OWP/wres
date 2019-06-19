@@ -167,30 +167,27 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
      * 
      * @param threshold the threshold
      * @return the predicate for filtering pairs
+     * @throws NullPointerException if the {@link Threshold#getDataType()} is null
+     * @throws IllegalStateException if the {@link Threshold#getDataType()} is not recognized
      */
 
     static Predicate<SingleValuedPair> getFilterForSingleValuedPairs( Threshold input )
     {
-        Predicate<SingleValuedPair> returnMe = null;
-
         switch ( input.getDataType() )
         {
             case LEFT:
-                returnMe = Slicer.left( input::test );
-                break;
+                return Slicer.left( input::test );
             case LEFT_AND_RIGHT:
             case LEFT_AND_ANY_RIGHT:
             case LEFT_AND_RIGHT_MEAN:
-                returnMe = Slicer.leftAndRight( input::test );
-                break;
+                return Slicer.leftAndRight( input::test );
             case RIGHT:
             case ANY_RIGHT:
             case RIGHT_MEAN:
-                returnMe = Slicer.right( input::test );
-                break;
+                return Slicer.right( input::test );
+            default:
+                throw new IllegalStateException( "Unrecognized threshold type '" + input.getDataType() + "'." );
         }
-
-        return returnMe;
     }
 
     /**
@@ -199,30 +196,27 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
      * 
      * @param threshold the threshold
      * @return the predicate for filtering pairs
+     * @throws NullPointerException if the {@link Threshold#getDataType()} is null
+     * @throws IllegalStateException if the {@link Threshold#getDataType()} is not recognized
      */
 
     static Predicate<TimeSeries<SingleValuedPair>> getFilterForTimeSeriesOfSingleValuedPairs( Threshold input )
     {
-        Predicate<TimeSeries<SingleValuedPair>> returnMe = null;
-
         switch ( input.getDataType() )
         {
             case LEFT:
-                returnMe = Slicer.anyOfLeftInTimeSeriesOfSingleValuedPairs( input::test );
-                break;
+                return Slicer.anyOfLeftInTimeSeriesOfSingleValuedPairs( input::test );
             case LEFT_AND_RIGHT:
             case LEFT_AND_ANY_RIGHT:
             case LEFT_AND_RIGHT_MEAN:
-                returnMe = Slicer.anyOfLeftAndAnyOfRightInTimeSeriesOfSingleValuedPairs( input::test );
-                break;
+                return Slicer.anyOfLeftAndAnyOfRightInTimeSeriesOfSingleValuedPairs( input::test );
             case RIGHT:
             case ANY_RIGHT:
             case RIGHT_MEAN:
-                returnMe = Slicer.anyOfRightInTimeSeriesOfSingleValuedPairs( input::test );
-                break;
+                return Slicer.anyOfRightInTimeSeriesOfSingleValuedPairs( input::test );
+            default:
+                throw new IllegalStateException( "Unrecognized threshold type '" + input.getDataType() + "'." );
         }
-
-        return returnMe;
     }
 
     /**

@@ -13,6 +13,9 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.ToDoubleFunction;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import wres.config.MetricConfigException;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
@@ -37,7 +40,6 @@ import wres.datamodel.statistics.Statistic;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
-import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.engine.statistics.metric.Metric;
@@ -59,7 +61,12 @@ import wres.engine.statistics.metric.processing.MetricFuturesByTime.MetricFuture
 
 public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<EnsemblePairs>
 {
-
+    /**
+     * Logger instance.
+     */
+    
+    private static final Logger LOGGER = LoggerFactory.getLogger( MetricProcessorByTimeEnsemblePairs.class );
+    
     /**
      * Function that computes an average from an array.
      */
@@ -131,29 +138,29 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                                MetricProcessor.ADMISSABLE_DATA );
 
         //Process the metrics that consume ensemble pairs
-        if ( hasMetrics( SampleDataGroup.ENSEMBLE ) )
+        if ( this.hasMetrics( SampleDataGroup.ENSEMBLE ) )
         {
-            processEnsemblePairs( inputNoMissing, futures );
+            this.processEnsemblePairs( inputNoMissing, futures );
         }
 
         //Process the metrics that consume single-valued pairs
-        if ( hasMetrics( SampleDataGroup.SINGLE_VALUED ) )
+        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED ) )
         {
             //Derive the single-valued pairs from the ensemble pairs using the configured mapper
             SingleValuedPairs singleValued = Slicer.toSingleValuedPairs( inputNoMissing, toSingleValues );
-            processSingleValuedPairs( singleValued, futures );
+            this.processSingleValuedPairs( singleValued, futures );
         }
 
         //Process the metrics that consume discrete probability pairs
-        if ( hasMetrics( SampleDataGroup.DISCRETE_PROBABILITY ) )
+        if ( this.hasMetrics( SampleDataGroup.DISCRETE_PROBABILITY ) )
         {
-            processDiscreteProbabilityPairs( inputNoMissing, futures );
+            this.processDiscreteProbabilityPairs( inputNoMissing, futures );
         }
 
         //Process the metrics that consume dichotomous pairs
-        if ( hasMetrics( SampleDataGroup.DICHOTOMOUS ) )
+        if ( this.hasMetrics( SampleDataGroup.DICHOTOMOUS ) )
         {
-            processDichotomousPairs( inputNoMissing, futures );
+            this.processDichotomousPairs( inputNoMissing, futures );
         }
 
         // Log
@@ -165,7 +172,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         MetricFuturesByTime futureResults = futures.build();
 
         //Add for merge with existing futures, if required
-        addToMergeList( futureResults );
+        this.addToMergeList( futureResults );
 
         return futureResults.getMetricOutput();
     }
@@ -201,6 +208,8 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                     MetricFactory.ofDiscreteProbabilityScoreCollection( metricExecutor,
                                                                         this.getMetrics( SampleDataGroup.DISCRETE_PROBABILITY,
                                                                                          StatisticGroup.DOUBLE_SCORE ) );
+
+            LOGGER.debug( "Created the discrete probability scores for processing. {}", this.discreteProbabilityScore );
         }
         else
         {
@@ -213,6 +222,9 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                     MetricFactory.ofDiscreteProbabilityMultiVectorCollection( metricExecutor,
                                                                               this.getMetrics( SampleDataGroup.DISCRETE_PROBABILITY,
                                                                                                StatisticGroup.MULTIVECTOR ) );
+
+            LOGGER.debug( "Created the discrete probability diagrams for processing. {}",
+                          this.discreteProbabilityMultiVector );
         }
         else
         {
@@ -224,6 +236,8 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
             this.ensembleScore = MetricFactory.ofEnsembleScoreCollection( metricExecutor,
                                                                           this.getMetrics( SampleDataGroup.ENSEMBLE,
                                                                                            StatisticGroup.DOUBLE_SCORE ) );
+
+            LOGGER.debug( "Created the ensemble scores for processing. {}", this.ensembleScore );
         }
         else
         {
@@ -236,6 +250,8 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
             this.ensembleMultiVector = MetricFactory.ofEnsembleMultiVectorCollection( metricExecutor,
                                                                                       this.getMetrics( SampleDataGroup.ENSEMBLE,
                                                                                                        StatisticGroup.MULTIVECTOR ) );
+
+            LOGGER.debug( "Created the ensemble diagrams for processing. {}", this.ensembleMultiVector );
         }
         else
         {
@@ -247,6 +263,8 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
             this.ensembleBoxPlot = MetricFactory.ofEnsembleBoxPlotCollection( metricExecutor,
                                                                               this.getMetrics( SampleDataGroup.ENSEMBLE,
                                                                                                StatisticGroup.BOXPLOT_PER_PAIR ) );
+
+            LOGGER.debug( "Created the ensemble box plots for processing. {}", this.ensembleBoxPlot );
         }
         else
         {
@@ -264,6 +282,33 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         // This is also called by the constructor of the superclass, but local parameters must be validated too
         this.validate( config );
     }
+    
+    /**
+     * <p>Removes a duplicate instance of the {@link MetricConstants.SAMPLE_SIZE}, which may appear in more than one
+     * context.
+     * 
+     * <p>See #65138. 
+     * 
+     * <p>TODO: remove this on completing #65101 and removing the sample size metric
+     * 
+     * @param inGroup the {@link SampleDataGroup}, may be null
+     * @param outGroup the {@link StatisticGroup}, may be null
+     * @return a set of {@link MetricConstants} for a specified {@link SampleDataGroup} and {@link StatisticGroup}
+     *         or an empty array if both inputs are defined and no corresponding metrics are present
+     */
+
+    @Override
+    MetricConstants[] getMetrics( SampleDataGroup inGroup, StatisticGroup outGroup ) {
+        
+        Set<MetricConstants> metrics = new HashSet<>( Arrays.asList( super.getMetrics( inGroup, outGroup ) ) );
+        
+        if( inGroup == SampleDataGroup.SINGLE_VALUED && metrics.contains( MetricConstants.SAMPLE_SIZE ) )
+        {
+            metrics.remove( MetricConstants.SAMPLE_SIZE );
+        }
+
+        return metrics.toArray( new MetricConstants[metrics.size()] );
+    }
 
     /**
      * Helper that returns a predicate for filtering pairs based on the {@link Threshold#getDataType()}
@@ -272,40 +317,31 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * @param threshold the threshold
      * @return the predicate for filtering pairs
      * @throws NullPointerException if the {@link Threshold#getDataType()} is null
+     * @throws IllegalStateException if the {@link Threshold#getDataType()} is not recognized
      */
 
     static Predicate<EnsemblePair> getFilterForEnsemblePairs( Threshold input )
     {
-        ThresholdConstants.ThresholdDataType type = input.getDataType();
-
-        Predicate<EnsemblePair> returnMe = null;
-
-        switch ( type )
+        switch ( input.getDataType() )
         {
             case LEFT:
-                returnMe = Slicer.leftVector( input::test );
-                break;
+                return Slicer.leftVector( input::test );
             case RIGHT:
-                returnMe = Slicer.allOfRight( input::test );
-                break;
+                return Slicer.allOfRight( input::test );
             case LEFT_AND_RIGHT:
-                returnMe = Slicer.leftAndAllOfRight( input::test );
-                break;
+                return Slicer.leftAndAllOfRight( input::test );
             case ANY_RIGHT:
-                returnMe = Slicer.anyOfRight( input::test );
-                break;
+                return Slicer.anyOfRight( input::test );
             case LEFT_AND_ANY_RIGHT:
-                returnMe = Slicer.leftAndAnyOfRight( input::test );
-                break;
+                return Slicer.leftAndAnyOfRight( input::test );
             case RIGHT_MEAN:
-                returnMe = Slicer.right( input::test, AVERAGE );
-                break;
+                return Slicer.right( input::test, AVERAGE );
             case LEFT_AND_RIGHT_MEAN:
-                returnMe = Slicer.leftAndRight( input::test, AVERAGE );
-                break;
+                return Slicer.leftAndRight( input::test, AVERAGE );
+            default:
+                throw new IllegalStateException( "Unrecognized threshold type '" + input.getDataType() + "'." );
         }
 
-        return returnMe;
     }
 
     @Override
@@ -444,10 +480,10 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                 pairs = Slicer.filter( pairs, filter, null );
             }
 
-            processEnsemblePairs( pairs,
-                                  futures,
-                                  outGroup,
-                                  ignoreTheseMetrics );
+            this.processEnsemblePairs( pairs,
+                                       futures,
+                                       outGroup,
+                                       ignoreTheseMetrics );
 
         }
     }
@@ -469,21 +505,21 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
     {
         if ( outGroup == StatisticGroup.DOUBLE_SCORE )
         {
-            futures.addDoubleScoreOutput( processEnsemblePairs( input,
-                                                                ensembleScore,
-                                                                ignoreTheseMetrics ) );
+            futures.addDoubleScoreOutput( this.processEnsemblePairs( input,
+                                                                     ensembleScore,
+                                                                     ignoreTheseMetrics ) );
         }
         else if ( outGroup == StatisticGroup.MULTIVECTOR )
         {
-            futures.addMultiVectorOutput( processEnsemblePairs( input,
-                                                                ensembleMultiVector,
-                                                                ignoreTheseMetrics ) );
+            futures.addMultiVectorOutput( this.processEnsemblePairs( input,
+                                                                     ensembleMultiVector,
+                                                                     ignoreTheseMetrics ) );
         }
         else if ( outGroup == StatisticGroup.BOXPLOT_PER_PAIR )
         {
-            futures.addBoxPlotOutputPerPair( processEnsemblePairs( input,
-                                                                   ensembleBoxPlot,
-                                                                   ignoreTheseMetrics ) );
+            futures.addBoxPlotOutputPerPair( this.processEnsemblePairs( input,
+                                                                        ensembleBoxPlot,
+                                                                        ignoreTheseMetrics ) );
         }
     }
 
@@ -582,9 +618,9 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                                                        baselineMeta );
 
             this.processDiscreteProbabilityPairs( transformed,
-                                             futures,
-                                             outGroup,
-                                             ignoreTheseMetrics );
+                                                  futures,
+                                                  outGroup,
+                                                  ignoreTheseMetrics );
 
         }
     }

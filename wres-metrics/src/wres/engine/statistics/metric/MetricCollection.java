@@ -14,6 +14,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -120,6 +122,14 @@ public class MetricCollection<S extends SampleData<?>, T extends Statistic<?>, U
 
             throw new MetricCalculationException( "Computation of the metric collection was cancelled: ", e );
         }
+    }
+    
+    @Override
+    public String toString() 
+    {
+        Set<MetricConstants> metrics = this.getMetrics();
+        
+        return "The following metrics are in collection object '" + this.hashCode() + "': " + metrics;
     }
 
     /**
@@ -248,12 +258,17 @@ public class MetricCollection<S extends SampleData<?>, T extends Statistic<?>, U
                                                   + "set." );
         }
 
-        // Count elements in metrics and collected metrics
-        int count = this.metrics.size() + this.collectableMetrics.values().stream().mapToInt( Map::size ).sum();
-        if ( ignoreTheseMetrics.size() == count )
+        // If all of the stored metrics are contained in the ignored metrics, throw an 
+        // exception: cannot ignore all metrics
+        if ( ignoreTheseMetrics.containsAll( this.getMetrics() ) )
         {
             throw new MetricCalculationException( "Cannot ignore all metrics in the store: specify some metrics "
-                                                  + "to process." );
+                                                  + "to process. The store contains "
+                                                  + this.getMetrics()
+                                                  + " and the "
+                                                  + "ignored metrics are "
+                                                  + ignoreTheseMetrics
+                                                  + "." );
         }
 
         //Compute only the required metrics
@@ -408,4 +423,16 @@ public class MetricCollection<S extends SampleData<?>, T extends Statistic<?>, U
         }
     }
 
+    /**
+     * Helper that returns a set of all stored metrics.
+     * 
+     * @return all stored metrics
+     */
+    
+    private Set<MetricConstants> getMetrics() 
+    {
+        return Stream.concat( this.collectableMetrics.keySet().stream(), this.metrics.keySet().stream() )
+                     .collect( Collectors.toSet() );
+    }
+    
 }
