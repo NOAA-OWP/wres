@@ -17,6 +17,9 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import wres.config.MetricConfigException;
 import wres.config.ProjectConfigs;
 import wres.config.generated.ProjectConfig;
@@ -62,6 +65,12 @@ import wres.engine.statistics.metric.timeseries.TimingErrorDurationStatistics;
 
 public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTime<SingleValuedPairs>
 {
+    
+    /**
+     * Logger instance.
+     */
+    
+    private static final Logger LOGGER = LoggerFactory.getLogger( MetricProcessorByTimeSingleValuedPairs.class );
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link TimeSeriesOfSingleValuedPairs} and produce
@@ -179,6 +188,9 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                                                     StatisticGroup.PAIRED );
             this.timeSeries = MetricFactory.ofSingleValuedTimeSeriesCollection( metricExecutor,
                                                                                 timingErrorMetrics );
+            
+            LOGGER.debug( "Created the timing-error metrics for processing. {}", this.timeSeries );
+            
             //Summary statistics
             Map<MetricConstants, TimingErrorDurationStatistics> localStatistics =
                     new EnumMap<>( MetricConstants.class );

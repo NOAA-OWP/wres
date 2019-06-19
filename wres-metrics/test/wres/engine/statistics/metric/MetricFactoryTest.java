@@ -527,7 +527,7 @@ public final class MetricFactoryTest
 
         mockEnsemble =
                 new ProjectConfig( new Inputs( null,
-                                               new DataSourceConfig( DatasourceType.SINGLE_VALUED_FORECASTS,
+                                               new DataSourceConfig( DatasourceType.ENSEMBLE_FORECASTS,
                                                                      null,
                                                                      null,
                                                                      null,

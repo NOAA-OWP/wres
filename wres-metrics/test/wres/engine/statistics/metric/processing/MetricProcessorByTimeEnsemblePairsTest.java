@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.function.BiPredicate;
 
 import org.junit.Rule;
@@ -20,6 +21,8 @@ import org.junit.rules.ExpectedException;
 
 import wres.config.MetricConfigException;
 import wres.config.ProjectConfigPlus;
+import wres.config.generated.DataSourceConfig;
+import wres.config.generated.DatasourceType;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
@@ -865,5 +868,128 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         }
     }
 
+    /**
+     * <p>Tests that an ensemble processor produces an ensemble instance of the {@link MetricConstants.SAMPLE_SIZE} metric. 
+     * 
+     * <p>See #65085.
+     * 
+     * @throws MetricParameterException if one or more metric parameters is set incorrectly
+     */
+
+    @Test
+    public void testThatSampleSizeIsConstructedForEnsembleInput() throws MetricParameterException
+    {
+        List<MetricConfig> metrics = new ArrayList<>();
+        metrics.add( new MetricConfig( null, null, MetricConfigName.CONTINUOUS_RANKED_PROBABILITY_SCORE ) );
+        metrics.add( new MetricConfig( null, null, MetricConfigName.MEAN_ERROR ) );
+        metrics.add( new MetricConfig( null, null, MetricConfigName.SAMPLE_SIZE ) );
+
+        ProjectConfig mock =
+                new ProjectConfig( new Inputs( null,
+                                               new DataSourceConfig( DatasourceType.ENSEMBLE_FORECASTS,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null ),
+                                               null ),
+                                   null,
+                                   Arrays.asList( new MetricsConfig( null, metrics, null ) ),
+                                   null,
+                                   null,
+                                   null );
+
+        MetricProcessor<EnsemblePairs, StatisticsForProject> processor =
+                MetricFactory.ofMetricProcessorByTimeEnsemblePairs( mock, StatisticGroup.set() );
+
+        Set<MetricConstants> actualSingleValuedScores =
+                Set.of( processor.getMetrics( SampleDataGroup.SINGLE_VALUED, StatisticGroup.DOUBLE_SCORE ) );
+
+        Set<MetricConstants> expectedSingleValuedScores = Set.of( MetricConstants.MEAN_ERROR );
+
+        assertEquals( expectedSingleValuedScores, actualSingleValuedScores );
+
+        Set<MetricConstants> actualEnsembleScores =
+                Set.of( processor.getMetrics( SampleDataGroup.ENSEMBLE, StatisticGroup.DOUBLE_SCORE ) );
+
+        Set<MetricConstants> expectedEnsembleScores =
+                Set.of( MetricConstants.SAMPLE_SIZE,
+                                        MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE );
+
+        assertEquals( expectedEnsembleScores, actualEnsembleScores );
+        
+    }
+
+    /**
+     * <p>Tests that an ensemble processor produces an ensemble instance of the {@link MetricConstants.SAMPLE_SIZE} 
+     * metric when a probability score exists. 
+     * 
+     * <p>See #65085.
+     * 
+     * @throws MetricParameterException if one or more metric parameters is set incorrectly
+     */
+
+    @Test
+    public void testThatSampleSizeIsConstructedForEnsembleInputWhenProbailityScoreExists() throws MetricParameterException
+    {
+        List<MetricConfig> metrics = new ArrayList<>();
+        metrics.add( new MetricConfig( null, null, MetricConfigName.BRIER_SCORE ) );
+        metrics.add( new MetricConfig( null, null, MetricConfigName.MEAN_ERROR ) );
+        metrics.add( new MetricConfig( null, null, MetricConfigName.SAMPLE_SIZE ) );
+
+        // Mock some thresholds
+        List<ThresholdsConfig> thresholds = new ArrayList<>();
+        thresholds.add( new ThresholdsConfig( wres.config.generated.ThresholdType.PROBABILITY,
+                                              wres.config.generated.ThresholdDataType.LEFT,
+                                              "0.1,0.2,0.3",
+                                              wres.config.generated.ThresholdOperator.GREATER_THAN ) );
+        
+        ProjectConfig mock =
+                new ProjectConfig( new Inputs( null,
+                                               new DataSourceConfig( DatasourceType.ENSEMBLE_FORECASTS,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null ),
+                                               null ),
+                                   null,
+                                   Arrays.asList( new MetricsConfig( thresholds, metrics, null ) ),
+                                   null,
+                                   null,
+                                   null );
+
+        MetricProcessor<EnsemblePairs, StatisticsForProject> processor =
+                MetricFactory.ofMetricProcessorByTimeEnsemblePairs( mock, StatisticGroup.set() );
+
+        Set<MetricConstants> actualSingleValuedScores =
+                Set.of( processor.getMetrics( SampleDataGroup.SINGLE_VALUED, StatisticGroup.DOUBLE_SCORE ) );
+
+        Set<MetricConstants> expectedSingleValuedScores = Set.of( MetricConstants.MEAN_ERROR );
+
+        assertEquals( expectedSingleValuedScores, actualSingleValuedScores );
+
+        Set<MetricConstants> actualEnsembleScores =
+                Set.of( processor.getMetrics( SampleDataGroup.ENSEMBLE, StatisticGroup.DOUBLE_SCORE ) );
+
+        Set<MetricConstants> expectedEnsembleScores = Set.of( MetricConstants.SAMPLE_SIZE );
+
+        assertEquals( expectedEnsembleScores, actualEnsembleScores );
+        
+        
+        Set<MetricConstants> actualProbabilityScores =
+                Set.of( processor.getMetrics( SampleDataGroup.DISCRETE_PROBABILITY, StatisticGroup.DOUBLE_SCORE ) );
+
+        Set<MetricConstants> expectedProbabilityScores = Set.of( MetricConstants.BRIER_SCORE );
+
+        assertEquals( expectedProbabilityScores, actualProbabilityScores );
+        
+    }    
 
 }

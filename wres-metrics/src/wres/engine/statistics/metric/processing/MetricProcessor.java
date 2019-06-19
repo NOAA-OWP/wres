@@ -90,12 +90,11 @@ import wres.engine.statistics.metric.config.MetricConfigHelper;
 public abstract class MetricProcessor<S extends SampleData<?>, T extends StatisticsForProject>
         implements Function<S, T>
 {
-
     /**
-     * Default logger.
+     * Logger instance.
      */
 
-    static final Logger LOGGER = LoggerFactory.getLogger( MetricProcessor.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( MetricProcessor.class );
 
     /**
      * Filter for admissible numerical data.
@@ -128,13 +127,13 @@ public abstract class MetricProcessor<S extends SampleData<?>, T extends Statist
      */
 
     final MetricCollection<SingleValuedPairs, MultiVectorStatistic, MultiVectorStatistic> singleValuedMultiVector;
-    
+
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link SingleValuedPairs} and produce
      * {@link BoxPlotStatistics}.
      */
 
-    final MetricCollection<SingleValuedPairs, BoxPlotStatistics, BoxPlotStatistics> singleValuedBoxPlot;    
+    final MetricCollection<SingleValuedPairs, BoxPlotStatistics, BoxPlotStatistics> singleValuedBoxPlot;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link DichotomousPairs} and produce
@@ -167,13 +166,13 @@ public abstract class MetricProcessor<S extends SampleData<?>, T extends Statist
      */
 
     final ExecutorService thresholdExecutor;
-    
+
     /**
      * The number of decimal places to use when rounding.
      */
 
     private static final int DECIMALS = 5;
-    
+
     /**
      * Returns true if a prior call led to the caching of metric outputs.
      * 
@@ -355,7 +354,7 @@ public abstract class MetricProcessor<S extends SampleData<?>, T extends Statist
         Objects.requireNonNull( metricExecutor, "Specify a non-null metric executor service." );
 
         this.metrics = MetricConfigHelper.getMetricsFromConfig( config );
-        
+
         LOGGER.debug( "Based on the project declaration, the following metrics will be computed: {}.", this.metrics );
 
         //Construct the metrics that are common to more than one type of input pairs
@@ -365,12 +364,14 @@ public abstract class MetricProcessor<S extends SampleData<?>, T extends Statist
                     MetricFactory.ofSingleValuedScoreCollection( metricExecutor,
                                                                  this.getMetrics( SampleDataGroup.SINGLE_VALUED,
                                                                                   StatisticGroup.DOUBLE_SCORE ) );
+
+            LOGGER.debug( "Created the single-valued scores for processing. {}", this.singleValuedScore );
         }
         else
         {
             this.singleValuedScore = null;
         }
-        
+
         // Diagrams
         if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticGroup.MULTIVECTOR ) )
         {
@@ -378,6 +379,8 @@ public abstract class MetricProcessor<S extends SampleData<?>, T extends Statist
                     MetricFactory.ofSingleValuedMultiVectorCollection( metricExecutor,
                                                                        this.getMetrics( SampleDataGroup.SINGLE_VALUED,
                                                                                         StatisticGroup.MULTIVECTOR ) );
+
+            LOGGER.debug( "Created the single-valued diagrams for processing. {}", this.singleValuedMultiVector );
         }
         else
         {
@@ -391,12 +394,14 @@ public abstract class MetricProcessor<S extends SampleData<?>, T extends Statist
                     MetricFactory.ofDichotomousScoreCollection( metricExecutor,
                                                                 this.getMetrics( SampleDataGroup.DICHOTOMOUS,
                                                                                  StatisticGroup.DOUBLE_SCORE ) );
+
+            LOGGER.debug( "Created the dichotomous scores for processing. {}", this.dichotomousScalar );
         }
         else
         {
             this.dichotomousScalar = null;
         }
-        
+
         // Contingency table
         if ( this.hasMetrics( SampleDataGroup.DICHOTOMOUS, StatisticGroup.MATRIX ) )
         {
@@ -404,12 +409,14 @@ public abstract class MetricProcessor<S extends SampleData<?>, T extends Statist
                     MetricFactory.ofDichotomousMatrixCollection( metricExecutor,
                                                                  this.getMetrics( SampleDataGroup.DICHOTOMOUS,
                                                                                   StatisticGroup.MATRIX ) );
+
+            LOGGER.debug( "Created the contingency table metrics for processing. {}", this.dichotomousMatrix );
         }
         else
         {
             this.dichotomousMatrix = null;
         }
-        
+
         //Box plots
         if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticGroup.BOXPLOT_PER_POOL ) )
         {
@@ -417,12 +424,14 @@ public abstract class MetricProcessor<S extends SampleData<?>, T extends Statist
                     MetricFactory.ofSingleValuedBoxPlotCollection( metricExecutor,
                                                                    this.getMetrics( SampleDataGroup.SINGLE_VALUED,
                                                                                     StatisticGroup.BOXPLOT_PER_POOL ) );
+
+            LOGGER.debug( "Created the single-valued box plots for processing. {}", this.singleValuedBoxPlot );
         }
         else
         {
             this.singleValuedBoxPlot = null;
         }
-        
+
         //Set the thresholds: canonical --> metric-local overrides --> global        
         this.thresholdsByMetric = MetricConfigHelper.getThresholdsFromConfig( config, externalThresholds );
 
@@ -439,8 +448,8 @@ public abstract class MetricProcessor<S extends SampleData<?>, T extends Statist
         this.thresholdExecutor = thresholdExecutor;
 
         this.allDataThreshold = Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                         Operator.GREATER,
-                                                         ThresholdDataType.LEFT_AND_RIGHT );
+                                              Operator.GREATER,
+                                              ThresholdDataType.LEFT_AND_RIGHT );
 
         //Finally, validate the configuration against the parameters set
         this.validate( config );
@@ -511,12 +520,7 @@ public abstract class MetricProcessor<S extends SampleData<?>, T extends Statist
             unconditional.removeIf( a -> !a.isInGroup( outGroup ) );
         }
 
-        //Remove duplicate sample size
-        if ( inGroup == SampleDataGroup.ENSEMBLE && hasMetrics( SampleDataGroup.SINGLE_VALUED ) )
-        {
-            unconditional.remove( MetricConstants.SAMPLE_SIZE );
-        }
-
+        // Return, removing any duplicate sample size instance, if needed
         return unconditional.toArray( new MetricConstants[unconditional.size()] );
     }
 
