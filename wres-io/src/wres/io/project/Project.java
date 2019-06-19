@@ -348,15 +348,19 @@ public class Project
         // Also sets the desired time step of the output
         this.setDesiredTimeScaleAndTimeStep();
 
-        // Check for features that potentially have intersecting values.
-        // The query in getIntersectingFeatures checks that there is some data
-        // for each feature on each side, but does not guarantee pairs.
-        synchronized ( Project.FEATURE_LOCK )
+        // Gridded data will not be present in the database.
+        if ( !this.usesGriddedData( this.getRight() ) )
         {
-            LOGGER.debug( "Features so far: {}", this.features );
-            this.features = this.getIntersectingFeatures();
-            LOGGER.debug( "Features after getting intersecting features: {}",
-                          this.features );
+            // Check for features that potentially have intersecting values.
+            // The query in getIntersectingFeatures checks that there is some
+            // data for each feature on each side, but does not guarantee pairs.
+            synchronized ( Project.FEATURE_LOCK )
+            {
+                LOGGER.debug( "Features so far: {}", this.features );
+                this.features = this.getIntersectingFeatures();
+                LOGGER.debug( "Features after getting intersecting features: {}",
+                              this.features );
+            }
         }
 
         if (!ConfigHelper.isSimulation( this.getRight() ) &&
