@@ -5,11 +5,13 @@
 # Read the options, which is currently only one: -l to indicate a run of latest. 
 latest=0
 clean=1
-while getopts "l:n" option; do
+migrate=1
+while getopts ":lnm" option; do
      case "${option}"
      in
          l) latest=1;;
          n) clean=0;;
+         m) migrate=0;;
      esac
 done
 shift $((OPTIND -1))
@@ -34,6 +36,14 @@ configName=project_config.xml
 outputDirPrefix=wres_evaluation_output_
 benchDirName=benchmarks
 echoPrefix="===================="
+
+migrationArg="-Dwres.attemptToMigrate=true"
+if [[ "$migrate" == 0 ]]; then
+    echo "Liquibase migration of database will not be performed."
+    migrationArg="-Dwres.attemptToMigrate=false"
+else 
+    echo "Liquibase migration of database will be performed since no -m was specified."
+fi
 
 # ============================================================
 # Overall Setup
@@ -119,7 +129,7 @@ for scenarioName in $*; do
 
     if [[ "$clean" == 1 && -f $scenarioDir/CLEAN ]]; then
         echo "$echoPrefix Cleaning the database: ./wres.sh cleandatabase ..."
-        ./wres.sh cleandatabase
+        JAVA_OPTS=$JAVA_OPTS" $migrationArg" ./wres.sh cleandatabase
         if [[ $? -ne 0 ]]; then
             echo "$echoPrefix WRES clean failed; see above.  Something is wrong with the database $WRES_DB_NAME.  Aborting all tests..." | tee /dev/stderr
             exit 1
@@ -146,7 +156,7 @@ for scenarioName in $*; do
     # If it fails then the file FAILS must exist in the scenario directory or its treated
     # as a test failure.  the file FAILS tells this script that failure is expected.
     echo "$echoPrefix Executing the project: ./wres.sh execute $scenarioDir/$configName ..."
-    JAVA_OPTS=$JAVA_OPTS" -Djava.io.tmpdir=$scenarioDir" ./wres.sh execute $scenarioDir/$configName
+    JAVA_OPTS=$JAVA_OPTS" -Djava.io.tmpdir=$scenarioDir $migrationArg" ./wres.sh execute $scenarioDir/$configName
     executeResult=$?
 
     if [[ executeResult -ne 0 ]]; then
