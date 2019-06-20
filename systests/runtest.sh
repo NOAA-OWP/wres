@@ -4,10 +4,12 @@
 
 # Read the options, which is currently only one: -l to indicate a run of latest. 
 latest=0
-while getopts "l" option; do
+clean=1
+while getopts "l:n" option; do
      case "${option}"
      in
-         l) latest=1;
+         l) latest=1;;
+         n) clean=0;;
      esac
 done
 shift $((OPTIND -1))
@@ -115,7 +117,7 @@ for scenarioName in $*; do
     	export WRES_DB_NAME=wres4 #Standard system testing db.
     fi
 
-    if [ -f $scenarioDir/CLEAN ]; then
+    if [[ "$clean" == 1 && -f $scenarioDir/CLEAN ]]; then
         echo "$echoPrefix Cleaning the database: ./wres.sh cleandatabase ..."
         ./wres.sh cleandatabase
         if [[ $? -ne 0 ]]; then
