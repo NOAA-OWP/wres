@@ -781,7 +781,7 @@ mainClassName = 'wres.Main'
 sourceCompatibility = '11'
 targetCompatibility = '11'
 
-applicationDefaultJvmArgs = ['-Xms1628m', '-Xmx1628m',
+applicationDefaultJvmArgs = ['-Xms2310m', '-Xmx2310m',
                              '-XX:+HeapDumpOnOutOfMemoryError',
                              '-Djava.util.logging.config.class=wres.system.logging.JavaUtilLoggingRedirector']
 
