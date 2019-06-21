@@ -10,5 +10,5 @@ services:
         environment:
          - JAVA_OPTS=-Dwres.broker=***REMOVED***wres-broker${WRES_ENV_SUFFIX} -Djava.io.tmpdir=/mnt/wres_share/evaluations
          - PGPASSFILE=/wres_secrets/.pgpass
-        # Worker JVM should have 32m max heap, WRES should have 1628m max heap
-        mem_limit: 2048m
+        # Worker JVM should have 32m max heap, WRES should have 2310m max heap
+        mem_limit: 2730m

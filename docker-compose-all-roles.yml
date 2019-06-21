@@ -46,5 +46,5 @@ services:
          - JAVA_OPTS=-Dwres.broker=broker -Djava.io.tmpdir=/mnt/wres_share/evaluations
          - PGPASSFILE=/wres_secrets/.pgpass
          #- INNER_JAVA_OPTS=-Dwres.logLevel=trace
-        # Worker JVM should have 32m heap, wres should have 1628m heap
-        mem_limit: 2048m
+        # Worker JVM should have 32m heap, wres should have 2310m heap
+        mem_limit: 2730m
