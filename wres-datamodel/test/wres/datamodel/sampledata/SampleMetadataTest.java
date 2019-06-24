@@ -140,7 +140,7 @@ public class SampleMetadataTest
     @Test
     public void testUnionOfThrowsExceptionWithUnequalInputs()
     {
-        exception.expect( MetadataException.class );
+        exception.expect( SampleMetadataException.class );
         exception.expectMessage( "Only the time window and thresholds can differ when finding the union of metadata." );
 
         SampleMetadata failOne = SampleMetadata.of( MeasurementUnit.of(),

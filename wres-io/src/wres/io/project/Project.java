@@ -42,7 +42,7 @@ import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.TimeScaleFunction;
-import wres.datamodel.metadata.MetadataHelper;
+import wres.datamodel.metadata.ScaleValidationHelper;
 import wres.datamodel.metadata.RescalingException;
 import wres.datamodel.metadata.TimeScale;
 import wres.io.concurrency.Executor;
@@ -514,7 +514,7 @@ public class Project
      * </p>The desired time scale is validated against the existing time scale of each source separately. An 
      * exception is thrown if the validation fails for any one source.
      * 
-     * <p> Uses the {@link MetadataHelper#throwExceptionIfChangeOfScaleIsInvalid(TimeScale, TimeScale, Duration)} for
+     * <p> Uses the {@link ScaleValidationHelper#throwExceptionIfChangeOfScaleIsInvalid(TimeScale, TimeScale, Duration)} for
      * validation.
      * 
      * <p> Uses the {@link TimeScale#getLeastCommonTimeScale(Set)} to determine the LCS.
@@ -638,7 +638,7 @@ public class Project
                               .forEach( pair -> {
                                   try
                                   {
-                                      MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( pair.getLeft(),
+                                      ScaleValidationHelper.throwExceptionIfChangeOfScaleIsInvalid( pair.getLeft(),
                                                                                              finalDesiredScale,
                                                                                              pair.getRight(),
                                                                                              dataType.toString() );

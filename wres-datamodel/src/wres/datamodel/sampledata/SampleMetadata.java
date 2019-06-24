@@ -171,7 +171,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
      * @return the union of the input
      * @throws IllegalArgumentException if the input is empty
      * @throws NullPointerException if the input is null
-     * @throws MetadataException if the input contains metadata whose differences extend beyond the time windows and
+     * @throws SampleMetadataException if the input contains metadata whose differences extend beyond the time windows and
      *            thresholds
      */
     
@@ -197,7 +197,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
     
             if ( !next.equalsWithoutTimeWindowOrThresholds( test ) )
             {
-                throw new MetadataException( "Only the time window and thresholds can differ when finding the union of "
+                throw new SampleMetadataException( "Only the time window and thresholds can differ when finding the union of "
                                              + "metadata." );
             }
             if ( next.hasTimeWindow() )

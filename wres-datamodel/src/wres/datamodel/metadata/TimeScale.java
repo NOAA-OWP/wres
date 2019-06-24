@@ -267,7 +267,7 @@ public final class TimeScale implements Comparable<TimeScale>
      * scale is present. However, there is no other validation of the proposed rescaling, such as the proposed 
      * {@link TimeScale#getFunction()} associated with the rescaled quantity. 
      * For that, and other validation see:
-     * {@link MetadataHelper#throwExceptionIfChangeOfScaleIsInvalid(TimeScale, TimeScale, Duration, String...)}.
+     * {@link ScaleValidationHelper#throwExceptionIfChangeOfScaleIsInvalid(TimeScale, TimeScale, Duration, String...)}.
      * 
      * @param timeScales the time scales from which to derive the LCS
      * @return the LCS for the input

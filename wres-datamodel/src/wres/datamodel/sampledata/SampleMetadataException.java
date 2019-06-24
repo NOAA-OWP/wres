@@ -8,7 +8,7 @@ import wres.datamodel.DataException;
  * @author james.brown@hydrosolved.com
  */
 
-public class MetadataException extends DataException
+public class SampleMetadataException extends DataException
 {
 
     /**
@@ -18,33 +18,33 @@ public class MetadataException extends DataException
     private static final long serialVersionUID = -1559780940246528464L;
     
     /**
-     * Constructs an {@link MetadataException} with no message.
+     * Constructs an {@link SampleMetadataException} with no message.
      */
 
-    public MetadataException()
+    public SampleMetadataException()
     {
         super();
     }
 
     /**
-     * Constructs a {@link MetadataException} with the specified message.
+     * Constructs a {@link SampleMetadataException} with the specified message.
      * 
      * @param message the message.
      */
 
-    public MetadataException(final String message)
+    public SampleMetadataException(final String message)
     {
         super(message);
     }
 
     /**
-     * Constructs a {@link MetadataException} with the specified message.
+     * Constructs a {@link SampleMetadataException} with the specified message.
      * 
      * @param message the message.
      * @param cause the cause of the exception
      */
 
-    public MetadataException(final String message, final Throwable cause)
+    public SampleMetadataException(final String message, final Throwable cause)
     {
         super(message, cause);
     }
