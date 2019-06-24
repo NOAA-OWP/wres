@@ -23,8 +23,6 @@ import java.util.function.ToDoubleFunction;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
-import wres.datamodel.metadata.StatisticMetadata;
-import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.pairs.DichotomousPair;
 import wres.datamodel.sampledata.pairs.DichotomousPairs;
 import wres.datamodel.sampledata.pairs.DiscreteProbabilityPair;
@@ -40,12 +38,14 @@ import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesO
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.statistics.Statistic;
+import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdType;
 import wres.datamodel.time.BasicTimeSeries;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeWindow;
 
 /**
  * A utility class for slicing/dicing and transforming datasets associated with verification metrics.

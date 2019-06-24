@@ -15,12 +15,11 @@ import java.util.List;
 import java.util.Objects;
 
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.Location;
-import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.SampleMetadata;
-import wres.datamodel.metadata.SampleMetadata.SampleMetadataBuilder;
-import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.sampledata.DatasetIdentifier;
+import wres.datamodel.sampledata.Location;
+import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.sampledata.SampleMetadata;
+import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
 import wres.datamodel.sampledata.pairs.DichotomousPair;
 import wres.datamodel.sampledata.pairs.DichotomousPairs;
 import wres.datamodel.sampledata.pairs.DiscreteProbabilityPair;
@@ -34,6 +33,7 @@ import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.time.Event;
+import wres.datamodel.time.TimeWindow;
 
 /**
  * Factory class for generating test datasets for metric calculations.

@@ -4,8 +4,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import java.util.StringJoiner;
 
-import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.TimeScale;
+import wres.datamodel.sampledata.SampleMetadata;
 import wres.util.TimeHelper;
 
 /**

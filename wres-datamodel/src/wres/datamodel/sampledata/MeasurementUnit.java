@@ -1,8 +1,7 @@
-package wres.datamodel.metadata;
+package wres.datamodel.sampledata;
 
 import java.util.Objects;
 
-import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.statistics.Statistic;
 
 /**
@@ -46,7 +45,7 @@ public class MeasurementUnit implements Comparable<MeasurementUnit>
      * 
      * @param unit the unit string
      * @return a {@link MeasurementUnit}
-     * @throws MetadataException if the input string is null
+     * @throws NullPointerException if the input string is null
      */
     
     public static MeasurementUnit of( final String unit )

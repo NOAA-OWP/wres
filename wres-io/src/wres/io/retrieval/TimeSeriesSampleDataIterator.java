@@ -12,8 +12,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.Feature;
-import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.time.TimeWindow;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
 import wres.io.config.OrderedSampleMetadata;

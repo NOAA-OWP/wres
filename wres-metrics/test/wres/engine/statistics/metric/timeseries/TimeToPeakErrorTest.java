@@ -15,15 +15,15 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.Location;
-import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.SampleMetadata.SampleMetadataBuilder;
-import wres.datamodel.metadata.StatisticMetadata;
-import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.sampledata.DatasetIdentifier;
+import wres.datamodel.sampledata.Location;
+import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.statistics.PairedStatistic;
+import wres.datamodel.statistics.StatisticMetadata;
+import wres.datamodel.time.TimeWindow;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.singlevalued.SumOfSquareError;
 

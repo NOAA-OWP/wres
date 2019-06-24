@@ -12,7 +12,6 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreGroup;
-import wres.datamodel.metadata.StatisticMetadata;
 
 /**
  * An abstract base class for an immutable score output.

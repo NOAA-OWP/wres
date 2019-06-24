@@ -1,11 +1,12 @@
-package wres.datamodel.metadata;
+package wres.datamodel.sampledata;
 
 import java.util.Comparator;
 import java.util.Objects;
 
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.metadata.TimeScale;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.datamodel.time.TimeWindow;
 
 /**
  * An immutable store of metadata associated with {@link SampleData}. Includes a {@link SampleMetadataBuilder} for 

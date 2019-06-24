@@ -12,7 +12,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.datamodel.metadata.TimeScale.TimeScaleFunction;
+import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.datamodel.time.TimeWindow;
 
 /**
  * A helper class for manipulating metadata.

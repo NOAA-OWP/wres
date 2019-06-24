@@ -16,10 +16,10 @@ import ohd.hseb.charter.ChartEngineException;
 import ohd.hseb.charter.ChartPanelTools;
 import ohd.hseb.charter.ChartTools;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
-import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.Location;
-import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.SampleMetadata;
+import wres.datamodel.sampledata.DatasetIdentifier;
+import wres.datamodel.sampledata.Location;
+import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 

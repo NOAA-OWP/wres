@@ -10,7 +10,6 @@ import java.util.Objects;
 
 import wres.datamodel.MatrixOfDoubles;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.metadata.StatisticMetadata;
 
 /**
  * Immutable matrix of statistics associated with a metric. The number of elements and the order in which they are stored, 

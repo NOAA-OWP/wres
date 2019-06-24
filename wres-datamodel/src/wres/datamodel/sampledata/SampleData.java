@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Objects;
 
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.metadata.SampleMetadata;
 
 /**
  * <p>Sample data to be iterated over by a metric. A sample may comprise paired data or unpaired data.

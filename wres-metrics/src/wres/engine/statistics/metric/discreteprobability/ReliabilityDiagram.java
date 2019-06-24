@@ -13,11 +13,11 @@ import org.apache.commons.math3.util.Precision;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.MissingValues;
-import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.statistics.MultiVectorStatistic;
+import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Diagram;
 
 /**

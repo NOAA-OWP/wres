@@ -10,8 +10,8 @@ import java.util.SortedSet;
 import java.util.stream.Collectors;
 
 import wres.datamodel.metadata.MetadataHelper;
-import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.time.BasicTimeSeries;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;

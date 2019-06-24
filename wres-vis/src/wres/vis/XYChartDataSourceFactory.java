@@ -30,7 +30,6 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.datamodel.Slicer;
-import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.BoxPlotStatistics;
@@ -40,6 +39,7 @@ import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.MultiVectorStatistic;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.datamodel.time.TimeWindow;
 import wres.util.TimeHelper;
 
 /**

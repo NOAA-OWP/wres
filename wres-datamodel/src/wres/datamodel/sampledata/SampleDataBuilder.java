@@ -3,7 +3,6 @@ package wres.datamodel.sampledata;
 import java.util.List;
 
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.metadata.SampleMetadata;
 
 /**
  * A builder for {@link SampleData}.

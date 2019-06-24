@@ -1,12 +1,14 @@
-package wres.datamodel.metadata;
+package wres.datamodel.statistics;
 
 import java.util.Comparator;
 import java.util.Objects;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.metadata.SampleMetadata.SampleMetadataBuilder;
+import wres.datamodel.sampledata.DatasetIdentifier;
+import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
-import wres.datamodel.statistics.Statistic;
+import wres.datamodel.sampledata.SampleMetadata;
+import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
 
 /**
  * An immutable store of metadata associated with a {@link Statistic}. Includes a {@link StatisticMetadataBuilder} for 

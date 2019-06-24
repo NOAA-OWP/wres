@@ -3,8 +3,6 @@ package wres.datamodel.statistics;
 import java.util.List;
 import java.util.Objects;
 
-import wres.datamodel.metadata.StatisticMetadata;
-
 /**
  * Immutable store of several box plot statistics.
  * 

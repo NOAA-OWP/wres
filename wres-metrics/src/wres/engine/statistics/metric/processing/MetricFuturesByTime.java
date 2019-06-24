@@ -15,7 +15,6 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants.StatisticGroup;
-import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
@@ -26,6 +25,7 @@ import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.statistics.StatisticsForProject.StatisticsForProjectBuilder;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.datamodel.time.TimeWindow;
 
 /**
  * Store of metric futures for each output type. Use {@link #getMetricOutput()} to obtain the processed

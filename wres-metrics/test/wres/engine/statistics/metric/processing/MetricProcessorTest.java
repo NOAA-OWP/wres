@@ -33,7 +33,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.pairs.EnsemblePairs;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.statistics.StatisticsForProject;

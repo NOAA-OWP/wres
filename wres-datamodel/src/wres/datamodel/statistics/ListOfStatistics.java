@@ -8,8 +8,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import wres.datamodel.metadata.StatisticMetadata;
-
 /**
  * An immutable list of {@link Statistic}. A thread-safe builder is included to build a {@link ListOfStatistics}
  * incrementally.

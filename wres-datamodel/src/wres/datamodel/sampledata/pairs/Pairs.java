@@ -9,10 +9,10 @@ import java.util.Objects;
 import java.util.StringJoiner;
 
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBuilder;
 import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.sampledata.SampleMetadata;
 
 /**
  * An abstract base class for storing zero or more paired values. 

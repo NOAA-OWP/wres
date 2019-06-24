@@ -4,11 +4,11 @@ import java.util.Objects;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
-import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.singlevalued.MeanSquareErrorSkillScore;
 
 /**

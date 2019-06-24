@@ -14,10 +14,10 @@ import java.util.function.ToDoubleFunction;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MissingValues;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.PairedStatistic;
+import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 

@@ -3,10 +3,10 @@ package wres.engine.statistics.metric.singlevalued;
 import java.util.Objects;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.StatisticMetadata;
 
 /**
  * Computes the square of Pearson's product-moment correlation coefficient between the left and right sides of the

@@ -5,7 +5,6 @@ import java.util.Map;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreGroup;
-import wres.datamodel.metadata.StatisticMetadata;
 
 /**
  * An immutable score statistic that comprises one or more {@link Double} components.

@@ -1,4 +1,4 @@
-package wres.datamodel.metadata;
+package wres.datamodel.time;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -13,6 +13,8 @@ import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import wres.datamodel.time.TimeWindow;
 
 /**
  * Tests the {@link TimeWindow}.

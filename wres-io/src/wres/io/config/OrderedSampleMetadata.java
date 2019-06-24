@@ -3,11 +3,11 @@ package wres.io.config;
 import java.time.Duration;
 
 import wres.config.generated.Feature;
-import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.Location;
-import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.SampleMetadata;
-import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.sampledata.DatasetIdentifier;
+import wres.datamodel.sampledata.Location;
+import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.sampledata.SampleMetadata;
+import wres.datamodel.time.TimeWindow;
 import wres.io.project.Project;
 
 /**

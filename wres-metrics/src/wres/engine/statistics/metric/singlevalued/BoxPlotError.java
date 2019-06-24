@@ -6,11 +6,11 @@ import java.util.Objects;
 import java.util.function.DoubleUnaryOperator;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.BoxPlotStatistics;
+import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.engine.statistics.metric.Diagram;

@@ -17,7 +17,7 @@ import org.junit.rules.ExpectedException;
 import wres.config.FeaturePlus;
 import wres.config.generated.Feature;
 import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;

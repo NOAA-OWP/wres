@@ -19,9 +19,9 @@ import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
-import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
+import wres.datamodel.statistics.StatisticMetadata;
 import wres.io.config.ConfigHelper;
 import wres.vis.ChartEngineFactory;
 

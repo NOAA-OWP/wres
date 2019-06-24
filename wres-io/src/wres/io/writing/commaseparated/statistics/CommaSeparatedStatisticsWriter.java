@@ -18,7 +18,7 @@ import java.util.StringJoiner;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.time.TimeWindow;
 import wres.util.TimeHelper;
 
 /**
