@@ -12,19 +12,19 @@ import org.slf4j.LoggerFactory;
 import wres.datamodel.metadata.TimeScale.TimeScaleFunction;
 
 /**
- * A helper class for manipulating metadata.
+ * A helper class for validating scale information.
  * 
  * @author james.brown@hydrosolved.com
  */
 
-public final class MetadataHelper
+public final class ScaleValidationHelper
 {
 
     /**
      * Logger.
      */
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( MetadataHelper.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( ScaleValidationHelper.class );
 
     /**
      * <p>Compares two {@link TimeScale} and throws an exception when the desiredTimeScale
@@ -65,7 +65,7 @@ public final class MetadataHelper
 
         // Change of scale required, i.e. not absolutely equal and not instantaneous
         // (which has a more lenient interpretation)
-        if ( MetadataHelper.isChangeOfScaleRequired( existingTimeScale, desiredTimeScale, context ) )
+        if ( ScaleValidationHelper.isChangeOfScaleRequired( existingTimeScale, desiredTimeScale, context ) )
         {
 
             // Timestep cannot be zero
@@ -81,41 +81,41 @@ public final class MetadataHelper
             }
             
             // The desired time scale must be a sensible function in the context of rescaling
-            MetadataHelper.throwExceptionIfDesiredFunctionIsUnknown( desiredTimeScale.getFunction() );
+            ScaleValidationHelper.throwExceptionIfDesiredFunctionIsUnknown( desiredTimeScale.getFunction() );
 
             // Downscaling not currently allowed
-            MetadataHelper.throwExceptionIfDownscalingRequested( existingTimeScale.getPeriod(),
+            ScaleValidationHelper.throwExceptionIfDownscalingRequested( existingTimeScale.getPeriod(),
                                                                  desiredTimeScale.getPeriod() );
 
             // The desired time scale period must be an integer multiple of the existing time scale period
-            MetadataHelper.throwExceptionIfDesiredPeriodDoesNotCommute( existingTimeScale.getPeriod(),
+            ScaleValidationHelper.throwExceptionIfDesiredPeriodDoesNotCommute( existingTimeScale.getPeriod(),
                                                                         desiredTimeScale.getPeriod(),
                                                                         "existing period" );
 
             // If the existing and desired periods are the same, the function cannot differ
-            MetadataHelper.throwExceptionIfPeriodsMatchAndFunctionsDiffer( existingTimeScale, desiredTimeScale, context );
+            ScaleValidationHelper.throwExceptionIfPeriodsMatchAndFunctionsDiffer( existingTimeScale, desiredTimeScale, context );
 
             // If the existing time scale is instantaneous, do not allow accumulations (for now)
-            MetadataHelper.throwExceptionIfAccumulatingInstantaneous( existingTimeScale,
+            ScaleValidationHelper.throwExceptionIfAccumulatingInstantaneous( existingTimeScale,
                                                                       desiredTimeScale.getFunction() );
 
             // If the desired function is a total, then the existing function must also be a total
-            MetadataHelper.throwExceptionIfAccumulatingNonAccumulations( existingTimeScale.getFunction(),
+            ScaleValidationHelper.throwExceptionIfAccumulatingNonAccumulations( existingTimeScale.getFunction(),
                                                                          desiredTimeScale.getFunction(),
                                                                          context );
 
             // The time-step of the data must be less than or equal to the period associated with the desired time scale
             // if rescaling is required
-            MetadataHelper.throwExceptionIfDataTimeStepExceedsDesiredPeriod( desiredTimeScale,
+            ScaleValidationHelper.throwExceptionIfDataTimeStepExceedsDesiredPeriod( desiredTimeScale,
                                                                              timeStep );
 
             // If time-step of the data is equal to the period associated with the desired time scale, then 
             // rescaling is not allowed
-            MetadataHelper.throwExceptionIfDataTimeStepMatchesDesiredPeriod( desiredTimeScale,
+            ScaleValidationHelper.throwExceptionIfDataTimeStepMatchesDesiredPeriod( desiredTimeScale,
                                                                              timeStep );
 
             // The desired time scale period must be an integer multiple of the data time-step
-            MetadataHelper.throwExceptionIfDesiredPeriodDoesNotCommute( timeStep,
+            ScaleValidationHelper.throwExceptionIfDesiredPeriodDoesNotCommute( timeStep,
                                                                         desiredTimeScale.getPeriod(),
                                                                         "data time-step" );
 
@@ -154,7 +154,7 @@ public final class MetadataHelper
         // Log the second case if the desired time scale has a different function
         if ( exceptionTwo && desiredTimeScale.getFunction() != TimeScaleFunction.UNKNOWN )
         {
-            String clarify = MetadataHelper.clarifyWarning( context );
+            String clarify = ScaleValidationHelper.clarifyWarning( context );
 
             LOGGER.warn( "The function associated with the desired time scale is a {}, but "
                          + "the function associated with the existing time scale{}is {}. Assuming "
@@ -260,7 +260,7 @@ public final class MetadataHelper
                 // Warn if the desired time scale has a different function
                 if ( desiredTimeScale.getFunction() != TimeScaleFunction.UNKNOWN )
                 {
-                    String clarify = MetadataHelper.clarifyWarning( context );
+                    String clarify = ScaleValidationHelper.clarifyWarning( context );
 
                     LOGGER.warn( "The function associated with the desired time scale is "
                                  + "a {}, but the function associated with the existing time "
@@ -329,7 +329,7 @@ public final class MetadataHelper
         {
             if ( existingFunction == TimeScaleFunction.UNKNOWN )
             {
-                String clarify = MetadataHelper.clarifyWarning( context );
+                String clarify = ScaleValidationHelper.clarifyWarning( context );
 
                 LOGGER.warn( "The function associated with the desired time scale is a {}, but "
                              + "the function associated with the existing time scale{}is {}. Assuming "
@@ -424,7 +424,7 @@ public final class MetadataHelper
      * No argument constructor.
      */
 
-    private MetadataHelper()
+    private ScaleValidationHelper()
     {
     }
 
