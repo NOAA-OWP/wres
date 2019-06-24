@@ -23,6 +23,8 @@ class JobResultConsumer extends DefaultConsumer
 
     private static final Integer PARSE_FAILED = 601;
 
+    private static final int RETRY_COUNT = 9001;
+
     private final BlockingQueue<Integer> result;
 
     /**
@@ -62,32 +64,45 @@ class JobResultConsumer extends DefaultConsumer
 
             boolean offerSucceeded = this.getResult()
                                          .offer( theIntegerResult );
+            int tries = 0;
 
-            if ( !offerSucceeded )
+            while ( !offerSucceeded && tries < RETRY_COUNT )
             {
                 LOGGER.info( "Failed to offer {} to the job result processing queue {}, retrying.",
                              theIntegerResult, this.getResult() );
 
-                boolean secondOfferSucceeded = this.getResult()
-                                                   .offer( theIntegerResult );
+                offerSucceeded = this.getResult()
+                                     .offer( theIntegerResult );
+                tries++;
+            }
 
-                if ( !secondOfferSucceeded )
-                {
-                    LOGGER.warn( "Failed again to offer {} to the job result processing queue {}, gave up.",
-                                 theIntegerResult, this.getResult() );
-                }
+            if ( !offerSucceeded )
+            {
+                LOGGER.warn( "Failed to offer {} to the job result processing queue {} after {} tries, gave up.",
+                             theIntegerResult, this.getResult(), tries );
             }
         }
         catch ( InvalidProtocolBufferException ipbe )
         {
             LOGGER.warn( "Could not parse a job result message.", ipbe );
 
-            boolean offerSucceeded = this.getResult().offer( PARSE_FAILED );
+            boolean offerSucceeded = this.getResult()
+                                         .offer( PARSE_FAILED );
+            int tries = 0;
+
+            while ( !offerSucceeded && tries <= RETRY_COUNT )
+            {
+                LOGGER.info( "Failed to offer {} to the job result processing queue {}, not trying again.",
+                             PARSE_FAILED, this.getResult() );
+                offerSucceeded = this.getResult()
+                                     .offer( PARSE_FAILED );
+                tries++;
+            }
 
             if ( !offerSucceeded )
             {
-                LOGGER.warn( "Failed to offer {} to the job result processing queue {}, not trying again.",
-                             PARSE_FAILED, this.getResult() );
+                LOGGER.warn( "Failed to offer {} to the job result processing queue {} after {} tries, gave up.",
+                             PARSE_FAILED, this.getResult(), tries );
             }
         }
     }
