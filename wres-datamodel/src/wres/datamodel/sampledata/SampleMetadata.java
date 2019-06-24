@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Objects;
 
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.metadata.TimeScale;
+import wres.datamodel.scale.TimeScale;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindow;
 

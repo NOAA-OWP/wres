@@ -6,8 +6,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
-import wres.datamodel.metadata.TimeScale;
-import wres.datamodel.metadata.TimeScale.TimeScaleFunction;
+import wres.datamodel.scale.TimeScale;
+import wres.datamodel.scale.TimeScale.TimeScaleFunction;
 import wres.io.utilities.DataScripter;
 
 /**

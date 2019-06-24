@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.metadata.TimeScale;
+import wres.datamodel.scale.TimeScale;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Features;

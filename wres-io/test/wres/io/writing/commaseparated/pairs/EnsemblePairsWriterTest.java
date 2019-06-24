@@ -22,8 +22,6 @@ import java.util.concurrent.ExecutionException;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import wres.datamodel.metadata.TimeScale;
-import wres.datamodel.metadata.TimeScale.TimeScaleFunction;
 import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
@@ -32,6 +30,8 @@ import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfEnsemblePairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfEnsemblePairs.TimeSeriesOfEnsemblePairsBuilder;
+import wres.datamodel.scale.TimeScale;
+import wres.datamodel.scale.TimeScale.TimeScaleFunction;
 import wres.datamodel.time.Event;
 
 /**

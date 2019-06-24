@@ -27,7 +27,7 @@ import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
 
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.metadata.TimeScale;
+import wres.datamodel.scale.TimeScale;
 import wres.io.concurrency.WRESCallable;
 import wres.io.concurrency.WRESRunnableException;
 import wres.io.config.ConfigHelper;
