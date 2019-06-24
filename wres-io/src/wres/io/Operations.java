@@ -452,6 +452,8 @@ public final class Operations {
                                                          .filter( IngestResult::requiresRetry )
                                                          .collect( Collectors.toUnmodifiableList() );
 
+        LOGGER.debug( "Here are retries needed: {}", retriesNeeded );
+
         // With 9 retries and an additional 2 seconds per retry, max sleep will
         // be 90 seconds.
         final int RETRY_LIMIT = 10;
@@ -469,6 +471,9 @@ public final class Operations {
                 List<IngestResult> doRetryOnThese =
                         new ArrayList<>( retriesNeeded.size() );
                 doRetryOnThese.addAll( retriesNeeded );
+
+                LOGGER.debug( "Iteration {}, retries needed: {}",
+                              retriesAttempted,retriesNeeded );
 
                 List<Future<List<IngestResult>>> retriedIngests =
                         Collections.emptyList();
@@ -491,12 +496,18 @@ public final class Operations {
                     retriesFinishedThisIteration.addAll( retried );
                 }
 
+                LOGGER.debug( "Iteration {}, retries finished this iteration: {}",
+                              retriesAttempted, retriesFinishedThisIteration );
+
                 retriesAttempted++;
                 retriesNeeded = retriesFinishedThisIteration.stream()
                                                             .filter( IngestResult::requiresRetry )
                                                             .collect( Collectors.toUnmodifiableList() );
                 retriesFinished.addAll( retriesFinishedThisIteration );
             }
+
+            LOGGER.debug( "After iterations, all retries finished: {}",
+                          retriesFinished );
         }
         catch ( InterruptedException ie )
         {

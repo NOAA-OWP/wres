@@ -384,6 +384,8 @@ public class Project
         Set<FeatureDetails> intersectingFeatures = new HashSet<>( this.features.size() );
         DataScripter script = ProjectScriptGenerator.createIntersectingFeaturesScript( this );
 
+        LOGGER.debug( "getIntersectingFeatures will run: {}", script );
+
         try ( DataProvider dataProvider = script.buffer() )
         {
             while ( dataProvider.next() )
@@ -395,6 +397,8 @@ public class Project
                 intersectingFeatures.add( featureDetail );
             }
         }
+
+        LOGGER.debug( "getIntersectingFeatures finished run: {}", script );
 
         return Collections.unmodifiableSet( intersectingFeatures );
     }

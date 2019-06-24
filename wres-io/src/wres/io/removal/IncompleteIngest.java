@@ -1,6 +1,7 @@
 package wres.io.removal;
 
 import java.sql.SQLException;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -8,9 +9,14 @@ import java.util.concurrent.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.io.data.caching.DataSources;
+import wres.io.data.details.SourceCompletedDetails;
+import wres.io.data.details.SourceDetails;
+import wres.io.data.details.TimeSeries;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
+import wres.system.DatabaseLockManager;
 import wres.util.FutureQueue;
 
 /**
@@ -21,6 +27,179 @@ import wres.util.FutureQueue;
 public class IncompleteIngest
 {
     private static Logger LOGGER = LoggerFactory.getLogger( IncompleteIngest.class );
+
+    private static final String DB_COMMUNICATION_FAILED =
+            "Communication with the database failed.";
+
+
+    public static boolean removeSourceDataSafely( String sourceHash,
+                                                  DatabaseLockManager lockManager )
+    {
+        Objects.requireNonNull( sourceHash );
+        Objects.requireNonNull( lockManager );
+
+        try
+        {
+            SourceDetails sourceDetails =
+                    DataSources.getExistingSource( sourceHash );
+            return IncompleteIngest.removeSourceDataSafely( sourceDetails,
+                                                            lockManager );
+        }
+        catch ( SQLException se )
+        {
+            throw new IllegalStateException( DB_COMMUNICATION_FAILED, se );
+        }
+    }
+
+    private static boolean removeSourceDataSafely( SourceDetails source,
+                                                   DatabaseLockManager lockManager )
+            throws SQLException
+    {
+        Objects.requireNonNull( source );
+        Objects.requireNonNull( source.getId() );
+        Objects.requireNonNull( lockManager );
+
+        boolean wasIngested = IncompleteIngest.wasCompletelyIngested( source );
+
+        if ( wasIngested )
+        {
+            LOGGER.warn( "Source {} was fully ingested, will not remove.",
+                         source );
+            return false;
+        }
+
+        boolean isBeingIngested = IncompleteIngest.isBeingIngested( source,
+                                                                    lockManager );
+        if ( isBeingIngested )
+        {
+            LOGGER.warn( "Source {} is being actively ingested, will not remove.",
+                         source );
+            return false;
+        }
+
+        int sourceId = source.getId();
+        DataScripter observationsScript = new DataScripter();
+        observationsScript.addLine( "DELETE FROM wres.Observation" );
+        observationsScript.addLine( "WHERE source_id = ?" );
+        observationsScript.addArgument( sourceId );
+
+        // Simple, but slow when the partitions are not by timeseries_id:
+        DataScripter timeSeriesValueScript = new DataScripter();
+        timeSeriesValueScript.addLine( "DELETE FROM wres.TimeSeriesValue" );
+        timeSeriesValueScript.addLine( "WHERE timeseries_id IN" );
+        timeSeriesValueScript.addLine( "(" );
+        timeSeriesValueScript.addTab().addLine( "SELECT timeseries_id" );
+        timeSeriesValueScript.addTab().addLine( "FROM wres.TimeSeriesSource" );
+        timeSeriesValueScript.addTab().addLine( "WHERE lead IS NULL" );
+        timeSeriesValueScript.addTab().addLine( "AND source_id = ?" );
+        timeSeriesValueScript.addArgument( sourceId );
+        timeSeriesValueScript.addLine( ")" );
+
+        DataScripter timeSeriesScript = new DataScripter();
+        timeSeriesScript.addLine( "DELETE FROM wres.TimeSeries" );
+        timeSeriesScript.addLine( "WHERE timeseries_id IN" );
+        timeSeriesScript.addLine( "(" );
+        timeSeriesScript.addTab().addLine( "SELECT timeseries_id" );
+        timeSeriesScript.addTab().addLine( "FROM wres.TimeSeriesSource" );
+        timeSeriesScript.addTab().addLine( "WHERE lead IS NULL" );
+        timeSeriesScript.addTab().addLine( "AND source_id = ?" );
+        timeSeriesScript.addArgument( sourceId );
+        timeSeriesScript.addLine( ")" );
+
+        DataScripter sourceScript = new DataScripter();
+        sourceScript.addLine( "DELETE from wres.Source" );
+        sourceScript.addLine( "WHERE source_id = ?" );
+        sourceScript.addArgument( sourceId );
+
+        try
+        {
+            lockManager.lockSource( sourceId );
+            int observationsRemoved = observationsScript.execute();
+            int timeSeriesValuesRemoved = timeSeriesValueScript.execute();
+            int timeSeriesRemoved = timeSeriesScript.execute();
+            int sourcesRemoved = sourceScript.execute();
+            LOGGER.debug( "Removed {} obs, {} fc, {} ts, {} s.",
+                          observationsRemoved,
+                          timeSeriesValuesRemoved,
+                          timeSeriesRemoved,
+                          sourcesRemoved );
+
+            if ( sourcesRemoved != 1 )
+            {
+                LOGGER.warn( "Removed {} sources when 1 was expected.",
+                             sourcesRemoved );
+            }
+        }
+        finally
+        {
+            lockManager.unlockSource( sourceId );
+        }
+
+        // Invalidate caches affected by deletes above
+        DataSources.invalidateGlobalCache();
+        TimeSeries.invalidateGlobalCache();
+
+        return true;
+    }
+
+    /**
+     * Given a source, return true if it is currently being ingested.
+     * @param source The source to look for, non-null and with non-null ID.
+     * @param lockManager The lock manager to use.
+     * @return true if the source is being actively ingested, false otherwise.
+     * @throws IllegalStateException When database communication fails.
+     */
+
+    private static boolean isBeingIngested( SourceDetails source,
+                                            DatabaseLockManager lockManager )
+    {
+        Objects.requireNonNull( source );
+        Objects.requireNonNull( source.getId() );
+        Integer sourceId = source.getId();
+
+        // Check twice to be more confident that no other process is currently
+        // ingesting this source when the first check returns false.
+        boolean isLockedCheckOne;
+        boolean isLockedCheckTwo = false;
+
+        try
+        {
+            isLockedCheckOne = lockManager.isSourceLocked( sourceId );
+
+            if ( !isLockedCheckOne )
+            {
+                isLockedCheckTwo = lockManager.isSourceLocked( sourceId );
+            }
+        }
+        catch ( SQLException se )
+        {
+            throw new IllegalStateException( DB_COMMUNICATION_FAILED, se );
+        }
+
+        return isLockedCheckOne || isLockedCheckTwo;
+    }
+
+
+    /**
+     * Given a source, return true if it has been completely ingested.
+     * @param source The source in question.
+     * @return true when the source has been completely ingested, false otherwise.
+     * @throws IllegalStateException When communication with the database fails.
+     */
+
+    private static boolean wasCompletelyIngested( SourceDetails source )
+    {
+        SourceCompletedDetails completedDetails = new SourceCompletedDetails( source );
+
+        try
+        {
+            return completedDetails.wasCompleted();
+        }
+        catch ( SQLException se )
+        {
+            throw new IllegalStateException( DB_COMMUNICATION_FAILED, se );
+        }
+    }
 
     /**
      * Checks to see if the database contains orphaned data
@@ -51,11 +230,15 @@ public class IncompleteIngest
         return thereAreOrphans;
     }
 
+
     /**
      * Removes all data from the database that isn't properly linked to a project
+     * Assumes that the caller (or caller of caller) holds an exclusive lock on
+     * the database instance.
      * @return Whether or not values were removed
      * @throws SQLException Thrown when one of the required scripts could not complete
      */
+
     @SuppressWarnings( "unchecked" )
     public static boolean removeOrphanedData() throws SQLException
     {

@@ -18,6 +18,32 @@ import wres.io.config.ConfigHelper;
 
 public class IngestResult
 {
+    enum State
+    {
+        /**
+         * State of a source that has not been ingested nor seen yet.
+         * This is also the state of a source that was formerly
+         * INCOMPLETE_AND_ABANDONED_BY_ANOTHER_PROCESS but has been safely
+         * removed/cleaned-up.
+         */
+        INCOMPLETE_AND_NOT_BEGUN,
+
+        /** State of a successfully ingested, ready-for-evaluation source. */
+        COMPLETE,
+
+        /**
+         * State of a source that was started by another process and is
+         * actively being ingested by another process.
+         */
+        INCOMPLETE_AND_ACTIVE_IN_ANOTHER_PROCESS,
+
+        /**
+         * State of a source that was started by another process but not
+         * finished and is not being actively ingested by another process.
+         */
+        INCOMPLETE_AND_ABANDONED_BY_ANOTHER_PROCESS,
+    }
+
     private final LeftOrRightOrBaseline leftOrRightOrBaseline;
     private final DataSource dataSource;
     private final String hash;

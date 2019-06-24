@@ -36,6 +36,7 @@ import wres.io.config.LeftOrRightOrBaseline;
 import wres.io.data.caching.DataSources;
 import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
+import wres.io.removal.IncompleteIngest;
 import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
 import wres.util.NetCDF;
@@ -279,6 +280,9 @@ public class SourceLoader
                                                 + "blank." );
         }
 
+        LOGGER.debug( "ingestData() with hash known in advance: {}, {}",
+                      source, hash );
+
         List<Future<List<IngestResult>>> tasks = new ArrayList<>();
 
         IngestSaver ingestSaver = IngestSaver.createTask()
@@ -334,6 +338,8 @@ public class SourceLoader
         Objects.requireNonNull( projectConfig );
         Objects.requireNonNull( lockManager );
 
+        LOGGER.debug( "ingestFile called: {}", source );
+
         URI sourceUri = source.getUri();
         List<Future<List<IngestResult>>> tasks = new ArrayList<>();
         FileEvaluation checkIngest = shouldIngest( source.getUri(),
@@ -374,37 +380,53 @@ public class SourceLoader
             if ( checkIngest.isValid() )
             {
                 // When the ingest requires retry and also is not in progress,
-                // throw an exception: some process trying to ingest the source
+                // attempt cleanup: some process trying to ingest the source
                 // died during ingest and data needs to be cleaned out.
                 if ( !checkIngest.ingestMarkedComplete()
                      && !checkIngest.ingestInProgress() )
                 {
-                    throw new IllegalStateException( "Another WRES instance"
-                                                     + " started to ingest "
-                                                     + checkIngest.hash
-                                                     + " but did not finish." );
+                    String hash = checkIngest.getHash();
+                    LOGGER.info( "Another WRES instance started to ingest a source like '{}' identified by '{}' but did not finish, cleaning up...",
+                                 sourceUri,
+                                 hash );
+                    IncompleteIngest.removeSourceDataSafely( hash,
+                                                             lockManager );
+                    List<Future<List<IngestResult>>> futureList =
+                            SourceLoader.ingestData( source,
+                                                     projectConfig,
+                                                     lockManager,
+                                                     hash );
+                    tasks.addAll( futureList );
                 }
-
-                LOGGER.debug( "Data will not be loaded from '{}'. That data is already in the database",
-                              sourceUri );
-
-                // Fake a future, return result immediately.
-                tasks.add( IngestResult.fakeFutureSingleItemListFrom( projectConfig,
-                                                                      source,
-                                                                      checkIngest.getHash(),
-                                                                      !checkIngest.ingestMarkedComplete() ) );
-
-                // Additional links required? The source already exists, but the links may not
-                for ( LeftOrRightOrBaseline nextLink : source.getLinks() )
+                else
                 {
-                    // Get the context for the link
-                    DataSourceConfig dataSourceconfig = SourceLoader.getDataSourceConfig( projectConfig, nextLink );
-                    DataSource anotherDataSource = source.withContext( dataSourceconfig );
+                    LOGGER.debug(
+                            "Data will not be loaded from '{}'. That data is already in the database",
+                            sourceUri );
 
                     // Fake a future, return result immediately.
-                    tasks.add( IngestResult.fakeFutureSingleItemListFrom( projectConfig,
-                                                                          anotherDataSource,
-                                                                          checkIngest.getHash() ) );
+                    tasks.add( IngestResult.fakeFutureSingleItemListFrom(
+                            projectConfig,
+                            source,
+                            checkIngest.getHash(),
+                            !checkIngest.ingestMarkedComplete() ) );
+
+                    // Additional links required? The source already exists, but the links may not
+                    for ( LeftOrRightOrBaseline nextLink : source.getLinks() )
+                    {
+                        // Get the context for the link
+                        DataSourceConfig dataSourceconfig =
+                                SourceLoader.getDataSourceConfig( projectConfig,
+                                                                  nextLink );
+                        DataSource anotherDataSource =
+                                source.withContext( dataSourceconfig );
+
+                        // Fake a future, return result immediately.
+                        tasks.add( IngestResult.fakeFutureSingleItemListFrom(
+                                projectConfig,
+                                anotherDataSource,
+                                checkIngest.getHash() ) );
+                    }
                 }
             }
             else
