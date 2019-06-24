@@ -7,11 +7,11 @@ import org.slf4j.LoggerFactory;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreGroup;
-import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.StatisticMetadata;
 
 /**
  * Constructs a {@link Metric} that returns the sample size.

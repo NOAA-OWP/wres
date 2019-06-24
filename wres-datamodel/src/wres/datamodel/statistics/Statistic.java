@@ -1,6 +1,5 @@
 package wres.datamodel.statistics;
 
-import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.sampledata.SampleData;
 
 /**

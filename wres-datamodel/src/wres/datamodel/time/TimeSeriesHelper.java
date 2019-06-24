@@ -5,8 +5,7 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.StringJoiner;
 
-import wres.datamodel.metadata.SampleMetadata;
-import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.sampledata.SampleMetadata;
 
 /**
  * A helper class for time-series.

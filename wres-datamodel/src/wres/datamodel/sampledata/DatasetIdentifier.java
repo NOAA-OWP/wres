@@ -1,9 +1,8 @@
-package wres.datamodel.metadata;
+package wres.datamodel.sampledata;
 
 import java.util.Objects;
 import java.util.StringJoiner;
 
-import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.statistics.Statistic;
 
 /**

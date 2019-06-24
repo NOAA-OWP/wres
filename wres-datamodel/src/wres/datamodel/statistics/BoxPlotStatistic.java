@@ -5,7 +5,6 @@ import java.util.StringJoiner;
 
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.metadata.StatisticMetadata;
 
 /**
  * An immutable representation of a box plot statistic, which comprises a set of 

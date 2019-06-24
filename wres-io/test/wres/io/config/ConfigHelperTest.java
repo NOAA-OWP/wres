@@ -24,7 +24,7 @@ import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeSeriesMetricConfig;
 import wres.config.generated.TimeSeriesMetricConfigName;
-import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.time.TimeWindow;
 
 public class ConfigHelperTest
 {

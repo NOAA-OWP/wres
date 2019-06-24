@@ -8,8 +8,6 @@ import java.util.StringJoiner;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import wres.datamodel.metadata.StatisticMetadata;
-
 /**
  * A statistic that comprises a list of pairs.
  * 

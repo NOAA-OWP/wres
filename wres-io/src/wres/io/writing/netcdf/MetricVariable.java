@@ -10,10 +10,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
 
-import wres.datamodel.metadata.StatisticMetadata;
-import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.datamodel.time.TimeWindow;
 import wres.util.TimeHelper;
 
 class MetricVariable

@@ -8,11 +8,11 @@ import java.util.stream.IntStream;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.MulticategoryPair;
 import wres.datamodel.sampledata.pairs.MulticategoryPairs;
 import wres.datamodel.statistics.MatrixStatistic;
+import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Metric;
 
 /**

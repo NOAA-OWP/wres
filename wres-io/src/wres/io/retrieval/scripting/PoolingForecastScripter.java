@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.sql.SQLException;
 
 import wres.config.generated.DataSourceConfig;
-import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.time.TimeWindow;
 import wres.io.config.ConfigHelper;
 import wres.io.config.OrderedSampleMetadata;
 import wres.util.TimeHelper;

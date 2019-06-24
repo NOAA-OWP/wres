@@ -17,8 +17,8 @@ import ucar.ma2.DataType;
 import ucar.ma2.InvalidRangeException;
 import ucar.nc2.NetcdfFileWriter;
 import wres.config.generated.DestinationConfig;
-import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.time.TimeWindow;
 import wres.io.config.ConfigHelper;
 
 class NetcdfOutputFileCreator

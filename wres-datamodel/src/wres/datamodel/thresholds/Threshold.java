@@ -4,7 +4,7 @@ import java.util.Objects;
 import java.util.function.DoublePredicate;
 
 import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdType;
