@@ -1,4 +1,4 @@
-package wres.datamodel.metadata;
+package wres.datamodel.scale;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -9,7 +9,7 @@ import java.util.StringJoiner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.datamodel.metadata.TimeScale.TimeScaleFunction;
+import wres.datamodel.scale.TimeScale.TimeScaleFunction;
 
 /**
  * A helper class for validating scale information.

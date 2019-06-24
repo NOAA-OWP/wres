@@ -13,7 +13,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.datamodel.metadata.TimeScale;
+import wres.datamodel.scale.TimeScale;
 import wres.io.data.details.TimeSeries;
 import wres.io.utilities.CopyException;
 import wres.io.utilities.DataBuilder;

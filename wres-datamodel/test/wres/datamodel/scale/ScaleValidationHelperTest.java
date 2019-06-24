@@ -1,4 +1,4 @@
-package wres.datamodel.metadata;
+package wres.datamodel.scale;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -9,7 +9,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.datamodel.metadata.TimeScale.TimeScaleFunction;
+import wres.datamodel.scale.RescalingException;
+import wres.datamodel.scale.ScaleValidationHelper;
+import wres.datamodel.scale.TimeScale;
+import wres.datamodel.scale.TimeScale.TimeScaleFunction;
 
 /**
  * Tests the {@link ScaleValidationHelper}.

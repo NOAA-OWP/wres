@@ -21,10 +21,10 @@ import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.datamodel.metadata.TimeScale;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.pairs.Pair;
 import wres.datamodel.sampledata.pairs.Pairs;
+import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindow;

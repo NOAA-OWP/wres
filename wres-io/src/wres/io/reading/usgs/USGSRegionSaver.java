@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DurationUnit;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.metadata.TimeScale;
+import wres.datamodel.scale.TimeScale;
 import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;

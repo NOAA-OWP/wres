@@ -1,4 +1,4 @@
-package wres.datamodel.metadata;
+package wres.datamodel.scale;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
@@ -22,7 +22,9 @@ import org.junit.rules.ExpectedException;
 
 import wres.config.generated.DurationUnit;
 import wres.config.generated.TimeScaleConfig;
-import wres.datamodel.metadata.TimeScale.TimeScaleFunction;
+import wres.datamodel.scale.RescalingException;
+import wres.datamodel.scale.TimeScale;
+import wres.datamodel.scale.TimeScale.TimeScaleFunction;
 
 /**
  * Tests the {@link TimeScale}.

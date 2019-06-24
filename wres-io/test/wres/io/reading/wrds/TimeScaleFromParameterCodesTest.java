@@ -7,7 +7,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.datamodel.metadata.TimeScale;
+import wres.datamodel.scale.TimeScale;
 
 /**
  * Tests the {@link TimeScaleFromParameterCodes}.

@@ -47,7 +47,7 @@ import wres.config.generated.TimeScaleFunction;
 import wres.config.generated.TimeSeriesMetricConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.StatisticGroup;
-import wres.datamodel.metadata.TimeScale;
+import wres.datamodel.scale.TimeScale;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
 import wres.io.config.ConfigHelper;
 import wres.util.Collections;

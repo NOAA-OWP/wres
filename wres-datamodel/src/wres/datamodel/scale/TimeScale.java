@@ -1,4 +1,4 @@
-package wres.datamodel.metadata;
+package wres.datamodel.scale;
 
 import java.time.Duration;
 import java.util.Iterator;

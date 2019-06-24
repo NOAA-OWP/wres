@@ -1,4 +1,4 @@
-package wres.datamodel.metadata;
+package wres.datamodel.scale;
 
 import wres.datamodel.DataException;
 

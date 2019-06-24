@@ -6,7 +6,7 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.datamodel.metadata.TimeScale;
+import wres.datamodel.scale.TimeScale;
 
 /**
  * <p>Helper class that builds a {@link TimeScale} from a set of {@link ParameterCodes}.

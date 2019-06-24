@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.metadata.TimeScale;
+import wres.datamodel.scale.TimeScale;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
