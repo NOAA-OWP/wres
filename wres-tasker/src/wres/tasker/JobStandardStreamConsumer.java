@@ -1,6 +1,8 @@
 package wres.tasker;
 
+import java.time.Duration;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import javax.xml.bind.DatatypeConverter;
 
@@ -18,7 +20,7 @@ class JobStandardStreamConsumer extends DefaultConsumer
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( JobStandardStreamConsumer.class );
 
-    private static final int RETRY_COUNT = 9001;
+    private static final Duration OFFER_LIMIT = Duration.ofSeconds( 30 );
 
     private final BlockingQueue<JobStandardStream.job_standard_stream> result;
 
@@ -60,24 +62,22 @@ class JobStandardStreamConsumer extends DefaultConsumer
             throw new WresParseException( "Failed to parse message, hex: " + hexVersion, ipbe );
         }
 
-        boolean offerSucceeded = this.getResult()
-                                     .offer( decodedResult );
-        int tries = 1;
-
-        while ( !offerSucceeded && tries <= RETRY_COUNT )
+        try
         {
-            LOGGER.info( "Failed to offer {} to the standardstream processing queue {}, retrying.",
-                         decodedResult, this.getResult() );
-
-            offerSucceeded = this.getResult()
-                                 .offer( decodedResult );
-            tries++;
+            boolean offerSucceeded = this.getResult()
+                                         .offer( decodedResult,
+                                                 OFFER_LIMIT.toSeconds(),
+                                                 TimeUnit.SECONDS );
+            if ( !offerSucceeded )
+            {
+                LOGGER.warn( "Failed to offer {} to the standardstream processing queue {} after {}, gave up.",
+                             decodedResult, this.getResult(), OFFER_LIMIT );
+            }
         }
-
-        if ( !offerSucceeded )
+        catch ( InterruptedException ie )
         {
-            LOGGER.warn( "Failed to offer {} to the standardstream processing queue {} after {} tries, gave up.",
-                         decodedResult, this.getResult(), tries );
+            LOGGER.warn( "Interrupted while attempting to offer " + decodedResult
+                         + " to the standardstream processing queue.", ie );
         }
     }
 }

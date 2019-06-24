@@ -1,6 +1,8 @@
 package wres.tasker;
 
+import java.time.Duration;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.rabbitmq.client.AMQP;
@@ -23,7 +25,7 @@ class JobResultConsumer extends DefaultConsumer
 
     private static final Integer PARSE_FAILED = 601;
 
-    private static final int RETRY_COUNT = 9001;
+    private static final Duration OFFER_LIMIT = Duration.ofSeconds( 30 );
 
     private final BlockingQueue<Integer> result;
 
@@ -55,6 +57,7 @@ class JobResultConsumer extends DefaultConsumer
         LOGGER.info( "Heard a message, consumerTag: {}, envelope: {}, properties: {}, message: {}",
                      consumerTag, envelope, properties, message );
         JobResult.job_result jobResult;
+        boolean exception = false;
 
         try
         {
@@ -63,46 +66,46 @@ class JobResultConsumer extends DefaultConsumer
             int theIntegerResult = jobResult.getResult();
 
             boolean offerSucceeded = this.getResult()
-                                         .offer( theIntegerResult );
-            int tries = 0;
-
-            while ( !offerSucceeded && tries < RETRY_COUNT )
-            {
-                LOGGER.info( "Failed to offer {} to the job result processing queue {}, retrying.",
-                             theIntegerResult, this.getResult() );
-
-                offerSucceeded = this.getResult()
-                                     .offer( theIntegerResult );
-                tries++;
-            }
+                                         .offer( theIntegerResult,
+                                                 OFFER_LIMIT.toSeconds(),
+                                                 TimeUnit.SECONDS );
 
             if ( !offerSucceeded )
             {
                 LOGGER.warn( "Failed to offer {} to the job result processing queue {} after {} tries, gave up.",
-                             theIntegerResult, this.getResult(), tries );
+                             theIntegerResult, this.getResult(), OFFER_LIMIT );
             }
+        }
+        catch ( InterruptedException ie )
+        {
+            LOGGER.warn( "Interrupted while offering message to job result processing queue.",
+                         ie );
         }
         catch ( InvalidProtocolBufferException ipbe )
         {
             LOGGER.warn( "Could not parse a job result message.", ipbe );
+            exception = true;
+        }
 
-            boolean offerSucceeded = this.getResult()
-                                         .offer( PARSE_FAILED );
-            int tries = 0;
-
-            while ( !offerSucceeded && tries <= RETRY_COUNT )
+        if ( exception )
+        {
+            try
             {
-                LOGGER.info( "Failed to offer {} to the job result processing queue {}, not trying again.",
-                             PARSE_FAILED, this.getResult() );
-                offerSucceeded = this.getResult()
-                                     .offer( PARSE_FAILED );
-                tries++;
+                boolean offerSucceeded = this.getResult()
+                                             .offer( PARSE_FAILED,
+                                                     OFFER_LIMIT.toSeconds(),
+                                                     TimeUnit.SECONDS );
+
+                if ( !offerSucceeded )
+                {
+                    LOGGER.warn( "Failed to offer {} to the job result processing queue {} after {} tries, gave up.",
+                                 PARSE_FAILED, this.getResult(), OFFER_LIMIT );
+                }
             }
-
-            if ( !offerSucceeded )
+            catch ( InterruptedException ie )
             {
-                LOGGER.warn( "Failed to offer {} to the job result processing queue {} after {} tries, gave up.",
-                             PARSE_FAILED, this.getResult(), tries );
+                LOGGER.warn( "Interrupted while offering " + PARSE_FAILED
+                             + " message to job result processing queue", ie );
             }
         }
     }

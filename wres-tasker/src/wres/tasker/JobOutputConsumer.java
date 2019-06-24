@@ -1,6 +1,9 @@
 package wres.tasker;
 
+import java.time.Duration;
+import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.rabbitmq.client.AMQP;
@@ -16,7 +19,7 @@ class JobOutputConsumer extends DefaultConsumer
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( JobOutputConsumer.class );
 
-    private static final int RETRY_COUNT = 9001;
+    private static final Duration OFFER_LIMIT = Duration.ofSeconds( 30 );
 
     private final BlockingQueue<JobOutput.job_output> wresJobOutput;
 
@@ -42,38 +45,39 @@ class JobOutputConsumer extends DefaultConsumer
         LOGGER.debug( "Heard a message, consumerTag: {}, envelope: {}, properties: {}, message: {}",
                       consumerTag, envelope, properties, message );
 
-        JobOutput.job_output oneWresJobOutputMessage;
+        JobOutput.job_output oneWresJobOutputMessage = null;
 
         try
         {
             oneWresJobOutputMessage = JobOutput.job_output.parseFrom( message );
-
             LOGGER.debug( "Successfully parsed message, consumerTag: {}, envelope: {}, properties: {}, message: {}",
                           consumerTag, envelope, properties, oneWresJobOutputMessage );
-            boolean offerSucceeded = this.getWresJobOutput()
-                                         .offer( oneWresJobOutputMessage );
-            int tries = 0;
-
-            while( !offerSucceeded && tries <= RETRY_COUNT )
-            {
-                LOGGER.info( "Failed to offer job output message {}, trying again",
-                             message );
-                offerSucceeded= this.getWresJobOutput()
-                                    .offer( oneWresJobOutputMessage );
-                tries++;
-            }
-
-            if ( !offerSucceeded)
-            {
-                LOGGER.warn( "Failed to offer job output message {} after {} tries, gave up.",
-                             message, tries );
-            }
         }
         catch ( InvalidProtocolBufferException ipbe )
         {
             // Not much we can do at this point.
             LOGGER.warn( "Could not parse a job output message.", ipbe );
         }
+
+        try
+        {
+            boolean offerSucceeded = this.getWresJobOutput()
+                                         .offer( oneWresJobOutputMessage,
+                                                 OFFER_LIMIT.getSeconds(),
+                                                 TimeUnit.SECONDS );
+
+            if ( !offerSucceeded )
+            {
+                LOGGER.warn( "Failed to offer job output message {} after {}, gave up.",
+                             message, OFFER_LIMIT );
+            }
+        }
+        catch ( InterruptedException ie )
+        {
+            LOGGER.warn( "Interrupted while attempting to put job output message "
+                         + Arrays.toString( message ), ie );
+        }
+
     }
 
 }
