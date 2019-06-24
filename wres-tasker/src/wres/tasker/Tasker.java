@@ -27,7 +27,6 @@ public class Tasker
      */
     private static final int MAX_SERVER_THREADS = 100;
 
-    private static final String ENV_VAR_FOR_WRES_ENVIRONMENT = "WRES_ENV_SUFFIX";
 
     /**
      * Tasker receives requests for wres runs and passes them along to queue.
@@ -102,7 +101,7 @@ public class Tasker
         SslContextFactory sslContextFactory = new SslContextFactory();
         String ourServerCertificateFilename = BrokerHelper.getSecretsDir()
                                               + "/***REMOVED***wres"
-                                              + Tasker.getEnvironmentSuffix()
+                                              + Environment.getEnvironmentSuffix()
                                               + "_server_private_key_and_x509_cert.p12";
         sslContextFactory.setKeyStoreType( "PKCS12" );
         sslContextFactory.setKeyStorePassword( "wres-web-passphrase" );
@@ -111,26 +110,4 @@ public class Tasker
     }
 
 
-    /**
-     * Returns a string that can be appended to a base hostname in order to
-     * vary the hostname used per-environent. If there is a production string
-     * it will be blank. Uses the $WRES_ENV_SUFFIX environment variable which
-     * contains the dash in it already.
-     * @return an always-appendable-to-hostname, non-null string for use in
-     * reading a server private key file or server x509 certificate file.
-     */
-
-    private static String getEnvironmentSuffix()
-    {
-        String descriptor = System.getenv( ENV_VAR_FOR_WRES_ENVIRONMENT );
-
-        if ( descriptor == null || descriptor.isEmpty() )
-        {
-            return "";
-        }
-        else
-        {
-            return descriptor;
-        }
-    }
 }

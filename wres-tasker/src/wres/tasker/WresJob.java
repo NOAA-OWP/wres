@@ -56,6 +56,8 @@ public class WresJob
 
     private static final Random RANDOM = new Random( System.currentTimeMillis() );
 
+    private static final String ENVIRONMENT_NAME = Environment.getEnvironmentSuffix();
+
     static
     {
         // Determine the actual broker name, whether from -D or default
@@ -92,16 +94,18 @@ public class WresJob
     public Response postWresJob( @FormParam( "projectConfig" ) String projectConfig,
                                  @FormParam( "userName" ) String wresUser )
     {
-        String databaseUrl = Users.getDatabaseHost( wresUser );
-        String databaseName = Users.getDatabaseName( wresUser );
-        String databaseUser = Users.getDatabaseUser( wresUser );
+        String databaseUrl = Users.getDatabaseHost( wresUser, ENVIRONMENT_NAME );
+        String databaseName = Users.getDatabaseName( wresUser, ENVIRONMENT_NAME );
+        String databaseUser = Users.getDatabaseUser( wresUser, ENVIRONMENT_NAME );
 
         // If all three are missing, call it a 404 not found
         if ( databaseUrl == null && databaseName == null && databaseUser == null )
         {
             return WresJob.notFound( "Could not find any record of user '"
                                      + wresUser
-                                     + "' in the system. Please correct the user name or contact WRES team." );
+                                     + "' in the "
+                                     + ENVIRONMENT_NAME
+                                     + " system. Please correct the user name or contact WRES team." );
         }
         // If only one of the three is missing, mistake on our end 500
         else if ( databaseUrl == null || databaseName == null || databaseUser == null )
