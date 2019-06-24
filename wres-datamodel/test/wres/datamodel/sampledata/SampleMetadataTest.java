@@ -9,8 +9,11 @@ import static org.junit.Assert.assertTrue;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Collections;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
@@ -48,7 +51,106 @@ public class SampleMetadataTest
     private static final String THIRD_TIME = "2000-02-02T00:00:00Z";
     private static final String SECOND_TIME = "1986-01-01T00:00:00Z";
     private static final String FIRST_TIME = "1985-01-01T00:00:00Z";
+    
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
+    
+    /**
+     * Tests the {@link SampleMetadata#unionOf(java.util.List)} against a benchmark.
+     */
+    @Test
+    public void unionOf()
+    {
+        Location l1 = Location.of( DRRC2 );
+        SampleMetadata m1 = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
+                                                       .setIdentifier( DatasetIdentifier.of( l1, "SQIN", "HEFS" ) )
+                                                       .setTimeWindow( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                                      Instant.parse( "1985-12-31T23:59:59Z" ) ) )
+                                                       .build();
+        Location l2 = Location.of( DRRC2 );
+        SampleMetadata m2 = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
+                                                       .setIdentifier( DatasetIdentifier.of( l2, "SQIN", "HEFS" ) )
+                                                       .setTimeWindow( TimeWindow.of( Instant.parse( "1986-01-01T00:00:00Z" ),
+                                                                                      Instant.parse( "1986-12-31T23:59:59Z" ) ) )
+                                                       .build();
+        Location l3 = Location.of( DRRC2 );
+        SampleMetadata m3 = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
+                                                       .setIdentifier( DatasetIdentifier.of( l3, "SQIN", "HEFS" ) )
+                                                       .setTimeWindow( TimeWindow.of( Instant.parse( "1987-01-01T00:00:00Z" ),
+                                                                                      Instant.parse( "1988-01-01T00:00:00Z" ) ) )
+                                                       .build();
+        Location benchmarkLocation = Location.of( DRRC2 );
+        SampleMetadata benchmark = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
+                                                              .setIdentifier( DatasetIdentifier.of( benchmarkLocation,
+                                                                                                    "SQIN",
+                                                                                                    "HEFS" ) )
+                                                              .setTimeWindow( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                                             Instant.parse( "1988-01-01T00:00:00Z" ) ) )
+                                                              .build();
 
+        assertEquals( "Unexpected difference between union of metadata and benchmark.",
+                      benchmark,
+                      SampleMetadata.unionOf( Arrays.asList( m1, m2, m3 ) ) );
+    }
+
+    /**
+     * Tests that the {@link SampleMetadata#unionOf(java.util.List)} throws an expected exception when the input is
+     * null.
+     */
+    @Test
+    public void testUnionOfThrowsExceptionWithNullInput()
+    {
+        exception.expect( NullPointerException.class );
+        exception.expectMessage( "Cannot find the union of null metadata." );
+
+        SampleMetadata.unionOf( null );
+    }
+
+    /**
+     * Tests that the {@link SampleMetadata#unionOf(java.util.List)} throws an expected exception when the input is
+     * empty.
+     */
+    @Test
+    public void testUnionOfThrowsExceptionWithEmptyInput()
+    {
+        exception.expect( IllegalArgumentException.class );
+        exception.expectMessage( "Cannot find the union of empty input." );
+
+        SampleMetadata.unionOf( Collections.emptyList() );
+    }
+
+    /**
+     * Tests that the {@link SampleMetadata#unionOf(java.util.List)} throws an expected exception when the input is
+     * contains a null.
+     */
+    @Test
+    public void testUnionOfThrowsExceptionWithOneNullInput()
+    {
+        exception.expect( NullPointerException.class );
+        exception.expectMessage( "Cannot find the union of null metadata." );
+
+        SampleMetadata.unionOf( Arrays.asList( (SampleMetadata) null ) );
+    }
+
+
+    /**
+     * Tests that the {@link SampleMetadata#unionOf(java.util.List)} throws an expected exception when the inputs are
+     * unequal on attributes that are expected to be equal.
+     */
+    @Test
+    public void testUnionOfThrowsExceptionWithUnequalInputs()
+    {
+        exception.expect( MetadataException.class );
+        exception.expectMessage( "Only the time window and thresholds can differ when finding the union of metadata." );
+
+        SampleMetadata failOne = SampleMetadata.of( MeasurementUnit.of(),
+                                                    DatasetIdentifier.of( Location.of( "DRRC3" ), "SQIN", "HEFS" ) );
+        SampleMetadata failTwo =
+                SampleMetadata.of( MeasurementUnit.of(), DatasetIdentifier.of( Location.of( "A" ), "B" ) );
+
+        SampleMetadata.unionOf( Arrays.asList( failOne, failTwo ) );
+    }    
+    
     /**
      * Tests construction of the {@link SampleMetadata} using the various construction options.
      */

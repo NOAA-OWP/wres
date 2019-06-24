@@ -2,9 +2,7 @@ package wres.datamodel.metadata;
 
 import java.math.BigDecimal;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
 
@@ -12,9 +10,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.datamodel.metadata.TimeScale.TimeScaleFunction;
-import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.time.TimeWindow;
 
 /**
  * A helper class for manipulating metadata.
@@ -30,58 +25,6 @@ public final class MetadataHelper
      */
 
     private static final Logger LOGGER = LoggerFactory.getLogger( MetadataHelper.class );
-
-    /**
-     * Finds the union of the input, based on the {@link TimeWindow}. All components of the input must be equal, 
-     * except the {@link SampleMetadata#getTimeWindow()} and {@link SampleMetadata#getThresholds()}, otherwise an exception is 
-     * thrown. See also {@link TimeWindow#unionOf(List)}. No threshold information is represented in the union.
-     * 
-     * @param input the input metadata
-     * @return the union of the input
-     * @throws IllegalArgumentException if the input is empty
-     * @throws NullPointerException if the input is null
-     */
-
-    public static SampleMetadata unionOf( List<SampleMetadata> input )
-    {
-        String nullString = "Cannot find the union of null metadata.";
-
-        Objects.requireNonNull( input, nullString );
-
-        if ( input.isEmpty() )
-        {
-            throw new IllegalArgumentException( "Cannot find the union of empty input." );
-        }
-        List<TimeWindow> unionWindow = new ArrayList<>();
-
-        // Test entry
-        SampleMetadata test = input.get( 0 );
-
-        // Validate for equivalence with the first entry and add window to list
-        for ( SampleMetadata next : input )
-        {
-            Objects.requireNonNull( next, nullString );
-
-            if ( !next.equalsWithoutTimeWindowOrThresholds( test ) )
-            {
-                throw new MetadataException( "Only the time window and thresholds can differ when finding the union of "
-                                             + "metadata." );
-            }
-            if ( next.hasTimeWindow() )
-            {
-                unionWindow.add( next.getTimeWindow() );
-            }
-        }
-
-        // Remove any threshold information from the result
-        test = SampleMetadata.of( test, (OneOrTwoThresholds) null );
-
-        if ( !unionWindow.isEmpty() )
-        {
-            test = SampleMetadata.of( test, TimeWindow.unionOf( unionWindow ) );
-        }
-        return test;
-    }
 
     /**
      * <p>Compares two {@link TimeScale} and throws an exception when the desiredTimeScale
