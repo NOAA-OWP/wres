@@ -49,6 +49,8 @@ public class FEWSSource extends BasicSource
 
         try
         {
+            // This is an awkward inference: "cache presence means I ingest."
+            // See #50933-420
             if ( !DataSources.hasSource( this.getHash() ) )
             {
                 PIXMLReader sourceReader = new PIXMLReader( this.getFilename(),
