@@ -25,9 +25,11 @@ class Users
      * @param user
      * @return the database name that user should use, null if not found
      */
-    static String getDatabaseName( String user )
+    static String getDatabaseName( String user, String environment )
     {
-        return USER_PROPERTIES.getProperty( "database.name." + user.toLowerCase() );
+        return USER_PROPERTIES.getProperty( "database.name."
+                                            + environment.toLowerCase() + "."
+                                            + user.toLowerCase() );
     }
 
     /**
@@ -35,9 +37,11 @@ class Users
      * @param user the user to look for
      * @return the database host that user should use, null if not found
      */
-    static String getDatabaseHost( String user )
+    static String getDatabaseHost( String user, String environment )
     {
-        return USER_PROPERTIES.getProperty( "database.host." + user.toLowerCase() );
+        return USER_PROPERTIES.getProperty( "database.host."
+                                            + environment.toLowerCase() + "."
+                                            + user.toLowerCase() );
     }
 
     /**
@@ -46,9 +50,11 @@ class Users
      * @return the database host that user should use, null if not found
      */
 
-    static String getDatabaseUser( String user )
+    static String getDatabaseUser( String user, String environment )
     {
-        return USER_PROPERTIES.getProperty( "database.user." + user.toLowerCase() );
+        return USER_PROPERTIES.getProperty( "database.user."
+                                            + environment.toLowerCase() + "."
+                                            + user.toLowerCase() );
     }
 
 

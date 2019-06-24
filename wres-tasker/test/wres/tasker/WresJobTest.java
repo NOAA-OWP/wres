@@ -222,6 +222,9 @@ public class WresJobTest
 
         System.setProperty( CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST,
                             approvedCiphersJoiner.toString() );
+
+        System.setProperty( Environment.SYSTEM_PROPERTY_NAMING_WRES_ENVIRONMENT,
+                            "-dev" );
     }
 
     @Test
