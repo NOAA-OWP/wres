@@ -9,7 +9,6 @@ import java.util.Objects;
 import java.util.SortedSet;
 import java.util.stream.Collectors;
 
-import wres.datamodel.metadata.MetadataHelper;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.time.BasicTimeSeries;
@@ -243,7 +242,7 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
             {
                 mainMeta.add( this.mainMeta );
             }
-            this.setMetadata( MetadataHelper.unionOf( mainMeta ) );
+            this.setMetadata( SampleMetadata.unionOf( mainMeta ) );
 
             //Add the baseline data if required
             if ( timeSeries.hasBaseline() )
@@ -284,7 +283,7 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
             {
                 baselineMeta.add( this.baselineMeta );
             }
-            this.setMetadataForBaseline( MetadataHelper.unionOf( baselineMeta ) );
+            this.setMetadataForBaseline( SampleMetadata.unionOf( baselineMeta ) );
 
             return this;
         }
