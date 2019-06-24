@@ -18,6 +18,8 @@ class JobStandardStreamConsumer extends DefaultConsumer
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( JobStandardStreamConsumer.class );
 
+    private static final int RETRY_COUNT = 9001;
+
     private final BlockingQueue<JobStandardStream.job_standard_stream> result;
 
     /**
@@ -58,20 +60,24 @@ class JobStandardStreamConsumer extends DefaultConsumer
             throw new WresParseException( "Failed to parse message, hex: " + hexVersion, ipbe );
         }
 
-        boolean offerSucceeded = this.getResult().offer( decodedResult );
+        boolean offerSucceeded = this.getResult()
+                                     .offer( decodedResult );
+        int tries = 1;
 
-        if ( !offerSucceeded )
+        while ( !offerSucceeded && tries <= RETRY_COUNT )
         {
             LOGGER.info( "Failed to offer {} to the standardstream processing queue {}, retrying.",
                          decodedResult, this.getResult() );
 
-            boolean secondOfferSucceeded = this.getResult().offer( decodedResult );
+            offerSucceeded = this.getResult()
+                                 .offer( decodedResult );
+            tries++;
+        }
 
-            if ( !secondOfferSucceeded )
-            {
-                LOGGER.warn( "Failed again to offer {} to the standardstream processing queue {}, gave up.",
-                             decodedResult, this.getResult() );
-            }
+        if ( !offerSucceeded )
+        {
+            LOGGER.warn( "Failed to offer {} to the standardstream processing queue {} after {} tries, gave up.",
+                         decodedResult, this.getResult(), tries );
         }
     }
 }

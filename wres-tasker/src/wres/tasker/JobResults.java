@@ -47,19 +47,19 @@ class JobResults
                                                                            .maximumSize( 10_000 )
                                                                            .build();
 
-    /** A shared bag of job standard out */
+    /** A shared map of job standard out */
     private static final Cache<String, ConcurrentNavigableMap<Integer,String>> JOB_STDOUT_BY_ID
             = Caffeine.newBuilder()
                       .maximumSize( 1_000 )
                       .build();
 
-    /** A shared bag of job standard error */
+    /** A shared map of job standard error */
     private static final Cache<String, ConcurrentNavigableMap<Integer,String>> JOB_STDERR_BY_ID
             = Caffeine.newBuilder()
                       .maximumSize( 1_000 )
                       .build();
 
-    /** A shared bag of job output references */
+    /** A shared map of job output references */
     private static final Cache<String, ConcurrentSkipListSet<URI>> JOB_OUTPUTS_BY_ID
             = Caffeine.newBuilder()
                       .maximumSize( 1_000 )

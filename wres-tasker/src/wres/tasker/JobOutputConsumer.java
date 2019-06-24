@@ -16,6 +16,8 @@ class JobOutputConsumer extends DefaultConsumer
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( JobOutputConsumer.class );
 
+    private static final int RETRY_COUNT = 9001;
+
     private final BlockingQueue<JobOutput.job_output> wresJobOutput;
 
     JobOutputConsumer( Channel channel,
@@ -48,19 +50,23 @@ class JobOutputConsumer extends DefaultConsumer
 
             LOGGER.debug( "Successfully parsed message, consumerTag: {}, envelope: {}, properties: {}, message: {}",
                           consumerTag, envelope, properties, oneWresJobOutputMessage );
-            boolean offerSucceeded = this.getWresJobOutput().offer( oneWresJobOutputMessage );
+            boolean offerSucceeded = this.getWresJobOutput()
+                                         .offer( oneWresJobOutputMessage );
+            int tries = 0;
 
-            if ( !offerSucceeded )
+            while( !offerSucceeded && tries <= RETRY_COUNT )
             {
                 LOGGER.info( "Failed to offer job output message {}, trying again",
                              message );
-                boolean secondOfferSucceeded = this.getWresJobOutput()
-                                                   .offer( oneWresJobOutputMessage );
-                if ( !secondOfferSucceeded )
-                {
-                    LOGGER.warn( "Failed again to offer job output message {}, gave up.",
-                                 message );
-                }
+                offerSucceeded= this.getWresJobOutput()
+                                    .offer( oneWresJobOutputMessage );
+                tries++;
+            }
+
+            if ( !offerSucceeded)
+            {
+                LOGGER.warn( "Failed to offer job output message {} after {} tries, gave up.",
+                             message, tries );
             }
         }
         catch ( InvalidProtocolBufferException ipbe )
