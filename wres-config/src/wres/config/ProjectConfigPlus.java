@@ -86,11 +86,13 @@ public class ProjectConfigPlus
         this.validationEvents = Collections.unmodifiableList(copiedList);
     }
 
+
     /**
      * Return a description of where this project config came from.
      * In the case of a file, the path to the file.
      * @return the origin of the project config
      */
+
     public String getOrigin()
     {
         return this.origin;
