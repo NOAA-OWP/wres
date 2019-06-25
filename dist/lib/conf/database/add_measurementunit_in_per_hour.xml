@@ -1,0 +1,370 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="wres.MeasurementUnit - Add inches per hour" author="Christopher Tubbs">
+        <sql>
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'in/hr'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'in/hr'
+            );
+        </sql>
+        <sql>
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'in hr^-1'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'in hr^-1'
+            );
+        </sql>
+        <sql>
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'in hr-1'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'in hr-1'
+            );
+        </sql>
+        <sql>
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'in hr{-1}'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'in hr{-1}'
+            );
+        </sql>
+        <sql>
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'in/h'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'in/h'
+            );
+        </sql>
+        <sql>
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'in h^-1'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'in hr-1'
+            );
+        </sql>
+        <sql>
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'in h-1'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'in h-1'
+            );
+        </sql>
+        <sql>
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'in h{-1}'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'in h{-1}'
+            );
+        </sql>
+        <comment>Adding identity conversions</comment>
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit)
+            SELECT measurementunit_id, measurementunit_id
+            FROM wres.MeasurementUnit M
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.UnitConversion UC
+                WHERE UC.from_unit = M.measurementunit_id
+                    AND UC.to_unit = M.measurementunit_id
+            );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.UnitConversion - in/hr to ft/sec" author="Christopher Tubbs" dbms="PostgreSQL">
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT FPS.measurementunit_id, M.measurementunit_id, 43200
+            FROM wres.MeasurementUnit M
+            CROSS JOIN wres.MeasurementUnit FPS
+            WHERE (
+                    M.unit_name = 'in/hr'
+                        OR M.unit_name = 'in/h'
+                        OR M.unit_name = 'in hr^-1'
+                        OR M.unit_name = 'in h^-1'
+                        OR M.unit_name = 'in hr-1'
+                        OR M.unit_name = 'in h-1'
+                        OR M.unit_name = 'in hr{-1}'
+                        OR M.unit_name = 'in h{-1}'
+                )
+                AND FPS.unit_name = 'ft/sec'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion UC
+                    WHERE UC.from_unit = FPS.measurementunit_id
+                        AND UC.to_unit = M.measurementunit_id
+                );
+        </sql>
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT M.measurementunit_id, FPS.measurementunit_id, 1/43200.0
+            FROM wres.MeasurementUnit M
+            CROSS JOIN wres.MeasurementUnit FPS
+            WHERE (
+                M.unit_name = 'in/hr'
+                    OR M.unit_name = 'in/h'
+                    OR M.unit_name = 'in hr^-1'
+                    OR M.unit_name = 'in h^-1'
+                    OR M.unit_name = 'in hr-1'
+                    OR M.unit_name = 'in h-1'
+                    OR M.unit_name = 'in hr{-1}'
+                    OR M.unit_name = 'in h{-1}'
+            )
+            AND FPS.unit_name = 'ft/sec'
+            AND NOT EXISTS (
+                SELECT 1
+                    FROM wres.UnitConversion UC
+                    WHERE UC.from_unit = M.measurementunit_id
+                        AND UC.to_unit = FPS.measurementunit_id
+            );
+        </sql>
+        <comment>Added conversions between in/hr and ft/sec</comment>
+    </changeSet>
+    <changeSet id="wres.UnitConversion - in/hr to m/sec" author="Christopher Tubbs" dbms="PostgreSQL">
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT MPS.measurementunit_id, M.measurementunit_id, 141732
+            FROM wres.MeasurementUnit M
+            CROSS JOIN wres.MeasurementUnit MPS
+            WHERE (
+                M.unit_name = 'in/hr'
+                OR M.unit_name = 'in/h'
+                OR M.unit_name = 'in hr^-1'
+                OR M.unit_name = 'in h^-1'
+                OR M.unit_name = 'in hr-1'
+                OR M.unit_name = 'in h-1'
+                OR M.unit_name = 'in hr{-1}'
+                OR M.unit_name = 'in h{-1}'
+            )
+            AND (
+                MPS.unit_name = 'm/sec'
+                    OR MPS.unit_name = 'm s-1'
+                    OR MPS.unit_name = 'm/s'
+                    OR MPS.unit_name = 'm s{-1}'
+            )
+            AND NOT EXISTS (
+                SELECT 1
+                FROM wres.UnitConversion UC
+                WHERE UC.from_unit = MPS.measurementunit_id
+                    AND UC.to_unit = M.measurementunit_id
+            );
+        </sql>
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT M.measurementunit_id, MPS.measurementunit_id, 1/141732
+            FROM wres.MeasurementUnit M
+            CROSS JOIN wres.MeasurementUnit MPS
+            WHERE (
+                M.unit_name = 'in/hr'
+                    OR M.unit_name = 'in/h'
+                    OR M.unit_name = 'in hr^-1'
+                    OR M.unit_name = 'in h^-1'
+                    OR M.unit_name = 'in hr-1'
+                    OR M.unit_name = 'in h-1'
+                    OR M.unit_name = 'in hr{-1}'
+                    OR M.unit_name = 'in h{-1}'
+            )
+            AND (
+                MPS.unit_name = 'm/sec'
+                    OR MPS.unit_name = 'm s-1'
+                    OR MPS.unit_name = 'm/s'
+                    OR MPS.unit_name = 'm s{-1}'
+            )
+            AND NOT EXISTS (
+                SELECT 1
+                FROM wres.UnitConversion UC
+                WHERE UC.from_unit = M.measurementunit_id
+                    AND UC.to_unit = MPS.measurementunit_id
+            );
+        </sql>
+        <comment>Added conversions between in/hr and m/sec</comment>
+    </changeSet>
+    <changeSet id="wres.UnitConversion - in/hr to MPH" author="Christopher Tubbs" dbms="PostgreSQL">
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT MPH.measurementunit_id, M.measurementunit_id, 63360
+            FROM wres.MeasurementUnit M
+            CROSS JOIN wres.MeasurementUnit MPH
+            WHERE (
+                M.unit_name = 'in/hr'
+                    OR M.unit_name = 'in/h'
+                    OR M.unit_name = 'in hr^-1'
+                    OR M.unit_name = 'in h^-1'
+                    OR M.unit_name = 'in hr-1'
+                    OR M.unit_name = 'in h-1'
+                    OR M.unit_name = 'in hr{-1}'
+                    OR M.unit_name = 'in h{-1}'
+            )
+            AND MPH.unit_name = 'mph'
+            AND NOT EXISTS (
+                SELECT 1
+                FROM wres.UnitConversion UC
+                WHERE UC.from_unit = MPH.measurementunit_id
+                    AND UC.to_unit = M.measurementunit_id
+            );
+        </sql>
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT M.measurementunit_id, MPH.measurementunit_id, 1/63360
+            FROM wres.MeasurementUnit M
+            CROSS JOIN wres.MeasurementUnit MPH
+            WHERE (
+                M.unit_name = 'in/hr'
+                    OR M.unit_name = 'in/h'
+                    OR M.unit_name = 'in hr^-1'
+                    OR M.unit_name = 'in h^-1'
+                    OR M.unit_name = 'in hr-1'
+                    OR M.unit_name = 'in h-1'
+                    OR M.unit_name = 'in hr{-1}'
+                    OR M.unit_name = 'in h{-1}'
+            )
+            AND MPH.unit_name = 'mph'
+            AND NOT EXISTS (
+                SELECT 1
+                FROM wres.UnitConversion UC
+                WHERE UC.from_unit = M.measurementunit_id
+                    AND UC.to_unit = MPH.measurementunit_id
+            );
+        </sql>
+        <comment>Added conversions between in/hr and MPH</comment>
+    </changeSet>
+    <changeSet id="wres.UnitConversion - in/hr to mm/s" author="Christopher Tubbs" dbms="PostgreSQL">
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT MMPS.measurementunit_id, M.measurementunit_id, 141.732
+            FROM wres.MeasurementUnit M
+            CROSS JOIN wres.MeasurementUnit MMPS
+            WHERE (
+                    M.unit_name = 'in/hr'
+                        OR M.unit_name = 'in/h'
+                        OR M.unit_name = 'in hr^-1'
+                        OR M.unit_name = 'in h^-1'
+                        OR M.unit_name = 'in hr-1'
+                        OR M.unit_name = 'in h-1'
+                        OR M.unit_name = 'in hr{-1}'
+                        OR M.unit_name = 'in h{-1}'
+                )
+                AND (
+                    MMPS.unit_name = 'mm/s'
+                        OR MMPS.unit_name = 'mm s^-1'
+                        OR MMPS.unit_name = 'mm s{-1}'
+                        OR MMPS.unit_name = 'mm s-1'
+                )
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion UC
+                    WHERE UC.from_unit = MMPS.measurementunit_id
+                        AND UC.to_unit = M.measurementunit_id
+                );
+        </sql>
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT M.measurementunit_id, MMPS.measurementunit_id, 1/141.732
+            FROM wres.MeasurementUnit M
+            CROSS JOIN wres.MeasurementUnit MMPS
+            WHERE (
+                    M.unit_name = 'in/hr'
+                        OR M.unit_name = 'in/h'
+                        OR M.unit_name = 'in hr^-1'
+                        OR M.unit_name = 'in h^-1'
+                        OR M.unit_name = 'in hr-1'
+                        OR M.unit_name = 'in h-1'
+                        OR M.unit_name = 'in hr{-1}'
+                        OR M.unit_name = 'in h{-1}'
+                )
+                AND (
+                    MMPS.unit_name = 'mm/s'
+                        OR MMPS.unit_name = 'mm s^-1'
+                        OR MMPS.unit_name = 'mm s{-1}'
+                        OR MMPS.unit_name = 'mm s-1'
+                )
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion UC
+                    WHERE UC.from_unit = M.measurementunit_id
+                        AND UC.to_unit = MMPS.measurementunit_id
+                );
+        </sql>
+        <comment>Added conversions between in/hr and mm/s</comment>
+    </changeSet>
+    <changeSet id="wres.UnitConversion - in/hr to mm/h" author="Christopher Tubbs" dbms="PostgreSQL">
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT MMPH.measurementunit_id, M.measurementunit_id, 0.0393701
+            FROM wres.MeasurementUnit M
+            CROSS JOIN wres.MeasurementUnit MMPH
+            WHERE (
+					M.unit_name = 'in/hr'
+						OR M.unit_name = 'in/h'
+						OR M.unit_name = 'in hr^-1'
+						OR M.unit_name = 'in h^-1'
+						OR M.unit_name = 'in hr-1'
+						OR M.unit_name = 'in h-1'
+						OR M.unit_name = 'in hr{-1}'
+						OR M.unit_name = 'in h{-1}'
+                )
+                AND (
+                    MMPH.unit_name = 'mm/h'
+                        OR MMPH.unit_name = 'mm h^-1'
+                        OR MMPH.unit_name = 'mm h{-1}'
+                        OR MMPH.unit_name = 'mm h-1'
+                )
+                AND NOT EXISTS (
+					SELECT 1
+					FROM wres.UnitConversion UC
+					WHERE UC.from_unit = MMPH.measurementunit_id
+						AND UC.to_unit = M.measurementunit_id
+                );
+        </sql>
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT M.measurementunit_id, MMPH.measurementunit_id, 25.399986284
+            FROM wres.MeasurementUnit M
+            CROSS JOIN wres.MeasurementUnit MMPH
+            WHERE (
+                    M.unit_name = 'in/hr'
+                        OR M.unit_name = 'in/h'
+                        OR M.unit_name = 'in hr^-1'
+                        OR M.unit_name = 'in h^-1'
+                        OR M.unit_name = 'in hr-1'
+                        OR M.unit_name = 'in h-1'
+                        OR M.unit_name = 'in hr{-1}'
+                        OR M.unit_name = 'in h{-1}'
+                )
+                AND (
+                    MMPH.unit_name = 'mm/h'
+                        OR MMPH.unit_name = 'mm h^-1'
+                        OR MMPH.unit_name = 'mm h{-1}'
+                        OR MMPH.unit_name = 'mm h-1'
+                )
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion UC
+                    WHERE UC.from_unit = M.measurementunit_id
+                        AND UC.to_unit = MMPH.measurementunit_id
+                );
+        </sql>
+        <comment>Added conversions between in/hr and mm/hr</comment>
+    </changeSet>
+</databaseChangeLog>
+
