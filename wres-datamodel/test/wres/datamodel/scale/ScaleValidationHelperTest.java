@@ -9,9 +9,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.datamodel.scale.RescalingException;
-import wres.datamodel.scale.ScaleValidationHelper;
-import wres.datamodel.scale.TimeScale;
 import wres.datamodel.scale.TimeScale.TimeScaleFunction;
 
 /**

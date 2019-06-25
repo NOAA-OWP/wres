@@ -14,8 +14,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.datamodel.time.TimeWindow;
-
 /**
  * Tests the {@link TimeWindow}.
  * 

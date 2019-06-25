@@ -7,8 +7,6 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-import wres.datamodel.sampledata.MeasurementUnit;
-
 /**
  * Tests the {@link MeasurementUnit}.
  * 
