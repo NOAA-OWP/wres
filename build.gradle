@@ -467,7 +467,7 @@ project(':wres-config')
     javadoc
     {
         // XJC generates Java8-unfriendly javadoc. Do not bother generating.
-        excludes = ['**/generated/*.java']
+        //excludes = ['**/generated/*.java']
     }
 }
 
