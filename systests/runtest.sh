@@ -2,7 +2,12 @@
 # Arguments specify scenario subdirectories of systests and can be more than one.  It will look through the 
 #   arguments provided in order.
 
-# Read the options, which is currently only one: -l to indicate a run of latest. 
+# Options include the following:
+#
+# -l ... Use the latest installed revision, that pointed to by /wres_share/releases/latest
+# -n ... No clean option turns off database cleaning
+# -m ... No migration option turns off database migration, which is how WRES will be run in deployment.
+#        Normally every run of the tests will have the potential to migrate the db through Liquibase.
 latest=0
 clean=1
 migrate=1
