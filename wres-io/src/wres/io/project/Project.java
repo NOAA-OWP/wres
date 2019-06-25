@@ -22,6 +22,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -272,15 +273,7 @@ public class Project
      */
     
     private Duration leastCommonTimeStep;
-    
-    /**
-     * The desired scale for the project
-     *<p>
-     * If the configuration doesn't specify the desired scale, the system
-     * will determine that data itself
-     * </p>
-     */
-    private DesiredTimeScaleConfig desiredTimeScaleConfig;
+
 
     private Boolean leftUsesGriddedData = null;
     private Boolean rightUsesGriddedData = null;
@@ -1674,50 +1667,58 @@ public class Project
      * @deprecated to be replaced with {@link #getDesiredTimeStep()} or {@link #getDesiredTimeScale()} as needed
      */
     @Deprecated(since="1.5", forRemoval=true)
-    public DesiredTimeScaleConfig getScale() throws CalculationException
+    public DesiredTimeScaleConfig getScale()
     {
-        // TODO: Convert this to a function to determine time step; this doesn't actually have anything to do with scale
-        if (this.desiredTimeScaleConfig == null)
-        {
-            this.desiredTimeScaleConfig = this.projectConfig.getPair().getDesiredTimeScale();
+        DesiredTimeScaleConfig scaleConfig = this.getProjectConfig()
+                                                 .getPair()
+                                                 .getDesiredTimeScale();
 
-            // If there is an explicit desired time scale but the frequency
-            // wasn't set, we need to set the default
-            if (this.desiredTimeScaleConfig != null &&
-                this.desiredTimeScaleConfig.getFrequency() == null)
+        LOGGER.debug( "getScale() started, scaleConfig={}",
+                      scaleConfig );
+        // TODO: Convert this to a function to determine time step; this doesn't actually have anything to do with scale
+
+        // If there is an explicit desired time scale but the frequency
+        // wasn't set, we need to set the default
+        if ( scaleConfig != null &&
+             scaleConfig.getFrequency() == null )
+        {
+            scaleConfig = new DesiredTimeScaleConfig( scaleConfig.getFunction(),
+                                                      scaleConfig.getPeriod(),
+                                                      scaleConfig.getUnit(),
+                                                      null,
+                                                      scaleConfig.getPeriod() );
+        }
+
+        if ( scaleConfig == null )
+        {
+            ChronoUnit databaseLeadResolution = TimeHelper.LEAD_RESOLUTION;
+            String leadLowerCase = databaseLeadResolution.toString()
+                                                         .toLowerCase();
+            DurationUnit desiredUnit = DurationUnit.fromValue( leadLowerCase );
+
+            if ( ConfigHelper.isForecast( this.getRight() ) )
             {
-                this.desiredTimeScaleConfig = new DesiredTimeScaleConfig(
-                        this.desiredTimeScaleConfig.getFunction(),
-                        this.desiredTimeScaleConfig.getPeriod(),
-                        this.desiredTimeScaleConfig.getUnit(),
-                        null,
-                        this.desiredTimeScaleConfig.getPeriod());
+                Duration commonInterval = this.getDesiredTimeStep();
+                int intervalInMinutes = ( int ) commonInterval.toMinutes();
+                scaleConfig = new DesiredTimeScaleConfig( TimeScaleFunction.MEAN,
+                                                          intervalInMinutes ,
+                                                          desiredUnit,
+                                                          "Dynamic Scale",
+                                                          intervalInMinutes );
+            }
+            else
+            {
+                scaleConfig = new DesiredTimeScaleConfig( TimeScaleFunction.MEAN,
+                                                          60,
+                                                          desiredUnit,
+                                                          null,
+                                                          60 );
             }
         }
 
-        if (this.desiredTimeScaleConfig == null && ConfigHelper.isForecast( this.getRight() ))
-        {
-            Duration commonInterval = this.getDesiredTimeStep();
-            this.desiredTimeScaleConfig = new DesiredTimeScaleConfig(
-                    TimeScaleFunction.MEAN,
-                    (int)commonInterval.toMinutes(),
-                    DurationUnit.MINUTES,
-                    "Dynamic Scale",
-                    (int)commonInterval.toMinutes()
-            );
-        }
-        else if(this.desiredTimeScaleConfig == null)
-        {
-            this.desiredTimeScaleConfig = new DesiredTimeScaleConfig(
-                    TimeScaleFunction.MEAN,
-                    60,
-                    DurationUnit.fromValue(TimeHelper.LEAD_RESOLUTION.toString().toLowerCase() ),
-                    null,
-                    60
-            );
-        }
-
-        return this.desiredTimeScaleConfig;
+        LOGGER.debug( "getScale() finished, scaleConfig={}",
+                      scaleConfig );
+        return scaleConfig;
     }
 
     /**
