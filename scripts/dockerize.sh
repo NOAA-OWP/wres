@@ -9,6 +9,9 @@
 # that depend on the context of the wres directory will work (such as those that
 # depend on git depending on the context of directory to work).
 
+# This script should be idempotent, meaning you can run it several times in
+# a row without damage. This is true for the build steps, tag steps, push steps.
+
 # Depends on versions.sh script
 
 # Attempt to auto-detect the versions needed.
@@ -92,3 +95,35 @@ echo "Built wres/wres-broker:$broker_version -- $broker_image_id"
 
 echo "Displaying most recent 10 docker images"
 docker image ls | head -n 11
+
+# Optional: set environment variable DOCKER_REGISTRY to the FQDN of a docker
+# registry (without any path, full fqdn, without scheme)
+
+if [[ ! -z "$DOCKER_REGISTRY" ]]
+then
+    echo "Attempting more tags and docker push to https://$DOCKER_REGISTRY"
+    echo "Now running docker login https://$DOCKER_REGISTRY..."
+    docker login https://$DOCKER_REGISTRY
+    login_success=$?
+
+    if [[ ! login_success ]]
+    then
+        echo "Failed to login, not going to try to push to registry. Try again."
+        exit 2
+    fi
+
+    echo "Tagging wres/worker-worker:$overall_version as $DOCKER_REGISTRY/wres/wres-worker/$overall_version"
+    docker tag wres/wres-worker:$overall_version $DOCKER_REGISTRY/wres/wres-worker:$overall_version
+    echo "Tagging wres/worker-tasker:$tasker_version as $DOCKER_REGISTRY/wres/wres-tasker/$tasker_version"
+    docker tag wres/wres-tasker:$tasker_version $DOCKER_REGISTRY/wres/wres-tasker:$tasker_version
+    echo "Tagging wres/worker-broker:$broker_version as $DOCKER_REGISTRY/wres/wres-broker/$broker_version"
+    docker tag wres/wres-broker:$broker_version $DOCKER_REGISTRY/wres/wres-broker:$broker_version
+    docker push $DOCKER_REGISTRY/wres/wres-worker:$overall_version
+    docker push $DOCKER_REGISTRY/wres/wres-tasker:$tasker_version
+    docker push $DOCKER_REGISTRY/wres/wres-broker:$broker_version
+else
+    echo "No variable 'DOCKER_REGISTRY' found, not attempting to docker push."
+    echo "If you want to automatically push, set DOCKER_REGISTRY to the FQDN of"
+    echo "an accessible docker registry and this script will attempt to tag and"
+    echo "push to that registry."
+fi
