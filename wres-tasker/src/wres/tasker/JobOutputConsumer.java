@@ -76,6 +76,7 @@ class JobOutputConsumer extends DefaultConsumer
         {
             LOGGER.warn( "Interrupted while attempting to put job output message "
                          + Arrays.toString( message ), ie );
+            Thread.currentThread().interrupt();
         }
 
     }
