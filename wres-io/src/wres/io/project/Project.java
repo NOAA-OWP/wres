@@ -6,6 +6,7 @@ import java.time.Duration;
 import java.time.MonthDay;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -22,8 +23,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -44,6 +45,8 @@ import wres.config.generated.ProjectConfig;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.TimeScaleFunction;
 import wres.datamodel.scale.RescalingException;
+import wres.datamodel.scale.ScaleValidationEvent;
+import wres.datamodel.scale.ScaleValidationEvent.EventType;
 import wres.datamodel.scale.ScaleValidationHelper;
 import wres.datamodel.scale.TimeScale;
 import wres.io.concurrency.Executor;
@@ -162,7 +165,8 @@ public class Project
      * provide a valid match
      * </p>
      */
-    private final Map<Feature, Integer> leadOffsets = new ConcurrentSkipListMap<>( ConfigHelper.getFeatureComparator() );
+    private final Map<Feature, Integer> leadOffsets =
+            new ConcurrentSkipListMap<>( ConfigHelper.getFeatureComparator() );
 
     /**
      * Stores the earliest possible observation date for each feature
@@ -262,16 +266,16 @@ public class Project
      * the validation and metadata may not reflect the data retrieval reality. 
      * See #58715 and #44539-45. 
      */
-    
+
     private TimeScale desiredTimeScale;
-    
+
     /**
      * The least common time step associated with all ingested sources.
      * 
      * TODO: reconcile this with {@link #getScale()}, which currently mixes up 
      * two different things: time scale and time-step. 
      */
-    
+
     private Duration leastCommonTimeStep;
 
 
@@ -308,19 +312,19 @@ public class Project
      * @param dataSourceConfig A DataSourceConfig from a project configuration
      * @return The name for how the DataSourceConfig relates to the project
      */
-    public String getInputName(DataSourceConfig dataSourceConfig)
+    public String getInputName( DataSourceConfig dataSourceConfig )
     {
         String name = null;
 
-        if (dataSourceConfig.equals( this.getLeft() ))
+        if ( dataSourceConfig.equals( this.getLeft() ) )
         {
             name = Project.LEFT_MEMBER;
         }
-        else if (dataSourceConfig.equals( this.getRight() ))
+        else if ( dataSourceConfig.equals( this.getRight() ) )
         {
             name = Project.RIGHT_MEMBER;
         }
-        else if (dataSourceConfig.equals( this.getBaseline() ))
+        else if ( dataSourceConfig.equals( this.getBaseline() ) )
         {
             name = Project.BASELINE_MEMBER;
         }
@@ -356,9 +360,10 @@ public class Project
             }
         }
 
-        if (!ConfigHelper.isSimulation( this.getRight() ) &&
-            !ProjectConfigs.hasTimeSeriesMetrics( this.getProjectConfig() ) &&
-            !this.usesGriddedData( this.getRight() ))
+        if ( !ConfigHelper.isSimulation( this.getRight() ) &&
+             !ProjectConfigs.hasTimeSeriesMetrics( this.getProjectConfig() )
+             &&
+             !this.usesGriddedData( this.getRight() ) )
         {
             this.populateLeadOffsets();
         }
@@ -420,7 +425,6 @@ public class Project
     }
 
 
-
     /**
      * Returns the desired time scale associated with the project, which 
      * is either the user-declared time scale (canonically) or the Least 
@@ -437,12 +441,12 @@ public class Project
      * 
      * @return the desired time scale or null
      */
-    
+
     public TimeScale getDesiredTimeScale()
     {
         return this.desiredTimeScale;
     }
-    
+
     /**
      * Returns the desired time-step associated with the project. Currently,
      * this is the larger of the following two sources of information:
@@ -489,8 +493,8 @@ public class Project
         // Return the least common time-step of all 
         // ingested sources
         return this.leastCommonTimeStep;
-    }  
-    
+    }
+
     /**
      * <p> Sets and validates the time scale and time step at which evaluation should be conducted.
      * 
@@ -537,15 +541,18 @@ public class Project
         }
 
         // Obtain the existing time scale and corresponding time step for each ingested source and source type
-        Set<Pair<TimeScale, Duration>> leftScalesAndSteps = this.getTimeScaleAndTimeStepForEachProjectSource( this.getLeft() );
-        Set<Pair<TimeScale, Duration>> rightScalesAndSteps = this.getTimeScaleAndTimeStepForEachProjectSource( this.getRight() );
-        Set<Pair<TimeScale, Duration>> baselineScalesAndSteps = this.getTimeScaleAndTimeStepForEachProjectSource( this.getBaseline() );
-        
+        Set<Pair<TimeScale, Duration>> leftScalesAndSteps =
+                this.getTimeScaleAndTimeStepForEachProjectSource( this.getLeft() );
+        Set<Pair<TimeScale, Duration>> rightScalesAndSteps =
+                this.getTimeScaleAndTimeStepForEachProjectSource( this.getRight() );
+        Set<Pair<TimeScale, Duration>> baselineScalesAndSteps =
+                this.getTimeScaleAndTimeStepForEachProjectSource( this.getBaseline() );
+
         // Union of scales and steps
         Set<Pair<TimeScale, Duration>> existingScalesAndSteps = new HashSet<>( leftScalesAndSteps );
         existingScalesAndSteps.addAll( rightScalesAndSteps );
         existingScalesAndSteps.addAll( baselineScalesAndSteps );
-        
+
         // Determine the Least Common Scale if required and available
         if ( Objects.isNull( desiredScale ) )
         {
@@ -572,7 +579,7 @@ public class Project
             }
         }
 
-        // Validate the desired time scale against each existing one        
+        // Validate the time scale information        
         if ( Objects.nonNull( desiredScale ) )
         {
             LOGGER.debug( "Found {} distinct time scales across all ingested sources. "
@@ -580,24 +587,39 @@ public class Project
                           existingScalesAndSteps.size(),
                           desiredScale );
 
-            Project.validateTimeScale( Collections.unmodifiableSet( leftScalesAndSteps ),
-                                       desiredScale,
-                                       LeftOrRightOrBaseline.LEFT );
-            Project.validateTimeScale( Collections.unmodifiableSet( rightScalesAndSteps ),
-                                       desiredScale,
-                                       LeftOrRightOrBaseline.RIGHT );
-            Project.validateTimeScale( Collections.unmodifiableSet( baselineScalesAndSteps ),
-                                       desiredScale,
-                                       LeftOrRightOrBaseline.BASELINE );
+            Set<ScaleValidationEvent> events = new TreeSet<>();
+            
+            events.addAll( this.validateTimeScale( Collections.unmodifiableSet( leftScalesAndSteps ),
+                                               desiredScale,
+                                               this.getLeft(),
+                                               LeftOrRightOrBaseline.LEFT ) );
+            events.addAll( this.validateTimeScale( Collections.unmodifiableSet( rightScalesAndSteps ),
+                                               desiredScale,
+                                               this.getRight(),
+                                               LeftOrRightOrBaseline.RIGHT ) );
+            
+            if ( !baselineScalesAndSteps.isEmpty() )
+            {
+                events.addAll( this.validateTimeScale( Collections.unmodifiableSet( baselineScalesAndSteps ),
+                                                       desiredScale,
+                                                       this.getBaseline(),
+                                                       LeftOrRightOrBaseline.BASELINE ) );
+            }
+            
+            // Report on them
+            this.reportOnScaleValidationEvents( Collections.unmodifiableSet( events ) );
+
         }
-        
+
         LOGGER.debug( "Finished validating the {} existing time scales against the desired time scale.",
                       existingScalesAndSteps.size() );
 
         // Compute the desired time-step for the pairs, which is the least common duration of 
         // the existing time steps across all ingested sources
         Duration leastCommonStep =
-                this.getLeastCommonTimeStepFromSources( leftScalesAndSteps, rightScalesAndSteps, baselineScalesAndSteps );
+                this.getLeastCommonTimeStepFromSources( leftScalesAndSteps,
+                                                        rightScalesAndSteps,
+                                                        baselineScalesAndSteps );
 
         LOGGER.debug( "Identified the least common time step associated with all ingested sources: {}.",
                       leastCommonStep );
@@ -613,45 +635,44 @@ public class Project
      * 
      * @param existingScalesAndSteps the existing time scale and step information
      * @param desiredTimeScale the desired time scale
+     * @param dataSourceConfig the data source declaration
      * @param dataType the data type to validate, which helps with messaging
      * @throws a RescalingException if a proposed change of time scale is invalid
      * @throws NullPointerException if any input is null
      */
 
-    private static void validateTimeScale( Set<Pair<TimeScale, Duration>> existingScalesAndSteps,
-                                           TimeScale desiredTimeScale,
-                                           LeftOrRightOrBaseline dataType )
+    private Set<ScaleValidationEvent> validateTimeScale( Set<Pair<TimeScale, Duration>> existingScalesAndSteps,
+                                                                TimeScale desiredTimeScale,
+                                                                DataSourceConfig dataSourceConfig,
+                                                                LeftOrRightOrBaseline dataType )
     {
         Objects.requireNonNull( existingScalesAndSteps );
-        
+
         Objects.requireNonNull( desiredTimeScale );
-        
-        Objects.requireNonNull( dataType );        
-        
-        final TimeScale finalDesiredScale = desiredTimeScale;
+
+        Objects.requireNonNull( dataSourceConfig );
+
+        Objects.requireNonNull( dataType );
+
+        // Unique validation events
+        Set<ScaleValidationEvent> events = new TreeSet<>();
+
         // Only check where the existing scale and the time step is known
-        existingScalesAndSteps.stream()
-                              .filter( p -> Objects.nonNull( p.getLeft() ) && Objects.nonNull( p.getRight() ) )
-                              .forEach( pair -> {
-                                  try
-                                  {
-                                      ScaleValidationHelper.throwExceptionIfChangeOfScaleIsInvalid( pair.getLeft(),
-                                                                                             finalDesiredScale,
-                                                                                             pair.getRight(),
-                                                                                             dataType.toString() );
-                                  }
-                                  // Annotate and propagate
-                                  catch ( RescalingException e )
-                                  {
-                                      throw new RescalingException( "Failed to validate the time scale and time step "
-                                                                    + "information associated with one or more '"
-                                                                    + dataType
-                                                                    + "' sources.",
-                                                                    e );
-                                  }
-                              } );
+        for ( Pair<TimeScale, Duration> nextPair : existingScalesAndSteps )
+        {
+            if ( Objects.nonNull( nextPair.getLeft() ) && Objects.nonNull( nextPair.getRight() ) )
+            {
+                events.addAll( ScaleValidationHelper.validateScaleInformation( dataSourceConfig,
+                                                                               nextPair.getLeft(),
+                                                                               desiredTimeScale,
+                                                                               nextPair.getRight(),
+                                                                               dataType.toString() ) );
+            }
+        }
+
+        return Collections.unmodifiableSet( events );
     }
-    
+
     /**
      * Returns the {@link TimeScale} and time-step information for each source associated with the
      * input declaration. The time-step is represented as a {@link Duration}.
@@ -662,17 +683,18 @@ public class Project
      * @throws CalculationException if time step could not be determined from the data
      */
 
-    private Set<Pair<TimeScale, Duration>> getTimeScaleAndTimeStepForEachProjectSource( DataSourceConfig dataSourceConfig )
-            throws SQLException, CalculationException
+    private Set<Pair<TimeScale, Duration>>
+            getTimeScaleAndTimeStepForEachProjectSource( DataSourceConfig dataSourceConfig )
+                    throws SQLException, CalculationException
     {
         // Nothing to discover (e.g. if the input is a baseline source and there is no baseline)
-        if( Objects.isNull( dataSourceConfig ) )
+        if ( Objects.isNull( dataSourceConfig ) )
         {
             return java.util.Collections.emptySet();
         }
-        
-        Set<Pair<TimeScale,Duration>> existingTimeScales = new HashSet<>(  );
-        
+
+        Set<Pair<TimeScale, Duration>> existingTimeScales = new HashSet<>();
+
         LeftOrRightOrBaseline sourceType =
                 ConfigHelper.getLeftOrRightOrBaseline( this.getProjectConfig(), dataSourceConfig );
 
@@ -688,7 +710,7 @@ public class Project
                                                                                       sourceType );
 
             }
-            
+
             // Observed type
             else
             {
@@ -740,8 +762,8 @@ public class Project
         {
             LOGGER.warn( "Could not find the time-scale information for any {} source.", sourceType );
         }
-    
-        return java.util.Collections.unmodifiableSet( existingTimeScales );
+
+        return Collections.unmodifiableSet( existingTimeScales );
     }
 
     /**
@@ -817,7 +839,7 @@ public class Project
         }
 
         return finalizeExistingTimeScalesForSources( dataSourceConfig,
-                                                     java.util.Collections.unmodifiableSet( existingTimeScales ),
+                                                     Collections.unmodifiableSet( existingTimeScales ),
                                                      sourceType );
     }
 
@@ -906,7 +928,43 @@ public class Project
             mutableCopy.add( Pair.of( declaredExistingTimeScale, globalTimeStepToReUse ) );
         }
 
-        return java.util.Collections.unmodifiableSet( mutableCopy );
+        return Collections.unmodifiableSet( mutableCopy );
+    }
+    
+    /**
+     * <p>Reports on a collection of {@link ScaleValidationEvent}. Currently, this involves aggregating events whose
+     * type is {@link EventType#ERROR} and throwing a {@link RescalingException} and logging events whose type is
+     * {@link EventType#WARN}.
+     * 
+     * <p>See #64542 for the interrim and #61930 for the vision.
+     * 
+     * @param events the validation events
+     * @throws RescalingException if there are one or more validation events that represent errors
+     * @throws NullPointerException if the input is null
+     */
+    
+    private void reportOnScaleValidationEvents( Set<ScaleValidationEvent> events )
+    {
+        Objects.requireNonNull( events );
+
+        // Any warnings? Log those individually.        
+        events.stream().filter( a -> a.getEventType() == EventType.WARN ).forEach( e -> LOGGER.warn( e.toString() ) );
+
+        // If errors, aggregate and throw an exception
+        if ( ScaleValidationHelper.hasEvent( events, EventType.ERROR ) )
+        {
+            StringJoiner message = new StringJoiner( System.lineSeparator() );
+            message.add( "Encountered the following errors while validating the time-scale and time-step "
+                         + "information: " );
+
+            String spacer = "    ";
+            
+            events.stream()
+                  .filter( a -> a.getEventType() == EventType.ERROR )
+                  .forEach( e -> message.add( spacer + e.toString() ) );
+
+            throw new RescalingException( message.toString() );
+        }
     }
 
     /**
@@ -923,7 +981,7 @@ public class Project
             throws CalculationException
     {
         Objects.requireNonNull( dataSourceConfig );
-        
+
         LeftOrRightOrBaseline sourceType =
                 ConfigHelper.getLeftOrRightOrBaseline( this.getProjectConfig(), dataSourceConfig );
 
@@ -942,7 +1000,7 @@ public class Project
             }
         }
     }
-    
+
     /**
      * Returns the least common time step from the input. Currently, this finds the least
      * value in each source type separately, and then determines the least common value from 
@@ -966,11 +1024,11 @@ public class Project
             throws CalculationException
     {
         Objects.requireNonNull( leftScalesAndSteps );
-        
+
         Objects.requireNonNull( rightScalesAndSteps );
-        
+
         Objects.requireNonNull( baselineScalesAndSteps );
-        
+
         // Filter time-steps that are both non-null and not zero
         // See #61703
         TreeSet<Duration> leastLeft = Project.getTimeStepsFromScalesAndSteps( leftScalesAndSteps );
@@ -1029,7 +1087,7 @@ public class Project
 
         return TimeScale.getLeastCommonDuration( java.util.Collections.unmodifiableSet( leastValues ) );
     }
-    
+
     /**
      * Unpacks the input and returns the time steps without any null values.
      * 
@@ -1046,7 +1104,7 @@ public class Project
                              .filter( Objects::nonNull )
                              .collect( Collectors.toCollection( TreeSet::new ) );
     }
-    
+
     /**
      * Loads metadata about all features that the project needs to use
      * @throws SQLException Thrown if metadata about the features could not be loaded from the database
@@ -1088,7 +1146,7 @@ public class Project
                     script.addTab().addLine( "SELECT 1" );
                     script.addTab().addLine( "FROM wres.TimeSeries TS" );
                     script.addTab().addLine( "INNER JOIN wres.VariableFeature VF" );
-                    script.addTab(  2  ).addLine("ON VF.variablefeature_id = TS.variablefeature_id" );
+                    script.addTab( 2 ).addLine( "ON VF.variablefeature_id = TS.variablefeature_id" );
                     script.addTab()
                           .addLine( "INNER JOIN wres.TimeSeriesSource TSS" );
                     script.addTab( 2 )
@@ -1113,7 +1171,7 @@ public class Project
                           .addLine( "INNER JOIN wres.VariableFeature VF" );
                     script.addTab( 2 )
                           .addLine(
-                                  "ON VF.variablefeature_id = O.variablefeature_id" );
+                                    "ON VF.variablefeature_id = O.variablefeature_id" );
                     script.addTab()
                           .addLine( "INNER JOIN wres.ProjectSource PS" );
                     script.addTab( 2 )
@@ -1140,7 +1198,7 @@ public class Project
                           .addLine( "INNER JOIN wres.VariableFeature VF" );
                     script.addTab( 2 )
                           .addLine(
-                                  "ON VF.variablefeature_id = TS.variablefeature_id" );
+                                    "ON VF.variablefeature_id = TS.variablefeature_id" );
                     script.addTab()
                           .addLine( "INNER JOIN wres.TimeSeriesSource TSS" );
                     script.addTab( 2 )
@@ -1165,7 +1223,7 @@ public class Project
                           .addLine( "INNER JOIN wres.VariableFeature VF" );
                     script.addTab( 2 )
                           .addLine(
-                                  "ON VF.variablefeature_id = O.variablefeature_id" );
+                                    "ON VF.variablefeature_id = O.variablefeature_id" );
                     script.addTab()
                           .addLine( "INNER JOIN wres.ProjectSource PS" );
                     script.addTab( 2 )
@@ -1182,14 +1240,14 @@ public class Project
                 try
                 {
                     script.consume( feature -> this.features.add( new FeatureDetails(
-                            feature ) ) );
+                                                                                      feature ) ) );
                 }
                 catch ( SQLException e )
                 {
                     throw new SQLException(
-                            "The features for this project could "
-                            + "not be retrieved from the database.",
-                            e );
+                                            "The features for this project could "
+                                            + "not be retrieved from the database.",
+                                            e );
                 }
             }
             else
@@ -1225,21 +1283,21 @@ public class Project
         return this.projectConfig.getInputs().getBaseline();
     }
 
-    private Integer getVariableId(DataSourceConfig dataSourceConfig)
+    private Integer getVariableId( DataSourceConfig dataSourceConfig )
             throws SQLException
     {
         final String side = this.getInputName( dataSourceConfig );
         Integer variableId = null;
 
-        if ( Project.LEFT_MEMBER.equals( side ))
+        if ( Project.LEFT_MEMBER.equals( side ) )
         {
             variableId = this.getLeftVariableID();
         }
-        else if ( Project.RIGHT_MEMBER.equals( side ))
+        else if ( Project.RIGHT_MEMBER.equals( side ) )
         {
             variableId = this.getRightVariableID();
         }
-        else if ( Project.BASELINE_MEMBER.equals( side ))
+        else if ( Project.BASELINE_MEMBER.equals( side ) )
         {
             variableId = this.getBaselineVariableID();
         }
@@ -1254,9 +1312,9 @@ public class Project
      */
     public Integer getLeftVariableID() throws SQLException
     {
-        if (this.leftVariableID == null)
+        if ( this.leftVariableID == null )
         {
-            this.leftVariableID = Variables.getVariableID(this.getLeftVariableName());
+            this.leftVariableID = Variables.getVariableID( this.getLeftVariableName() );
         }
 
         return this.leftVariableID;
@@ -1277,9 +1335,9 @@ public class Project
      */
     public Integer getRightVariableID() throws SQLException
     {
-        if (this.rightVariableID == null)
+        if ( this.rightVariableID == null )
         {
-            this.rightVariableID = Variables.getVariableID( this.getRightVariableName());
+            this.rightVariableID = Variables.getVariableID( this.getRightVariableName() );
         }
 
         return this.rightVariableID;
@@ -1300,7 +1358,7 @@ public class Project
      */
     public Integer getBaselineVariableID() throws SQLException
     {
-        if (this.hasBaseline() && this.baselineVariableID == null)
+        if ( this.hasBaseline() && this.baselineVariableID == null )
         {
             this.baselineVariableID = Variables.getVariableID( this.getBaselineVariableName() );
         }
@@ -1314,7 +1372,7 @@ public class Project
     private String getBaselineVariableName()
     {
         String name = null;
-        if (this.hasBaseline())
+        if ( this.hasBaseline() )
         {
             name = this.getBaseline().getVariable().getValue();
         }
@@ -1328,8 +1386,8 @@ public class Project
     {
         Double maximum = Double.MAX_VALUE;
 
-        if (this.projectConfig.getPair().getValues() != null &&
-            this.projectConfig.getPair().getValues().getMaximum() != null)
+        if ( this.projectConfig.getPair().getValues() != null &&
+             this.projectConfig.getPair().getValues().getMaximum() != null )
         {
             maximum = this.projectConfig.getPair().getValues().getMaximum();
         }
@@ -1345,8 +1403,8 @@ public class Project
     {
         Double maximum = null;
 
-        if (this.projectConfig.getPair().getValues() != null &&
-            this.projectConfig.getPair().getValues().getDefaultMaximum() != null)
+        if ( this.projectConfig.getPair().getValues() != null &&
+             this.projectConfig.getPair().getValues().getDefaultMaximum() != null )
         {
             maximum = this.projectConfig.getPair().getValues().getDefaultMaximum();
         }
@@ -1361,8 +1419,8 @@ public class Project
     {
         Double minimum = -Double.MAX_VALUE;
 
-        if (this.projectConfig.getPair().getValues() != null &&
-            this.projectConfig.getPair().getValues().getMinimum() != null)
+        if ( this.projectConfig.getPair().getValues() != null &&
+             this.projectConfig.getPair().getValues().getMinimum() != null )
         {
             minimum = this.projectConfig.getPair().getValues().getMinimum();
         }
@@ -1378,8 +1436,8 @@ public class Project
     {
         Double defaultMinimum = null;
 
-        if (this.projectConfig.getPair().getValues() != null &&
-                this.projectConfig.getPair().getValues().getDefaultMinimum() != null)
+        if ( this.projectConfig.getPair().getValues() != null &&
+             this.projectConfig.getPair().getValues().getDefaultMinimum() != null )
         {
             defaultMinimum = this.projectConfig.getPair().getValues().getDefaultMinimum();
         }
@@ -1395,8 +1453,8 @@ public class Project
     {
         String earliestDate = null;
 
-        if (this.projectConfig.getPair().getDates() != null &&
-            this.projectConfig.getPair().getDates().getEarliest() != null)
+        if ( this.projectConfig.getPair().getDates() != null &&
+             this.projectConfig.getPair().getDates().getEarliest() != null )
         {
             earliestDate = this.projectConfig.getPair().getDates().getEarliest();
         }
@@ -1412,8 +1470,8 @@ public class Project
     {
         String latestDate = null;
 
-        if (this.projectConfig.getPair().getDates() != null &&
-                this.projectConfig.getPair().getDates().getLatest() != null)
+        if ( this.projectConfig.getPair().getDates() != null &&
+             this.projectConfig.getPair().getDates().getLatest() != null )
         {
             latestDate = this.projectConfig.getPair().getDates().getLatest();
         }
@@ -1429,8 +1487,8 @@ public class Project
     {
         String earliestDate = null;
 
-        if (this.projectConfig.getPair().getIssuedDates() != null &&
-                this.projectConfig.getPair().getIssuedDates().getEarliest() != null)
+        if ( this.projectConfig.getPair().getIssuedDates() != null &&
+             this.projectConfig.getPair().getIssuedDates().getEarliest() != null )
         {
             earliestDate = this.projectConfig.getPair().getIssuedDates().getEarliest();
         }
@@ -1446,8 +1504,8 @@ public class Project
     {
         String latestDate = null;
 
-        if (this.projectConfig.getPair().getIssuedDates() != null &&
-            this.projectConfig.getPair().getIssuedDates().getLatest() != null)
+        if ( this.projectConfig.getPair().getIssuedDates() != null &&
+             this.projectConfig.getPair().getIssuedDates().getLatest() != null )
         {
             latestDate = this.projectConfig.getPair().getIssuedDates().getLatest();
         }
@@ -1473,9 +1531,9 @@ public class Project
 
         PairConfig.Season season = this.projectConfig.getPair().getSeason();
 
-        if (season != null)
+        if ( season != null )
         {
-            earliest = MonthDay.of(season.getEarliestMonth(), season.getEarliestDay());
+            earliest = MonthDay.of( season.getEarliestMonth(), season.getEarliestDay() );
         }
 
         return earliest;
@@ -1491,9 +1549,9 @@ public class Project
 
         PairConfig.Season season = this.projectConfig.getPair().getSeason();
 
-        if (season != null)
+        if ( season != null )
         {
-            latest = MonthDay.of(season.getLatestMonth(), season.getLatestDay());
+            latest = MonthDay.of( season.getLatestMonth(), season.getLatestDay() );
         }
 
         return latest;
@@ -1516,8 +1574,8 @@ public class Project
     {
         Integer period;
 
-        if (this.projectConfig.getPair().getLeadTimesPoolingWindow() != null &&
-            this.projectConfig.getPair().getLeadTimesPoolingWindow().getPeriod() != null)
+        if ( this.projectConfig.getPair().getLeadTimesPoolingWindow() != null &&
+             this.projectConfig.getPair().getLeadTimesPoolingWindow().getPeriod() != null )
         {
             period = this.projectConfig.getPair()
                                        .getLeadTimesPoolingWindow()
@@ -1528,7 +1586,7 @@ public class Project
             period = this.getScale().getPeriod();
         }
 
-        return Duration.of(period, this.getLeadUnit());
+        return Duration.of( period, this.getLeadUnit() );
     }
 
     /**
@@ -1540,7 +1598,7 @@ public class Project
         // Indicates one basis per period
         int period = 0;
 
-        if (this.getIssuePoolingWindow().getPeriod() != null)
+        if ( this.getIssuePoolingWindow().getPeriod() != null )
         {
             period = this.getIssuePoolingWindow().getPeriod();
         }
@@ -1560,7 +1618,7 @@ public class Project
     {
         String unit;
 
-        if (this.projectConfig.getPair().getLeadTimesPoolingWindow() != null)
+        if ( this.projectConfig.getPair().getLeadTimesPoolingWindow() != null )
         {
             unit = this.projectConfig.getPair().getLeadTimesPoolingWindow().getUnit().value();
         }
@@ -1570,11 +1628,11 @@ public class Project
         }
 
         // The following ensures that the returned unit may be converted into a ChronoUnit
-        if (unit != null)
+        if ( unit != null )
         {
             unit = unit.toUpperCase();
 
-            if (!unit.endsWith( "S" ))
+            if ( !unit.endsWith( "S" ) )
             {
                 unit += "S";
             }
@@ -1609,9 +1667,9 @@ public class Project
     {
         Integer frequency;
 
-        if (this.projectConfig.getPair().getLeadTimesPoolingWindow() != null)
+        if ( this.projectConfig.getPair().getLeadTimesPoolingWindow() != null )
         {
-            if (this.projectConfig.getPair().getLeadTimesPoolingWindow().getFrequency() != null)
+            if ( this.projectConfig.getPair().getLeadTimesPoolingWindow().getFrequency() != null )
             {
                 frequency = this.projectConfig.getPair()
                                               .getLeadTimesPoolingWindow()
@@ -1627,13 +1685,13 @@ public class Project
         else
         {
             frequency = this.getScale().getFrequency();
-            if (frequency == null)
+            if ( frequency == null )
             {
                 frequency = this.getScale().getPeriod();
             }
         }
 
-        return Duration.of(frequency, this.getLeadUnit());
+        return Duration.of( frequency, this.getLeadUnit() );
     }
 
     /**
@@ -1666,7 +1724,7 @@ public class Project
      * right hand data could not be calculated
      * @deprecated to be replaced with {@link #getDesiredTimeStep()} or {@link #getDesiredTimeScale()} as needed
      */
-    @Deprecated(since="1.5", forRemoval=true)
+    @Deprecated( since = "1.5", forRemoval = true )
     public DesiredTimeScaleConfig getScale()
     {
         DesiredTimeScaleConfig scaleConfig = this.getProjectConfig()
@@ -1699,9 +1757,9 @@ public class Project
             if ( ConfigHelper.isForecast( this.getRight() ) )
             {
                 Duration commonInterval = this.getDesiredTimeStep();
-                int intervalInMinutes = ( int ) commonInterval.toMinutes();
+                int intervalInMinutes = (int) commonInterval.toMinutes();
                 scaleConfig = new DesiredTimeScaleConfig( TimeScaleFunction.MEAN,
-                                                          intervalInMinutes ,
+                                                          intervalInMinutes,
                                                           desiredUnit,
                                                           "Dynamic Scale",
                                                           intervalInMinutes );
@@ -1743,12 +1801,12 @@ public class Project
         {
             mode = PairingMode.ROLLING;
         }
-        else if ( ProjectConfigs.hasTimeSeriesMetrics( this.projectConfig ))
+        else if ( ProjectConfigs.hasTimeSeriesMetrics( this.projectConfig ) )
         {
             mode = PairingMode.TIME_SERIES;
         }
-        else if (this.projectConfig.getPair().isByTimeSeries() != null &&
-                 this.projectConfig.getPair().isByTimeSeries())
+        else if ( this.projectConfig.getPair().isByTimeSeries() != null &&
+                  this.projectConfig.getPair().isByTimeSeries() )
         {
             mode = PairingMode.BY_TIMESERIES;
         }
@@ -1790,11 +1848,11 @@ public class Project
         // If there isn't a definition, we want to move a single unit at a time
         int frequency = 1;
 
-        if (this.getIssuePoolingWindow().getFrequency() != null)
+        if ( this.getIssuePoolingWindow().getFrequency() != null )
         {
             frequency = this.getIssuePoolingWindow().getFrequency();
         }
-        else if ( this.getIssuePoolingWindowPeriod() > 0)
+        else if ( this.getIssuePoolingWindowPeriod() > 0 )
         {
             frequency = this.getIssuePoolingWindowPeriod();
         }
@@ -1837,37 +1895,39 @@ public class Project
                 DataScripter script = new DataScripter();
                 script.addLine( "SELECT (" );
                 script.addTab().addLine( "(" );
-                script.addTab(  2  ).addLine("(COUNT(E.ensemble_id) * 8 + 24) * -- This determines the size of a single row" );
-                script.addTab(   3   ).addLine("(  -- This determines the number of expected rows" );
-                script.addTab(    4    ).addLine( "SELECT COUNT(*)" );
-                script.addTab(    4    ).addLine( "FROM wres.TimeSeriesValue TSV" );
-                script.addTab(    4    ).addLine( "INNER JOIN (" );
-                script.addTab(     5     ).addLine( "SELECT TS.timeseries_id" );
-                script.addTab(     5     ).addLine( "FROM wres.TimeSeries TS" );
-                script.addTab(     5     ).addLine( "INNER JOIN wres.TimeSeriesSource TSS" );
-                script.addTab(      6      ).addLine( "ON TSS.timeseries_id = TS.timeseries_id" );
-                script.addTab(     5     ).addLine( "INNER JOIN wres.ProjectSource PS" );
-                script.addTab(      6      ).addLine( "ON PS.source_id = TSS.source_id" );
-                script.addTab(     5     ).addLine( "WHERE PS.project_id = ", this.getId() );
-                script.addTab(      6      ).addLine( "AND PS.member = ", Project.RIGHT_MEMBER );
-                script.addTab(     5     ).addLine( "LIMIT 1" );
-                script.addTab(    4    ).addLine( ") AS TS" );
-                script.addTab(    4    ).addLine( "ON TS.timeseries_id = TSV.timeseries_id" );
-                script.addTab(   3   ).addLine( ")" );
-                script.addTab(  2  ).addLine(") / 1000.0)::float AS size     -- We divide by 1000.0 to convert the number to kilobyte scale" );
-                script.addLine("-- We Select from ensemble because the number of ensembles affects" );
-                script.addLine("--   the number of values returned in the resultant array" );
+                script.addTab( 2 )
+                      .addLine( "(COUNT(E.ensemble_id) * 8 + 24) * -- This determines the size of a single row" );
+                script.addTab( 3 ).addLine( "(  -- This determines the number of expected rows" );
+                script.addTab( 4 ).addLine( "SELECT COUNT(*)" );
+                script.addTab( 4 ).addLine( "FROM wres.TimeSeriesValue TSV" );
+                script.addTab( 4 ).addLine( "INNER JOIN (" );
+                script.addTab( 5 ).addLine( "SELECT TS.timeseries_id" );
+                script.addTab( 5 ).addLine( "FROM wres.TimeSeries TS" );
+                script.addTab( 5 ).addLine( "INNER JOIN wres.TimeSeriesSource TSS" );
+                script.addTab( 6 ).addLine( "ON TSS.timeseries_id = TS.timeseries_id" );
+                script.addTab( 5 ).addLine( "INNER JOIN wres.ProjectSource PS" );
+                script.addTab( 6 ).addLine( "ON PS.source_id = TSS.source_id" );
+                script.addTab( 5 ).addLine( "WHERE PS.project_id = ", this.getId() );
+                script.addTab( 6 ).addLine( "AND PS.member = ", Project.RIGHT_MEMBER );
+                script.addTab( 5 ).addLine( "LIMIT 1" );
+                script.addTab( 4 ).addLine( ") AS TS" );
+                script.addTab( 4 ).addLine( "ON TS.timeseries_id = TSV.timeseries_id" );
+                script.addTab( 3 ).addLine( ")" );
+                script.addTab( 2 )
+                      .addLine( ") / 1000.0)::float AS size     -- We divide by 1000.0 to convert the number to kilobyte scale" );
+                script.addLine( "-- We Select from ensemble because the number of ensembles affects" );
+                script.addLine( "--   the number of values returned in the resultant array" );
                 script.addLine( "FROM wres.Ensemble E" );
                 script.addLine( "WHERE EXISTS (" );
                 script.addTab().addLine( "SELECT 1" );
                 script.addTab().addLine( "FROM wres.TimeSeries TS" );
                 script.addTab().addLine( "INNER JOIN wres.TimeSeriesSource TSS" );
-                script.addTab(  2  ).addLine( "ON TSS.timeseries_id = TS.timeseries_id" );
+                script.addTab( 2 ).addLine( "ON TSS.timeseries_id = TS.timeseries_id" );
                 script.addTab().addLine( "INNER JOIN wres.ProjectSource PS" );
-                script.addTab(  2  ).addLine( "ON PS.source_id = TSS.source_id" );
+                script.addTab( 2 ).addLine( "ON PS.source_id = TSS.source_id" );
                 script.addTab().addLine( "WHERE PS.project_id = ", this.getId() );
-                script.addTab(  2  ).addLine( "AND PS.member = ", Project.RIGHT_MEMBER );
-                script.addTab(  2  ).addLine( "AND TS.ensemble_id = E.ensemble_id" );
+                script.addTab( 2 ).addLine( "AND PS.member = ", Project.RIGHT_MEMBER );
+                script.addTab( 2 ).addLine( "AND TS.ensemble_id = E.ensemble_id" );
                 script.addLine( ")" );
 
                 if ( !this.getRight().getEnsemble().isEmpty() )
@@ -1875,10 +1935,10 @@ public class Project
                     int includeCount = 0;
                     int excludeCount = 0;
 
-                    StringJoiner include = new StringJoiner( ",", "ANY('{", "}'::integer[])");
-                    StringJoiner exclude = new StringJoiner(",", "ANY('{", "}'::integer[])");
+                    StringJoiner include = new StringJoiner( ",", "ANY('{", "}'::integer[])" );
+                    StringJoiner exclude = new StringJoiner( ",", "ANY('{", "}'::integer[])" );
 
-                    for ( EnsembleCondition condition : this.getRight().getEnsemble())
+                    for ( EnsembleCondition condition : this.getRight().getEnsemble() )
                     {
                         List<Integer> ids;
                         try
@@ -1888,29 +1948,28 @@ public class Project
                         catch ( SQLException e )
                         {
                             throw new CalculationException(
-                                    "Ensemble IDs needed to determine the size of a single time "
-                                    + "series could not be retrieved.",
-                                    e
-                            );
+                                                            "Ensemble IDs needed to determine the size of a single time "
+                                                            + "series could not be retrieved.",
+                                                            e );
                         }
                         if ( condition.isExclude() )
                         {
                             excludeCount += ids.size();
-                            ids.forEach( id -> exclude.add(id.toString()) );
+                            ids.forEach( id -> exclude.add( id.toString() ) );
                         }
                         else
                         {
                             includeCount += ids.size();
-                            ids.forEach( id -> include.add(id.toString()) );
+                            ids.forEach( id -> include.add( id.toString() ) );
                         }
                     }
 
-                    if (includeCount > 0)
+                    if ( includeCount > 0 )
                     {
                         script.addTab().addLine( "AND ensemble_id = ", include.toString() );
                     }
 
-                    if (excludeCount > 0)
+                    if ( excludeCount > 0 )
                     {
                         script.addTab().addLine( "AND NOT ensemble_id = ", exclude.toString() );
                     }
@@ -1936,15 +1995,15 @@ public class Project
                 // only retrieve one time series at a time. If the estimated size is
                 // 400KB, we'll bring in two at a time.
                 this.numberOfSeriesToRetrieve =
-                        ( ( Double ) Math.max( 1.0, sizeCap / timeSeriesSize ) )
-                                .intValue();
+                        ( (Double) Math.max( 1.0, sizeCap / timeSeriesSize ) )
+                                                                              .intValue();
             }
 
             return this.numberOfSeriesToRetrieve;
         }
     }
 
-    public boolean usesGriddedData(DataSourceConfig dataSourceConfig)
+    public boolean usesGriddedData( DataSourceConfig dataSourceConfig )
             throws SQLException
     {
         Boolean usesGriddedData;
@@ -1961,18 +2020,18 @@ public class Project
                 usesGriddedData = this.baselineUsesGriddedData;
         }
 
-        if (usesGriddedData == null)
+        if ( usesGriddedData == null )
         {
-            DataScripter script = new DataScripter(  );
-            script.addLine("SELECT EXISTS (");
-            script.addTab().addLine("SELECT 1");
-            script.addTab().addLine("FROM wres.ProjectSource PS");
-            script.addTab().addLine("INNER JOIN wres.Source S");
-            script.addTab(  2  ).addLine("ON PS.source_id = S.source_id");
-            script.addTab().addLine("WHERE PS.project_id = ", this.getId());
-            script.addTab(  2  ).addLine("AND PS.member = ", this.getInputName( dataSourceConfig ));
-            script.addTab(  2  ).addLine("AND S.is_point_data = FALSE");
-            script.addLine(") AS uses_gridded_data;");
+            DataScripter script = new DataScripter();
+            script.addLine( "SELECT EXISTS (" );
+            script.addTab().addLine( "SELECT 1" );
+            script.addTab().addLine( "FROM wres.ProjectSource PS" );
+            script.addTab().addLine( "INNER JOIN wres.Source S" );
+            script.addTab( 2 ).addLine( "ON PS.source_id = S.source_id" );
+            script.addTab().addLine( "WHERE PS.project_id = ", this.getId() );
+            script.addTab( 2 ).addLine( "AND PS.member = ", this.getInputName( dataSourceConfig ) );
+            script.addTab( 2 ).addLine( "AND S.is_point_data = FALSE" );
+            script.addLine( ") AS uses_gridded_data;" );
 
             usesGriddedData = script.retrieve( "uses_gridded_data" );
 
@@ -1996,7 +2055,7 @@ public class Project
      */
     public String getDesiredMeasurementUnit()
     {
-        return String.valueOf(this.projectConfig.getPair().getUnit());
+        return String.valueOf( this.projectConfig.getPair().getUnit() );
     }
 
     /**
@@ -2021,22 +2080,22 @@ public class Project
      * system being unable to determine what locations to retrieve offsets from.
      * @throws CalculationException Thrown if lead offsets cannot be calculated
      */
-    public Integer getLeadOffset(Feature feature)
+    public Integer getLeadOffset( Feature feature )
             throws SQLException
     {
-        if (ConfigHelper.isSimulation( this.getRight() ) ||
-                ProjectConfigs.hasTimeSeriesMetrics( this.projectConfig ))
+        if ( ConfigHelper.isSimulation( this.getRight() ) ||
+             ProjectConfigs.hasTimeSeriesMetrics( this.projectConfig ) )
         {
             LOGGER.debug( "getLeadOffset Returning 0 for {} (timeseries metrics)",
                           feature );
             return 0;
         }
-        else if (this.usesGriddedData( this.getRight() ))
+        else if ( this.usesGriddedData( this.getRight() ) )
         {
             Integer offset = this.getMinimumLead();
 
             // If the default minimum was hit, return 0 instead.
-            if (offset == Integer.MIN_VALUE)
+            if ( offset == Integer.MIN_VALUE )
             {
                 LOGGER.debug( "getLeadOffset Returning 0 for {} (gridded data on right)",
                               feature );
@@ -2044,10 +2103,9 @@ public class Project
             }
 
             // We subtract by one time step since this returns an exclusive value where minimum lead is inclusive
-            return offset - (int)TimeHelper.unitsToLeadUnits(
-                    this.getScale().getUnit().value(),
-                    this.getScale().getPeriod()
-            );
+            return offset - (int) TimeHelper.unitsToLeadUnits(
+                                                               this.getScale().getUnit().value(),
+                                                               this.getScale().getPeriod() );
         }
 
         return this.leadOffsets.get( feature );
@@ -2076,7 +2134,7 @@ public class Project
 
         FormattedStopwatch timer = null;
 
-        if (LOGGER.isDebugEnabled())
+        if ( LOGGER.isDebugEnabled() )
         {
             timer = new FormattedStopwatch();
             timer.start();
@@ -2086,44 +2144,46 @@ public class Project
 
         LOGGER.trace( "Running variablefeature load script: {}", script );
 
-        Map<FeatureDetails.FeatureKey, Future<Integer>> futureOffsets = new LinkedHashMap<>(  );
+        Map<FeatureDetails.FeatureKey, Future<Integer>> futureOffsets = new LinkedHashMap<>();
 
-        try (DataProvider data = script.buffer())
+        try ( DataProvider data = script.buffer() )
         {
             LOGGER.trace( "Variable feature metadata loaded... {}", data );
 
-            while (data.next())
+            while ( data.next() )
             {
                 int obsVariableFeatureId = data.getInt( "observation_feature" );
-                int fcVariableFeatureId = data.getInt("forecast_feature");
-                int featureId = data.getValue("feature_id");
+                int fcVariableFeatureId = data.getInt( "forecast_feature" );
+                int featureId = data.getValue( "feature_id" );
 
                 OffsetEvaluator evaluator = new OffsetEvaluator(
-                        this,
-                        obsVariableFeatureId,
-                        fcVariableFeatureId
-                );
+                                                                 this,
+                                                                 obsVariableFeatureId,
+                                                                 fcVariableFeatureId );
 
                 // TODO: Add DataProvider constructor for the key
                 FeatureDetails.FeatureKey key = Features.getFeatureKey(
-                        featureId
-                );
+                                                                        featureId );
 
-                futureOffsets.put( key, Executor.submit( evaluator ));
+                futureOffsets.put( key, Executor.submit( evaluator ) );
 
                 LOGGER.trace( "A task has been created to find the offset for {} using obsVFI {}, fcVFI {}, featureID {}.",
-                              key, obsVariableFeatureId, fcVariableFeatureId, featureId );
+                              key,
+                              obsVariableFeatureId,
+                              fcVariableFeatureId,
+                              featureId );
             }
         }
         catch ( SQLException e )
         {
-            throw new IOException("Tasks used to evaluate lead hour offsets "
-                                  + "could not be created.", e);
+            throw new IOException( "Tasks used to evaluate lead hour offsets "
+                                   + "could not be created.",
+                                   e );
         }
 
-        while (!futureOffsets.isEmpty())
+        while ( !futureOffsets.isEmpty() )
         {
-            FeatureDetails.FeatureKey key = ( FeatureDetails.FeatureKey)futureOffsets.keySet().toArray()[0];
+            FeatureDetails.FeatureKey key = (FeatureDetails.FeatureKey) futureOffsets.keySet().toArray()[0];
             Future<Integer> futureOffset = futureOffsets.remove( key );
 
             // Determine the feature definition for the offset
@@ -2131,10 +2191,10 @@ public class Project
             Integer offset;
             try
             {
-                LOGGER.trace( "Loading the offset for '{}'", ConfigHelper.getFeatureDescription( feature ));
+                LOGGER.trace( "Loading the offset for '{}'", ConfigHelper.getFeatureDescription( feature ) );
 
                 // If the current task is the last/only task left to evaluate, wait for the result
-                if (futureOffsets.isEmpty())
+                if ( futureOffsets.isEmpty() )
                 {
                     offset = futureOffset.get();
                 }
@@ -2146,17 +2206,16 @@ public class Project
                 }
 
                 // If the returned value doesn't exist, move on
-                if (offset == null)
+                if ( offset == null )
                 {
                     continue;
                 }
-                LOGGER.trace("The offset was: {}", offset);
+                LOGGER.trace( "The offset was: {}", offset );
 
                 // Add the non-null value to the mapping with the feature as the key
                 this.leadOffsets.put(
-                        feature,
-                        offset
-                );
+                                      feature,
+                                      offset );
                 LOGGER.trace( "An offset for {} was loaded!", ConfigHelper.getFeatureDescription( feature ) );
             }
             catch ( InterruptedException e )
@@ -2166,22 +2225,23 @@ public class Project
             }
             catch ( ExecutionException e )
             {
-                throw new IOException("An error occured while populating the future"
-                             + "offsets.", e);
+                throw new IOException( "An error occured while populating the future"
+                                       + "offsets.",
+                                       e );
             }
             catch ( TimeoutException e )
             {
                 // If the task took more than 500 milliseconds to evaluate, put
                 // it back into the queue and move on to the next one
-                LOGGER.trace("It took too long to get the offset for '{}'; "
-                             + "moving on to another location while we wait "
-                             + "for the output on this location",
-                             ConfigHelper.getFeatureDescription( feature ));
+                LOGGER.trace( "It took too long to get the offset for '{}'; "
+                              + "moving on to another location while we wait "
+                              + "for the output on this location",
+                              ConfigHelper.getFeatureDescription( feature ) );
                 futureOffsets.put( key, futureOffset );
             }
         }
 
-        if (timer != null && LOGGER.isDebugEnabled())
+        if ( timer != null && LOGGER.isDebugEnabled() )
         {
             timer.stop();
             LOGGER.debug( "It took {} to get the offsets for all locations.",
@@ -2207,9 +2267,9 @@ public class Project
      * @throws CalculationException Thrown if the number of issue pools
      * for a set of leads for a feature could not be calculated
      */
-    public Integer getIssuePoolCount( final Feature feature) throws CalculationException
+    public Integer getIssuePoolCount( final Feature feature ) throws CalculationException
     {
-        if ( this.getPairingMode() != PairingMode.ROLLING)
+        if ( this.getPairingMode() != PairingMode.ROLLING )
         {
             return -1;
         }
@@ -2217,12 +2277,12 @@ public class Project
         synchronized ( POOL_LOCK )
         {
 
-            if (!this.poolCounts.containsKey( feature ))
+            if ( !this.poolCounts.containsKey( feature ) )
             {
                 // TODO: Uncomment and remove feature parameter. Will break current system tests
                 /*Instant beginning = Instant.parse( this.getEarliestIssueDate());
                 Instant end = Instant.parse( this.getLatestIssueDate() );
-
+                
                 Duration jump = Duration.of(
                         this.getIssuePoolingWindowFrequency(),
                         ChronoUnit.valueOf( this.getIssuePoolingWindowUnit().toUpperCase())
@@ -2231,10 +2291,10 @@ public class Project
                         this.getIssuePoolingWindowPeriod(),
                         ChronoUnit.valueOf(this.getIssuePoolingWindowUnit().toUpperCase())
                 );
-
+                
                 Integer count = 0;
-
-
+                
+                
                 while (beginning.isBefore( end ) || beginning.equals( end ))
                 {
                     LOGGER.info("");
@@ -2247,7 +2307,7 @@ public class Project
                     count++;
                     beginning = beginning.plus( jump );
                 }
-
+                
                 this.poolCounts.put( feature, count );*/
 
                 try
@@ -2256,20 +2316,20 @@ public class Project
 
                     counter.consume( row -> {
                         Integer sampleCount = row.getInt( "window_count" );
-                        if (sampleCount != null)
+                        if ( sampleCount != null )
                         {
-                            this.poolCounts.put(feature, sampleCount);
+                            this.poolCounts.put( feature, sampleCount );
                         }
                     } );
                 }
                 catch ( SQLException e )
                 {
                     throw new CalculationException(
-                            "The number of value pools revolving around issue times "
-                            + "could not be determined for " +
-                            ConfigHelper.getFeatureDescription( feature ),
-                            e
-                    );
+                                                    "The number of value pools revolving around issue times "
+                                                    + "could not be determined for "
+                                                    +
+                                                    ConfigHelper.getFeatureDescription( feature ),
+                                                    e );
                 }
             }
         }
@@ -2301,11 +2361,11 @@ public class Project
      * @throws CalculationException thrown if the calculation of the frequency resulted in an
      * impossible value
      */
-    private Duration getValueInterval( DataSourceConfig dataSourceConfig) throws CalculationException
+    private Duration getValueInterval( DataSourceConfig dataSourceConfig ) throws CalculationException
     {
         Duration interval;
 
-        if (ConfigHelper.isForecast( dataSourceConfig ))
+        if ( ConfigHelper.isForecast( dataSourceConfig ) )
         {
             interval = this.getForecastInterval( dataSourceConfig );
         }
@@ -2314,12 +2374,13 @@ public class Project
             interval = this.getObservationInterval( dataSourceConfig );
         }
 
-        if (interval == null)
+        if ( interval == null )
         {
-            throw new CalculationException("The interval for the " +
-                                           this.getInputName( dataSourceConfig ) +
-                                           " data could either not be determined or was "
-                                           + "invalid.");
+            throw new CalculationException( "The interval for the " +
+                                            this.getInputName( dataSourceConfig )
+                                            +
+                                            " data could either not be determined or was "
+                                            + "invalid." );
         }
 
         return interval;
@@ -2336,31 +2397,31 @@ public class Project
      * @throws CalculationException thrown if the calculation used to determine the frequency of the
      * forecast values encountered an error
      */
-    private Duration getForecastInterval( DataSourceConfig dataSourceConfig) throws CalculationException
+    private Duration getForecastInterval( DataSourceConfig dataSourceConfig ) throws CalculationException
     {
         // TODO: Forecasts between locations might not be unified.
         // Generalizing the interval for all locations based on a single one could cause miscalculations
-        DataScripter script = new DataScripter(  );
+        DataScripter script = new DataScripter();
 
-        script.addLine("WITH differences AS");
-        script.addLine("(");
-        script.addLine("    SELECT lead - lag(lead) OVER (ORDER BY TSV.timeseries_id, lead) AS difference");
-        script.addLine("    FROM wres.TimeSeriesValue TSV");
-        script.addLine("    INNER JOIN wres.TimeSeries TS");
-        script.addLine("        ON TS.timeseries_id = TSV.timeseries_id");
+        script.addLine( "WITH differences AS" );
+        script.addLine( "(" );
+        script.addLine( "    SELECT lead - lag(lead) OVER (ORDER BY TSV.timeseries_id, lead) AS difference" );
+        script.addLine( "    FROM wres.TimeSeriesValue TSV" );
+        script.addLine( "    INNER JOIN wres.TimeSeries TS" );
+        script.addLine( "        ON TS.timeseries_id = TSV.timeseries_id" );
 
-        if (this.getMinimumLead() != Integer.MIN_VALUE)
+        if ( this.getMinimumLead() != Integer.MIN_VALUE )
         {
-            script.addTab().addLine("WHERE lead > ", this.getMinimumLead());
+            script.addTab().addLine( "WHERE lead > ", this.getMinimumLead() );
         }
         else
         {
-            script.addTab().addLine("WHERE lead > 0");
+            script.addTab().addLine( "WHERE lead > 0" );
         }
 
-        if (this.getMaximumLead() != Integer.MAX_VALUE)
+        if ( this.getMaximumLead() != Integer.MAX_VALUE )
         {
-            script.addTab(  2  ).addLine("AND lead <= ", this.getMaximumLead());
+            script.addTab( 2 ).addLine( "AND lead <= ", this.getMaximumLead() );
         }
         else
         {
@@ -2372,8 +2433,8 @@ public class Project
             // That was even with a subset of the real data (1 month vs 30 years).
             // If we cut it to 100 hours, it now takes 1.6s. Still not great, but
             // much faster
-            int ceiling = TimeHelper.durationToLead( Duration.of(100, ChronoUnit.HOURS) );
-            script.addTab(  2  ).addLine( "AND lead <= ", ceiling );
+            int ceiling = TimeHelper.durationToLead( Duration.of( 100, ChronoUnit.HOURS ) );
+            script.addTab( 2 ).addLine( "AND lead <= ", ceiling );
         }
 
         Optional<FeatureDetails> featureDetails;
@@ -2388,7 +2449,7 @@ public class Project
                                             e );
         }
 
-        if (featureDetails.isPresent())
+        if ( featureDetails.isPresent() )
         {
             FeatureDetails feature = featureDetails.get();
             Integer variableFeatureId;
@@ -2408,7 +2469,7 @@ public class Project
             Integer arbitraryEnsembleId;
             try
             {
-                arbitraryEnsembleId = Ensembles.getSingleEnsembleID( this.getId(), variableFeatureId);
+                arbitraryEnsembleId = Ensembles.getSingleEnsembleID( this.getId(), variableFeatureId );
             }
             catch ( SQLException e )
             {
@@ -2417,29 +2478,29 @@ public class Project
                                                 e );
             }
 
-            script.addTab(  2  ).addLine("AND TS.variablefeature_id = ", variableFeatureId);
-            script.addTab(  2  ).addLine("AND TS.ensemble_id = ", arbitraryEnsembleId);
+            script.addTab( 2 ).addLine( "AND TS.variablefeature_id = ", variableFeatureId );
+            script.addTab( 2 ).addLine( "AND TS.ensemble_id = ", arbitraryEnsembleId );
 
         }
 
-        script.addTab(  2  ).addLine("AND EXISTS (");
-        script.addTab(   3   ).addLine("SELECT 1");
-        script.addTab(   3   ).addLine("FROM wres.ProjectSource PS");
-        script.addTab(   3   ).addLine("INNER JOIN wres.TimeSeriesSource TSS");
-        script.addTab(    4    ).addLine("ON TSS.source_id = PS.source_id");
-        script.addTab(   3   ).addLine("WHERE PS.project_id = ", this.getId());
-        script.addLine("                AND PS.member = ", this.getInputName( dataSourceConfig ));
-        script.addLine("                AND TSV.timeseries_id = TSS.timeseries_id");
-        script.addLine("        )");
-        script.addLine(")");
-        script.addLine("SELECT MIN(difference)::bigint AS interval");
-        script.addLine("FROM differences");
-        script.addLine("WHERE difference IS NOT NULL");
-        script.addLine("    AND difference > 0");
+        script.addTab( 2 ).addLine( "AND EXISTS (" );
+        script.addTab( 3 ).addLine( "SELECT 1" );
+        script.addTab( 3 ).addLine( "FROM wres.ProjectSource PS" );
+        script.addTab( 3 ).addLine( "INNER JOIN wres.TimeSeriesSource TSS" );
+        script.addTab( 4 ).addLine( "ON TSS.source_id = PS.source_id" );
+        script.addTab( 3 ).addLine( "WHERE PS.project_id = ", this.getId() );
+        script.addLine( "                AND PS.member = ", this.getInputName( dataSourceConfig ) );
+        script.addLine( "                AND TSV.timeseries_id = TSS.timeseries_id" );
+        script.addLine( "        )" );
+        script.addLine( ")" );
+        script.addLine( "SELECT MIN(difference)::bigint AS interval" );
+        script.addLine( "FROM differences" );
+        script.addLine( "WHERE difference IS NOT NULL" );
+        script.addLine( "    AND difference > 0" );
 
         try
         {
-            return Duration.of(script.retrieve( "interval" ), TimeHelper.LEAD_RESOLUTION);
+            return Duration.of( script.retrieve( "interval" ), TimeHelper.LEAD_RESOLUTION );
         }
         catch ( SQLException e )
         {
@@ -2457,16 +2518,16 @@ public class Project
      * @throws CalculationException thrown if the calculation used to determine the
      * frequency of the observation values encountered an error
      */
-    private Duration getObservationInterval( DataSourceConfig dataSourceConfig) throws CalculationException
+    private Duration getObservationInterval( DataSourceConfig dataSourceConfig ) throws CalculationException
     {
         // TODO: Observations between locations are often not unified.
         // Generalizing the scale for all locations based on a single one could cause miscalculations
-        DataScripter script = new DataScripter(  );
+        DataScripter script = new DataScripter();
 
-        script.addLine("WITH differences AS");
-        script.addLine("(");
-        script.addLine("    SELECT AGE(observation_time, (LAG(observation_time) OVER (ORDER BY observation_time)))");
-        script.addLine("    FROM wres.Observation O");
+        script.addLine( "WITH differences AS" );
+        script.addLine( "(" );
+        script.addLine( "    SELECT AGE(observation_time, (LAG(observation_time) OVER (ORDER BY observation_time)))" );
+        script.addLine( "    FROM wres.Observation O" );
 
         Optional<FeatureDetails> featureDetails;
         try
@@ -2482,15 +2543,15 @@ public class Project
 
         int tabCount;
 
-        if (featureDetails.isPresent())
+        if ( featureDetails.isPresent() )
         {
             String variablePositionClause;
             try
             {
                 variablePositionClause = ConfigHelper.getVariableFeatureClause(
-                        featureDetails.get().toFeature(),
-                        this.getVariableId( dataSourceConfig ),
-                        "O" );
+                                                                                featureDetails.get().toFeature(),
+                                                                                this.getVariableId( dataSourceConfig ),
+                                                                                "O" );
             }
             catch ( SQLException e )
             {
@@ -2499,36 +2560,36 @@ public class Project
                                                 + "could not be loaded.",
                                                 e );
             }
-            script.addLine("    WHERE ", variablePositionClause);
+            script.addLine( "    WHERE ", variablePositionClause );
             tabCount = 3;
-            script.addTab(  2  ).add("AND ");
+            script.addTab( 2 ).add( "AND " );
 
         }
         else
         {
             tabCount = 2;
-            script.addTab().add("WHERE ");
+            script.addTab().add( "WHERE " );
         }
 
 
-        script.addLine("EXISTS (");
+        script.addLine( "EXISTS (" );
 
-        script.addTab(tabCount).addLine("SELECT 1");
-        script.addTab(tabCount).addLine("FROM wres.ProjectSource PS");
-        script.addTab(tabCount).addLine("WHERE PS.project_id = ", this.getId());
-        script.addTab(tabCount).addTab().addLine("AND PS.member = ", this.getInputName( dataSourceConfig ) );
-        script.addTab(tabCount).addTab().addLine("AND PS.source_id = O.source_id");
-        script.addTab().addLine(")");
-        script.addTab().addLine("GROUP BY observation_time");
-        script.addLine(")");
-        script.addLine("SELECT ( EXTRACT( epoch FROM MIN(age))/60 )::bigint AS interval -- Divide by 60 to convert the seconds to minutes");
-        script.addLine("FROM differences");
-        script.addLine("WHERE age IS NOT NULL");
-        script.addLine("GROUP BY age;");
+        script.addTab( tabCount ).addLine( "SELECT 1" );
+        script.addTab( tabCount ).addLine( "FROM wres.ProjectSource PS" );
+        script.addTab( tabCount ).addLine( "WHERE PS.project_id = ", this.getId() );
+        script.addTab( tabCount ).addTab().addLine( "AND PS.member = ", this.getInputName( dataSourceConfig ) );
+        script.addTab( tabCount ).addTab().addLine( "AND PS.source_id = O.source_id" );
+        script.addTab().addLine( ")" );
+        script.addTab().addLine( "GROUP BY observation_time" );
+        script.addLine( ")" );
+        script.addLine( "SELECT ( EXTRACT( epoch FROM MIN(age))/60 )::bigint AS interval -- Divide by 60 to convert the seconds to minutes" );
+        script.addLine( "FROM differences" );
+        script.addLine( "WHERE age IS NOT NULL" );
+        script.addLine( "GROUP BY age;" );
 
         try
         {
-            return Duration.of(script.retrieve( "interval" ), TimeHelper.LEAD_RESOLUTION);
+            return Duration.of( script.retrieve( "interval" ), TimeHelper.LEAD_RESOLUTION );
         }
         catch ( SQLException e )
         {
@@ -2546,15 +2607,17 @@ public class Project
         return this.getBaseline() != null;
     }
 
-    public Integer getId() {
+    public Integer getId()
+    {
         return this.projectID;
     }
 
-    private String getIDName() {
+    private String getIDName()
+    {
         return "project_id";
     }
 
-    protected void setID(Integer id)
+    protected void setID( Integer id )
     {
         this.projectID = id;
     }
@@ -2567,7 +2630,7 @@ public class Project
         script.retryOnSqlState( "23505" );
         script.setHighPriority( true );
 
-        script.addLine("INSERT INTO wres.Project (project_name, input_code)");
+        script.addLine( "INSERT INTO wres.Project (project_name, input_code)" );
         script.addTab().addLine( "SELECT ?, ?" );
 
         script.addArgument( this.getProjectName() );
@@ -2623,8 +2686,11 @@ public class Project
     @Override
     public String toString()
     {
-        return "Project { Name: " + this.getProjectName() +
-               ", Code: " + this.getInputCode() + " }";
+        return "Project { Name: " + this.getProjectName()
+               +
+               ", Code: "
+               + this.getInputCode()
+               + " }";
     }
 
     public boolean performedInsert()
@@ -2647,7 +2713,7 @@ public class Project
      * @throws CalculationException thrown if the calculation used to find the
      * last lead for vector data did not return a result
      */
-    public Integer getLastLead(Feature feature) throws CalculationException
+    public Integer getLastLead( Feature feature ) throws CalculationException
     {
         // Lead duration pool windows are canonical: see #63407-31
         // If they are present, always return the maximum declared
@@ -2661,12 +2727,12 @@ public class Project
             // so this will return the declared maximum lead duration
             return this.getMaximumLead();
         }
-        
+
         // Now dealing with data-dependent pools: see #63407-31 and #56213
         boolean leadIsMissing = !this.lastLeads.containsKey( feature );
         Integer lastLead;
 
-        if (leadIsMissing)
+        if ( leadIsMissing )
         {
             DataScripter script = ProjectScriptGenerator.createLastLeadScript( this, feature );
 
@@ -2677,20 +2743,23 @@ public class Project
             catch ( SQLException e )
             {
                 throw new CalculationException( "The calculation used to determine "
-                                                + "where to stop evaluating " +
-                                                ConfigHelper.getFeatureDescription( feature ) +
+                                                + "where to stop evaluating "
+                                                +
+                                                ConfigHelper.getFeatureDescription( feature )
+                                                +
                                                 " failed.",
-                                                e);
+                                                e );
             }
 
-            if (Objects.isNull( lastLead ))
+            if ( Objects.isNull( lastLead ) )
             {
-                String message = "The calculation used to determine when to stop evaluating data for %s returned nothing";
+                String message =
+                        "The calculation used to determine when to stop evaluating data for %s returned nothing";
                 message = String.format( message, ConfigHelper.getFeatureDescription( feature ) );
                 message += System.lineSeparator();
                 message += "The offending query was:" + System.lineSeparator();
                 message += script.toString();
-                throw new CalculationException( message);
+                throw new CalculationException( message );
             }
 
             // #63407- 
@@ -2699,10 +2768,10 @@ public class Project
                           TimeHelper.LEAD_RESOLUTION,
                           ConfigHelper.getFeatureDescription( feature ) );
 
-            this.lastLeads.put(feature, lastLead);
+            this.lastLeads.put( feature, lastLead );
         }
 
-        return this.lastLeads.get(feature);
+        return this.lastLeads.get( feature );
     }
 
 
@@ -2716,16 +2785,17 @@ public class Project
         int result = Integer.MIN_VALUE;
 
         if ( this.getProjectConfig().getPair() != null
-             && this.getProjectConfig().getPair()
+             && this.getProjectConfig()
+                    .getPair()
                     .getLeadHours() != null
-             && this.getProjectConfig().getPair()
+             && this.getProjectConfig()
+                    .getPair()
                     .getLeadHours()
                     .getMinimum() != null )
         {
-            result = (int)TimeHelper.unitsToLeadUnits(
-                    ChronoUnit.HOURS.toString(),
-                    this.getProjectConfig().getPair().getLeadHours().getMinimum()
-            );
+            result = (int) TimeHelper.unitsToLeadUnits(
+                                                        ChronoUnit.HOURS.toString(),
+                                                        this.getProjectConfig().getPair().getLeadHours().getMinimum() );
         }
 
         return result;
@@ -2741,16 +2811,17 @@ public class Project
         int result = Integer.MAX_VALUE;
 
         if ( this.getProjectConfig().getPair() != null
-             && this.getProjectConfig().getPair()
+             && this.getProjectConfig()
+                    .getPair()
                     .getLeadHours() != null
-             && this.getProjectConfig().getPair()
+             && this.getProjectConfig()
+                    .getPair()
                     .getLeadHours()
                     .getMaximum() != null )
         {
-            result = (int)TimeHelper.unitsToLeadUnits(
-                    ChronoUnit.HOURS.toString(),
-                    this.getProjectConfig().getPair().getLeadHours().getMaximum()
-            );
+            result = (int) TimeHelper.unitsToLeadUnits(
+                                                        ChronoUnit.HOURS.toString(),
+                                                        this.getProjectConfig().getPair().getLeadHours().getMaximum() );
         }
 
         return result;
@@ -2758,7 +2829,7 @@ public class Project
 
     public Duration getLeftTimeShift()
     {
-        return ConfigHelper.getTimeShift(this.getLeft());
+        return ConfigHelper.getTimeShift( this.getLeft() );
     }
 
     public Duration getRightTimeShift()
@@ -2775,19 +2846,20 @@ public class Project
      * @throws SQLException Thrown if the initial date could not be loaded
      * from the database.
      */
-    public String getInitialObservationDate( final DataSourceConfig sourceConfig, final Feature feature) throws SQLException
+    public String getInitialObservationDate( final DataSourceConfig sourceConfig, final Feature feature )
+            throws SQLException
     {
         synchronized ( this.initialObservationDates )
         {
-            if (!this.initialObservationDates.containsKey( feature ))
+            if ( !this.initialObservationDates.containsKey( feature ) )
             {
                 DataScripter script = ProjectScriptGenerator.generateInitialObservationDateScript(
-                        this,
-                        sourceConfig,
-                        feature
-                );
+                                                                                                   this,
+                                                                                                   sourceConfig,
+                                                                                                   feature );
 
-                LOGGER.trace( "Script to get observations for {}: {}", feature,
+                LOGGER.trace( "Script to get observations for {}: {}",
+                              feature,
                               script );
                 String zeroDate = script.retrieve( "zero_date" );
                 if ( zeroDate == null )
@@ -2803,22 +2875,21 @@ public class Project
         return this.initialObservationDates.get( feature );
     }
 
-    public String getInitialForecastDate( DataSourceConfig sourceConfig, Feature feature) throws SQLException
+    public String getInitialForecastDate( DataSourceConfig sourceConfig, Feature feature ) throws SQLException
     {
         synchronized ( this.initialForecastDates )
         {
-            if (!this.initialForecastDates.containsKey( feature ))
+            if ( !this.initialForecastDates.containsKey( feature ) )
             {
-                DataScripter script =  ProjectScriptGenerator.generateInitialForecastDateScript(
-                        this,
-                        sourceConfig,
-                        feature
-                );
+                DataScripter script = ProjectScriptGenerator.generateInitialForecastDateScript(
+                                                                                                this,
+                                                                                                sourceConfig,
+                                                                                                feature );
 
-                this.initialForecastDates.put(feature, script.retrieve( "zero_date" ));
+                this.initialForecastDates.put( feature, script.retrieve( "zero_date" ) );
             }
 
-            return this.initialForecastDates.get(feature);
+            return this.initialForecastDates.get( feature );
         }
     }
 
@@ -2867,11 +2938,11 @@ public class Project
      * @throws CalculationException thrown if the calculation used to determine
      * the typical gap encountered an error
      */
-    public Integer getForecastLag(DataSourceConfig sourceConfig, Feature feature) throws CalculationException
+    public Integer getForecastLag( DataSourceConfig sourceConfig, Feature feature ) throws CalculationException
     {
-        synchronized (this.timeSeriesLag )
+        synchronized ( this.timeSeriesLag )
         {
-            if (!this.timeSeriesLag.containsKey( feature ))
+            if ( !this.timeSeriesLag.containsKey( feature ) )
             {
                 // This script will tell us the maximum distance between
                 // sequential forecasts for a feature for this project.
@@ -2921,7 +2992,7 @@ public class Project
         return false;
     }
 
-    public int compareTo(Project other)
+    public int compareTo( Project other )
     {
         return this.getInputCode().compareTo( other.getInputCode() );
     }
@@ -2971,13 +3042,6 @@ public class Project
         private final AtomicBoolean warnOnUnknownFunction = new AtomicBoolean();
 
         /**
-         * Is <code>true</code> if one or more consumptions generated a warning for an instantaneous
-         * time scale according to {@link TimeScale#isInstantaneous()}.
-         */
-
-        private final AtomicBoolean warnOnInstantaneous = new AtomicBoolean();
-        
-        /**
          * Is <code>true</code> if one or more consumptions time steps were zero, i.e. two
          * or more measurements were coincident}.
          */
@@ -3016,12 +3080,6 @@ public class Project
         private String warnFunctionString;
 
         /**
-         * A time scale to help with warnings.
-         */
-
-        private TimeScale warnTimeScale;
-
-        /**
          * Construct with the existing time scale from the declaration and source type.
          * 
          * @param declaredExistingTimeScale the declared existingTimeScale, which may be null
@@ -3050,12 +3108,12 @@ public class Project
             Duration period = value.getDuration( "scale_period" );
             String functionString = value.getString( "scale_function" );
             Duration timeStep = value.getDuration( "time_step" );
-            
+
             // Ignore if the time step is zero by returning
-            if( Duration.ZERO.equals( timeStep ) )
+            if ( Duration.ZERO.equals( timeStep ) )
             {
                 this.warnOnZeroTimeStep.set( true );
-                
+
                 return;
             }
 
@@ -3092,9 +3150,9 @@ public class Project
             {
                 this.warnOnNullScale.set( true );
             }
-            
+
             // Create the scale and/or time step information
-            this.createTimeStepInformation( period, functionString, timeStep, value );
+            this.createTimeScaleAndStepInformation( period, functionString, timeStep );
         }
 
         /**
@@ -3103,16 +3161,14 @@ public class Project
         * @param period the time scale period
         * @param functionString the time scale function string
         * @param timeStep the time step
-        * @param value the time scale and step provider
         */
 
-        private void createTimeStepInformation( Duration period,
-                                                String functionString,
-                                                Duration timeStep,
-                                                DataProvider value )
+        private void createTimeScaleAndStepInformation( Duration period,
+                                                        String functionString,
+                                                        Duration timeStep )
         {
             TimeScale timeScale = null;
-            
+
             // Time scale information available
             if ( Objects.nonNull( period ) && Objects.nonNull( functionString ) )
             {
@@ -3120,38 +3176,6 @@ public class Project
                         TimeScale.TimeScaleFunction.valueOf( functionString.toUpperCase() );
 
                 timeScale = TimeScale.of( period, function );
-            }
-            
-            // Validate time scale if both input and declaration are present
-            if ( Objects.nonNull( this.declaredExistingTimeScale )
-                 && Objects.nonNull( timeScale )   
-                 && ! this.declaredExistingTimeScale.equals( timeScale ) )
-            {
-                // Report the original time scale function in case the database said UNKNOWN and this was
-                // augmented above
-                TimeScale timeScaleToReport = timeScale;
-                if ( "UNKNOWN".equalsIgnoreCase( value.getString( "scale_function" ) ) )
-                {
-                    timeScaleToReport = TimeScale.of( period );
-                }
-
-                if ( timeScale.isInstantaneous() && this.declaredExistingTimeScale.isInstantaneous() )
-                {
-                    this.warnOnInstantaneous.set( true );
-                    this.warnTimeScale = timeScaleToReport;
-                }
-                else
-                {
-                    throw new RescalingException( "The existing time scale information in the project "
-                                                  + "declaration is inconsistent with the time scale "
-                                                  + "information obtained from one or more "
-                                                  + sourceType
-                                                  + " sources. Source "
-                                                  + "says: "
-                                                  + timeScaleToReport
-                                                  + ". Declaration says: "
-                                                  + this.declaredExistingTimeScale );
-                }
             }
 
             // Store, with possibly null time scale information
@@ -3209,31 +3233,6 @@ public class Project
                              this.warnFunctionString );
             }
 
-            // Warn when one or more instances differed in time scale, but both 
-            // were recognized as instantaneous by TimeScale::isInstantaneous
-            if ( this.warnOnInstantaneous.get() )
-            {
-                // Print the raw period and function for the two time scales
-                String warnScaleString = "[" + this.warnTimeScale.getPeriod()
-                                         + ","
-                                         +
-                                         this.warnTimeScale.getFunction()
-                                         + "]";
-                String declaredScaleString = "[" + this.declaredExistingTimeScale.getPeriod()
-                                             + ","
-                                             +
-                                             this.declaredExistingTimeScale.getFunction()
-                                             + "]";
-
-                LOGGER.warn( "The existing time scale information in the project declaration is "
-                             + "inconsistent with the time scale information obtained from one "
-                             + "or more {} sources, but both are recognized as 'INSTANTANEOUS' "
-                             + "and, therefore, allowed. Source says: {}. Declaration says: {}.",
-                             this.sourceType,
-                             warnScaleString,
-                             declaredScaleString );
-            }
-
             // Warn when one or more instances had no time scale information
             if ( this.warnOnNullScale.get() )
             {
@@ -3254,7 +3253,7 @@ public class Project
         }
 
     }
-    
-    
+
+
 }
 

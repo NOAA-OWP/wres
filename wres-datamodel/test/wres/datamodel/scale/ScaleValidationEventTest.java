@@ -3,6 +3,7 @@ package wres.datamodel.scale;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -36,6 +37,13 @@ public final class ScaleValidationEventTest
                     equalTo( ScaleValidationEvent.of( EventType.ERROR, "An error" ) ) );
     }
 
+    @Test
+    public void testConstructionOfPassEvent()
+    {
+        assertThat( ScaleValidationEvent.pass( "No issues" ),
+                    equalTo( ScaleValidationEvent.of( EventType.PASS, "No issues" ) ) );
+    }
+    
     @Test
     public void testGetEventTypeReturnsExpectedType()
     {
@@ -79,7 +87,7 @@ public final class ScaleValidationEventTest
         assertThat( this.event, not( equalTo( null ) ) );
 
         // Unequal on event type
-        ScaleValidationEvent anError = ScaleValidationEvent.of( EventType.ERROR, "A warning" );
+        ScaleValidationEvent anError = ScaleValidationEvent.of( EventType.PASS, "A warning" );
         assertThat( this.event, not( equalTo( anError ) ) );
 
         // Unequal on message
@@ -107,6 +115,30 @@ public final class ScaleValidationEventTest
             assertThat( this.event.hashCode(), equalTo( otherEvent.hashCode() ) );
         }
 
+    }
+    
+    @Test 
+    public void testCompareTo()
+    {
+        // Consistent with equals 
+        ScaleValidationEvent otherEvent = ScaleValidationEvent.of( EventType.WARN, "A warning" );
+
+        assertTrue( this.event.compareTo( otherEvent ) == 0 );
+
+        ScaleValidationEvent anError = ScaleValidationEvent.of( EventType.ERROR, "1" );
+        ScaleValidationEvent anotherError = ScaleValidationEvent.of( EventType.ERROR, "2" );
+        
+        assertTrue( anError.compareTo( anotherError ) < 0 );
+        
+        assertTrue( anotherError.compareTo( anError ) > 0 );
+        
+        ScaleValidationEvent otherEventError = ScaleValidationEvent.of( EventType.ERROR, "A warning" );
+        
+        assertTrue( otherEvent.compareTo( otherEventError ) < 0 );
+        
+        exception.expect( NullPointerException.class );
+
+        this.event.compareTo( null );
     }
 
     @Test
