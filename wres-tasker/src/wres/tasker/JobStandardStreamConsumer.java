@@ -78,6 +78,7 @@ class JobStandardStreamConsumer extends DefaultConsumer
         {
             LOGGER.warn( "Interrupted while attempting to offer " + decodedResult
                          + " to the standardstream processing queue.", ie );
+            Thread.currentThread().interrupt();
         }
     }
 }

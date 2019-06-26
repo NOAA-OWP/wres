@@ -80,6 +80,7 @@ class JobResultConsumer extends DefaultConsumer
         {
             LOGGER.warn( "Interrupted while offering message to job result processing queue.",
                          ie );
+            Thread.currentThread().interrupt();
         }
         catch ( InvalidProtocolBufferException ipbe )
         {
@@ -106,6 +107,7 @@ class JobResultConsumer extends DefaultConsumer
             {
                 LOGGER.warn( "Interrupted while offering " + PARSE_FAILED
                              + " message to job result processing queue", ie );
+                Thread.currentThread().interrupt();
             }
         }
     }
