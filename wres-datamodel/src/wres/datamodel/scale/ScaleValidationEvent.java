@@ -3,17 +3,21 @@ package wres.datamodel.scale;
 import java.util.Objects;
 
 /**
- * Records a validation event related to scale information or rescaling. There are two types of validation event, 
+ * <p>Records a validation event related to scale information or rescaling. There are two types of validation event, 
  * represented by the {@link EventType} enumeration within this class, namely {@link EventType#WARN}, which represents 
  * a warning and {@link EventType#ERROR}, which represents an error. A {@link ScaleValidationEvent} provides a 
  * mechanism to collect together multiple validation events before acting or reporting on them collectively, such as by 
  * throwing an exception with a summary of all validation events encountered, rather than drip-feeding validation 
  * failures.
  * 
+ * <p>See #64542 for the near-term motivation and #61930 for the long-term motivation. While this abstraction may light
+ * a path towards a more general messaging API for exceptions, warnings, and assumptions that are intended for users 
+ * (rather than developers), it is more likely that a messaging API will replace this abstraction.
+ * 
  * @author james.brown@hydrosolved.com
  */
 
-public class ScaleValidationEvent
+public class ScaleValidationEvent implements Comparable<ScaleValidationEvent>
 {
     /**
      * Describes a type of scale validation event.
@@ -31,7 +35,12 @@ public class ScaleValidationEvent
         /**
          * An event that represents an error.
          */
-        ERROR;
+        ERROR,
+        
+        /**
+         * An event that represents a validation pass.
+         */
+        PASS;
     }
 
     /**
@@ -45,7 +54,7 @@ public class ScaleValidationEvent
      */
 
     private final String message;
-
+    
     /**
      * Construct a validation event.
      * 
@@ -84,6 +93,20 @@ public class ScaleValidationEvent
     public static ScaleValidationEvent error( String message )
     {
         return new ScaleValidationEvent( EventType.ERROR, message );
+    }   
+
+    /**
+     * Creates a scale validation event that indicates valid scale information.
+     * 
+     * 
+     * @param message the message
+     * @throws NullPointerException if the message is null
+     * @return a validation event
+     */
+    
+    public static ScaleValidationEvent pass( String message )
+    {
+        return new ScaleValidationEvent( EventType.PASS, message );
     }
 
     /**
@@ -120,6 +143,21 @@ public class ScaleValidationEvent
         return eventType + ": " + message;
     }
 
+    @Override
+    public int compareTo( ScaleValidationEvent o )
+    {
+        Objects.requireNonNull( o );
+        
+        int returnMe = this.getEventType().compareTo( o.getEventType() );
+        
+        if(  returnMe < 0 )
+        {
+            return returnMe;
+        }
+        
+        return this.getMessage().compareTo( o.getMessage() );
+    }
+    
     @Override
     public boolean equals( Object obj )
     {
