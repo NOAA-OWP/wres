@@ -1,14 +1,21 @@
 package wres.datamodel.scale;
 
 import java.math.BigDecimal;
+import java.text.MessageFormat;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
+import static java.util.stream.Collectors.collectingAndThen;
+import static java.util.stream.Collectors.toList;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import wres.config.generated.DataSourceConfig;
+import wres.config.generated.TimeScaleConfig;
+import wres.datamodel.scale.ScaleValidationEvent.EventType;
 import wres.datamodel.scale.TimeScale.TimeScaleFunction;
 
 /**
@@ -21,106 +28,156 @@ public final class ScaleValidationHelper
 {
 
     /**
-     * Logger.
+     * Start of a message
      */
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( ScaleValidationHelper.class );
+    private static final String MESSAGE_START = "While validating a {0} data source: ";
 
     /**
-     * <p>Compares two {@link TimeScale} and throws an exception when the desiredTimeScale
-     * cannot be derived, either in principle or in practice, from the existingTimeScale.
-     * For example, it is not possible, in principle, to obtain the maximum value over 
-     * some {@link Duration} from the average value over the same duration. Likewise,
-     * it is not currently possible, in practice, to obtain an estimate of a smaller
-     * {@link Duration} from a larger {@link Duration}, i.e. to conduct downscaling. 
-     * Indeed, downscaling is not currently supported by the application, but is 
-     * supportable, in principle.</p> 
+     * <p>Checks that the <code>existingTimeScale</code> information is *consistent* with the corresponding declared 
+     * information and that the <code>desiredTimeScale</code> is *deliverable* from the information available.
      * 
-     * <p>In addition to validating the desiredTimeScale
-     * against the existingTimeScale, the desiredTimeScale is validated against the
-     * time-step of the available data. For example, it is not possible to estimate an
-     * average value over some {@link Duration} from data whose time-step is the same as 
-     * that {@link Duration}. More generally, the {@link TimeScale#getPeriod()} must be 
-     * an integer multiple of the timeStep.</p>
+     * <p>In terms of being deliverable, validates the existing and desired {@link TimeScale} against the time-step of 
+     * the data. Whether a <code>desiredTimeScale</code> is deliverable may change as the functionality and 
+     * permissiveness of the software changes.
+     * 
+     * <p>Returns zero or more {@link ScaleValidationEvent} that are {@link EventType#ERROR} or {@link EventType#WARN} 
+     * for the caller to handle. A {@link EventType#ERROR} is associated with exceptional behavior, whereas a 
+     * {@link EventType#WARN} is information that should be provided to a user, but is not exceptional.
      *
-     * @param existingTimeScale the existing time scale
-     * @param desiredTimeScale the desired time scale 
+     * @param dataSourceConfig the declared data source
+     * @param existingTimeScale the existing time scale, which may originate from the declaration or data or both
+     * @param desiredTimeScale the desired time scale, which may originate from the declaration or data/system 
      * @param timeStep the time-step of the data
-     * @param context optional context information to help clarify warnings
-     * @throws RescalingException when the desiredTimeScale cannot be obtained from the 
-     *            existingTimeScale and the timeStep, either in principle or in practice
+     * @param dataSource a data source identifier to help clarify the validation message
+     * @return a list of validation events
      * @throws NullPointerException if any input is null
      */
 
-    public static void throwExceptionIfChangeOfScaleIsInvalid( TimeScale existingTimeScale,
-                                                               TimeScale desiredTimeScale,
-                                                               Duration timeStep,
-                                                               String... context )
+    public static List<ScaleValidationEvent> validateScaleInformation( DataSourceConfig dataSourceConfig,
+                                                                       TimeScale existingTimeScale,
+                                                                       TimeScale desiredTimeScale,
+                                                                       Duration timeStep,
+                                                                       String dataSource )
     {
+        Objects.requireNonNull( dataSourceConfig, "The project declaration cannot be null." );
+
         Objects.requireNonNull( existingTimeScale, "The existing time scale cannot be null." );
 
         Objects.requireNonNull( desiredTimeScale, "The desired time scale cannot be null." );
 
         Objects.requireNonNull( timeStep, "The time-step duration cannot be null." );
 
+        Objects.requireNonNull( dataSource, "The data source identifier cannot be null." );
+
+        List<ScaleValidationEvent> allEvents = new ArrayList<>();
+
+        // Check for consistency with the declaration
+        ScaleValidationEvent consistency =
+                ScaleValidationHelper.validateConsistency( dataSourceConfig, existingTimeScale, dataSource );
+
+        allEvents.add( consistency );
+
         // Change of scale required, i.e. not absolutely equal and not instantaneous
         // (which has a more lenient interpretation)
-        if ( ScaleValidationHelper.isChangeOfScaleRequired( existingTimeScale, desiredTimeScale, context ) )
+        if ( ScaleValidationHelper.isChangeOfScaleRequired( existingTimeScale, desiredTimeScale ) )
         {
 
             // Timestep cannot be zero
             if ( timeStep.isZero() )
             {
-                throw new RescalingException( "The period associated with the time-step cannot be zero." );
+                String message = MessageFormat.format( MESSAGE_START
+                                                       + "The period associated with the time-step cannot be zero.",
+                                                       dataSource );
+
+                allEvents.add( ScaleValidationEvent.error( message ) );
             }
 
             // Timestep cannot be negative
             if ( timeStep.isNegative() )
             {
-                throw new RescalingException( "The period associated with the time-step cannot be negative." );
+                String message = MessageFormat.format( MESSAGE_START
+                                                       + "The period associated with the time-step cannot be "
+                                                       + "negative.",
+                                                       dataSource );
+
+                allEvents.add( ScaleValidationEvent.error( message ) );
             }
-            
+
             // The desired time scale must be a sensible function in the context of rescaling
-            ScaleValidationHelper.throwExceptionIfDesiredFunctionIsUnknown( desiredTimeScale.getFunction() );
+            allEvents.add( ScaleValidationHelper.checkIfDesiredFunctionIsUnknown( desiredTimeScale.getFunction(),
+                                                                                  dataSource ) );
 
             // Downscaling not currently allowed
-            ScaleValidationHelper.throwExceptionIfDownscalingRequested( existingTimeScale.getPeriod(),
-                                                                 desiredTimeScale.getPeriod() );
+            allEvents.add( ScaleValidationHelper.checkIfDownscalingRequested( existingTimeScale.getPeriod(),
+                                                                              desiredTimeScale.getPeriod(),
+                                                                              dataSource ) );
 
             // The desired time scale period must be an integer multiple of the existing time scale period
-            ScaleValidationHelper.throwExceptionIfDesiredPeriodDoesNotCommute( existingTimeScale.getPeriod(),
-                                                                        desiredTimeScale.getPeriod(),
-                                                                        "existing period" );
+            allEvents.add( ScaleValidationHelper.checkIfDesiredPeriodDoesNotCommute( existingTimeScale.getPeriod(),
+                                                                                     desiredTimeScale.getPeriod(),
+                                                                                     dataSource,
+                                                                                     "existing period" ) );
 
             // If the existing and desired periods are the same, the function cannot differ
-            ScaleValidationHelper.throwExceptionIfPeriodsMatchAndFunctionsDiffer( existingTimeScale, desiredTimeScale, context );
+            allEvents.add( ScaleValidationHelper.checkIfPeriodsMatchAndFunctionsDiffer( existingTimeScale,
+                                                                                        desiredTimeScale,
+                                                                                        dataSource,
+                                                                                        dataSource ) );
 
             // If the existing time scale is instantaneous, do not allow accumulations (for now)
-            ScaleValidationHelper.throwExceptionIfAccumulatingInstantaneous( existingTimeScale,
-                                                                      desiredTimeScale.getFunction() );
+            allEvents.add( ScaleValidationHelper.checkIfAccumulatingInstantaneous( existingTimeScale,
+                                                                                   desiredTimeScale.getFunction(),
+                                                                                   dataSource ) );
 
             // If the desired function is a total, then the existing function must also be a total
-            ScaleValidationHelper.throwExceptionIfAccumulatingNonAccumulations( existingTimeScale.getFunction(),
-                                                                         desiredTimeScale.getFunction(),
-                                                                         context );
+            allEvents.add( ScaleValidationHelper.checkIfAccumulatingNonAccumulation( existingTimeScale.getFunction(),
+                                                                                     desiredTimeScale.getFunction(),
+                                                                                     dataSource ) );
 
             // The time-step of the data must be less than or equal to the period associated with the desired time scale
             // if rescaling is required
-            ScaleValidationHelper.throwExceptionIfDataTimeStepExceedsDesiredPeriod( desiredTimeScale,
-                                                                             timeStep );
+            allEvents.add( ScaleValidationHelper.checkIfDataTimeStepExceedsDesiredPeriod( desiredTimeScale,
+                                                                                          timeStep,
+                                                                                          dataSource ) );
 
             // If time-step of the data is equal to the period associated with the desired time scale, then 
             // rescaling is not allowed
-            ScaleValidationHelper.throwExceptionIfDataTimeStepMatchesDesiredPeriod( desiredTimeScale,
-                                                                             timeStep );
+            allEvents.add( ScaleValidationHelper.checkIfDataTimeStepMatchesDesiredPeriod( desiredTimeScale,
+                                                                                          timeStep,
+                                                                                          dataSource ) );
 
             // The desired time scale period must be an integer multiple of the data time-step
-            ScaleValidationHelper.throwExceptionIfDesiredPeriodDoesNotCommute( timeStep,
-                                                                        desiredTimeScale.getPeriod(),
-                                                                        "data time-step" );
+            allEvents.add( ScaleValidationHelper.checkIfDesiredPeriodDoesNotCommute( timeStep,
+                                                                                     desiredTimeScale.getPeriod(),
+                                                                                     dataSource,
+                                                                                     "data time-step" ) );
 
         }
 
+        // Filter all events that are not passes and return an immutable collection of them
+        return allEvents.stream()
+                        .filter( a -> a.getEventType() != EventType.PASS )
+                        .collect( collectingAndThen( toList(), Collections::unmodifiableList ) );
+    }
+
+    /**
+     * Returns <code>true</code> if the input contains a {@link ScaleValidationEvent} whose 
+     * {@link ScaleValidationEvent#getEventType()} is the prescribed type, otherwise <code>false</code>.
+     * 
+     * @param events the events to check
+     * @param eventType the event type to check
+     * @return true if the input has one or more validation events with the prescribed eventType, otherwise false
+     * @throws NullPointerException if either input is null
+     */
+
+    public static boolean hasEvent( Collection<ScaleValidationEvent> events, EventType eventType )
+    {
+        Objects.requireNonNull( events );
+
+        Objects.requireNonNull( eventType );
+
+        return events.stream().anyMatch( a -> a.getEventType() == eventType );
     }
 
     /**
@@ -135,12 +192,11 @@ public final class ScaleValidationHelper
      *
      * @param existingTimeScale the existing time scale
      * @param desiredTimeScale the desired time scale
-     * @param context optional context to clarify any warnings
      * @return true if a change of time scale is required, otherwise false
      * @throws NullPointerException if either input is null
      */
 
-    public static boolean isChangeOfScaleRequired( TimeScale existingTimeScale, TimeScale desiredTimeScale, String...context )
+    static boolean isChangeOfScaleRequired( TimeScale existingTimeScale, TimeScale desiredTimeScale )
     {
         Objects.requireNonNull( existingTimeScale, "Specify a non-null existing time scale." );
 
@@ -150,106 +206,223 @@ public final class ScaleValidationHelper
         boolean exceptionOne = existingTimeScale.isInstantaneous() && desiredTimeScale.isInstantaneous();
         boolean exceptionTwo = existingTimeScale.getPeriod().equals( desiredTimeScale.getPeriod() )
                                && existingTimeScale.getFunction() == TimeScaleFunction.UNKNOWN;
-        
-        // Log the second case if the desired time scale has a different function
-        if ( exceptionTwo && desiredTimeScale.getFunction() != TimeScaleFunction.UNKNOWN )
-        {
-            String clarify = ScaleValidationHelper.clarifyWarning( context );
-
-            LOGGER.warn( "The function associated with the desired time scale is a {}, but "
-                         + "the function associated with the existing time scale{}is {}. Assuming "
-                         + "that the latter is also a {}.",
-                         desiredTimeScale.getFunction(),
-                         clarify,
-                         TimeScaleFunction.UNKNOWN,
-                         desiredTimeScale.getFunction() );
-        }
 
         return different && !exceptionOne && !exceptionTwo;
     }
 
     /**
-     * Throws an exception if the desiredFunction is {@link TimeScaleFunction#UNKNOWN}.
-     *
-     * @param desiredFunction the desired function
-     * @throws RescalingException if the desired function is unknown
+     * Checks for consistency between the data source declaration and the proposed time scale information.
+     * 
+     * @param dataSourceConfig the data source declaration
+     * @param existingTimeScale the existing time scale
+     * @param dataSource the data source identifier
+     * @return a validation event 
      */
 
-    private static void throwExceptionIfDesiredFunctionIsUnknown( TimeScaleFunction desiredFunction )
+    private static ScaleValidationEvent validateConsistency( DataSourceConfig dataSourceConfig,
+                                                             TimeScale existingTimeScale,
+                                                             String dataSource )
+    {
+        TimeScaleConfig existingTimeScaleConfig = dataSourceConfig.getExistingTimeScale();
+
+        if ( Objects.nonNull( existingTimeScaleConfig ) )
+        {
+            TimeScale declaredExistingTimeScale = TimeScale.of( existingTimeScaleConfig );
+            if ( !declaredExistingTimeScale.equals( existingTimeScale ) )
+            {
+                if ( existingTimeScale.isInstantaneous() && declaredExistingTimeScale.isInstantaneous() )
+                {
+                    String declaredString = "[" + declaredExistingTimeScale.getPeriod()
+                                            + ","
+                                            + declaredExistingTimeScale.getFunction()
+                                            + "]";
+                    String existingString = "[" + existingTimeScale.getPeriod()
+                                            + ","
+                                            + existingTimeScale.getFunction()
+                                            + "]";
+
+
+                    String message = MessageFormat.format( MESSAGE_START
+                                                           + "The existing time scale in the project declaration is "
+                                                           + "{1} and the existing time scale associated with the "
+                                                           + "data is {2}. This discrepancy is allowed because both "
+                                                           + "are recognized by the system as ''INSTANTANEOUS''.",
+                                                           dataSource,
+                                                           declaredString,
+                                                           existingString );
+
+                    return ScaleValidationEvent.warn( message );
+                }
+                else
+                {
+                    String message = MessageFormat.format( MESSAGE_START
+                                                           + "The existing time scale in the project declaration is "
+                                                           + "{1} and the existing time scale associated with the "
+                                                           + "data is {2}. This inconsistency is not allowed. Fix "
+                                                           + "the declaration of the source.",
+                                                           dataSource,
+                                                           declaredExistingTimeScale,
+                                                           existingTimeScale );
+
+                    return ScaleValidationEvent.error( message );
+                }
+            }
+
+            String message = MessageFormat.format( "The existing time scale in the project declaration of {1} is "
+                                                   + "consistent with the existing time scale associated with the data "
+                                                   + "of {2}.",
+                                                   dataSource,
+                                                   declaredExistingTimeScale,
+                                                   existingTimeScale );
+
+            return ScaleValidationEvent.pass( message );
+        }
+
+        String message = MessageFormat.format( "The existing time scale in the project declaration is NULL. The "
+                                               + "existing time scale associated with the data is {1}.",
+                                               dataSource,
+                                               existingTimeScale );
+
+        return ScaleValidationEvent.pass( message );
+    }
+
+    /**
+     * Checks whether the desiredFunction is {@link TimeScaleFunction#UNKNOWN}, which is not allowed. If so,
+     * returns a {@link ScaleValidationEvent} that is {@link EventType#ERROR}, otherwise {@link EventType#PASS}.
+     *
+     * @param desiredFunction the desired function
+     * @param dataSource a data source identifier to help clarify the validation mesage
+     * @return a validation event
+     */
+
+    private static ScaleValidationEvent checkIfDesiredFunctionIsUnknown( TimeScaleFunction desiredFunction,
+                                                                         String dataSource )
     {
         if ( desiredFunction == TimeScaleFunction.UNKNOWN )
         {
-            throw new RescalingException( "The desired time scale function is '" + TimeScaleFunction.UNKNOWN
-                                          + "': the function must be known to conduct rescaling." );
+            String message = MessageFormat.format( MESSAGE_START +
+                                                   "The desired time scale function is ''{1}''"
+                                                   + ": the function must be known to conduct rescaling.",
+                                                   dataSource,
+                                                   TimeScaleFunction.UNKNOWN );
+
+            return ScaleValidationEvent.error( message );
         }
+
+        return ScaleValidationEvent.pass( "The desired function is not unknown and is, therefore, acceptable." );
     }
 
     /**
-     * Throws an exception if the existingPeriod is larger than the desiredPeriod.
+     * Checks whether the existingPeriod is larger than the desiredPeriod, which is not allowed. If so, returns
+     * a {@link ScaleValidationEvent} that is {@link EventType#ERROR}, otherwise {@link EventType#PASS}.
      * 
      * @param existingPeriod the existing period
-     * @param desiredPeriod the desired period 
-     * @throws RescalingException if the existingPeriod is larger than the desiredPeriod
+     * @param desiredPeriod the desired period
+     * @param dataSource a data source identifier to help clarify the validation mesage
+     * @return a validation event
      */
 
-    private static void throwExceptionIfDownscalingRequested( Duration existingPeriod, Duration desiredPeriod )
+    private static ScaleValidationEvent
+            checkIfDownscalingRequested( Duration existingPeriod, Duration desiredPeriod, String dataSource )
     {
         if ( existingPeriod.compareTo( desiredPeriod ) > 0 )
         {
-            throw new RescalingException( "Downscaling is not supported: the desired time scale cannot be smaller "
-                                          + "than the existing time scale." );
+            String message = MessageFormat.format( MESSAGE_START +
+                                                   "Downscaling is not supported: the desired time scale of ''{1}'' "
+                                                   + "cannot be smaller than the existing time scale of ''{2}''.",
+                                                   dataSource,
+                                                   desiredPeriod,
+                                                   existingPeriod );
+
+            return ScaleValidationEvent.error( message );
         }
+
+        String message =
+                MessageFormat.format( "The existing period of ''{0}'' is not larger than the desired period of "
+                                      + "''{1}'' and is, therefore, acceptable.",
+                                      existingPeriod,
+                                      desiredPeriod );
+
+        return ScaleValidationEvent.pass( message );
     }
 
     /**
-     * Throws an exception if the desiredPeriod is not an integer multiple of the input period.
+     * Checks whether both periods are positive and whether the desiredPeriod is not an integer multiple of the input 
+     * period. If not an integer multiple, returns a {@link ScaleValidationEvent} that is {@link EventType#ERROR}, 
+     * otherwise {@link EventType#PASS}.  
      * 
      * @param inputPeriod the input period
      * @param desiredPeriod the desired period 
+     * @param dataSource a data source identifier to help clarify the validation mesage
      * @param periodType a qualifier for the input period type
-     * @throws RescalingException if the desiredPeriod is not an integer multiple of the existingPeriod
+     * @return a validation event
      */
 
-    private static void throwExceptionIfDesiredPeriodDoesNotCommute( Duration inputPeriod,
-                                                                     Duration desiredPeriod,
-                                                                     String periodType )
+    private static ScaleValidationEvent checkIfDesiredPeriodDoesNotCommute( Duration inputPeriod,
+                                                                            Duration desiredPeriod,
+                                                                            String dataSource,
+                                                                            String periodType )
     {
         BigDecimal firstDecimal = BigDecimal.valueOf( inputPeriod.getSeconds() )
                                             .add( BigDecimal.valueOf( inputPeriod.getNano(), 9 ) );
         BigDecimal secondDecimal = BigDecimal.valueOf( desiredPeriod.getSeconds() )
                                              .add( BigDecimal.valueOf( desiredPeriod.getNano(), 9 ) );
 
-        if ( secondDecimal.remainder( firstDecimal ).compareTo( BigDecimal.ZERO ) != 0 )
+        boolean isOneZero = Duration.ZERO.equals( inputPeriod ) || Duration.ZERO.equals( desiredPeriod );
+
+        if ( isOneZero || secondDecimal.remainder( firstDecimal ).compareTo( BigDecimal.ZERO ) != 0 )
         {
-            throw new RescalingException( "The desired period of " + desiredPeriod
-                                          + " is not an integer multiple of the "
-                                          + periodType
-                                          + " ("
-                                          + inputPeriod
-                                          + "). If the data has multiple time-steps that "
-                                          + "vary by time or feature, it may not be possible to "
-                                          + "achieve the desired time scale for all of the data. "
-                                          + "In that case, consider removing the desired time "
-                                          + "scale and performing an evaluation at the "
-                                          + "existing time scale of the data, where possible." );
+            String message = MessageFormat.format( MESSAGE_START +
+                                                   "The desired period of ''{1}''"
+                                                   + " is not an integer multiple of the {2}"
+                                                   + ", which is ''{3}''. If the data has multiple time-steps that "
+                                                   + "vary by time or feature, it may not be possible to "
+                                                   + "achieve the desired time scale for all of the data. "
+                                                   + "In that case, consider removing the desired time "
+                                                   + "scale and performing an evaluation at the "
+                                                   + "existing time scale of the data, where possible.",
+                                                   dataSource,
+                                                   desiredPeriod,
+                                                   periodType,
+                                                   inputPeriod );
+
+            return ScaleValidationEvent.error( message );
         }
+
+        String message = MessageFormat.format( "The desired period of ''{0}'' is an integer multiple of the {1} of "
+                                               + "''{2}'' and is, therefore, acceptable.",
+                                               desiredPeriod,
+                                               periodType,
+                                               inputPeriod );
+
+        return ScaleValidationEvent.pass( message );
     }
 
     /**
-     * Throws an exception if the {@link TimeScale#getPeriod()} of the two periods match, and the 
-     * {@link TimeScale#getFunction()} do not match, except if the existingTimeScale is
-     * {@link TimeScaleFunction#UNKNOWN}, which is allowed (lenient). Cannot change the function without
-     * changing the period.
+     * <p>Checks whether the {@link TimeScale#getPeriod()} of the two periods match. Returns a validation event as 
+     * follows:
+     * 
+     * <ol>
+     * <li>If the {@link TimeScale#getPeriod()} match and the {@link TimeScale#getFunction()} do not match and the 
+     * the existingTimeScale is {@link TimeScaleFunction#UNKNOWN}, returns a {@link ScaleValidationEvent} that is 
+     * a {@link EventType#WARN}, which assumes, leniently, that the desiredTimeScale can be achieved.</li>
+     * <li>If the {@link TimeScale#getPeriod()} match and the {@link TimeScale#getFunction()} do not match and the 
+     * the existingTimeScale is not a {@link TimeScaleFunction#UNKNOWN}, returns a {@link ScaleValidationEvent} that is 
+     * a {@link EventType#ERROR}.</li>
+     * <li>Otherwise, returns a {@link ScaleValidationEvent} that is a {@link EventType#PASS}.</li>
+     * </ol>
      * 
      * @param existingTimeScale the existing time scale
      * @param desiredTimeScale the desired time scale
+     * @param dataSource a data source identifier to help clarify the validation mesage
      * @param context some optional context information to clarify warnings 
-     * @throws RescalingException if the periods match and the functions differ
+     * @returns a validation event
      */
 
-    private static void throwExceptionIfPeriodsMatchAndFunctionsDiffer( TimeScale existingTimeScale,
-                                                                        TimeScale desiredTimeScale,
-                                                                        String... context)
+    private static ScaleValidationEvent checkIfPeriodsMatchAndFunctionsDiffer( TimeScale existingTimeScale,
+                                                                               TimeScale desiredTimeScale,
+                                                                               String dataSource,
+                                                                               String context )
     {
         if ( existingTimeScale.getPeriod().equals( desiredTimeScale.getPeriod() )
              && existingTimeScale.getFunction() != desiredTimeScale.getFunction() )
@@ -262,141 +435,224 @@ public final class ScaleValidationHelper
                 {
                     String clarify = ScaleValidationHelper.clarifyWarning( context );
 
-                    LOGGER.warn( "The function associated with the desired time scale is "
-                                 + "a {}, but the function associated with the existing time "
-                                 + "scale{}is {}. Assuming that the latter is also a {}.",
-                                 desiredTimeScale.getFunction(),
-                                 clarify,
-                                 TimeScaleFunction.UNKNOWN,
-                                 desiredTimeScale.getFunction() );
+                    String message = MessageFormat.format( MESSAGE_START +
+                                                           "The function associated with the desired time scale is "
+                                                           + "a ''{1}'', but the function associated with the existing "
+                                                           + "time scale{2}is ''{3}''. Assuming that the latter is also "
+                                                           + "a ''{4}''.",
+                                                           dataSource,
+                                                           desiredTimeScale.getFunction(),
+                                                           clarify,
+                                                           TimeScaleFunction.UNKNOWN,
+                                                           desiredTimeScale.getFunction() );
+
+                    return ScaleValidationEvent.warn( message );
                 }
             }
             else
             {
-                throw new RescalingException( "The periods associated with the existing and desired "
-                                              + "time scales are the same, but the time scale functions "
-                                              + "are different ["
-                                              + existingTimeScale.getFunction()
-                                              + ", "
-                                              + desiredTimeScale.getFunction()
-                                              + "]. The function cannot be "
-                                              + "changed without changing the period." );
+                String message = MessageFormat.format( MESSAGE_START +
+                                                       "The period associated with the existing and desired "
+                                                       + "time scales is ''{1}'', but the time scale function "
+                                                       + "associated with the existing time scale is ''{2}'', which "
+                                                       + "differs from the function associated with the desired time "
+                                                       + "scale, namely ''{3}''. This is not allowed. The function "
+                                                       + "cannot be changed without changing the period.",
+                                                       dataSource,
+                                                       existingTimeScale.getPeriod(),
+                                                       existingTimeScale.getFunction(),
+                                                       desiredTimeScale.getFunction() );
+
+                return ScaleValidationEvent.error( message );
             }
         }
+
+        String message =
+                MessageFormat.format( "No attempt was made to change the time scale functions without changing "
+                                      + "the period.",
+                                      existingTimeScale.getPeriod(),
+                                      desiredTimeScale.getPeriod(),
+                                      existingTimeScale.getFunction(),
+                                      desiredTimeScale.getFunction() );
+
+        return ScaleValidationEvent.pass( message );
     }
 
     /**
-     * Throws an exception when attempting to accumulate something an instantaneous value. 
-     * TODO: in principle, this might be supported in future, but involves both an integral
+     * <p>Checks whether attempting to accumulate a quantity that is instantaneous, which is not allowed. If so, returns
+     * a {@link ScaleValidationEvent} that is {@link EventType#ERROR}, otherwise {@link EventType#PASS}. 
+     * 
+     * <p>TODO: in principle, this might be supported in future, but involves both an integral
      * estimate and a change in units. For example, if the input is precipitation in mm/s
      * then the total might be estimated as the average over the interval, multiplied by 
      * the number of seconds.
      * 
      * @param existingFunction the existing function
      * @param desiredFunction the desired function
-     * @throws RescalingException if the desiredFunction is a {@link TimeScaleFunction#TOTAL} and 
-     *            the existingFunction {@link TimeScale#isInstantaneous()} returns <code>true</code> 
+     * @param dataSource a data source identifier to help clarify the validation mesage
+     * @return a validation event
      */
 
-    private static void throwExceptionIfAccumulatingInstantaneous( TimeScale existingScale,
-                                                                   TimeScaleFunction desiredFunction )
+    private static ScaleValidationEvent checkIfAccumulatingInstantaneous( TimeScale existingScale,
+                                                                          TimeScaleFunction desiredFunction,
+                                                                          String dataSource )
     {
         if ( existingScale.isInstantaneous() && desiredFunction == TimeScaleFunction.TOTAL )
         {
-            throw new RescalingException( "Cannot accumulate instantaneous values. Change the existing "
-                                          + "time scale or change the function associated with the desired "
-                                          + "time scale to something other than a '"
-                                          + TimeScaleFunction.TOTAL
-                                          + "'." );
+            String message = MessageFormat.format( MESSAGE_START
+                                                   + "Cannot accumulate instantaneous values. Change the existing "
+                                                   + "time scale or change the function associated with the desired "
+                                                   + "time scale to something other than a ''{1}''.",
+                                                   dataSource,
+                                                   TimeScaleFunction.TOTAL );
+
+            return ScaleValidationEvent.error( message );
         }
+
+        return ScaleValidationEvent.pass( "Not attempting to accumulate an instantaneous value." );
+
     }
 
     /**
-     * Throws an exception when attempting to accumulate something that is not already an accumulation.
+     * <p>Checks whether attempting to accumulate something that is not already an accumulation.
+     * 
+     * <ol>
+     * <li>If the desired function is a {@link TimeScaleFunction.TOTAL} and the existing function is a
+     * {@link TimeScaleFunction.UNKNOWN}, returns a {@link ScaleValidationEvent} that is 
+     * a {@link EventType#WARN}, which assumes, leniently, that the existing function is a 
+     * {@link TimeScaleFunction.TOTAL}.</li>
+     * <li>If the desired function is a {@link TimeScaleFunction.TOTAL} and the existing function is not
+     * {@link TimeScaleFunction.UNKNOWN}, returns a {@link ScaleValidationEvent} that is 
+     * a {@link EventType#ERROR}.</li>
+     * <li>Otherwise, returns a {@link ScaleValidationEvent} that is a {@link EventType#PASS}.</li>
+     * </ol>
      * 
      * @param existingFunction the existing function
      * @param desiredFunction the desired function
-     * @param context some optional context information to clarify warnings 
-     * @throws RescalingException if the desiredFunction is a {@link TimeScaleFunction#TOTAL} and the 
-     *            existingFunction is not a {@link TimeScaleFunction#TOTAL} or a {@link TimeScaleFunction#UNKNOWN}
+     * @param dataSource a data source identifier to help clarify the validation mesage
+     * @returns a validation event
      */
 
-    private static void throwExceptionIfAccumulatingNonAccumulations( TimeScaleFunction existingFunction,
-                                                                      TimeScaleFunction desiredFunction,
-                                                                      String... context )
+    private static ScaleValidationEvent checkIfAccumulatingNonAccumulation( TimeScaleFunction existingFunction,
+                                                                            TimeScaleFunction desiredFunction,
+                                                                            String dataSource )
     {
         if ( desiredFunction == TimeScaleFunction.TOTAL && existingFunction != TimeScaleFunction.TOTAL )
         {
             if ( existingFunction == TimeScaleFunction.UNKNOWN )
             {
-                String clarify = ScaleValidationHelper.clarifyWarning( context );
+                String clarify = ScaleValidationHelper.clarifyWarning( dataSource );
 
-                LOGGER.warn( "The function associated with the desired time scale is a {}, but "
-                             + "the function associated with the existing time scale{}is {}. Assuming "
-                             + "that the existing function is a {}.",
-                             TimeScaleFunction.TOTAL,
-                             clarify,
-                             TimeScaleFunction.UNKNOWN,
-                             TimeScaleFunction.TOTAL );
+                String message =
+                        MessageFormat.format( MESSAGE_START
+                                              + "The function associated with the desired time scale is a ''{1}'', but "
+                                              + "the function associated with the existing time scale{2}is ''{3}''. "
+                                              + "Assuming that the existing function is a ''{4}''.",
+                                              dataSource,
+                                              TimeScaleFunction.TOTAL,
+                                              clarify,
+                                              TimeScaleFunction.UNKNOWN,
+                                              TimeScaleFunction.TOTAL );
+
+                return ScaleValidationEvent.warn( message );
             }
             else
             {
-                throw new RescalingException( "Cannot accumulate values that are not already accumulations. The "
-                                              + "function associated with the existing time scale must be a '"
-                                              + TimeScaleFunction.TOTAL
-                                              + "', rather than a '"
-                                              + existingFunction
-                                              + "', or the function associated with the desired time scale must "
-                                              + "be changed." );
+                String message =
+                        MessageFormat.format( MESSAGE_START
+                                              + "Cannot accumulate values that are not already accumulations. The "
+                                              + "function associated with the existing time scale must be a ''{1}'', "
+                                              + "rather than a ''{2}'', or the function associated with the desired "
+                                              + "time scale must be changed.",
+                                              dataSource,
+                                              TimeScaleFunction.TOTAL,
+                                              existingFunction );
+
+                return ScaleValidationEvent.error( message );
             }
         }
+
+        String message = MessageFormat.format( "Did not detect an attempt to accumulate something that is not an "
+                                               + "accumulation. Found an existing function of ''{0}'', and a desired "
+                                               + "function of ''{1}''",
+                                               existingFunction,
+                                               desiredFunction );
+
+        return ScaleValidationEvent.pass( message );
     }
 
     /**
-     * Throws an exception if the time-step of the data exceeds the desired period and rescaling is required.
+     * Checks whether the time-step of the data exceeds the desired period and rescaling is required. If so, returns a
+     * {@link ScaleValidationEvent} that is {@link EventType#ERROR}, otherwise {@link EventType#PASS}. 
      *
      * @param desiredTimeScale the desired time scale
      * @param timeStep the data time-step
-     * @throws RescalingException if the timeStep exceeds the desiredPeriod
+     * @param dataSource a data source identifier to help clarify the validation mesage
+     * @return a validation event
      */
 
-    private static void
-            throwExceptionIfDataTimeStepExceedsDesiredPeriod( TimeScale desiredTimeScale,
-                                                              Duration timeStep )
+    private static ScaleValidationEvent checkIfDataTimeStepExceedsDesiredPeriod( TimeScale desiredTimeScale,
+                                                                                 Duration timeStep,
+                                                                                 String dataSource )
     {
         if ( timeStep.compareTo( desiredTimeScale.getPeriod() ) > 0 )
         {
-            throw new RescalingException( "Insufficient data for rescaling: the time-step of the data cannot be "
-                                          + "greater than the desired time scale when rescaling is required ["
-                                          + timeStep
-                                          + ","
-                                          + desiredTimeScale.getPeriod()
-                                          + "]." );
+            String message =
+                    MessageFormat.format( MESSAGE_START
+                                          + "Insufficient data for rescaling: The time-step of the data is ''{1}'' and "
+                                          + "the period associated with the desired time scale is ''{2}''. The "
+                                          + "time-step of the data cannot be greater than the desired time scale when "
+                                          + "rescaling is required.",
+                                          dataSource,
+                                          timeStep,
+                                          desiredTimeScale.getPeriod() );
+
+            return ScaleValidationEvent.error( message );
         }
+
+        String message = MessageFormat.format( "The desired time scale has a period of ''{0}'', which is greater "
+                                               + "than or equal to the data time-step of ''{1}''.",
+                                               desiredTimeScale.getPeriod(),
+                                               timeStep );
+
+        return ScaleValidationEvent.pass( message );
     }
 
     /**
-     * Throws an exception if the time-step of the data matches the period associated with the desiredTimeScale, and 
-     * rescaling is required. This is not allowed, because there is insufficient data for rescaling.
+     * Checks whether the time-step of the data matches the period associated with the desiredTimeScale and rescaling 
+     * is required. If so, returns a {@link ScaleValidationEvent} that is {@link EventType#ERROR}, 
+     * otherwise {@link EventType#PASS}. 
      *
      * @param desiredTimeScale the desired time scale
      * @param timeStep the data time-step
+     * @param dataSource a data source identifier to help clarify the validation mesage
      * @throws RescalingException if the timeStep matches the desired period and rescaling is required
      */
 
-    private static void
-            throwExceptionIfDataTimeStepMatchesDesiredPeriod( TimeScale desiredTimeScale,
-                                                              Duration timeStep )
+    private static ScaleValidationEvent checkIfDataTimeStepMatchesDesiredPeriod( TimeScale desiredTimeScale,
+                                                                                 Duration timeStep,
+                                                                                 String dataSource )
     {
         if ( timeStep.equals( desiredTimeScale.getPeriod() ) )
         {
-            throw new RescalingException( "Insufficient data for rescaling: the period associated with the desired "
-                                          + "time scale matches the time-step of the data ("
-                                          + timeStep
-                                          + ")." );
+            String message = MessageFormat.format( MESSAGE_START
+                                                   + "Insufficient data for rescaling: the period associated with the "
+                                                   + "desired time scale matches the time-step of the data ({1}).",
+                                                   dataSource,
+                                                   timeStep );
+
+            return ScaleValidationEvent.error( message );
         }
+
+        String message =
+                MessageFormat.format( "The desired time scale has a period of ''{0}'', which is not equal to the "
+                                      + "data time-step of '{1}'.",
+                                      desiredTimeScale.getPeriod(),
+                                      timeStep );
+
+        return ScaleValidationEvent.pass( message );
     }
-    
+
     /**
      * Clarifies a warning message with some context information, otherwise returns a single-space string.
      * 
@@ -407,7 +663,7 @@ public final class ScaleValidationHelper
     private static String clarifyWarning( String... context )
     {
         String returnMe = " ";
-        
+
         if ( Objects.nonNull( context ) && context.length > 0 )
         {
             StringJoiner joiner = new StringJoiner( " " );
