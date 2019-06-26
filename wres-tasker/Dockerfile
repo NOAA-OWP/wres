@@ -11,6 +11,7 @@ RUN yum install -y \
     device-mapper-1.02.149-10.el7_6.7 \
     device-mapper-event-libs-1.02.149-10.el7_6.7 \
     device-mapper-libs-1.02.149-10.el7_6.7 \
+    glib2-2.56.1-4.el7_6 \
     glibc-2.17-260.el7_6.5 \
     glibc-common-2.17-260.el7_6.5 \
     krb5-libs-1.15.1-37.el7_6 \
@@ -28,8 +29,8 @@ RUN yum install -y \
     nss-util-3.36.0-1.1.el7_6 \
     openldap-2.4.44-21.el7_6 \
     openssl-libs-1.0.2k-16.el7_6.1 \
-    python-2.7.5-77.el7_6 \
-    python-libs-2.7.5-77.el7_6 \
+    python-2.7.5-80.el7_6 \
+    python-libs-2.7.5-80.el7_6 \
     shadow-utils-4.1.5.1-25.el7_6.1 \
     systemd-219-62.el7_6.6 \
     systemd-libs-219-62.el7_6.6 \
