@@ -23,7 +23,7 @@ buildscript
 plugins
 {
     // Static analysis tool sonarqube client, compatible with sonarqube 7.5:
-    id 'org.sonarqube' version '2.6.2'
+    id 'org.sonarqube' version '2.7.1'
 
     //id 'com.github.jacobono.jaxb' version '1.3.5'
     // Above is unmaintained, less gradle-y, below fork has several improvements
@@ -36,7 +36,7 @@ plugins
     //id 'org.uulib.gradle.markdown' version '0.0.1'
 
     // To generate de/serialization classes for message bodies
-    id 'com.google.protobuf' version '0.8.8'
+    id 'com.google.protobuf' version '0.8.9'
 
     // To create trusted certificate files (.jks aka cacerts) from dir of .pem
     // (Not working: not friendly to our directory structure nor submodules)
@@ -159,7 +159,7 @@ project(':wres-util')
 
         compile 'org.slf4j:slf4j-api:1.8.0-beta4'
 
-        compile 'com.google.guava:guava:27.1-jre'
+        compile 'com.google.guava:guava:28.0-jre'
         compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 
         compile('edu.ucar:cdm:5.0.0-beta6')
@@ -168,15 +168,20 @@ project(':wres-util')
             exclude group: 'commons-logging', module: 'commons-logging'
         }
 
+        // Update the org.apache.httpcomponents modules depended upon by cdm
+        compile 'org.apache.httpcomponents:httpclient:4.5.9'
+        compile 'org.apache.httpcomponents:httpcore:4.4.11'
+        compile 'org.apache.httpcomponents:httpmime:4.5.9'
+
         runtime 'ch.qos.logback:logback-classic:1.3.0-alpha4'
 
         // Because cdm uses apache commons logging, bridge to slf4j
         runtime 'org.slf4j:jcl-over-slf4j:1.8.0-beta4'
 
-        testCompile 'junit:junit:4.12'
+        testCompile 'junit:junit:4.13-beta-3'
 
         // Mocking help
-        testCompile 'org.mockito:mockito-core:2.27.0'
+        testCompile 'org.mockito:mockito-core:2.28.2'
 
         // super-duper mocking help (mocking static, private methods)
         testCompile 'org.powermock:powermock-api-mockito2:2.0.2'
@@ -193,10 +198,10 @@ project(':wres-system')
         compile project(':wres-util')
         compile 'org.slf4j:slf4j-api:1.8.0-beta4'
 
-        compile 'com.google.guava:guava:27.1-jre'
+        compile 'com.google.guava:guava:28.0-jre'
 
         // to use native postgres copy, need this on compile, otherwise runtime
-        compile 'org.postgresql:postgresql:42.2.5'
+        compile 'org.postgresql:postgresql:42.2.6'
         compile group: 'org.liquibase', name: 'liquibase-core', version: '3.6.3'
 
         // connection pooling:
@@ -207,12 +212,12 @@ project(':wres-system')
         compile 'org.slf4j:jul-to-slf4j:1.8.0-beta4'
 
         //JB @ 02/16/17
-        testCompile group: 'com.google.guava', name: 'guava-testlib', version: '27.1-jre'
+        testCompile group: 'com.google.guava', name: 'guava-testlib', version: '28.0-jre'
 
-        testCompile 'junit:junit:4.12'
+        testCompile 'junit:junit:4.13-beta-3'
 
         // Mocking help
-        testCompile 'org.mockito:mockito-core:2.27.0'
+        testCompile 'org.mockito:mockito-core:2.28.2'
 
         // super-duper mocking help (mocking static, private methods)
         testCompile 'org.powermock:powermock-api-mockito2:2.0.2'
@@ -229,7 +234,7 @@ project(':wres-datamodel')
         compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
         compile project(':wres-config')
 
-        testCompile 'junit:junit:4.12'
+        testCompile 'junit:junit:4.13-beta-3'
 
         testCompile files('../libs/external/EVS.jar')
     }
@@ -248,10 +253,10 @@ project(':wres-io')
 
         compile 'org.slf4j:slf4j-api:1.8.0-beta4'
         compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
-        compile 'org.glassfish.jersey.core:jersey-common:2.28'
-        compile 'org.glassfish.jersey.core:jersey-client:2.28'
-        compile 'org.glassfish.jersey.inject:jersey-hk2:2.28'
-        compile 'org.glassfish.jersey.media:jersey-media-json-jackson:2.28'
+        compile 'org.glassfish.jersey.core:jersey-common:2.29'
+        compile 'org.glassfish.jersey.core:jersey-client:2.29'
+        compile 'org.glassfish.jersey.inject:jersey-hk2:2.29'
+        compile 'org.glassfish.jersey.media:jersey-media-json-jackson:2.29'
 
         compile('edu.ucar:cdm:5.0.0-beta6')
         {
@@ -264,14 +269,14 @@ project(':wres-io')
 
         compile group: 'org.liquibase', name: 'liquibase-core', version: '3.6.3'
 
-        compile( group: 'com.amazonaws', name: 'aws-java-sdk-s3', version: '1.11.370')
+        compile( group: 'com.amazonaws', name: 'aws-java-sdk-s3', version: '1.11.580')
         {
             // Because we use slf4j, not jcl:
             exclude group: 'commons-logging', module: 'commons-logging'
         }
 
         // to use native postgres copy, need this on compile, otherwise runtime
-        compile 'org.postgresql:postgresql:42.2.5'
+        compile 'org.postgresql:postgresql:42.2.6'
 
         // connection pooling:
         compile 'com.mchange:c3p0:0.9.5.4'
@@ -292,19 +297,19 @@ project(':wres-io')
         runtime 'org.slf4j:jcl-over-slf4j:1.8.0-beta4'
 
         //JB @ 02/16/17
-        testCompile group: 'com.google.guava', name: 'guava-testlib', version: '27.1-jre'
+        testCompile group: 'com.google.guava', name: 'guava-testlib', version: '28.0-jre'
 
-        testCompile 'junit:junit:4.12'
+        testCompile 'junit:junit:4.13-beta-3'
 
         // Mocking help
-        testCompile 'org.mockito:mockito-core:2.27.0'
+        testCompile 'org.mockito:mockito-core:2.28.2'
 
         // super-duper mocking help (mocking static, private methods)
         testCompile 'org.powermock:powermock-api-mockito2:2.0.2'
         testCompile 'org.powermock:powermock-module-junit4:2.0.2'
 
         // Use mockserver as a mock server for mock API responses
-        testCompile 'org.mock-server:mockserver-netty:5.5.1'
+        testCompile 'org.mock-server:mockserver-netty:5.6.0'
 
         // Use H2 for truly embedded SQL db
         testCompile 'com.h2database:h2:1.4.199'
@@ -327,8 +332,8 @@ project(':wres-metrics')
         compile 'org.slf4j:slf4j-api:1.8.0-beta4'
 
         testCompile project (':wres-datamodel')
-        testCompile 'junit:junit:4.12'
-        testCompile 'org.mockito:mockito-core:2.27.0'
+        testCompile 'junit:junit:4.13-beta-3'
+        testCompile 'org.mockito:mockito-core:2.28.2'
     }
 }
 
@@ -342,7 +347,7 @@ project(':wres-vis')
 
         compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.9'
         compile group: 'com.sun.xml.fastinfoset', name: 'FastInfoset', version: '1.2.16'
-        compile 'com.google.guava:guava:27.1-jre'
+        compile 'com.google.guava:guava:28.0-jre'
         compile 'org.slf4j:slf4j-api:1.8.0-beta4'
         runtime 'ch.qos.logback:logback-classic:1.3.0-alpha4'
 
@@ -355,7 +360,7 @@ project(':wres-vis')
 
         testCompile project (':wres-datamodel')
         testCompile files('../libs/external/ohdcommonchps.jar')
-        testCompile 'junit:junit:4.12'
+        testCompile 'junit:junit:4.13-beta-3'
         //Must load jfreechart explicitly before EVS.jar to avoid conflicting versions
         testCompile files('../libs/external/jfreechart-1.0.9.jar')
         testCompile files('../libs/external/EVS.jar')
@@ -395,7 +400,7 @@ project(':wres-config')
 
         runtime 'org.eclipse.persistence:org.eclipse.persistence.moxy:2.7.4'
 
-        testCompile 'junit:junit:4.12'
+        testCompile 'junit:junit:4.13-beta-3'
 
         // May help in future with #37380, may need to modify sources
         // available at https://git.apache.org/cxf-xjc-utils.git in dv dir:
@@ -490,7 +495,7 @@ project(':wres-grid')
         // Because cdm uses apache commons logging, bridge to slf4j
         runtime 'org.slf4j:jcl-over-slf4j:1.8.0-beta4'
 
-        testCompile 'junit:junit:4.12'
+        testCompile 'junit:junit:4.13-beta-3'
     }
 }
 
@@ -505,7 +510,7 @@ project(':wres-messages')
         // Automagically download and use the correct protobuf compiler
         protoc
         {
-            artifact = 'com.google.protobuf:protoc:3.5.1-1'
+            artifact = 'com.google.protobuf:protoc:3.8.0'
         }
         // So all IDEs/editors can see generated files, use actual src dir:
         generatedFilesBaseDir = "${generatedDir}"
@@ -542,9 +547,9 @@ project(':wres-messages')
     dependencies
     {
         compile 'org.slf4j:slf4j-api:1.8.0-beta4'
-        compile 'com.google.protobuf:protobuf-java:3.5.1'
+        compile 'com.google.protobuf:protobuf-java:3.8.0'
 
-        testCompile 'junit:junit:4.12'
+        testCompile 'junit:junit:4.13-beta-3'
     }
 }
 
@@ -603,40 +608,40 @@ project(':wres-tasker')
         compile 'jakarta.xml.bind:jakarta.xml.bind-api:2.3.2'
 
         // Server library to run a web server:
-        compile 'org.eclipse.jetty:jetty-server:9.4.18.v20190429'
+        compile 'org.eclipse.jetty:jetty-server:9.4.19.v20190610'
 
         // Servlet container library to run a web application with:
-        compile 'org.eclipse.jetty:jetty-webapp:9.4.18.v20190429'
+        compile 'org.eclipse.jetty:jetty-webapp:9.4.19.v20190610'
 
         // Needed at compile-time to reference ServletContainer.class and
         // DefaultServlet.class
-        compile 'org.glassfish.jersey.containers:jersey-container-servlet-core:2.28'
+        compile 'org.glassfish.jersey.containers:jersey-container-servlet-core:2.29'
         // Update the jetty-continuation depended upon by above jersey dep
-        compile 'org.eclipse.jetty:jetty-continuation:9.4.18.v20190429'
+        compile 'org.eclipse.jetty:jetty-continuation:9.4.19.v20190610'
 
         compile 'com.github.ben-manes.caffeine:caffeine:2.7.0'
 
         // To accurately detect mime types of files.
-        compile 'org.apache.tika:tika-core:1.20'
+        compile 'org.apache.tika:tika-core:1.21'
 
         runtime 'ch.qos.logback:logback-classic:1.3.0-alpha4'
-        runtime 'org.glassfish.jersey.core:jersey-server:2.28'
+        runtime 'org.glassfish.jersey.core:jersey-server:2.29'
 
         // Needed to prevent "java.lang.IllegalStateException: InjectionManagerFactory not found."
         // Thanks, https://luohuahuang.org/2017/11/13/jersey-illegalstateexception-injectionmanagerfactory/
-        runtime 'org.glassfish.jersey.inject:jersey-hk2:2.28'
+        runtime 'org.glassfish.jersey.inject:jersey-hk2:2.29'
 
-        testCompile 'junit:junit:4.12'
+        testCompile 'junit:junit:4.13-beta-3'
 
         // To generate fake certificates and keys for testing
         testCompile 'org.bouncycastle:bcpkix-jdk15on:1.61'
         testCompile 'org.bouncycastle:bcprov-jdk15on:1.61'
 
         // To test against an embedded AMQP broker
-        testCompile 'org.apache.qpid:qpid-broker-core:7.1.2'
+        testCompile 'org.apache.qpid:qpid-broker-core:7.1.3'
         // Provides support for both 0-8 and 0-9-1
-        testCompile 'org.apache.qpid:qpid-broker-plugins-amqp-0-8-protocol:7.1.2'
-        testCompile 'org.apache.qpid:qpid-broker-plugins-memory-store:7.1.2'
+        testCompile 'org.apache.qpid:qpid-broker-plugins-amqp-0-8-protocol:7.1.3'
+        testCompile 'org.apache.qpid:qpid-broker-plugins-memory-store:7.1.3'
     }
 
     apply plugin: 'application'
@@ -813,26 +818,26 @@ dependencies
 
     compile 'javax.ws.rs:javax.ws.rs-api:2.1'
     compile 'javax.annotation:javax.annotation-api:1.3.2'
-    compile 'org.eclipse.jetty:jetty-server:9.4.18.v20190429'
-    compile 'org.eclipse.jetty:jetty-webapp:9.4.18.v20190429'
-    compile 'org.glassfish.jersey.containers:jersey-container-servlet-core:2.28'
+    compile 'org.eclipse.jetty:jetty-server:9.4.19.v20190610'
+    compile 'org.eclipse.jetty:jetty-webapp:9.4.19.v20190610'
+    compile 'org.glassfish.jersey.containers:jersey-container-servlet-core:2.29'
     // Update the jetty-continuation that above jersey dep depends on
-    compile 'org.eclipse.jetty:jetty-continuation:9.4.18.v20190429'
+    compile 'org.eclipse.jetty:jetty-continuation:9.4.19.v20190610'
 
     compile 'com.github.ben-manes.caffeine:caffeine:2.7.0'
 
-    runtime 'org.glassfish.jersey.core:jersey-server:2.28'
-    runtime 'org.glassfish.jersey.containers:jersey-container-jetty-http:2.28'
-    runtime 'org.glassfish.jersey.inject:jersey-hk2:2.28'
+    runtime 'org.glassfish.jersey.core:jersey-server:2.29'
+    runtime 'org.glassfish.jersey.containers:jersey-container-jetty-http:2.29'
+    runtime 'org.glassfish.jersey.inject:jersey-hk2:2.29'
 
     runtime 'ch.qos.logback:logback-classic:1.3.0-alpha4'
 
 
     testCompile group: 'commons-io', name: 'commons-io', version: '2.6'
-    testCompile group: 'com.google.guava', name: 'guava-testlib', version: '27.1-jre'
-    testCompile group: 'com.google.guava', name: 'guava', version: '27.1-jre'
-    testCompile 'junit:junit:4.12'
-    testCompile 'org.mockito:mockito-core:2.27.0'
+    testCompile group: 'com.google.guava', name: 'guava-testlib', version: '28.0-jre'
+    testCompile group: 'com.google.guava', name: 'guava', version: '28.0-jre'
+    testCompile 'junit:junit:4.13-beta-3'
+    testCompile 'org.mockito:mockito-core:2.28.2'
 }
 
 sourceSets
