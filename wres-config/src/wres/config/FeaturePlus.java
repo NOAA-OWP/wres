@@ -1,9 +1,7 @@
 package wres.config;
 
-import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Objects;
 import java.util.SortedMap;
 import java.util.StringJoiner;
