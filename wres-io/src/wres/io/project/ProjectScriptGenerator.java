@@ -235,7 +235,7 @@ final class ProjectScriptGenerator
                     addedParameter = true;
                 }
 
-                script.add(" gage_id = '", feature.getGageId());
+                script.add(" gage_id = '", feature.getGageId(), "'" );
             }
 
             if (Strings.hasValue(feature.getState()))
@@ -479,7 +479,7 @@ final class ProjectScriptGenerator
                     script.add( " AND" );
                 }
 
-                script.add( " gage_id = '", feature.getGageId() );
+                script.add( " gage_id = '", feature.getGageId(), "'" );
             }
 
             if (feature.getPolygon() != null)
