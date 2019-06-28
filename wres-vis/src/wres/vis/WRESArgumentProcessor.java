@@ -4,6 +4,8 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.SortedSet;
 
@@ -13,12 +15,13 @@ import org.slf4j.LoggerFactory;
 import ohd.hseb.hefs.utils.arguments.Argument;
 import ohd.hseb.hefs.utils.arguments.DefaultArgumentsProcessor;
 import ohd.hseb.hefs.utils.plugins.UniqueGenericParameterList;
-import ohd.hseb.util.misc.HString;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.datamodel.Slicer;
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.SampleMetadata;
+import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.Statistic;
@@ -133,11 +136,25 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
                                                        + meta.getSampleMetadata().getThresholds() );
         }
 
-        addArgument( "probabilities",
-                     HString.buildStringFromArray( displayPlotInput.getData().get( 0 ).getProbabilities().getDoubles(),
-                                                   ", " )
-                            .replaceAll( "0.0,", "min," )
-                            .replaceAll( "1.0", "max" ) );
+
+        // See #65503
+        String probabilities = "none defined";
+        if( ! displayPlotInput.getData().isEmpty() )
+        {
+             List<BoxPlotStatistic> stats = displayPlotInput.getData();
+             BoxPlotStatistic first = stats.get( 0 );
+             VectorOfDoubles probsWrapped = first.getProbabilities();
+             double[] probs = probsWrapped.getDoubles();
+             probabilities = Arrays.toString( probs );
+             
+             // Pretty print
+             probabilities = probabilities.replaceAll( "0.0,", "min," );
+             probabilities = probabilities.replaceAll( "1.0", "max" );
+             probabilities = probabilities.replace( "[", "" );
+             probabilities = probabilities.replace( "]", "" );             
+        }
+        
+        this.addArgument( "probabilities", probabilities );
 
         initializeFunctionInformation();
     }

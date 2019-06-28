@@ -6,7 +6,6 @@ import java.time.Duration;
 import java.time.MonthDay;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -24,7 +23,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -642,9 +640,9 @@ public class Project
      */
 
     private Set<ScaleValidationEvent> validateTimeScale( Set<Pair<TimeScale, Duration>> existingScalesAndSteps,
-                                                                TimeScale desiredTimeScale,
-                                                                DataSourceConfig dataSourceConfig,
-                                                                LeftOrRightOrBaseline dataType )
+                                                         TimeScale desiredTimeScale,
+                                                         DataSourceConfig dataSourceConfig,
+                                                         LeftOrRightOrBaseline dataType )
     {
         Objects.requireNonNull( existingScalesAndSteps );
 
@@ -718,9 +716,9 @@ public class Project
                                                                                       sourceType );
             }
 
-            existingTimeScales.addAll( this.getTimeScaleAndTimeStep( scripter,
-                                                                     dataSourceConfig,
-                                                                     sourceType ) );
+            existingTimeScales.addAll( this.getTimeScaleAndTimeSteps( scripter,
+                                                                      dataSourceConfig,
+                                                                      sourceType ) );
         }
         // Non-gridded types
         else
@@ -734,7 +732,7 @@ public class Project
                                                                                             this.getMinimumLead(),
                                                                                             this.getMaximumLead(),
                                                                                             sourceType );
-                existingTimeScales.addAll( this.getTimeScaleAndTimeStep( forecast, dataSourceConfig, sourceType ) );
+                existingTimeScales.addAll( this.getTimeScaleAndTimeSteps( forecast, dataSourceConfig, sourceType ) );
 
                 // Check the wres.Observation instead
                 if ( existingTimeScales.isEmpty() )
@@ -742,7 +740,9 @@ public class Project
                     DataScripter observed = ProjectScriptGenerator.createObservedTimeRetriever( this.getId(),
                                                                                                 this.getFeatures(),
                                                                                                 sourceType );
-                    existingTimeScales.addAll( this.getTimeScaleAndTimeStep( observed, dataSourceConfig, sourceType ) );
+                    existingTimeScales.addAll( this.getTimeScaleAndTimeSteps( observed,
+                                                                              dataSourceConfig,
+                                                                              sourceType ) );
                 }
             }
             // Currently, left sources are always in wres.Observation
@@ -752,7 +752,7 @@ public class Project
                                                                                             this.getFeatures(),
                                                                                             sourceType );
 
-                existingTimeScales.addAll( this.getTimeScaleAndTimeStep( observed, dataSourceConfig, sourceType ) );
+                existingTimeScales.addAll( this.getTimeScaleAndTimeSteps( observed, dataSourceConfig, sourceType ) );
             }
 
         }
@@ -792,11 +792,10 @@ public class Project
      * @throws NullPointerException if either input is null
      */
 
-    private Set<Pair<TimeScale, Duration>>
-            getTimeScaleAndTimeStep( DataScripter data,
-                                     DataSourceConfig dataSourceConfig,
-                                     LeftOrRightOrBaseline sourceType )
-                    throws SQLException, CalculationException
+    private Set<Pair<TimeScale, Duration>> getTimeScaleAndTimeSteps( DataScripter data,
+                                                                     DataSourceConfig dataSourceConfig,
+                                                                     LeftOrRightOrBaseline sourceType )
+            throws SQLException, CalculationException
     {
         Objects.requireNonNull( data );
 
@@ -3020,7 +3019,7 @@ public class Project
          * The time scale and time step information consumed.
          */
 
-        private final Set<Pair<TimeScale, Duration>> existingTimeScales = new HashSet<>();
+        private final Set<Pair<TimeScale, Duration>> existingScalesAndSteps = new HashSet<>();
 
         /**
          * Is <code>true</code> if one or more consumptions generated a warning for a null period.
@@ -3179,7 +3178,7 @@ public class Project
             }
 
             // Store, with possibly null time scale information
-            this.existingTimeScales.add( Pair.of( timeScale, timeStep ) );
+            this.existingScalesAndSteps.add( Pair.of( timeScale, timeStep ) );
 
         }
 
@@ -3191,7 +3190,7 @@ public class Project
 
         private Set<Pair<TimeScale, Duration>> getTimeScalesAndSteps()
         {
-            return java.util.Collections.unmodifiableSet( this.existingTimeScales );
+            return java.util.Collections.unmodifiableSet( this.existingScalesAndSteps );
         }
 
         /**
@@ -3242,7 +3241,7 @@ public class Project
                              this.sourceType );
             }
 
-            // Warn when one or more instances had no time scale information
+            // Warn when one or more instances had a time-step of zero
             if ( this.warnOnZeroTimeStep.get() )
             {
                 LOGGER.warn( "Found a zero time step for one or more {} sources. "
