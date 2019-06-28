@@ -61,6 +61,8 @@ public class ReadValueManager
     private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
     private static final String MD5SUM_OF_EMPTY_STRING = "68b329da9893e34099c7d8ad5cb9c940";
 
+    private static final Duration MAX_RETRY_DURATION = Duration.ofSeconds( 30 );
+
     private final ProjectConfig projectConfig;
     private final DataSource dataSource;
     private final DatabaseLockManager lockManager;
@@ -250,6 +252,7 @@ public class ReadValueManager
             if ( dataSaved )
             {
                 completer.complete( this.latches );
+                LOGGER.info( "Successfully ingested data from {}", location );
             }
             else if ( this.latches.isEmpty() )
             {
@@ -521,20 +524,51 @@ public class ReadValueManager
 
             int httpStatus = httpResponse.statusCode();
 
-            if ( httpStatus >= 400 && httpStatus < 500 )
+            boolean retry = true;
+            Instant start = Instant.now();
+            long sleepMillis = 1000;
+
+            while ( retry )
             {
+                if ( ( httpStatus >= 200 && httpStatus < 300 )
+                    || ( httpStatus >= 400 && httpStatus < 500 ) )
+                {
+                    retry = false;
+                }
+                else
+                {
+                    LOGGER.warn( "Retrying {} in a bit due to http status {}.",
+                                 uri, httpStatus );
+                    Thread.sleep( sleepMillis );
+                    httpResponse = HTTP_CLIENT.send( request,
+                                                     HttpResponse.BodyHandlers.ofInputStream() );
+                    httpStatus = httpResponse.statusCode();
+                    Instant now = Instant.now();
+                    retry = start.plus( MAX_RETRY_DURATION )
+                                 .isAfter( now );
+
+                    // Exponential backoff to be nice to the server.
+                    sleepMillis *= 2;
+                }
+            }
+
+            if ( httpStatus >= 200 && httpStatus < 300 )
+            {
+                LOGGER.debug( "Successfully got data from {}", uri );
+                return Pair.of( httpStatus, httpResponse.body() );
+            }
+            else if ( httpStatus >= 400 && httpStatus < 500 )
+            {
+                LOGGER.debug( "Got empty/not-found data from {}", uri );
                 return Pair.of( httpStatus, InputStream.nullInputStream() );
             }
-            else if ( httpStatus >= 500 )
+            else
             {
                 throw new IngestException( "Failed to get data from "
                                            + uri
                                            + " due to status code "
                                            + httpStatus );
             }
-
-            LOGGER.debug( "Successfully retrieved data from {}", uri );
-            return Pair.of( httpStatus, httpResponse.body() );
         }
         catch ( InterruptedException ie )
         {

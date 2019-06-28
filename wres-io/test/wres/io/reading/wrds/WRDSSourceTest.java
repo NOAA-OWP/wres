@@ -9,15 +9,15 @@ import java.util.Set;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockserver.integration.ClientAndServer;
+import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.model.HttpStatusCode;
+import org.mockserver.verify.VerificationTimes;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
@@ -25,6 +25,7 @@ import org.powermock.modules.junit4.PowerMockRunner;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -3338,8 +3339,6 @@ public class WRDSSourceTest
     private static final int FAKE_FEATURE_ID = 5351;
     private static final int FAKE_TIMESERIES_ID = 5507;
 
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
 
     @Mock
     DatabaseLockManager fakeLockManager;
@@ -3543,7 +3542,141 @@ public class WRDSSourceTest
 
 
     @Test
-    public void readAndSaveInvalidWrdsTimeSeries() throws IOException
+    public void readAndSaveValidWrdsTimeSeriesAfterTwo504ResponsesFromGatewayFirst() throws IOException
+    {
+        // Return a 504 for the first two requests, simulating gateway timeout
+        // on the WRDS side.
+        WRDSSourceTest.mockServer.when( HttpRequest.request()
+                                                   .withPath( VALID_AHPS_PATH )
+                                                   .withMethod( "GET" ),
+                                        Times.exactly( 2 ) )
+                                 .respond( org.mockserver.model.HttpResponse.response()
+                                                                            .withStatusCode( 504 ) );
+
+        // On the third time, return the body successfully.
+        WRDSSourceTest.mockServer.when( HttpRequest.request()
+                                                   .withPath( VALID_AHPS_PATH )
+                                                   .withMethod( "GET" ) )
+                                 .respond( org.mockserver.model.HttpResponse.response( VALID_AHPS_BODY ) );
+
+        URI fakeAhpsUri = URI.create( "http://localhost:"
+                                      + WRDSSourceTest.mockServer.getLocalPort()
+                                      + VALID_AHPS_PATH
+                                      + "?" + AHPS_QUERY_PARAMS
+        );
+
+        List<DataSourceConfig.Source> sourceList = new ArrayList<>( 1 );
+        Format format = Format.WRDS;
+        DataSourceConfig.Source confSource = new DataSourceConfig.Source( fakeAhpsUri,
+                                                                          format,
+                                                                          null,
+                                                                          null,
+                                                                          null,
+                                                                          null,
+                                                                          null,
+                                                                          null,
+                                                                          null );
+
+        sourceList.add( confSource );
+
+        DataSourceConfig.Variable configVariable = new DataSourceConfig.Variable( "QR", null, "CFS" );
+        DataSourceConfig config = new DataSourceConfig( DatasourceType.SINGLE_VALUED_FORECASTS,
+                                                        sourceList,
+                                                        configVariable,
+                                                        null,
+                                                        null,
+                                                        null,
+                                                        null,
+                                                        null,
+                                                        null);
+
+        ProjectConfig.Inputs inputs = new ProjectConfig.Inputs( null,
+                                                                config,
+                                                                null );
+
+        Feature featureConfig = new Feature( null,
+                                             null,
+                                             null,
+                                             null,
+                                             null,
+                                             "DRRC2",
+                                             null,
+                                             null,
+                                             null,
+                                             null,
+                                             null,
+                                             null,
+                                             null );
+
+        List<Feature> features = new ArrayList<>( 1 );
+        features.add( featureConfig );
+        PairConfig pairConfig = new PairConfig( "CMS",
+                                                features,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null );
+
+        ProjectConfig projectConfig = new ProjectConfig( inputs,
+                                                         pairConfig,
+                                                         null,
+                                                         null,
+                                                         null,
+                                                         null );
+
+        DataSource dataSource = DataSource.of( confSource,
+                                               config,
+                                               Set.of( LeftOrRightOrBaseline.LEFT,
+                                                       LeftOrRightOrBaseline.RIGHT ),
+                                               fakeAhpsUri );
+
+        // Spy seems needed to make new instances within the classes under test.
+        // See https://github.com/mockito/mockito/wiki/Mocking-Object-Creation
+        WRDSSource wrdsSource = Mockito.spy(
+                new WRDSSource( projectConfig,
+                                dataSource,
+                                this.fakeLockManager ) );
+
+        ReadValueManager readValueManager = Mockito.spy(
+                new ReadValueManager( projectConfig,
+                                      dataSource,
+                                      this.fakeLockManager ) );
+        Mockito.doReturn( this.mockSourceCompleter )
+               .when( readValueManager )
+               .createSourceCompleter( 0, this.fakeLockManager );
+
+        Mockito.doReturn( readValueManager )
+               .when( wrdsSource )
+               .createReadValueManager( projectConfig,
+                                        dataSource,
+                                        this.fakeLockManager );
+
+        List<IngestResult> ingestResults = wrdsSource.save();
+
+        WRDSSourceTest.mockServer.verify( request().withMethod( "GET" )
+                                                   .withPath( VALID_AHPS_PATH ),
+                                          VerificationTimes.exactly( 3 ) );
+
+        assertFalse( "Expected single result to have been 'ingested' during the test.",
+                     ingestResults.get( 0 )
+                                  .wasFoundAlready() );
+        assertEquals( "Expected ingest to happen for 'right'.",
+                      LeftOrRightOrBaseline.RIGHT, ingestResults.get( 0 )
+                                                                .getLeftOrRightOrBaseline() );
+
+        WRDSSourceTest.mockServer.reset();
+    }
+
+
+    @Test
+    public void readAndSaveInvalidWrdsTimeSeries()
     {
         WRDSSourceTest.mockServer.when( HttpRequest.request()
                                                    .withPath( INVALID_AHPS_PATH )
@@ -3631,8 +3764,7 @@ public class WRDSSourceTest
         WRDSSource wrdsSource = new WRDSSource( projectConfig, dataSource, this.fakeLockManager );
 
         // Expect a PreIngestException during attempt to save invalid data
-        exception.expect( PreIngestException.class );
-        wrdsSource.save();
+        assertThrows( PreIngestException.class, wrdsSource::save );
 
         WRDSSourceTest.mockServer.verify( request().withMethod( "GET" )
                                                    .withPath( INVALID_AHPS_PATH ) );
