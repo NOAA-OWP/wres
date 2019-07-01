@@ -5,8 +5,6 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ExecutionException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ucar.ma2.InvalidRangeException;
@@ -301,9 +299,7 @@ class GridManager
             LOGGER.trace("Ingesting {}...", this.metadata);
             this.removePreexistingCoordinates();
 
-            this.addCopyTasks();
-
-            this.finishCopyTasks();
+            this.ingestCoordinates();
 
             this.metadata.completeLoad();
 
@@ -323,8 +319,7 @@ class GridManager
             clearScript.execute();
         }
 
-        @SuppressWarnings( "unchecked" )
-        private void addCopyTasks() throws IOException, SQLException
+        private void ingestCoordinates() throws IOException, SQLException
         {
             DataBuilder builder = DataBuilder.with(
                     "gridprojection_id",
@@ -357,31 +352,34 @@ class GridManager
                         this.addY(builder, yCoordinates, yIndex);
 
                         builder.set( "geographic_coordinate", "(" + point.getLongitude() + "," + point.getLatitude() + ")");
+                        final int MAX_COPIES = SystemSettings.getMaximumCopies();
 
-                        if ( builder.getRowCount() >= SystemSettings.getMaximumCopies())
+                        if ( builder.getRowCount() >= MAX_COPIES )
                         {
-                            //Future copy = builder.build().copy( "wres.NetcdfCoordinate", true );
-                            //this.copyQueue.add( copy );
-                            LOGGER.trace("Job to copy {} coordinates for {} dispatched.",
-                                         SystemSettings.getMaximumCopies(),
-                                         this.metadata);
+                            LOGGER.trace( "Began to copy {} coordinates for {}.",
+                                          MAX_COPIES,
+                                          this.metadata );
+                            builder.build()
+                                   .copy( "wres.NetcdfCoordinate", true );
+                            LOGGER.trace( "Finished copying {} coordinates for {}.",
+                                          MAX_COPIES,
+                                          this.metadata );
                         }
                     }
                 }
 
-                if (builder.getRowCount() > 0)
+                final int rowsRemaining = builder.getRowCount();
+
+                if ( rowsRemaining> 0 )
                 {
-                    //Future copy = builder.build().copy( "wres.NetcdfCoordinate", true );
-                    //this.copyQueue.add( copy );
-                    LOGGER.trace("Job to copy the last coordinates for {} dispatched.", this.metadata);
+                    LOGGER.trace( "Began to copy the last {} coordinates for {}.",
+                                  rowsRemaining, this.metadata );
+                    builder.build()
+                           .copy( "wres.NetcdfCoordinate", true );
+                    LOGGER.trace( "Finished copying the last {} coordinates for {}.",
+                                  rowsRemaining, this.metadata );
                 }
             }
-            /*
-            catch ( ExecutionException e )
-            {
-                throw new IOException( "Grid data could not be read and saved.", e );
-            }
-            */
         }
 
         private void addX(final DataBuilder builder, final Variable xCoordinates, final int index) throws IOException
@@ -418,20 +416,6 @@ class GridManager
             }
         }
 
-        private void finishCopyTasks() throws IOException
-        {
-            LOGGER.trace("Waiting for coordinate copy operations for {} to finish.", this.metadata);
-
-            try
-            {
-                this.copyQueue.loop();
-            }
-            catch ( ExecutionException e )
-            {
-                throw new IOException( "Grid projection copy operation failed.", e );
-            }
-            LOGGER.trace("All copy operations for the coordinates belonging to {} completed.", this.metadata);
-        }
 
         @Override
         protected Logger getLogger()
@@ -440,6 +424,5 @@ class GridManager
         }
 
         private final GridMetadata metadata;
-        private final FutureQueue copyQueue = new FutureQueue(  );
     }
 }
