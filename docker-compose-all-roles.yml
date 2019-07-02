@@ -15,9 +15,9 @@ services:
         environment:
          # Make sure to pass through WRES_ENV_SUFFIX to tasker at runtime
          - JAVA_OPTS=-Dwres.broker=broker -Dwres.environment=${WRES_ENV_SUFFIX}
-        # Tasker JVM should have 449m max heap specified at launch
+        # Tasker JVM should have 1500m max heap specified at launch
         # The total limit includes stack space which depends on Thread count
-        mem_limit: 1024m
+        mem_limit: 2048m
     broker:
         ports:
          - "5671:5671"
