@@ -42,27 +42,27 @@ class JobResults
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( JobResults.class );
 
-    /** A shared bag of job results by ID */
+    /** A shared map of job results by ID */
     private static final Cache<String,Integer> JOB_RESULTS_BY_ID = Caffeine.newBuilder()
-                                                                           .maximumSize( 10_000 )
+                                                                           .maximumSize( 500 )
                                                                            .build();
 
     /** A shared map of job standard out */
     private static final Cache<String, ConcurrentNavigableMap<Integer,String>> JOB_STDOUT_BY_ID
             = Caffeine.newBuilder()
-                      .maximumSize( 1_000 )
+                      .maximumSize( 50 )
                       .build();
 
     /** A shared map of job standard error */
     private static final Cache<String, ConcurrentNavigableMap<Integer,String>> JOB_STDERR_BY_ID
             = Caffeine.newBuilder()
-                      .maximumSize( 1_000 )
+                      .maximumSize( 50 )
                       .build();
 
     /** A shared map of job output references */
     private static final Cache<String, ConcurrentSkipListSet<URI>> JOB_OUTPUTS_BY_ID
             = Caffeine.newBuilder()
-                      .maximumSize( 1_000 )
+                      .maximumSize( 500 )
                       .build();
 
     /**

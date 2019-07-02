@@ -647,7 +647,7 @@ project(':wres-tasker')
     apply plugin: 'application'
 
     mainClassName = 'wres.tasker.Tasker'
-    applicationDefaultJvmArgs = ['-Xms449m','-Xmx449m',
+    applicationDefaultJvmArgs = ['-Xms1500m','-Xmx1500m',
                                  '-XX:+HeapDumpOnOutOfMemoryError']
 
     // Add static html files to the classpath when running via script
