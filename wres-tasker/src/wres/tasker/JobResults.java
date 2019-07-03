@@ -1,6 +1,8 @@
 package wres.tasker;
 
+import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.net.URI;
 import java.util.Objects;
 import java.util.Set;
@@ -16,6 +18,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
+
+import javax.ws.rs.core.StreamingOutput;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -502,39 +506,50 @@ class JobResults
     /**
      * Get the plain text of standard out for a given wres job
      * @param jobId the job to look for
-     * @return the standard out from the job
+     * @return A StreamingOutput having standard out
      */
 
-    static String getJobStdout( String jobId )
+    static StreamingOutput getJobStdout( String jobId )
     {
         ConcurrentNavigableMap<Integer,String> stdout = JOB_STDOUT_BY_ID.asMap()
                                                                         .get( jobId );
 
-        if ( stdout == null )
-        {
-            return "No job id '" + jobId + "' found.'";
-        }
-
-        StringJoiner result = new StringJoiner( System.lineSeparator() );
-
-        // There is an assumption that the worker starts counting at 0
-        int previousIndex = -1;
-
-        for ( Integer index : stdout.keySet() )
-        {
-            int indexDiff = index - previousIndex;
-
-            // Handle missing lines by looking for gaps in incrementing integer.
-            if ( indexDiff > 1 )
+        StreamingOutput streamingOutput = output -> {
+            try ( OutputStreamWriter outputStreamWriter =  new OutputStreamWriter( output );
+                  BufferedWriter writer = new BufferedWriter( outputStreamWriter ) )
             {
-                result.add( "*** Missing " + ( indexDiff - 1 ) + " lines ***" );
+
+                if ( stdout == null )
+                {
+                    writer.write( "No job id '" + jobId + "' found.'" );
+                    return;
+                }
+
+                // There is an assumption that the worker starts counting at 0
+                int previousIndex = -1;
+
+                for ( Integer index : stdout.keySet() )
+                {
+                    int indexDiff = index - previousIndex;
+
+                    // Handle missing lines by looking for gaps in incrementing integer.
+                    if ( indexDiff > 1 )
+                    {
+                        writer.write( "*** Missing " + ( indexDiff - 1 ) + " lines ***" );
+                        writer.newLine();
+                    }
+
+                    // The reason this is not in an "else" nor do we check for
+                    // null? We are iterating over existing keys in the loop.
+                    String stdoutLine = stdout.get( index );
+                    writer.write( stdoutLine );
+                    writer.newLine();
+                    previousIndex = index;
+                }
             }
+        };
 
-            result.add( stdout.get( index ) );
-            previousIndex = index;
-        }
-
-        return result.toString();
+        return streamingOutput;
     }
 
 
