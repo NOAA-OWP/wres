@@ -451,8 +451,6 @@ public class WriterTestHelper
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT ) );
 
-        // Output requires a future... which requires a metadata...
-        // which requires a datasetidentifier..
         DatasetIdentifier datasetIdentifier =
                 DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP" );
 
@@ -521,9 +519,6 @@ public class WriterTestHelper
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT ) );
 
-        // Output requires a future... which requires a metadata...
-        // which requires a datasetidentifier..
-
         DatasetIdentifier datasetIdentifier =
                 DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP" );
 
@@ -570,9 +565,6 @@ public class WriterTestHelper
                 OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT ) );
-
-        // Output requires a future... which requires a metadata...
-        // which requires a datasetidentifier..
 
         DatasetIdentifier datasetIdentifier =
                 DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP" );
