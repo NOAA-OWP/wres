@@ -41,10 +41,8 @@ public class WRESArgumentProcessorTest
      */
 
     @Test( expected = Test.None.class /* no exception expected */ )
-    public void testConstructionDoesNotThrowIOBExceptionWhenInputIsEmpty()
+    public void testConstructionDoesNotThrowIOOBExceptionWhenInputIsEmpty()
     {
-
-
         new WRESArgumentProcessor( BoxPlotStatistics.of( Collections.emptyList(), this.meta ), ChronoUnit.SECONDS );
     }
 

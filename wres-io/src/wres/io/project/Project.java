@@ -22,9 +22,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -539,15 +539,15 @@ public class Project
         }
 
         // Obtain the existing time scale and corresponding time step for each ingested source and source type
-        Set<Pair<TimeScale, Duration>> leftScalesAndSteps =
+        Set<TimeScaleAndTimeStep> leftScalesAndSteps =
                 this.getTimeScaleAndTimeStepForEachProjectSource( this.getLeft() );
-        Set<Pair<TimeScale, Duration>> rightScalesAndSteps =
+        Set<TimeScaleAndTimeStep> rightScalesAndSteps =
                 this.getTimeScaleAndTimeStepForEachProjectSource( this.getRight() );
-        Set<Pair<TimeScale, Duration>> baselineScalesAndSteps =
+        Set<TimeScaleAndTimeStep> baselineScalesAndSteps =
                 this.getTimeScaleAndTimeStepForEachProjectSource( this.getBaseline() );
 
         // Union of scales and steps
-        Set<Pair<TimeScale, Duration>> existingScalesAndSteps = new HashSet<>( leftScalesAndSteps );
+        Set<TimeScaleAndTimeStep> existingScalesAndSteps = new HashSet<>( leftScalesAndSteps );
         existingScalesAndSteps.addAll( rightScalesAndSteps );
         existingScalesAndSteps.addAll( baselineScalesAndSteps );
 
@@ -557,11 +557,11 @@ public class Project
             LOGGER.debug( "No desired time scale declared. Attempting to substitute the Least Common Scale based on "
                           + "the ingested sources." );
 
-            // The unique existing times scales from which to determined the Least Common Scale
+            // The unique existing times scales from which to determine the Least Common Scale
             // Only include non-null time scales
             Set<TimeScale> existingScales =
                     existingScalesAndSteps.stream()
-                                          .map( Pair::getLeft )
+                                          .map( TimeScaleAndTimeStep::getTimeScale )
                                           .filter( Objects::nonNull )
                                           .collect( Collectors.toSet() );
 
@@ -625,6 +625,10 @@ public class Project
         // Set the desired scale and least common time step
         this.desiredTimeScale = desiredScale;
         this.leastCommonTimeStep = leastCommonStep;
+
+        LOGGER.debug( "Finished setting the desired time scale of '{}' and the time step of '{}'.",
+                      this.desiredTimeScale,
+                      this.leastCommonTimeStep );
     }
 
     /**
@@ -639,7 +643,7 @@ public class Project
      * @throws NullPointerException if any input is null
      */
 
-    private Set<ScaleValidationEvent> validateTimeScale( Set<Pair<TimeScale, Duration>> existingScalesAndSteps,
+    private Set<ScaleValidationEvent> validateTimeScale( Set<TimeScaleAndTimeStep> existingScalesAndSteps,
                                                          TimeScale desiredTimeScale,
                                                          DataSourceConfig dataSourceConfig,
                                                          LeftOrRightOrBaseline dataType )
@@ -656,14 +660,14 @@ public class Project
         Set<ScaleValidationEvent> events = new TreeSet<>();
 
         // Only check where the existing scale and the time step is known
-        for ( Pair<TimeScale, Duration> nextPair : existingScalesAndSteps )
+        for ( TimeScaleAndTimeStep next : existingScalesAndSteps )
         {
-            if ( Objects.nonNull( nextPair.getLeft() ) && Objects.nonNull( nextPair.getRight() ) )
+            if ( Objects.nonNull( next.getTimeScale() ) && Objects.nonNull( next.getTimeStep() ) )
             {
                 events.addAll( ScaleValidationHelper.validateScaleInformation( dataSourceConfig,
-                                                                               nextPair.getLeft(),
+                                                                               next.getTimeScale(),
                                                                                desiredTimeScale,
-                                                                               nextPair.getRight(),
+                                                                               next.getTimeStep(),
                                                                                dataType.toString() ) );
             }
         }
@@ -681,7 +685,7 @@ public class Project
      * @throws CalculationException if time step could not be determined from the data
      */
 
-    private Set<Pair<TimeScale, Duration>>
+    private Set<TimeScaleAndTimeStep>
             getTimeScaleAndTimeStepForEachProjectSource( DataSourceConfig dataSourceConfig )
                     throws SQLException, CalculationException
     {
@@ -691,7 +695,7 @@ public class Project
             return java.util.Collections.emptySet();
         }
 
-        Set<Pair<TimeScale, Duration>> existingTimeScales = new HashSet<>();
+        Set<TimeScaleAndTimeStep> existingTimeScales = new HashSet<>();
 
         LeftOrRightOrBaseline sourceType =
                 ConfigHelper.getLeftOrRightOrBaseline( this.getProjectConfig(), dataSourceConfig );
@@ -792,7 +796,7 @@ public class Project
      * @throws NullPointerException if either input is null
      */
 
-    private Set<Pair<TimeScale, Duration>> getTimeScaleAndTimeSteps( DataScripter data,
+    private Set<TimeScaleAndTimeStep> getTimeScaleAndTimeSteps( DataScripter data,
                                                                      DataSourceConfig dataSourceConfig,
                                                                      LeftOrRightOrBaseline sourceType )
             throws SQLException, CalculationException
@@ -801,7 +805,7 @@ public class Project
 
         Objects.requireNonNull( dataSourceConfig );
 
-        Set<Pair<TimeScale, Duration>> existingTimeScales;
+        Set<TimeScaleAndTimeStep> existingTimeScales;
 
         // Declared existing time scale to use when the source has no information
         TimeScale declaredExistingTimeScale = null;
@@ -821,7 +825,7 @@ public class Project
             data.consume( consumer );
 
             // Retrieve
-            existingTimeScales = consumer.getTimeScalesAndSteps();
+            existingTimeScales = consumer.get();
 
             // Log any warnings
             consumer.logAllWarningsOnCompletion();
@@ -837,9 +841,9 @@ public class Project
                                     e );
         }
 
-        return finalizeExistingTimeScalesForSources( dataSourceConfig,
-                                                     Collections.unmodifiableSet( existingTimeScales ),
-                                                     sourceType );
+        return this.finalizeExistingTimeScalesForSources( dataSourceConfig,
+                                                          Collections.unmodifiableSet( existingTimeScales ),
+                                                          sourceType );
     }
 
     /**
@@ -863,12 +867,12 @@ public class Project
      * @throws CalculationException if the global time-step is required and cannot be determined
      */
 
-    private Set<Pair<TimeScale, Duration>> finalizeExistingTimeScalesForSources( DataSourceConfig dataSourceConfig,
-                                                                                 Set<Pair<TimeScale, Duration>> existingScalesAndSteps,
-                                                                                 LeftOrRightOrBaseline sourceType )
+    private Set<TimeScaleAndTimeStep> finalizeExistingTimeScalesForSources( DataSourceConfig dataSourceConfig,
+                                                                            Set<TimeScaleAndTimeStep> existingScalesAndSteps,
+                                                                            LeftOrRightOrBaseline sourceType )
             throws CalculationException
     {
-        Set<Pair<TimeScale, Duration>> mutableCopy = new HashSet<>();
+        Set<TimeScaleAndTimeStep> mutableCopy = new HashSet<>();
 
         // Declared existing time scale to use when the source has no information
         TimeScale declaredExistingTimeScale = null;
@@ -884,9 +888,9 @@ public class Project
         // every possible pair of time-scale and time-step for each pair with a null time-step
         Duration globalTimeStepToReUse = null;
         boolean warn = false;
-        for ( Pair<TimeScale, Duration> nextScaleAndStep : existingScalesAndSteps )
+        for ( TimeScaleAndTimeStep nextScaleAndStep : existingScalesAndSteps )
         {
-            if ( Objects.isNull( nextScaleAndStep.getRight() ) )
+            if ( Objects.isNull( nextScaleAndStep.getTimeStep() ) )
             {
                 // Compute the global time-step only where required
                 if ( Objects.isNull( globalTimeStepToReUse ) )
@@ -895,7 +899,7 @@ public class Project
                 }
 
                 warn = true;
-                mutableCopy.add( Pair.of( nextScaleAndStep.getLeft(), globalTimeStepToReUse ) );
+                mutableCopy.add( TimeScaleAndTimeStep.of( nextScaleAndStep.getTimeScale(), globalTimeStepToReUse ) );
             }
             else
             {
@@ -924,7 +928,7 @@ public class Project
                           + "Using an analyzed time-step instead, which is not source-specific.",
                           sourceType );
 
-            mutableCopy.add( Pair.of( declaredExistingTimeScale, globalTimeStepToReUse ) );
+            mutableCopy.add( TimeScaleAndTimeStep.of( declaredExistingTimeScale, globalTimeStepToReUse ) );
         }
 
         return Collections.unmodifiableSet( mutableCopy );
@@ -1017,9 +1021,9 @@ public class Project
      * @throws CalculationException if the least time-step cannot be determined for the left or right sources
      */
 
-    private Duration getLeastCommonTimeStepFromSources( Set<Pair<TimeScale, Duration>> leftScalesAndSteps,
-                                                        Set<Pair<TimeScale, Duration>> rightScalesAndSteps,
-                                                        Set<Pair<TimeScale, Duration>> baselineScalesAndSteps )
+    private Duration getLeastCommonTimeStepFromSources( Set<TimeScaleAndTimeStep> leftScalesAndSteps,
+                                                        Set<TimeScaleAndTimeStep> rightScalesAndSteps,
+                                                        Set<TimeScaleAndTimeStep> baselineScalesAndSteps )
             throws CalculationException
     {
         Objects.requireNonNull( leftScalesAndSteps );
@@ -1094,12 +1098,12 @@ public class Project
      * @return the time steps without nulls
      */
 
-    private static TreeSet<Duration> getTimeStepsFromScalesAndSteps( Set<Pair<TimeScale, Duration>> scalesAndSteps )
+    private static TreeSet<Duration> getTimeStepsFromScalesAndSteps( Set<TimeScaleAndTimeStep> scalesAndSteps )
     {
         Objects.requireNonNull( scalesAndSteps );
 
         return scalesAndSteps.stream()
-                             .map( Pair::getRight )
+                             .map( TimeScaleAndTimeStep::getTimeStep )
                              .filter( Objects::nonNull )
                              .collect( Collectors.toCollection( TreeSet::new ) );
     }
@@ -3012,14 +3016,15 @@ public class Project
      * Consumes time-scale and time-step information and logs any warnings generated by the process.
      */
 
-    private static class TimeScaleAndTimeStepConsumer implements ExceptionalConsumer<DataProvider, SQLException>
+    private static class TimeScaleAndTimeStepConsumer
+            implements ExceptionalConsumer<DataProvider, SQLException>, Supplier<Set<TimeScaleAndTimeStep>>
     {
 
         /**
          * The time scale and time step information consumed.
          */
 
-        private final Set<Pair<TimeScale, Duration>> existingScalesAndSteps = new HashSet<>();
+        private final Set<TimeScaleAndTimeStep> existingScalesAndSteps = new HashSet<>();
 
         /**
          * Is <code>true</code> if one or more consumptions generated a warning for a null period.
@@ -3178,19 +3183,8 @@ public class Project
             }
 
             // Store, with possibly null time scale information
-            this.existingScalesAndSteps.add( Pair.of( timeScale, timeStep ) );
+            this.existingScalesAndSteps.add( TimeScaleAndTimeStep.of( timeScale, timeStep ) );
 
-        }
-
-        /**
-         * Returns all time scale and time step information consumed.
-         * 
-         * @return all time scale and time step information
-         */
-
-        private Set<Pair<TimeScale, Duration>> getTimeScalesAndSteps()
-        {
-            return java.util.Collections.unmodifiableSet( this.existingScalesAndSteps );
         }
 
         /**
@@ -3251,8 +3245,101 @@ public class Project
             }
         }
 
-    }
+        @Override
+        public Set<TimeScaleAndTimeStep> get()
+        {
+            return Collections.unmodifiableSet( this.existingScalesAndSteps );
+        }
 
+    }
+    
+    /**
+     * Value class that stores information on time-scales and time-steps. This is an implementation detail, not to be 
+     * exposed outside the current context.
+     */
+    
+    private static class TimeScaleAndTimeStep 
+    {
+        /**
+         * Time scale.
+         */
+        
+        private final TimeScale timeScale;
+        
+        /**
+         * Time step.
+         */
+        
+        private final Duration timeStep;
+        
+        /**
+         * Returns an instance.
+         * @param timeScale the required time scale
+         * @param timeStep the required time-step
+         * @throws NullPointerException if the time-step is null
+         */
+        
+        private static TimeScaleAndTimeStep of( TimeScale timeScale, Duration timeStep )
+        {
+            return new TimeScaleAndTimeStep( timeScale, timeStep );
+        }       
+        
+        /**
+         * Returns the time scale.
+         * @return the time scale
+         */
+        
+        private TimeScale getTimeScale()
+        {
+            return this.timeScale;
+        }
+        
+        /**
+         * Returns the time-step.
+         * @return the time-step
+         */
+        
+        private Duration getTimeStep()
+        {
+            return this.timeStep;
+        }
+        
+        @Override
+        public boolean equals( Object o )
+        {
+            if(! ( o instanceof TimeScaleAndTimeStep ) )
+            {
+                return false;
+            }
+            
+            TimeScaleAndTimeStep input = (TimeScaleAndTimeStep)o;
+
+            // Time scale may be null
+            return Objects.equals( input.getTimeScale(), this.getTimeScale() )
+                   && input.getTimeStep().equals( this.getTimeStep() );
+        }
+        
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash( this.getTimeScale(), this.getTimeStep() );
+        }
+        
+        /**
+         * Construct a time-scale and time-step.
+         * @param timeScale the required time scale
+         * @param timeStep the required time-step
+         * @throws NullPointerException if the time-step is null
+         */
+        private TimeScaleAndTimeStep( TimeScale timeScale, Duration timeStep )
+        {
+            Objects.requireNonNull( timeStep );
+
+            this.timeScale = timeScale;            
+            this.timeStep = timeStep;
+        }
+        
+    }
 
 }
 
