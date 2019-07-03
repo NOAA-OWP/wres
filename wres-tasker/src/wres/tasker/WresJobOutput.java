@@ -4,22 +4,16 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.Set;
-import java.util.StringJoiner;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
@@ -55,24 +49,17 @@ public class WresJobOutput
                            .build();
         }
 
-        StreamingOutput streamingOutput = new StreamingOutput() {
-            @Override
-            public void write( OutputStream output )
-                    throws IOException, WebApplicationException
+        StreamingOutput streamingOutput = output -> {
+            try ( OutputStreamWriter outputStreamWriter =  new OutputStreamWriter( output );
+                  BufferedWriter writer = new BufferedWriter( outputStreamWriter ) )
             {
-                try ( OutputStreamWriter outputStreamWriter =  new OutputStreamWriter( output );
-                      BufferedWriter writer = new BufferedWriter( outputStreamWriter ) )
+                for ( URI outputResource : jobOutputs )
                 {
-                    for ( URI outputResource : jobOutputs )
-                    {
-                        java.nio.file.Path path =
-                                Paths.get( outputResource.getPath() );
-                        java.nio.file.Path resourceName = path.getFileName();
-                        writer.write( resourceName.toString() );
-                        writer.newLine();
-                    }
-
-                    writer.flush();
+                    java.nio.file.Path path =
+                            Paths.get( outputResource.getPath() );
+                    java.nio.file.Path resourceName = path.getFileName();
+                    writer.write( resourceName.toString() );
+                    writer.newLine();
                 }
             }
         };
@@ -96,33 +83,35 @@ public class WresJobOutput
                            .build();
         }
 
-        List<String> resourceNames = new ArrayList<>();
-
-        for ( URI outputResource : jobOutputs )
-        {
-            java.nio.file.Path path = Paths.get( outputResource.getPath() );
-            java.nio.file.Path resourceName = path.getFileName();
-            resourceNames.add( resourceName.toString() );
-        }
-
-        // Since we're going to the trouble of showing html, may as well sort it
-        Collections.sort( resourceNames );
-
         String header = "<!DOCTYPE html><html><head><title>Resources created by job id "
                         + id + "</title></head><body><h1>Resources created by job id "
                         + id + "</h1><ul><li>";
         String footer = "</li></ul></body></html>";
 
-        StringJoiner fullDocument = new StringJoiner( "</li><li>", header, footer );
+        StreamingOutput streamingOutput = output -> {
+            try ( OutputStreamWriter outputStreamWriter =  new OutputStreamWriter( output );
+                  BufferedWriter writer = new BufferedWriter( outputStreamWriter ) )
+            {
+                writer.write( header );
+                writer.newLine();
 
-        for ( String resourceName : resourceNames )
-        {
-            String resource = "<a href=\"output/" + resourceName + "\">" + resourceName
-                              + "</a>";
-            fullDocument.add( resource );
-        }
+                for ( URI outputResource : jobOutputs )
+                {
+                    java.nio.file.Path path =
+                            Paths.get( outputResource.getPath() );
+                    java.nio.file.Path resourceName = path.getFileName();
+                    String resource = "<a href=\"output/" + resourceName + "\">" + resourceName
+                                      + "</a>";
+                    writer.write( resource );
+                    writer.newLine();
+                }
 
-        return Response.ok( fullDocument.toString() )
+                writer.write( footer );
+                writer.newLine();
+            }
+        };
+
+        return Response.ok( streamingOutput )
                        .build();
     }
 
