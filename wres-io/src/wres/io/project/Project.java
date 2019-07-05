@@ -7,6 +7,7 @@ import java.time.MonthDay;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -15,6 +16,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutionException;
@@ -585,27 +587,27 @@ public class Project
                           existingScalesAndSteps.size(),
                           desiredScale );
 
-            Set<ScaleValidationEvent> events = new TreeSet<>();
+            Map<ScaleValidationEvent,Set<String>> events = new TreeMap<>();
             
-            events.addAll( this.validateTimeScale( Collections.unmodifiableSet( leftScalesAndSteps ),
+            events.putAll( this.validateTimeScale( Collections.unmodifiableSet( leftScalesAndSteps ),
                                                desiredScale,
                                                this.getLeft(),
                                                LeftOrRightOrBaseline.LEFT ) );
-            events.addAll( this.validateTimeScale( Collections.unmodifiableSet( rightScalesAndSteps ),
+            events.putAll( this.validateTimeScale( Collections.unmodifiableSet( rightScalesAndSteps ),
                                                desiredScale,
                                                this.getRight(),
                                                LeftOrRightOrBaseline.RIGHT ) );
             
             if ( !baselineScalesAndSteps.isEmpty() )
             {
-                events.addAll( this.validateTimeScale( Collections.unmodifiableSet( baselineScalesAndSteps ),
+                events.putAll( this.validateTimeScale( Collections.unmodifiableSet( baselineScalesAndSteps ),
                                                        desiredScale,
                                                        this.getBaseline(),
                                                        LeftOrRightOrBaseline.BASELINE ) );
             }
             
             // Report on them
-            this.reportOnScaleValidationEvents( Collections.unmodifiableSet( events ) );
+            this.reportOnScaleValidationEvents( Collections.unmodifiableMap( events ) );
 
         }
 
@@ -643,10 +645,10 @@ public class Project
      * @throws NullPointerException if any input is null
      */
 
-    private Set<ScaleValidationEvent> validateTimeScale( Set<TimeScaleAndTimeStep> existingScalesAndSteps,
-                                                         TimeScale desiredTimeScale,
-                                                         DataSourceConfig dataSourceConfig,
-                                                         LeftOrRightOrBaseline dataType )
+    private Map<ScaleValidationEvent, Set<String>> validateTimeScale( Set<TimeScaleAndTimeStep> existingScalesAndSteps,
+                                                                      TimeScale desiredTimeScale,
+                                                                      DataSourceConfig dataSourceConfig,
+                                                                      LeftOrRightOrBaseline dataType )
     {
         Objects.requireNonNull( existingScalesAndSteps );
 
@@ -657,22 +659,46 @@ public class Project
         Objects.requireNonNull( dataType );
 
         // Unique validation events
-        Set<ScaleValidationEvent> events = new TreeSet<>();
+        Map<ScaleValidationEvent, Set<String>> events = new TreeMap<>();
 
-        // Only check where the existing scale and the time step is known
+        // Obtain the validation events
         for ( TimeScaleAndTimeStep next : existingScalesAndSteps )
         {
+            // Only check where the existing scale and the time step is known            
             if ( Objects.nonNull( next.getTimeScale() ) && Objects.nonNull( next.getTimeStep() ) )
             {
-                events.addAll( ScaleValidationHelper.validateScaleInformation( dataSourceConfig,
-                                                                               next.getTimeScale(),
-                                                                               desiredTimeScale,
-                                                                               next.getTimeStep(),
-                                                                               dataType.toString() ) );
+                List<ScaleValidationEvent> validation =
+                        ScaleValidationHelper.validateScaleInformation( dataSourceConfig,
+                                                                        next.getTimeScale(),
+                                                                        desiredTimeScale,
+                                                                        next.getTimeStep(),
+                                                                        dataType.toString() );
+                
+                String context = next.getContext();
+                
+                // Unwrap the events and record with the context in which they arose
+                for( ScaleValidationEvent nextEvent : validation )
+                {
+                    Set<String> pattern = events.get( nextEvent );
+                    
+                    // Validation pattern exists already
+                    if( Objects.isNull( pattern ) )
+                    {                       
+                        pattern = new TreeSet<>();
+                        events.put( nextEvent, pattern );
+                    }
+                                      
+                    // Add the context
+                    if( ! context.isBlank() )
+                    {
+                        pattern.add( context );
+                    }
+                    
+                }                
             }
         }
 
-        return Collections.unmodifiableSet( events );
+        return Collections.unmodifiableMap( events );
     }
 
     /**
@@ -797,8 +823,8 @@ public class Project
      */
 
     private Set<TimeScaleAndTimeStep> getTimeScaleAndTimeSteps( DataScripter data,
-                                                                     DataSourceConfig dataSourceConfig,
-                                                                     LeftOrRightOrBaseline sourceType )
+                                                                DataSourceConfig dataSourceConfig,
+                                                                LeftOrRightOrBaseline sourceType )
             throws SQLException, CalculationException
     {
         Objects.requireNonNull( data );
@@ -945,31 +971,135 @@ public class Project
      * @throws RescalingException if there are one or more validation events that represent errors
      * @throws NullPointerException if the input is null
      */
-    
-    private void reportOnScaleValidationEvents( Set<ScaleValidationEvent> events )
+
+    private void reportOnScaleValidationEvents( Map<ScaleValidationEvent, Set<String>> events )
     {
         Objects.requireNonNull( events );
 
         // Any warnings? Log those individually.        
-        events.stream().filter( a -> a.getEventType() == EventType.WARN ).forEach( e -> LOGGER.warn( e.toString() ) );
+        Set<ScaleValidationEvent> rawEvents = Collections.unmodifiableSet( events.keySet() );
 
-        // If errors, aggregate and throw an exception
-        if ( ScaleValidationHelper.hasEvent( events, EventType.ERROR ) )
+        rawEvents.stream()
+                 .filter( a -> a.getEventType() == EventType.WARN )
+                 .forEach( e -> LOGGER.warn( e.toString() ) );
+
+        // If errors, aggregate and throw an exception with context information
+        if ( ScaleValidationHelper.hasEvent( rawEvents, EventType.ERROR ) )
         {
-            StringJoiner message = new StringJoiner( System.lineSeparator() );
-            message.add( "Encountered the following errors while validating the time-scale and time-step "
-                         + "information: " );
+            // Unique ERROR events without context
+            Set<ScaleValidationEvent> eventsWithoutContext = events.entrySet()
+                                                                   .stream()
+                                                                   .filter( x -> x.getValue().isEmpty()
+                                                                                 && x.getKey()
+                                                                                     .getEventType() == EventType.ERROR )
+                                                                   .map( Map.Entry::getKey )
+                                                                   .collect( Collectors.toSet() );
 
-            String spacer = "    ";
-            
-            events.stream()
-                  .filter( a -> a.getEventType() == EventType.ERROR )
-                  .forEach( e -> message.add( spacer + e.toString() ) );
+            this.reportOnScaleValidationErrorsWithoutContext( eventsWithoutContext );
 
-            throw new RescalingException( message.toString() );
+            // Unique ERROR events with context
+            Map<ScaleValidationEvent, Set<String>> eventsWithContext = events.entrySet()
+                                                                             .stream()
+                                                                             .filter( x -> !x.getValue().isEmpty()
+                                                                                           && x.getKey()
+                                                                                               .getEventType() == EventType.ERROR )
+                                                                             .collect( Collectors.toMap( Map.Entry::getKey,
+                                                                                                         Map.Entry::getValue ) );
+
+            this.reportOnScaleValidationErrorsWithContext( eventsWithContext );
         }
     }
 
+    /**
+     * <p>Reports on a collection of {@link ScaleValidationEvent} of type {@link EventType#ERROR} where context
+     * information is provided to qualify the errors, such as a set of location identifiers for which each error
+     * occurred.
+     * 
+     * @param events the validation events
+     * @throws RescalingException if there are one or more validation events that represent errors
+     * @throws NullPointerException if the input is null
+     */
+
+    private void reportOnScaleValidationErrorsWithContext( Map<ScaleValidationEvent, Set<String>> events )
+    {
+        Objects.requireNonNull( events );
+
+        String spacer = "    ";
+
+        if ( !events.isEmpty() )
+        {
+            // Reverse the map, grouping by context
+            Map<String, Set<ScaleValidationEvent>> eventsWithContextInv = new TreeMap<>();
+
+            for ( Map.Entry<ScaleValidationEvent, Set<String>> nextEntry : events.entrySet() )
+            {
+                Set<ScaleValidationEvent> eventsInv;
+
+                String context = nextEntry.getValue().toString();
+
+                if ( eventsWithContextInv.containsKey( context ) )
+                {
+                    eventsInv = eventsWithContextInv.get( context );
+                }
+                else
+                {
+                    eventsInv = new TreeSet<>();
+                    eventsWithContextInv.put( context, eventsInv );
+                }
+
+                // Add the event
+                eventsInv.add( nextEntry.getKey() );
+            }
+
+            if ( !eventsWithContextInv.isEmpty() )
+            {
+                StringJoiner message = new StringJoiner( System.lineSeparator() );
+
+                message.add( "While validating the time-scale and time-step information, uncovered the following "
+                             + "errors in different contexts: " );
+
+                for ( Map.Entry<String, Set<ScaleValidationEvent>> nextEntry : eventsWithContextInv.entrySet() )
+                {
+                    message.add( spacer
+                                 + "While validating the time-scale and time-step information at "
+                                 + nextEntry.getKey()
+                                 + " uncovered the following errors:" );
+
+                    nextEntry.getValue().stream().forEach( e -> message.add( spacer + spacer + e.toString() ) );
+                }
+
+                throw new RescalingException( message.toString() );
+            }
+        }
+    }
+    
+    /**
+     * <p>Reports on a collection of {@link ScaleValidationEvent} of type {@link EventType#ERROR} where no context 
+     * information is available.
+     * 
+     * @param events the validation events
+     * @throws RescalingException if there are one or more validation events that represent errors
+     * @throws NullPointerException if the input is null
+     */
+
+    private void reportOnScaleValidationErrorsWithoutContext( Set<ScaleValidationEvent> events )
+    {
+        Objects.requireNonNull( events );
+
+        String spacer = "    ";
+        
+        if ( !events.isEmpty() )
+        {
+            StringJoiner message = new StringJoiner( System.lineSeparator() );
+            message.add( "While validating the time-scale and time-step information, uncovered the following "
+                         + "errors: " );
+
+            events.stream().forEach( e -> message.add( spacer + spacer + e.toString() ) );
+
+            throw new RescalingException( message.toString() );
+        }
+    }      
+    
     /**
      * Wraps the {@link {@link #getValueInterval(DataSourceConfig)}} and performs locking because this method involves
      * mutation. TODO: it would be cleaner if the helper itself handled the locking.
@@ -3112,7 +3242,14 @@ public class Project
             Duration period = value.getDuration( "scale_period" );
             String functionString = value.getString( "scale_function" );
             Duration timeStep = value.getDuration( "time_step" );
-
+            
+            // Add some context information if available: see #64542
+            String context = null;
+            if( value.hasColumn( "lid" ) )
+            {
+                context = value.getString( "lid" );
+            }
+            
             // Ignore if the time step is zero by returning
             if ( Duration.ZERO.equals( timeStep ) )
             {
@@ -3156,7 +3293,7 @@ public class Project
             }
 
             // Create the scale and/or time step information
-            this.createTimeScaleAndStepInformation( period, functionString, timeStep );
+            this.createTimeScaleAndStepInformation( period, functionString, timeStep, context );
         }
 
         /**
@@ -3165,11 +3302,13 @@ public class Project
         * @param period the time scale period
         * @param functionString the time scale function string
         * @param timeStep the time step
+        * @param context the optional context information, which may be null
         */
 
         private void createTimeScaleAndStepInformation( Duration period,
                                                         String functionString,
-                                                        Duration timeStep )
+                                                        Duration timeStep,
+                                                        String context )
         {
             TimeScale timeScale = null;
 
@@ -3182,9 +3321,19 @@ public class Project
                 timeScale = TimeScale.of( period, function );
             }
 
-            // Store, with possibly null time scale information
-            this.existingScalesAndSteps.add( TimeScaleAndTimeStep.of( timeScale, timeStep ) );
-
+            if( Objects.nonNull( context ) )
+            {
+                LOGGER.trace( "The time scale {} and time step {} appears in context {}.",
+                             timeScale,
+                             timeStep,
+                             context );
+                
+                this.existingScalesAndSteps.add( TimeScaleAndTimeStep.of( timeScale, timeStep, context ) );
+            }
+            else
+            {
+                this.existingScalesAndSteps.add( TimeScaleAndTimeStep.of( timeScale, timeStep ) );
+            }
         }
 
         /**
@@ -3252,77 +3401,127 @@ public class Project
         }
 
     }
-    
+
     /**
      * Value class that stores information on time-scales and time-steps. This is an implementation detail, not to be 
      * exposed outside the current context.
      */
-    
-    private static class TimeScaleAndTimeStep 
+
+    private static class TimeScaleAndTimeStep implements Comparable<TimeScaleAndTimeStep>
     {
         /**
          * Time scale.
          */
-        
+
         private final TimeScale timeScale;
-        
+
         /**
          * Time step.
          */
-        
+
         private final Duration timeStep;
-        
+
+        /**
+         * Clarifying context, such as the identifier of the feature to which the information refers
+         * or the feature and approximate time where the information was detected.
+         */
+
+        private final String context;
+
         /**
          * Returns an instance.
          * @param timeScale the required time scale
          * @param timeStep the required time-step
          * @throws NullPointerException if the time-step is null
          */
-        
+
         private static TimeScaleAndTimeStep of( TimeScale timeScale, Duration timeStep )
         {
             return new TimeScaleAndTimeStep( timeScale, timeStep );
-        }       
-        
+        }
+
+        /**
+         * Returns an instance.
+         * @param timeScale the required time scale
+         * @param timeStep the required time-step
+         * @param context the required context
+         * @throws NullPointerException if the timeStep or context is null
+         */
+
+        private static TimeScaleAndTimeStep of( TimeScale timeScale, Duration timeStep, String context )
+        {
+            return new TimeScaleAndTimeStep( timeScale, timeStep, context );
+        }
+
         /**
          * Returns the time scale.
          * @return the time scale
          */
-        
+
         private TimeScale getTimeScale()
         {
             return this.timeScale;
         }
-        
+
         /**
          * Returns the time-step.
          * @return the time-step
          */
-        
+
         private Duration getTimeStep()
         {
             return this.timeStep;
         }
         
+        /**
+         * Returns the context in which the time scale and step arose.
+         * @return a context string
+         */
+
+        private String getContext()
+        {
+            return this.context;
+        }
+        
         @Override
         public boolean equals( Object o )
         {
-            if(! ( o instanceof TimeScaleAndTimeStep ) )
+            if ( ! ( o instanceof TimeScaleAndTimeStep ) )
             {
                 return false;
             }
-            
-            TimeScaleAndTimeStep input = (TimeScaleAndTimeStep)o;
+
+            TimeScaleAndTimeStep input = (TimeScaleAndTimeStep) o;
 
             // Time scale may be null
             return Objects.equals( input.getTimeScale(), this.getTimeScale() )
                    && input.getTimeStep().equals( this.getTimeStep() );
         }
-        
+
         @Override
         public int hashCode()
         {
             return Objects.hash( this.getTimeScale(), this.getTimeStep() );
+        }
+
+        @Override
+        public int compareTo( TimeScaleAndTimeStep o )
+        {
+            int returnMe = Objects.compare( this.getTimeScale(), o.getTimeScale(), Comparator.naturalOrder() );
+            
+            if( returnMe != 0 )
+            {
+                return returnMe;
+            }
+            
+            returnMe = this.getTimeStep().compareTo( o.getTimeStep() );
+            
+            if( returnMe != 0 )
+            {
+                return returnMe;
+            }
+            
+            return this.getContext().compareTo( o.getContext() );
         }
         
         /**
@@ -3335,10 +3534,29 @@ public class Project
         {
             Objects.requireNonNull( timeStep );
 
-            this.timeScale = timeScale;            
+            this.timeScale = timeScale;
             this.timeStep = timeStep;
+            this.context = "";
         }
-        
+
+        /**
+         * Construct a time-scale and time-step.
+         * @param timeScale the required time scale
+         * @param timeStep the required time-step
+         * @param context the optional context information, may be null
+         * @throws NullPointerException if the timeStep or context is null
+         */
+        private TimeScaleAndTimeStep( TimeScale timeScale, Duration timeStep, String context )
+        {
+            Objects.requireNonNull( timeStep );
+
+            Objects.requireNonNull( context );
+
+            this.timeScale = timeScale;
+            this.timeStep = timeStep;
+            this.context = context;
+        }
+
     }
 
 }

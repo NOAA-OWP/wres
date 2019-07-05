@@ -1063,12 +1063,18 @@ final class ProjectScriptGenerator
         scripter.addTab(  2  ).addLine(")");
         scripter.addLine(")");
         scripter.addLine("SELECT EXTRACT(EPOCH FROM difference) / 60 AS time_step,");
-        scripter.addTab().addLine("scale_period,");
-        scripter.addTab().addLine("scale_function");
+        scripter.addTab().addLine("D.scale_period,");
+        scripter.addTab().addLine("D.scale_function,");
+        scripter.addTab().addLine("D.variablefeature_id,");
+        scripter.addTab().addLine("F.lid");
         scripter.addLine("FROM differences D");
+        scripter.addLine("INNER JOIN wres.variablefeature AS VF");
+        scripter.addTab().addLine( "ON VF.variablefeature_id = D.variablefeature_id" );
+        scripter.addLine("INNER JOIN wres.feature AS F");
+        scripter.addTab().addLine( "ON F.feature_id = VF.feature_id" );
         scripter.addLine("WHERE D.difference IS NOT NULL");
         scripter.addTab().addLine("AND D.variablefeature_id = D.previous_variable_feature");
-        scripter.add("GROUP BY difference, scale_period, scale_function;");
+        scripter.add("GROUP BY D.difference, D.variablefeature_id, F.lid, D.scale_period, D.scale_function;");
 
         return scripter;
     }
@@ -1105,26 +1111,30 @@ final class ProjectScriptGenerator
         scripter.addTab(  2  ).addLine("TS.timeseries_id,");
         scripter.addTab(  2  ).addLine("TS.scale_function,");
         scripter.addTab(  2  ).addLine("TS.scale_period,");
+        scripter.addTab(  2  ).addLine("TS.variablefeature_id,");
         scripter.addTab(  2  ).addLine("lag(TSV.timeseries_id) OVER (ORDER BY TSV.timeseries_id, lead) AS previous_timeseries_id");
         scripter.addTab().addLine("FROM wres.TimeSeriesValue TSV");
         scripter.addTab().addLine("INNER JOIN (");
-        scripter.addTab(  2  ).addLine("SELECT TS.timeseries_id, TS.scale_function, TS.scale_period");
+        scripter.addTab(  2  ).addLine("SELECT TS.timeseries_id,");
+        scripter.addTab(  3  ).addLine("TS.scale_function,");
+        scripter.addTab(  3  ).addLine("TS.scale_period,");
+        scripter.addTab(  3  ).addLine("TS.variablefeature_id");        
         scripter.addTab(  2  ).addLine("FROM wres.TimeSeries TS");
         scripter.addTab(  2  ).addLine("WHERE EXISTS (");
-        scripter.addTab(    4    ).addLine("SELECT 1");
-        scripter.addTab(    4    ).addLine("FROM wres.TimeSeriesSource TSS");
-        scripter.addTab(    4    ).addLine("INNER JOIN wres.ProjectSource PS");
-        scripter.addTab(     5     ).addLine("ON PS.source_id = TSS.source_id");
-        scripter.addTab(    4    ).addLine("WHERE PS.project_id = ", projectId );
-        scripter.addTab(     5     ).addLine("AND TSS.timeseries_id = TS.timeseries_id");
-        scripter.addTab(     5     ).addLine("AND PS.member = '", sourceType.value(), "'" );
-        scripter.addTab(   3   ).addLine(")");
-        scripter.addTab(   3   ).addLine("AND EXISTS (");
-        scripter.addTab(    4    ).addLine("SELECT 1");
-        scripter.addTab(    4    ).addLine("FROM wres.VariableFeature VBF");
-        scripter.addTab(    4    ).addLine("WHERE VBF.variablefeature_id = TS.variablefeature_id");
-        scripter.addTab(     5     ).addLine("AND VBF.feature_id = ", createAnyFeatureStatement( features, 6 ));
-        scripter.addTab(   3   ).addLine(")");
+        scripter.addTab(    3    ).addLine("SELECT 1");
+        scripter.addTab(    3    ).addLine("FROM wres.TimeSeriesSource TSS");
+        scripter.addTab(    3    ).addLine("INNER JOIN wres.ProjectSource PS");
+        scripter.addTab(     4     ).addLine("ON PS.source_id = TSS.source_id");
+        scripter.addTab(    3    ).addLine("WHERE PS.project_id = ", projectId );
+        scripter.addTab(     4     ).addLine("AND TSS.timeseries_id = TS.timeseries_id");
+        scripter.addTab(     4     ).addLine("AND PS.member = '", sourceType.value(), "'" );
+        scripter.addTab(   2   ).addLine(")");
+        scripter.addTab(   2   ).addLine("AND EXISTS (");
+        scripter.addTab(    3    ).addLine("SELECT 1");
+        scripter.addTab(    3    ).addLine("FROM wres.VariableFeature VBF");
+        scripter.addTab(    3    ).addLine("WHERE VBF.variablefeature_id = TS.variablefeature_id");
+        scripter.addTab(     4     ).addLine("AND VBF.feature_id = ", createAnyFeatureStatement( features, 6 ));
+        scripter.addTab(   2   ).addLine(")");
         scripter.addTab().addLine(") AS TS");
         scripter.addTab(  2  ).addLine("ON TS.timeseries_id = TSV.timeseries_id");
 
@@ -1157,12 +1167,20 @@ final class ProjectScriptGenerator
         }
 
         scripter.addLine(")");
-        scripter.addLine("SELECT D.difference AS time_step, D.scale_period, D.scale_function");
+        scripter.addLine("SELECT D.difference AS time_step,");
+        scripter.addTab().addLine("D.scale_period,");
+        scripter.addTab().addLine("D.scale_function,");
+        scripter.addTab().addLine("D.variablefeature_id,");
+        scripter.addTab().addLine("F.lid");       
         scripter.addLine("FROM differences D");
+        scripter.addLine("INNER JOIN wres.variablefeature AS VF");
+        scripter.addTab().addLine( "ON VF.variablefeature_id = D.variablefeature_id" );
+        scripter.addLine("INNER JOIN wres.feature AS F");
+        scripter.addTab().addLine( "ON F.feature_id = VF.feature_id" );
         scripter.addLine("WHERE D.difference IS NOT NULL");
         scripter.addTab().addLine("AND D.timeseries_id = D.previous_timeseries_id");
-        scripter.add("GROUP BY D.difference, D.scale_period, D.scale_function;");
-        
+        scripter.add("GROUP BY D.difference, D.variablefeature_id, F.lid, D.scale_period, D.scale_function;");
+
         return scripter;
     }
     
