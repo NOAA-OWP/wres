@@ -100,9 +100,16 @@ public abstract class XYChartDataSourceFactory
             }
         };
 
+        int seriesCount = 0;
+        
+        if( !input.getData().isEmpty() )
+        {
+            seriesCount = input.getData().get( 0 ).getData().size();
+        }
+        
         XYChartDataSourceFactory.buildInitialParameters( source,
                                                          orderIndex,
-                                                         input.getData().size() );
+                                                         seriesCount );
 
         if ( pooledInput )
         {

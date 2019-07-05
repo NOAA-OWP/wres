@@ -727,13 +727,22 @@ public abstract class ChartEngineFactory
         //For each input in the list, create a chart
         for ( BoxPlotStatistics next : input )
         {
-            ChartEngine engine = ChartEngineFactory.processBoxPlotErrorsDiagram( next,
-                                                                                 templateName,
-                                                                                 overrideParametersStr,
-                                                                                 durationUnits );
-            results.put( Pair.of( next.getMetadata().getSampleMetadata().getTimeWindow(),
-                                  next.getMetadata().getSampleMetadata().getThresholds() ),
-                         engine );
+            // Skip empty outputs: #65503
+            if ( !next.getData().isEmpty() )
+            {
+                ChartEngine engine = ChartEngineFactory.processBoxPlotErrorsDiagram( next,
+                                                                                     templateName,
+                                                                                     overrideParametersStr,
+                                                                                     durationUnits );
+                results.put( Pair.of( next.getMetadata().getSampleMetadata().getTimeWindow(),
+                                      next.getMetadata().getSampleMetadata().getThresholds() ),
+                             engine );
+            }
+            else
+            {
+                LOGGER.debug( "Skipped the box plot outputs for {} because there were no box plot statistics to draw.",
+                              next.getMetadata() );
+            }
         }
         
         return Collections.unmodifiableMap( results );
