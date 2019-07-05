@@ -51,7 +51,7 @@
 
     <!-- Quiet the connection pooling library with level "warn" or "error" -->
     <logger name="com.mchange.v2">
-        <level value="warn" />
+        <level value="error" />
     </logger>
 
     <!-- Quiet the cdm hdf5 library until it is quieter by default -->
