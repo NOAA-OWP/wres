@@ -70,9 +70,9 @@ public abstract class XYChartDataSourceFactory
                                                             ChronoUnit durationUnits )
     {
         Objects.requireNonNull( input );
-        
+
         Objects.requireNonNull( durationUnits );
-        
+
         // One box per pool? See #62374
         boolean pooledInput = input.getMetadata().getMetricID().isInGroup( StatisticGroup.BOXPLOT_PER_POOL );
 
@@ -92,19 +92,17 @@ public abstract class XYChartDataSourceFactory
             {
                 // Add a boxplot for output that contains one box per pool. See #62374
                 if ( pooledInput )
-                {                    
+                {
                     return new BoxPlotDiagramByLeadXYDataset( input, durationUnits );
                 }
-                
+
                 return new BoxPlotDiagramXYDataset( input );
             }
         };
-        
-        BoxPlotStatistic statistic = input.getData().get( 0 );
 
         XYChartDataSourceFactory.buildInitialParameters( source,
                                                          orderIndex,
-                                                         statistic.getData().size() );
+                                                         input.getData().size() );
 
         if ( pooledInput )
         {
@@ -113,16 +111,29 @@ public abstract class XYChartDataSourceFactory
         }
         else
         {
+            // See #65503 - need a default in case the input is empty
+            String inputUnits = "unknown";
+
+            if ( !input.getData().isEmpty() )
+            {
+                inputUnits = input.getData().get( 0 ).getLinkedValueType().toString();
+
+            }
+
             source.getDefaultFullySpecifiedDataSourceDrawingParameters()
-                  .setDefaultDomainAxisTitle( statistic.getLinkedValueType()
-                                                       .toString()
-                                              + "@inputUnitsLabelSuffix@" );
+                  .setDefaultDomainAxisTitle( inputUnits + "@inputUnitsLabelSuffix@" );
         }
-        
+
+        // See #65503 - need a default in case the input is empty
+        String outputUnits = "unknown";
+
+        if ( !input.getData().isEmpty() )
+        {
+            outputUnits = input.getData().get( 0 ).getValueType().toString();
+        }
+
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
-              .setDefaultRangeAxisTitle( statistic.getValueType()
-                                              .toString()
-                                         + "@outputUnitsLabelSuffix@" );
+              .setDefaultRangeAxisTitle( outputUnits + "@outputUnitsLabelSuffix@" );
 
         if ( ( subPlotIndex != null ) && ( subPlotIndex >= 0 ) )
         {
