@@ -99,11 +99,13 @@ public class WresJobOutput
                 {
                     java.nio.file.Path path =
                             Paths.get( outputResource.getPath() );
-                    java.nio.file.Path resourceName = path.getFileName();
-                    String resource = "<a href=\"output/" + resourceName + "\">" + resourceName
-                                      + "</a>";
-                    writer.write( resource );
-                    writer.newLine();
+                    String resourceName = path.getFileName()
+                                              .toString();
+                    writer.write( "<a href=\"output/" );
+                    writer.write( resourceName );
+                    writer.write(  "\">" );
+                    writer.write( resourceName );
+                    writer.write( "</a></li><li>" );
                 }
 
                 writer.write( footer );
