@@ -150,7 +150,7 @@ public class ScaleValidationEvent implements Comparable<ScaleValidationEvent>
         
         int returnMe = this.getEventType().compareTo( o.getEventType() );
         
-        if(  returnMe < 0 )
+        if(  returnMe != 0 )
         {
             return returnMe;
         }

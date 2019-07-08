@@ -1030,21 +1030,21 @@ public class Project
         {
             // Reverse the map, grouping by context
             Map<String, Set<ScaleValidationEvent>> eventsWithContextInv = new TreeMap<>();
-
+            
+            Set<String> allContexts = new TreeSet<>();
+            
             for ( Map.Entry<ScaleValidationEvent, Set<String>> nextEntry : events.entrySet() )
             {
-                Set<ScaleValidationEvent> eventsInv;
+                String nextContext = nextEntry.getValue().toString();
+                
+                allContexts.addAll( nextEntry.getValue() );
+                
+                Set<ScaleValidationEvent> eventsInv = eventsWithContextInv.get( nextContext );
 
-                String context = nextEntry.getValue().toString();
-
-                if ( eventsWithContextInv.containsKey( context ) )
-                {
-                    eventsInv = eventsWithContextInv.get( context );
-                }
-                else
+                if ( Objects.isNull( eventsInv ) )
                 {
                     eventsInv = new TreeSet<>();
-                    eventsWithContextInv.put( context, eventsInv );
+                    eventsWithContextInv.put( nextContext, eventsInv );
                 }
 
                 // Add the event
@@ -1055,8 +1055,12 @@ public class Project
             {
                 StringJoiner message = new StringJoiner( System.lineSeparator() );
 
-                message.add( "While validating the time-scale and time-step information, uncovered the following "
-                             + "errors in different contexts: " );
+                message.add( "While validating the time-scale and time-step information, uncovered " + events.size()
+                             + " errors across "
+                             + allContexts.size()
+                             + " features: "
+                             + allContexts
+                             + ". The details of each error follow:" );
 
                 for ( Map.Entry<String, Set<ScaleValidationEvent>> nextEntry : eventsWithContextInv.entrySet() )
                 {
@@ -1091,8 +1095,8 @@ public class Project
         if ( !events.isEmpty() )
         {
             StringJoiner message = new StringJoiner( System.lineSeparator() );
-            message.add( "While validating the time-scale and time-step information, uncovered the following "
-                         + "errors: " );
+            message.add( "While validating the time-scale and time-step information, uncovered " + events.size()
+                         + " errors, as follows: " );
 
             events.stream().forEach( e -> message.add( spacer + spacer + e.toString() ) );
 
@@ -3495,13 +3499,14 @@ public class Project
 
             // Time scale may be null
             return Objects.equals( input.getTimeScale(), this.getTimeScale() )
-                   && input.getTimeStep().equals( this.getTimeStep() );
+                   && input.getTimeStep().equals( this.getTimeStep() )
+                   && input.getContext().equals( this.getContext() );
         }
 
         @Override
         public int hashCode()
         {
-            return Objects.hash( this.getTimeScale(), this.getTimeStep() );
+            return Objects.hash( this.getTimeScale(), this.getTimeStep(), this.getContext() );
         }
 
         @Override
