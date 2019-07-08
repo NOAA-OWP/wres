@@ -112,11 +112,11 @@ then
         exit 2
     fi
 
-    echo "Tagging wres/worker-worker:$overall_version as $DOCKER_REGISTRY/wres/wres-worker/$overall_version"
+    echo "Tagging wres/wres-worker:$overall_version as $DOCKER_REGISTRY/wres/wres-worker/$overall_version"
     docker tag wres/wres-worker:$overall_version $DOCKER_REGISTRY/wres/wres-worker:$overall_version
-    echo "Tagging wres/worker-tasker:$tasker_version as $DOCKER_REGISTRY/wres/wres-tasker/$tasker_version"
+    echo "Tagging wres/wres-tasker:$tasker_version as $DOCKER_REGISTRY/wres/wres-tasker/$tasker_version"
     docker tag wres/wres-tasker:$tasker_version $DOCKER_REGISTRY/wres/wres-tasker:$tasker_version
-    echo "Tagging wres/worker-broker:$broker_version as $DOCKER_REGISTRY/wres/wres-broker/$broker_version"
+    echo "Tagging wres/wres-broker:$broker_version as $DOCKER_REGISTRY/wres/wres-broker/$broker_version"
     docker tag wres/wres-broker:$broker_version $DOCKER_REGISTRY/wres/wres-broker:$broker_version
     docker push $DOCKER_REGISTRY/wres/wres-worker:$overall_version
     docker push $DOCKER_REGISTRY/wres/wres-tasker:$tasker_version
