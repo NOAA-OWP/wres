@@ -468,6 +468,9 @@ public final class Operations {
 
             while ( retriesNeeded.size() > 0 && retriesAttempted < RETRY_LIMIT )
             {
+                // First, invalidate the data sources cache.
+                DataSources.invalidateGlobalCache();
+
                 List<IngestResult> doRetryOnThese =
                         new ArrayList<>( retriesNeeded.size() );
                 doRetryOnThese.addAll( retriesNeeded );
