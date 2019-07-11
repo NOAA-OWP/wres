@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -479,7 +480,7 @@ public final class Operations {
                               retriesAttempted,retriesNeeded );
 
                 List<Future<List<IngestResult>>> retriedIngests =
-                        Collections.emptyList();
+                        new ArrayList<>( retriesNeeded.size() );
                 List<IngestResult> retriesFinishedThisIteration =
                         new ArrayList<>( retriesNeeded.size() );
 
@@ -490,7 +491,8 @@ public final class Operations {
 
                 for ( IngestResult ingestResult : doRetryOnThese )
                 {
-                    retriedIngests = loader.retry( ingestResult );
+                    List<Future<List<IngestResult>>> retriedIngest = loader.retry( ingestResult );
+                    retriedIngests.addAll( retriedIngest );
                 }
 
                 for ( Future<List<IngestResult>> futureRetriedIngest : retriedIngests )
@@ -523,6 +525,8 @@ public final class Operations {
             throw new IngestException( message, ee );
         }
 
+        Set<Path> pathsToDelete = new HashSet<>();
+
         for ( IngestResult retryResult : retriesFinished )
         {
             // In the case where a zipped source is retried, it will be a temp
@@ -533,20 +537,24 @@ public final class Operations {
             if ( resultUri.getRawPath()
                           .contains( ZippedPIXMLIngest.TEMP_FILE_PREFIX ) )
             {
-                Path tempFile = Paths.get( resultUri );
+                Path pathToDelete = Paths.get( resultUri );
+                pathsToDelete.add( pathToDelete );
+            }
+        }
 
-                try
-                {
-                    Files.delete( tempFile );
-                    LOGGER.info( "Deleted temporary zipped source {}",
-                                 tempFile );
-                }
-                catch ( IOException ioe )
-                {
-                    LOGGER.warn( "Failed to delete temporary file {}",
-                                 tempFile,
-                                 ioe );
-                }
+        for ( Path pathToDelete : pathsToDelete )
+        {
+            try
+            {
+                Files.delete( pathToDelete );
+                LOGGER.info( "Deleted temporary zipped source {}",
+                             pathToDelete );
+            }
+            catch ( IOException ioe )
+            {
+                LOGGER.warn( "Failed to delete temporary file {}",
+                             pathToDelete,
+                             ioe );
             }
         }
 
