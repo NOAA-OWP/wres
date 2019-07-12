@@ -265,7 +265,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
         // Find the union across metrics
         Set<Threshold> union = filtered.union();
 
-        double[] sorted = getSortedClimatology( input, union );
+        double[] sorted = this.getSortedClimatology( input, union );
 
         // Iterate the thresholds
         for ( Threshold threshold : union )

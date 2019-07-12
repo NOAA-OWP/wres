@@ -336,15 +336,15 @@ public abstract class Pairs<T extends Pair<?,?>> implements SampleData<T>
 
     private void validateClimatologicalInput()
     {
-        if ( Objects.nonNull( climatology ) )
+        if ( Objects.nonNull( this.getClimatology() ) && !this.getRawData().isEmpty() )
         {
-            if ( climatology.size() == 0 )
+            if ( this.getClimatology().size() == 0 )
             {
                 throw new SampleDataException( "Cannot build the paired data with an empty climatology: add one or "
                                                + "more values." );
             }
 
-            if ( !Arrays.stream( climatology.getDoubles() ).anyMatch( Double::isFinite ) )
+            if ( !Arrays.stream( this.getClimatology().getDoubles() ).anyMatch( Double::isFinite ) )
             {
                 throw new SampleDataException( "Must have at least one non-missing value in the climatological "
                                                + "input" );

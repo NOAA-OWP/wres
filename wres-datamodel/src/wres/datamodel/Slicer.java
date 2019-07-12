@@ -23,6 +23,9 @@ import java.util.function.ToDoubleFunction;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import wres.datamodel.sampledata.pairs.DichotomousPair;
 import wres.datamodel.sampledata.pairs.DichotomousPairs;
 import wres.datamodel.sampledata.pairs.DiscreteProbabilityPair;
@@ -56,6 +59,11 @@ import wres.datamodel.time.TimeWindow;
 public final class Slicer
 {
 
+    /**
+     * Logger.
+     */
+    private static final Logger LOGGER = LoggerFactory.getLogger( Slicer.class );
+    
     /**
      * Null input error message.
      */
@@ -1395,7 +1403,8 @@ public final class Slicer
 
     /**
      * Returns a {@link Threshold} with quantiles defined from a prescribed {@link Threshold} with probabilities, 
-     * where the quantiles are mapped using {@link #getQuantileFunction(double[])}.
+     * where the quantiles are mapped using {@link #getQuantileFunction(double[])}. If the input is empty, returns
+     * a threshold whose value is {@link Double#NaN}.
      * 
      * @param sorted the sorted input array
      * @param threshold the probability threshold from which the quantile threshold is determined
@@ -1416,9 +1425,18 @@ public final class Slicer
         }
         if ( sorted.length == 0 )
         {
-            throw new IllegalArgumentException( "Cannot compute the quantile from empty input." );
+            // #65881
+            LOGGER.debug( "Returning a default quantile because there were no measurements from which to determine a "
+                          + "measured quantile." );
+
+            return Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( Double.NaN ),
+                                                  threshold.getProbabilities(),
+                                                  threshold.getCondition(),
+                                                  threshold.getDataType(),
+                                                  threshold.getLabel(),
+                                                  threshold.getUnits() );
         }
-        DoubleUnaryOperator qF = getQuantileFunction( sorted );
+        DoubleUnaryOperator qF = Slicer.getQuantileFunction( sorted );
         Double first = qF.applyAsDouble( threshold.getProbabilities().first() );
         if ( Objects.nonNull( digits ) )
         {
