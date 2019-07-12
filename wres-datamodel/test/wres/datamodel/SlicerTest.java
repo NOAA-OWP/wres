@@ -1188,6 +1188,29 @@ public final class SlicerTest
                           .isEmpty() );
 
     }
+    
+    /**
+     * Checks that a default quantile is returned by 
+     * {@link Slicer#getQuantileFromProbability(Threshold, double[], Integer)} empty input.
+     */
+    
+    @Test
+    public void testGetQuantileFromProbabilityReturnsDefaultQuantileForEmptyInput()
+    {
+        double[] sorted = new double[0];
+        Threshold testA = Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.0 ),
+                                                            Operator.GREATER,
+                                                            ThresholdDataType.LEFT );
+        
+        //Test for equality
+        Threshold actual = Slicer.getQuantileFromProbability( testA, sorted );  
+        
+        Threshold expected = Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( Double.NaN ),                                                            
+                                                            OneOrTwoDoubles.of( 0.0 ),
+                                                            Operator.GREATER,
+                                                            ThresholdDataType.LEFT );
+        assertEquals( expected, actual );        
+    }
 
     /**
      * Tests the {@link Slicer#filter(ListOfStatistics, java.util.function.Predicate)} produces an expected 
