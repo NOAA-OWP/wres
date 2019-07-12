@@ -48,6 +48,7 @@ public class CSVSource extends BasicSource
 
     private final DatabaseLockManager lockManager;
     private final Set<Pair<CountDownLatch,CountDownLatch>> latches = new HashSet<>();
+    private final Set<String> unconfiguredVariableNames = new HashSet<>( 1 );
     private SourceDetails sourceDetails;
 
     /**
@@ -126,6 +127,13 @@ public class CSVSource extends BasicSource
             sourceCompleted = this.wasCompleted( this.sourceDetails );
         }
 
+        if ( !this.unconfiguredVariableNames.isEmpty() )
+        {
+            LOGGER.warn( "The following variable names were encountered in observation csv data source from {} that were not configured in the project: {}",
+                         this.getFilename(),
+                         this.unconfiguredVariableNames );
+        }
+
         return IngestResult.singleItemListFrom(
                 this.getProjectConfig(),
                 this.getDataSource(),
@@ -199,6 +207,13 @@ public class CSVSource extends BasicSource
         else
         {
             sourceCompleted = this.wasCompleted( this.sourceDetails );
+        }
+
+        if ( !this.unconfiguredVariableNames.isEmpty() )
+        {
+            LOGGER.warn( "The following variable names were encountered in forecast csv data source from {} that were not configured in the project: {}",
+                         this.getFilename(),
+                         this.unconfiguredVariableNames );
         }
 
         return IngestResult.singleItemListFrom(
@@ -401,13 +416,8 @@ public class CSVSource extends BasicSource
         else if (!dataProvider.getString( "variable_name" )
                               .equalsIgnoreCase( this.getDataSourceConfig().getVariable().getValue() ))
         {
-            valid = false;
             String foundVariable = dataProvider.getString( "variable_name" );
-            errorJoiner.add( "The variable in the provided csv ('" +
-                             foundVariable +
-                             "') doesn't match the configured variable ('" +
-                             this.getDataSourceConfig().getVariable().getValue() +
-                             "')" );
+            this.unconfiguredVariableNames.add( foundVariable );
         }
 
         hasColumn = dataProvider.hasColumn( "location" );

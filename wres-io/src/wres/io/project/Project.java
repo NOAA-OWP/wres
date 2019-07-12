@@ -59,6 +59,7 @@ import wres.io.data.caching.Variables;
 import wres.io.data.details.FeatureDetails;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
+import wres.io.utilities.NoDataException;
 import wres.util.CalculationException;
 import wres.util.FormattedStopwatch;
 import wres.util.LRUMap;
@@ -337,8 +338,10 @@ public class Project
      * @throws SQLException if retrieval of data from the database fails
      * @throws IOException if loading fails
      * @throws CalculationException if required calculations could not be completed
+     * @throws NoDataException if zero features have intersecting data
      */
-    public void prepareForExecution() throws SQLException, IOException, CalculationException
+
+    public void prepareForExecution() throws SQLException, IOException
     {
         LOGGER.trace( "prepareForExecution() entered" );
         // Sets and validates the time-scale information from the declaration and ingested sources
@@ -357,6 +360,11 @@ public class Project
                 this.features = this.getIntersectingFeatures();
                 LOGGER.debug( "Features after getting intersecting features: {}",
                               this.features );
+            }
+
+            if ( this.features.isEmpty() )
+            {
+                throw new NoDataException( "No features had data on both the left and the right for the variables specified." );
             }
         }
 
@@ -2265,7 +2273,7 @@ public class Project
      * locations to find offsets for cannot be formed
      * @throws CalculationException Thrown if a common scale between left and right data could be calculated
      */
-    private void populateLeadOffsets() throws IOException, SQLException, CalculationException
+    private void populateLeadOffsets() throws IOException, SQLException
     {
         LOGGER.trace( "populateLeadOffsets() entered" );
 
