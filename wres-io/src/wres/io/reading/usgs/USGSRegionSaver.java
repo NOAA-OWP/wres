@@ -468,9 +468,6 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
         // Determines if we use the daily REST service or the instantaneous REST service
         webTarget = webTarget.path( this.getEndpoint().toString() );
 
-        // Not necessary, but aids with debugging
-        webTarget = webTarget.queryParam( "indent", "on" );
-
         // The current object tree supports JSON; additional work will
         // need to be done to support XML.
         webTarget = webTarget.queryParam( "format", "json" );
