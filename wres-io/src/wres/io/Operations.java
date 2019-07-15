@@ -6,8 +6,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,6 +25,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.slf4j.LoggerFactory;
+
+import static java.time.ZoneOffset.UTC;
 
 import wres.config.FeaturePlus;
 import wres.config.generated.Feature;
@@ -727,16 +730,15 @@ public final class Operations {
      * Logs information about the execution of the WRES into the database for
      * aid in remote debugging
      * @param arguments The arguments used to run the WRES
-     * @param start The time (in milliseconds) at which the WRES was executed
-     * @param duration The length of time (in milliseconds) that the WRES
-     *                 executed in
+     * @param start The instant at which the WRES began execution
+     * @param duration The length of time that the WRES executed in
      * @param failed Whether or not the execution failed
      * @param error Any error that caused the WRES to crash
      * @param version The top-level version of WRES (module versions vary)
      */
     public static void logExecution( String[] arguments,
-                                     long start,
-                                     long duration,
+                                     Instant start,
+                                     Duration duration,
                                      boolean failed,
                                      String error,
                                      String version )
@@ -746,9 +748,8 @@ public final class Operations {
 
         try
         {
-            Timestamp startTimestamp = new Timestamp( start );
-            String runTime = duration + " MILLISECONDS";
-
+            LocalDateTime startedAtZulu = LocalDateTime.ofInstant( start, UTC );
+            String runTime = duration.toMillis() + " MILLISECONDS";
 
             // For any arguments that happen to be regular files, read the
             // contents of the first file into the "project" field. Maybe there
@@ -814,7 +815,7 @@ public final class Operations {
                     project,
                     System.getProperty( "user.name" ),
                     // Let server find and report network address
-                    startTimestamp,
+                    startedAtZulu,
                     runTime,
                     failed,
                     error
