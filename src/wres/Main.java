@@ -1,7 +1,8 @@
 package wres;
 
 import java.lang.management.ManagementFactory;
-import java.time.OffsetDateTime;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -13,9 +14,7 @@ import org.slf4j.MDC;
 
 import wres.io.Operations;
 import wres.util.Collections;
-import wres.util.FormattedStopwatch;
 import wres.util.Strings;
-import wres.util.TimeHelper;
 
 /**
  * @author Christopher Tubbs
@@ -59,9 +58,9 @@ public class Main {
 
         final String finalOperation = operation;
 
-        FormattedStopwatch watch = new FormattedStopwatch();
-
         final AtomicInteger exitCode = new AtomicInteger( MainFunctions.FAILURE );
+
+        Instant beganExecution = Instant.now();
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             if ( exitCode.get() == MainFunctions.SUCCESS )
@@ -72,7 +71,10 @@ public class Main {
             {
                 MainFunctions.forceShutdown( 6, TimeUnit.SECONDS );
             }
-            LOGGER.info("The function '{}' took {}", finalOperation, watch.getFormattedDuration());
+
+            Instant endedExecution = Instant.now();
+            Duration duration = Duration.between( beganExecution, endedExecution );
+            LOGGER.info( "The function '{}' took {}", finalOperation, duration );
         }));
 
         String[] cutArgs = Collections.removeIndexFromArray(args, 0);
@@ -82,12 +84,7 @@ public class Main {
 
         LOGGER.info( "Beginning operation: '{}' at {}...",
                      operation,
-                     TimeHelper.convertDateToString( OffsetDateTime.now() ));
-        watch.start();
-
-        // The following two are for logging run information to the database.
-        long startTime = System.currentTimeMillis();
-        Long duration;
+                     Instant.now() );
 
         try
         {
@@ -99,10 +96,11 @@ public class Main {
                                      + "logs for more details." );
             }
 
-            duration = System.currentTimeMillis() - startTime;
+            Instant endedExecution = Instant.now();
+            Duration duration = Duration.between( beganExecution, endedExecution );
 
             Operations.logExecution( args,
-                                     startTime,
+                                     beganExecution,
                                      duration,
                                      exitCode.get() == MainFunctions.FAILURE,
                                      Main.combineExceptions(),
@@ -110,17 +108,17 @@ public class Main {
         }
         catch ( Exception e )
         {
-            duration = System.currentTimeMillis() - startTime;
+            Instant endedExecution = Instant.now();
+            Duration duration = Duration.between( beganExecution, endedExecution );
             String message = "Operation '" + operation + "' completed unsuccessfully";
             LOGGER.error( message, e );
             Operations.logExecution( args,
-                                     startTime,
+                                     beganExecution,
                                      duration,
                                      exitCode.get() == MainFunctions.FAILURE,
                                      Main.combineExceptions( ),
                                      Main.getVersion() );
         }
-        watch.stop();
 
         Main.printLogFileInformation();
 
