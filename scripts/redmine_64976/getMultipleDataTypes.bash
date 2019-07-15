@@ -23,7 +23,7 @@ SCRIPT_DIR=$PWD # use -s option to override this
 LOGFILE=$SCRIPT_DIR/nc_logs.txt
 SSHKEYS="yes"
 
-while getopts "h:u:d:w:s:V:t:k:" opt; do
+while getopts "h:u:d:w:s:V:t:k:l:" opt; do
 	case $opt in
 		h)
 			DESTINATION_HOST=$OPTARG
@@ -49,8 +49,11 @@ while getopts "h:u:d:w:s:V:t:k:" opt; do
 		k)
 			SSHKEYS=$OPTARG
 			;;
+		l)
+			LOGFILE=$OPTARG
+			;;
 		\?)
-			echo "Usage: $0 -t data_types [-h destination_host -d /destination_dir -u remote_loginID -w yyyymmdd [yyyymmdd2] -s thisScript_dir -V data_version -k YES/NO]"
+			echo "Usage: $0 -t data_types [-h destination_host -d /destination_dir -u remote_loginID -w yyyymmdd [yyyymmdd2] -s thisScript_dir -V data_version -l log_file -k YES/NO]"
 			exit 2
 			;;
 	esac
@@ -58,7 +61,7 @@ done
 
 if [ -z "$DATATYPES" ]
 then
-	echo "Usage: $0 -t data_types [-h destination_host -d /destination_dir -u remote_loginID -w yyyymmdd [yyyymmdd2] -s thisScript_dir -V data_version -k YES/NO]"
+	echo "Usage: $0 -t data_types [-h destination_host -d /destination_dir -u remote_loginID -w yyyymmdd [yyyymmdd2] -s thisScript_dir -V data_version -l log_file -k YES/NO]"
 	exit 2
 fi
 
@@ -92,7 +95,7 @@ do
 	for DATATYPE in $DATATYPES # get data type1, type2, ... typeN
 	do
 		echo $DATATYPE
-		./getNplace_DStore_data.bash -t $DATATYPE -h $DESTINATION_HOST -d $DESTINATION_DIR -u $REMOTE_USER -s $SCRIPT_DIR -V $DATAVERSION -w $WHATDATE -k $SSHKEYS 
+		./getNplace_DStore_data.bash -t $DATATYPE -h $DESTINATION_HOST -d $DESTINATION_DIR -u $REMOTE_USER -s $SCRIPT_DIR -V $DATAVERSION -w $WHATDATE -l $LOGFILE -k $SSHKEYS 
 	done
 	FROMDATE=`expr $FROMDATE + 1` # increment by 1 day
 done

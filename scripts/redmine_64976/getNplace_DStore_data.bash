@@ -24,7 +24,7 @@ SCRIPT_DIR=$PWD # use -s option to override this
 LOGFILE=$SCRIPT_DIR/nc_logs.txt
 SSHKEYS="YES"
 
-while getopts "h:u:d:w:s:V:t:k:" opt; do
+while getopts "h:u:d:w:s:V:t:k:l:" opt; do
 	case $opt in
 		h)
 			DESTINATION_HOST=$OPTARG
@@ -50,8 +50,11 @@ while getopts "h:u:d:w:s:V:t:k:" opt; do
 		k)
 			SSHKEYS=$OPTARG
 			;;
+		l)
+			LOGFILE=$OPTARG
+			;;
 		\?)
-			echo "Usage: $0 -t data_type [-h destination_host -d /destination_dir -u remote_loginID -w yyyymmdd -s thisScript_dir -V data_version -k YES/NO]"
+			echo "Usage: $0 -t data_type [-h destination_host -d /destination_dir -u remote_loginID -w yyyymmdd -s thisScript_dir -V data_version -l log_file -k YES/NO]"
 			exit 2
 			;;
 	esac
@@ -59,7 +62,7 @@ done
 
 if [ -z "$DATATYPE" ]
 then
-	echo "Usage: $0 -t data_type [-h destination_host -d /destination_dir -u remote_loginID -w yyyymmdd -s thisScript_dir -V data_version -k YES/NO]"
+	echo "Usage: $0 -t data_type [-h destination_host -d /destination_dir -u remote_loginID -w yyyymmdd -s thisScript_dir -V data_version -l log_file -k YES/NO]"
 	exit 2
 fi
 
