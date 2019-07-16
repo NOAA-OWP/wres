@@ -28,7 +28,7 @@ import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.statistics.ListOfStatistics;
-import wres.datamodel.statistics.MultiVectorStatistic;
+import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindow;
@@ -36,13 +36,13 @@ import wres.io.config.ConfigHelper;
 import wres.io.writing.commaseparated.CommaSeparatedUtilities;
 
 /**
- * Helps write box plots comprising {@link MultiVectorStatistic} to a file of Comma Separated Values (CSV).
+ * Helps write box plots comprising {@link DiagramStatistic} to a file of Comma Separated Values (CSV).
  * 
  * @author james.brown@hydrosolved.com
  */
 
 public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
-        implements Consumer<ListOfStatistics<MultiVectorStatistic>>, Supplier<Set<Path>>
+        implements Consumer<ListOfStatistics<DiagramStatistic>>, Supplier<Set<Path>>
 {
     /**
      * Set of paths that this writer actually wrote to
@@ -76,7 +76,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
      */
 
     @Override
-    public void accept( final ListOfStatistics<MultiVectorStatistic> output )
+    public void accept( final ListOfStatistics<DiagramStatistic> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
@@ -138,7 +138,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
     private static Set<Path> writeOneDiagramOutputType( Path outputDirectory,
                                                         ProjectConfig projectConfig,
                                                         DestinationConfig destinationConfig,
-                                                        ListOfStatistics<MultiVectorStatistic> output,
+                                                        ListOfStatistics<DiagramStatistic> output,
                                                         Format formatter,
                                                         ChronoUnit durationUnits )
             throws IOException
@@ -206,7 +206,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
 
     private static Set<Path> writeOneDiagramOutputTypePerTimeWindow( Path outputDirectory,
                                                                      DestinationConfig destinationConfig,
-                                                                     ListOfStatistics<MultiVectorStatistic> output,
+                                                                     ListOfStatistics<DiagramStatistic> output,
                                                                      StringJoiner headerRow,
                                                                      Format formatter,
                                                                      ChronoUnit durationUnits )
@@ -219,7 +219,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
                 Slicer.discover( output, next -> next.getMetadata().getSampleMetadata().getTimeWindow() );
         for ( TimeWindow timeWindow : timeWindows )
         {
-            ListOfStatistics<MultiVectorStatistic> next =
+            ListOfStatistics<DiagramStatistic> next =
                     Slicer.filter( output, data -> data.getSampleMetadata().getTimeWindow().equals( timeWindow ) );
 
             StatisticMetadata meta = next.getData().get( 0 ).getMetadata();
@@ -263,7 +263,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
 
     private static Set<Path> writeOneDiagramOutputTypePerThreshold( Path outputDirectory,
                                                                     DestinationConfig destinationConfig,
-                                                                    ListOfStatistics<MultiVectorStatistic> output,
+                                                                    ListOfStatistics<DiagramStatistic> output,
                                                                     StringJoiner headerRow,
                                                                     Format formatter,
                                                                     ChronoUnit durationUnits )
@@ -277,7 +277,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
         for ( OneOrTwoThresholds threshold : thresholds )
         {
 
-            ListOfStatistics<MultiVectorStatistic> next =
+            ListOfStatistics<DiagramStatistic> next =
                     Slicer.filter( output, data -> data.getSampleMetadata().getThresholds().equals( threshold ) );
 
             StatisticMetadata meta = next.getData().get( 0 ).getMetadata();
@@ -316,7 +316,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
      */
 
     private static List<RowCompareByLeft>
-            getRowsForOneDiagram( ListOfStatistics<MultiVectorStatistic> output,
+            getRowsForOneDiagram( ListOfStatistics<DiagramStatistic> output,
                                   Format formatter,
                                   ChronoUnit durationUnits )
     {
@@ -335,7 +335,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
             for ( OneOrTwoThresholds threshold : thresholds )
             {
                 // One output per time window and threshold
-                MultiVectorStatistic nextOutput = Slicer.filter( output,
+                DiagramStatistic nextOutput = Slicer.filter( output,
                                                                  data -> data.getSampleMetadata()
                                                                              .getThresholds()
                                                                              .equals( threshold )
@@ -370,7 +370,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
      */
 
     private static void
-            addRowsForOneDiagramAtOneTimeWindowAndThreshold( MultiVectorStatistic output,
+            addRowsForOneDiagramAtOneTimeWindowAndThreshold( DiagramStatistic output,
                                                              Map<Integer, List<Double>> merge )
     {
 
@@ -412,7 +412,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
      * @return the row data
      */
 
-    private static List<Double> getOneRowForOneDiagram( MultiVectorStatistic next, int row )
+    private static List<Double> getOneRowForOneDiagram( DiagramStatistic next, int row )
     {
         List<Double> valuesToAdd = new ArrayList<>();
         for ( Entry<MetricDimension, VectorOfDoubles> nextColumn : next.getData().entrySet() )
@@ -436,14 +436,14 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
      * @return the mutated header
      */
 
-    private static StringJoiner getDiagramHeader( ListOfStatistics<MultiVectorStatistic> output,
+    private static StringJoiner getDiagramHeader( ListOfStatistics<DiagramStatistic> output,
                                                   StringJoiner headerRow )
     {
         // Append to header
         StringJoiner returnMe = new StringJoiner( "," );
         returnMe.merge( headerRow );
         // Discover first item to help
-        MultiVectorStatistic data = output.getData().get( 0 );
+        DiagramStatistic data = output.getData().get( 0 );
         String metricName = data.getMetadata().getMetricID().toString();
 
         Set<MetricDimension> dimensions = data.getData().keySet();

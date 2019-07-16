@@ -18,7 +18,7 @@ import wres.datamodel.sampledata.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.MatrixStatistic;
-import wres.datamodel.statistics.MultiVectorStatistic;
+import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Diagram;
 import wres.engine.statistics.metric.MetricCollection;
@@ -34,7 +34,7 @@ import wres.engine.statistics.metric.MetricParameterException;
  * @author james.brown@hydrosolved.com
  */
 
-public class RelativeOperatingCharacteristicDiagram extends Diagram<DiscreteProbabilityPairs, MultiVectorStatistic>
+public class RelativeOperatingCharacteristicDiagram extends Diagram<DiscreteProbabilityPairs, DiagramStatistic>
 {
 
     /**
@@ -68,7 +68,7 @@ public class RelativeOperatingCharacteristicDiagram extends Diagram<DiscreteProb
     }
 
     @Override
-    public MultiVectorStatistic apply( final DiscreteProbabilityPairs s )
+    public DiagramStatistic apply( final DiscreteProbabilityPairs s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -124,7 +124,7 @@ public class RelativeOperatingCharacteristicDiagram extends Diagram<DiscreteProb
                                          this.hasRealUnits(),
                                          s.getRawData().size(),
                                          null );
-        return MultiVectorStatistic.ofMultiVectorOutput( output, metOut );
+        return DiagramStatistic.ofDiagramStatistic( output, metOut );
     }
 
     @Override

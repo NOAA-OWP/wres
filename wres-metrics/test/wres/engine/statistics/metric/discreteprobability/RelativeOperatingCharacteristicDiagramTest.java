@@ -19,7 +19,7 @@ import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.DiscreteProbabilityPairs;
-import wres.datamodel.statistics.MultiVectorStatistic;
+import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
@@ -70,7 +70,7 @@ public final class RelativeOperatingCharacteristicDiagramTest
                                       MetricConstants.MAIN );
 
         //Check the results       
-        final MultiVectorStatistic actual = roc.apply( input );
+        final DiagramStatistic actual = roc.apply( input );
         double[] expectedPOD = new double[] { 0.0, 0.13580246913580246, 0.2345679012345679, 0.43209876543209874,
                                               0.6296296296296297, 0.7037037037037037, 0.8024691358024691,
                                               0.8518518518518519, 0.9135802469135802,
@@ -82,7 +82,7 @@ public final class RelativeOperatingCharacteristicDiagramTest
         Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
         output.put( MetricDimension.PROBABILITY_OF_DETECTION, expectedPOD );
         output.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, expectedPOFD );
-        final MultiVectorStatistic expected = MultiVectorStatistic.ofMultiVectorOutput( output, m1 );
+        final DiagramStatistic expected = DiagramStatistic.ofDiagramStatistic( output, m1 );
         assertTrue( "Difference between actual and expected ROC.", actual.equals( expected ) );
     }
 
@@ -98,7 +98,7 @@ public final class RelativeOperatingCharacteristicDiagramTest
         DiscreteProbabilityPairs input =
                 DiscreteProbabilityPairs.of( Arrays.asList(), SampleMetadata.of() );
 
-        MultiVectorStatistic actual = roc.apply( input );
+        DiagramStatistic actual = roc.apply( input );
 
         double[] source = new double[11];
 

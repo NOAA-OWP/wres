@@ -16,7 +16,7 @@ import wres.datamodel.MetricConstants.MissingValues;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.sampledata.pairs.SingleValuedPair;
-import wres.datamodel.statistics.MultiVectorStatistic;
+import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Diagram;
 
@@ -36,7 +36,7 @@ import wres.engine.statistics.metric.Diagram;
  * @author james.brown@hydrosolved.com
  */
 
-public class ReliabilityDiagram extends Diagram<DiscreteProbabilityPairs, MultiVectorStatistic>
+public class ReliabilityDiagram extends Diagram<DiscreteProbabilityPairs, DiagramStatistic>
 {
 
     /**
@@ -63,7 +63,7 @@ public class ReliabilityDiagram extends Diagram<DiscreteProbabilityPairs, MultiV
     }
 
     @Override
-    public MultiVectorStatistic apply( final DiscreteProbabilityPairs s )
+    public DiagramStatistic apply( final DiscreteProbabilityPairs s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -127,7 +127,7 @@ public class ReliabilityDiagram extends Diagram<DiscreteProbabilityPairs, MultiV
                                     s.getRawData().size(),
                                     null );
 
-        return MultiVectorStatistic.ofMultiVectorOutput( output, metOut );
+        return DiagramStatistic.ofDiagramStatistic( output, metOut );
     }
 
     @Override

@@ -50,7 +50,7 @@ import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
-import wres.datamodel.statistics.MultiVectorStatistic;
+import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.statistics.StatisticMetadata;
@@ -240,17 +240,17 @@ public abstract class ChartEngineFactory
     }
 
     /**
-     * For diagrams only, which use {@link MultiVectorStatistic}.
+     * For diagrams only, which use {@link DiagramStatistic}.
      * @param inputKeyInstance The key-instance corresponding to the slice to create.
      * @param input The input from which to draw the data.
      * @param usedPlotType The plot type.
      * @return A single input slice for use in drawing the diagram.
      */
-    private static ListOfStatistics<MultiVectorStatistic> sliceInputForDiagram( Object inputKeyInstance,
-                                                                               final ListOfStatistics<MultiVectorStatistic> input,
+    private static ListOfStatistics<DiagramStatistic> sliceInputForDiagram( Object inputKeyInstance,
+                                                                               final ListOfStatistics<DiagramStatistic> input,
                                                                                OutputTypeSelection usedPlotType )
     {
-        ListOfStatistics<MultiVectorStatistic> inputSlice;
+        ListOfStatistics<DiagramStatistic> inputSlice;
         if ( usedPlotType == OutputTypeSelection.LEAD_THRESHOLD )
         {
             inputSlice =
@@ -270,7 +270,7 @@ public abstract class ChartEngineFactory
     }
 
     /**
-     * For diagrams only, which use {@link MultiVectorStatistic}.
+     * For diagrams only, which use {@link DiagramStatistic}.
      * @param inputKeyInstance The key-instance corresponding to the slice to create.
      * @param inputSlice The input slice from which to draw the data.
      * @param usedPlotType The plot type.
@@ -278,7 +278,7 @@ public abstract class ChartEngineFactory
      * @return the argument processor
      */
     private static WRESArgumentProcessor constructDiagramArguments( Object inputKeyInstance,
-                                                                    ListOfStatistics<MultiVectorStatistic> inputSlice,
+                                                                    ListOfStatistics<DiagramStatistic> inputSlice,
                                                                     ChartType usedPlotType,
                                                                     ChronoUnit durationUnits )
     {
@@ -316,7 +316,7 @@ public abstract class ChartEngineFactory
      */
     private static WRESChartEngine
             processReliabilityDiagram( Object inputKeyInstance,
-                                       ListOfStatistics<MultiVectorStatistic> input,
+                                       ListOfStatistics<DiagramStatistic> input,
                                        ChartType usedPlotType,
                                        String templateName,
                                        String overrideParametersStr,
@@ -327,7 +327,7 @@ public abstract class ChartEngineFactory
         int[] diagonalDataSourceIndices = null;
         String axisToSquareAgainstDomain = null;
 
-        final ListOfStatistics<MultiVectorStatistic> inputSlice =
+        final ListOfStatistics<DiagramStatistic> inputSlice =
                 sliceInputForDiagram( inputKeyInstance, input, usedPlotType.getBasis() );
         WRESArgumentProcessor arguments =
                 constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType, durationUnits );
@@ -384,7 +384,7 @@ public abstract class ChartEngineFactory
     private static WRESChartEngine
             processROCDiagram(
                                Object inputKeyInstance,
-                               ListOfStatistics<MultiVectorStatistic> input,
+                               ListOfStatistics<DiagramStatistic> input,
                                ChartType usedPlotType,
                                String templateName,
                                String overrideParametersStr,
@@ -395,7 +395,7 @@ public abstract class ChartEngineFactory
         int[] diagonalDataSourceIndices = null;
         String axisToSquareAgainstDomain = null;
 
-        final ListOfStatistics<MultiVectorStatistic> inputSlice =
+        final ListOfStatistics<DiagramStatistic> inputSlice =
                 sliceInputForDiagram( inputKeyInstance, input, usedPlotType.getBasis() );
         WRESArgumentProcessor arguments =
                 constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType, durationUnits );
@@ -441,7 +441,7 @@ public abstract class ChartEngineFactory
      */
     private static WRESChartEngine
             processQQDiagram( Object inputKeyInstance,
-                              ListOfStatistics<MultiVectorStatistic> input,
+                              ListOfStatistics<DiagramStatistic> input,
                               ChartType usedPlotType,
                               String templateName,
                               String overrideParametersStr,
@@ -452,7 +452,7 @@ public abstract class ChartEngineFactory
         int[] diagonalDataSourceIndices = null;
         String axisToSquareAgainstDomain = null;
 
-        final ListOfStatistics<MultiVectorStatistic> inputSlice =
+        final ListOfStatistics<DiagramStatistic> inputSlice =
                 sliceInputForDiagram( inputKeyInstance, input, usedPlotType.getBasis() );
         WRESArgumentProcessor arguments =
                 constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType, durationUnits );
@@ -500,7 +500,7 @@ public abstract class ChartEngineFactory
      */
     private static WRESChartEngine
             processRankHistogram( Object inputKeyInstance,
-                                  ListOfStatistics<MultiVectorStatistic> input,
+                                  ListOfStatistics<DiagramStatistic> input,
                                   ChartType usedPlotType,
                                   String templateName,
                                   String overrideParametersStr,
@@ -511,7 +511,7 @@ public abstract class ChartEngineFactory
         int[] diagonalDataSourceIndices = null;
         String axisToSquareAgainstDomain = null;
 
-        final ListOfStatistics<MultiVectorStatistic> inputSlice =
+        final ListOfStatistics<DiagramStatistic> inputSlice =
                 sliceInputForDiagram( inputKeyInstance, input, usedPlotType.getBasis() );
         WRESArgumentProcessor arguments =
                 constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType, durationUnits );
@@ -556,7 +556,7 @@ public abstract class ChartEngineFactory
      */
     public static ConcurrentMap<Object, ChartEngine>
             buildMultiVectorOutputChartEngine( final ProjectConfig config, 
-                                               final ListOfStatistics<MultiVectorStatistic> input,
+                                               final ListOfStatistics<DiagramStatistic> input,
                                                final OutputTypeSelection userSpecifiedPlotType,
                                                final String userSpecifiedTemplateResourceName,
                                                final String overrideParametersStr,

@@ -9,12 +9,13 @@ import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.VectorOfDoubles;
 
 /**
- * One or more vectors that are explicitly mapped to elements in {@link MetricDimension}.
+ * An abstraction of a verification diagram with one or more vectors that are explicitly mapped to elements in 
+ * {@link MetricDimension}.
  * 
  * @author james.brown@hydrosolved.com
  */
 
-public class MultiVectorStatistic implements Statistic<Map<MetricDimension, VectorOfDoubles>>
+public class DiagramStatistic implements Statistic<Map<MetricDimension, VectorOfDoubles>>
 {
     /**
      * The statistic.
@@ -37,31 +38,30 @@ public class MultiVectorStatistic implements Statistic<Map<MetricDimension, Vect
      * @return an instance of the output
      */
 
-    public static MultiVectorStatistic of( final Map<MetricDimension, VectorOfDoubles> statistic,
-                                           final StatisticMetadata meta )
+    public static DiagramStatistic of( Map<MetricDimension, VectorOfDoubles> statistic,
+                                       StatisticMetadata meta )
     {
-        return new MultiVectorStatistic( statistic, meta );
+        return new DiagramStatistic( statistic, meta );
     }
 
-
     /**
-     * Return a {@link MultiVectorStatistic}.
+     * Return a {@link DiagramStatistic}.
      * 
      * @param statistic the statistic data
      * @param meta the metadata
-     * @return a {@link MultiVectorStatistic}
+     * @return a {@link DiagramStatistic}
      * @throws NullPointerException if the statistic is null
      */
-
-    public static MultiVectorStatistic ofMultiVectorOutput( Map<MetricDimension, double[]> statistic,
-                                                            StatisticMetadata meta )
+    @Deprecated
+    public static DiagramStatistic ofDiagramStatistic( Map<MetricDimension, double[]> statistic,
+                                                       StatisticMetadata meta )
     {
         Objects.requireNonNull( statistic, "Specify a non-null map of inputs." );
 
         EnumMap<MetricDimension, VectorOfDoubles> map = new EnumMap<>( MetricDimension.class );
         statistic.forEach( ( key, value ) -> map.put( key, VectorOfDoubles.of( value ) ) );
 
-        return of( map, meta );
+        return DiagramStatistic.of( map, meta );
     }
 
     /**
@@ -103,11 +103,11 @@ public class MultiVectorStatistic implements Statistic<Map<MetricDimension, Vect
     @Override
     public boolean equals( final Object o )
     {
-        if ( ! ( o instanceof MultiVectorStatistic ) )
+        if ( ! ( o instanceof DiagramStatistic ) )
         {
             return false;
         }
-        final MultiVectorStatistic v = (MultiVectorStatistic) o;
+        final DiagramStatistic v = (DiagramStatistic) o;
         return meta.equals( v.getMetadata() ) && statistic.equals( v.statistic );
     }
 
@@ -133,7 +133,7 @@ public class MultiVectorStatistic implements Statistic<Map<MetricDimension, Vect
      * @throws StatisticException if any of the inputs are invalid
      */
 
-    private MultiVectorStatistic( final Map<MetricDimension, VectorOfDoubles> statistic, final StatisticMetadata meta )
+    private DiagramStatistic( final Map<MetricDimension, VectorOfDoubles> statistic, final StatisticMetadata meta )
     {
         if ( Objects.isNull( statistic ) )
         {
@@ -147,9 +147,9 @@ public class MultiVectorStatistic implements Statistic<Map<MetricDimension, Vect
         {
             throw new StatisticException( "Specify one or more outputs to store." );
         }
-        
+
         this.statistic = new EnumMap<>( MetricDimension.class );
-        this.statistic.putAll( statistic );       
+        this.statistic.putAll( statistic );
         this.meta = meta;
     }
 

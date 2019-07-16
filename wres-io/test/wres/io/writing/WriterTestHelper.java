@@ -30,7 +30,7 @@ import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.MatrixStatistic;
-import wres.datamodel.statistics.MultiVectorStatistic;
+import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -266,13 +266,13 @@ public class WriterTestHelper
     }
 
     /**
-     * Returns a {@link ListOfStatistics} containing a {@link MultiVectorStatistic} that 
+     * Returns a {@link ListOfStatistics} containing a {@link DiagramStatistic} that 
      * represents the output of a reliability diagram for one pool.
      * 
      * @return a reliability diagram for one pool
      */
 
-    public static ListOfStatistics<MultiVectorStatistic> getReliabilityDiagramForOnePool()
+    public static ListOfStatistics<DiagramStatistic> getReliabilityDiagramForOnePool()
     {
 
         // location id
@@ -314,8 +314,8 @@ public class WriterTestHelper
         fakeOutputs.put( MetricDimension.SAMPLE_SIZE, new double[] { 5926, 371, 540, 650, 1501 } );
 
         // Fake output wrapper.
-        ListOfStatistics<MultiVectorStatistic> fakeOutputData =
-                ListOfStatistics.of( Collections.singletonList( MultiVectorStatistic.ofMultiVectorOutput( fakeOutputs,
+        ListOfStatistics<DiagramStatistic> fakeOutputData =
+                ListOfStatistics.of( Collections.singletonList( DiagramStatistic.ofDiagramStatistic( fakeOutputs,
                                                                                                           fakeMetadata ) ) );
 
         return fakeOutputData;

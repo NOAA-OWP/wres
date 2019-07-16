@@ -27,7 +27,7 @@ import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.MatrixStatistic;
-import wres.datamodel.statistics.MultiVectorStatistic;
+import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -82,7 +82,7 @@ public final class MetricFuturesByTimeTest
      * Default multivector output.
      */
 
-    private ListOfStatistics<MultiVectorStatistic> multivector;
+    private ListOfStatistics<DiagramStatistic> multivector;
 
     /**
      * Default paired output.
@@ -155,7 +155,7 @@ public final class MetricFuturesByTimeTest
 
         // Add multi-vector output
         multivector =
-                ListOfStatistics.of( Collections.singletonList( MultiVectorStatistic.ofMultiVectorOutput( Collections.singletonMap( MetricDimension.FORECAST_PROBABILITY,
+                ListOfStatistics.of( Collections.singletonList( DiagramStatistic.ofDiagramStatistic( Collections.singletonMap( MetricDimension.FORECAST_PROBABILITY,
                                                                                                                                     new double[] { 1 } ),
                                                                                                           StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
                                                                                                                                 1,

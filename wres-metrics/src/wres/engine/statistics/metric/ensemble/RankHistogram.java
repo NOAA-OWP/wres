@@ -18,7 +18,7 @@ import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.datamodel.sampledata.pairs.EnsemblePairs;
-import wres.datamodel.statistics.MultiVectorStatistic;
+import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Diagram;
 
@@ -35,7 +35,7 @@ import wres.engine.statistics.metric.Diagram;
  * @author james.brown@hydrosolved.com
  */
 
-public class RankHistogram extends Diagram<EnsemblePairs, MultiVectorStatistic>
+public class RankHistogram extends Diagram<EnsemblePairs, DiagramStatistic>
 {
 
     /**
@@ -68,7 +68,7 @@ public class RankHistogram extends Diagram<EnsemblePairs, MultiVectorStatistic>
     }
 
     @Override
-    public MultiVectorStatistic apply( EnsemblePairs s )
+    public DiagramStatistic apply( EnsemblePairs s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -115,7 +115,7 @@ public class RankHistogram extends Diagram<EnsemblePairs, MultiVectorStatistic>
                                     this.hasRealUnits(),
                                     s.getRawData().size(),
                                     null );
-        return MultiVectorStatistic.ofMultiVectorOutput( output, metOut );
+        return DiagramStatistic.ofDiagramStatistic( output, metOut );
     }
 
     @Override

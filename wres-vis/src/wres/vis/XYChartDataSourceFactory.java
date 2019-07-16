@@ -36,7 +36,7 @@ import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
-import wres.datamodel.statistics.MultiVectorStatistic;
+import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindow;
@@ -300,12 +300,12 @@ public abstract class XYChartDataSourceFactory
      * @param rangeTitle Title for the range.
      * @param subPlotIndex The subplot index to use.  If null or negative, zero is assumed.
      * @param buildDataSetSupplier Supplies the {@link XYDataset} to be used in the data source.  
-     *            If null, then a simple {@link MultiVectorOutputDiagramXYDataset} is used.
+     *            If null, then a simple {@link DiagramStatisticXYDataset} is used.
      * @param durationUnits the duration units
      * @return A data source that can be used to draw the diagram.
      */
     public static DefaultXYChartDataSource ofMultiVectorOutputDiagram( final int orderIndex,
-                                                                       final ListOfStatistics<MultiVectorStatistic> input,
+                                                                       final ListOfStatistics<DiagramStatistic> input,
                                                                        final MetricDimension xConstant,
                                                                        final MetricDimension yConstant,
                                                                        final String domainTitle,
@@ -339,7 +339,7 @@ public abstract class XYChartDataSourceFactory
                 {
                     return buildDataSetSupplier.get();
                 }
-                return new MultiVectorOutputDiagramXYDataset( input,
+                return new DiagramStatisticXYDataset( input,
                                                               xConstant,
                                                               yConstant,
                                                               durationUnits );
