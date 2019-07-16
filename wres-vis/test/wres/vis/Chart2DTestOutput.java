@@ -27,7 +27,7 @@ import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
-import wres.datamodel.statistics.MultiVectorStatistic;
+import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindow;
@@ -122,7 +122,7 @@ public class Chart2DTestOutput
 
         FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
 
-        final ListOfStatistics<MultiVectorStatistic> results =
+        final ListOfStatistics<DiagramStatistic> results =
                 Chart2DTestDataGenerator.getReliabilityDiagramByLeadThreshold();
 
 //DEBUG OUTPUT:
@@ -167,7 +167,7 @@ public class Chart2DTestOutput
 
         FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
 
-        final ListOfStatistics<MultiVectorStatistic> results =
+        final ListOfStatistics<DiagramStatistic> results =
                 Chart2DTestDataGenerator.getReliabilityDiagramByLeadThreshold();
 
         //Call the factory.
@@ -243,7 +243,7 @@ public class Chart2DTestOutput
 
         FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
 
-        final ListOfStatistics<MultiVectorStatistic> results =
+        final ListOfStatistics<DiagramStatistic> results =
                 Chart2DTestDataGenerator.getROCDiagramByLeadThreshold();
 
         //Call the factory.
@@ -280,7 +280,7 @@ public class Chart2DTestOutput
 
         FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
 
-        final ListOfStatistics<MultiVectorStatistic> results =
+        final ListOfStatistics<DiagramStatistic> results =
                 Chart2DTestDataGenerator.getROCDiagramByLeadThreshold();
 
         //Call the factory.
@@ -316,7 +316,7 @@ public class Chart2DTestOutput
 
         FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
 
-        final ListOfStatistics<MultiVectorStatistic> results =
+        final ListOfStatistics<DiagramStatistic> results =
                 Chart2DTestDataGenerator.getQQDiagramByLeadThreshold();
 
         //Call the factory.
@@ -352,7 +352,7 @@ public class Chart2DTestOutput
 
         FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
 
-        final ListOfStatistics<MultiVectorStatistic> results =
+        final ListOfStatistics<DiagramStatistic> results =
                 Chart2DTestDataGenerator.getQQDiagramByLeadThreshold();
 
         //Call the factory.
@@ -387,7 +387,7 @@ public class Chart2DTestOutput
 
         FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
 
-        final ListOfStatistics<MultiVectorStatistic> results =
+        final ListOfStatistics<DiagramStatistic> results =
                 Chart2DTestDataGenerator.getRankHistogramByLeadThreshold();
 
         //Call the factory.
@@ -425,7 +425,7 @@ public class Chart2DTestOutput
 
         FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
 
-        final ListOfStatistics<MultiVectorStatistic> results =
+        final ListOfStatistics<DiagramStatistic> results =
                 Chart2DTestDataGenerator.getRankHistogramByLeadThreshold();
 
         //Call the factory.

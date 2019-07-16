@@ -18,7 +18,7 @@ import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
-import wres.datamodel.statistics.MultiVectorStatistic;
+import wres.datamodel.statistics.DiagramStatistic;
 
 /**
  * Tests the {@link QuantileQuantileDiagram}.
@@ -62,7 +62,7 @@ public final class QuantileQuantileDiagramTest
         final SingleValuedPairs input = SingleValuedPairs.of( values, SampleMetadata.of() );
 
         //Check the results       
-        final MultiVectorStatistic actual = qqd.apply( input );
+        final DiagramStatistic actual = qqd.apply( input );
         double[] actualObs = actual.get( MetricDimension.OBSERVED_QUANTILES ).getDoubles();
         double[] actualPred = actual.get( MetricDimension.PREDICTED_QUANTILES ).getDoubles();
 
@@ -109,7 +109,7 @@ public final class QuantileQuantileDiagramTest
         SingleValuedPairs input =
                 SingleValuedPairs.of( Arrays.asList(), SampleMetadata.of() );
 
-        MultiVectorStatistic actual = qqd.apply( input );
+        DiagramStatistic actual = qqd.apply( input );
 
         double[] source = new double[1000];
 

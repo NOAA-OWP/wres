@@ -20,7 +20,7 @@ import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.MatrixStatistic;
-import wres.datamodel.statistics.MultiVectorStatistic;
+import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.statistics.StatisticsForProject.StatisticsForProjectBuilder;
@@ -50,10 +50,10 @@ class MetricFuturesByTime
     private final List<Future<ListOfStatistics<DurationScoreStatistic>>> durationScore = new ArrayList<>();
 
     /**
-     * {@link MultiVectorStatistic} results.
+     * {@link DiagramStatistic} results.
      */
 
-    private final List<Future<ListOfStatistics<MultiVectorStatistic>>> multiVector = new ArrayList<>();
+    private final List<Future<ListOfStatistics<DiagramStatistic>>> multiVector = new ArrayList<>();
 
     /**
      * {@link BoxPlotStatistics} results per pair.
@@ -182,10 +182,10 @@ class MetricFuturesByTime
                 new ConcurrentLinkedQueue<>();
 
         /**
-         * {@link MultiVectorStatistic} results.
+         * {@link DiagramStatistic} results.
          */
 
-        private final ConcurrentLinkedQueue<Future<ListOfStatistics<MultiVectorStatistic>>> multiVector =
+        private final ConcurrentLinkedQueue<Future<ListOfStatistics<DiagramStatistic>>> multiVector =
                 new ConcurrentLinkedQueue<>();
 
         /**
@@ -245,13 +245,13 @@ class MetricFuturesByTime
         }
 
         /**
-         * Adds a set of future {@link MultiVectorStatistic} to the appropriate internal store.
+         * Adds a set of future {@link DiagramStatistic} to the appropriate internal store.
          * 
          * @param value the future result
          * @return the builder
          */
 
-        MetricFuturesByTimeBuilder addMultiVectorOutput( Future<ListOfStatistics<MultiVectorStatistic>> value )
+        MetricFuturesByTimeBuilder addMultiVectorOutput( Future<ListOfStatistics<DiagramStatistic>> value )
         {
             this.multiVector.add( value );
 

@@ -38,7 +38,7 @@ import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.ListOfStatistics.ListOfStatisticsBuilder;
-import wres.datamodel.statistics.MultiVectorStatistic;
+import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -241,17 +241,17 @@ public abstract class Chart2DTestDataGenerator
     }
 
     /**
-     * Returns a {@link ListOfStatistics} of {@link MultiVectorStatistic} that contains the components of the
+     * Returns a {@link ListOfStatistics} of {@link DiagramStatistic} that contains the components of the
      * reliability diagram (forecast probabilities, observed given forecast probabilities, and sample sizes) for various
      * thresholds and forecast lead times. Reads the input data from
      * testinput/chart2DTest/getReliabilityDiagramByLeadThreshold.xml.
      *
      * @return an output map of reliability diagrams
      */
-    static ListOfStatistics<MultiVectorStatistic> getReliabilityDiagramByLeadThreshold()
+    static ListOfStatistics<DiagramStatistic> getReliabilityDiagramByLeadThreshold()
             throws IOException
     {
-        final List<MultiVectorStatistic> rawData = new ArrayList<>();
+        final List<DiagramStatistic> rawData = new ArrayList<>();
         //Read only selected quantiles
         final List<Threshold> allowed = new ArrayList<>();
         final double[][] allow =
@@ -339,8 +339,8 @@ public abstract class Chart2DTestDataGenerator
                     output.put( MetricDimension.FORECAST_PROBABILITY, res[0] ); //Forecast probabilities
                     output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, res[1] ); //Observed | forecast probabilities
                     output.put( MetricDimension.SAMPLE_SIZE, res[2] ); //Observed | forecast probabilities
-                    final MultiVectorStatistic value =
-                            MultiVectorStatistic.ofMultiVectorOutput( output,
+                    final DiagramStatistic value =
+                            DiagramStatistic.ofDiagramStatistic( output,
                                                                       StatisticMetadata.of( SampleMetadata.of( source,
                                                                                                                window,
                                                                                                                OneOrTwoThresholds.of( q ) ),
@@ -360,7 +360,7 @@ public abstract class Chart2DTestDataGenerator
     }
 
     /**
-     * Returns a {@link ListOfStatistics} of {@link MultiVectorStatistic} that contains the components of the
+     * Returns a {@link ListOfStatistics} of {@link DiagramStatistic} that contains the components of the
      * Relative Operating Characteristic (ROC) diagram (probability of detection and probability of false detection) for
      * various thresholds and forecast lead times. Reads the input data from
      * testinput/chart2DTest/getROCDiagramByLeadThreshold.xml.
@@ -368,10 +368,10 @@ public abstract class Chart2DTestDataGenerator
      * @return an output map of ROC diagrams
      */
 
-    static ListOfStatistics<MultiVectorStatistic> getROCDiagramByLeadThreshold()
+    static ListOfStatistics<DiagramStatistic> getROCDiagramByLeadThreshold()
             throws IOException
     {
-        final List<MultiVectorStatistic> rawData = new ArrayList<>();
+        final List<DiagramStatistic> rawData = new ArrayList<>();
         //Read only selected quantiles
         final List<Threshold> allowed = new ArrayList<>();
         final double[][] allow =
@@ -441,8 +441,8 @@ public abstract class Chart2DTestDataGenerator
                     final Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
                     output.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, roc[0] ); //PoFD
                     output.put( MetricDimension.PROBABILITY_OF_DETECTION, roc[1] ); //PoD
-                    final MultiVectorStatistic value =
-                            MultiVectorStatistic.ofMultiVectorOutput( output,
+                    final DiagramStatistic value =
+                            DiagramStatistic.ofDiagramStatistic( output,
                                                                       StatisticMetadata.of( SampleMetadata.of( source,
                                                                                                                window,
                                                                                                                OneOrTwoThresholds.of( q ) ),
@@ -462,7 +462,7 @@ public abstract class Chart2DTestDataGenerator
     }
 
     /**
-     * Returns a {@link ListOfStatistics} of {@link MultiVectorStatistic} that contains the components of the
+     * Returns a {@link ListOfStatistics} of {@link DiagramStatistic} that contains the components of the
      * Rank Histogram (rank position, which represents the number of gaps between ensemble members plus one) and
      * the relative frequency of observations that fall within each gap. The results include various thresholds and
      * forecast lead times. Reads the input data from testinput/chart2DTest/getRankHistogramByLeadThreshold.xml.
@@ -470,10 +470,10 @@ public abstract class Chart2DTestDataGenerator
      * @return an output map of rank histograms
      */
 
-    static ListOfStatistics<MultiVectorStatistic> getRankHistogramByLeadThreshold()
+    static ListOfStatistics<DiagramStatistic> getRankHistogramByLeadThreshold()
             throws IOException
     {
-        final List<MultiVectorStatistic> rawData = new ArrayList<>();
+        final List<DiagramStatistic> rawData = new ArrayList<>();
 
         //Create the input file
         final File resultFile = new File( "testinput/chart2DTest/getRankHistogramByLeadThreshold.xml" );
@@ -536,8 +536,8 @@ public abstract class Chart2DTestDataGenerator
                 final Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
                 output.put( MetricDimension.RANK_ORDER, rh[0] );
                 output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, rh[1] );
-                final MultiVectorStatistic value =
-                        MultiVectorStatistic.ofMultiVectorOutput( output,
+                final DiagramStatistic value =
+                        DiagramStatistic.ofDiagramStatistic( output,
                                                                   StatisticMetadata.of( SampleMetadata.of( source,
                                                                                                            window,
                                                                                                            OneOrTwoThresholds.of( q ) ),
@@ -556,17 +556,17 @@ public abstract class Chart2DTestDataGenerator
     }
 
     /**
-     * Returns a {@link ListOfStatistics} of {@link MultiVectorStatistic} that contains the components of the
+     * Returns a {@link ListOfStatistics} of {@link DiagramStatistic} that contains the components of the
      * Quantile-Quantile Diagram (predicted quantiles and observed quantiles) for various thresholds and forecast lead
      * times. Reads the input data from testinput/chart2DTest/getQQDiagramByLeadThreshold.xml.
      *
      * @return an output map of QQ diagrams
      */
 
-    static ListOfStatistics<MultiVectorStatistic> getQQDiagramByLeadThreshold()
+    static ListOfStatistics<DiagramStatistic> getQQDiagramByLeadThreshold()
             throws IOException
     {
-        final List<MultiVectorStatistic> rawData = new ArrayList<>();
+        final List<DiagramStatistic> rawData = new ArrayList<>();
 
         //Create the input file
         final File resultFile = new File( "testinput/chart2DTest/getQQDiagramByLeadThreshold.xml" );
@@ -613,8 +613,8 @@ public abstract class Chart2DTestDataGenerator
             final Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
             output.put( MetricDimension.PREDICTED_QUANTILES, qq[0] );
             output.put( MetricDimension.OBSERVED_QUANTILES, qq[1] );
-            final MultiVectorStatistic value =
-                    MultiVectorStatistic.ofMultiVectorOutput( output,
+            final DiagramStatistic value =
+                    DiagramStatistic.ofDiagramStatistic( output,
                                                               StatisticMetadata.of( SampleMetadata.of( source,
                                                                                                        window,
                                                                                                        threshold ),

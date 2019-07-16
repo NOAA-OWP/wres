@@ -22,7 +22,7 @@ import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.MatrixStatistic;
-import wres.datamodel.statistics.MultiVectorStatistic;
+import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
@@ -304,7 +304,7 @@ public final class MetricFactory
 
     /**
      * Returns a {@link MetricCollection} of metrics that consume {@link SingleValuedPairs} and produce
-     * {@link MultiVectorStatistic}.
+     * {@link DiagramStatistic}.
      * 
      * @param metric the metric identifiers
      * @return a collection of metrics
@@ -312,7 +312,7 @@ public final class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public static MetricCollection<SingleValuedPairs, MultiVectorStatistic, MultiVectorStatistic>
+    public static MetricCollection<SingleValuedPairs, DiagramStatistic, DiagramStatistic>
             ofSingleValuedMultiVectorCollection( MetricConstants... metric ) throws MetricParameterException
     {
         return MetricFactory.ofSingleValuedMultiVectorCollection( ForkJoinPool.commonPool(), metric );
@@ -357,7 +357,7 @@ public final class MetricFactory
 
     /**
      * <p>Returns a {@link MetricCollection} of metrics that consume {@link DiscreteProbabilityPairs} and produce
-     * {@link MultiVectorStatistic}.</p>
+     * {@link DiagramStatistic}.</p>
      * 
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
      * 
@@ -367,7 +367,7 @@ public final class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public static MetricCollection<DiscreteProbabilityPairs, MultiVectorStatistic, MultiVectorStatistic>
+    public static MetricCollection<DiscreteProbabilityPairs, DiagramStatistic, DiagramStatistic>
             ofDiscreteProbabilityMultiVectorCollection( MetricConstants... metric ) throws MetricParameterException
     {
         return MetricFactory.ofDiscreteProbabilityMultiVectorCollection( ForkJoinPool.commonPool(), metric );
@@ -412,7 +412,7 @@ public final class MetricFactory
 
     /**
      * <p>Returns a {@link MetricCollection} of metrics that consume {@link EnsemblePairs} and produce
-     * {@link MultiVectorStatistic}.</p>
+     * {@link DiagramStatistic}.</p>
      * 
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
      * 
@@ -422,7 +422,7 @@ public final class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public static MetricCollection<EnsemblePairs, MultiVectorStatistic, MultiVectorStatistic>
+    public static MetricCollection<EnsemblePairs, DiagramStatistic, DiagramStatistic>
             ofEnsembleMultiVectorCollection( MetricConstants... metric ) throws MetricParameterException
     {
         return MetricFactory.ofEnsembleMultiVectorCollection( ForkJoinPool.commonPool(), metric );
@@ -504,7 +504,7 @@ public final class MetricFactory
 
     /**
      * Returns a {@link MetricCollection} of metrics that consume {@link SingleValuedPairs} and produce
-     * {@link MultiVectorStatistic}.
+     * {@link DiagramStatistic}.
      * 
      * @param executor an optional {@link ExecutorService} for executing the metrics
      * @param metric the metric identifiers
@@ -513,12 +513,12 @@ public final class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized 
      */
 
-    public static MetricCollection<SingleValuedPairs, MultiVectorStatistic, MultiVectorStatistic>
+    public static MetricCollection<SingleValuedPairs, DiagramStatistic, DiagramStatistic>
             ofSingleValuedMultiVectorCollection( ExecutorService executor,
                                                  MetricConstants... metric )
                     throws MetricParameterException
     {
-        final MetricCollectionBuilder<SingleValuedPairs, MultiVectorStatistic, MultiVectorStatistic> builder =
+        final MetricCollectionBuilder<SingleValuedPairs, DiagramStatistic, DiagramStatistic> builder =
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
@@ -609,7 +609,7 @@ public final class MetricFactory
 
     /**
      * Returns a {@link MetricCollection} of metrics that consume {@link DiscreteProbabilityPairs} and produce
-     * {@link MultiVectorStatistic}.
+     * {@link DiagramStatistic}.
      * 
      * @param executor an optional {@link ExecutorService} for executing the metrics
      * @param metric the metric identifiers
@@ -618,12 +618,12 @@ public final class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized 
      */
 
-    public static MetricCollection<DiscreteProbabilityPairs, MultiVectorStatistic, MultiVectorStatistic>
+    public static MetricCollection<DiscreteProbabilityPairs, DiagramStatistic, DiagramStatistic>
             ofDiscreteProbabilityMultiVectorCollection( ExecutorService executor,
                                                         MetricConstants... metric )
                     throws MetricParameterException
     {
-        final MetricCollectionBuilder<DiscreteProbabilityPairs, MultiVectorStatistic, MultiVectorStatistic> builder =
+        final MetricCollectionBuilder<DiscreteProbabilityPairs, DiagramStatistic, DiagramStatistic> builder =
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
@@ -687,7 +687,7 @@ public final class MetricFactory
 
     /**
      * Returns a {@link MetricCollection} of metrics that consume {@link EnsemblePairs} and produce
-     * {@link MultiVectorStatistic}.
+     * {@link DiagramStatistic}.
      * 
      * @param executor an optional {@link ExecutorService} for executing the metrics
      * @param metric the metric identifiers
@@ -696,12 +696,12 @@ public final class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public static MetricCollection<EnsemblePairs, MultiVectorStatistic, MultiVectorStatistic>
+    public static MetricCollection<EnsemblePairs, DiagramStatistic, DiagramStatistic>
             ofEnsembleMultiVectorCollection( ExecutorService executor,
                                              MetricConstants... metric )
                     throws MetricParameterException
     {
-        final MetricCollectionBuilder<EnsemblePairs, MultiVectorStatistic, MultiVectorStatistic> builder =
+        final MetricCollectionBuilder<EnsemblePairs, DiagramStatistic, DiagramStatistic> builder =
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
@@ -838,14 +838,14 @@ public final class MetricFactory
     }
 
     /**
-     * Returns a {@link Metric} that consumes {@link SingleValuedPairs} and produces {@link MultiVectorStatistic}.
+     * Returns a {@link Metric} that consumes {@link SingleValuedPairs} and produces {@link DiagramStatistic}.
      * 
      * @param metric the metric identifier
      * @return a metric
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public static Metric<SingleValuedPairs, MultiVectorStatistic> ofSingleValuedMultiVector( MetricConstants metric )
+    public static Metric<SingleValuedPairs, DiagramStatistic> ofSingleValuedMultiVector( MetricConstants metric )
     {
         if ( MetricConstants.QUANTILE_QUANTILE_DIAGRAM.equals( metric ) )
         {
@@ -954,7 +954,7 @@ public final class MetricFactory
     }
 
     /**
-     * Returns a {@link Metric} that consumes {@link DiscreteProbabilityPairs} and produces {@link MultiVectorStatistic}.
+     * Returns a {@link Metric} that consumes {@link DiscreteProbabilityPairs} and produces {@link DiagramStatistic}.
      * 
      * @param metric the metric identifier
      * @return a metric
@@ -962,7 +962,7 @@ public final class MetricFactory
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public static Metric<DiscreteProbabilityPairs, MultiVectorStatistic>
+    public static Metric<DiscreteProbabilityPairs, DiagramStatistic>
             ofDiscreteProbabilityMultiVector( MetricConstants metric ) throws MetricParameterException
     {
         switch ( metric )
@@ -1041,14 +1041,14 @@ public final class MetricFactory
     }
 
     /**
-     * Returns a {@link Metric} that consumes {@link EnsemblePairs} and produces {@link MultiVectorStatistic}.
+     * Returns a {@link Metric} that consumes {@link EnsemblePairs} and produces {@link DiagramStatistic}.
      * 
      * @param metric the metric identifier
      * @return a metric
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public static Metric<EnsemblePairs, MultiVectorStatistic> ofEnsembleMultiVector( MetricConstants metric )
+    public static Metric<EnsemblePairs, DiagramStatistic> ofEnsembleMultiVector( MetricConstants metric )
     {
         if ( MetricConstants.RANK_HISTOGRAM.equals( metric ) )
         {

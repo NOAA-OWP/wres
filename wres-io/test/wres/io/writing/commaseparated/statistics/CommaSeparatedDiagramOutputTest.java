@@ -16,7 +16,7 @@ import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationType;
 import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.statistics.MultiVectorStatistic;
+import wres.datamodel.statistics.DiagramStatistic;
 
 import wres.io.writing.WriterTestHelper;
 
@@ -29,7 +29,7 @@ public class CommaSeparatedDiagramOutputTest
     private final Path outputDirectory = Paths.get( System.getProperty( "java.io.tmpdir" ) );
 
     /**
-     * Tests the writing of {@link MultiVectorStatistic} to file.
+     * Tests the writing of {@link DiagramStatistic} to file.
      * 
      * @throws ProjectConfigException if the project configuration is incorrect
      * @throws IOException if the output could not be written

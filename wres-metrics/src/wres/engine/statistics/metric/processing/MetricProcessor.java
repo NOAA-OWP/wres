@@ -30,7 +30,7 @@ import wres.datamodel.statistics.Statistic;
 import wres.datamodel.statistics.StatisticAccessException;
 import wres.datamodel.statistics.StatisticException;
 import wres.datamodel.statistics.StatisticsForProject;
-import wres.datamodel.statistics.MultiVectorStatistic;
+import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -123,10 +123,10 @@ public abstract class MetricProcessor<S extends SampleData<?>, T extends Statist
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link SingleValuedPairs} and produce
-     * {@link MultiVectorStatistic}.
+     * {@link DiagramStatistic}.
      */
 
-    final MetricCollection<SingleValuedPairs, MultiVectorStatistic, MultiVectorStatistic> singleValuedMultiVector;
+    final MetricCollection<SingleValuedPairs, DiagramStatistic, DiagramStatistic> singleValuedMultiVector;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link SingleValuedPairs} and produce

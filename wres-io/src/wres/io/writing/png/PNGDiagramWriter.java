@@ -22,7 +22,7 @@ import wres.config.generated.DestinationConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
 import wres.datamodel.statistics.ListOfStatistics;
-import wres.datamodel.statistics.MultiVectorStatistic;
+import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindow;
@@ -30,13 +30,13 @@ import wres.io.config.ConfigHelper;
 import wres.vis.ChartEngineFactory;
 
 /**
- * Helps write charts comprising {@link MultiVectorStatistic} to a file in Portable Network Graphics (PNG) format.
+ * Helps write charts comprising {@link DiagramStatistic} to a file in Portable Network Graphics (PNG) format.
  * 
  * @author james.brown@hydrosolved.com
  */
 
 public class PNGDiagramWriter extends PNGWriter
-        implements Consumer<ListOfStatistics<MultiVectorStatistic>>,
+        implements Consumer<ListOfStatistics<DiagramStatistic>>,
                    Supplier<Set<Path>>
 {
     private Set<Path> pathsWrittenTo = new HashSet<>();
@@ -68,7 +68,7 @@ public class PNGDiagramWriter extends PNGWriter
      */
 
     @Override
-    public void accept( final ListOfStatistics<MultiVectorStatistic> output )
+    public void accept( final ListOfStatistics<DiagramStatistic> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
@@ -107,7 +107,7 @@ public class PNGDiagramWriter extends PNGWriter
     }
 
     /**
-     * Writes a set of charts associated with {@link MultiVectorStatistic} for a single metric and time window,
+     * Writes a set of charts associated with {@link DiagramStatistic} for a single metric and time window,
      * stored in a {@link ListOfStatistics}.
      *
      * @param outputDirectory the directory into which to write
@@ -122,7 +122,7 @@ public class PNGDiagramWriter extends PNGWriter
     private static Set<Path> writeMultiVectorCharts( Path outputDirectory,
                                                      ProjectConfigPlus projectConfigPlus,
                                                      DestinationConfig destinationConfig,
-                                                     ListOfStatistics<MultiVectorStatistic> output,
+                                                     ListOfStatistics<DiagramStatistic> output,
                                                      ChronoUnit durationUnits )
     {
         Set<Path> pathsWrittenTo = new HashSet<>();

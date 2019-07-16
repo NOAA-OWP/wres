@@ -40,10 +40,10 @@ public class StatisticsForProject
     private final List<Future<ListOfStatistics<DurationScoreStatistic>>> durationScore = new ArrayList<>();
 
     /**
-     * Thread safe map for {@link MultiVectorStatistic}.
+     * Thread safe map for {@link DiagramStatistic}.
      */
 
-    private final List<Future<ListOfStatistics<MultiVectorStatistic>>> multiVector = new ArrayList<>();
+    private final List<Future<ListOfStatistics<DiagramStatistic>>> multiVector = new ArrayList<>();
 
     /**
      * Thread safe map for {@link MatrixStatistic}.
@@ -98,14 +98,14 @@ public class StatisticsForProject
     }
 
     /**
-     * Returns a {@link ListOfStatistics} of {@link MultiVectorStatistic} or null if no output exists.
+     * Returns a {@link ListOfStatistics} of {@link DiagramStatistic} or null if no output exists.
      * 
      * @return the multi-vector output or null
      * @throws StatisticException if the output could not be retrieved
      * @throws InterruptedException if the retrieval was interrupted
      */
 
-    public ListOfStatistics<MultiVectorStatistic> getMultiVectorStatistics()
+    public ListOfStatistics<DiagramStatistic> getMultiVectorStatistics()
             throws InterruptedException
     {
         return this.unwrap( StatisticGroup.MULTIVECTOR, multiVector );
@@ -266,10 +266,10 @@ public class StatisticsForProject
                 new ConcurrentLinkedQueue<>();
 
         /**
-         * Thread safe map for {@link MultiVectorStatistic}.
+         * Thread safe map for {@link DiagramStatistic}.
          */
 
-        private final ConcurrentLinkedQueue<Future<ListOfStatistics<MultiVectorStatistic>>> multiVectorInternal =
+        private final ConcurrentLinkedQueue<Future<ListOfStatistics<DiagramStatistic>>> multiVectorInternal =
                 new ConcurrentLinkedQueue<>();
 
         /**
@@ -333,7 +333,7 @@ public class StatisticsForProject
         }
 
         /**
-         * Adds a new {@link MultiVectorStatistic} for a collection of metrics to the internal store, merging with existing 
+         * Adds a new {@link DiagramStatistic} for a collection of metrics to the internal store, merging with existing 
          * items that share the same key, as required.
          * 
          * @param result the result
@@ -341,7 +341,7 @@ public class StatisticsForProject
          */
 
         public StatisticsForProjectBuilder
-                addMultiVectorStatistics( Future<ListOfStatistics<MultiVectorStatistic>> result )
+                addMultiVectorStatistics( Future<ListOfStatistics<DiagramStatistic>> result )
         {
             multiVectorInternal.add( result );
 

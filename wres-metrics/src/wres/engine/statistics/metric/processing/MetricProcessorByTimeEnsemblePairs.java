@@ -34,7 +34,7 @@ import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
-import wres.datamodel.statistics.MultiVectorStatistic;
+import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.statistics.StatisticsForProject;
@@ -85,7 +85,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * {@link ScoreStatistic}.
      */
 
-    private final MetricCollection<DiscreteProbabilityPairs, MultiVectorStatistic, MultiVectorStatistic> discreteProbabilityMultiVector;
+    private final MetricCollection<DiscreteProbabilityPairs, DiagramStatistic, DiagramStatistic> discreteProbabilityMultiVector;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link EnsemblePairs} and produce {@link DoubleScoreStatistic}.
@@ -95,10 +95,10 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link EnsemblePairs} and produce
-     * {@link MultiVectorStatistic}.
+     * {@link DiagramStatistic}.
      */
 
-    private final MetricCollection<EnsemblePairs, MultiVectorStatistic, MultiVectorStatistic> ensembleMultiVector;
+    private final MetricCollection<EnsemblePairs, DiagramStatistic, DiagramStatistic> ensembleMultiVector;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link EnsemblePairs} and produce

@@ -9,23 +9,23 @@ import org.jfree.data.xy.XYDataset;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.Slicer;
 import wres.datamodel.statistics.ListOfStatistics;
-import wres.datamodel.statistics.MultiVectorStatistic;
+import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindow;
 import wres.util.TimeHelper;
 
 /**
- * The {@link XYDataset} for use in building a chart that plots a {@link MultiVectorStatistic}.
+ * The {@link XYDataset} for use in building a chart that plots a {@link DiagramStatistic}.
  * 
  * @author Hank.Herr
  */
-public class MultiVectorOutputDiagramXYDataset
-        extends WRESAbstractXYDataset<ListOfStatistics<MultiVectorStatistic>, ListOfStatistics<MultiVectorStatistic>>
+public class DiagramStatisticXYDataset
+        extends WRESAbstractXYDataset<ListOfStatistics<DiagramStatistic>, ListOfStatistics<DiagramStatistic>>
 {
     private static final long serialVersionUID = 4254109136599641286L;
     private final MetricDimension xConstant;
     private final MetricDimension yConstant;
-    
+
     /**
      * The duration units.
      */
@@ -42,7 +42,7 @@ public class MultiVectorOutputDiagramXYDataset
      * @throws NullPointerException if any input is null
      */
 
-    public MultiVectorOutputDiagramXYDataset( final ListOfStatistics<MultiVectorStatistic> input,
+    public DiagramStatisticXYDataset( final ListOfStatistics<DiagramStatistic> input,
                                               final MetricDimension xConstant,
                                               final MetricDimension yConstant,
                                               final ChronoUnit durationUnits )
@@ -63,7 +63,7 @@ public class MultiVectorOutputDiagramXYDataset
     }
 
     @Override
-    void preparePlotData(final ListOfStatistics<MultiVectorStatistic> rawData)
+    void preparePlotData(final ListOfStatistics<DiagramStatistic> rawData)
     {
         //This check should not be necessary, since the conditions should be impossible.  I'll do it anyway just to be sure.
         if ( rawData.getData().isEmpty() )

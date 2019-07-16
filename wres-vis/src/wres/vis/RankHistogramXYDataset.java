@@ -4,9 +4,9 @@ import java.time.temporal.ChronoUnit;
 
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.statistics.ListOfStatistics;
-import wres.datamodel.statistics.MultiVectorStatistic;
+import wres.datamodel.statistics.DiagramStatistic;
 
-public class RankHistogramXYDataset extends MultiVectorOutputDiagramXYDataset
+public class RankHistogramXYDataset extends DiagramStatisticXYDataset
 {
     private static final long serialVersionUID = -798561678672865289L;
 
@@ -20,7 +20,7 @@ public class RankHistogramXYDataset extends MultiVectorOutputDiagramXYDataset
      * @throws NullPointerException if any input is null
      */
 
-    public RankHistogramXYDataset( final ListOfStatistics<MultiVectorStatistic> input,
+    public RankHistogramXYDataset( final ListOfStatistics<DiagramStatistic> input,
                                    final MetricDimension xConstant,
                                    final MetricDimension yConstant,
                                    final ChronoUnit durationUnits )

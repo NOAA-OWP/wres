@@ -34,7 +34,7 @@ import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.MatrixStatistic;
-import wres.datamodel.statistics.MultiVectorStatistic;
+import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.statistics.StatisticsForProject;
@@ -109,10 +109,10 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
             new EnumMap<>( DestinationType.class );
 
     /**
-     * Store of consumers for processing {@link MultiVectorStatistic} by {@link DestinationType} format.
+     * Store of consumers for processing {@link DiagramStatistic} by {@link DestinationType} format.
      */
 
-    private final Map<DestinationType, Consumer<ListOfStatistics<MultiVectorStatistic>>> diagramConsumers =
+    private final Map<DestinationType, Consumer<ListOfStatistics<DiagramStatistic>>> diagramConsumers =
             new EnumMap<>( DestinationType.class );
 
     /**
@@ -552,18 +552,18 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
 
 
     /**
-     * Processes {@link MultiVectorStatistic}.
+     * Processes {@link DiagramStatistic}.
      * 
      * @param outputs the outputs to consume
      * @throws NullPointerException if the input is null
      */
 
-    private void processDiagramOutputs( ListOfStatistics<MultiVectorStatistic> outputs )
+    private void processDiagramOutputs( ListOfStatistics<DiagramStatistic> outputs )
     {
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
         // Iterate through the consumers
-        for ( Entry<DestinationType, Consumer<ListOfStatistics<MultiVectorStatistic>>> next : this.diagramConsumers.entrySet() )
+        for ( Entry<DestinationType, Consumer<ListOfStatistics<DiagramStatistic>>> next : this.diagramConsumers.entrySet() )
         {
             // Consume conditionally
             if ( this.writeWhenTrue.test( StatisticGroup.MULTIVECTOR, next.getKey() ) )

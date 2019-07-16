@@ -20,18 +20,18 @@ import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 
 /**
- * Tests the {@link MultiVectorStatistic}.
+ * Tests the {@link DiagramStatistic}.
  * 
  * @author james.brown@hydrosolveDataFactory.com
  */
-public final class MultiVectorStatisticTest
+public final class DiagramStatisticTest
 {
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
     /**
-     * Constructs a {@link MultiVectorStatistic} and tests for equality with another {@link MultiVectorStatistic}.
+     * Constructs a {@link DiagramStatistic} and tests for equality with another {@link DiagramStatistic}.
      */
 
     @Test
@@ -73,15 +73,15 @@ public final class MultiVectorStatisticTest
         mvb.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
         mvc.put( MetricDimension.PROBABILITY_OF_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4, 0.5 } );
         mvc.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4, 0.5 } );
-        final MultiVectorStatistic s = MultiVectorStatistic.ofMultiVectorOutput( mva, m1 );
-        final MultiVectorStatistic t = MultiVectorStatistic.ofMultiVectorOutput( mvb, m1 );
+        final DiagramStatistic s = DiagramStatistic.ofDiagramStatistic( mva, m1 );
+        final DiagramStatistic t = DiagramStatistic.ofDiagramStatistic( mvb, m1 );
         assertTrue( s.equals( t ) );
         assertNotEquals( null, s );
         assertNotEquals( Double.valueOf( 1.0 ), s );
-        assertTrue( !s.equals( MultiVectorStatistic.ofMultiVectorOutput( mvc, m1 ) ) );
-        assertTrue( !s.equals( MultiVectorStatistic.ofMultiVectorOutput( mvc, m2 ) ) );
-        final MultiVectorStatistic q = MultiVectorStatistic.ofMultiVectorOutput( mva, m2 );
-        final MultiVectorStatistic r = MultiVectorStatistic.ofMultiVectorOutput( mvb, m3 );
+        assertTrue( !s.equals( DiagramStatistic.ofDiagramStatistic( mvc, m1 ) ) );
+        assertTrue( !s.equals( DiagramStatistic.ofDiagramStatistic( mvc, m2 ) ) );
+        final DiagramStatistic q = DiagramStatistic.ofDiagramStatistic( mva, m2 );
+        final DiagramStatistic r = DiagramStatistic.ofDiagramStatistic( mvb, m3 );
         assertTrue( q.equals( q ) );
         assertFalse( s.equals( q ) );
         assertFalse( q.equals( s ) );
@@ -89,7 +89,7 @@ public final class MultiVectorStatisticTest
     }
 
     /**
-     * Constructs a {@link MultiVectorStatistic} and checks the {@link MultiVectorStatistic#getMetadata()}.
+     * Constructs a {@link DiagramStatistic} and checks the {@link DiagramStatistic#getMetadata()}.
      */
 
     @Test
@@ -116,13 +116,13 @@ public final class MultiVectorStatisticTest
         Map<MetricDimension, double[]> mva = new EnumMap<>( MetricDimension.class );
         mva.put( MetricDimension.PROBABILITY_OF_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
         mva.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
-        final MultiVectorStatistic q = MultiVectorStatistic.ofMultiVectorOutput( mva, m1 );
-        final MultiVectorStatistic r = MultiVectorStatistic.ofMultiVectorOutput( mva, m2 );
+        final DiagramStatistic q = DiagramStatistic.ofDiagramStatistic( mva, m1 );
+        final DiagramStatistic r = DiagramStatistic.ofDiagramStatistic( mva, m2 );
         assertTrue( "Expected unequal dimensions.", !q.getMetadata().equals( r.getMetadata() ) );
     }
 
     /**
-     * Constructs a {@link MultiVectorStatistic} and checks the {@link MultiVectorStatistic#hashCode()}.
+     * Constructs a {@link DiagramStatistic} and checks the {@link DiagramStatistic#hashCode()}.
      */
 
     @Test
@@ -165,15 +165,15 @@ public final class MultiVectorStatisticTest
         mvb.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
         mvc.put( MetricDimension.PROBABILITY_OF_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4, 0.5 } );
         mvc.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4, 0.5 } );
-        final MultiVectorStatistic q = MultiVectorStatistic.ofMultiVectorOutput( mva, m1 );
-        final MultiVectorStatistic r = MultiVectorStatistic.ofMultiVectorOutput( mvb, m2 );
-        final MultiVectorStatistic s = MultiVectorStatistic.ofMultiVectorOutput( mvc, m3 );
+        final DiagramStatistic q = DiagramStatistic.ofDiagramStatistic( mva, m1 );
+        final DiagramStatistic r = DiagramStatistic.ofDiagramStatistic( mvb, m2 );
+        final DiagramStatistic s = DiagramStatistic.ofDiagramStatistic( mvc, m3 );
         assertTrue( "Expected equal hash codes.", q.hashCode() == r.hashCode() );
         assertTrue( "Expected unequal hash codes.", q.hashCode() != s.hashCode() );
     }
 
     /**
-     * Constructs a {@link MultiVectorStatistic} and checks the accessor methods for correct operation.
+     * Constructs a {@link DiagramStatistic} and checks the accessor methods for correct operation.
      */
 
     @Test
@@ -191,7 +191,7 @@ public final class MultiVectorStatisticTest
         Map<MetricDimension, double[]> mva = new EnumMap<>( MetricDimension.class );
         mva.put( MetricDimension.PROBABILITY_OF_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
         mva.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
-        final MultiVectorStatistic s = MultiVectorStatistic.ofMultiVectorOutput( mva, m1 );
+        final DiagramStatistic s = DiagramStatistic.ofDiagramStatistic( mva, m1 );
         assertTrue( "Expected a " + MetricDimension.PROBABILITY_OF_DETECTION
                     + ".",
                     s.containsKey( MetricDimension.PROBABILITY_OF_DETECTION ) );
@@ -222,7 +222,7 @@ public final class MultiVectorStatisticTest
 
         exception.expect( StatisticException.class );
 
-        MultiVectorStatistic.of( null, m1 );
+        DiagramStatistic.of( null, m1 );
 
     }
 
@@ -238,7 +238,7 @@ public final class MultiVectorStatisticTest
 
         exception.expect( StatisticException.class );
 
-        MultiVectorStatistic.of( mva, null );
+        DiagramStatistic.of( mva, null );
 
     }
 
@@ -258,7 +258,7 @@ public final class MultiVectorStatisticTest
 
         exception.expect( StatisticException.class );
 
-        MultiVectorStatistic.of( mva, m1 );
+        DiagramStatistic.of( mva, m1 );
 
     }
 
