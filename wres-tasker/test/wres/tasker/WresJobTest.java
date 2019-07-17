@@ -232,8 +232,17 @@ public class WresJobTest
     {
         System.setProperty( "wres.secrets_dir", WresJobTest.tempDir.toString() );
         WresJob wresJob = new WresJob();
-        Response response = wresJob.postWresJob( "fake", "fake" );
+        Response response = wresJob.postWresJob( "fake", "fake", null );
         assertEquals( "Expected a 404 not found.", 404, response.getStatus() );
+    }
+
+    @Test
+    public void testBadRequest()
+    {
+        System.setProperty( "wres.secrets_dir", WresJobTest.tempDir.toString() );
+        WresJob wresJob = new WresJob();
+        Response response = wresJob.postWresJob( "fake", "hank", "boogaflickle" );
+        assertEquals( "Expected a 400 bad request.", 400, response.getStatus() );
     }
 
     @Test
@@ -242,7 +251,7 @@ public class WresJobTest
         System.setProperty( "wres.secrets_dir", WresJobTest.tempDir.toString() );
         WresJob wresJob = new WresJob();
         // This line could be brittle due to looking up a particular user:
-        Response response = wresJob.postWresJob( "fake", "hank" );
+        Response response = wresJob.postWresJob( "fake", "hank", null );
         assertEquals( "Expected a 500 Internal Server Error.", 500, response.getStatus() );
     }
 
@@ -253,7 +262,7 @@ public class WresJobTest
         EmbeddedBroker embeddedBroker = new EmbeddedBroker();
         embeddedBroker.start();
         WresJob wresJob = new WresJob();
-        Response response = wresJob.postWresJob( "fake", "hank" );
+        Response response = wresJob.postWresJob( "fake", "hank", null );
         assertEquals( "Expected a 201 Created.", 201, response.getStatus() );
         WresJob.shutdownNow();
         embeddedBroker.shutdown();
