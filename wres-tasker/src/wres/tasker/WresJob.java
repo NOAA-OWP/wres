@@ -32,6 +32,8 @@ import static javax.ws.rs.core.MediaType.TEXT_HTML;
 import wres.messages.BrokerHelper;
 import wres.messages.generated.Job;
 
+import static wres.messages.generated.Job.job.Verb;
+
 /**
  * Web services related to wres jobs.
  * A job is modeled as a resource.
@@ -92,7 +94,8 @@ public class WresJob
     @Consumes( APPLICATION_FORM_URLENCODED )
     @Produces( TEXT_HTML )
     public Response postWresJob( @FormParam( "projectConfig" ) String projectConfig,
-                                 @FormParam( "userName" ) String wresUser )
+                                 @FormParam( "userName" ) String wresUser,
+                                 @FormParam( "verb" ) String verb )
     {
         String databaseUrl = Users.getDatabaseHost( wresUser, ENVIRONMENT_NAME );
         String databaseName = Users.getDatabaseName( wresUser, ENVIRONMENT_NAME );
@@ -115,11 +118,43 @@ public class WresJob
                                                 + "' in the system. Please let WRES team know." );
         }
 
+        // Default to execute per tradition and majority case.
+        Verb actualVerb = null;
+
+        // Search through allowed values
+        if ( verb != null && !verb.isBlank() )
+        {
+            for ( Verb allowedValue : Verb.values() )
+            {
+                String allowed = allowedValue.name()
+                                             .toLowerCase();
+                if ( verb.toLowerCase()
+                         .equals( allowed ) )
+                {
+                    actualVerb = allowedValue;
+                    break;
+                }
+            }
+
+            if ( actualVerb == null )
+            {
+                return WresJob.badRequest( "Verb '"
+                                         + verb
+                                         + "' not available." );
+            }
+        }
+        else
+        {
+            // Default to "execute"
+            actualVerb = Verb.EXECUTE;
+        }
+
         Job.job jobMessage = Job.job.newBuilder()
                                     .setDatabaseHostname( databaseUrl )
                                     .setDatabaseName( databaseName )
                                     .setDatabaseUsername( databaseUser )
                                     .setProjectConfig( projectConfig )
+                                    .setVerb( actualVerb )
                                     .build();
         String jobId;
 
@@ -284,6 +319,15 @@ public class WresJob
     {
         return Response.status( Response.Status.NOT_FOUND )
                        .entity( "<!DOCTYPE html><html><head><title>Not found</title></head><body><h1>Not Found</h1><p>"
+                                + message
+                                + "</p></body></html>" )
+                       .build();
+    }
+
+    private static Response badRequest( String message )
+    {
+        return Response.status( Response.Status.BAD_REQUEST )
+                       .entity( "<!DOCTYPE html><html><head><title>Bad Request</title></head><body><h1>Bad Request</h1><p>"
                                 + message
                                 + "</p></body></html>" )
                        .build();

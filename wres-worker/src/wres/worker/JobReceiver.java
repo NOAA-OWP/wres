@@ -22,6 +22,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.messages.generated.Job;
+import static wres.messages.generated.Job.job.Verb;
+
 
 /**
  * The concrete class that does the work of taking a job message and creating
@@ -156,20 +158,29 @@ class JobReceiver extends DefaultConsumer
 
         List<String> result = new ArrayList<>();
 
-        String executable = this.getWresExecutable().getPath();
-        String command = "execute";
+        String executable = this.getWresExecutable()
+                                .getPath();
+        Verb command = jobMessage.getVerb();
         String projectConfig = jobMessage.getProjectConfig();
 
-        // Make sure we have a project config...
+        result.add( executable );
+        result.add( command.name()
+                           .toLowerCase() );
+
+        // Make sure we have a project config for ingest or execute
         if ( projectConfig == null )
         {
-            LOGGER.warn( "No project config specified in message." );
-            return null;
+            if ( command.equals( Verb.INGEST ) || command.equals( Verb.EXECUTE ) )
+            {
+                LOGGER.warn( "No project config specified in message with {} verb.",
+                             command );
+                return null;
+            }
         }
-
-        result.add( executable );
-        result.add( command );
-        result.add( projectConfig );
+        else
+        {
+            result.add( projectConfig );
+        }
 
         ProcessBuilder processBuilder = new ProcessBuilder( result );
 
@@ -182,9 +193,45 @@ class JobReceiver extends DefaultConsumer
             javaOpts = javaOpts + " " + innerJavaOpts;
         }
 
+        // Assume that a request for "connecttodb" means "migrate the db", which
+        // in turn means we must replace the option wres.attemptToMigrate=false
+        // to wres.attemptToMigrate=true or add the option and set to true if
+        // it is not present.
+        if ( command.equals( Verb.CONNECTTODB ) )
+        {
+            LOGGER.info( "Special case: migrate the database, existing JAVA_OPTS: {}",
+                         javaOpts );
+            javaOpts = JobReceiver.setAttemptToMigrateTrue( javaOpts );
+            LOGGER.info( "Updated JAVA_OPTS: {}", javaOpts );
+        }
+
         // Cause process builder to get java options
         processBuilder.environment().put( "JAVA_OPTS", javaOpts );
 
         return processBuilder;
+    }
+
+
+    /**
+     * Force wres.attemptToMigrate=true in a given JAVA_OPTS which may or may not
+     * already have this value set.
+     * @param javaOpts existing JAVA_OPTS, may or may not have the setting.
+     * @return new JAVA_OPTS with wres.attemptToMigrate=true
+     */
+    static String setAttemptToMigrateTrue( String javaOpts )
+    {
+        String migrateTrue = "-Dwres.attemptToMigrate=true";
+
+        if ( javaOpts.contains( "-Dwres.attemptToMigrate=" ) )
+        {
+            LOGGER.debug( "Found migration flag in java opts, replacing." );
+            return javaOpts.replaceAll( "-Dwres\\.attemptToMigrate=[\\w\\d]+",
+                                        migrateTrue );
+        }
+        else
+        {
+            LOGGER.debug( "Did not find migration flag in java opts, appending." );
+            return javaOpts + " " + migrateTrue;
+        }
     }
 }

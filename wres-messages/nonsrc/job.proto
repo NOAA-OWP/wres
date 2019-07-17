@@ -8,4 +8,15 @@ message job
     string database_name = 2;
     string database_username = 3;
     string project_config = 4;
+
+    enum Verb
+    {
+        EXECUTE = 0;
+        INGEST = 1;
+        CONNECTTODB = 2;
+        REFRESHDATABASE = 3;
+        CLEANDATABASE = 4;
+    }
+
+    Verb verb = 5;
 }
