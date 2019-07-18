@@ -63,7 +63,6 @@ public final class TimeWindow implements Comparable<TimeWindow>
 
     private final Instant latestValidTime;
 
-
     /**
      * The earliest forecast lead time associated with the time window in {@link leadUnits} units. If the 
      * {@link TimeWindow} does not represent a forecast, the {@link #earliestLead} and {@link #latestLead} should 
