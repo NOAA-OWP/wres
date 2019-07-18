@@ -46,8 +46,7 @@ class PoolingSampleDataIterator extends SampleDataIterator
 
         Pair<Duration, Duration> leadBounds = this.getLeadBounds( leadIteration );
 
-        while (TimeHelper.lessThan(leadBounds.getLeft(), lastPossibleLead) &&
-               TimeHelper.lessThanOrEqualTo( leadBounds.getRight(), lastPossibleLead ))
+        while ( leadBounds.getRight().compareTo( lastPossibleLead ) <= 0 )
         {
             for ( int issuePoolStep = 0; issuePoolStep < lastPoolingStep; ++issuePoolStep )
             {
@@ -69,7 +68,18 @@ class PoolingSampleDataIterator extends SampleDataIterator
 
             leadIteration++;
 
-            leadBounds = this.getLeadBounds( leadIteration );
+            Pair<Duration, Duration> newBounds = this.getLeadBounds( leadIteration );
+            
+            // If the window is zero wide and centered on one lead duration
+            // then it's possible that the next window is the same as the last window,
+            // so stop here
+            // #66118
+            if( newBounds.equals( leadBounds ) ) 
+            {
+                break;
+            }
+            
+            leadBounds = newBounds;   
         }
         
         // We need to throw an exception if no samples to evaluate could be determined
