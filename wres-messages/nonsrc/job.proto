@@ -16,6 +16,7 @@ message job
         CONNECTTODB = 2;
         REFRESHDATABASE = 3;
         CLEANDATABASE = 4;
+        VALIDATE = 5;
     }
 
     Verb verb = 5;
