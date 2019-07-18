@@ -662,10 +662,10 @@ project(':wres-tasker')
         testCompile 'org.bouncycastle:bcprov-jdk15on:1.62'
 
         // To test against an embedded AMQP broker
-        testCompile 'org.apache.qpid:qpid-broker-core:7.1.3'
+        testCompile 'org.apache.qpid:qpid-broker-core:7.1.4'
         // Provides support for both 0-8 and 0-9-1
-        testCompile 'org.apache.qpid:qpid-broker-plugins-amqp-0-8-protocol:7.1.3'
-        testCompile 'org.apache.qpid:qpid-broker-plugins-memory-store:7.1.3'
+        testCompile 'org.apache.qpid:qpid-broker-plugins-amqp-0-8-protocol:7.1.4'
+        testCompile 'org.apache.qpid:qpid-broker-plugins-memory-store:7.1.4'
     }
 
     apply plugin: 'application'
