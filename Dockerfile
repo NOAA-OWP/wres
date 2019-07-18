@@ -39,8 +39,8 @@ RUN yum install -y \
     shadow-utils-4.1.5.1-25.el7_6.1 \
     systemd-219-62.el7_6.7 \
     systemd-libs-219-62.el7_6.7 \
-    tzdata-2019a-1.el7 \
-    tzdata-java-2019a-1.el7 \
+    tzdata-2019b-1.el7 \
+    tzdata-java-2019b-1.el7 \
     util-linux-2.23.2-59.el7_6.1 \
     vim-minimal-7.4.160-6.el7_6
 
