@@ -81,7 +81,18 @@ final class BasicSampleDataIterator extends SampleDataIterator
 
                 leadIteration++;
 
-                leadBounds = this.getLeadBounds( leadIteration );                
+                Pair<Duration, Duration> newBounds = this.getLeadBounds( leadIteration );
+                
+                // If the window is zero wide and centered on one lead duration
+                // then it's possible that the next window is the same as the last window,
+                // so stop here
+                // #66118
+                if( newBounds.equals( leadBounds ) ) 
+                {
+                    break;
+                }
+                
+                leadBounds = newBounds;                
             }
         }
         else
