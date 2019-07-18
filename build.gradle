@@ -13,7 +13,7 @@ buildscript
     dependencies
     {
         // For markdown -> html
-        classpath 'com.atlassian.commonmark:commonmark:0.12.1'
+        classpath 'com.atlassian.commonmark:commonmark:0.13.0'
         // To create a unified javadoc across submodules and top-level module:
         classpath 'com.netflix.nebula:gradle-aggregate-javadocs-plugin:3.0.1'
     }
@@ -36,7 +36,7 @@ plugins
     //id 'org.uulib.gradle.markdown' version '0.0.1'
 
     // To generate de/serialization classes for message bodies
-    id 'com.google.protobuf' version '0.8.9'
+    id 'com.google.protobuf' version '0.8.10'
 
     // To create trusted certificate files (.jks aka cacerts) from dir of .pem
     // (Not working: not friendly to our directory structure nor submodules)
@@ -289,9 +289,9 @@ project(':wres-io')
 
         compile group: 'org.apache.commons', name: 'commons-compress', version: '1.18'
 
-        compile group: 'org.liquibase', name: 'liquibase-core', version: '3.6.3'
+        compile group: 'org.liquibase', name: 'liquibase-core', version: '3.7.0'
 
-        compile( group: 'com.amazonaws', name: 'aws-java-sdk-s3', version: '1.11.587')
+        compile( group: 'com.amazonaws', name: 'aws-java-sdk-s3', version: '1.11.593')
         {
             // Because we use slf4j, not jcl:
             exclude group: 'commons-logging', module: 'commons-logging'
@@ -529,10 +529,10 @@ project(':wres-messages')
 
     protobuf
     {
-        // Automagically download and use the correct protobuf compiler
+        // Automatically download and use the correct protobuf compiler
         protoc
         {
-            artifact = 'com.google.protobuf:protoc:3.8.0'
+            artifact = 'com.google.protobuf:protoc:3.9.0'
         }
         // So all IDEs/editors can see generated files, use actual src dir:
         generatedFilesBaseDir = "${generatedDir}"
@@ -569,7 +569,7 @@ project(':wres-messages')
     dependencies
     {
         compile 'org.slf4j:slf4j-api:1.8.0-beta4'
-        compile 'com.google.protobuf:protobuf-java:3.8.0'
+        compile 'com.google.protobuf:protobuf-java:3.9.0'
 
         testCompile 'junit:junit:4.13-beta-3'
     }
