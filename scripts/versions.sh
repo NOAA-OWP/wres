@@ -6,8 +6,8 @@
 
 function get_ver
 {
-    last_commit_hash=$( git log --format="%h" -n 1 $1 )
-    last_commit_date=$( git log --date=short --format="%cd" -n 1 $1 )
+    last_commit_hash=$( git log --format="%h" -n 1 -- $1 build.gradle )
+    last_commit_date=$( git log --date=short --format="%cd" -n 1 -- $1 build.gradle )
     last_commit_date_short=$( echo ${last_commit_date} | sed 's/\-//g' - )
     potential_version=${last_commit_date_short}-${last_commit_hash}
     echo ${potential_version}
