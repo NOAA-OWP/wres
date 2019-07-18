@@ -1577,14 +1577,15 @@ public class Validation
                          windowConfig.getFrequency() );
         }
 
-        // Period must be >= 1
-        if ( Objects.nonNull( windowConfig.getPeriod() ) && windowConfig.getPeriod() < 1 )
+        // Period must be >= 0
+        // #66118 
+        if ( Objects.nonNull( windowConfig.getPeriod() ) && windowConfig.getPeriod() < 0 )
         {
             valid = false;
 
             LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
                          + " Error when evaluating the declaration for {} "
-                         + "pooling windows: the period must be at least 1 "
+                         + "pooling windows: the period must be zero or greater "
                          + "but was '{}', which is not valid.",
                          projectConfigPlus.getOrigin(),
                          windowConfig.sourceLocation().getLineNumber(),

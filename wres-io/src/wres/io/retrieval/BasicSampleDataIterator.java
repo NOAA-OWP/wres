@@ -57,9 +57,12 @@ final class BasicSampleDataIterator extends SampleDataIterator
             int leadIteration = 0;
 
             Pair<Duration, Duration> leadBounds = this.getLeadBounds( leadIteration );
-         
-            while (TimeHelper.lessThan(leadBounds.getLeft(), lastPossibleLead) &&
-                   TimeHelper.lessThanOrEqualTo( leadBounds.getRight(), lastPossibleLead ))
+
+            // Check that the right bound is <= the last possible lead 
+            // No need to check the left bound, as the right bound >= left bound
+            // Will ensure that windows of zero width are included on the right bound
+            // See #66118
+            while ( leadBounds.getRight().compareTo( lastPossibleLead ) <= 0 )
             {
                 TimeWindow window = ConfigHelper.getTimeWindow(
                         this.getProject(),
