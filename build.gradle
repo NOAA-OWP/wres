@@ -71,9 +71,31 @@ subprojects
     def gitCommitId = gitCommit.id
     def gitCommitDate = gitCommit.getDate()
 
-    def gitIsClean = grgit.status().isClean()
+    // ...Or if this build script which controls dependencies has changed.
+    def gitCommitOfThis = grgit.log( paths: ['build.gradle'], maxCommits:1 ).find()
+    def gitCommitIdOfThis = gitCommitOfThis.id
+    def gitCommitDateOfThis = gitCommitOfThis.getDate()
 
     version = gitCommitDate.format('yyyyMMdd') + '-' + gitCommitId[0..6]
+
+    // If the build script tip commit has a later date, use that instead.
+    // This means we have multiple unneeded version updates of submodule
+    // versions but will not have the converse. The version will change when
+    // changes really did happen, whether to the module or this build script.
+    def versionOfThis = gitCommitDateOfThis.format( 'yyyyMMdd' ) + '-' + gitCommitId[0..6]
+
+    if ( gitCommitDateOfThis > gitCommitDate )
+    {
+        version = versionOfThis
+    }
+
+    // Whenever there are local changes, flag the version with a "-dev" suffix.
+    // If "-dev" shows up in a version in production, either a bad artifact
+    // made it into production or there is a bug in this logic. In either case,
+    // the response is to make sure that a clean build producing a version with
+    // no "-dev" occurs and to put that artifact into production.
+    def gitIsClean = grgit.status().isClean()
+
     if (!gitIsClean)
     {
         version = version + '-dev'
