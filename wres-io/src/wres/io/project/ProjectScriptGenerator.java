@@ -1107,7 +1107,7 @@ final class ProjectScriptGenerator
 
         scripter.addLine("WITH differences AS");
         scripter.addLine("(");
-        scripter.addTab().addLine("SELECT lead - lag(lead) OVER (ORDER BY TSV.timeseries_id, lead) AS difference,");
+        scripter.addTab().addLine("SELECT DISTINCT lead - lag(lead) OVER (ORDER BY TSV.timeseries_id, lead) AS difference,");
         scripter.addTab(  2  ).addLine("TS.timeseries_id,");
         scripter.addTab(  2  ).addLine("TS.scale_function,");
         scripter.addTab(  2  ).addLine("TS.scale_period,");
@@ -1140,7 +1140,7 @@ final class ProjectScriptGenerator
 
         if (minimumLead != Integer.MIN_VALUE )
         {
-            scripter.addTab().addLine("WHERE lead > ", minimumLead );
+            scripter.addTab().addLine("WHERE lead >= ", minimumLead );
         }
         else
         {
