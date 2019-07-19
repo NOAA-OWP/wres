@@ -19,7 +19,7 @@
     <pair label="Pairs by location and lead time">
         <unit>CMS</unit>
         <feature locationId="DRRC2" />
-        <leadHours minimum="1" maximum="24" />
+        <leadHours minimum="6" maximum="24" />
         <issuedDates latest="1985-06-07T12:00:00Z" />
 
         <desiredTimeScale>
@@ -28,6 +28,11 @@
             <unit>hours</unit>
             <frequency>3</frequency>
         </desiredTimeScale>
+        <leadTimesPoolingWindow>
+            <period>0</period>
+            <frequency>3</frequency>
+            <unit>hours</unit>
+        </leadTimesPoolingWindow>
     </pair>
 
     <metrics>
