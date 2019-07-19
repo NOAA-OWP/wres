@@ -19,12 +19,16 @@
     <pair label="Pairs by location and lead time"> 
         <unit>CMS</unit>
         <feature locationId="LGNN5" />
-        <leadHours minimum="1" maximum="48" />
+        <leadHours minimum="42" maximum="42" />
         <desiredTimeScale>
             <function>mean</function>
             <period>24</period>
             <unit>hours</unit>
         </desiredTimeScale>
+        <leadTimesPoolingWindow>
+            <period>0</period>
+            <unit>hours</unit>
+        </leadTimesPoolingWindow>
     </pair>
 
     <metrics>
