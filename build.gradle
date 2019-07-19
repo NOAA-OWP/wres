@@ -2,6 +2,7 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
 import java.nio.file.StandardCopyOption
+import java.time.ZoneId
 
 /* Used by gradle plugins outside the official gradle plugins repository */
 buildscript
@@ -69,12 +70,12 @@ subprojects
     // Each module does not need a version update unless code in it has changed.
     def gitCommit = grgit.log(paths: [project.name], maxCommits:1).find()
     def gitCommitId = gitCommit.id
-    def gitCommitDate = gitCommit.getDate()
+    def gitCommitDate = gitCommit.dateTime.withZoneSameInstant( ZoneId.of( "UTC" ) )
 
     // ...Or if this build script which controls dependencies has changed.
     def gitCommitOfThis = grgit.log( paths: ['build.gradle'], maxCommits:1 ).find()
     def gitCommitIdOfThis = gitCommitOfThis.id
-    def gitCommitDateOfThis = gitCommitOfThis.getDate()
+    def gitCommitDateOfThis = gitCommitOfThis.dateTime.withZoneSameInstant( ZoneId.of( "UTC" ) )
 
     version = gitCommitDate.format('yyyyMMdd') + '-' + gitCommitId[0..6]
 
@@ -82,9 +83,9 @@ subprojects
     // This means we have multiple unneeded version updates of submodule
     // versions but will not have the converse. The version will change when
     // changes really did happen, whether to the module or this build script.
-    def versionOfThis = gitCommitDateOfThis.format( 'yyyyMMdd' ) + '-' + gitCommitId[0..6]
+    def versionOfThis = gitCommitDateOfThis.format( 'yyyyMMdd' ) + '-' + gitCommitIdOfThis[0..6]
 
-    if ( gitCommitDateOfThis > gitCommitDate )
+    if ( gitCommitDateOfThis.isAfter( gitCommitDate ) )
     {
         version = versionOfThis
     }
@@ -815,6 +816,7 @@ applicationDefaultJvmArgs = ['-Xms2310m', '-Xmx2310m',
                              '-Djava.util.logging.config.class=wres.system.logging.JavaUtilLoggingRedirector']
 
 // Get the commit and date from the TOP for this project, it is outermost.
+// The top level commit will also reflect changes to this build.gradle script.
 def gitCommit = grgit.head()
 def gitCommitId = gitCommit.id
 def gitCommitDate = gitCommit.getDate()
