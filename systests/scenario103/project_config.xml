@@ -51,14 +51,12 @@
         <!-- The location id associated with the evaluation; in this case a handbook5 id. -->
         <feature locationId="LGNN5" />
         
-        <!-- The evaluation is restricted to the first 48 hours.  With 24-hour data, this will
-             yield either one or two lead times for evaluation.  In this specific case there
-             was only one because of the temporal offset identified in order to allow for the
-             forecasts and observation to align.  In general, it may be more useful to evaluate
-             a longer period of lead durations, setting minimum to be "0" hours and maximum to
-             be "120", "240", or even longer depending on the objectives of the evaluation.
+        <!-- The evaluation is restricted to pairs that have a lead time of 42h. In general, 
+             it may be more useful to evaluate a longer period of lead durations, setting 
+             minimum to be "0" hours and maximum to be "120", "240", or even longer depending
+             on the objectives of the evaluation.
         -->
-        <leadHours minimum="1" maximum="48" />
+        <leadHours minimum="42" maximum="42" />
 
         <!-- The desired time scale of the evaluation, which matches that of the observations.
         -->
@@ -67,6 +65,16 @@
             <period>24</period>
             <unit>hours</unit>
         </desiredTimeScale>
+
+        <!-- We place all pairs into a single pool that is zero-hours wide. This pool
+             is centered on a lead time of 42h, because that is the only lead time we
+             are considering here.
+        -->
+        <leadTimesPoolingWindow>
+            <period>0</period>
+            <unit>hours</unit>
+        </leadTimesPoolingWindow>
+
     </pair>
 
     <!-- Metrics and options associated with the metrics are specified in the metrics tag. -->
