@@ -1,7 +1,7 @@
 version: '2.2'
 services:
     worker:
-        image: "${DOCKER_REGISTRY}/wres/wres-worker:20190708-0643a66"
+        image: "${DOCKER_REGISTRY}/wres/wres-worker:20190719-8634c3e"
         restart: always
         volumes:
          - /mnt/wres_share:/mnt/wres_share
@@ -10,5 +10,8 @@ services:
         environment:
          - JAVA_OPTS=-Dwres.broker=***REMOVED***wres-broker${WRES_ENV_SUFFIX} -Djava.io.tmpdir=/mnt/wres_share/evaluations
          - PGPASSFILE=/wres_secrets/.pgpass
+         # Do not auto-liquibase-migrate on each evaluation. This requires an
+         # administrator to run the migration(s) during or after deployment.
+         - INNER_JAVA_OPTS=-Dwres.attemptToMigrate=false
         # Worker JVM should have 32m max heap, WRES should have 2310m max heap
         mem_limit: 2730m

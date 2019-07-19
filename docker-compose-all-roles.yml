@@ -3,7 +3,7 @@ services:
     tasker:
         ports:
          - "443:8443"
-        image: "${DOCKER_REGISTRY}/wres/wres-tasker:20190705-836d9ad"
+        image: "${DOCKER_REGISTRY}/wres/wres-tasker:20190719-8634c3e"
         restart: always
         depends_on:
          - "broker"
@@ -22,7 +22,7 @@ services:
         ports:
          - "5671:5671"
          - "15671:15671"
-        image: "${DOCKER_REGISTRY}/wres/wres-broker:20190626-faaf52c"
+        image: "${DOCKER_REGISTRY}/wres/wres-broker:20190719-8634c3e"
         restart: always
         volumes:
          # For certificates and keys that correspond to them:
@@ -32,7 +32,7 @@ services:
         # rabbitmq.conf should have 180m specified as high watermark
         mem_limit: 360m
     worker:
-        image: "${DOCKER_REGISTRY}/wres/wres-worker:20190708-0643a66"
+        image: "${DOCKER_REGISTRY}/wres/wres-worker:20190719-8634c3e"
         restart: always
         depends_on:
          - "broker"
@@ -44,6 +44,8 @@ services:
         environment:
          - JAVA_OPTS=-Dwres.broker=broker -Djava.io.tmpdir=/mnt/wres_share/evaluations
          - PGPASSFILE=/wres_secrets/.pgpass
-         #- INNER_JAVA_OPTS=-Dwres.logLevel=trace
+         # Do not auto-liquibase-migrate on each evaluation. This requires an
+         # administrator to run the migration(s) during or after deployment.
+         - INNER_JAVA_OPTS=-Dwres.attemptToMigrate=false
         # Worker JVM should have 32m heap, wres should have 2310m heap
         mem_limit: 2730m
