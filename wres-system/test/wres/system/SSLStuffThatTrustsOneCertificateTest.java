@@ -12,6 +12,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -69,6 +70,7 @@ public class SSLStuffThatTrustsOneCertificateTest
             + "-----END CERTIFICATE-----\n";
 
     @Test
+    @Ignore // #66282: update PEM or refactor to mock server with mock cert
     public void attemptToReachApacheDotOrg() throws IOException
     {
         byte[] certificateBytes =

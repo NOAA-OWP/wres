@@ -8,11 +8,16 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DesiredTimeScaleConfig;
@@ -47,6 +52,8 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
 
     private OrderedSampleMetadata sampleMetadata;
 
+    private static final Logger LOGGER = LoggerFactory.getLogger( Retriever.class );
+    
     /**
      * @param sampleMetadata Information about the sample data that will be retrieved
      * @param getLeftValues getter of left side data
@@ -222,7 +229,7 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
         {
             EnsemblePair pair = this.getPair( pivottedValues );
 
-            if (pair != null)
+            if ( Retriever.isValidPair( pair ) )
             {
                 if (this.getProjectDetails().getInputName( dataSourceConfig ).equals( Project.RIGHT_MEMBER))
                 {
@@ -247,6 +254,15 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
                 {
                     this.addBaselinePair( packagedPair );
                 }
+            }
+            else
+            {
+                LOGGER.trace( "Ignoring a pair with valid time {} and lead duration {} because "
+                              + "the left value is not finite or none of the right values are "
+                              + "finite: {}.",
+                              pivottedValues.getValidTime(),
+                              pivottedValues.getLeadDuration(),
+                              pair );
             }
         }
     }
@@ -293,6 +309,8 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
     }
 
     /**
+     * TODO: Return a primitive rather than a possibly null wrapped double.
+     * 
      * Finds and aggregates left hand values
      * @param end The date at which the left hand values need to be aggregated to
      * @return The scaled left hand value.
@@ -351,10 +369,13 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
 
         return leftAggregation;
     }
+    
 
+    // TODO: Return an empty collection rather than a possibly null collection
     private Collection<Double> getControlValues(final LocalDateTime start, final LocalDateTime end)
             throws RetrievalFailedException
     {
+        
         try
         {
             return this.getLeftValues.call(this.getFeature(), start, end);
@@ -435,5 +456,34 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
         return Collections.unmodifiableList( eventPairs );
     }
     
+    
+    /**
+     * Returns <code>true if the left value is finite and one or more of the right values is finite, otherwise 
+     * <code>false</code>.
+     * 
+     * @return true if the pair is valid, otherwise false
+     */
+    
+    private static boolean isValidPair( EnsemblePair pair )
+    {
+        // Pair is null
+        if ( Objects.isNull( pair ) )
+        {
+            return false;
+        }
+
+        // Left is not finite
+        if ( !Double.isFinite( pair.getLeft() ) )
+        {
+            return false;
+        }
+
+        // No right values are finite
+        // In other words, check for the absence of any finite value
+        // and reverse, because that is not a valid pair
+        double[] right = pair.getRight();
+
+        return !Arrays.stream( right ).noneMatch( Double::isFinite );
+    }
     
 }
