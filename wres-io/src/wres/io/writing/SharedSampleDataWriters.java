@@ -89,6 +89,8 @@ public class SharedSampleDataWriters implements Consumer<SampleData<?>>, Supplie
     @Override
     public void accept( SampleData<?> sampleData )
     {
+        Objects.requireNonNull( sampleData, "Cannot accept a null sample container for writing." );
+        
         if ( sampleData instanceof TimeSeriesOfSingleValuedPairs )
         {
             this.getSingleValuedWriter().accept( (TimeSeriesOfSingleValuedPairs) sampleData );

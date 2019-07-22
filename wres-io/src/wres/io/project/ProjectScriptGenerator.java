@@ -581,6 +581,10 @@ final class ProjectScriptGenerator
         script.addTab(   3   ).addLine( "WHERE PS.project_id = ", project.getId());
         script.addTab(    4    ).addLine("AND PS.member = 'left'");
         script.addTab(    4    ).addLine("AND O.variablefeature_id = VF.variablefeature_id");
+        
+        // #65881
+        script.addTab(    4    ).addLine( "AND O.observed_value IS NOT NULL" );
+        
         script.addTab(  2  ).addLine(")");
         script.addTab(  2  ).addLine( "GROUP BY VF.feature_id" );
         script.addLine(")");
@@ -1138,6 +1142,7 @@ final class ProjectScriptGenerator
         scripter.addTab().addLine(") AS TS");
         scripter.addTab(  2  ).addLine("ON TS.timeseries_id = TSV.timeseries_id");
 
+        // Lower bound is inclusive: #66118-34
         if (minimumLead != Integer.MIN_VALUE )
         {
             scripter.addTab().addLine("WHERE lead >= ", minimumLead );

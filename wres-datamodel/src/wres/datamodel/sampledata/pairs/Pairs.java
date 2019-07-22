@@ -325,7 +325,6 @@ public abstract class Pairs<T extends Pair<?,?>> implements SampleData<T>
         {
             throw new SampleDataException( "One or more of the baseline pairs is null." );
         }
-
     }
 
     /**
@@ -336,6 +335,7 @@ public abstract class Pairs<T extends Pair<?,?>> implements SampleData<T>
 
     private void validateClimatologicalInput()
     {
+        // #65881: if a climatology is provided, it cannot be empty when some pairs exist
         if ( Objects.nonNull( this.getClimatology() ) && !this.getRawData().isEmpty() )
         {
             if ( this.getClimatology().size() == 0 )
