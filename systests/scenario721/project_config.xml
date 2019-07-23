@@ -20,11 +20,17 @@
     <pair>
         <unit>CMS</unit>
         <feature locationId="FAKE2" />
+        <leadHours minimum="3" maximum="33" />
         <desiredTimeScale>
             <function>mean</function>
             <period>3</period>
             <unit>hours</unit>
         </desiredTimeScale>
+        <leadTimesPoolingWindow>
+            <period>0</period>
+            <frequency>3</frequency>
+            <unit>hours</unit>
+        </leadTimesPoolingWindow>
     </pair>
 
     <metrics>

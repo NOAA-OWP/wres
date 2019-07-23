@@ -17,13 +17,18 @@
         <unit>CMS</unit>
         <!--<feature rfc="ABRFC" />-->
         <feature locationId="DRRC2" />
-        <!--<leadHours minimum="1" maximum="48" />-->
+        <leadHours minimum="3" maximum="9" />
         <dates earliest="2018-08-26T00:00:00Z" latest="2018-09-04T00:00:00Z" />
         <desiredTimeScale>
             <function>mean</function>
             <period>3</period>
             <unit>hours</unit>
         </desiredTimeScale>
+        <leadTimesPoolingWindow>
+            <period>0</period>
+            <frequency>3</frequency>
+            <unit>hours</unit>
+        </leadTimesPoolingWindow>
     </pair>
     <metrics>
         <metric><name>mean error</name></metric>
