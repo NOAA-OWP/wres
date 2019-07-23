@@ -19,13 +19,18 @@
     <pair label="Pairs by location and lead time"> 
         <unit>MM</unit>
         <feature locationId="LGNN5" />
-        <leadHours minimum="1" maximum="48" />
+        <leadHours minimum="6" maximum="48" />
         <values minimum="0.00001"/><!-- I think this results in only positive values for both obs and fcst-->
         <desiredTimeScale>
             <function>total</function>
             <period>6</period>
             <unit>hours</unit>
         </desiredTimeScale>
+        <leadTimesPoolingWindow>
+            <period>0</period>
+            <frequency>6</frequency>
+            <unit>hours</unit>
+        </leadTimesPoolingWindow>
     </pair>
 
     <metrics>
