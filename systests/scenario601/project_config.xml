@@ -16,6 +16,12 @@
     <pair label="Pairs by location and lead time"> <!-- required for unit -->
         <unit>CMS</unit>
         <feature locationId="SMAF1" />
+        <leadHours minimum="1" maximum="18" />
+        <leadTimesPoolingWindow>
+            <period>0</period>
+            <frequency>1</frequency>
+            <unit>hours</unit>
+        </leadTimesPoolingWindow>
     </pair>
 
     <metrics>
