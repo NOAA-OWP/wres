@@ -39,15 +39,21 @@
         <!-- The measuring unit of the evaluation. -->
         <unit>FT</unit>
         
-        <!-- The evaluation is restricted to lead hours 48 - 144, or 4 days. The
-             desiredTimeScale of the evaluation is the 4 day maximum between those 4 days. 
+        <!-- The evaluation is restricted to a lead hour that end at 144 hours, or 4 days. The
+             desiredTimeScale of the evaluation is the 4 day maximum that ends at 4 days and 
+             all those pairs are placed in a pool that is zero hours wide and centered on 144 
+             hours.
         -->
-        <leadHours minimum="48" maximum="144" />
+        <leadHours minimum="144" maximum="144" />
         <desiredTimeScale>
             <function>maximum</function>
             <period>96</period>
             <unit>hours</unit>
         </desiredTimeScale>
+        <leadTimesPoolingWindow>
+            <period>0</period>
+            <unit>hours</unit>
+        </leadTimesPoolingWindow>
     </pair>
 
     <!-- Metrics and options associated with the metrics are specified in the metrics tag. -->

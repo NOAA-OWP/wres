@@ -1168,6 +1168,13 @@ final class ProjectScriptGenerator
             // If we cut it to 100 hours, it now takes 1.6s. Still not great, but
             // much faster
             int ceiling = TimeHelper.durationToLead( Duration.of( 100, ChronoUnit.HOURS) );
+            
+            // #66118-51
+            if (minimumLead != Integer.MIN_VALUE )
+            {
+                ceiling = ceiling + minimumLead;
+            }
+            
             scripter.addTab(  2  ).addLine( "AND lead <= ", ceiling );
         }
 
