@@ -3,7 +3,7 @@ services:
     tasker:
         ports:
          - "443:8443"
-        image: "${DOCKER_REGISTRY}/wres/wres-tasker:20190722-19746e3"
+        image: "${DOCKER_REGISTRY}/wres/wres-tasker:20190724-8a5afea"
         restart: always
         depends_on:
          - "broker"
@@ -32,7 +32,7 @@ services:
         # rabbitmq.conf should have 180m specified as high watermark
         mem_limit: 360m
     worker:
-        image: "${DOCKER_REGISTRY}/wres/wres-worker:20190722-19746e3"
+        image: "${DOCKER_REGISTRY}/wres/wres-worker:20190724-8a5afea"
         restart: always
         depends_on:
          - "broker"
