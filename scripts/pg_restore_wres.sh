@@ -47,9 +47,10 @@ then
     j=$min_j
 fi
 
-restore_schema_only_command="$pg_restore_command -e -j $j --no-owner -h ${database_host} -d ${database_name} -U ${database_username} --schema-only"
+restore_pre_data_only_command="$pg_restore_command -e -j $j --no-owner -h ${database_host} -d ${database_name} -U ${database_username} --section=pre-data"
 restore_data_only_table_command="$pg_restore_command -e -j $j --no-owner -h ${database_host} -d ${database_name} -U ${database_username} --data-only -t"
 restore_table_command="$pg_restore_command -e -j $j --no-owner -h ${database_host} -d ${database_name} -U ${database_username} -t"
+restore_post_data_only_command="$pg_restore_command -e -j $j --no-owner -h ${database_host} -d ${database_name} -U ${database_username} --section=post-data"
 
 # Some basic checks before execution.
 dump_file_exists="(does NOT exist!)"
@@ -133,9 +134,10 @@ echo "Using pg_restore executable ${pg_restore_command} ${pg_restore_command_exi
 echo "Using database host ${database_host} ${database_host_resolves}"
 echo "Using database name ${database_name}"
 echo "Using database username ${database_username}"
-echo "Using restore_schema_only_command ${restore_schema_only_command}"
+echo "Using restore_pre_data_only_command ${restore_pre_data_only_command}"
 echo "Using restore_data_only_table_command ${restore_data_only_table_command}"
 echo "Using restore_table_command ${restore_table_command}"
+echo "Using restore_post_data_only_command ${restore_post_data_only_command}"
 
 # Require one keystroke before doing it.
 read -n1 -r -p "Please ctrl-c if that is not correct, any key otherwise..." key
@@ -147,7 +149,7 @@ start_seconds=$(date +%s)
 set -x
 
 
-$restore_schema_only_command $dump_file \
+$restore_pre_data_only_command $dump_file \
 && $restore_data_only_table_command measurementunit $dump_file \
 && $restore_data_only_table_command usgsparameter $dump_file \
 && $restore_data_only_table_command netcdfcoordinate $dump_file \
@@ -324,6 +326,7 @@ $restore_schema_only_command $dump_file \
 && $restore_data_only_table_command projectsource $dump_file \
 && $restore_data_only_table_command executionlog $dump_file \
 && $restore_data_only_table_command projectexecutions $dump_file \
+&& $restore_post_data_only_command $dump_file \
 && $restore_table_command databasechangelog $changelog_dump_file \
 && $restore_table_command databasechangeloglock $changeloglock_dump_file
 
