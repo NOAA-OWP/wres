@@ -75,8 +75,12 @@ then
 fi
 
 database_host_resolves="(does NOT resolve!)"
-nslookup ${database_host} >/dev/null 2>&1
-resolved=$?
+
+if [ ! -z "$database_host" ]
+then
+    nslookup ${database_host} >/dev/null 2>&1
+    resolved=$?
+fi
 
 if [ "$resolved" == "0" ]
 then
