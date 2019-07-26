@@ -46,6 +46,7 @@ final class DatabaseSettings
 	private String certificateFileToTrust;
 	private int maxPoolSize = 10;
 	private int maxIdleTime = 30;
+	private boolean attemptToMigrate = true;
 
 	private Properties connectionProperties;
 
@@ -136,7 +137,7 @@ final class DatabaseSettings
 			// TODO: move liquibase migration out of static initialization.
 
             // Stop-gap measure between always-migrate and never-migrate.
-            boolean attemptToMigrate = true;
+            boolean migrate = this.attemptToMigrate;
             String attemptToMigrateSetting = System.getProperty( "wres.attemptToMigrate" );
 
             if ( attemptToMigrateSetting != null
@@ -145,12 +146,12 @@ final class DatabaseSettings
                 if ( attemptToMigrateSetting.toLowerCase()
                                             .equals( "true" ) )
                 {
-                    attemptToMigrate = true;
+                    migrate = true;
                 }
                 else if ( attemptToMigrateSetting.toLowerCase()
                                                  .equals( "false" ) )
                 {
-                    attemptToMigrate = false;
+                    migrate = false;
                 }
                 else
                 {
@@ -159,7 +160,7 @@ final class DatabaseSettings
                 }
             }
 
-            if ( attemptToMigrate )
+            if ( migrate )
             {
                 ConnectionSupplier connectionSupplier =
                         new ConnectionSupplier( this.getDatabaseName() );
@@ -514,6 +515,11 @@ final class DatabaseSettings
         this.useSSL = useSSL;
     }
 
+    private void setAttemptToMigrate(String value)
+    {
+        this.attemptToMigrate = Boolean.parseBoolean( value );
+    }
+
     private boolean shouldUseSSL()
     {
         return this.useSSL;
@@ -653,6 +659,9 @@ final class DatabaseSettings
                             break;
                         case "certificate_file_to_trust":
                             this.setCertificateFileToTrust( value );
+                            break;
+                        case "attempt_to_migrate":
+                            this.setAttemptToMigrate( value );
                             break;
                         default:
                             LOGGER.error( "Tag of type: '{}' is not valid for database configuration.",
