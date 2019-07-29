@@ -2,12 +2,14 @@ dump_file_prefix='wresbackup'
 database_host='fake.fqdn'
 database_name='wres'
 database_username='wres_user'
+wres_schema_owner='wres'
 pg_restore_command=$(which pg_restore)
+psql_command=$(which psql)
 cpus=$(nproc)
 max_j=8
 min_j=1
 
-while getopts "f:h:d:U:p:" opt
+while getopts "f:h:d:U:p:s:o:" opt
 do
     case $opt in
         f)
@@ -25,8 +27,14 @@ do
         p)
             pg_restore_command=$OPTARG
             ;;
+        s)
+            psql_command=$OPTARG
+            ;;
+        o)
+            wres_schema_owner=$OPTARG
+            ;;
         \?)
-            echo "Usage: $0 -f dump_file_prefix -h database_host -d database_name -U database_username [ -p pg_restore_command ]"
+            echo "Usage: $0 -f dump_file_prefix -h database_host -d database_name -U database_username [ -p pg_restore_command -s psql_command -o wres_schema_owner ]"
             exit 2
             ;;
     esac
@@ -51,6 +59,12 @@ restore_pre_data_only_command="$pg_restore_command -e -j $j --no-owner -h ${data
 restore_data_only_table_command="$pg_restore_command -e -j $j --no-owner -h ${database_host} -d ${database_name} -U ${database_username} --data-only -t"
 restore_table_command="$pg_restore_command -e -j $j --no-owner -h ${database_host} -d ${database_name} -U ${database_username} -t"
 restore_post_data_only_command="$pg_restore_command -e -j $j --no-owner -h ${database_host} -d ${database_name} -U ${database_username} --section=post-data"
+
+# Good luck getting this one to work:
+set_wres_schema_owner_command="$psql_command -h ${database_host} -d ${database_name} -U ${database_username} -c ALTER SCHEMA wres OWNER TO ${wres_schema_owner}"
+
+# Or even this
+#set_wres_schema_owner_command="$psql_command -h ${database_host} -d ${database_name} -U ${database_username} -c 'ALTER SCHEMA wres OWNER TO wres'"
 
 # Some basic checks before execution.
 dump_file_exists="(does NOT exist!)"
@@ -113,6 +127,20 @@ then
     pg_restore_command_is_executable="(executable)"
 fi
 
+psql_command_exists="(does NOT exist!)"
+
+if [ -f $psql_command ]
+then
+    psql_command_exists="(exists)"
+fi
+
+psql_command_is_executable="(is NOT executable)"
+
+if [ -x $psql_command ]
+then
+    psql_command_is_executable="(executable)"
+fi
+
 database_host_resolves="(does NOT resolve)"
 
 if [ ! -z "$database_host" ]
@@ -131,6 +159,7 @@ echo "Restoring dump_file ${dump_file} ${dump_file_exists} ${dump_file_readable}
 echo "Restoring changelog_dump_file ${changelog_dump_file} ${changelog_dump_file_exists} ${changelog_dump_file_readable}"
 echo "Restoring changeloglock_dump_file ${changeloglock_dump_file} ${changeloglock_dump_file_exists} ${changeloglock_dump_file_readable}"
 echo "Using pg_restore executable ${pg_restore_command} ${pg_restore_command_exists} ${pg_restore_command_is_executable}"
+echo "Using psql executable ${psql_command} ${psql_command_exists} ${psql_command_is_executable}"
 echo "Using database host ${database_host} ${database_host_resolves}"
 echo "Using database name ${database_name}"
 echo "Using database username ${database_username}"
@@ -138,6 +167,7 @@ echo "Using restore_pre_data_only_command ${restore_pre_data_only_command}"
 echo "Using restore_data_only_table_command ${restore_data_only_table_command}"
 echo "Using restore_table_command ${restore_table_command}"
 echo "Using restore_post_data_only_command ${restore_post_data_only_command}"
+echo "Using set_wres_schema_owner_command ${set_wres_schema_owner_command}"
 
 # Require one keystroke before doing it.
 read -n1 -r -p "Please ctrl-c if that is not correct, any key otherwise..." key
@@ -328,7 +358,8 @@ $restore_pre_data_only_command $dump_file \
 && $restore_data_only_table_command projectexecutions $dump_file \
 && $restore_post_data_only_command $dump_file \
 && $restore_table_command databasechangelog $changelog_dump_file \
-&& $restore_table_command databasechangeloglock $changeloglock_dump_file
+&& $restore_table_command databasechangeloglock $changeloglock_dump_file \
+&& $set_wres_schema_owner_command
 
 set +x
 
