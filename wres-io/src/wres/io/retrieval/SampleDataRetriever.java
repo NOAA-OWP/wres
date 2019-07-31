@@ -396,6 +396,13 @@ class SampleDataRetriever extends Retriever
             throw new RetrievalFailedException( "Raw values could not be retrieved from gridded files.", e );
         }
 
+        LOGGER.trace( "Made the following gridded data request: {}{}, which produced the following gridded data "
+                      + "response: {}{}",
+                      System.lineSeparator(),
+                      griddedRequest,
+                      System.lineSeparator(),
+                      response );
+
         return response;
     }
 

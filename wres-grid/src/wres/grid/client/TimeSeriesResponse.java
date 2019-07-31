@@ -137,7 +137,9 @@ public class TimeSeriesResponse implements Response
         {
             return String.format( "Feature: %s, Start: %s",
                                   this.feature.toString(),
-                                  this.issuedDate.toString() );
+                                  this.issuedDate.toString() )
+                   + ": "
+                   +this.entries;
         }
     }
 
@@ -265,4 +267,21 @@ public class TimeSeriesResponse implements Response
     {
         return this.timeSeriesPerFeature.values().iterator();
     }
+    
+    @Override 
+    public String toString()
+    {
+        StringJoiner joiner = new StringJoiner( System.lineSeparator() );
+        
+        joiner.add( "TimeSeriesResponse instance " + this.hashCode()+": {" );
+        for( Map.Entry<FeaturePlus,List<Series>> next : this.timeSeriesPerFeature.entrySet() )
+        {      
+            next.getValue().forEach( nextSeries -> joiner.add( "    " + nextSeries + ", " ) );
+        }
+        
+        joiner.add( "}" );
+        
+        return joiner.toString();
+    }
+    
 }

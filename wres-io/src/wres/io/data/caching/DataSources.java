@@ -301,15 +301,17 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
                             TimeHelper.durationToLead( window.getLatestLeadDuration() ) );
         }
 
-        if ( isForecast && sampleMetadata.getProject().getMinimumLead() > Integer.MIN_VALUE )
-        {
-            script.addTab().addLine( "AND S.lead >= ", sampleMetadata.getProject().getMinimumLead() );
-        }
-
-        if ( isForecast && sampleMetadata.getProject().getMaximumLead() < Integer.MAX_VALUE )
-        {
-            script.addTab().addLine( "AND S.lead <= ", sampleMetadata.getProject().getMaximumLead() );
-        }
+        // See #66485. JBr. This may or may not fix the problem. As of now, I have zero confidence in gridded
+        // evaluations because there is zero reliable test coverage at any level.
+//        if ( isForecast && sampleMetadata.getProject().getMinimumLead() > Integer.MIN_VALUE )
+//        {
+//            script.addTab().addLine( "AND S.lead >= ", sampleMetadata.getProject().getMinimumLead() );
+//        }
+//
+//        if ( isForecast && sampleMetadata.getProject().getMaximumLead() < Integer.MAX_VALUE )
+//        {
+//            script.addTab().addLine( "AND S.lead <= ", sampleMetadata.getProject().getMaximumLead() );
+//        }
 
         if ( sampleMetadata.getProject().getEarliestDate() != null )
         {
