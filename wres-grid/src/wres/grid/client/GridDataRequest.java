@@ -7,8 +7,13 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import java.util.StringJoiner;
 
 import wres.config.generated.Feature;
+
+/**
+ * TODO: JBr - make this class immutable, probably using a builder given the number of instance variables.
+ */
 
 class GridDataRequest implements Request
 {
@@ -81,7 +86,8 @@ class GridDataRequest implements Request
     @Override
     public Queue<String> getPaths()
     {
-        return this.paths;
+        // Do not expose the internal container, create a new one
+        return new LinkedList<>(  this.paths );
     }
 
     @Override
@@ -136,6 +142,27 @@ class GridDataRequest implements Request
     public Boolean getIsForecast()
     {
         return this.isForecast;
+    }
+    
+    @Override
+    public String toString()
+    {
+        StringJoiner joiner = new StringJoiner( System.lineSeparator() );
+
+        joiner.add( "GridDataRequest instance " + this.hashCode() + ": { " );
+        joiner.add( "    variableName: " + this.getVariableName() + "," );
+        joiner.add( "    earliestIssueTime: " + this.getEarliestIssueTime() + "," );
+        joiner.add( "    latestIssueTime: " + this.getLatestIssueTime() + "," );
+        joiner.add( "    earliestValidTime: " + this.getEarliestValidTime() + "," );
+        joiner.add( "    latestValidTime: " + this.getLatestValidTime() + "," );
+        joiner.add( "    earliestLead: " + this.getEarliestLead() + "," );
+        joiner.add( "    latestLead: " + this.getLatestLead() + "," );
+        joiner.add( "    isForecast: " + this.getIsForecast() + "," );
+        joiner.add( "    features: " + this.getFeatures() + "," );
+        joiner.add( "    paths: " + this.getPaths() );
+        joiner.add( "}" );
+
+        return joiner.toString();
     }
 
     private final Queue<String> paths;
