@@ -177,7 +177,9 @@ public class DataScripter extends ScriptBuilder
      */
     public DataProvider buffer() throws SQLException
     {
-        return Database.buffer( this.formQuery(), this.isHighPriority );
+        Query query = this.formQuery()
+                          .useCursor( true );
+        return Database.buffer( query, this.isHighPriority );
     }
 
     /**

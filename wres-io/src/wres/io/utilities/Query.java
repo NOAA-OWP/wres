@@ -50,6 +50,11 @@ public class Query
     private boolean forceTransaction;
 
     /**
+     * Whether to use a cursor to fetch results, i.e. stream/buffer resultset.
+     */
+    private boolean useCursor;
+
+    /**
      * Parameters to use in a single query execution
      */
     private Object[] parameters;
@@ -99,6 +104,12 @@ public class Query
     Query inTransaction(final boolean forceTransaction)
     {
         this.forceTransaction = forceTransaction;
+        return this;
+    }
+
+    Query useCursor( boolean useCursor )
+    {
+        this.useCursor = useCursor;
         return this;
     }
 
@@ -243,6 +254,12 @@ public class Query
                     connection.setTransactionIsolation( Connection.TRANSACTION_SERIALIZABLE );
                 }
 
+                if ( this.useCursor )
+                {
+                    LOGGER.debug( "Creating ResultSet using cursor {}", this );
+                    connection.setAutoCommit( false );
+                }
+
                 // If we don't need to add parameters, we can just call the script and get the results
                 if ( this.parameters == null )
                 {
@@ -256,7 +273,8 @@ public class Query
                 }
 
                 // If the connection can't commit without prompting, we need to go ahead and do so manually
-                if ( !connection.getAutoCommit() )
+                // Except when leaving a ResultSet open, using a cursor.
+                if ( !connection.getAutoCommit() && !this.useCursor )
                 {
                     connection.commit();
                 }
@@ -299,15 +317,24 @@ public class Query
             finally
             {
                 // If the connection is in a transaction, we probably modified it, so we want to return it to
-                // the previous state
-                if ( !connection.getAutoCommit() )
+                // the previous state, unless the ResultSet is still open, in
+                // that case there is an agreement that SQLDataProvider or the
+                // class reading the ResultSet will set autocommit to true.
+                if ( connection.getAutoCommit() != initialAutoCommit
+                     && !this.useCursor )
                 {
+                    LOGGER.trace( "Setting {} back to initialAutoCommit={}",
+                                  connection,
+                                  initialAutoCommit );
                     connection.setAutoCommit( initialAutoCommit );
                 }
 
                 // Reset the transaction isolation level to its previous state
                 if ( connection.getTransactionIsolation() != initialTransactionIsolation )
                 {
+                    LOGGER.trace( "Setting {} back to initialTransactionIsolation={}",
+                                  connection,
+                                  initialTransactionIsolation );
                     connection.setTransactionIsolation( initialTransactionIsolation );
                 }
 
@@ -428,7 +455,7 @@ public class Query
             {
                 // If the connection is in a transaction, we probably modified it, so we want to return it to
                 // the previous state
-                if ( !connection.getAutoCommit() )
+                if ( connection.getAutoCommit() != initialAutoCommit )
                 {
                     connection.setAutoCommit( initialAutoCommit );
                 }
@@ -620,6 +647,12 @@ public class Query
         // All system-wide database connection settings should be added here
         Statement statement = connection.createStatement();
         statement.setQueryTimeout( SystemSettings.getQueryTimeout() );
+
+        if ( this.useCursor )
+        {
+            statement.setFetchSize( SystemSettings.fetchSize() );
+        }
+
         return statement;
     }
 
@@ -636,6 +669,11 @@ public class Query
         PreparedStatement statement = connection.prepareStatement( this.script,
                                                                    RETURN_GENERATED_KEYS );
         statement.setQueryTimeout( SystemSettings.getQueryTimeout() );
+
+        if ( this.useCursor )
+        {
+            statement.setFetchSize( SystemSettings.fetchSize() );
+        }
 
         // If we have a basic array of parameters, we can just add them directly to the statement
         if (this.parameters != null)
@@ -728,6 +766,7 @@ public class Query
         return new ToStringBuilder( this )
                 .append( "script", script )
                 .append( "forceTransaction", forceTransaction )
+                .append( "useCursor", useCursor )
                 .append( "parameters", parameters )
                 .append( "batchParameters", batchParameters )
                 .append( "sqlStatesToRetry", sqlStatesToRetry )
