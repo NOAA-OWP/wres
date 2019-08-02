@@ -5,7 +5,8 @@ RUN yum install -y \
     unzip-6.0-19.el7 \
     which-2.20-7.el7 \
     # The following aren't direct dependencies of WRES, are updates post-1810:
-    bind-license-9.9.4-74.el7_6.1 \
+    bind-license-9.9.4-74.el7_6.2 \
+    curl-7.29.0-51.el7_6.3 \
     dbus-1.10.24-13.el7_6 \
     dbus-libs-1.10.24-13.el7_6 \
     device-mapper-1.02.149-10.el7_6.8 \
@@ -16,10 +17,11 @@ RUN yum install -y \
     glibc-common-2.17-260.el7_6.6 \
     krb5-libs-1.15.1-37.el7_6 \
     libblkid-2.23.2-59.el7_6.1 \
+    libcurl-7.29.0-51.el7 \
     libgcc-4.8.5-36.el7_6.2 \
     libmount-2.23.2-59.el7_6.1 \
     libsmartcols-2.23.2-59.el7_6.1 \
-    libssh2-1.4.3-12.el7_6.2 \
+    libssh2-1.4.3-12.el7_6.3 \
     libstdc++-4.8.5-36.el7_6.2 \
     libuuid-2.23.2-59.el7_6.1 \
     nss-3.36.0-7.1.el7_6 \
@@ -32,8 +34,8 @@ RUN yum install -y \
     python-2.7.5-80.el7_6 \
     python-libs-2.7.5-80.el7_6 \
     shadow-utils-4.1.5.1-25.el7_6.1 \
-    systemd-219-62.el7_6.7 \
-    systemd-libs-219-62.el7_6.7 \
+    systemd-219-62.el7_6.9 \
+    systemd-libs-219-62.el7_6.9 \
     tzdata-2019b-1.el7 \
     tzdata-java-2019b-1.el7 \
     util-linux-2.23.2-59.el7_6.1 \
