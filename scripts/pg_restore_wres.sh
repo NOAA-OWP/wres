@@ -113,20 +113,6 @@ then
     pg_restore_command_is_executable="(executable)"
 fi
 
-psql_command_exists="(does NOT exist!)"
-
-if [ -f $psql_command ]
-then
-    psql_command_exists="(exists)"
-fi
-
-psql_command_is_executable="(is NOT executable)"
-
-if [ -x $psql_command ]
-then
-    psql_command_is_executable="(executable)"
-fi
-
 database_host_resolves="(does NOT resolve)"
 
 if [ ! -z "$database_host" ]
@@ -145,7 +131,6 @@ echo "Restoring dump_file ${dump_file} ${dump_file_exists} ${dump_file_readable}
 echo "Restoring changelog_dump_file ${changelog_dump_file} ${changelog_dump_file_exists} ${changelog_dump_file_readable}"
 echo "Restoring changeloglock_dump_file ${changeloglock_dump_file} ${changeloglock_dump_file_exists} ${changeloglock_dump_file_readable}"
 echo "Using pg_restore executable ${pg_restore_command} ${pg_restore_command_exists} ${pg_restore_command_is_executable}"
-echo "Using psql executable ${psql_command} ${psql_command_exists} ${psql_command_is_executable}"
 echo "Using database host ${database_host} ${database_host_resolves}"
 echo "Using database name ${database_name}"
 echo "Using database username ${database_username}"
