@@ -73,6 +73,8 @@ public class SQLDataProvider implements DataProvider
         Objects.requireNonNull( connection );
         Objects.requireNonNull( resultSet );
 
+        LOGGER.trace( "Created {} with connection {}", this, connection );
+
         try
         {
             // Go ahead and throw an error if we can't access the data
@@ -736,30 +738,48 @@ public class SQLDataProvider implements DataProvider
 
             try
             {
-                if (LOGGER.isTraceEnabled())
-                {
-                    LOGGER.trace( "Closing a connection in SQLDataProvider#" + this.hashCode() + "..." );
-                }
+                // Query class and this class have an informal agreement that
+                // SQLDataProvider will setAutoCommit( true ) before closing
+                // because we don't want to change the state while the ResultSet
+                // is still open. Might be unnecessary due to DatabaseSettings
+                // "setAutoCommitOnClose( true )" on the pool/DataSource.
+                LOGGER.trace( "Setting autocommit to true on {} in {}",
+                              this.connection, this );
+                this.connection.setAutoCommit( true );
+            }
+            catch ( SQLException se )
+            {
+                LOGGER.warn( "Unable to set connection " + connection +
+                             " to autocommit=true", se );
+            }
+
+            try
+            {
+                LOGGER.trace( "Closing connection {} in {}",
+                              this.connection, this );
 
                 this.connection.close();
 
-                if (this.connection.isClosed() && LOGGER.isTraceEnabled())
+                if ( this.connection.isClosed() )
                 {
-                    LOGGER.info( "The connection in SQLDataProvider#" + this.hashCode() + " successfully closed." );
+                    LOGGER.trace( "The connection {} in {} successfully closed.",
+                                 this.connection, this );
                 }
-                else if (!this.connection.isClosed())
+                else
                 {
-                    LOGGER.error("The connection in SQLDataProvider#" + this.hashCode() + " wasn't closed.");
+                    LOGGER.error( "The connection {} in {} wasn't closed.",
+                                  this.connection, this );
                 }
             }
             catch ( SQLException e )
             {
-                LOGGER.warn("The connection for a ResultSet could not be closed.");
+                LOGGER.warn( "The connection for a ResultSet could not be closed.",
+                             e );
             }
         }
         else
         {
-            LOGGER.debug("This data set is already closed.");
+            LOGGER.debug("This {} data set is already closed.", this );
         }
     }
 }
