@@ -32,7 +32,6 @@ done
 
 dump_file=${dump_file_prefix}.pgdump
 changelog_dump_file=${dump_file_prefix}_changelog.pgdump
-changeloglock_dump_file=${dump_file_prefix}_changeloglock.pgdump
 
 
 dump_file_exists="(does not yet exist)"
@@ -43,20 +42,11 @@ then
 fi
 
 
-
 changelog_dump_file_exists="(does not yet exist)"
 
 if [ -f $changelog_dump_file ]
 then
     changelog_dump_file_exists="(ALREADY EXISTS!)"
-fi
-
-
-changeloglock_dump_file_exists="(does not yet exist)"
-
-if [ -f $changeloglock_dump_file ]
-then
-    changeloglock_dump_file_exists="(ALREADY EXISTS!)"
 fi
 
 
@@ -89,7 +79,6 @@ fi
 
 echo "Creating dump_file ${dump_file} ${dump_file_exists} ${dump_file_readable}"
 echo "Creating changelog_dump_file ${changelog_dump_file} ${changelog_dump_file_exists} ${changelog_dump_file_readable}"
-echo "Creating changeloglock_dump_file ${changeloglock_dump_file} ${changeloglock_dump_file_exists} ${changeloglock_dump_file_readable}"
 echo "Using pg_dump executable ${pg_dump_command} ${pg_dump_command_exists} ${pg_dump_command_is_executable}"
 echo "Using database host ${database_host} ${database_host_resolves}"
 echo "Using database name ${database_name}"
@@ -104,9 +93,8 @@ start_seconds=$(date +%s)
 # It is nice to see the following commands printed when run.
 set -x
 
-$pg_dump_command -h ${database_host} -d ${database_name} -Fc -n wres -U ${database_username} > ${dump_file}
-$pg_dump_command -h ${database_host} -d ${database_name} -Fc --table public.databasechangeloglock -U ${database_username} > ${changeloglock_dump_file}
-$pg_dump_command -h ${database_host} -d ${database_name} -Fc --table public.databasechangelog -U ${database_username} > ${changelog_dump_file}
+$pg_dump_command -h ${database_host} -d ${database_name} -Fc -U ${database_username} -n wres > ${dump_file}
+$pg_dump_command -h ${database_host} -d ${database_name} -Fc -U ${database_username} -n public --table databasechangelog --table databasechangeloglock > ${changelog_dump_file}
 
 set +x
 
@@ -115,4 +103,3 @@ date --iso-8601=ns
 
 echo Dump took around $((end_seconds - start_seconds)) seconds
 ls -lah ${dump_file_prefix}*.pgdump
-

@@ -48,8 +48,7 @@ then
 fi
 
 restore_pre_data_only_command="$pg_restore_command -e -j $j --no-owner -h ${database_host} -d ${database_name} -U ${database_username} --section=pre-data"
-restore_data_only_table_command="$pg_restore_command -e -j $j --no-owner -h ${database_host} -d ${database_name} -U ${database_username} --data-only -t"
-restore_table_command="$pg_restore_command -e -j $j --no-owner -h ${database_host} -d ${database_name} -U ${database_username} -t"
+restore_data_only_table_command="$pg_restore_command -e -j $j --no-owner -h ${database_host} -d ${database_name} -U ${database_username} --data-only --strict-names "
 restore_post_data_only_command="$pg_restore_command -e -j $j --no-owner -h ${database_host} -d ${database_name} -U ${database_username} --section=post-data"
 
 # Some basic checks before execution.
@@ -84,21 +83,6 @@ then
 fi
 
 
-changeloglock_dump_file_exists="(does NOT exist!)"
-
-if [ -f $changeloglock_dump_file ]
-then
-    changeloglock_dump_file_exists="(exists)"
-fi
-
-changeloglock_dump_file_readable="(is NOT readable!)"
-
-if [ -r $changeloglock_dump_file ]
-then
-    changeloglock_dump_file_readable="(readable)"
-fi
-
-
 pg_restore_command_exists="(does NOT exist!)"
 
 if [ -f $pg_restore_command ]
@@ -129,14 +113,12 @@ fi
 
 echo "Restoring dump_file ${dump_file} ${dump_file_exists} ${dump_file_readable}"
 echo "Restoring changelog_dump_file ${changelog_dump_file} ${changelog_dump_file_exists} ${changelog_dump_file_readable}"
-echo "Restoring changeloglock_dump_file ${changeloglock_dump_file} ${changeloglock_dump_file_exists} ${changeloglock_dump_file_readable}"
 echo "Using pg_restore executable ${pg_restore_command} ${pg_restore_command_exists} ${pg_restore_command_is_executable}"
 echo "Using database host ${database_host} ${database_host_resolves}"
 echo "Using database name ${database_name}"
 echo "Using database username ${database_username}"
 echo "Using restore_pre_data_only_command ${restore_pre_data_only_command}"
 echo "Using restore_data_only_table_command ${restore_data_only_table_command}"
-echo "Using restore_table_command ${restore_table_command}"
 echo "Using restore_post_data_only_command ${restore_post_data_only_command}"
 
 # Require one keystroke before doing it.
@@ -148,191 +130,47 @@ start_seconds=$(date +%s)
 # It is nice to see the following commands printed when run.
 set -x
 
-
-$restore_pre_data_only_command $dump_file \
-&& $restore_data_only_table_command measurementunit $dump_file \
-&& $restore_data_only_table_command usgsparameter $dump_file \
-&& $restore_data_only_table_command netcdfcoordinate $dump_file \
-&& $restore_data_only_table_command unitconversion $dump_file \
-&& $restore_data_only_table_command conversions $dump_file \
-&& $restore_data_only_table_command indexqueue $dump_file \
-&& $restore_data_only_table_command feature $dump_file \
-&& $restore_data_only_table_command ensemble $dump_file \
-&& $restore_data_only_table_command gridprojection $dump_file \
-&& $restore_data_only_table_command variable $dump_file \
-&& $restore_data_only_table_command variablefeature $dump_file \
-&& $restore_data_only_table_command source $dump_file \
-&& $restore_data_only_table_command timeseries $dump_file \
-&& $restore_data_only_table_command timeseriessource $dump_file \
-&& $restore_data_only_table_command timeseriesvalue $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_0 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_1 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_2 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_3 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_4 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_5 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_6 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_7 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_8 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_9 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_10 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_11 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_12 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_13 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_14 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_15 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_16 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_17 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_18 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_19 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_20 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_30 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_31 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_32 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_33 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_34 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_35 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_36 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_37 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_38 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_39 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_40 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_41 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_42 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_43 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_44 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_45 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_46 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_47 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_48 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_49 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_50 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_51 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_52 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_53 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_54 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_55 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_56 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_57 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_58 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_59 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_60 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_61 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_62 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_63 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_64 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_65 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_66 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_67 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_68 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_69 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_70 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_71 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_72 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_73 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_74 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_75 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_76 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_77 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_78 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_79 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_80 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_81 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_82 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_83 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_84 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_85 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_86 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_87 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_88 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_89 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_90 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_91 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_92 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_93 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_94 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_95 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_96 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_97 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_98 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_99 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_100 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_101 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_102 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_103 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_104 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_105 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_106 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_107 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_108 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_109 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_110 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_111 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_112 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_113 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_114 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_115 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_116 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_117 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_118 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_119 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_120 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_121 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_122 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_123 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_124 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_125 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_126 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_127 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_128 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_129 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_130 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_131 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_132 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_133 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_134 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_135 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_136 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_137 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_138 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_139 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_140 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_141 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_142 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_143 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_144 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_145 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_146 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_147 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_148 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_149 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_150 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_above_150 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_negative_1 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_negative_2 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_negative_3 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_negative_4 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_negative_5 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_negative_6 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_negative_7 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_negative_8 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_negative_9 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_negative_10 $dump_file \
-&& $restore_data_only_table_command timeseriesvalue_lead_below_negative_10 $dump_file \
-&& $restore_data_only_table_command observation $dump_file \
-&& $restore_data_only_table_command sourcecompleted $dump_file \
-&& $restore_data_only_table_command forecasts $dump_file \
-&& $restore_data_only_table_command project $dump_file \
-&& $restore_data_only_table_command projectsource $dump_file \
-&& $restore_data_only_table_command executionlog $dump_file \
-&& $restore_data_only_table_command projectexecutions $dump_file \
+$restore_pre_data_only_command $changelog_dump_file \
+&& $restore_data_only_table_command -n public -t databasechangelog -t databasechangeloglock $changelog_dump_file \
+&& $restore_post_data_only_command $changelog_dump_file \
+&& $restore_pre_data_only_command $dump_file \
+&& $restore_data_only_table_command -t measurementunit -t conversions -t usgsparameter -t netcdfcoordinate -t unitconversion -t feature -t ensemble -t gridprojection -t variable -t source -t indexqueue $dump_file \
+&& $restore_data_only_table_command -t measurementunit_measurementunit_id_seq -t feature_feature_id_seq -t ensemble_ensemble_id_seq -t gridprojection_gridprojection_id_seq -t variable_variable_id_seq -t source_source_id_seq -t indexqueue_indexqueue_id_seq $dump_file \
+&& $restore_data_only_table_command -t variablefeature $dump_file \
+&& $restore_data_only_table_command -t timeseries -t variablefeature_variablefeature_id_seq $dump_file \
+&& $restore_data_only_table_command -t timeseries_timeseries_id_seq -t timeseriessource -t timeseriesvalue -t timeseriesvalue_lead_0 -t timeseriesvalue_lead_1 -t timeseriesvalue_lead_2 -t timeseriesvalue_lead_3 -t timeseriesvalue_lead_4 -t timeseriesvalue_lead_5 -t timeseriesvalue_lead_6 -t timeseriesvalue_lead_7 -t timeseriesvalue_lead_8 -t timeseriesvalue_lead_9 $dump_file \
+&& $restore_data_only_table_command -t timeseriesvalue_lead_10 -t timeseriesvalue_lead_11 -t timeseriesvalue_lead_12 -t timeseriesvalue_lead_13 -t timeseriesvalue_lead_14 -t timeseriesvalue_lead_15 -t timeseriesvalue_lead_16 -t timeseriesvalue_lead_17 -t timeseriesvalue_lead_18 -t timeseriesvalue_lead_19 $dump_file \
+&& $restore_data_only_table_command -t timeseriesvalue_lead_20 -t timeseriesvalue_lead_21 -t timeseriesvalue_lead_22 -t timeseriesvalue_lead_23 -t timeseriesvalue_lead_24 -t timeseriesvalue_lead_25 -t timeseriesvalue_lead_26 -t timeseriesvalue_lead_27 -t timeseriesvalue_lead_28 -t timeseriesvalue_lead_29 $dump_file \
+&& $restore_data_only_table_command -t timeseriesvalue_lead_30 -t timeseriesvalue_lead_31 -t timeseriesvalue_lead_32 -t timeseriesvalue_lead_33 -t timeseriesvalue_lead_34 -t timeseriesvalue_lead_35 -t timeseriesvalue_lead_36 -t timeseriesvalue_lead_37 -t timeseriesvalue_lead_38 -t timeseriesvalue_lead_39 $dump_file \
+&& $restore_data_only_table_command -t timeseriesvalue_lead_40 -t timeseriesvalue_lead_41 -t timeseriesvalue_lead_42 -t timeseriesvalue_lead_43 -t timeseriesvalue_lead_44 -t timeseriesvalue_lead_45 -t timeseriesvalue_lead_46 -t timeseriesvalue_lead_47 -t timeseriesvalue_lead_48 -t timeseriesvalue_lead_49 $dump_file \
+&& $restore_data_only_table_command -t timeseriesvalue_lead_50 -t timeseriesvalue_lead_51 -t timeseriesvalue_lead_52 -t timeseriesvalue_lead_53 -t timeseriesvalue_lead_54 -t timeseriesvalue_lead_55 -t timeseriesvalue_lead_56 -t timeseriesvalue_lead_57 -t timeseriesvalue_lead_58 -t timeseriesvalue_lead_59 $dump_file \
+&& $restore_data_only_table_command -t timeseriesvalue_lead_60 -t timeseriesvalue_lead_61 -t timeseriesvalue_lead_62 -t timeseriesvalue_lead_63 -t timeseriesvalue_lead_64 -t timeseriesvalue_lead_65 -t timeseriesvalue_lead_66 -t timeseriesvalue_lead_67 -t timeseriesvalue_lead_68 -t timeseriesvalue_lead_69 $dump_file \
+&& $restore_data_only_table_command -t timeseriesvalue_lead_70 -t timeseriesvalue_lead_71 -t timeseriesvalue_lead_72 -t timeseriesvalue_lead_73 -t timeseriesvalue_lead_74 -t timeseriesvalue_lead_75 -t timeseriesvalue_lead_76 -t timeseriesvalue_lead_77 -t timeseriesvalue_lead_78 -t timeseriesvalue_lead_79 $dump_file \
+&& $restore_data_only_table_command -t timeseriesvalue_lead_80 -t timeseriesvalue_lead_81 -t timeseriesvalue_lead_82 -t timeseriesvalue_lead_83 -t timeseriesvalue_lead_84 -t timeseriesvalue_lead_85 -t timeseriesvalue_lead_86 -t timeseriesvalue_lead_87 -t timeseriesvalue_lead_88 -t timeseriesvalue_lead_89 $dump_file \
+&& $restore_data_only_table_command -t timeseriesvalue_lead_90 -t timeseriesvalue_lead_91 -t timeseriesvalue_lead_92 -t timeseriesvalue_lead_93 -t timeseriesvalue_lead_94 -t timeseriesvalue_lead_95 -t timeseriesvalue_lead_96 -t timeseriesvalue_lead_97 -t timeseriesvalue_lead_98 -t timeseriesvalue_lead_99 $dump_file \
+&& $restore_data_only_table_command -t timeseriesvalue_lead_100 -t timeseriesvalue_lead_101 -t timeseriesvalue_lead_102 -t timeseriesvalue_lead_103 -t timeseriesvalue_lead_104 -t timeseriesvalue_lead_105 -t timeseriesvalue_lead_106 -t timeseriesvalue_lead_107 -t timeseriesvalue_lead_108 -t timeseriesvalue_lead_109 $dump_file \
+&& $restore_data_only_table_command -t timeseriesvalue_lead_110 -t timeseriesvalue_lead_111 -t timeseriesvalue_lead_112 -t timeseriesvalue_lead_113 -t timeseriesvalue_lead_114 -t timeseriesvalue_lead_115 -t timeseriesvalue_lead_116 -t timeseriesvalue_lead_117 -t timeseriesvalue_lead_118 -t timeseriesvalue_lead_119 $dump_file \
+&& $restore_data_only_table_command -t timeseriesvalue_lead_120 -t timeseriesvalue_lead_121 -t timeseriesvalue_lead_122 -t timeseriesvalue_lead_123 -t timeseriesvalue_lead_124 -t timeseriesvalue_lead_125 -t timeseriesvalue_lead_126 -t timeseriesvalue_lead_127 -t timeseriesvalue_lead_128 -t timeseriesvalue_lead_129 $dump_file \
+&& $restore_data_only_table_command -t timeseriesvalue_lead_130 -t timeseriesvalue_lead_131 -t timeseriesvalue_lead_132 -t timeseriesvalue_lead_133 -t timeseriesvalue_lead_134 -t timeseriesvalue_lead_135 -t timeseriesvalue_lead_136 -t timeseriesvalue_lead_137 -t timeseriesvalue_lead_138 -t timeseriesvalue_lead_139 $dump_file \
+&& $restore_data_only_table_command -t timeseriesvalue_lead_140 -t timeseriesvalue_lead_141 -t timeseriesvalue_lead_142 -t timeseriesvalue_lead_143 -t timeseriesvalue_lead_144 -t timeseriesvalue_lead_145 -t timeseriesvalue_lead_146 -t timeseriesvalue_lead_147 -t timeseriesvalue_lead_148 -t timeseriesvalue_lead_149 -t timeseriesvalue_lead_150 -t timeseriesvalue_lead_above_150 $dump_file \
+&& $restore_data_only_table_command -t timeseriesvalue_lead_negative_1 -t timeseriesvalue_lead_negative_2 -t timeseriesvalue_lead_negative_3 -t timeseriesvalue_lead_negative_4 -t timeseriesvalue_lead_negative_5 -t timeseriesvalue_lead_negative_6 -t timeseriesvalue_lead_negative_7 -t timeseriesvalue_lead_negative_8 -t timeseriesvalue_lead_negative_9 -t timeseriesvalue_lead_negative_10 -t timeseriesvalue_lead_below_negative_10 $dump_file \
+&& $restore_data_only_table_command -t observation -t sourcecompleted -t forecasts -t project $dump_file \
+&& $restore_data_only_table_command -t projectsource -t project_project_id_seq -t executionlog -t projectexecutions $dump_file \
+&& $restore_data_only_table_command -t executionlog_log_id_seq $dump_file \
 && $restore_post_data_only_command $dump_file \
-&& $restore_table_command databasechangelog $changelog_dump_file \
-&& $restore_table_command databasechangeloglock $changeloglock_dump_file
+
+result=$?
 set +x
 
 end_seconds=$(date +%s)
 date --iso-8601=ns
 
 echo Restore took around $((end_seconds - start_seconds)) seconds.
-echo "Please run \"ALTER SCHEMA wres OWNER TO wres\" using psql on the same db."
+
+if [ "$result" -eq "0" ]
+then
+    echo "Please run \"ALTER SCHEMA wres OWNER TO wres\" using psql on the same db."
+else
+    echo "RESTORE FAILED! Examine above and this script to figure out why."
+    exit $result
+fi
