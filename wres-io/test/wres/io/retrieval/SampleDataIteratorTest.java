@@ -73,6 +73,7 @@ public class SampleDataIteratorTest
         // Mock the project wrapper
         Project project = mock( Project.class );
         when( project.getProjectConfig() ).thenReturn( mockedConfig );
+        when( project.getLeadOffset( null ) ).thenReturn( Duration.ZERO );
 
         // Mock the return of the project wrapper by the class under test
         when( iterator.getProject() ).thenReturn( project );
@@ -133,6 +134,7 @@ public class SampleDataIteratorTest
         // Mock the project wrapper
         Project project = mock( Project.class );
         when( project.getProjectConfig() ).thenReturn( mockedConfig );
+        when( project.getLeadOffset( null ) ).thenReturn( Duration.ZERO );
 
         // Mock the return of the project wrapper by the class under test
         when( iterator.getProject() ).thenReturn( project );

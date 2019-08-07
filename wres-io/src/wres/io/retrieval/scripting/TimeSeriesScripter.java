@@ -129,7 +129,8 @@ class TimeSeriesScripter extends Scripter
         this.addTab(  2  ).addLine(")");
     }
 
-    private void applyLeadQualifier() throws SQLException, IOException
+    @Override
+    void applyLeadQualifier()
     {
         if (this.getProjectDetails().getMaximumLead() < Integer.MAX_VALUE)
         {

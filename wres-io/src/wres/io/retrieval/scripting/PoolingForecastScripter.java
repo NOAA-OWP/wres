@@ -149,25 +149,6 @@ class PoolingForecastScripter extends Scripter
         return this.getScript();
     }
 
-    private void applyLeadQualifier()
-    {
-        long earliest = TimeHelper.durationToLead( this.getSampleMetadata().getMinimumLead() );
-        long latest = TimeHelper.durationToLead( this.getSampleMetadata()
-                                                     .getMetadata()
-                                                     .getTimeWindow()
-                                                     .getLatestLeadDuration() );
-
-        if (earliest == latest)
-        {
-            this.addTab().addLine("AND TSV.lead = ", earliest);
-        }
-        else
-        {
-            this.addTab().addLine( "AND TSV.lead > ", earliest);
-            this.addTab().addLine( "AND TSV.lead <= ", latest);
-        }
-    }
-
     @Override
     String getBaseDateName()
     {

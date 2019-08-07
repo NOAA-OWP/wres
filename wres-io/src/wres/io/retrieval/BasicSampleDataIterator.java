@@ -3,17 +3,20 @@ package wres.io.retrieval;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
+import java.util.Objects;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.Feature;
+import wres.config.generated.PairConfig;
+import wres.config.generated.ProjectConfig;
 import wres.datamodel.time.TimeWindow;
 import wres.io.config.ConfigHelper;
 import wres.io.config.OrderedSampleMetadata;
 import wres.io.project.Project;
-import wres.util.CalculationException;
 import wres.util.IterationFailedException;
 import wres.util.TimeHelper;
 
@@ -34,22 +37,31 @@ final class BasicSampleDataIterator extends SampleDataIterator
         super( feature, project, outputDirectoryForPairs);
     }
 
-
-    /**
-     * Generates a list of TimeWindows that will generate SampleData objects
-     */
     @Override
-    protected void calculateSamples() throws CalculationException
+    protected void calculateSamples()
     {
-        LOGGER.trace( "{} Calculating the sample metadata...");
+        LOGGER.trace( "Calculating the sample metadata...");
         int sampleCount = 0;
         OrderedSampleMetadata.Builder metadataBuilder =
                 new OrderedSampleMetadata.Builder().setProject( this.getProject() )
                                                    .setFeature( this.getFeature() );
 
 
-        // If we are basing samples on forecasts, we want to have the option of
-        if (ConfigHelper.isForecast( this.getRight() ))
+        // One big pool
+        if ( BasicSampleDataIterator.requiresOneBigPool( this.getProject().getProjectConfig() ) )
+        {
+            // If we are dealing with observation/simulation data, we only need one window
+            TimeWindow window = this.getOneBigTimeWindow( this.getProject().getProjectConfig() );
+
+            sampleCount++;
+
+            this.addSample( metadataBuilder.setSampleNumber( sampleCount )
+                                           .setTimeWindow( window )
+                                           .build() );
+        }
+        
+        // Lead duration pools
+        else
         {
             final Duration lastPossibleLead = Duration.of( this.getProject().getLastLead( this.getFeature() ),
                                                            TimeHelper.LEAD_RESOLUTION );
@@ -95,31 +107,104 @@ final class BasicSampleDataIterator extends SampleDataIterator
                 leadBounds = newBounds;                
             }
         }
-        else
-        {
-            // If we are dealing with observation/simulation data, we only need one window
-            TimeWindow window = ConfigHelper.getTimeWindow(
-                    this.getProject(),
-                    Duration.ZERO,
-                    Duration.ZERO,
-                    0
-            );
 
-            sampleCount++;
-
-            this.addSample(
-                    metadataBuilder.setSampleNumber( sampleCount )
-                                   .setTimeWindow( window )
-                                   .build()
-            );
-        }
-
-        // We need to throw an exception if no samples to evaluate could be determined
+        // JBr: Demoted from exception to log. The "lead offset" could exceed the last lead duration to 
+        // consider, in which case there is no pool with data, and the pre-check is not 
+        // sufficiently sophisticated to assert that this is exceptional
         if ( this.getSampleCount() == 0)
         {
-            throw new IterationFailedException( "No windows could be generated for evaluation." );
+            LOGGER.debug( "No windows could be generated for '"+this.getFeature()+"'." );
         }
 
         LOGGER.trace("Sample metadata has been calculated.");
     }
+    
+    /**
+     * Returns <code>true</code> if there is one big pool to generate, otherwise <code>false</code>.
+     * 
+     * @return true if the project declares zero types of pooling window, false if one or more types
+     */
+
+    private static boolean requiresOneBigPool( ProjectConfig project )
+    {
+        return Objects.isNull( project.getPair().getIssuedDatesPoolingWindow() )
+               && Objects.isNull( project.getPair().getLeadTimesPoolingWindow() );
+    }
+    
+    /**
+     * Creates one big time window that is consistent with the project declaration. TODO: replace with #56213, which
+     * will supply the time windows for iteration.
+     * 
+     * @param projectConfig the project configuration
+     * @return a time window
+     * @throws NullPointerException if the input is null
+     */
+
+    private TimeWindow getOneBigTimeWindow( ProjectConfig projectConfig )
+    {
+        Objects.requireNonNull( projectConfig, "Cannot determine the time window from null project configuration." );
+
+        PairConfig pairConfig = projectConfig.getPair();
+
+        Instant earliestReferenceTime = Instant.MIN;
+        Instant latestReferenceTime = Instant.MAX;
+        Instant earliestValidTime = Instant.MIN;
+        Instant latestValidTime = Instant.MAX;
+        Duration smallestLeadDuration = TimeWindow.DURATION_MIN;
+        Duration largestLeadDuration = TimeWindow.DURATION_MAX;
+
+        // Issued datetimes
+        if ( Objects.nonNull( pairConfig.getIssuedDates() ) )
+        {
+            if ( Objects.nonNull( pairConfig.getIssuedDates().getEarliest() ) )
+            {
+                earliestReferenceTime = Instant.parse( pairConfig.getIssuedDates().getEarliest() );
+            }
+            if ( Objects.nonNull( pairConfig.getIssuedDates().getLatest() ) )
+            {
+                latestReferenceTime = Instant.parse( pairConfig.getIssuedDates().getLatest() );
+            }
+        }
+
+        // Valid datetimes
+        if ( Objects.nonNull( pairConfig.getDates() ) )
+        {
+            if ( Objects.nonNull( pairConfig.getDates().getEarliest() ) )
+            {
+                earliestValidTime = Instant.parse( pairConfig.getDates().getEarliest() );
+            }
+            if ( Objects.nonNull( pairConfig.getDates().getLatest() ) )
+            {
+                latestValidTime = Instant.parse( pairConfig.getDates().getLatest() );
+            }
+        }
+
+        // Lead durations
+        if ( Objects.nonNull( pairConfig.getLeadHours() ) )
+        {
+            if ( Objects.nonNull( pairConfig.getLeadHours().getMinimum() ) )
+            {
+                smallestLeadDuration = Duration.ofHours( pairConfig.getLeadHours().getMinimum() );
+            }
+            if ( Objects.nonNull( pairConfig.getLeadHours().getMaximum() ) )
+            {
+                largestLeadDuration = Duration.ofHours( pairConfig.getLeadHours().getMaximum() );
+            }
+        }
+
+        // Adjust the lead durations for any offset
+        Pair<Duration, Duration> adjusted =
+                this.getAdjustedLeadBounds( Pair.of( smallestLeadDuration, largestLeadDuration ) );
+        
+        smallestLeadDuration = adjusted.getLeft();
+        largestLeadDuration = adjusted.getRight();
+        
+        return TimeWindow.of( earliestReferenceTime,
+                              latestReferenceTime,
+                              earliestValidTime,
+                              latestValidTime,
+                              smallestLeadDuration,
+                              largestLeadDuration );
+    }    
+    
 }

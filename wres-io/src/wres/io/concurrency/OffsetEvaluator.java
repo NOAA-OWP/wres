@@ -67,7 +67,7 @@ public class OffsetEvaluator extends WRESCallable<Integer>
                                             e );
         }
 
-        script.addLine("SELECT TS.offset");
+        script.addLine("SELECT TS.offset, COUNT(*)");
         script.addLine("FROM (");
         script.addTab().add( "SELECT TS.initialization_date + INTERVAL '1 ", TimeHelper.LEAD_RESOLUTION, "' * (TSV.lead + ", width, ")");
 
@@ -119,8 +119,8 @@ public class OffsetEvaluator extends WRESCallable<Integer>
         //This is giving numbers like -60
         if ( this.project.getMinimumLead() != Integer.MIN_VALUE)
         {
-            // The minimum lead is configured in hours, but we work with minues, so we need to adjust
-            script.addLine( this.project.getMinimumLead() - TimeHelper.unitsToLeadUnits( "HOURS", 1 ) + width);
+            // #66924
+            script.addLine( this.project.getMinimumLead());
         }
         else
         {
@@ -184,7 +184,8 @@ public class OffsetEvaluator extends WRESCallable<Integer>
 
         script.addLine(") AS OT");
         script.addTab().addLine("ON OT.observation_time = TS.valid_time");
-        script.addLine("ORDER BY TS.offset");
+        script.addLine("GROUP BY TS.offset");
+        script.addLine("ORDER BY COUNT DESC, ABS(TS.offset)");
         script.add("LIMIT 1;");
 
         return script;

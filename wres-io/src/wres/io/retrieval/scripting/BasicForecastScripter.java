@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.sql.SQLException;
 
 import wres.config.generated.DataSourceConfig;
+import wres.datamodel.time.TimeWindow;
 import wres.io.config.ConfigHelper;
 import wres.io.config.OrderedSampleMetadata;
 import wres.util.TimeHelper;
@@ -68,25 +69,6 @@ class BasicForecastScripter extends Scripter
         }
 
         this.addLine(")::bigint AS basis_epoch_time,");
-    }
-
-    private void applyLeadQualifier()
-    {
-        long earliest = TimeHelper.durationToLead( this.getSampleMetadata().getMinimumLead());
-        long latest = TimeHelper.durationToLead( this.getSampleMetadata()
-                                                     .getMetadata()
-                                                     .getTimeWindow()
-                                                     .getLatestLeadDuration() );
-
-        if (earliest == latest)
-        {
-            this.addTab().addLine("AND TSV.lead = ", earliest);
-        }
-        else
-        {
-            this.addTab().addLine( "AND TSV.lead > ", earliest);
-            this.addTab().addLine( "AND TSV.lead <= ", latest);
-        }
     }
 
     @Override

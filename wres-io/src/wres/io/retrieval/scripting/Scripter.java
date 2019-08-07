@@ -13,11 +13,13 @@ import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.EnsembleCondition;
 import wres.config.generated.Feature;
+import wres.datamodel.time.TimeWindow;
 import wres.io.config.ConfigHelper;
 import wres.io.config.OrderedSampleMetadata;
 import wres.io.data.caching.Ensembles;
 import wres.io.project.Project;
 import wres.io.utilities.ScriptBuilder;
+import wres.util.TimeHelper;
 
 public abstract class Scripter extends ScriptBuilder
 {
@@ -301,6 +303,31 @@ public abstract class Scripter extends ScriptBuilder
             this.addLine(" <= '", this.getProjectDetails().getLatestDate(), "'");
         }
     }
+    
+    void applyLeadQualifier()
+    {
+        OrderedSampleMetadata metadata = this.getSampleMetadata();
+        TimeWindow timeWindow = metadata.getMetadata()
+                                        .getTimeWindow();
+
+        // #66118: check for lead duration constraints and add them if needed
+        if ( !timeWindow.bothLeadDurationsAreUnbounded() )
+        {
+
+            long earliest = TimeHelper.durationToLead( metadata.getMinimumLead() );
+            long latest = TimeHelper.durationToLead( timeWindow.getLatestLeadDuration() );
+
+            if ( earliest == latest )
+            {
+                this.addTab().addLine( "AND TSV.lead = ", earliest );
+            }
+            else
+            {
+                this.addTab().addLine( "AND TSV.lead > ", earliest );
+                this.addTab().addLine( "AND TSV.lead <= ", latest );
+            }
+        }
+    }    
 
     String getMember()
     {

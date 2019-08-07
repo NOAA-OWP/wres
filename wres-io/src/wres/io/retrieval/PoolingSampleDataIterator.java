@@ -83,9 +83,13 @@ class PoolingSampleDataIterator extends SampleDataIterator
         }
         
         // We need to throw an exception if no samples to evaluate could be determined
+        // JBr: Demoted from exception to log. The "lead offset" could exceed the last lead duration to 
+        // consider, in which case there is no pool with data, and the pre-check is not 
+        // sufficiently sophisticated to assert that this is exceptional
         if ( this.getSampleCount() == 0)
         {
-            throw new IterationFailedException( "No windows could be generated for evaluation." );
+            LOGGER.debug( "No windows could be generated for '{}'. First "
+                    + "attemped lead duration bounds were '{}'.", this.getFeature(), leadBounds );
         }
     }
 

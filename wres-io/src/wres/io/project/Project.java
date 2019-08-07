@@ -21,8 +21,6 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -368,13 +366,7 @@ public class Project
             }
         }
 
-        if ( !ConfigHelper.isSimulation( this.getRight() ) &&
-             !ProjectConfigs.hasTimeSeriesMetrics( this.getProjectConfig() )
-             &&
-             !this.usesGriddedData( this.getRight() ) )
-        {
-            this.populateLeadOffsets();
-        }
+        this.populateLeadOffsets();
     }
 
 
@@ -536,7 +528,7 @@ public class Project
      * @throws CalculationException Thrown if no time scale or time step information is discovered
      * @throws RescalingException Thrown if the desired time scale is not deliverable from the existing sources
      */
-    private void setDesiredTimeScaleAndTimeStep() throws SQLException, CalculationException
+    private void setDesiredTimeScaleAndTimeStep() throws SQLException
     {
         // The desired time scale
         TimeScale desiredScale = null;
@@ -721,7 +713,7 @@ public class Project
 
     private Set<TimeScaleAndTimeStep>
             getTimeScaleAndTimeStepForEachProjectSource( DataSourceConfig dataSourceConfig )
-                    throws SQLException, CalculationException
+                    throws SQLException
     {
         // Nothing to discover (e.g. if the input is a baseline source and there is no baseline)
         if ( Objects.isNull( dataSourceConfig ) )
@@ -833,7 +825,7 @@ public class Project
     private Set<TimeScaleAndTimeStep> getTimeScaleAndTimeSteps( DataScripter data,
                                                                 DataSourceConfig dataSourceConfig,
                                                                 LeftOrRightOrBaseline sourceType )
-            throws SQLException, CalculationException
+            throws SQLException
     {
         Objects.requireNonNull( data );
 
@@ -904,7 +896,6 @@ public class Project
     private Set<TimeScaleAndTimeStep> finalizeExistingTimeScalesForSources( DataSourceConfig dataSourceConfig,
                                                                             Set<TimeScaleAndTimeStep> existingScalesAndSteps,
                                                                             LeftOrRightOrBaseline sourceType )
-            throws CalculationException
     {
         Set<TimeScaleAndTimeStep> mutableCopy = new HashSet<>();
 
@@ -1123,7 +1114,6 @@ public class Project
      */
 
     private Duration getValueIntervalWithLocking( DataSourceConfig dataSourceConfig )
-            throws CalculationException
     {
         Objects.requireNonNull( dataSourceConfig );
 
@@ -1166,7 +1156,6 @@ public class Project
     private Duration getLeastCommonTimeStepFromSources( Set<TimeScaleAndTimeStep> leftScalesAndSteps,
                                                         Set<TimeScaleAndTimeStep> rightScalesAndSteps,
                                                         Set<TimeScaleAndTimeStep> baselineScalesAndSteps )
-            throws CalculationException
     {
         Objects.requireNonNull( leftScalesAndSteps );
 
@@ -1715,7 +1704,7 @@ public class Project
      * @return The length of a period of lead time to retrieve from the database
      * @throws CalculationException Thrown if the scale of the data could not be calculated
      */
-    public Duration getLeadPeriod() throws CalculationException
+    public Duration getLeadPeriod()
     {
         Integer period;
 
@@ -1808,7 +1797,7 @@ public class Project
      * @return The frequency will which to retrieve a period of leads
      * @throws CalculationException Thrown if the scale of the data could not be calculated
      */
-    public Duration getLeadFrequency() throws CalculationException
+    public Duration getLeadFrequency()
     {
         Integer frequency;
 
@@ -1844,7 +1833,7 @@ public class Project
      * @return Whether or not data should be scaled
      * @throws CalculationException Thrown if the scale of the data could not be calculated
      */
-    public boolean shouldScale() throws CalculationException
+    public boolean shouldScale()
     {
         return this.getProjectConfig().getPair().getDesiredTimeScale() != null &&
                this.getScale() != null;
@@ -2030,7 +2019,7 @@ public class Project
      * @throws CalculationException Thrown if the estimated size of a time
      * series could not be calculated
      */
-    public Integer getNumberOfSeriesToRetrieve() throws CalculationException
+    public Integer getNumberOfSeriesToRetrieve()
     {
         synchronized ( Project.SERIES_AMOUNT_LOCK )
         {
@@ -2221,50 +2210,28 @@ public class Project
      * </p>
      * @param feature The feature to find the offset for
      * @return The needed offset to match the first valid window with observations
-     * @throws SQLException Thrown if offsets cannot be populated due to the
-     * system being unable to determine what locations to retrieve offsets from.
-     * @throws CalculationException Thrown if lead offsets cannot be calculated
      */
-    public Integer getLeadOffset( Feature feature )
-            throws SQLException
+    public Duration getLeadOffset( Feature feature )
     {
-        if ( ConfigHelper.isSimulation( this.getRight() ) ||
-             ProjectConfigs.hasTimeSeriesMetrics( this.projectConfig ) )
-        {
-            LOGGER.debug( "getLeadOffset Returning 0 for {} (timeseries metrics)",
-                          feature );
-            return 0;
-        }
-        else if ( this.usesGriddedData( this.getRight() ) )
-        {
-            Integer offset = this.getMinimumLead();
+        // Assume zero offset
+        Duration returnMe = Duration.ZERO;
 
-            // If the default minimum was hit, return 0 instead.
-            if ( offset == Integer.MIN_VALUE )
-            {
-                LOGGER.debug( "getLeadOffset Returning 0 for {} (gridded data on right)",
-                              feature );
-                return 0;
-            }
-
-            // We subtract by one time step since this returns an exclusive value where minimum lead is inclusive
-            return offset - (int) TimeHelper.unitsToLeadUnits(
-                                                               this.getScale().getUnit().value(),
-                                                               this.getScale().getPeriod() );
+        if ( Objects.nonNull( leadOffsets.get( feature ) ) )
+        {
+            returnMe = Duration.of( leadOffsets.get( feature ), TimeHelper.LEAD_RESOLUTION );
         }
 
-        return this.leadOffsets.get( feature );
+        LOGGER.debug( "Found offset of {} for feature {}.", returnMe, ConfigHelper.getFeatureDescription( feature ) );
+
+        return returnMe;
     }
 
     /**
-     * Caches the lead time offsets for each location in the project
-     * <p>
-     *     When each offset is retrieved on demand, it adds several seconds to
-     *     the evaluation of each location. When there are many locations, this
-     *     adds up. When they are all pulled semi-simultaenously, execution
-     *     of the evaluation may occur almost immediately upon evaluating its
-     *     location.
-     * </p>
+     * <p>Populates the lead offsets from futures of those offset values, together with their corresponding feature.
+     * 
+     * <p>The assumption of a lead offset, in general, and one that is fixed across all time-series associated with
+     * a feature, in particular, are not durable assumptions. See #66924.
+     * 
      * @throws IOException Thrown if the locations with which to evaluate cannot
      * be loaded
      * @throws IOException Thrown if the loading of the actual offset values fails
@@ -2273,7 +2240,29 @@ public class Project
      * locations to find offsets for cannot be formed
      * @throws CalculationException Thrown if a common scale between left and right data could be calculated
      */
+
     private void populateLeadOffsets() throws IOException, SQLException
+    {
+        // Get the offsets, if any
+        Map<FeatureDetails.FeatureKey, Future<Integer>> futureOffsets = this.getLeadOffsetFutures();
+        
+        // Consume them
+        this.populateLeadOffsetsFromFutures( Collections.unmodifiableMap( futureOffsets ) );
+    }    
+    
+    /**
+     * <p>Populates the lead offsets from futures of those offset values, together with their corresponding feature.
+     * 
+     * <p>The assumption of a lead offset, in general, and one that is fixed across all time-series associated with
+     * a feature, in particular, are not durable assumptions. See #66924.
+     * 
+     * @param futureOffsets the future offsets
+     * @throws IOException if the offset could not be populated for one or more features
+     * @throws CalculationException Thrown if a common scale between left and right data could be calculated
+     */
+
+    private void populateLeadOffsetsFromFutures( Map<FeatureDetails.FeatureKey, Future<Integer>> futureOffsets )
+            throws IOException
     {
         LOGGER.trace( "populateLeadOffsets() entered" );
 
@@ -2283,6 +2272,128 @@ public class Project
         {
             timer = new FormattedStopwatch();
             timer.start();
+        }
+
+        for( Map.Entry<FeatureDetails.FeatureKey, Future<Integer>> next : futureOffsets.entrySet() )
+        {
+            FeatureDetails.FeatureKey key = next.getKey();
+            Future<Integer> futureOffset = next.getValue();
+
+            // Determine the feature definition for the offset
+            Feature feature = new FeatureDetails( key ).toFeature();
+            Integer offset;
+            try
+            {
+                LOGGER.trace( "Loading the offset for '{}'", ConfigHelper.getFeatureDescription( feature ) );
+
+                // Previously had a time-out: see #66924
+                // It is better not to add that complexity, but if it is subsequently found
+                // to be important, then implement it by adding the timed-out features to a side-map 
+                // and then recursively calling this method while the side-map contains something, rather
+                // than attempting to handle the timed out features in-method.
+                offset = futureOffset.get();
+
+                // Add if it exists
+                if ( Objects.nonNull( offset ) )
+                {
+
+                    // Add the non-null value to the mapping with the feature as the key
+                    this.leadOffsets.put(
+                                          feature,
+                                          offset );
+                    LOGGER.trace( "An offset for {} was loaded!", ConfigHelper.getFeatureDescription( feature ) );
+                }
+                else
+                {
+                    LOGGER.trace( "Found a null lead offset for '{}'", ConfigHelper.getFeatureDescription( feature ) );
+                }
+                
+            }
+            catch ( InterruptedException e )
+            {
+                LOGGER.warn( "Population of lead offsets has been interrupted.", e );
+                Thread.currentThread().interrupt();
+            }
+            catch ( ExecutionException e )
+            {
+                throw new IOException( "An error occured while populating the future"
+                                       + "offsets.",
+                                       e );
+            }
+        }
+
+        if ( timer != null && LOGGER.isDebugEnabled() )
+        {
+            timer.stop();
+            LOGGER.debug( "It took {} to get the offsets for all locations.",
+                          timer.getFormattedDuration() );
+        }        
+        
+    }    
+    
+    /**
+     * Returns the lead time offsets for each feature in the project
+     * <p>
+     *     When each offset is retrieved on demand, it adds several seconds to
+     *     the evaluation of each location. When there are many locations, this
+     *     adds up. When they are all pulled semi-simultaneously, execution
+     *     of the evaluation may occur almost immediately upon evaluating its
+     *     location.
+     * </p>
+     * 
+     * <p>The assumption of a lead offset, in general, and one that is fixed across all time-series associated with
+     * a feature, in particular, are not durable assumptions. See #66924. 
+     * 
+     * @throws IOException Thrown if the locations with which to evaluate cannot
+     * be loaded
+     * @throws IOException Thrown if the loading of the actual offset values fails
+     * @throws IOException Thrown if the loading of the offset values is interrupted
+     * @throws SQLException Thrown if the script used to determine what
+     * locations to find offsets for cannot be formed
+     * @throws CalculationException Thrown if a common scale between left and right data could be calculated
+     * @return the futures of the lead offsets mapped by feature
+     */
+    private Map<FeatureDetails.FeatureKey, Future<Integer>> getLeadOffsetFutures() throws IOException, SQLException
+    {
+        // Only determine lead offsets when they are absolutely required    
+        
+        // Do not need offsets for simulations because there is no forecast horizon
+        if ( ConfigHelper.isSimulation( this.getRight() ) )
+        {
+
+            LOGGER.debug( "Lead offsets were not computed because the right source contains simulations "
+                    + "and offsets are only needed for forecasts." );
+
+            return Collections.emptyMap();
+        }
+
+        // Time-series metrics do not require lead offsets because the data is pulled 
+        // in complete time-series
+        if ( ProjectConfigs.hasTimeSeriesMetrics( this.getProjectConfig() ) )
+        {
+            LOGGER.debug( "Lead offsets were not computed because the evaluation contains time-series metrics "
+                    + "for which the retrieval pulls complete time-series." );
+
+            return Collections.emptyMap();
+        }
+
+        // Lead offsets cannot be determined for gridded data
+        if ( this.usesGriddedData( this.getRight() ) )
+        {
+            LOGGER.debug( "Lead offsets were not computed because the evaluation uses gridded data for which "
+                    + "lead offsets cannot be computed at present." );
+
+            return Collections.emptyMap();
+        }
+
+        // Lead offsets are not required if the desired time scale is minimum (no upscaling)
+        TimeScale desiredScale = this.getDesiredTimeScale();
+        if ( Objects.nonNull( desiredScale ) && desiredScale.isInstantaneous() )
+        {
+            LOGGER.debug( "Lead offsets were not computed because the desired time scale is instantaneous and lead "
+                    + "offsets are only needed when upscaling." );
+
+            return Collections.emptyMap();
         }
 
         DataScripter script = ProjectScriptGenerator.formVariableFeatureLoadScript( this );
@@ -2326,74 +2437,9 @@ public class Project
                                    e );
         }
 
-        while ( !futureOffsets.isEmpty() )
-        {
-            FeatureDetails.FeatureKey key = (FeatureDetails.FeatureKey) futureOffsets.keySet().toArray()[0];
-            Future<Integer> futureOffset = futureOffsets.remove( key );
-
-            // Determine the feature definition for the offset
-            Feature feature = new FeatureDetails( key ).toFeature();
-            Integer offset;
-            try
-            {
-                LOGGER.trace( "Loading the offset for '{}'", ConfigHelper.getFeatureDescription( feature ) );
-
-                // If the current task is the last/only task left to evaluate, wait for the result
-                if ( futureOffsets.isEmpty() )
-                {
-                    offset = futureOffset.get();
-                }
-                else
-                {
-                    // Otherwise, give the offset 500 milliseconds before
-                    // quiting and moving on to another task
-                    offset = futureOffset.get( 500, TimeUnit.MILLISECONDS );
-                }
-
-                // If the returned value doesn't exist, move on
-                if ( offset == null )
-                {
-                    continue;
-                }
-                LOGGER.trace( "The offset was: {}", offset );
-
-                // Add the non-null value to the mapping with the feature as the key
-                this.leadOffsets.put(
-                                      feature,
-                                      offset );
-                LOGGER.trace( "An offset for {} was loaded!", ConfigHelper.getFeatureDescription( feature ) );
-            }
-            catch ( InterruptedException e )
-            {
-                LOGGER.warn( "Population of lead offsets has been interrupted.", e );
-                Thread.currentThread().interrupt();
-            }
-            catch ( ExecutionException e )
-            {
-                throw new IOException( "An error occured while populating the future"
-                                       + "offsets.",
-                                       e );
-            }
-            catch ( TimeoutException e )
-            {
-                // If the task took more than 500 milliseconds to evaluate, put
-                // it back into the queue and move on to the next one
-                LOGGER.trace( "It took too long to get the offset for '{}'; "
-                              + "moving on to another location while we wait "
-                              + "for the output on this location",
-                              ConfigHelper.getFeatureDescription( feature ) );
-                futureOffsets.put( key, futureOffset );
-            }
-        }
-
-        if ( timer != null && LOGGER.isDebugEnabled() )
-        {
-            timer.stop();
-            LOGGER.debug( "It took {} to get the offsets for all locations.",
-                          timer.getFormattedDuration() );
-        }
+        return Collections.unmodifiableMap( futureOffsets );
     }
-
+    
     /**
      * Determines the number of pools for issue date pooling for a feature
      *
@@ -2412,7 +2458,7 @@ public class Project
      * @throws CalculationException Thrown if the number of issue pools
      * for a set of leads for a feature could not be calculated
      */
-    public Integer getIssuePoolCount( final Feature feature ) throws CalculationException
+    public Integer getIssuePoolCount( final Feature feature )
     {
         if ( this.getPairingMode() != PairingMode.ROLLING )
         {
@@ -2506,7 +2552,7 @@ public class Project
      * @throws CalculationException thrown if the calculation of the frequency resulted in an
      * impossible value
      */
-    private Duration getValueInterval( DataSourceConfig dataSourceConfig ) throws CalculationException
+    private Duration getValueInterval( DataSourceConfig dataSourceConfig )
     {
         Duration interval;
 
@@ -2542,7 +2588,7 @@ public class Project
      * @throws CalculationException thrown if the calculation used to determine the frequency of the
      * forecast values encountered an error
      */
-    private Duration getForecastInterval( DataSourceConfig dataSourceConfig ) throws CalculationException
+    private Duration getForecastInterval( DataSourceConfig dataSourceConfig )
     {
         // TODO: Forecasts between locations might not be unified.
         // Generalizing the interval for all locations based on a single one could cause miscalculations
@@ -2663,7 +2709,7 @@ public class Project
      * @throws CalculationException thrown if the calculation used to determine the
      * frequency of the observation values encountered an error
      */
-    private Duration getObservationInterval( DataSourceConfig dataSourceConfig ) throws CalculationException
+    private Duration getObservationInterval( DataSourceConfig dataSourceConfig )
     {
         // TODO: Observations between locations are often not unified.
         // Generalizing the scale for all locations based on a single one could cause miscalculations
@@ -2858,7 +2904,7 @@ public class Project
      * @throws CalculationException thrown if the calculation used to find the
      * last lead for vector data did not return a result
      */
-    public Integer getLastLead( Feature feature ) throws CalculationException
+    public Integer getLastLead( Feature feature )
     {
         // Lead duration pool windows are canonical: see #63407-31
         // If they are present, always return the maximum declared
@@ -3083,7 +3129,7 @@ public class Project
      * @throws CalculationException thrown if the calculation used to determine
      * the typical gap encountered an error
      */
-    public Integer getForecastLag( DataSourceConfig sourceConfig, Feature feature ) throws CalculationException
+    public Integer getForecastLag( DataSourceConfig sourceConfig, Feature feature )
     {
         synchronized ( this.timeSeriesLag )
         {

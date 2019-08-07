@@ -26,7 +26,7 @@ import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleData;
-import wres.datamodel.scale.TimeScale;
+import wres.datamodel.time.TimeWindow;
 import wres.io.config.ConfigHelper;
 import wres.io.config.OrderedSampleMetadata;
 import wres.io.project.Project;
@@ -231,7 +231,7 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
      * 
      * @throws CalculationException if the samples could not be calculated
      */
-    protected abstract void calculateSamples() throws CalculationException;
+    protected abstract void calculateSamples();
 
     /**
      * <p>Get the left and right lead bounds for a sample
@@ -245,22 +245,46 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
      * @throws CalculationException Thrown if the frequency, period, or offset for lead bounds 
      *            could not be calculated
      */
-    Pair<Duration, Duration> getLeadBounds( final int sampleNumber ) throws CalculationException
+    Pair<Duration, Duration> getLeadBounds( final int sampleNumber )
     {
+        Pair<Duration, Duration> leadBounds = null;
+        
         // Are leadTimesPoolingWindows defined?
         // If so, they must be respected and not modified by the data: #63407
-        if ( Objects.nonNull( this.getProject().getProjectConfig().getPair().getLeadTimesPoolingWindow() ) )
+        PairConfig pairConfig = this.getProject().getProjectConfig().getPair();
+        
+        if ( Objects.nonNull( pairConfig.getLeadTimesPoolingWindow() ) )
         {
-            return this.getLeadBoundsForLeadTimesPoolingWindows( this.getProject().getProjectConfig(),
+            leadBounds = this.getLeadBoundsForLeadTimesPoolingWindows( this.getProject().getProjectConfig(),
                                                                  sampleNumber );
         }
-        // No leadTimesPoolingWindows, so use default system behavior, 
-        // which is one pool for each lead duration
+        // No leadTimesPoolingWindows
         else
         {
-            return this.getLeadBoundsForDefaultLeadTimesPoolingWindows( sampleNumber );
+            // Unbounded
+            Duration lowerBound = TimeWindow.DURATION_MIN;
+            Duration upperBound = TimeWindow.DURATION_MAX;
+            
+            if ( Objects.nonNull( pairConfig.getLeadHours() ) )
+            {
+                IntBoundsType bounds = pairConfig.getLeadHours();
+                
+                if( Objects.nonNull( bounds.getMinimum() ) )
+                {
+                    lowerBound = Duration.of( pairConfig.getLeadHours().getMinimum(), ChronoUnit.HOURS );
+                }
+                
+                if( Objects.nonNull( bounds.getMaximum() ) )
+                {
+                    upperBound = Duration.of( pairConfig.getLeadHours().getMaximum(), ChronoUnit.HOURS );
+                }
+            }
+            
+            leadBounds = Pair.of( lowerBound, upperBound );
         }
-    }
+
+        return this.getAdjustedLeadBounds( leadBounds );
+    }        
 
     /**
      * <p>Returns the lower and upper bounds of the next lead duration pooling window
@@ -278,7 +302,6 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
 
     private Pair<Duration, Duration> getLeadBoundsForLeadTimesPoolingWindows( ProjectConfig project,
                                                                               int sampleNumber )
-            throws CalculationException
     {
         Objects.requireNonNull( project );
 
@@ -336,83 +359,85 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
 //        }
 
         return Pair.of( earliestExclusive, latestInclusive );
-    }
-
-    /**
-     * <p>Returns the lower and upper bounds of the next lead duration pooling window
-     * whose sample number corresponds to the input when the pooling windows are 
-     * based on the default system behavior. The default behavior is to produce one
-     * pool for each lead duration.  
-     * 
-     * <p>TODO: replace with #56213
-     * 
-     * @param sampleNumber The number of the sample, 0 indexed, that indicates the order of evaluation
-     * @return A pair of durations describing the left and right lead bounds for the sample
-     * @throws CalculationException Thrown if the frequency, period, or offset for lead bounds could not be calculated
-     */
-    Pair<Duration, Duration> getLeadBoundsForDefaultLeadTimesPoolingWindows( final int sampleNumber )
-    {
-        Duration beginning;
-        Duration end;
-        Duration offset;
-
-        try
-        {
-            Feature feature = this.getFeature();
-            Project project = this.getProject();
-            Integer rawOffset = project.getLeadOffset( feature );
-            if ( rawOffset != null )
-            {
-                offset = Duration.of( rawOffset.longValue(),
-                                      TimeHelper.LEAD_RESOLUTION );
-            }
-            else
-            {
-                // Null offset found should mean no data will be found. Rather
-                // than break the iteration, set a 0 offset, which should be
-                // inert.
-                LOGGER.warn( "No offset found for feature {}, there should be no statistics for this feature.",
-                             feature );
-                offset = Duration.ZERO;
-            }
-        }
-        catch ( SQLException e )
-        {
-            throw new CalculationException( "The offset between observed values and "
-                                            + "forecasted values are needed to determine "
-                                            + "when a lead range should begin, but could "
-                                            + "not be loaded.",
-                                            e );
-        }
-
-        Duration leadFrequency = this.getProject().getLeadFrequency();
-        Duration leadPeriod = this.getProject().getLeadPeriod();
-
-        // If the lead offset is positive, forecasts at this offset value
-        // need to be captured in the first lead bounds, so start at the offset 
-        // minus the lead period and iterate forwards from there in multiples of
-        // lead frequency, otherwise iterate forwards from the zero lower-bound. 
-        // However, skip this interval if it is smaller than the desired time scale
-        // See #60307
-        TimeScale desiredTimeScale = this.getProject().getDesiredTimeScale();
-        if ( !offset.isZero()
-             && Objects.nonNull( desiredTimeScale )
-             && !offset.minus( desiredTimeScale.getPeriod() ).isNegative() )
-        {
-            beginning = offset.minus( leadPeriod ).plus( leadFrequency.multipliedBy( sampleNumber ) );
-        }
-        else
-        {
-            beginning = offset.plus( leadFrequency.multipliedBy( sampleNumber ) );
-        }
-
-        end = beginning.plus( leadPeriod );
-
-        return Pair.of( beginning, end );
     }    
     
+    /**
+     * <p>Adjusts the input interval to add the "lead offset" to the lower bound. The "lead offset" is the duration by 
+     * which the right data must be shifted (or at which rescaling should begin) in order to align with the left data
+     * at the desired time scale. For example, if the first left value has a time scale of PT24H and aligns with right
+     * forecast data that corresponds to a lead duration interval of (PT18H, PT42H], then the "lead offset" is PT18H. 
+     * This offset is only added to intervals that are larger than zero wide. If an interval is zero wide, then a 
+     * precise thing has been requested, and there is no scope for adjusting it to ensure pairs begin when they should.  
+     * 
+     * <p>This adjustment is only necessary within the current retrieval pipeline because the calculation of lead 
+     * duration intervals attempts to account for both pairing and pooling at the same time in a precise way, rather
+     * than retrieving the maximum amount of data that could be needed for a pool and then forming the pairs from that
+     * superset of data.
+     * 
+     * <p>The whole retrieval process should be reviewed in light of #56213 whose aim is to form pools that are data
+     * independent and to populate them with pairs, which are necessarily data dependent, because they are concerned
+     * with things like "lead offsets".
+     * 
+     * @param unadjusted the lead bounds without any accounting for the lead offset
+     * @return an adjusted set of lead duration bounds
+     * @throws NullPointerException if the input is null
+     */
     
-    int getFinalPoolingStep() throws CalculationException
+    Pair<Duration,Duration> getAdjustedLeadBounds( Pair<Duration, Duration> unadjusted )
+    {
+        Objects.requireNonNull( unadjusted );
+        
+        // Something precise requested
+        if( unadjusted.getLeft().equals( unadjusted.getRight() ) )
+        {
+            return unadjusted;
+        }
+
+        Feature featureToAdjust = this.getFeature();
+        Project projectToAdjust = this.getProject();
+        Duration offset = projectToAdjust.getLeadOffset( featureToAdjust );
+
+        // No adjustment needed
+        if( Duration.ZERO.equals( offset ) )
+        {
+            return unadjusted;
+        }
+        
+        // Unadjusted lower bound
+        Duration lower = unadjusted.getLeft();
+        
+        //Unadjusted upper
+        Duration upper = unadjusted.getRight();
+
+        if ( !TimeWindow.DURATION_MIN.equals( lower ) )
+        {
+            lower = lower.plus( offset );
+        }
+        // If the lower bound, then start at the offset (this assumes no negative lead times)
+        else
+        {
+            lower = offset;
+        }
+
+        if ( !TimeWindow.DURATION_MAX.equals( upper ) )
+        {
+            upper = upper.plus( offset );
+        }
+        
+        Pair<Duration,Duration> adjusted = Pair.of( lower, upper );
+        
+        LOGGER.debug( "Adding the lead duration offset of {} to the lead duration bounds, changing them from "
+                + "{} to {}.", offset, unadjusted, adjusted );
+        
+        return adjusted;
+    }
+    
+    /**
+     * @return the final pooling step
+     * @throws CalculationException if the issue pool count could not be determined
+     */
+    
+    int getFinalPoolingStep()
     {
         if (this.finalPoolingStep == null)
         {
@@ -421,7 +446,12 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
         return this.finalPoolingStep;
     }
 
-    protected int calculateFinalPoolingStep() throws CalculationException
+    /**
+     * @return the final pooling step
+     * @throws CalculationException if the issue pool count could not be determined
+     */
+    
+    protected int calculateFinalPoolingStep()
     {
         return this.project.getIssuePoolCount( this.feature );
     }
