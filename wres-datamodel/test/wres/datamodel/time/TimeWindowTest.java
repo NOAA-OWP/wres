@@ -3,16 +3,16 @@ package wres.datamodel.time;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 /**
  * Tests the {@link TimeWindow}.
@@ -29,8 +29,6 @@ public final class TimeWindowTest
     private static final String THIRD_TIME = "1986-01-01T00:00:00Z";
     private static final String SECOND_TIME = "1985-01-01T00:00:00Z";
     private static final String FIRST_TIME = "1983-01-01T00:00:00Z";
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
 
     /**
      * Constructs an {@link TimeWindow} and tests for access to its immutable instance variables.
@@ -71,7 +69,9 @@ public final class TimeWindowTest
         //Construct a window from 1985-01-01T00:00:00Z to 2010-12-31T11:59:59Z with lead times of 6-120h
         TimeWindow window = TimeWindow.of( Instant.parse( SECOND_TIME ),
                                            Instant.parse( FIFTH_TIME ),
-                                           Duration.ZERO );
+                                           Duration.ofSeconds( Long.MIN_VALUE ),
+                                           Duration.ofSeconds( Long.MAX_VALUE, 999_999_999 ) );
+
         TimeWindow equalWindow = TimeWindow.of( Instant.parse( SECOND_TIME ),
                                                 Instant.parse( FIFTH_TIME ) );
         assertTrue( window.equals( equalWindow ) );
@@ -120,7 +120,8 @@ public final class TimeWindowTest
     {
         TimeWindow first = TimeWindow.of( Instant.parse( SECOND_TIME ),
                                           Instant.parse( FIFTH_TIME ),
-                                          Duration.ZERO );
+                                          Duration.ofSeconds( Long.MIN_VALUE ),
+                                          Duration.ofSeconds( Long.MAX_VALUE, 999_999_999 ) );
         TimeWindow second = TimeWindow.of( Instant.parse( SECOND_TIME ),
                                            Instant.parse( FIFTH_TIME ) );
 
@@ -228,13 +229,14 @@ public final class TimeWindowTest
                                            Duration.ZERO );
         //Equality of strings for equal objects
         assertTrue( "Unexpected inequality between the string representation of two time windows that are equal.",
-                    window.toString().equals( TimeWindow.of( Instant.parse( SECOND_TIME ),
-                                                             Instant.parse( FIFTH_TIME ),
-                                                             Instant.parse( SECOND_TIME ),
-                                                             Instant.parse( FIFTH_TIME ),
-                                                             Duration.ZERO,
-                                                             Duration.ZERO )
-                                                        .toString() ) );
+                    window.toString()
+                          .equals( TimeWindow.of( Instant.parse( SECOND_TIME ),
+                                                  Instant.parse( FIFTH_TIME ),
+                                                  Instant.parse( SECOND_TIME ),
+                                                  Instant.parse( FIFTH_TIME ),
+                                                  Duration.ZERO,
+                                                  Duration.ZERO )
+                                             .toString() ) );
 
         //Equality against a benchmark
         assertTrue( window.toString()
@@ -250,15 +252,16 @@ public final class TimeWindowTest
     @Test
     public void testExceptionOnEarliestReferenceTimeAfterLatestReferenceTime()
     {
-        exception.expect( IllegalArgumentException.class );
-        exception.expectMessage( "Cannot define a time window whose latest reference time is before its "
-                + "earliest reference time." );
+        IllegalArgumentException thrown = assertThrows( IllegalArgumentException.class,
+                                                        () -> TimeWindow.of( Instant.parse( SECOND_TIME ),
+                                                                             Instant.parse( "1984-12-31T11:59:59Z" ),
+                                                                             Duration.ZERO ) );
+        assertEquals( "Cannot define a time window whose latest reference time is before its "
+                      + "earliest reference time.",
+                      thrown.getMessage() );
 
-        TimeWindow.of( Instant.parse( SECOND_TIME ),
-                       Instant.parse( "1984-12-31T11:59:59Z" ),
-                       Duration.ZERO );
     }
-    
+
     /**
      * Constructs a {@link TimeWindow} and tests for an exception when the earliest valid time is 
      * after the latest valid time.
@@ -267,16 +270,15 @@ public final class TimeWindowTest
     @Test
     public void testExceptionOnEarliestValidTimeAfterLatestValidTime()
     {
-        exception.expect( IllegalArgumentException.class );
-        exception.expectMessage( "Cannot define a time window whose latest valid time is before its "
-                + "earliest valid time." );
-
-        TimeWindow.of( Instant.parse( SECOND_TIME ),
-                       Instant.parse( "1986-12-31T11:59:59Z" ),
-                       Instant.parse( SECOND_TIME ),
-                       Instant.parse( "1984-12-31T11:59:59Z" ),
-                       Duration.ZERO,
-                       Duration.ZERO );
+        IllegalArgumentException thrown = assertThrows( IllegalArgumentException.class,
+                                                        () -> TimeWindow.of( Instant.parse( SECOND_TIME ),
+                                                                             Instant.parse( "1986-12-31T11:59:59Z" ),
+                                                                             Instant.parse( SECOND_TIME ),
+                                                                             Instant.parse( "1984-12-31T11:59:59Z" ),
+                                                                             Duration.ZERO,
+                                                                             Duration.ZERO ) );
+        assertEquals( "Cannot define a time window whose latest valid time is before its earliest valid time.",
+                      thrown.getMessage() );
     }
 
     /**
@@ -287,14 +289,14 @@ public final class TimeWindowTest
     @Test
     public void testExceptionOnEarliestLeadTimeAfterLatestLeadTime()
     {
-        exception.expect( IllegalArgumentException.class );
-        exception.expectMessage( "Cannot define a time window whose latest lead duration is before its earliest "
-                                 + "lead duration." );
-
-        TimeWindow.of( Instant.parse( SECOND_TIME ),
-                       Instant.parse( FIFTH_TIME ),
-                       Duration.ofHours( 1 ),
-                       Duration.ZERO );
+        IllegalArgumentException thrown = assertThrows( IllegalArgumentException.class,
+                                                        () -> TimeWindow.of( Instant.parse( SECOND_TIME ),
+                                                                             Instant.parse( FIFTH_TIME ),
+                                                                             Duration.ofHours( 1 ),
+                                                                             Duration.ZERO ) );
+        assertEquals( "Cannot define a time window whose latest lead duration is before its earliest "
+                      + "lead duration.",
+                      thrown.getMessage() );
     }
 
     /**
@@ -304,12 +306,12 @@ public final class TimeWindowTest
     @Test
     public void testExceptionWhenEarliestReferenceTimeIsNull()
     {
-        exception.expect( NullPointerException.class );
-        exception.expectMessage( "The earliest reference time cannot be null." );
-
-        TimeWindow.of( null,
-                       Instant.MAX,
-                       Duration.ZERO );
+        NullPointerException thrown = assertThrows( NullPointerException.class,
+                                                    () -> TimeWindow.of( null,
+                                                                         Instant.MAX,
+                                                                         Duration.ZERO ) );
+        assertEquals( "The earliest reference time cannot be null.",
+                      thrown.getMessage() );
     }
 
     /**
@@ -319,15 +321,15 @@ public final class TimeWindowTest
     @Test
     public void testExceptionWhenLatestReferenceTimeIsNull()
     {
-        exception.expect( NullPointerException.class );
-        exception.expectMessage( "The latest reference time cannot be null." );
-
-        TimeWindow.of( Instant.MIN,
-                       null,
-                       Duration.ofHours( 1 ),
-                       Duration.ZERO );
+        NullPointerException thrown = assertThrows( NullPointerException.class,
+                                                    () -> TimeWindow.of( Instant.MIN,
+                                                                         null,
+                                                                         Duration.ofHours( 1 ),
+                                                                         Duration.ZERO ) );
+        assertEquals( "The latest reference time cannot be null.",
+                      thrown.getMessage() );
     }
-    
+
     /**
      * Constructs a {@link TimeWindow} and tests for an exception when the earliest valid time is null.
      */
@@ -335,15 +337,15 @@ public final class TimeWindowTest
     @Test
     public void testExceptionWhenEarliestValidTimeIsNull()
     {
-        exception.expect( NullPointerException.class );
-        exception.expectMessage( "The earliest valid time cannot be null." );
-
-        TimeWindow.of( Instant.MIN,
-                       Instant.MAX,
-                       null,
-                       Instant.MAX,
-                       Duration.ZERO,
-                       Duration.ZERO );
+        NullPointerException thrown = assertThrows( NullPointerException.class,
+                                                    () -> TimeWindow.of( Instant.MIN,
+                                                                         Instant.MAX,
+                                                                         null,
+                                                                         Instant.MAX,
+                                                                         Duration.ZERO,
+                                                                         Duration.ZERO ) );
+        assertEquals( "The earliest valid time cannot be null.",
+                      thrown.getMessage() );
     }
 
     /**
@@ -353,15 +355,15 @@ public final class TimeWindowTest
     @Test
     public void testExceptionWhenLatestValidTimeIsNull()
     {
-        exception.expect( NullPointerException.class );
-        exception.expectMessage( "The latest valid time cannot be null." );
-
-        TimeWindow.of( Instant.MIN,
-                       Instant.MAX,
-                       Instant.MIN,
-                       null,
-                       Duration.ZERO,
-                       Duration.ZERO );
+        NullPointerException thrown = assertThrows( NullPointerException.class,
+                                                    () -> TimeWindow.of( Instant.MIN,
+                                                                         Instant.MAX,
+                                                                         Instant.MIN,
+                                                                         null,
+                                                                         Duration.ZERO,
+                                                                         Duration.ZERO ) );
+        assertEquals( "The latest valid time cannot be null.",
+                      thrown.getMessage() );
     }
 
     /**
@@ -371,15 +373,15 @@ public final class TimeWindowTest
     @Test
     public void testExceptionWhenEarliestLeadDurationIsNull()
     {
-        exception.expect( NullPointerException.class );
-        exception.expectMessage( "The earliest lead duration cannot be null." );
-
-        TimeWindow.of( Instant.MIN,
-                       Instant.MAX,
-                       Instant.MIN,
-                       Instant.MAX,
-                       null,
-                       Duration.ZERO );
+        NullPointerException thrown = assertThrows( NullPointerException.class,
+                                                    () -> TimeWindow.of( Instant.MIN,
+                                                                         Instant.MAX,
+                                                                         Instant.MIN,
+                                                                         Instant.MAX,
+                                                                         null,
+                                                                         Duration.ZERO ) );
+        assertEquals( "The earliest lead duration cannot be null.",
+                      thrown.getMessage() );
     }
 
     /**
@@ -389,17 +391,17 @@ public final class TimeWindowTest
     @Test
     public void testExceptionWhenLatestLeadDurationTimeIsNull()
     {
-        exception.expect( NullPointerException.class );
-        exception.expectMessage( "The latest lead duration cannot be null." );
-
-        TimeWindow.of( Instant.MIN,
-                       Instant.MAX,
-                       Instant.MIN,
-                       Instant.MAX,
-                       Duration.ZERO,
-                       null );
+        NullPointerException thrown = assertThrows( NullPointerException.class,
+                                                    () -> TimeWindow.of( Instant.MIN,
+                                                                         Instant.MAX,
+                                                                         Instant.MIN,
+                                                                         Instant.MAX,
+                                                                         Duration.ZERO,
+                                                                         null ) );
+        assertEquals( "The latest lead duration cannot be null.",
+                      thrown.getMessage() );
     }
-    
+
     /**
      * Tests {@link TimeWindow#hasUnboundedReferenceTimes()}.
      */
@@ -428,6 +430,57 @@ public final class TimeWindowTest
 
         assertTrue( partlyHigh.hasUnboundedReferenceTimes() );
     }
+    
+    /**
+     * Tests {@link TimeWindow#hasUnboundedValidTimes()}.
+     */
+
+    @Test
+    public void testHasUnboundedValidTimes()
+    {       
+        TimeWindow bounded = TimeWindow.of( Instant.parse( FIRST_TIME ),
+                                            Instant.parse( SECOND_TIME ),
+                                            Instant.parse( THIRD_TIME ),
+                                            Instant.parse( FOURTH_TIME ) );
+
+        assertFalse( bounded.hasUnboundedValidTimes() );
+
+        TimeWindow unbounded = TimeWindow.of();
+
+        assertTrue( unbounded.hasUnboundedValidTimes() );
+
+        TimeWindow partlyLow = TimeWindow.of( Instant.parse( FIRST_TIME ),
+                                              Instant.parse( SECOND_TIME ),
+                                              Instant.MIN,
+                                              Instant.parse( FOURTH_TIME ) );
+
+        assertTrue( partlyLow.hasUnboundedValidTimes() );
+
+        TimeWindow partlyHigh = TimeWindow.of( Instant.parse( FIRST_TIME ),
+                                               Instant.parse( SECOND_TIME ),
+                                               Instant.parse( THIRD_TIME ),
+                                               Instant.MAX );
+
+        assertTrue( partlyHigh.hasUnboundedValidTimes() );
+    }
+        
+    /**
+     * Tests {@link TimeWindow#bothLeadDurationsAreUnbounded()}.
+     */
+
+    @Test
+    public void testBothLeadDurationsAreUnbounded()
+    {       
+        TimeWindow bounded = TimeWindow.of( Instant.parse( FIRST_TIME ),
+                                            Instant.parse( SECOND_TIME ),
+                                            Duration.ZERO );
+
+        assertFalse( bounded.bothLeadDurationsAreUnbounded() );
+
+        TimeWindow unbounded = TimeWindow.of();
+
+        assertTrue( unbounded.bothLeadDurationsAreUnbounded() );
+    }       
 
     /**
      * Tests the {@link TimeWindow#unionWith(TimeWindow)}.
@@ -480,5 +533,48 @@ public final class TimeWindowTest
         assertTrue( TimeWindow.unionOf( unionTwo ).equals( expectedTwo ) );
 
     }
+
+    /**
+     * Tests that {@link TimeWindow#unionWith(TimeWindow)} throws an {@link IllegalArgumentException} on empty input.
+     */
+
+    @Test
+    public void testUnionWithThrowsExceptionOnEmptyInput()
+    {
+        IllegalArgumentException thrown =
+                assertThrows( IllegalArgumentException.class, () -> TimeWindow.unionOf( Collections.emptyList() ) );
+
+        assertEquals( "Cannot determine the union of time windows for empty input.", thrown.getMessage() );
+    }
+
+    /**
+     * Tests that {@link TimeWindow#unionWith(TimeWindow)} throws an {@link IllegalArgumentException} on empty that
+     * contains a <code>null</code>.
+     */
+
+    @Test
+    public void testUnionWithThrowsExceptionOnInputWithNull()
+    {
+        IllegalArgumentException thrown =
+                assertThrows( IllegalArgumentException.class,
+                              () -> TimeWindow.unionOf( Collections.singletonList( null ) ) );
+
+        assertEquals( "Cannot determine the union of time windows for input that contains one or more "
+                      + "null time windows.",
+                      thrown.getMessage() );
+    }
+
+    /**
+     * Tests that {@link TimeWindow#unionWith(TimeWindow)} throws an {@link NullPointerException} on null input.
+     */
+
+    @Test
+    public void testUnionWithThrowsExceptionOnNullInput()
+    {
+        NullPointerException thrown = assertThrows( NullPointerException.class, () -> TimeWindow.unionOf( null ) );
+
+        assertEquals( "Cannot determine the union of time windows for a null input.", thrown.getMessage() );
+    }
+
 
 }

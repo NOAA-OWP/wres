@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
@@ -296,7 +297,7 @@ public final class ListOfStatisticsTest
     @Test
     public void testToString()
     {
-        TimeWindow window = TimeWindow.of( Instant.MIN, Instant.MAX );
+        TimeWindow window = TimeWindow.of( Instant.MIN, Instant.MAX, Duration.ZERO );
 
         OneOrTwoThresholds thresholdOne =
                 OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 1.0 ),

@@ -241,7 +241,8 @@ public final class SingleValuedPairsWriterTest
             tsBuilder.addTimeSeries( pairs );
             tsBuilder.setMetadata( SampleMetadata.of( pairs.getMetadata(),
                                                       TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                     Instant.parse( "1990-01-01T00:00:00Z" ) ) ) );
+                                                                     Instant.parse( "1990-01-01T00:00:00Z" ),
+                                                                     Duration.ZERO ) ) );
 
 
             // Write the pairs

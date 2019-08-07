@@ -630,7 +630,9 @@ public class SampleMetadataTest
                 TimeWindow.of( Instant.parse( THIRD_TIME ),
                                Instant.parse( THIRD_TIME ),
                                Instant.parse( THIRD_TIME ),
-                               Instant.parse( THIRD_TIME ) );
+                               Instant.parse( THIRD_TIME ),
+                               Duration.ZERO,
+                               Duration.ZERO );
 
         SampleMetadata meta = new SampleMetadataBuilder().setFromExistingInstance( SampleMetadata.of() )
                                                          .setIdentifier( identifier )

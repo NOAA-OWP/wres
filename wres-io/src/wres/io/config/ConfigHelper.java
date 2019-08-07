@@ -2242,8 +2242,8 @@ public class ConfigHelper
         Instant latestReferenceTime = Instant.MAX;
         Instant earliestValidTime = Instant.MIN;
         Instant latestValidTime = Instant.MAX;
-        Duration smallestLeadDuration = Duration.ofSeconds( Long.MIN_VALUE, 0 );
-        Duration largestLeadDuration = Duration.ofSeconds( Long.MAX_VALUE, 999_999_999 );
+        Duration smallestLeadDuration = TimeWindow.DURATION_MIN;
+        Duration largestLeadDuration = TimeWindow.DURATION_MAX;
         
         // Issued datetimes
         if( Objects.nonNull( pairConfig.getIssuedDates() ) )
