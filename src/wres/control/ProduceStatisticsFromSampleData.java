@@ -10,6 +10,7 @@ import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.pairs.EnsemblePairs;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.statistics.StatisticsForProject;
+import wres.datamodel.statistics.StatisticsForProject.StatisticsForProjectBuilder;
 import wres.engine.statistics.metric.processing.MetricProcessorForProject;
 
 /**
@@ -28,41 +29,70 @@ class ProduceStatisticsFromSampleData implements Function<SampleData<?>, Statist
     private final MetricProcessorForProject metricProcessor;
 
     /**
+     * Returns an instance.
+     * 
+     * @param metricProcessor the metric processor
+     * @return an instance of the producer
+     */
+    
+    static ProduceStatisticsFromSampleData of( MetricProcessorForProject metricProcessor )
+    {
+        return new ProduceStatisticsFromSampleData( metricProcessor );
+    }
+    
+    @Override
+    public StatisticsForProject apply( SampleData<?> pool )
+    {
+        Objects.requireNonNull( pool );
+        
+        StatisticsForProject returnMe = null;
+        
+        // No data in the composition
+        if ( pool.getRawData().isEmpty()
+             && ( !pool.hasBaseline() || pool.getBaselineData().getRawData().isEmpty() ) )
+        {
+            LOGGER.debug( "Empty pool discovered for {}: no statistics will be produced.", pool.getMetadata() );
+            
+            StatisticsForProjectBuilder builder = new StatisticsForProjectBuilder();
+            
+            // Empty container
+            return builder.build();
+        }
+
+        // Process the pairs
+        if ( pool instanceof SingleValuedPairs )
+        {
+            returnMe = this.metricProcessor.getMetricProcessorForSingleValuedPairs().apply( (SingleValuedPairs) pool );
+        }
+        else if ( pool instanceof EnsemblePairs )
+        {
+            returnMe = this.metricProcessor.getMetricProcessorForEnsemblePairs().apply( (EnsemblePairs) pool );
+        }
+        else
+        {
+            throw new WresProcessingException( "While processing pairs: encountered an unexpected type of pairs." );
+        }
+
+        LOGGER.debug( "Completed composing statistics for feature '{}' and time window {}.",
+                      pool.getMetadata().getIdentifier().getGeospatialID(),
+                      pool.getMetadata().getTimeWindow() );
+
+        return returnMe;
+    }
+    
+
+    /**
      * Construct.
      * 
      * @param metricProcessor the metric processor
      * @throws NullPointerException if either input is null
      */
 
-    ProduceStatisticsFromSampleData( final MetricProcessorForProject metricProcessor )
+    private ProduceStatisticsFromSampleData( MetricProcessorForProject metricProcessor )
     {
         Objects.requireNonNull( metricProcessor, "Specify a non-null metric processor." );
+        
         this.metricProcessor = metricProcessor;
     }
-
-    @Override
-    public StatisticsForProject apply( SampleData<?> input )
-    {
-        StatisticsForProject returnMe = null;
-
-        // Process the pairs
-        if ( input instanceof SingleValuedPairs )
-        {
-            returnMe = metricProcessor.getMetricProcessorForSingleValuedPairs().apply( (SingleValuedPairs) input );
-        }
-        else if ( input instanceof EnsemblePairs )
-        {
-            returnMe = metricProcessor.getMetricProcessorForEnsemblePairs().apply( (EnsemblePairs) input );
-        }
-        else
-        {
-            throw new WresProcessingException( "While processing pairs: encountered an unexpected type of pairs." );
-        }
-        
-        LOGGER.debug( "Completed composing statistics for feature '{}' and time window {}.",
-                      input.getMetadata().getIdentifier().getGeospatialID(),
-                      input.getMetadata().getTimeWindow() );
-
-        return returnMe;
-    }
+    
 }

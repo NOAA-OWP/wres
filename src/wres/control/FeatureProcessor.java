@@ -181,17 +181,18 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                 // Complete all statistics tasks asynchronously:
                 // 1. Get some sample data from the database
                 // 2. Compute statistics from the sample data
-                // 3. Produce outputs from the statistics
+                // 3. Produce outputs from the statistics                
+                SupplySampleData pairSupplier = SupplySampleData.of( nextInput );
+                
                 final CompletableFuture<Set<Path>> statisticsTasks =
-                        CompletableFuture.supplyAsync( new SupplySampleData( nextInput ),
-                                                       this.executors.getPairExecutor() )
-                                         .thenApplyAsync( new ProduceStatisticsFromSampleData( processor ),
+                        CompletableFuture.supplyAsync( pairSupplier, this.executors.getPairExecutor() )
+                                         .thenApplyAsync( ProduceStatisticsFromSampleData.of( processor ),
                                                           this.executors.getPairExecutor() )
                                          .thenApplyAsync( metricOutputs -> {
                                              ProduceOutputsFromStatistics outputProcessor =
-                                                     new ProduceOutputsFromStatistics( this.resolvedProject,
-                                                                                       onlyWriteTheseTypes,
-                                                                                       this.sharedWriters );
+                                                     ProduceOutputsFromStatistics.of( this.resolvedProject,
+                                                                                      onlyWriteTheseTypes,
+                                                                                      this.sharedWriters );
                                              outputProcessor.accept( metricOutputs );
                                              outputProcessor.close();
                                              return outputProcessor.get();
@@ -201,37 +202,22 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                 // Add the task to the list
                 listOfFutures.add( statisticsTasks );               
 
-                // Create a separate task for serializing the sample data
-                // In future, this may be parcelled together with the statistical output
-                // in order to form a direct connection between the two. See #54942 and #54731
-                // Form a separate task for the main pairs and baseline pairs, because they are independent tasks
-                // There is one shared writer per output path
+                // Create a task for serializing the sample data
                 if ( Objects.nonNull( this.sharedSampleWriters ) )
                 {
-                    final CompletableFuture<Set<Path>> sampleDataTask =
-                            CompletableFuture.supplyAsync( new SupplySampleData( nextInput ),
-                                                           this.executors.getProductExecutor() )
-                                             .thenApplyAsync( sampleData -> {
-                                                 this.sharedSampleWriters.accept( sampleData );
-                                                 return sharedSampleWriters.get();
-                                             },
-                                                              this.executors.getProductExecutor() );
+                    CompletableFuture<Set<Path>> sampleDataTask =
+                            this.getPairWritingTask( pairSupplier, this.sharedSampleWriters );
 
                     listOfFutures.add( sampleDataTask );
                 }
 
-                // Create the baseline pairs if required and a writer has been provided
+                // Create a task for serializing the baseline data
                 if ( Objects.nonNull( projectConfig.getInputs().getBaseline() )
                      && Objects.nonNull( this.sharedBaselineSampleWriters ) )
                 {
-                    final CompletableFuture<Set<Path>> baselineSampleDataTask =
-                            CompletableFuture.supplyAsync( new SupplySampleData( nextInput ),
-                                                           this.executors.getProductExecutor() )
-                                             .thenApplyAsync( sampleData -> {
-                                                 this.sharedBaselineSampleWriters.accept( sampleData.getBaselineData() );
-                                                 return sharedSampleWriters.get();
-                                             },
-                                                              this.executors.getProductExecutor() );
+                    CompletableFuture<Set<Path>> baselineSampleDataTask =
+                            this.getPairWritingTask( SupplySampleData.of( nextInput, true ),
+                                                     this.sharedBaselineSampleWriters );
 
                     listOfFutures.add( baselineSampleDataTask );
                 }
@@ -275,6 +261,24 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
     }
     
     /**
+     * Returns a task that writes pairs.
+     * 
+     * @param pairSupplier the supplier of paired data to write
+     * @param sharedWriters the consumers of paired data for writing
+     */
+
+    private CompletableFuture<Set<Path>> getPairWritingTask( SupplySampleData pairSupplier,
+                                                             SharedSampleDataWriters sharedWriters )
+    {
+        return CompletableFuture.supplyAsync( pairSupplier, this.executors.getProductExecutor() )
+                                .thenApplyAsync( sampleData -> {
+                                    sharedWriters.accept( sampleData );
+                                    return sharedWriters.get();
+                                },
+                                                 this.executors.getProductExecutor() );
+    }
+    
+    /**
      * Generates products at the end of the processing pipeline.
      * 
      * @param processor the processor from which to obtain the inputs for product generation
@@ -296,9 +300,9 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                                             .contains( format );
                 try ( // End of pipeline processor
                       ProduceOutputsFromStatistics endOfPipeline =
-                              new ProduceOutputsFromStatistics( this.resolvedProject,
-                                                    nowWriteTheseTypes,
-                                                    this.sharedWriters ) )
+                              ProduceOutputsFromStatistics.of( this.resolvedProject,
+                                                               nowWriteTheseTypes,
+                                                               this.sharedWriters ) )
                 {
                     // Generate output
                     endOfPipeline.accept( processor.getCachedMetricOutput() );
@@ -307,7 +311,6 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
             }
             catch ( InterruptedException e )
             {
-                LOGGER.warn( "Interrupted while generating products.", e );
                 Thread.currentThread().interrupt();
 
                 throw new WresProcessingException( this.errorMessage, e );

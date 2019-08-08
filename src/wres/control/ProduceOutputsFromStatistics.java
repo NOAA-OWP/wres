@@ -159,38 +159,9 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
      */
 
     private final ChronoUnit durationUnits;
-    
-    /**
-     * Build a product processor that writes unconditionally
-     *
-     * @param resolvedProject the resolved project
-     * @throws NullPointerException if any of the inputs are null
-     * @throws WresProcessingException if the project is invalid for writing
-     */
-
-    ProduceOutputsFromStatistics( final ResolvedProject resolvedProject )
-    {
-        // Write unconditionally
-        this( resolvedProject, ( x, y ) -> true );
-    }
 
     /**
-     * Build a product processor that writes conditionally.
-     *
-     * @param resolvedProject the resolved project
-     * @param writeWhenTrue the condition under which outputs should be written
-     * @throws NullPointerException if any of the inputs are null
-     * @throws WresProcessingException if the project is invalid for writing
-     */
-
-    ProduceOutputsFromStatistics( final ResolvedProject resolvedProject,
-                                  final BiPredicate<StatisticGroup, DestinationType> writeWhenTrue )
-    {
-        this( resolvedProject, writeWhenTrue, null );
-    }
-
-    /**
-     * Build a product processor that writes conditionally.
+     * Build a product processor.
      * 
      * @param resolvedProject the resolved project
      * @param writeWhenTrue the condition under which outputs should be written
@@ -199,35 +170,11 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
      * @throws WresProcessingException if the project is invalid for writing
      */
 
-    ProduceOutputsFromStatistics( final ResolvedProject resolvedProject,
-                                  final BiPredicate<StatisticGroup, DestinationType> writeWhenTrue,
-                                  final SharedStatisticsWriters sharedWriters )
+    static ProduceOutputsFromStatistics of( ResolvedProject resolvedProject,
+                                            BiPredicate<StatisticGroup, DestinationType> writeWhenTrue,
+                                            SharedStatisticsWriters sharedWriters )
     {
-        Objects.requireNonNull( resolvedProject,
-                                "Specify a non-null configuration for the results processor." );
-
-        Objects.requireNonNull( writeWhenTrue, "Specify a non-null condition to ignore." );
-
-        this.resourcesToClose = new ArrayList<>( 1 );
-        this.writersToPaths = new ArrayList<>();
-        this.resolvedProject = resolvedProject;
-        this.writeWhenTrue = writeWhenTrue;
-
-        // Register the duration units
-        String durationUnitsString =
-                resolvedProject.getProjectConfig().getOutputs().getDurationFormat().value().toUpperCase();
-        this.durationUnits = ChronoUnit.valueOf( durationUnitsString );
-        
-        // Register output consumers
-        try
-        {
-            // implicitly passing resolvedProject via shared state
-            this.buildConsumers( sharedWriters );
-        }
-        catch ( ProjectConfigException e )
-        {
-            throw new WresProcessingException( "While processing the project configuration to write output:", e );
-        }
+        return new ProduceOutputsFromStatistics( resolvedProject, writeWhenTrue, sharedWriters );
     }
 
     /**
@@ -877,4 +824,46 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
     {
         return this.durationUnits;
     }
+    
+    /**
+     * Build a product processor that writes conditionally.
+     * 
+     * @param resolvedProject the resolved project
+     * @param writeWhenTrue the condition under which outputs should be written
+     * @param sharedWriters an optional set of shared writers to consume outputs
+     * @throws NullPointerException if any of the inputs are null
+     * @throws WresProcessingException if the project is invalid for writing
+     */
+
+    private ProduceOutputsFromStatistics( final ResolvedProject resolvedProject,
+                                          final BiPredicate<StatisticGroup, DestinationType> writeWhenTrue,
+                                          final SharedStatisticsWriters sharedWriters )
+    {
+        Objects.requireNonNull( resolvedProject,
+                                "Specify a non-null configuration for the results processor." );
+
+        Objects.requireNonNull( writeWhenTrue, "Specify a non-null condition to ignore." );
+
+        this.resourcesToClose = new ArrayList<>( 1 );
+        this.writersToPaths = new ArrayList<>();
+        this.resolvedProject = resolvedProject;
+        this.writeWhenTrue = writeWhenTrue;
+
+        // Register the duration units
+        String durationUnitsString =
+                resolvedProject.getProjectConfig().getOutputs().getDurationFormat().value().toUpperCase();
+        this.durationUnits = ChronoUnit.valueOf( durationUnitsString );
+        
+        // Register output consumers
+        try
+        {
+            // implicitly passing resolvedProject via shared state
+            this.buildConsumers( sharedWriters );
+        }
+        catch ( ProjectConfigException e )
+        {
+            throw new WresProcessingException( "While processing the project configuration to write output:", e );
+        }
+    }
+    
 }
