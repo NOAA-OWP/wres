@@ -35,18 +35,36 @@ class SupplySampleData implements Supplier<SampleData<?>>
     private final Future<SampleData<?>> futureSamples;
 
     /**
-     * Construct.
+     * Is true to return the baseline data only.
+     */
+    
+    private final boolean baselineOnly;
+    
+    /**
+     * Returns an instance.
      * 
      * @param futureSamples the future sample data
-     * @throws NullPointerException if either input is null
+     * @return an instance of the supplier
      */
-
-    SupplySampleData( final Future<SampleData<?>> futureSamples )
+    
+    static SupplySampleData of( Future<SampleData<?>> futureSamples )
     {
-        Objects.requireNonNull( futureSamples, "Specify a non-null sample data future." );
-
-        this.futureSamples = futureSamples;
+        return SupplySampleData.of( futureSamples, false );
     }
+
+    /**
+     * When the <code>baselineOnly</code> is <code>true</code>, returns a supplier for the baseline data only, 
+     * otherwise the fully composed sample data. 
+     * 
+     * @param futureSamples the future sample data
+     * @param baselineOnly is true to return the baseline data only
+     * @return an instance of the supplier
+     */
+    
+    static SupplySampleData of( Future<SampleData<?>> futureSamples, boolean baselineOnly )
+    {
+        return new SupplySampleData( futureSamples, baselineOnly );
+    }    
 
     @Override
     public SampleData<?> get()
@@ -55,8 +73,15 @@ class SupplySampleData implements Supplier<SampleData<?>>
         
         try
         {
-            returnMe = futureSamples.get();
-
+            if( this.baselineOnly )
+            {
+                returnMe = this.futureSamples.get().getBaselineData();
+            }
+            else
+            {
+                returnMe = this.futureSamples.get();
+            }           
+            
             LOGGER.debug( "Acquired pairs for feature '{}' and time window {}.",
                           returnMe.getMetadata().getIdentifier().getGeospatialID(),
                           returnMe.getMetadata().getTimeWindow() );
@@ -72,6 +97,22 @@ class SupplySampleData implements Supplier<SampleData<?>>
         }
         
         return returnMe;
-    }
+    }    
+    
+    /**
+     * Construct.
+     * 
+     * @param futureSamples the future sample data
+     * @param baselineOnly is true to supply the baseline data only 
+     * @throws NullPointerException if either input is null
+     */
+
+    private SupplySampleData( Future<SampleData<?>> futureSamples, boolean baselineOnly )
+    {
+        Objects.requireNonNull( futureSamples, "Specify a non-null sample data future." );
+
+        this.futureSamples = futureSamples;
+        this.baselineOnly = baselineOnly;
+    }    
     
 }
