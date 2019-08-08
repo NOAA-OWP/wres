@@ -34,7 +34,7 @@ done
 
 dump_file=${dump_file_prefix}.pgdump
 changelog_dump_file=${dump_file_prefix}_changelog.pgdump
-changeloglock_dump_file=${dump_file_prefix}_changeloglock.pgdump
+list_of_non_schema_objects_file=${dump_file_prefix}.pgdumplist
 
 computed_j=$(($cpus - 2))
 j=$computed_j
@@ -47,6 +47,8 @@ then
     j=$min_j
 fi
 
+
+list_objects_command="$pg_restore_command -e -l ${dump_file} -f ${list_of_non_schema_objects_file}"
 restore_pre_data_only_command="$pg_restore_command -e -j $j --no-owner -h ${database_host} -d ${database_name} -U ${database_username} --section=pre-data"
 restore_data_only_table_command="$pg_restore_command -e -j $j --no-owner -h ${database_host} -d ${database_name} -U ${database_username} --data-only --strict-names "
 restore_post_data_only_command="$pg_restore_command -e -j $j --no-owner -h ${database_host} -d ${database_name} -U ${database_username} --section=post-data"
@@ -82,6 +84,12 @@ then
     changelog_dump_file_readable="(readable)"
 fi
 
+list_of_non_schema_objects_file_exists="(does not yet exist)"
+
+if [ -f $list_of_non_schema_objects_file ]
+then
+    list_of_non_schema_objects_file_exists="(ALREADY EXISTS!)"
+fi
 
 pg_restore_command_exists="(does NOT exist!)"
 
@@ -117,9 +125,15 @@ echo "Using pg_restore executable ${pg_restore_command} ${pg_restore_command_exi
 echo "Using database host ${database_host} ${database_host_resolves}"
 echo "Using database name ${database_name}"
 echo "Using database username ${database_username}"
+echo "Creating list_of_non_schema_objects_file ${list_of_non_schema_objects_file} ${list_of_non_schema_objects_file_exists}"
 echo "Using restore_pre_data_only_command ${restore_pre_data_only_command}"
 echo "Using restore_data_only_table_command ${restore_data_only_table_command}"
 echo "Using restore_post_data_only_command ${restore_post_data_only_command}"
+
+echo "Assumption: public.scale_function and public.operating_member exist."
+echo "To be sure they exist, use psql to run the following before restoring:"
+echo "CREATE TYPE scale_function AS ENUM('UNKNOWN', 'MEAN', 'MINIMUM', 'MAXIMUM', 'TOTAL');"
+echo "CREATE TYPE operating_member AS ENUM('left', 'right', 'baseline');"
 
 # Require one keystroke before doing it.
 read -n1 -r -p "Please ctrl-c if that is not correct, any key otherwise..." key
@@ -127,13 +141,21 @@ read -n1 -r -p "Please ctrl-c if that is not correct, any key otherwise..." key
 date --iso-8601=ns
 start_seconds=$(date +%s)
 
+# Regarding the "ex" command below:
+# Delete lines with word "schema" using posix-compliant method (SO 5410757).
+# The reason is the schema setup occurs above/outside this script, allows role
+# that owns the database to create and own the schema and grant limited
+# permissions to the role running restore (or liquibase).
+
 # It is nice to see the following commands printed when run.
 set -x
 
-$restore_pre_data_only_command $changelog_dump_file \
+$list_objects_command \
+&& ex +g/SCHEMA/d -cwq ${list_of_non_schema_objects_file} \
+&& $restore_pre_data_only_command $changelog_dump_file \
 && $restore_data_only_table_command -n public -t databasechangelog -t databasechangeloglock $changelog_dump_file \
 && $restore_post_data_only_command $changelog_dump_file \
-&& $restore_pre_data_only_command $dump_file \
+&& $restore_pre_data_only_command  -L ${list_of_non_schema_objects_file} $dump_file \
 && $restore_data_only_table_command -t measurementunit -t conversions -t usgsparameter -t netcdfcoordinate -t unitconversion -t feature -t ensemble -t gridprojection -t variable -t source -t indexqueue $dump_file \
 && $restore_data_only_table_command -t measurementunit_measurementunit_id_seq -t feature_feature_id_seq -t ensemble_ensemble_id_seq -t gridprojection_gridprojection_id_seq -t variable_variable_id_seq -t source_source_id_seq -t indexqueue_indexqueue_id_seq $dump_file \
 && $restore_data_only_table_command -t variablefeature -t variablebyfeature $dump_file \
@@ -169,8 +191,15 @@ echo Restore took around $((end_seconds - start_seconds)) seconds.
 
 if [ "$result" -eq "0" ]
 then
-    echo "Please run \"ALTER SCHEMA wres OWNER TO wres\" using psql on the same db."
+    echo "1. Use psql to run \"ALTER SCHEMA wres OWNER TO wres\" on $database_name at $database_host."
+    echo "2. Run WRES with migration turned on, e.g. \"-Dwres.attemptToMigrate=true -Dwres.url=$database_host -Dwres.databaseName=$database_name\". (You pick user)"
+    echo "3. Use psql to run \"\\dtv wres.*\" on $database_name at $database_host."
+    echo "4. Make ownership of the tables consistently the same user."
+    echo "5. Runs of WRES with or without migration should now succeed on $database_name at $database_host."
 else
     echo "RESTORE FAILED! Examine above and this script to figure out why."
+    echo "RESTORE FAILED! This script intentionally does not auto-drop."
+    echo "RESTORE FAILED! To start over with restore, use psql to run:"
+    echo "drop schema wres cascade; drop table public.databasechangelog; drop table public.databasechangeloglock; create schema wres authorization wres;"
     exit $result
 fi
