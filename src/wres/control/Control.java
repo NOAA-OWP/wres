@@ -246,6 +246,7 @@ public class Control implements Function<String[], Integer>,
                     ProcessorHelper.processProjectConfig( projectConfigPlus,
                                                           executors,
                                                           lockManager );
+
             this.pathsWrittenTo.addAll( innerPathsWrittenTo );
             LOGGER.info( "Wrote the following output: {}", this.pathsWrittenTo );
             lockManager.unlockShared( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );

@@ -33,9 +33,12 @@ import wres.io.writing.commaseparated.CommaSeparatedUtilities;
 import wres.util.TimeHelper;
 
 /**
- * Abstract base class for writing a time-series of pairs as comma separated values (CSV). There is one 
+ * <p>Abstract base class for writing a time-series of pairs as comma separated values (CSV). There is one 
  * {@link PairsWriter} for each {@link Path} to be written; writing to that {@link Path} is 
  * managed by this {@link PairsWriter}. The {@link PairsWriter} must be closed after all writing is complete.
+ * 
+ * <p>The {@link Path} is supplied on construction and no guarantee is made that anything is created at that 
+ * {@link Path}. It is the responsibility of the caller to determine whether something was written, if that matters.
  * 
  * @param <S> the decomposed type of pairs to write
  * @param <T> the composed type of pairs to write
@@ -174,7 +177,7 @@ public abstract class PairsWriter<S extends Pair<?,?>, T extends Pairs<S> & Time
     }
 
     /**
-     * Supplies the set of {@link Path} to which values were written.
+     * Supplies the {@link Path} to which values were written.
      * 
      * @return the paths written
      */
@@ -206,12 +209,13 @@ public abstract class PairsWriter<S extends Pair<?,?>, T extends Pairs<S> & Time
 
         try
         {
-            // Write header
-            this.writeHeaderIfRequired( pairs );
-
             // Write contents if available
             if ( !pairs.getRawData().isEmpty() )
             {
+                // Write header if not already written
+                // At this point, we have a non-empty pool: #67088
+                this.writeHeaderIfRequired( pairs );
+
                 // Feature to write, which is fixed across all pairs
                 
                 // TODO: need a more consistent representation of a geographic feature throughout the application
