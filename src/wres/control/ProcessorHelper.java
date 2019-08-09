@@ -25,6 +25,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -195,7 +196,7 @@ class ProcessorHelper
         // Report on the completion state of all features
         // Report detailed state by default (final arg = true)
         // TODO: demote to summary report (final arg = false) for >> feature count
-        FeatureReport featureReport = new FeatureReport( projectConfigPlus, decomposedFeatures.size(), true );
+        FeatureReporter featureReport = new FeatureReporter( projectConfigPlus, decomposedFeatures.size(), true );
 
         // Deactivate progress monitoring within features, as features are processed asynchronously - the internal
         // completion state of features has no value when reported in this way
@@ -224,13 +225,25 @@ class ProcessorHelper
         // or one completes exceptionally for reasons other than lack of data
         try
         {
+            // Complete the feature tasks
             ProcessorHelper.doAllOrException( featureTasks ).join();
-
-            // Report on features
-            featureReport.report();
+            
+            // Report on the features
+            featureReport.report();   
 
             // Find the paths written to by writers
-            pathsWrittenTo.addAll( featureReport.getPathsWrittenTo() );
+            pathsWrittenTo.addAll( featureReport.getPathsWrittenTo() );             
+            
+            // Find the paths written to by shared writers
+            pathsWrittenTo.addAll( sharedStatisticsWriters.get() );
+            if( Objects.nonNull( sharedSampleDataWriters ) )
+            {
+                pathsWrittenTo.addAll( sharedSampleDataWriters.get() );
+            }
+            if( Objects.nonNull( sharedBaselineSampleDataWriters ) )
+            {
+                pathsWrittenTo.addAll( sharedBaselineSampleDataWriters.get() );
+            }            
         }
         catch ( CompletionException e )
         {
@@ -238,7 +251,9 @@ class ProcessorHelper
         }
         finally
         {
+            // Clean up by closing shared writers
             sharedStatisticsWriters.close();
+            
             if( Objects.nonNull( sharedSampleDataWriters ) )
             {
                 sharedSampleDataWriters.close();
@@ -247,17 +262,20 @@ class ProcessorHelper
             {
                 sharedBaselineSampleDataWriters.close();
             }
-        }
+            
+            // Clean-up an empty output directory: #67088
+            try ( Stream<Path> outputs = Files.list( outputDirectory ) )
+            {
+                if ( outputs.count() == 0 )
+                {
+                    // Will only succeed for an empty directory
+                    boolean status = Files.deleteIfExists( outputDirectory );
 
-        // Find the paths written to by shared writers.
-        pathsWrittenTo.addAll( sharedStatisticsWriters.get() );
-        if( Objects.nonNull( sharedSampleDataWriters ) )
-        {
-            pathsWrittenTo.addAll( sharedSampleDataWriters.get() );     
-        }
-        if( Objects.nonNull( sharedBaselineSampleDataWriters ) )
-        {
-            pathsWrittenTo.addAll( sharedBaselineSampleDataWriters.get() ); 
+                    LOGGER.debug( "Attempted to remove empty output directory {} with success status: {}",
+                                  outputDirectory,
+                                  status );
+                }
+            }
         }
 
         return Collections.unmodifiableSet( pathsWrittenTo );

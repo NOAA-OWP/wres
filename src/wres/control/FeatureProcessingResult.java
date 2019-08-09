@@ -11,7 +11,7 @@ import wres.io.config.ConfigHelper;
 /**
  * Records the completion of one {@link Feature}. 
  * 
- * See {@link FeatureReport} for a report on the completion of a collection of one or more features.
+ * See {@link FeatureReporter} for a report on the completion of a collection of one or more features.
  */
 
 class FeatureProcessingResult

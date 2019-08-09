@@ -1,6 +1,7 @@
 package wres.io.writing.commaseparated.pairs;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
@@ -137,8 +138,7 @@ public final class EnsemblePairsWriterTest
     }
 
     /**
-     * Builds a {@link EnsemblePairsWriter}, writes some empty pairs, and checks that the written output matches the
-     * expected output.
+     * Builds a {@link EnsemblePairsWriter} and attempts to write some empty pairs, which should not be written.
      * @throws IOException if the writing or removal of the paired file fails
      */
 
@@ -171,19 +171,10 @@ public final class EnsemblePairsWriterTest
             // Write the pairs
             writer.accept( emptyPairs );
 
-            // Read the results
-            List<String> results = Files.readAllLines( pathToFile );
+            // Assert the expected results of nothing
+            assertFalse( pathToFile.toFile().exists() );
 
-            // Assert the expected results
-            assertTrue( results.size() == 1 );
-            assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,"
-                                                 + "VALID TIME OF PAIR,"
-                                                 + "LEAD DURATION OF PAIR IN SECONDS "
-                                                 + "[MEAN OVER PAST 3600 SECONDS],"
-                                                 + "LEFT IN SCOOBIES,"
-                                                 + "RIGHT IN SCOOBIES" ) );
-
-            // If all succeeded, remove the file, otherwise leave to help debugging
+            // Nothing expected
             Files.deleteIfExists( pathToFile );
         }
     }

@@ -2,10 +2,10 @@ package wres.io.writing;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.DecimalFormat;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
@@ -74,7 +74,21 @@ public class SharedSampleDataWriters implements Consumer<SampleData<?>>, Supplie
     @Override
     public Set<Path> get()
     {
-        Set<Path> returnMe = new HashSet<>( Arrays.asList( singleValuedWriter.get(), ensembleWriter.get() ) );
+        Path singleValuedPairPath = singleValuedWriter.get();
+        Path ensemblePairPath = ensembleWriter.get();
+        
+        Set<Path> returnMe = new HashSet<>();
+        
+        // Only return paths that point to files that exist
+        if( Files.exists( singleValuedPairPath ) )
+        {
+            returnMe.add( singleValuedPairPath );
+        }
+        
+        if( Files.exists( ensemblePairPath ) )
+        {
+            returnMe.add( ensemblePairPath );
+        }
 
         return Collections.unmodifiableSet( returnMe );
     }

@@ -20,21 +20,21 @@ import wres.io.config.ConfigHelper;
 
 /**
  * <p>A {@link Consumer} that records information about the completion state of a {@link Feature}. The 
- * {@link FeatureReport} is mutable and is updated asynchronously as {@link FeatureProcessingResult} become available.
+ * {@link FeatureReporter} is mutable and is updated asynchronously as {@link FeatureProcessingResult} become available.
  * Some information is reported during execution, and additional information is reported on request (e.g. at the 
  * end of execution) by calling {@link #report()}.</p>
  * 
  * @author james.brown@hydrosolved.com
  */
 
-class FeatureReport implements Consumer<FeatureProcessingResult>
+class FeatureReporter implements Consumer<FeatureProcessingResult>
 {
 
     /**
      * Logger.
      */
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( FeatureReport.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( FeatureReporter.class );
 
     /**
      * List of successful features.
@@ -74,7 +74,7 @@ class FeatureReport implements Consumer<FeatureProcessingResult>
     private final boolean printDetailedReport;
 
     /**
-     * Build a {@link FeatureReport}.
+     * Build a {@link FeatureReporter}.
      * 
      * @param projectConfigPlus the project configuration
      * @param totalFeatures the total number of features to process
@@ -82,7 +82,7 @@ class FeatureReport implements Consumer<FeatureProcessingResult>
      * @throws NullPointerException if the project configuration is null
      */
 
-    FeatureReport( ProjectConfigPlus projectConfigPlus, int totalFeatures, boolean printDetailedReport )
+    FeatureReporter( ProjectConfigPlus projectConfigPlus, int totalFeatures, boolean printDetailedReport )
     {
         Objects.requireNonNull( projectConfigPlus,
                                 "Specify non-null project configuration when building the feature report." );
@@ -109,16 +109,25 @@ class FeatureReport implements Consumer<FeatureProcessingResult>
         // Increment the feature count
         int currentFeature = this.processed.getAndIncrement();
 
-        this.successfulFeatures.add( result.getFeature() );
-        if ( LOGGER.isInfoEnabled() )
+        if ( result.getPathsWrittenTo().isEmpty() )
         {
+            LOGGER.warn( "[{}/{}] Completed feature '{}', but no outputs were produced. "
+                         + "This probably occurred because no pools contained valid pairs.",
+                         currentFeature,
+                         this.totalFeatures,
+                         ConfigHelper.getFeatureDescription( result.getFeature() ) );
+        }
+        else
+        {
+            this.successfulFeatures.add( result.getFeature() );
+
+            this.pathsWrittenTo.addAll( result.getPathsWrittenTo() );
+            
             LOGGER.info( "[{}/{}] Completed feature '{}'",
                          currentFeature,
                          this.totalFeatures,
                          ConfigHelper.getFeatureDescription( result.getFeature() ) );
         }
-
-        this.pathsWrittenTo.addAll( result.getPathsWrittenTo() );
     }
 
     /**
@@ -147,7 +156,7 @@ class FeatureReport implements Consumer<FeatureProcessingResult>
         // exceptional behavior
         if ( successfulFeaturesToReport.isEmpty() )
         {
-            throw new WresProcessingException( "No features could be found to evaluate.", null );
+            throw new WresProcessingException( "No features were succesfully evaluated.", null );
         }
 
         // Summary report
