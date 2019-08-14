@@ -156,7 +156,7 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
         // exceptional behavior
         if ( successfulFeaturesToReport.isEmpty() )
         {
-            throw new WresProcessingException( "No features were succesfully evaluated.", null );
+            throw new WresProcessingException( "No features were successfully evaluated.", null );
         }
 
         // Summary report
