@@ -12,7 +12,7 @@ services:
          - PGPASSFILE=/wres_secrets/.pgpass
          # Do not auto-liquibase-migrate on each evaluation. This requires an
          # administrator to run the migration(s) during or after deployment.
-	 # Write heap dumps to the root of the volume above.
+         # Write heap dumps to the root of the volume above.
          - INNER_JAVA_OPTS=-Dwres.attemptToMigrate=false -XX:HeapDumpPath=/mnt/wres_share
         # Worker JVM should have 32m max heap, WRES should have 2310m max heap
         mem_limit: 2730m
