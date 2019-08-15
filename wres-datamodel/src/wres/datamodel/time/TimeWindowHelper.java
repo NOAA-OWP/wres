@@ -331,7 +331,7 @@ public final class TimeWindowHelper
     }
 
     /**
-     * Builds a {@link TimeWindow} whose {@link TimeWindow#getEarliestReferenceTime()}
+     * <p>Builds a {@link TimeWindow} whose {@link TimeWindow#getEarliestReferenceTime()}
      * and {@link TimeWindow#getLatestReferenceTime()} return the <code>earliest</earliest> 
      * and <code>latest</earliest> bookends of the {@link PairConfig#getIssuedDates()}, 
      * respectively, whose {@link TimeWindow#getEarliestValidTime()}
@@ -340,8 +340,13 @@ public final class TimeWindowHelper
      * respectively, and whose {@link TimeWindow#getEarliestLeadDuration()}
      * and {@link TimeWindow#getLatestLeadDuration()} return the <code>minimum</earliest> 
      * and <code>maximum</earliest> bookends of the {@link PairConfig#getLeadHours()}, 
-     * respectively. If any of these variables are missing from the input, defaults 
-     * are used.
+     * respectively. 
+     * 
+     * <p>If any of these variables are missing from the input, defaults 
+     * are used, which represent the computationally-feasible limiting values. For example, 
+     * the smallest and largest possible instant is {@link Instant#MIN} and {@link Instant#MAX}, 
+     * respectively. The smallest and largest possible {@link Duration} is 
+     * {@link TimeWindow#DURATION_MIN} and {@link TimeWindow#DURATION_MAX}, respectively.
      * 
      * @param pairConfig the pair configuration
      * @return a time window
