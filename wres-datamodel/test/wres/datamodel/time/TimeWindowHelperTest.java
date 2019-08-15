@@ -4,10 +4,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import org.junit.Test;
@@ -15,12 +12,8 @@ import org.junit.Test;
 import wres.config.generated.DateCondition;
 import wres.config.generated.DurationUnit;
 import wres.config.generated.IntBoundsType;
-import wres.config.generated.MetricsConfig;
 import wres.config.generated.PairConfig;
 import wres.config.generated.PoolingWindowConfig;
-import wres.config.generated.ProjectConfig;
-import wres.config.generated.TimeSeriesMetricConfig;
-import wres.config.generated.TimeSeriesMetricConfigName;
 
 /**
  * <p>Tests the {@link TimeWindowHelper}.
@@ -44,7 +37,7 @@ public final class TimeWindowHelperTest
     private static final String INSTANT_ONE = "2017-08-08T00:00:00Z";
 
     /**
-     * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromProjectConfig(wres.config.generated.ProjectConfig)}
+     * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)
      * where the project declaration includes a <code>leadHours</code> and a 
      * <code>leadTimesPoolingWindow</code>. Expects twenty-three time windows with
      * prescribed characteristics.
@@ -74,13 +67,6 @@ public final class TimeWindowHelperTest
                                                  leadTimesPoolingWindowConfig,
                                                  null,
                                                  null );
-        ProjectConfig mockedConfig =
-                new ProjectConfig( null,
-                                   pairsConfig,
-                                   null,
-                                   null,
-                                   null,
-                                   null );
 
         // Generate the expected windows
         Set<TimeWindow> expectedTimeWindows = new HashSet<>( 23 );
@@ -90,7 +76,7 @@ public final class TimeWindowHelperTest
         }
 
         // Generate the actual windows
-        Set<TimeWindow> actualTimeWindows = TimeWindowHelper.getTimeWindowsFromProjectConfig( mockedConfig );
+        Set<TimeWindow> actualTimeWindows = TimeWindowHelper.getTimeWindowsFromPairConfig( pairsConfig );
 
         // Assert the expected cardinality
         assertEquals( 23, actualTimeWindows.size() );
@@ -100,7 +86,7 @@ public final class TimeWindowHelperTest
     }
 
     /**
-     * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromProjectConfig(wres.config.generated.ProjectConfig)}
+     * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)
      * where the project declaration includes a <code>leadHours</code> and a 
      * <code>leadTimesPoolingWindow</code>. Expects one time windows with
      * prescribed characteristics.
@@ -130,20 +116,13 @@ public final class TimeWindowHelperTest
                                                  leadTimesPoolingWindowConfig,
                                                  null,
                                                  null );
-        ProjectConfig mockedConfig =
-                new ProjectConfig( null,
-                                   pairsConfig,
-                                   null,
-                                   null,
-                                   null,
-                                   null );
 
         // Generate the expected windows
         Set<TimeWindow> expectedTimeWindows = new HashSet<>( 1 );
         expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 1 ), Duration.ofHours( 25 ) ) );
 
         // Generate the actual windows
-        Set<TimeWindow> actualTimeWindows = TimeWindowHelper.getTimeWindowsFromProjectConfig( mockedConfig );
+        Set<TimeWindow> actualTimeWindows = TimeWindowHelper.getTimeWindowsFromPairConfig( pairsConfig );
 
         // Assert the expected cardinality
         assertEquals( 1, actualTimeWindows.size() );
@@ -153,7 +132,7 @@ public final class TimeWindowHelperTest
     }
 
     /**
-     * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromProjectConfig(wres.config.generated.ProjectConfig)}
+     * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)
      * where the project declaration includes a <code>leadHours</code>, a 
      * <code>leadTimesPoolingWindow</code>, an <code>issuedDates</code>, and 
      * an <code>issuedDatesPoolingWindow</code>. Expects eighteen time 
@@ -188,13 +167,6 @@ public final class TimeWindowHelperTest
                                                  leadTimesPoolingWindowConfig,
                                                  null,
                                                  null );
-        ProjectConfig mockedConfig =
-                new ProjectConfig( null,
-                                   pairsConfig,
-                                   null,
-                                   null,
-                                   null,
-                                   null );
 
         // Generate the expected windows
         Set<TimeWindow> expectedTimeWindows = new HashSet<>( 22 );
@@ -290,7 +262,7 @@ public final class TimeWindowHelperTest
 //                                                Duration.ofHours( 40 ) ) );
 
         // Generate the actual windows
-        Set<TimeWindow> actualTimeWindows = TimeWindowHelper.getTimeWindowsFromProjectConfig( mockedConfig );
+        Set<TimeWindow> actualTimeWindows = TimeWindowHelper.getTimeWindowsFromPairConfig( pairsConfig );
 
         // Assert the expected cardinality
         assertEquals( 18, actualTimeWindows.size() );
@@ -300,7 +272,7 @@ public final class TimeWindowHelperTest
     }
 
     /**
-     * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromProjectConfig(wres.config.generated.ProjectConfig)}
+     * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)
      * where the project declaration includes a <code>leadHours</code>, a 
      * <code>leadTimesPoolingWindow</code>, a <code>dates</code> and a 
      * <code>issuedDates</code>. Expects one time window with prescribed characteristics.
@@ -331,13 +303,6 @@ public final class TimeWindowHelperTest
                                                  leadTimesPoolingWindowConfig,
                                                  null,
                                                  null );
-        ProjectConfig mockedConfig =
-                new ProjectConfig( null,
-                                   pairsConfig,
-                                   null,
-                                   null,
-                                   null,
-                                   null );
 
         // Generate the expected windows
         Set<TimeWindow> expectedTimeWindows = new HashSet<>( 1 );
@@ -349,7 +314,7 @@ public final class TimeWindowHelperTest
                                                 Duration.ofHours( 25 ) ) );
 
         // Generate the actual windows
-        Set<TimeWindow> actualTimeWindows = TimeWindowHelper.getTimeWindowsFromProjectConfig( mockedConfig );
+        Set<TimeWindow> actualTimeWindows = TimeWindowHelper.getTimeWindowsFromPairConfig( pairsConfig );
 
         // Assert the expected cardinality
         assertEquals( 1, actualTimeWindows.size() );
@@ -359,9 +324,8 @@ public final class TimeWindowHelperTest
     }
 
     /**
-     * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromProjectConfig(wres.config.generated.ProjectConfig)}
-     * where the project declaration includes a <code>timeSeriesMetric</code>. Expects one time window that 
-     * is unbounded in all dimensions.
+     * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)
+     * where the project declaration does not include any constraints on time.
      * 
      * <p>The project declaration from this test scenario matches (in all important ways) the declaration associated 
      * with system test scenario1000, as of commit 766c6d0b4ad96f191bcafb8f2a357c0f2e6a2d3c, but the expected output 
@@ -369,37 +333,22 @@ public final class TimeWindowHelperTest
      */
 
     @Test
-    public void testGetTimeWindowsWithTimeSeriesMetricReturnsOneWindow()
+    public void testGetTimeWindowsFromUnconstrainedPairConfigReturnsOneWindow()
     {
         // Mock the sufficient elements of the ProjectConfig
-
-        List<TimeSeriesMetricConfig> timeMetrics = new ArrayList<>();
-
-        timeMetrics.add( new TimeSeriesMetricConfig( null,
-                                                     null,
-                                                     TimeSeriesMetricConfigName.TIME_TO_PEAK_ERROR,
-                                                     null ) );
-
-        List<MetricsConfig> metrics = Arrays.asList( new MetricsConfig( null, null, timeMetrics ) );
-
-        ProjectConfig mockedConfig = new ProjectConfig( null,
-                                                        new PairConfig( null,
-                                                                        null,
-                                                                        null,
-                                                                        null,
-                                                                        null,
-                                                                        null,
-                                                                        null,
-                                                                        null,
-                                                                        null,
-                                                                        null,
-                                                                        null,
-                                                                        null,
-                                                                        null ),
-                                                        metrics,
-                                                        null,
-                                                        null,
-                                                        null );
+        PairConfig pairsConfig = new PairConfig( null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null );
 
         // Generate the expected windows
         Set<TimeWindow> expectedTimeWindows = new HashSet<>( 1 );
@@ -411,7 +360,7 @@ public final class TimeWindowHelperTest
                                                 Duration.ofSeconds( Long.MAX_VALUE, 999_999_999 ) ) );
 
         // Generate the actual windows
-        Set<TimeWindow> actualTimeWindows = TimeWindowHelper.getTimeWindowsFromProjectConfig( mockedConfig );
+        Set<TimeWindow> actualTimeWindows = TimeWindowHelper.getTimeWindowsFromPairConfig( pairsConfig );
 
         // Assert the expected cardinality
         assertEquals( 1, actualTimeWindows.size() );
@@ -421,7 +370,7 @@ public final class TimeWindowHelperTest
     }
 
     /**
-     * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromProjectConfig(wres.config.generated.ProjectConfig)}
+     * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)
      * where the project declaration includes a <code>issuedDatesPoolingWindow</code> and a 
      * <code>leadTimesPoolingWindow</code>. Expects twenty-three time windows.
      * 
@@ -462,13 +411,6 @@ public final class TimeWindowHelperTest
                                                  leadTimesPoolingWindowConfig,
                                                  null,
                                                  null );
-        ProjectConfig mockedConfig =
-                new ProjectConfig( null,
-                                   pairsConfig,
-                                   null,
-                                   null,
-                                   null,
-                                   null );
 
         // Generate the expected time windows
         Set<TimeWindow> expectedTimeWindows = new HashSet<>( 22 );
@@ -612,7 +554,7 @@ public final class TimeWindowHelperTest
                                                 Duration.ofHours( 18 ) ) );
 
         // Generate the actual time windows
-        Set<TimeWindow> actualTimeWindows = TimeWindowHelper.getTimeWindowsFromProjectConfig( mockedConfig );
+        Set<TimeWindow> actualTimeWindows = TimeWindowHelper.getTimeWindowsFromPairConfig( pairsConfig );
 
         // Assert the expected cardinality
         assertEquals( 23, actualTimeWindows.size() );
