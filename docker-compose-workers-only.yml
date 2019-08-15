@@ -8,11 +8,11 @@ services:
          - /mnt/wres_secrets:/wres_secrets:ro
         network_mode: "host"
         environment:
-         - JAVA_OPTS=-Dwres.broker=***REMOVED***wres-broker${WRES_ENV_SUFFIX} -Djava.io.tmpdir=/mnt/wres_share/evaluations -XX:HeapDumpPath=/mnt/wres_share
+         - JAVA_OPTS=-Dwres.broker=***REMOVED***wres-broker${WRES_ENV_SUFFIX} -Djava.io.tmpdir=/mnt/wres_share/evaluations -XX:HeapDumpPath=/mnt/wres_share/ -XX:OnOutOfMemoryError='mv /mnt/wres_share/java_pid%p.hprof /mnt/wres_share/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/java_pid%p_`hostname`.hprof'
          - PGPASSFILE=/wres_secrets/.pgpass
          # Do not auto-liquibase-migrate on each evaluation. This requires an
          # administrator to run the migration(s) during or after deployment.
          # Write heap dumps to the root of the volume above.
-         - INNER_JAVA_OPTS=-Dwres.attemptToMigrate=false -XX:HeapDumpPath=/mnt/wres_share
+         - INNER_JAVA_OPTS=-Dwres.attemptToMigrate=false  -XX:HeapDumpPath=/mnt/wres_share/ -XX:OnOutOfMemoryError='mv /mnt/wres_share/java_pid%p.hprof /mnt/wres_share/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/java_pid%p_`hostname`.hprof'
         # Worker JVM should have 32m max heap, WRES should have 2310m max heap
         mem_limit: 2730m
