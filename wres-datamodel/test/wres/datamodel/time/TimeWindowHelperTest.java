@@ -611,6 +611,103 @@ public final class TimeWindowHelperTest
 
         // Assert that the expected and actual are equal
         assertEquals( expectedTimeWindows, actualTimeWindows );
-    }    
-    
+    }
+
+    /**
+     * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)
+     * where the project declaration includes a <code>leadHours</code>, a 
+     * an <code>issuedDates</code>, and an <code>issuedDatesPoolingWindow</code>. 
+     * Expects nine time windows with prescribed characteristics.
+     * 
+     * <p>The project declaration from this test scenario is similar to the declaration associated 
+     * with system test scenario505, as of commit c8def0cf2d608c0617786f7cb4f28b563960d667, but without
+     * a <code>leadTimesPoolingWindow</code>.
+     */
+
+    @Test
+    public void testGetTimeWindowsWithLeadHoursIssuedDatesAndIssuedDatesPoolingWindowReturnsNineWindows()
+    {
+        // Mock the sufficient elements of the ProjectConfig
+        IntBoundsType leadBoundsConfig = new IntBoundsType( 0, 40 );
+        DateCondition issuedDatesConfig = new DateCondition( INSTANT_NINE, INSTANT_TEN );
+        PoolingWindowConfig issuedDatesPoolingWindowConfig =
+                new PoolingWindowConfig( 13, 7, DurationUnit.HOURS );
+        PairConfig pairsConfig = new PairConfig( null,
+                                                 null,
+                                                 null,
+                                                 leadBoundsConfig,
+                                                 null,
+                                                 issuedDatesConfig,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 issuedDatesPoolingWindowConfig,
+                                                 null,
+                                                 null,
+                                                 null );
+
+        // Generate the expected windows
+        Set<TimeWindow> expectedTimeWindows = new HashSet<>( 11 );
+
+        Duration first = Duration.ofHours( 0 );
+        Duration last = Duration.ofHours( 40 );
+
+        expectedTimeWindows.add( TimeWindow.of( Instant.parse( INSTANT_NINE ),
+                                                Instant.parse( "2551-03-17T13:00:00Z" ),
+                                                first,
+                                                last ) );
+        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2551-03-17T07:00:00Z" ),
+                                                Instant.parse( "2551-03-17T20:00:00Z" ),
+                                                first,
+                                                last ) );
+        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2551-03-17T14:00:00Z" ),
+                                                Instant.parse( "2551-03-18T03:00:00Z" ),
+                                                first,
+                                                last ) );
+        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2551-03-17T21:00:00Z" ),
+                                                Instant.parse( "2551-03-18T10:00:00Z" ),
+                                                first,
+                                                last ) );
+        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2551-03-18T04:00:00Z" ),
+                                                Instant.parse( "2551-03-18T17:00:00Z" ),
+                                                first,
+                                                last ) );
+        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2551-03-18T11:00:00Z" ),
+                                                Instant.parse( INSTANT_ELEVEN ),
+                                                first,
+                                                last ) );
+        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2551-03-18T18:00:00Z" ),
+                                                Instant.parse( "2551-03-19T07:00:00Z" ),
+                                                first,
+                                                last ) );
+        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2551-03-19T01:00:00Z" ),
+                                                Instant.parse( "2551-03-19T14:00:00Z" ),
+                                                first,
+                                                last ) );
+        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2551-03-19T08:00:00Z" ),
+                                                Instant.parse( "2551-03-19T21:00:00Z" ),
+                                                first,
+                                                last ) );
+
+// Add these if the rule is containment of the left bookend only        
+//        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2551-03-19T15:00:00Z" ),
+//                                                Instant.parse( "2551-03-20T04:00:00Z" ),
+//                                                first,
+//                                                last ) );
+
+//        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2551-03-19T22:00:00Z" ),
+//                                                Instant.parse( "2551-03-20T11:00:00Z" ),
+//                                                first,
+//                                                last ) );
+
+        // Generate the actual windows
+        Set<TimeWindow> actualTimeWindows = TimeWindowHelper.getTimeWindowsFromPairConfig( pairsConfig );
+
+        // Assert the expected cardinality
+        assertEquals( 9, actualTimeWindows.size() );
+
+        // Assert that the expected and actual are equal
+        assertEquals( expectedTimeWindows, actualTimeWindows );
+    }
+
 }
