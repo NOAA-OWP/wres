@@ -860,7 +860,7 @@ public class ConfigHelper
      * opportunity, which may be well before this point.</p>
      * 
      * TODO: replace this with upfront calculation of the time windows. 
-     * See {@link TimeWindowHelper#getTimeWindowsFromProjectConfig(ProjectConfig)}
+     * See {@link TimeWindowHelper}
      * 
      * @param project the project configuration
      * @param firstLead the earliest lead time
