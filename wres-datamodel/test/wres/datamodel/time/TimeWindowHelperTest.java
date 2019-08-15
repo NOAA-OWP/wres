@@ -324,12 +324,10 @@ public final class TimeWindowHelperTest
     }
 
     /**
-     * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)
-     * where the project declaration does not include any constraints on time.
+     * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig) where the project declaration 
+     * does not include any constraints on time. 
      * 
-     * <p>The project declaration from this test scenario matches (in all important ways) the declaration associated 
-     * with system test scenario1000, as of commit 766c6d0b4ad96f191bcafb8f2a357c0f2e6a2d3c, but the expected output 
-     * differs.
+     * <p>This is analogous to system test scenario508, as of commit b9a7214ec22999482784119a8527149348c80119.
      */
 
     @Test
@@ -356,8 +354,8 @@ public final class TimeWindowHelperTest
                                                 Instant.MAX,
                                                 Instant.MIN,
                                                 Instant.MAX,
-                                                Duration.ofSeconds( Long.MIN_VALUE, 0 ),
-                                                Duration.ofSeconds( Long.MAX_VALUE, 999_999_999 ) ) );
+                                                TimeWindow.DURATION_MIN,
+                                                TimeWindow.DURATION_MAX ) );
 
         // Generate the actual windows
         Set<TimeWindow> actualTimeWindows = TimeWindowHelper.getTimeWindowsFromPairConfig( pairsConfig );
@@ -563,4 +561,56 @@ public final class TimeWindowHelperTest
         assertEquals( expectedTimeWindows, actualTimeWindows );
     }
 
+    /**
+     * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig) where the project declaration 
+     * does not include any explicit time windows, but is constrained by <code>leadHours</code>, 
+     * <code>issuedDates</code> and <code>dates</code>. 
+     */
+
+    @Test
+    public void testGetTimeWindowsWithLeadHoursDatesAndIssuedDatesReturnsOneWindow()
+    {
+        // Mock the sufficient elements of the ProjectConfig
+        // Lead durations for all time windows
+        IntBoundsType leadBoundsConfig = new IntBoundsType( 0, 18 );
+
+        // Issued dates into which all time windows must fit
+        DateCondition issuedDatesConfig = new DateCondition( INSTANT_ONE, INSTANT_TWO );
+
+        // Valid dates into which all time windows must fit
+        DateCondition datesConfig = new DateCondition( INSTANT_ONE, INSTANT_THREE );
+
+        PairConfig pairsConfig = new PairConfig( null,
+                                                 null,
+                                                 null,
+                                                 leadBoundsConfig,
+                                                 datesConfig,
+                                                 issuedDatesConfig,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null );
+
+        // Generate the expected windows
+        Set<TimeWindow> expectedTimeWindows = new HashSet<>( 1 );
+        expectedTimeWindows.add( TimeWindow.of( Instant.parse( INSTANT_ONE ),
+                                                Instant.parse( INSTANT_TWO ),
+                                                Instant.parse( INSTANT_ONE ),
+                                                Instant.parse( INSTANT_THREE ),
+                                                Duration.ofHours( 0 ),
+                                                Duration.ofHours( 18 ) ) );
+
+        // Generate the actual windows
+        Set<TimeWindow> actualTimeWindows = TimeWindowHelper.getTimeWindowsFromPairConfig( pairsConfig );
+
+        // Assert the expected cardinality
+        assertEquals( 1, actualTimeWindows.size() );
+
+        // Assert that the expected and actual are equal
+        assertEquals( expectedTimeWindows, actualTimeWindows );
+    }    
+    
 }
