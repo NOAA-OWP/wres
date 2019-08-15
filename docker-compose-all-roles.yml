@@ -14,7 +14,7 @@ services:
          - /mnt/wres_share:/mnt/wres_share
         environment:
          # Make sure to pass through WRES_ENV_SUFFIX to tasker at runtime
-         - JAVA_OPTS=-Dwres.broker=broker -Dwres.environment=${WRES_ENV_SUFFIX} -XX:HeapDumpPath=/mnt/wres_share
+         - JAVA_OPTS=-Dwres.broker=broker -Dwres.environment=${WRES_ENV_SUFFIX} -XX:HeapDumpPath=/mnt/wres_share/ -XX:OnOutOfMemoryError='mv /mnt/wres_share/java_pid%p.hprof /mnt/wres_share/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/java_pid%p_`hostname`.hprof'
         # Tasker JVM should have 1795m max heap specified at launch
         # The total limit includes stack space which depends on Thread count
         mem_limit: 2370m
@@ -42,11 +42,11 @@ services:
          # For certificates, keys that correspond to them, and .pgpass:
          - /mnt/wres_secrets:/wres_secrets:ro
         environment:
-         - JAVA_OPTS=-Dwres.broker=broker -Djava.io.tmpdir=/mnt/wres_share/evaluations -XX:HeapDumpPath=/mnt/wres_share
+         - JAVA_OPTS=-Dwres.broker=broker -Djava.io.tmpdir=/mnt/wres_share/evaluations -XX:HeapDumpPath=/mnt/wres_share/ -XX:OnOutOfMemoryError='mv /mnt/wres_share/java_pid%p.hprof /mnt/wres_share/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/java_pid%p_`hostname`.hprof'
          - PGPASSFILE=/wres_secrets/.pgpass
          # Do not auto-liquibase-migrate on each evaluation. This requires an
          # administrator to run the migration(s) during or after deployment.
          # Write heap dumps to the root of the volume above.
-         - INNER_JAVA_OPTS=-Dwres.attemptToMigrate=false -XX:HeapDumpPath=/mnt/wres_share
+         - INNER_JAVA_OPTS=-Dwres.attemptToMigrate=false -XX:HeapDumpPath=/mnt/wres_share/ -XX:OnOutOfMemoryError='mv /mnt/wres_share/java_pid%p.hprof /mnt/wres_share/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/java_pid%p_`hostname`.hprof'
         # Worker JVM should have 32m heap, wres should have 2310m heap
         mem_limit: 2730m
