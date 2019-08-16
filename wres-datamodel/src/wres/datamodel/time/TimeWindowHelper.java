@@ -123,11 +123,6 @@ public final class TimeWindowHelper
 
         PoolingWindowConfig leadTimesPoolingWindow = pairConfig.getLeadTimesPoolingWindow();
 
-        if ( Objects.isNull( leadTimesPoolingWindow ) )
-        {
-            throw new UnsupportedOperationException( messageStart + "without a leadTimesPoolingWindow." );
-        }
-
         // Obtain the base window
         TimeWindow baseWindow = TimeWindowHelper.getOneBigTimeWindow( pairConfig );
 
@@ -223,12 +218,6 @@ public final class TimeWindowHelper
         }
 
         PoolingWindowConfig issuedDatesPoolingWindow = pairConfig.getIssuedDatesPoolingWindow();
-
-        if ( Objects.isNull( issuedDatesPoolingWindow ) )
-        {
-            throw new UnsupportedOperationException( messageStart
-                                                     + "without an issuedDatesPoolingWindow." );
-        }
 
         // Obtain the base window
         TimeWindow baseWindow = TimeWindowHelper.getOneBigTimeWindow( pairConfig );

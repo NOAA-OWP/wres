@@ -1,6 +1,7 @@
 package wres.datamodel.time;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -54,7 +55,7 @@ public final class TimeWindowHelperTest
     private static final String INSTANT_TWENTY_EIGHT = "2551-03-24T00:00:00Z";
 
     /**
-     * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)
+     * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)}
      * where the project declaration includes a <code>leadHours</code> and a 
      * <code>leadTimesPoolingWindow</code>. Expects twenty-four time windows with
      * prescribed characteristics.
@@ -122,7 +123,7 @@ public final class TimeWindowHelperTest
     }
 
     /**
-     * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)
+     * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)}
      * where the project declaration includes a <code>leadHours</code> and a 
      * <code>leadTimesPoolingWindow</code>. Expects two time windows with
      * prescribed characteristics.
@@ -169,7 +170,7 @@ public final class TimeWindowHelperTest
     }
 
     /**
-     * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)
+     * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)}
      * where the project declaration includes a <code>leadHours</code>, a 
      * <code>leadTimesPoolingWindow</code>, an <code>issuedDates</code>, and 
      * an <code>issuedDatesPoolingWindow</code>. Expects eighteen time 
@@ -291,7 +292,7 @@ public final class TimeWindowHelperTest
     }
 
     /**
-     * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)
+     * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)}
      * where the project declaration includes a <code>leadHours</code>, a 
      * <code>leadTimesPoolingWindow</code>, a <code>dates</code> and an 
      * <code>issuedDates</code>. Expects one time window with prescribed characteristics.
@@ -342,7 +343,7 @@ public final class TimeWindowHelperTest
     }
 
     /**
-     * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig) where the project declaration 
+     * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)} where the project declaration 
      * does not include any constraints on time, aka "one big pool".
      * 
      * <p>This is analogous to system test scenario508, as of commit b9a7214ec22999482784119a8527149348c80119.
@@ -386,7 +387,7 @@ public final class TimeWindowHelperTest
     }
 
     /**
-     * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)
+     * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)}
      * where the project declaration includes a <code>issuedDatesPoolingWindow</code> and a 
      * <code>leadTimesPoolingWindow</code>. Expects twenty-three time windows. Tests both
      * an explicit and implicit declaration of the <code>frequency</code>.
@@ -613,7 +614,7 @@ public final class TimeWindowHelperTest
     }
 
     /**
-     * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig) where the project declaration 
+     * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)} where the project declaration 
      * does not include any explicit time windows, but is constrained by <code>leadHours</code>, 
      * <code>issuedDates</code> and <code>dates</code>, aka "one big pool" with constraints.
      */
@@ -667,7 +668,7 @@ public final class TimeWindowHelperTest
     }
 
     /**
-     * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)
+     * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)}
      * where the project declaration includes a <code>leadHours</code>, a 
      * an <code>issuedDates</code>, and an <code>issuedDatesPoolingWindow</code>. 
      * Expects nine time windows with prescribed characteristics.
@@ -751,6 +752,206 @@ public final class TimeWindowHelperTest
 
         // Assert that the expected and actual are equal
         assertEquals( expectedTimeWindows, actualTimeWindows );
+    }
+
+    /**
+     * Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)} for an expected exception when 
+     * <code>leadHours</code> are required but missing.
+     */
+
+    @Test
+    public void testGetTimeWindowsThrowsUnsupportedOperationExceptionWhenLeadHoursExpectedButMissing()
+    {
+        PoolingWindowConfig leadTimesPoolingWindowConfig =
+                new PoolingWindowConfig( 18, null, DurationUnit.HOURS );
+
+        PairConfig pairsConfig = new PairConfig( null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 leadTimesPoolingWindowConfig,
+                                                 null,
+                                                 null );
+
+        UnsupportedOperationException thrown = assertThrows( UnsupportedOperationException.class,
+                                                             () -> TimeWindowHelper.getTimeWindowsFromPairConfig( pairsConfig ) );
+
+        assertEquals( "Cannot determine lead duration time windows without a leadHours.",
+                      thrown.getMessage() );
+    }
+
+    /**
+     * Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)} for an expected exception when the 
+     * <code>minimum</code> <code>leadHours</code> is required but missing.
+     */
+
+    @Test
+    public void testGetTimeWindowsThrowsUnsupportedOperationExceptionWhenLeadHoursMinimumExpectedButMissing()
+    {
+        PoolingWindowConfig leadTimesPoolingWindowConfig =
+                new PoolingWindowConfig( 18, null, DurationUnit.HOURS );
+
+        IntBoundsType leadBoundsConfig = new IntBoundsType( null, 40 );
+
+        PairConfig pairsConfig = new PairConfig( null,
+                                                 null,
+                                                 null,
+                                                 leadBoundsConfig,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 leadTimesPoolingWindowConfig,
+                                                 null,
+                                                 null );
+
+        UnsupportedOperationException thrown = assertThrows( UnsupportedOperationException.class,
+                                                             () -> TimeWindowHelper.getTimeWindowsFromPairConfig( pairsConfig ) );
+
+        assertEquals( "Cannot determine lead duration time windows without a minimum leadHours.",
+                      thrown.getMessage() );
+    }
+
+    /**
+     * Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)} for an expected exception when the 
+     * <code>maximum</code> <code>leadHours</code> is required but missing.
+     */
+
+    @Test
+    public void testGetTimeWindowsThrowsUnsupportedOperationExceptionWhenLeadHoursMaximumExpectedButMissing()
+    {
+        PoolingWindowConfig leadTimesPoolingWindowConfig =
+                new PoolingWindowConfig( 18, null, DurationUnit.HOURS );
+
+        IntBoundsType leadBoundsConfig = new IntBoundsType( 0, null );
+
+        PairConfig pairsConfig = new PairConfig( null,
+                                                 null,
+                                                 null,
+                                                 leadBoundsConfig,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 leadTimesPoolingWindowConfig,
+                                                 null,
+                                                 null );
+
+        UnsupportedOperationException thrown = assertThrows( UnsupportedOperationException.class,
+                                                             () -> TimeWindowHelper.getTimeWindowsFromPairConfig( pairsConfig ) );
+
+        assertEquals( "Cannot determine lead duration time windows without a maximum leadHours.",
+                      thrown.getMessage() );
+    }
+
+    /**
+     * Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)} for an expected exception when 
+     * <code>issuedDates</code> is required but missing.
+     */
+
+    @Test
+    public void testGetTimeWindowsThrowsUnsupportedOperationExceptionWhenIssuedDatesExpectedButMissing()
+    {
+        PoolingWindowConfig issuedDatesPoolingWindowConfig =
+                new PoolingWindowConfig( 13, 7, DurationUnit.HOURS );
+
+        PairConfig pairsConfig = new PairConfig( null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 issuedDatesPoolingWindowConfig,
+                                                 null,
+                                                 null,
+                                                 null );
+
+        UnsupportedOperationException thrown = assertThrows( UnsupportedOperationException.class,
+                                                             () -> TimeWindowHelper.getTimeWindowsFromPairConfig( pairsConfig ) );
+
+        assertEquals( "Cannot determine issued dates time windows without an issuedDates.",
+                      thrown.getMessage() );
+    }
+
+    /**
+     * Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)} for an expected exception when the 
+     * <code>earliest</code> <code>issuedDates</code> is required but missing.
+     */
+
+    @Test
+    public void testGetTimeWindowsThrowsUnsupportedOperationExceptionWhenIssuedDatesEarliestExpectedButMissing()
+    {
+        PoolingWindowConfig issuedDatesPoolingWindowConfig =
+                new PoolingWindowConfig( 13, 7, DurationUnit.HOURS );
+
+        DateCondition issuedDatesConfig = new DateCondition( null, INSTANT_ONE );
+
+        PairConfig pairsConfig = new PairConfig( null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 issuedDatesConfig,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 issuedDatesPoolingWindowConfig,
+                                                 null,
+                                                 null,
+                                                 null );
+
+        UnsupportedOperationException thrown = assertThrows( UnsupportedOperationException.class,
+                                                             () -> TimeWindowHelper.getTimeWindowsFromPairConfig( pairsConfig ) );
+
+        assertEquals( "Cannot determine issued dates time windows without an earliest issuedDates.",
+                      thrown.getMessage() );
+    }
+
+    /**
+     * Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)} for an expected exception when 
+     * the <code>latest</code> <code>issuedDates</code> is required but missing.
+     */
+
+    @Test
+    public void testGetTimeWindowsThrowsUnsupportedOperationExceptionWhenIssuedDatesLatestExpectedButMissing()
+    {
+        PoolingWindowConfig issuedDatesPoolingWindowConfig =
+                new PoolingWindowConfig( 13, 7, DurationUnit.HOURS );
+
+        DateCondition issuedDatesConfig = new DateCondition( INSTANT_ONE, null );
+
+        PairConfig pairsConfig = new PairConfig( null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 issuedDatesConfig,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 issuedDatesPoolingWindowConfig,
+                                                 null,
+                                                 null,
+                                                 null );
+
+        UnsupportedOperationException thrown = assertThrows( UnsupportedOperationException.class,
+                                                             () -> TimeWindowHelper.getTimeWindowsFromPairConfig( pairsConfig ) );
+
+        assertEquals( "Cannot determine issued dates time windows without a latest issuedDates.",
+                      thrown.getMessage() );
     }
 
 }
