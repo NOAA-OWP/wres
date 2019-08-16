@@ -19,6 +19,7 @@
         <dates earliest="2017-08-08T00:00:00Z" latest="2017-08-09T17:00:00Z" />
         <issuedDates earliest="2017-08-08T00:00:00Z" latest="2017-08-08T23:00:00Z" />
         <issuedDatesPoolingWindow>
+            <period>0</period>
             <frequency>1</frequency>
             <unit>hours</unit>
         </issuedDatesPoolingWindow>

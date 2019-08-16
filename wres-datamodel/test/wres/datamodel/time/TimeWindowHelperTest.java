@@ -395,7 +395,7 @@ public final class TimeWindowHelperTest
         PoolingWindowConfig leadTimesPoolingWindowConfig =
                 new PoolingWindowConfig( 18, null, DurationUnit.HOURS );
         PoolingWindowConfig issuedDatesPoolingWindowConfig =
-                new PoolingWindowConfig( null, 1, DurationUnit.HOURS );
+                new PoolingWindowConfig( 1, null, DurationUnit.HOURS );
         PairConfig pairsConfig = new PairConfig( null,
                                                  null,
                                                  null,

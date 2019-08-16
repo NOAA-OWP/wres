@@ -660,8 +660,8 @@ over a prescribed period, in prescribed time units.
         </xs:annotation>
 
         <xs:sequence>
-            <xs:element name="function" type="timeScaleFunction" default="mean" minOccurs="1" maxOccurs="1"/>
-            <xs:element name="period" type="duration" minOccurs="1" maxOccurs="1"/>
+            <xs:element name="function" type="timeScaleFunction" default="mean" />
+            <xs:element name="period" type="duration" />
             <xs:element name="unit" type="durationUnit" />
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
@@ -709,8 +709,8 @@ time scale within a single class, rather than two classes.
         </xs:annotation>
 
         <xs:sequence>
-            <xs:element name="period" type="duration" minOccurs="0" />
-            <xs:element name="frequency" type="duration" minOccurs="0"/>
+            <xs:element name="period" type="duration" />
+            <xs:element name="frequency" type="duration" minOccurs="0" />
             <xs:element name="unit" type="durationUnit" />
         </xs:sequence>
     </xs:complexType>
