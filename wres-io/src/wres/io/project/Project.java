@@ -1708,8 +1708,8 @@ public class Project
     {
         Integer period;
 
-        if ( this.projectConfig.getPair().getLeadTimesPoolingWindow() != null &&
-             this.projectConfig.getPair().getLeadTimesPoolingWindow().getPeriod() != null )
+        // Period is required: #67319
+        if ( this.projectConfig.getPair().getLeadTimesPoolingWindow() != null )
         {
             period = this.projectConfig.getPair()
                                        .getLeadTimesPoolingWindow()
@@ -1724,20 +1724,13 @@ public class Project
     }
 
     /**
-     * @return The period of issue times to pull from the database at once. 0
-     * unless specified from the database
+     * @return The period of issue times to pull from the database at once.
      */
     public int getIssuePoolingWindowPeriod()
     {
         // Indicates one basis per period
-        int period = 0;
-
-        if ( this.getIssuePoolingWindow().getPeriod() != null )
-        {
-            period = this.getIssuePoolingWindow().getPeriod();
-        }
-
-        return period;
+        // Period is required: #67319
+        return  this.getIssuePoolingWindow().getPeriod();
     }
 
     /**
