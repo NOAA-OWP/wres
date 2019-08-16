@@ -51,23 +51,23 @@ public final class TimeWindowHelperTest
     private static final String INSTANT_TWENTY_FIVE = "2551-03-19T14:00:00Z";
     private static final String INSTANT_TWENTY_SIX = "2551-03-19T08:00:00Z";
     private static final String INSTANT_TWENTY_SEVEN = "2551-03-19T21:00:00Z";
+    private static final String INSTANT_TWENTY_EIGHT = "2551-03-24T00:00:00Z";
 
     /**
      * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)
      * where the project declaration includes a <code>leadHours</code> and a 
-     * <code>leadTimesPoolingWindow</code>. Expects twenty-three time windows with
+     * <code>leadTimesPoolingWindow</code>. Expects twenty-four time windows with
      * prescribed characteristics.
      * 
      * <p>The project declaration from this test scenario matches (in all important ways) the declaration associated 
-     * with system test scenario017, as of commit 766c6d0b4ad96f191bcafb8f2a357c0f2e6a2d3c, but the expected output 
-     * differs.
+     * with system test scenario017, as of commit fa548da9da85b16631f238f78b358d85ddbebed5.
      */
 
     @Test
-    public void testGetTimeWindowsWithLeadHoursAndLeadTimesPoolingWindowReturnsTwentyThreeWindows()
+    public void testGetTimeWindowsWithLeadHoursAndLeadTimesPoolingWindowReturnsTwentyFourWindows()
     {
         // Mock the sufficient elements of the ProjectConfig
-        IntBoundsType leadBoundsConfig = new IntBoundsType( 1, 24 );
+        IntBoundsType leadBoundsConfig = new IntBoundsType( 0, 24 );
         PoolingWindowConfig leadTimesPoolingWindowConfig =
                 new PoolingWindowConfig( 1, null, DurationUnit.HOURS );
         PairConfig pairsConfig = new PairConfig( null,
@@ -85,17 +85,37 @@ public final class TimeWindowHelperTest
                                                  null );
 
         // Generate the expected windows
-        Set<TimeWindow> expectedTimeWindows = new HashSet<>( 23 );
-        for ( long i = 1; i < 24; i++ )
-        {
-            expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( i ), Duration.ofHours( i + 1 ) ) );
-        }
+        Set<TimeWindow> expectedTimeWindows = new HashSet<>( 24 );
+        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 0 ), Duration.ofHours( 1 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 1 ), Duration.ofHours( 2 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 2 ), Duration.ofHours( 3 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 3 ), Duration.ofHours( 4 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 4 ), Duration.ofHours( 5 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 5 ), Duration.ofHours( 6 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 6 ), Duration.ofHours( 7 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 7 ), Duration.ofHours( 8 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 8 ), Duration.ofHours( 9 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 9 ), Duration.ofHours( 10 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 10 ), Duration.ofHours( 11 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 11 ), Duration.ofHours( 12 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 12 ), Duration.ofHours( 13 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 13 ), Duration.ofHours( 14 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 14 ), Duration.ofHours( 15 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 15 ), Duration.ofHours( 16 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 16 ), Duration.ofHours( 17 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 17 ), Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 18 ), Duration.ofHours( 19 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 19 ), Duration.ofHours( 20 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 20 ), Duration.ofHours( 21 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 21 ), Duration.ofHours( 22 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 22 ), Duration.ofHours( 23 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 23 ), Duration.ofHours( 24 ) ) );
 
         // Generate the actual windows
         Set<TimeWindow> actualTimeWindows = TimeWindowHelper.getTimeWindowsFromPairConfig( pairsConfig );
 
         // Assert the expected cardinality
-        assertEquals( 23, actualTimeWindows.size() );
+        assertEquals( 24, actualTimeWindows.size() );
 
         // Assert that the expected and actual are equal
         assertEquals( expectedTimeWindows, actualTimeWindows );
@@ -104,21 +124,21 @@ public final class TimeWindowHelperTest
     /**
      * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)
      * where the project declaration includes a <code>leadHours</code> and a 
-     * <code>leadTimesPoolingWindow</code>. Expects one time windows with
+     * <code>leadTimesPoolingWindow</code>. Expects two time windows with
      * prescribed characteristics.
      * 
      * <p>The project declaration from this test scenario matches (in all important ways) the declaration associated 
-     * with system test scenario403, as of commit 766c6d0b4ad96f191bcafb8f2a357c0f2e6a2d3c, but the expected output 
-     * differs.
+     * with system test scenario403, as of commit fa548da9da85b16631f238f78b358d85ddbebed5.
      */
 
     @Test
-    public void testGetTimeWindowsWithLeadHoursAndLeadTimesPoolingWindowReturnsOneWindow()
+    public void testGetTimeWindowsWithLeadHoursAndLeadTimesPoolingWindowReturnsTwoWindows()
     {
         // Mock the sufficient elements of the ProjectConfig
-        IntBoundsType leadBoundsConfig = new IntBoundsType( 1, 48 );
+        IntBoundsType leadBoundsConfig = new IntBoundsType( 0, 48 );
         PoolingWindowConfig leadTimesPoolingWindowConfig =
                 new PoolingWindowConfig( 24, null, DurationUnit.HOURS );
+
         PairConfig pairsConfig = new PairConfig( null,
                                                  null,
                                                  null,
@@ -134,14 +154,15 @@ public final class TimeWindowHelperTest
                                                  null );
 
         // Generate the expected windows
-        Set<TimeWindow> expectedTimeWindows = new HashSet<>( 1 );
-        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 1 ), Duration.ofHours( 25 ) ) );
+        Set<TimeWindow> expectedTimeWindows = new HashSet<>( 2 );
+        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 0 ), Duration.ofHours( 24 ) ) );
+        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 24 ), Duration.ofHours( 48 ) ) );
 
         // Generate the actual windows
         Set<TimeWindow> actualTimeWindows = TimeWindowHelper.getTimeWindowsFromPairConfig( pairsConfig );
 
         // Assert the expected cardinality
-        assertEquals( 1, actualTimeWindows.size() );
+        assertEquals( 2, actualTimeWindows.size() );
 
         // Assert that the expected and actual are equal
         assertEquals( expectedTimeWindows, actualTimeWindows );
@@ -155,8 +176,7 @@ public final class TimeWindowHelperTest
      * windows with prescribed characteristics.
      * 
      * <p>The project declaration from this test scenario matches (in all important ways) the declaration associated 
-     * with system test scenario505, as of commit 766c6d0b4ad96f191bcafb8f2a357c0f2e6a2d3c, but the expected output 
-     * differs.
+     * with system test scenario505, which is in development as of commit 766c6d0b4ad96f191bcafb8f2a357c0f2e6a2d3c.
      */
 
     @Test
@@ -186,7 +206,7 @@ public final class TimeWindowHelperTest
                                                  null );
 
         // Generate the expected windows
-        Set<TimeWindow> expectedTimeWindows = new HashSet<>( 22 );
+        Set<TimeWindow> expectedTimeWindows = new HashSet<>( 18 );
         expectedTimeWindows.add( TimeWindow.of( Instant.parse( INSTANT_NINE ), //2551-03-17T00:00:00Z
                                                 Instant.parse( INSTANT_TWELVE ), //2551-03-17T13:00:00Z
                                                 Duration.ofHours( 0 ),
@@ -273,11 +293,8 @@ public final class TimeWindowHelperTest
     /**
      * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)
      * where the project declaration includes a <code>leadHours</code>, a 
-     * <code>leadTimesPoolingWindow</code>, a <code>dates</code> and a 
+     * <code>leadTimesPoolingWindow</code>, a <code>dates</code> and an 
      * <code>issuedDates</code>. Expects one time window with prescribed characteristics.
-     * 
-     * <p>The project declaration from this test scenario extends the declaration associated with system test 
-     * scenario403, as of commit 766c6d0b4ad96f191bcafb8f2a357c0f2e6a2d3c.
      */
 
     @Test
@@ -288,7 +305,7 @@ public final class TimeWindowHelperTest
         // (2551-03-17T00:00:00Z, 2551-03-20T00:00:00Z)
         DateCondition issuedDatesConfig = new DateCondition( INSTANT_NINE, INSTANT_TEN );
         // (2551-03-19T00:00:00Z, 2551-03-24T00:00:00Z)
-        DateCondition datesConfig = new DateCondition( INSTANT_ELEVEN, "2551-03-24T00:00:00Z" );
+        DateCondition datesConfig = new DateCondition( INSTANT_ELEVEN, INSTANT_TWENTY_EIGHT );
         PoolingWindowConfig leadTimesPoolingWindowConfig =
                 new PoolingWindowConfig( 24, null, DurationUnit.HOURS );
         PairConfig pairsConfig = new PairConfig( null,
@@ -310,7 +327,7 @@ public final class TimeWindowHelperTest
         expectedTimeWindows.add( TimeWindow.of( Instant.parse( INSTANT_NINE ), //2551-03-17T00:00:00Z
                                                 Instant.parse( INSTANT_TEN ), //2551-03-20T00:00:00Z
                                                 Instant.parse( INSTANT_ELEVEN ), //2551-03-19T00:00:00Z
-                                                Instant.parse( "2551-03-24T00:00:00Z" ), //2551-03-24T00:00:00Z
+                                                Instant.parse( INSTANT_TWENTY_EIGHT ), //2551-03-24T00:00:00Z
                                                 Duration.ofHours( 1 ),
                                                 Duration.ofHours( 25 ) ) );
 
@@ -326,7 +343,7 @@ public final class TimeWindowHelperTest
 
     /**
      * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig) where the project declaration 
-     * does not include any constraints on time. 
+     * does not include any constraints on time, aka "one big pool".
      * 
      * <p>This is analogous to system test scenario508, as of commit b9a7214ec22999482784119a8527149348c80119.
      */
@@ -371,11 +388,12 @@ public final class TimeWindowHelperTest
     /**
      * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)
      * where the project declaration includes a <code>issuedDatesPoolingWindow</code> and a 
-     * <code>leadTimesPoolingWindow</code>. Expects twenty-three time windows.
+     * <code>leadTimesPoolingWindow</code>. Expects twenty-three time windows. Tests both
+     * an explicit and implicit declaration of the <code>frequency</code>.
      * 
      * <p>The project declaration from this test matches the declaration associated 
      * with system test scenario704, as of commit da07c16148429740496b8cc6df89a73e3697f17c, 
-     * except that the <code>period</code> is 1.0 time units here.
+     * except the <code>period</code> is 1.0 time units here.
      */
 
     @Test
@@ -597,7 +615,7 @@ public final class TimeWindowHelperTest
     /**
      * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig) where the project declaration 
      * does not include any explicit time windows, but is constrained by <code>leadHours</code>, 
-     * <code>issuedDates</code> and <code>dates</code>. 
+     * <code>issuedDates</code> and <code>dates</code>, aka "one big pool" with constraints.
      */
 
     @Test
@@ -683,7 +701,7 @@ public final class TimeWindowHelperTest
                                                  null );
 
         // Generate the expected windows
-        Set<TimeWindow> expectedTimeWindows = new HashSet<>( 11 );
+        Set<TimeWindow> expectedTimeWindows = new HashSet<>( 9 );
 
         Duration first = Duration.ofHours( 0 );
         Duration last = Duration.ofHours( 40 );
