@@ -239,12 +239,8 @@ public final class TimeWindowHelper
                                                                            .toUpperCase() );
         // Period associated with the issuedDatesPoolingWindow
         // The default period is one time unit
-        Duration periodOfIssuedDatesPoolingWindow = Duration.of( 1, timeUnits );
-        if ( Objects.nonNull( issuedDatesPoolingWindow.getPeriod() ) )
-        {
-            periodOfIssuedDatesPoolingWindow =
-                    Duration.of( issuedDatesPoolingWindow.getPeriod(), timeUnits );
-        }
+        Duration periodOfIssuedDatesPoolingWindow = Duration.of( issuedDatesPoolingWindow.getPeriod(), timeUnits );
+
         // Exclusive lower bound: #56213-104
         Instant earliestInstantExclusive = Instant.parse( issuedDates.getEarliest() );
 

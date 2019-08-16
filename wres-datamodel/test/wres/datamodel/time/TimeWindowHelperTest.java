@@ -372,8 +372,9 @@ public final class TimeWindowHelperTest
      * where the project declaration includes a <code>issuedDatesPoolingWindow</code> and a 
      * <code>leadTimesPoolingWindow</code>. Expects twenty-three time windows.
      * 
-     * <p>The project declaration from this test matches (in all important ways) the declaration associated 
-     * with system test scenario704, as of commit 77387b9dd1e87eb7314b7b1e6d469de7b37aa2c6.
+     * <p>The project declaration from this test matches the declaration associated 
+     * with system test scenario704, as of commit da07c16148429740496b8cc6df89a73e3697f17c, 
+     * except that the <code>period</code> is 1.0 time units here.
      */
 
     @Test
@@ -394,8 +395,13 @@ public final class TimeWindowHelperTest
         // The declaration of the time windows by lead duration and issued date
         PoolingWindowConfig leadTimesPoolingWindowConfig =
                 new PoolingWindowConfig( 18, null, DurationUnit.HOURS );
+
+        // Use a period that equals the frequency
+        // This allows for the testing of an explicit and implicit declaration of the frequency
+        // in one test scenario, as the default behavior, when omitting the frequency, is frequency=period
         PoolingWindowConfig issuedDatesPoolingWindowConfig =
-                new PoolingWindowConfig( 1, null, DurationUnit.HOURS );
+                new PoolingWindowConfig( 1, 1, DurationUnit.HOURS );
+
         PairConfig pairsConfig = new PairConfig( null,
                                                  null,
                                                  null,
@@ -411,7 +417,7 @@ public final class TimeWindowHelperTest
                                                  null );
 
         // Generate the expected time windows
-        Set<TimeWindow> expectedTimeWindows = new HashSet<>( 22 );
+        Set<TimeWindow> expectedTimeWindows = new HashSet<>( 23 );
         expectedTimeWindows.add( TimeWindow.of( Instant.parse( INSTANT_ONE ),
                                                 Instant.parse( INSTANT_FOUR ),
                                                 Instant.parse( INSTANT_ONE ),
@@ -551,7 +557,7 @@ public final class TimeWindowHelperTest
                                                 Duration.ofHours( 0 ),
                                                 Duration.ofHours( 18 ) ) );
 
-        // Generate the actual time windows
+        // Generate the actual time windows for the explicit test
         Set<TimeWindow> actualTimeWindows = TimeWindowHelper.getTimeWindowsFromPairConfig( pairsConfig );
 
         // Assert the expected cardinality
@@ -559,6 +565,30 @@ public final class TimeWindowHelperTest
 
         // Assert that the expected and actual time windows are equal
         assertEquals( expectedTimeWindows, actualTimeWindows );
+
+        // Declare the same version of this test with implicit frequency
+        PoolingWindowConfig issuedDatesPoolingWindowConfigNoFreq =
+                new PoolingWindowConfig( 1, null, DurationUnit.HOURS );
+
+        PairConfig pairsConfigNoFreq = new PairConfig( null,
+                                                       null,
+                                                       null,
+                                                       leadBoundsConfig,
+                                                       datesConfig,
+                                                       issuedDatesConfig,
+                                                       null,
+                                                       null,
+                                                       null,
+                                                       issuedDatesPoolingWindowConfigNoFreq,
+                                                       leadTimesPoolingWindowConfig,
+                                                       null,
+                                                       null );
+
+        // Generate the actual time windows for the implicit test
+        Set<TimeWindow> actualTimeWindowsNoFreq = TimeWindowHelper.getTimeWindowsFromPairConfig( pairsConfigNoFreq );
+
+        // Assert that the expected and actual time windows are equal
+        assertEquals( expectedTimeWindows, actualTimeWindowsNoFreq );
     }
 
     /**
