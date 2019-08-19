@@ -15,7 +15,10 @@ function get_ver
 
 echo Main version: $( get_ver . )
 
-for directory in wres-*
+# To use extended globbing in the for loop that follows, extglob.
+shopt -s extglob
+
+for directory in wres-*([a-z])
 do
     version=$( get_ver ${directory} )
     echo "${directory} version: ${version}"
