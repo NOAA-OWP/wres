@@ -114,31 +114,44 @@ public class OffsetEvaluator extends WRESCallable<Integer>
         script.addTab().addLine("INNER JOIN (");
         script.addTab(  2  ).addLine("SELECT TSV.timeseries_id, TSV.lead");
         script.addTab(  2  ).addLine("FROM wres.TimeSeriesValue TSV");
+
+        // See discussion in #67333-29 onwards
+        long minimum = this.project.getMinimumLead();
+        long maximum = this.project.getMaximumLead();
+
+        // Width is always positive (e.g., timestep of data)
+        long searchSpace = width * 5; 
+
+        // Interval is unbounded
+        if( minimum == Integer.MIN_VALUE && maximum == Integer.MAX_VALUE )
+        {
+            minimum = width;
+            maximum = minimum + searchSpace;
+        }
+        // Interval is upper bounded
+        else if( minimum == Integer.MIN_VALUE )
+        {
+            minimum = maximum - searchSpace;
+        }
+        // Interval is lower bounded
+        else if( maximum == Integer.MAX_VALUE )
+        {
+            maximum = minimum + searchSpace;
+        }
+        // Interval is fully bounded
+        else
+        {
+            // If the proposed search space is OOB, then constrain it
+            if( maximum - minimum > searchSpace )
+            {
+                maximum = minimum + searchSpace;
+            }
+        }
+
         script.addTab(  2  ).add("WHERE TSV.lead >= ");
-
-        //This is giving numbers like -60
-        if ( this.project.getMinimumLead() != Integer.MIN_VALUE)
-        {
-            // #66924
-            script.addLine( this.project.getMinimumLead());
-        }
-        else
-        {
-            script.addLine(width);
-        }
-
+        script.addLine( minimum );        
         script.addTab(   3   ).add("AND TSV.lead <= ");
-
-        if ( this.project.getMaximumLead() != Integer.MAX_VALUE)
-        {
-            script.addLine(this.project.getMaximumLead());
-        }
-        else
-        {
-            // We want to set a limit to how far ahead we're going to look. If we are going to group
-            // values across 24 hours, a 5 day sliding buffer should be enough to find an offset
-            script.addLine(width * 5);
-        }
+        script.addLine( maximum );      
 
         script.addTab().addLine(") AS TSV");
         script.addTab(  2  ).addLine("ON TSV.timeseries_id = TS.timeseries_id");
