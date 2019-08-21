@@ -40,7 +40,7 @@ public final class TimeWindowHelper
      * @param pairConfig the pair declaration, cannot be null
      * @return a set of one or more time windows for evaluation
      * @throws NullPointerException if the projectConfig is null
-     * @throws UnsupportedOperationException if the time windows cannot be determined
+     * @throws ProjectConfigException if the time windows cannot be determined
      */
 
     public static Set<TimeWindow> getTimeWindowsFromPairConfig( PairConfig pairConfig )
@@ -95,7 +95,7 @@ public final class TimeWindowHelper
      * @param pairConfig the pairs configuration
      * @return the set of lead duration time windows 
      * @throws NullPointerException if the pairConfig is null
-     * @throws UnsupportedOperationException if the time windows cannot be determined
+     * @throws ProjectConfigException if the time windows cannot be determined
      */
 
     private static Set<TimeWindow> getLeadDurationTimeWindows( PairConfig pairConfig )
@@ -188,7 +188,7 @@ public final class TimeWindowHelper
      * @param pairConfig the pairs configuration
      * @return the set of issued dates time windows 
      * @throws NullPointerException if the pairConfig is null
-     * @throws UnsupportedOperationException if the time windows cannot be determined
+     * @throws ProjectConfigException if the time windows cannot be determined
      */
 
     private static Set<TimeWindow> getIssuedDatesTimeWindows( PairConfig pairConfig )
@@ -284,16 +284,16 @@ public final class TimeWindowHelper
      * @param pairConfig the pairs configuration
      * @return the set of lead duration and issued dates time windows 
      * @throws NullPointerException if the pairConfig is null
-     * @throws UnsupportedOperationException if the time windows cannot be determined
+     * @throws ProjectConfigException if the time windows cannot be determined
      */
 
     private static Set<TimeWindow> getIssuedDatesAndLeadDurationTimeWindows( PairConfig pairConfig )
     {
         Objects.requireNonNull( pairConfig, "Cannot determine time windows from null pair configuration." );
 
-        Set<TimeWindow> leadDurationWindows = getLeadDurationTimeWindows( pairConfig );
+        Set<TimeWindow> leadDurationWindows = TimeWindowHelper.getLeadDurationTimeWindows( pairConfig );
 
-        Set<TimeWindow> issuedDatesWindows = getIssuedDatesTimeWindows( pairConfig );
+        Set<TimeWindow> issuedDatesWindows = TimeWindowHelper.getIssuedDatesTimeWindows( pairConfig );
 
         // Create a new window for each combination of issued dates and lead duration
         Set<TimeWindow> timeWindows = new HashSet<>( leadDurationWindows.size() * issuedDatesWindows.size() );
