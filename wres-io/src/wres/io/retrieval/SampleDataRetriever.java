@@ -37,6 +37,7 @@ import wres.io.config.ConfigHelper;
 import wres.io.config.OrderedSampleMetadata;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.MeasurementUnits;
+import wres.io.project.Project;
 import wres.io.retrieval.scripting.Scripter;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
@@ -176,7 +177,10 @@ class SampleDataRetriever extends Retriever
         builder.addTimeSeries( events );
         builder.setMetadata( this.getSampleMetadata().getMetadata() );
 
-        if (!this.getBaselinePairs().isEmpty())
+        // #67532
+        Project project = this.getProjectDetails();
+        
+        if ( project.hasBaseline() )
         {
             events = this.getSingleValuedEvents( this.getBaselinePairs() );
             builder.addTimeSeriesDataForBaseline( events );
@@ -209,8 +213,11 @@ class SampleDataRetriever extends Retriever
 
         builder.addTimeSeries( events );
         builder.setMetadata( this.getSampleMetadata().getMetadata() );
-
-        if (!this.getBaselinePairs().isEmpty())
+         
+        // #67532
+        Project project = this.getProjectDetails();
+        
+        if ( project.hasBaseline() )
         {
             events = this.getBaselinePairs();
             builder.addTimeSeriesDataForBaseline( events );

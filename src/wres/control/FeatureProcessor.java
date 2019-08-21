@@ -182,7 +182,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                 // 1. Get some sample data from the database
                 // 2. Compute statistics from the sample data
                 // 3. Produce outputs from the statistics                
-                SupplySampleData pairSupplier = SupplySampleData.of( nextInput );
+                SampleDataSupplier pairSupplier = SampleDataSupplier.of( nextInput );
                 
                 final CompletableFuture<Set<Path>> statisticsTasks =
                         CompletableFuture.supplyAsync( pairSupplier, this.executors.getPairExecutor() )
@@ -216,7 +216,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                      && Objects.nonNull( this.sharedBaselineSampleWriters ) )
                 {
                     CompletableFuture<Set<Path>> baselineSampleDataTask =
-                            this.getPairWritingTask( SupplySampleData.of( nextInput, true ),
+                            this.getPairWritingTask( SampleDataSupplier.of( nextInput, true ),
                                                      this.sharedBaselineSampleWriters );
 
                     listOfFutures.add( baselineSampleDataTask );
@@ -267,7 +267,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      * @param sharedWriters the consumers of paired data for writing
      */
 
-    private CompletableFuture<Set<Path>> getPairWritingTask( SupplySampleData pairSupplier,
+    private CompletableFuture<Set<Path>> getPairWritingTask( SampleDataSupplier pairSupplier,
                                                              SharedSampleDataWriters sharedWriters )
     {
         return CompletableFuture.supplyAsync( pairSupplier, this.executors.getProductExecutor() )
