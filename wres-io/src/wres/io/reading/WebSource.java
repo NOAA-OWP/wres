@@ -54,11 +54,15 @@ class WebSource implements Callable<List<IngestResult>>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( WebSource.class );
 
-    private static final String ISSUED_DATES_ERROR_MESSAGE =
+    private static final String DATES_ERROR_MESSAGE =
             "One must specify issued dates with both earliest and latest (e.g. "
             + "<issuedDates earliest=\"2018-12-28T15:42:00Z\" "
             + "latest=\"2019-01-01T00:00:00Z\" />) when using a web API as a "
-            + "source for forecasts.";
+            + "source for forecasts. One must specify dates with both "
+            + "earliest and latest (e.g. "
+            + "<dates earliest=\"2019-08-10T14:30:00Z\" "
+            + "latest=\"2019-08-15T18:00:00Z\" />) "
+            + "when using a web API as a source for observations.";
 
     private final ProjectConfig projectConfig;
     private final DataSource dataSource;
@@ -144,6 +148,11 @@ class WebSource implements Callable<List<IngestResult>>
         return this.lockManager;
     }
 
+    private DataSource getDataSource()
+    {
+        return this.dataSource;
+    }
+
     private URI getBaseUri()
     {
         return this.baseUri;
@@ -175,18 +184,19 @@ class WebSource implements Callable<List<IngestResult>>
             throw new IngestException( "Failed to get features/locations.", se );
         }
 
-        Set<Pair<Instant,Instant>> issuedRanges = createWeekRanges( this.getProjectConfig(),
-                                                                    this.getNow() );
+        Set<Pair<Instant,Instant>> weekRanges = createWeekRanges( this.getProjectConfig(),
+                                                                  this.getDataSource(),
+                                                                  this.getNow() );
 
         try
         {
             for ( FeatureDetails featureDetails : features )
             {
-                for ( Pair<Instant, Instant> issuedRange : issuedRanges )
+                for ( Pair<Instant, Instant> range : weekRanges )
                 {
-                    URI wrdsUri = createWrdsUri( this.getBaseUri(),
-                                                 issuedRange,
-                                                 featureDetails );
+                    URI uri = createUri( this.getBaseUri(),
+                                         range,
+                                         featureDetails );
 
                     DataSource dataSource =
                             DataSource.of( this.getSourceConfig(),
@@ -198,7 +208,7 @@ class WebSource implements Callable<List<IngestResult>>
                                            // the instance this one came from.
                                            Set.of( ConfigHelper.getLeftOrRightOrBaseline( this.getProjectConfig(),
                                                                                           this.getDataSourceConfig() ) ),
-                                                           wrdsUri );
+                                                           uri );
                     // TODO: hash contents, not the URL
                     // Should already be happening... double check that we use
                     // and save the data hash not the URL hash.
@@ -277,33 +287,46 @@ class WebSource implements Callable<List<IngestResult>>
      */
 
     private Set<Pair<Instant,Instant>> createWeekRanges( ProjectConfig config,
+                                                         DataSource dataSource,
                                                          OffsetDateTime nowDate )
     {
         Objects.requireNonNull( config );
         Objects.requireNonNull( config.getPair() );
+        Objects.requireNonNull( dataSource );
+        Objects.requireNonNull( dataSource.getContext() );
 
-        if ( config.getPair().getIssuedDates() == null )
+        boolean isForecast = ConfigHelper.isForecast( dataSource.getContext() );
+
+        if ( ( isForecast && config.getPair().getIssuedDates() == null )
+             || ( !isForecast && config.getPair().getDates() == null ) )
         {
             throw new ProjectConfigException( config.getPair(),
-                                              ISSUED_DATES_ERROR_MESSAGE );
+                                              DATES_ERROR_MESSAGE );
         }
 
-        DateCondition issuedDates = config.getPair().getIssuedDates();
+        DateCondition dates = config.getPair()
+                                    .getDates();
 
-        if ( issuedDates.getEarliest() == null
-             || issuedDates.getLatest() == null )
+        if ( isForecast )
         {
-            throw new ProjectConfigException( issuedDates,
-                                              ISSUED_DATES_ERROR_MESSAGE );
+            dates = config.getPair()
+                          .getIssuedDates();
+        }
+
+        if ( dates.getEarliest() == null
+             || dates.getLatest() == null )
+        {
+            throw new ProjectConfigException( dates,
+                                              DATES_ERROR_MESSAGE );
         }
 
         Set<Pair<Instant,Instant>> weekRanges = new HashSet<>();
 
         OffsetDateTime earliest;
-        String specifiedEarliest = issuedDates.getEarliest();
+        String specifiedEarliest = dates.getEarliest();
 
         OffsetDateTime latest;
-        String specifiedLatest = issuedDates.getLatest();
+        String specifiedLatest = dates.getLatest();
 
         earliest = OffsetDateTime.parse( specifiedEarliest )
                                  .with( previousOrSame( SUNDAY ) )
@@ -354,6 +377,66 @@ class WebSource implements Callable<List<IngestResult>>
     }
 
 
+    private URI createUri( URI baseUri,
+                           Pair<Instant,Instant> range,
+                           FeatureDetails featureDetails )
+    {
+        if ( baseUri.getHost()
+                    .toLowerCase()
+                    .contains( "usgs.gov" ) )
+        {
+            return this.createUsgsUri( baseUri, range, featureDetails );
+        }
+        else if ( baseUri.getPath()
+                         .toLowerCase()
+                         .endsWith( "ahps" ) ||
+                  baseUri.getPath()
+                         .toLowerCase()
+                         .endsWith( "ahps/" ) )
+        {
+            return this.createWrdsUri( baseUri, range, featureDetails );
+        }
+        else
+        {
+            throw new ProjectConfigException( this.dataSource.getContext(),
+                                              "Unrecognized URI base "
+                                              + baseUri );
+        }
+    }
+
+
+    /**
+     * Specific to USGS API, get a URI for a given issued date range and feature
+     *
+     * <p>Expecting a USGS URI like this:
+     * https://nwis.waterservices.usgs.gov/nwis/iv/</p>
+     * @param range the range of dates (from left to right)
+     * @param featureDetails the feature to request for
+     * @return a URI suitable to get the data from WRDS API
+     */
+
+    private URI createUsgsUri( URI baseUri,
+                               Pair<Instant,Instant> range,
+                               FeatureDetails featureDetails )
+    {
+        // example "?format=json&sites=09165000&parameterCd=00060&startDT=2018-10-01T00:00:0
+        if ( !baseUri.getHost()
+                     .toLowerCase()
+                     .contains( "usgs.gov" ) )
+        {
+            throw new IllegalArgumentException( "Expected URI like '"
+                                                + "https://nwis.waterservices.usgs.gov/nwis/iv"
+                                                + " but instead got " + baseUri.toString() );
+        }
+
+        Map<String, String> urlParameters = createUsgsUrlParameters( range,
+                                                                     featureDetails,
+                                                                     this.getDataSource() );
+        return getURIWithParameters( this.getBaseUri(),
+                                     urlParameters );
+    }
+
+
     /**
      * Specific to WRDS API, get a URI for a given issued date range and feature
      *
@@ -368,8 +451,12 @@ class WebSource implements Callable<List<IngestResult>>
                                Pair<Instant,Instant> issuedRange,
                                FeatureDetails featureDetails )
     {
-        if ( !baseUri.getPath().endsWith( "ahps" ) &&
-             !baseUri.getPath().endsWith( "ahps/" ) )
+        if ( !baseUri.getPath()
+                     .toLowerCase()
+                     .endsWith( "ahps" ) &&
+             !baseUri.getPath()
+                     .toLowerCase()
+                     .endsWith( "ahps/" ) )
         {
             throw new IllegalArgumentException( "Expected URI like '" +
                                                 "http://***REMOVED***.***REMOVED***.***REMOVED***/api/v1/forecasts/streamflow/ahps'"
@@ -405,6 +492,23 @@ class WebSource implements Callable<List<IngestResult>>
 
         return getURIWithParameters( uriWithLocation,
                                      wrdsParameters );
+    }
+
+    /**
+     * Specific to USGS NWIS API, get date range url parameters
+     * @param range the date range to set parameters for
+     * @return the key/value parameters
+     */
+
+    private Map<String,String> createUsgsUrlParameters( Pair<Instant,Instant> range,
+                                                        FeatureDetails featureDetails,
+                                                        DataSource dataSource )
+    {
+        return Map.of( "format", "json",
+                       "parameterCd", dataSource.getVariable().getValue(),
+                       "startDT", range.getLeft().toString(),
+                       "endDT", range.getRight().toString(),
+                       "sites", featureDetails.getGageID() );
     }
 
 
