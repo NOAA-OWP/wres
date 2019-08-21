@@ -256,7 +256,7 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
         if ( Objects.nonNull( pairConfig.getLeadTimesPoolingWindow() ) )
         {
             leadBounds = this.getLeadBoundsForLeadTimesPoolingWindows( this.getProject().getProjectConfig(),
-                                                                 sampleNumber );
+                                                                       sampleNumber );
         }
         // No leadTimesPoolingWindows
         else

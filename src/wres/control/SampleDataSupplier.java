@@ -18,7 +18,7 @@ import wres.engine.statistics.metric.processing.MetricProcessorException;
  * @author james.brown@hydrosolved.com
  */
 
-class SupplySampleData implements Supplier<SampleData<?>>
+class SampleDataSupplier implements Supplier<SampleData<?>>
 {
 
     /**
@@ -26,7 +26,7 @@ class SupplySampleData implements Supplier<SampleData<?>>
      */
     
     private static final Logger LOGGER =
-            LoggerFactory.getLogger( SupplySampleData.class );
+            LoggerFactory.getLogger( SampleDataSupplier.class );
 
     /**
      * The future sample data.
@@ -47,9 +47,9 @@ class SupplySampleData implements Supplier<SampleData<?>>
      * @return an instance of the supplier
      */
     
-    static SupplySampleData of( Future<SampleData<?>> futureSamples )
+    static SampleDataSupplier of( Future<SampleData<?>> futureSamples )
     {
-        return SupplySampleData.of( futureSamples, false );
+        return SampleDataSupplier.of( futureSamples, false );
     }
 
     /**
@@ -61,9 +61,9 @@ class SupplySampleData implements Supplier<SampleData<?>>
      * @return an instance of the supplier
      */
     
-    static SupplySampleData of( Future<SampleData<?>> futureSamples, boolean baselineOnly )
+    static SampleDataSupplier of( Future<SampleData<?>> futureSamples, boolean baselineOnly )
     {
-        return new SupplySampleData( futureSamples, baselineOnly );
+        return new SampleDataSupplier( futureSamples, baselineOnly );
     }    
 
     @Override
@@ -73,18 +73,21 @@ class SupplySampleData implements Supplier<SampleData<?>>
         
         try
         {
+            returnMe = this.futureSamples.get();
+            
             if( this.baselineOnly )
             {
-                returnMe = this.futureSamples.get().getBaselineData();
-            }
-            else
-            {
-                returnMe = this.futureSamples.get();
-            }           
+                returnMe = returnMe.getBaselineData();
+            }      
             
-            LOGGER.debug( "Acquired pairs for feature '{}' and time window {}.",
-                          returnMe.getMetadata().getIdentifier().getGeospatialID(),
-                          returnMe.getMetadata().getTimeWindow() );
+            // #67532
+            if( Objects.isNull( returnMe ) )
+            {
+                throw new IllegalStateException( "Failed to retrieve non-null sample data, which is not an "
+                        + "expected state." );
+            }
+            
+            LOGGER.debug( "Acquired pairs for {}.", returnMe.getMetadata() );
         }
         catch ( InterruptedException e )
         {
@@ -97,7 +100,7 @@ class SupplySampleData implements Supplier<SampleData<?>>
         }
         
         return returnMe;
-    }    
+    }     
     
     /**
      * Construct.
@@ -107,7 +110,7 @@ class SupplySampleData implements Supplier<SampleData<?>>
      * @throws NullPointerException if either input is null
      */
 
-    private SupplySampleData( Future<SampleData<?>> futureSamples, boolean baselineOnly )
+    private SampleDataSupplier( Future<SampleData<?>> futureSamples, boolean baselineOnly )
     {
         Objects.requireNonNull( futureSamples, "Specify a non-null sample data future." );
 
