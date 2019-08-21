@@ -11,6 +11,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.ProjectConfigException;
 import wres.config.generated.DateCondition;
 import wres.config.generated.IntBoundsType;
 import wres.config.generated.PairConfig;
@@ -108,17 +109,17 @@ public final class TimeWindowHelper
 
         if ( Objects.isNull( leadHours ) )
         {
-            throw new UnsupportedOperationException( messageStart + "without a leadHours." );
+            throw new ProjectConfigException( leadHours, messageStart + "without a leadHours." );
         }
 
         if ( Objects.isNull( leadHours.getMinimum() ) )
         {
-            throw new UnsupportedOperationException( messageStart + "without a minimum leadHours." );
+            throw new ProjectConfigException( leadHours, messageStart + "without a minimum leadHours." );
         }
 
         if ( Objects.isNull( leadHours.getMaximum() ) )
         {
-            throw new UnsupportedOperationException( messageStart + "without a maximum leadHours." );
+            throw new ProjectConfigException( leadHours, messageStart + "without a maximum leadHours." );
         }
 
         PoolingWindowConfig leadTimesPoolingWindow = pairConfig.getLeadTimesPoolingWindow();
@@ -201,20 +202,17 @@ public final class TimeWindowHelper
 
         if ( Objects.isNull( issuedDates ) )
         {
-            throw new UnsupportedOperationException( messageStart
-                                                     + "without an issuedDates." );
+            throw new ProjectConfigException( issuedDates, messageStart + "without an issuedDates." );
         }
 
         if ( Objects.isNull( issuedDates.getEarliest() ) )
         {
-            throw new UnsupportedOperationException( messageStart
-                                                     + "without an earliest issuedDates." );
+            throw new ProjectConfigException( issuedDates, messageStart + "without an earliest issuedDates." );
         }
 
         if ( Objects.isNull( issuedDates.getLatest() ) )
         {
-            throw new UnsupportedOperationException( messageStart
-                                                     + "without a latest issuedDates." );
+            throw new ProjectConfigException( issuedDates, messageStart + "without a latest issuedDates." );
         }
 
         PoolingWindowConfig issuedDatesPoolingWindow = pairConfig.getIssuedDatesPoolingWindow();
