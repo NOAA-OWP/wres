@@ -6,9 +6,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
@@ -50,6 +47,7 @@ import wres.io.reading.IngestResult;
 import wres.io.reading.IngestedValues;
 import wres.io.reading.PreIngestException;
 import wres.io.reading.SourceCompleter;
+import wres.io.reading.WebClient;
 import wres.system.DatabaseLockManager;
 import wres.util.TimeHelper;
 
@@ -57,16 +55,13 @@ public class ReadValueManager
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( ReadValueManager.class );
 
-    // TODO: inject http client in constructor without changing much else #60281
-    private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
     private static final String MD5SUM_OF_EMPTY_STRING = "68b329da9893e34099c7d8ad5cb9c940";
-
-    private static final Duration MAX_RETRY_DURATION = Duration.ofSeconds( 30 );
 
     private final ProjectConfig projectConfig;
     private final DataSource dataSource;
     private final DatabaseLockManager lockManager;
     private final Set<Pair<CountDownLatch,CountDownLatch>> latches = new HashSet<>();
+    private final WebClient webClient = new WebClient();
 
     ReadValueManager( final ProjectConfig projectConfig,
                       final DataSource datasource,
@@ -92,7 +87,7 @@ public class ReadValueManager
                           .toLowerCase()
                           .startsWith( "http" ) )
         {
-            Pair<Integer,InputStream> response = this.getFromWeb( location );
+            Pair<Integer,InputStream> response = this.webClient.getFromWeb( location );
             int httpStatus = response.getLeft();
 
             if ( httpStatus >= 400 && httpStatus < 500 )
@@ -501,81 +496,6 @@ public class ReadValueManager
         Path forecastPath = Paths.get( uri );
         File forecastFile = forecastPath.toFile();
         return new FileInputStream( forecastFile );
-    }
-
-    private Pair<Integer,InputStream> getFromWeb( URI uri ) throws IOException
-    {
-        if ( !uri.getScheme().startsWith( "http" ) )
-        {
-            throw new IllegalArgumentException(
-                    "Must pass an http uri, got " + uri );
-        }
-
-        LOGGER.debug( "getFromWeb {}", uri );
-
-        try
-        {
-            HttpRequest request = HttpRequest.newBuilder()
-                                             .uri( uri )
-                                             .build();
-            HttpResponse<InputStream> httpResponse =
-                    HTTP_CLIENT.send( request,
-                                      HttpResponse.BodyHandlers.ofInputStream() );
-
-            int httpStatus = httpResponse.statusCode();
-
-            boolean retry = true;
-            Instant start = Instant.now();
-            long sleepMillis = 1000;
-
-            while ( retry )
-            {
-                if ( ( httpStatus >= 200 && httpStatus < 300 )
-                    || ( httpStatus >= 400 && httpStatus < 500 ) )
-                {
-                    retry = false;
-                }
-                else
-                {
-                    LOGGER.warn( "Retrying {} in a bit due to http status {}.",
-                                 uri, httpStatus );
-                    Thread.sleep( sleepMillis );
-                    httpResponse = HTTP_CLIENT.send( request,
-                                                     HttpResponse.BodyHandlers.ofInputStream() );
-                    httpStatus = httpResponse.statusCode();
-                    Instant now = Instant.now();
-                    retry = start.plus( MAX_RETRY_DURATION )
-                                 .isAfter( now );
-
-                    // Exponential backoff to be nice to the server.
-                    sleepMillis *= 2;
-                }
-            }
-
-            if ( httpStatus >= 200 && httpStatus < 300 )
-            {
-                LOGGER.debug( "Successfully got data from {}", uri );
-                return Pair.of( httpStatus, httpResponse.body() );
-            }
-            else if ( httpStatus >= 400 && httpStatus < 500 )
-            {
-                LOGGER.debug( "Got empty/not-found data from {}", uri );
-                return Pair.of( httpStatus, InputStream.nullInputStream() );
-            }
-            else
-            {
-                throw new IngestException( "Failed to get data from "
-                                           + uri
-                                           + " due to status code "
-                                           + httpStatus );
-            }
-        }
-        catch ( InterruptedException ie )
-        {
-            LOGGER.warn( "Interrupted while getting data from {}", uri, ie );
-            Thread.currentThread().interrupt();
-            return Pair.of( -1, InputStream.nullInputStream() );
-        }
     }
 
     /**
