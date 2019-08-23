@@ -22,6 +22,25 @@ public class TimeSeriesHelper
     static final String UNSUPPORTED_MODIFICATION = "While attempting to modify an immutable time-series.";
 
     /**
+     * Returns a string representation of the {@link TimeSeries}.
+     * @param <T> the type of time-series
+     * @param timeSeries the input time-series
+     * @return a string representation
+     */
+    
+    public static <T> String toString( TimeSeries<T> timeSeries )
+    {
+        StringJoiner joiner = new StringJoiner( System.lineSeparator() );
+    
+        for ( Event<T> nextEvent : timeSeries.eventIterator() )
+        {
+            joiner.add( nextEvent.toString() );
+        }
+    
+        return joiner.toString();
+    }    
+    
+    /**
      * Helper method that adjusts the earliest and latest basis times of the {@link TimeWindow} associated with the 
      * input {@link SampleMetadata} when iterating over the atomic time-series by basis time.
      * 
@@ -83,33 +102,6 @@ public class TimeSeriesHelper
         }
 
         return returnMe;
-    }
-
-    /**
-     * Returns a string representation of the {@link TimeSeries}.
-     * @param <T> the type of time-series
-     * @param timeSeries the input time-series
-     * @return a string representation
-     */
-
-    public static <T> String toString( TimeSeries<T> timeSeries )
-    {
-        StringJoiner joiner = new StringJoiner( System.lineSeparator() );
-        if ( timeSeries.hasMultipleTimeSeries() )
-        {
-            for ( TimeSeries<T> next : timeSeries.basisTimeIterator() )
-            {
-                joiner.add( next.toString() );
-            }
-        }
-        else
-        {
-            for ( Event<T> next : timeSeries.timeIterator() )
-            {
-                joiner.add( next.toString() );
-            }
-        }
-        return joiner.toString();
     }
 
     /**

@@ -7,10 +7,12 @@ import static org.junit.Assert.assertTrue;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Set;
 import java.util.StringJoiner;
 import java.util.stream.StreamSupport;
 
@@ -49,11 +51,11 @@ public final class TimeSeriesOfSingleValuedPairsTest
     public final ExpectedException exception = ExpectedException.none();
 
     /**
-     * Tests the {@link SafeTimeSeriesOfSingleValuedPairs#basisTimeIterator()} method.
+     * Tests the {@link SafeTimeSeriesOfSingleValuedPairs#referenceTimeIterator()} method.
      */
 
     @Test
-    public void testBasisTimeIterator()
+    public void testReferenceTimeIterator()
     {
         //Build a time-series with three basis times 
         List<Event<SingleValuedPair>> first = new ArrayList<>();
@@ -80,12 +82,12 @@ public final class TimeSeriesOfSingleValuedPairsTest
                                                  .addTimeSeries( third )
                                                  .setMetadata( meta )
                                                  .build();
-        assertTrue( ts.hasMultipleTimeSeries() );
+        assertTrue( ts.getReferenceTimes().size() == 3 );
         //Iterate and test
         int nextValue = 1;
-        for ( TimeSeries<SingleValuedPair> next : ts.basisTimeIterator() )
+        for ( TimeSeries<SingleValuedPair> next : ts.referenceTimeIterator() )
         {
-            for ( Event<SingleValuedPair> nextPair : next.timeIterator() )
+            for ( Event<SingleValuedPair> nextPair : next.eventIterator() )
             {
                 assertTrue( nextPair.getValue().equals( SingleValuedPair.of( nextValue, nextValue ) ) );
                 nextValue++;
@@ -129,20 +131,18 @@ public final class TimeSeriesOfSingleValuedPairsTest
                                                  .setMetadataForBaseline( meta )
                                                  .build();
 
-        assertTrue( "Expected a regular time-series.", ts.isRegular() );
-
         //Iterate and test
         int nextValue = 1;
-        for ( TimeSeries<SingleValuedPair> next : ts.durationIterator() )
+        for ( List<Event<SingleValuedPair>> next : ts.durationIterator() )
         {
-            for ( Event<SingleValuedPair> nextPair : next.timeIterator() )
+            Set<Instant> basisTimes = new HashSet<>();
+            for ( Event<SingleValuedPair> nextPair : next )
             {
-                assertTrue( "Unexpected pair in lead-time iteration of time-series.",
-                            nextPair.getValue().equals( SingleValuedPair.of( nextValue, nextValue ) ) );
+                assertTrue( nextPair.getValue().equals( SingleValuedPair.of( nextValue, nextValue ) ) );
+                basisTimes.add( nextPair.getReferenceTime() );
             }
             //Three time-series
-            assertTrue( "Unexpected number of time-series in dataset.",
-                        next.getBasisTimes().size() == 3 );
+            assertTrue( basisTimes.size() == 3 );
             nextValue++;
         }
 
@@ -153,8 +153,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
                 (TimeSeriesOfSingleValuedPairs) new TimeSeriesOfSingleValuedPairsBuilder().addTimeSeries( fourth )
                                                                                           .setMetadata( meta )
                                                                                           .build();
-        assertTrue( "Unexpected regular duration for the regular time-series ",
-                    Duration.ofHours( 51 ).equals( durationCheck.getRegularDuration() ) );
+        assertTrue( Duration.ofHours( 51 ).equals( durationCheck.getDurations().first() ) );
     }
 
     /**
@@ -175,8 +174,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
         SampleMetadata meta = SampleMetadata.of();
         b.addTimeSeries( values ).setMetadata( meta );
         //Check dataset dimensions
-        assertTrue( "Unexpected baseline associated with time-series.",
-                    Objects.isNull( b.build().getBaselineData() ) );
+        assertTrue( Objects.isNull( b.build().getBaselineData() ) );
 
         b.addTimeSeriesDataForBaseline( values );
         b.setMetadataForBaseline( meta );
@@ -184,18 +182,16 @@ public final class TimeSeriesOfSingleValuedPairsTest
         TimeSeriesOfSingleValuedPairs baseline = b.build().getBaselineData();
 
         //Check dataset dimensions
-        assertTrue( "Expected a time-series with one basis time and three lead times.",
-                    baseline.getDurations().size() == 3 && baseline.getBasisTimes().size() == 1 );
+        assertTrue( baseline.getDurations().size() == 3 && baseline.getReferenceTimes().size() == 1 );
 
         //Check dataset
         //Iterate and test
         int nextValue = 1;
-        for ( TimeSeries<SingleValuedPair> next : baseline.durationIterator() )
+        for ( List<Event<SingleValuedPair>> next : baseline.durationIterator() )
         {
-            for ( Event<SingleValuedPair> nextPair : next.timeIterator() )
+            for ( Event<SingleValuedPair> nextPair : next )
             {
-                assertTrue( "Unexpected pair in lead-time iteration of baseline time-series.",
-                            nextPair.getValue().equals( SingleValuedPair.of( nextValue, nextValue ) ) );
+                assertTrue( nextPair.getValue().equals( SingleValuedPair.of( nextValue, nextValue ) ) );
                 nextValue++;
             }
         }
@@ -248,18 +244,16 @@ public final class TimeSeriesOfSingleValuedPairsTest
         TimeSeriesOfSingleValuedPairs tsAppend = c.build();
 
         //Check dataset dimensions
-        assertTrue( "Expected a time-series with three basis times and three lead times.",
-                    tsAppend.getDurations().size() == 3 && StreamSupport.stream( tsAppend.basisTimeIterator()
+        assertTrue( tsAppend.getDurations().size() == 3 && StreamSupport.stream( tsAppend.referenceTimeIterator()
                                                                                          .spliterator(),
                                                                                  false )
                                                                         .count() == 3 );
         //Check dataset
         //Iterate and test
         int nextValue = 1;
-        for ( Event<SingleValuedPair> nextPair : tsAppend.timeIterator() )
+        for ( Event<SingleValuedPair> nextPair : tsAppend.eventIterator() )
         {
-            assertTrue( "Unexpected pair in lead-time iteration of baseline time-series.",
-                        nextPair.getValue().equals( SingleValuedPair.of( nextValue, nextValue ) ) );
+            assertTrue( nextPair.getValue().equals( SingleValuedPair.of( nextValue, nextValue ) ) );
             nextValue++;
         }
     }
@@ -288,7 +282,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
 
         //Iterate
         exception.expect( NoSuchElementException.class );
-        Iterator<TimeSeries<SingleValuedPair>> noneSuchBasis = ts.basisTimeIterator().iterator();
+        Iterator<TimeSeries<SingleValuedPair>> noneSuchBasis = ts.referenceTimeIterator().iterator();
         noneSuchBasis.forEachRemaining( Objects::isNull );
         noneSuchBasis.next();
     }
@@ -318,7 +312,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
         //Mutate 
         exception.expect( UnsupportedOperationException.class );
 
-        Iterator<TimeSeries<SingleValuedPair>> immutableBasis = ts.basisTimeIterator().iterator();
+        Iterator<TimeSeries<SingleValuedPair>> immutableBasis = ts.referenceTimeIterator().iterator();
         immutableBasis.next();
         immutableBasis.remove();
     }
@@ -348,7 +342,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
         //Mutate 
         exception.expect( UnsupportedOperationException.class );
 
-        Iterator<TimeSeries<SingleValuedPair>> immutableDuration = ts.durationIterator().iterator();
+        Iterator<List<Event<SingleValuedPair>>> immutableDuration = ts.durationIterator().iterator();
         immutableDuration.next();
         immutableDuration.remove();
     }
@@ -376,8 +370,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
         b.addTimeSeries( values ).setMetadata( meta );
 
         //Check dataset count
-        assertTrue( "Unexpected string representation of time-series.",
-                    joiner.toString().equals( b.build().toString() ) );
+        assertTrue( joiner.toString().equals( b.build().toString() ) );
         //Add another time-series
         Instant nextBasisTime = Instant.parse( FIFTH_TIME );
         List<Event<SingleValuedPair>> otherValues = new ArrayList<>();
@@ -394,8 +387,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
                         + "1.0,1.0)" );
         }
         b.addTimeSeries( otherValues );
-        assertTrue( "Unexpected string representation of compound time-series.",
-                    joiner.toString().equals( b.build().toString() ) );
+        assertTrue( joiner.toString().equals( b.build().toString() ) );
 
         //Check for equality of string representations when building in two different ways
         List<Event<SingleValuedPair>> input = new ArrayList<>();
@@ -404,8 +396,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
         TimeSeriesOfSingleValuedPairsBuilder a = new TimeSeriesOfSingleValuedPairsBuilder();
         TimeSeriesOfSingleValuedPairs pairs =
                 ( (TimeSeriesOfSingleValuedPairsBuilder) a.addTimeSeries( input ).setMetadata( meta ) ).build();
-        assertTrue( "Unequal string representation of two time-series that should have an equal representation.",
-                    joiner.toString().equals( pairs.toString() ) );
+        assertTrue( joiner.toString().equals( pairs.toString() ) );
     }
 
     /**
@@ -454,14 +445,12 @@ public final class TimeSeriesOfSingleValuedPairsTest
                                                  .setMetadata( meta )
                                                  .build();
 
-        assertFalse( "Expected an irregular time-series.", ts.isRegular() );
-
         //Iterate and test
         double[] expectedOrder = new double[] { 1, 7, 4, 10, 5, 11, 6, 12, 2, 8, 3, 9 };
         int nextIndex = 0;
-        for ( TimeSeries<SingleValuedPair> next : ts.durationIterator() )
+        for ( List<Event<SingleValuedPair>> next : ts.durationIterator() )
         {
-            for ( Event<SingleValuedPair> nextPair : next.timeIterator() )
+            for ( Event<SingleValuedPair> nextPair : next )
             {
                 assertTrue( "Unexpected pair in lead-time iteration of time-series.",
                             nextPair.getValue()
@@ -501,7 +490,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
 
         // Iterate by time
         int i = 1;
-        for ( Event<SingleValuedPair> next : ts.timeIterator() )
+        for ( Event<SingleValuedPair> next : ts.eventIterator() )
         {
             assertEquals( next.getValue(), SingleValuedPair.of( i, i ) );
             i++;
@@ -510,20 +499,21 @@ public final class TimeSeriesOfSingleValuedPairsTest
 
         // Iterate by basis time
         int j = 1;
-        for ( TimeSeries<SingleValuedPair> tsn : ts.basisTimeIterator() )
+        for ( TimeSeries<SingleValuedPair> tsn : ts.referenceTimeIterator() )
         {
-            assertEquals( tsn.timeIterator().iterator().next().getValue(), SingleValuedPair.of( j, j ) );
+            assertEquals( tsn.eventIterator().iterator().next().getValue(), SingleValuedPair.of( j, j ) );
             j++;
         }
         assertEquals( 10, j ); // All elements iterated
 
         // Iterate by duration
         int k = 1;
-        for ( TimeSeries<SingleValuedPair> tsn : ts.durationIterator() )
+        for ( List<Event<SingleValuedPair>> tsn : ts.durationIterator() )
         {
-            assertTrue( tsn.getRegularDuration().equals( Duration.ZERO ) );
-            for ( Event<SingleValuedPair> next : tsn.timeIterator() )
+            for ( Event<SingleValuedPair> next : tsn )
             {
+                assertTrue( Duration.ZERO.equals(next.getDuration() ) );
+                
                 assertEquals( next.getValue(), SingleValuedPair.of( k, k ) );
                 k++;
             }
@@ -561,8 +551,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
         c.addTimeSeries( ts );
 
         //Check that climatology has been preserved
-        assertTrue( "Failed to perserve climatology when building new time-series.",
-                    climatology.equals( c.build().getClimatology() ) );
+        assertTrue( climatology.equals( c.build().getClimatology() ) );
     }
 
 }

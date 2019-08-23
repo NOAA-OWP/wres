@@ -7,10 +7,12 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Set;
 import java.util.StringJoiner;
 
 import org.junit.Before;
@@ -96,7 +98,7 @@ public final class BasicTimeSeriesTest
     }
 
     /**
-     * Test {@link BasicTimeSeries#timeIterator()}.
+     * Test {@link BasicTimeSeries#eventIterator()}.
      */
 
     @Test
@@ -104,7 +106,7 @@ public final class BasicTimeSeriesTest
     {
         // Actual events
         List<Event<Double>> actual = new ArrayList<>();
-        defaultTimeSeries.timeIterator().forEach( actual::add );
+        defaultTimeSeries.eventIterator().forEach( actual::add );
 
         // Expected events
         List<Event<Double>> expected = new ArrayList<>();
@@ -132,11 +134,12 @@ public final class BasicTimeSeriesTest
     public void testDurationIterator()
     {
         // Actual durations
-        List<Duration> actual = new ArrayList<>();
-        defaultTimeSeries.durationIterator().forEach( next -> actual.addAll( next.getDurations() ) );
+        Set<Duration> actual = new HashSet<>();
+        defaultTimeSeries.durationIterator()
+                         .forEach( next -> next.forEach( inner -> actual.add( inner.getDuration() ) ) );
 
         // Expected durations
-        List<Duration> expected = new ArrayList<>();
+        Set<Duration> expected = new HashSet<>();
         expected.add( Duration.ofDays( 1 ) );
         expected.add( Duration.ofDays( 2 ) );
 
@@ -144,15 +147,15 @@ public final class BasicTimeSeriesTest
     }
 
     /**
-     * Test {@link BasicTimeSeries#basisTimeIterator()}.
+     * Test {@link BasicTimeSeries#referenceTimeIterator()}.
      */
 
     @Test
-    public void testBasisTimeIterator()
+    public void testReferenceTimeIterator()
     {
         // Actual durations
         List<Instant> actual = new ArrayList<>();
-        defaultTimeSeries.basisTimeIterator().forEach( next -> actual.add( next.getEarliestBasisTime() ) );
+        defaultTimeSeries.referenceTimeIterator().forEach( next -> actual.add( next.getReferenceTimes().first() ) );
 
         // Expected durations
         List<Instant> expected = new ArrayList<>();
@@ -160,36 +163,6 @@ public final class BasicTimeSeriesTest
         expected.add( Instant.parse( THIRD_TIME ) );
 
         assertTrue( actual.equals( expected ) );
-    }
-
-    /**
-     * Test {@link BasicTimeSeries#getEarliestBasisTime()}.
-     */
-
-    @Test
-    public void testGetEarliestBasisTime()
-    {
-        assertTrue( Instant.parse( FIRST_TIME ).equals( defaultTimeSeries.getEarliestBasisTime() ) );
-    }
-
-    /**
-     * Test {@link BasicTimeSeries#getLatestBasisTime()}.
-     */
-
-    @Test
-    public void testGetLatestBasisTime()
-    {
-        assertTrue( Instant.parse( THIRD_TIME ).equals( defaultTimeSeries.getLatestBasisTime() ) );
-    }
-
-    /**
-     * Tests {@link BasicTimeSeries#isRegular()}.
-     */
-
-    @Test
-    public void testIsRegular()
-    {
-        assertTrue( "Expected a regular time-series.", defaultTimeSeries.isRegular() );
     }
 
     /**
@@ -209,47 +182,6 @@ public final class BasicTimeSeriesTest
     }
 
     /**
-     * Tests {@link BasicTimeSeries#getRegularDuration()}.
-     */
-
-    @Test
-    public void testGetRegularDuration()
-    {
-        //Build a time-series with one basis time
-        List<Event<SingleValuedPair>> first = new ArrayList<>();
-        BasicTimeSeriesBuilder<SingleValuedPair> b = new BasicTimeSeriesBuilder<>();
-        Instant firstBasisTime = Instant.parse( FIRST_TIME );
-        first.add( Event.of( firstBasisTime, Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
-
-        TimeSeries<SingleValuedPair> ts = b.addTimeSeries( first ).build();
-        Duration benchmark = Duration.ofDays( 1 );
-
-        assertTrue( "Expected a regular time-series with a duration of '" + benchmark
-                    + "'.",
-                    ts.getRegularDuration().equals( benchmark ) );
-
-        //Add more data and test again
-        first.add( Event.of( firstBasisTime, Instant.parse( THIRD_TIME ), SingleValuedPair.of( 2, 2 ) ) );
-        first.add( Event.of( firstBasisTime, Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 3, 3 ) ) );
-        first.add( Event.of( firstBasisTime, Instant.parse( FIFTH_TIME ), SingleValuedPair.of( 4, 4 ) ) );
-
-        BasicTimeSeriesBuilder<SingleValuedPair> c = new BasicTimeSeriesBuilder<>();
-        TimeSeries<SingleValuedPair> tsSecond = c.addTimeSeries( first ).build();
-
-        assertTrue( "Expected a regular time-series with a duration of '" + benchmark
-                    + "'.",
-                    tsSecond.getRegularDuration().equals( benchmark ) );
-
-        //Add an irregular timestep and check for null output
-        first.add( Event.of( firstBasisTime, Instant.parse( "1985-01-07T00:00:00Z" ), SingleValuedPair.of( 4, 4 ) ) );
-        BasicTimeSeriesBuilder<SingleValuedPair> d = new BasicTimeSeriesBuilder<>();
-        TimeSeries<SingleValuedPair> tsThird = d.addTimeSeries( first ).build();
-
-        assertTrue( "Expected an irregular time-series.",
-                    Objects.isNull( tsThird.getRegularDuration() ) );
-    }
-
-    /**
      * Tests {@link BasicTimeSeries#hasMultipleTimeSeries()}.
      */
 
@@ -265,7 +197,7 @@ public final class BasicTimeSeriesTest
         b.addTimeSeries( values );
 
         //Check dataset count
-        assertFalse( "Expected a time-series with one basis time.", b.build().hasMultipleTimeSeries() );
+        assertTrue( b.build().getReferenceTimes().size() == 1 );
 
         //Add another time-series
         Instant nextBasisTime = Instant.parse( SECOND_TIME );
@@ -273,15 +205,15 @@ public final class BasicTimeSeriesTest
                                                       Instant.parse( SECOND_TIME ),
                                                       SingleValuedPair.of( 1, 1 ) ) ) );
 
-        assertTrue( "Expected a time-series with multiple basis times.", b.build().hasMultipleTimeSeries() );
+        assertTrue( b.build().getReferenceTimes().size() == 2 );
     }
 
     /**
-     * Tests {@link BasicTimeSeries#getBasisTimes()}.
+     * Tests {@link BasicTimeSeries#getReferenceTimes()}.
      */
 
     @Test
-    public void testGetBasisTimes()
+    public void testGetReferenceTimes()
     {
         //Build a time-series with two basis times
         List<Event<SingleValuedPair>> values = new ArrayList<>();
@@ -297,14 +229,13 @@ public final class BasicTimeSeriesTest
         TimeSeries<SingleValuedPair> pairs = b.build();
 
         //Check dataset count
-        assertTrue( "Expected a time-series with two basis times.", pairs.getBasisTimes().size() == 2 );
+        assertTrue( pairs.getReferenceTimes().size() == 2 );
 
         //Check the basis times
-        assertTrue( "First basis time missing from time-series.",
-                    pairs.getBasisTimes().first().equals( basisTime ) );
-        Iterator<Instant> it = pairs.getBasisTimes().iterator();
+        assertTrue( pairs.getReferenceTimes().first().equals( basisTime ) );
+        Iterator<Instant> it = pairs.getReferenceTimes().iterator();
         it.next();
-        assertTrue( "Second basis time missing from time-series.", it.next().equals( nextBasisTime ) );
+        assertTrue( it.next().equals( nextBasisTime ) );
     }
 
     /**
@@ -324,18 +255,15 @@ public final class BasicTimeSeriesTest
 
         b.addTimeSeries( values );
         //Check dataset count
-        assertTrue( "Expected a time-series with three lead times.", b.build().getDurations().size() == 3 );
+        assertTrue( b.build().getDurations().size() == 3 );
         //Check the lead times
-        assertTrue( "First lead time missing from time-series.",
-                    b.build().getDurations().contains( Duration.ofDays( 1 ) ) );
-        assertTrue( "Second lead time missing from time-series.",
-                    b.build().getDurations().contains( Duration.ofDays( 2 ) ) );
-        assertTrue( "Third lead time missing from time-series.",
-                    b.build().getDurations().contains( Duration.ofDays( 3 ) ) );
+        assertTrue( b.build().getDurations().contains( Duration.ofDays( 1 ) ) );
+        assertTrue( b.build().getDurations().contains( Duration.ofDays( 2 ) ) );
+        assertTrue( b.build().getDurations().contains( Duration.ofDays( 3 ) ) );
     }
 
     /**
-     * Confirms that the {@link BasicTimeSeries#timeIterator()} throws an iteration exception when expected.
+     * Confirms that the {@link BasicTimeSeries#eventIterator()} throws an iteration exception when expected.
      */
 
     @Test
@@ -344,22 +272,22 @@ public final class BasicTimeSeriesTest
         exception.expect( NoSuchElementException.class );
         exception.expectMessage( "No more events to iterate." );
 
-        Iterator<Event<Double>> noneSuchElement = defaultTimeSeries.timeIterator().iterator();
+        Iterator<Event<Double>> noneSuchElement = defaultTimeSeries.eventIterator().iterator();
         noneSuchElement.forEachRemaining( Objects::isNull );
         noneSuchElement.next();
     }
 
     /**
-     * Confirms that the {@link BasicTimeSeries#basisTimeIterator()} throws an iteration exception when expected.
+     * Confirms that the {@link BasicTimeSeries#referenceTimeIterator()} throws an iteration exception when expected.
      */
 
     @Test
-    public void testBasisTimeIteratorThrowsNoSuchElementException()
+    public void testReferenceTimeIteratorThrowsNoSuchElementException()
     {
         exception.expect( NoSuchElementException.class );
-        exception.expectMessage( "No more basis times to iterate." );
+        exception.expectMessage( "No more reference times to iterate." );
 
-        Iterator<TimeSeries<Double>> noneSuchBasis = defaultTimeSeries.basisTimeIterator().iterator();
+        Iterator<TimeSeries<Double>> noneSuchBasis = defaultTimeSeries.referenceTimeIterator().iterator();
         noneSuchBasis.forEachRemaining( Objects::isNull );
         noneSuchBasis.next();
     }
@@ -374,13 +302,13 @@ public final class BasicTimeSeriesTest
         exception.expect( NoSuchElementException.class );
         exception.expectMessage( "No more durations to iterate." );
 
-        Iterator<TimeSeries<Double>> noneSuchDuration = defaultTimeSeries.durationIterator().iterator();
+        Iterator<List<Event<Double>>> noneSuchDuration = defaultTimeSeries.durationIterator().iterator();
         noneSuchDuration.forEachRemaining( Objects::isNull );
         noneSuchDuration.next();
     }
 
     /**
-     * Confirms that the {@link BasicTimeSeries#timeIterator()} throws an exception when attempting to mutate the 
+     * Confirms that the {@link BasicTimeSeries#eventIterator()} throws an exception when attempting to mutate the 
      * time-series.
      */
 
@@ -390,7 +318,7 @@ public final class BasicTimeSeriesTest
         exception.expect( UnsupportedOperationException.class );
         exception.expectMessage( WHILE_ATTEMPTING_TO_MODIFY_AN_IMMUTABLE_TIME_SERIES );
 
-        Iterator<Event<Double>> immutableTimeSeries = defaultTimeSeries.timeIterator().iterator();
+        Iterator<Event<Double>> immutableTimeSeries = defaultTimeSeries.eventIterator().iterator();
         immutableTimeSeries.next();
         immutableTimeSeries.remove();
     }
@@ -406,7 +334,7 @@ public final class BasicTimeSeriesTest
         exception.expect( UnsupportedOperationException.class );
         exception.expectMessage( WHILE_ATTEMPTING_TO_MODIFY_AN_IMMUTABLE_TIME_SERIES );
 
-        Iterator<TimeSeries<Double>> immutableTimeSeries = defaultTimeSeries.durationIterator().iterator();
+        Iterator<List<Event<Double>>> immutableTimeSeries = defaultTimeSeries.durationIterator().iterator();
         immutableTimeSeries.next();
         immutableTimeSeries.remove();
     }
@@ -417,12 +345,12 @@ public final class BasicTimeSeriesTest
      */
 
     @Test
-    public void testBasisTimeIteratorThrowsExceptionOnAttemptToMutate()
+    public void testReferemceTimeIteratorThrowsExceptionOnAttemptToMutate()
     {
         exception.expect( UnsupportedOperationException.class );
         exception.expectMessage( WHILE_ATTEMPTING_TO_MODIFY_AN_IMMUTABLE_TIME_SERIES );
 
-        Iterator<TimeSeries<Double>> immutableTimeSeries = defaultTimeSeries.basisTimeIterator().iterator();
+        Iterator<TimeSeries<Double>> immutableTimeSeries = defaultTimeSeries.referenceTimeIterator().iterator();
         immutableTimeSeries.next();
         immutableTimeSeries.remove();
     }

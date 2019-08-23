@@ -57,63 +57,33 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
     }
 
     @Override
-    public Iterable<Event<SingleValuedPair>> timeIterator()
+    public Iterable<Event<SingleValuedPair>> eventIterator()
     {
-        return main.timeIterator();
+        return main.eventIterator();
     }
 
     @Override
-    public Iterable<TimeSeries<SingleValuedPair>> basisTimeIterator()
+    public Iterable<TimeSeries<SingleValuedPair>> referenceTimeIterator()
     {
-        return main.basisTimeIterator();
+        return main.referenceTimeIterator();
     }
 
     @Override
-    public Iterable<TimeSeries<SingleValuedPair>> durationIterator()
+    public Iterable<List<Event<SingleValuedPair>>> durationIterator()
     {
         return main.durationIterator();
     }
 
     @Override
-    public SortedSet<Instant> getBasisTimes()
+    public SortedSet<Instant> getReferenceTimes()
     {
-        return Collections.unmodifiableSortedSet( main.getBasisTimes() );
+        return Collections.unmodifiableSortedSet( main.getReferenceTimes() );
     }
 
     @Override
     public SortedSet<Duration> getDurations()
     {
         return Collections.unmodifiableSortedSet( main.getDurations() );
-    }
-
-    @Override
-    public boolean hasMultipleTimeSeries()
-    {
-        return main.hasMultipleTimeSeries();
-    }
-
-    @Override
-    public boolean isRegular()
-    {
-        return main.isRegular();
-    }
-
-    @Override
-    public Duration getRegularDuration()
-    {
-        return main.getRegularDuration();
-    }
-
-    @Override
-    public Instant getEarliestBasisTime()
-    {
-        return main.getEarliestBasisTime();
-    }
-
-    @Override
-    public Instant getLatestBasisTime()
-    {
-        return main.getLatestBasisTime();
     }
 
     @Override
@@ -157,7 +127,7 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
             
             //Add the main data
             List<Event<SingleValuedPair>> nextSource = new ArrayList<>();
-            timeSeries.timeIterator().forEach( nextSource::add );
+            timeSeries.eventIterator().forEach( nextSource::add );
 
             this.addTimeSeries( nextSource );
 
@@ -195,7 +165,7 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
             Objects.requireNonNull( timeSeries, NULL_INPUT );
             
             List<Event<SingleValuedPair>> nextSource = new ArrayList<>();
-            timeSeries.timeIterator().forEach( nextSource::add );
+            timeSeries.eventIterator().forEach( nextSource::add );
 
             this.addTimeSeriesDataForBaseline( nextSource );
 
@@ -295,7 +265,7 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
             Objects.requireNonNull( timeSeries, NULL_INPUT );
 
             List<Event<SingleValuedPair>> values = new ArrayList<>();
-            timeSeries.timeIterator().forEach( values::add );
+            timeSeries.eventIterator().forEach( values::add );
             this.addTimeSeriesDataForBaseline( values );
 
             return this;

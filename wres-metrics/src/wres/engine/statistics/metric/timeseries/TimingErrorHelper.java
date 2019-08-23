@@ -43,7 +43,7 @@ class TimingErrorHelper
         double peakRightValue = Double.NEGATIVE_INFINITY;
 
         // Iterate through the pairs to find the peak on each side
-        for ( Event<SingleValuedPair> nextPair : timeSeries.timeIterator() )
+        for ( Event<SingleValuedPair> nextPair : timeSeries.eventIterator() )
         {
             // New peak left
             if ( Double.compare( nextPair.getValue().getLeft(), peakLeftValue ) > 0 )

@@ -254,11 +254,11 @@ public abstract class PairsWriter<S extends Pair<?,?>, T extends Pairs<S> & Time
                 {
 
                     // Iterate in time-series order
-                    for ( TimeSeries<S> nextSeries : pairs.basisTimeIterator() )
+                    for ( TimeSeries<S> nextSeries : pairs.referenceTimeIterator() )
                     {
-                        Instant basisTime = nextSeries.getEarliestBasisTime();
+                        Instant basisTime = nextSeries.getReferenceTimes().first();
 
-                        for ( Event<S> nextPair : nextSeries.timeIterator() )
+                        for ( Event<S> nextPair : nextSeries.eventIterator() )
                         {
 
                             // Move to next line
