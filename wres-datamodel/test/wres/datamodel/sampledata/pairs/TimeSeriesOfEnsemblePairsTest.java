@@ -6,10 +6,12 @@ import static org.junit.Assert.assertTrue;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Set;
 import java.util.StringJoiner;
 import java.util.stream.StreamSupport;
 
@@ -48,11 +50,11 @@ public final class TimeSeriesOfEnsemblePairsTest
     public final ExpectedException exception = ExpectedException.none();
 
     /**
-     * Tests the {@link TimeSeriesOfEnsemblePairs#basisTimeIterator()} method.
+     * Tests the {@link TimeSeriesOfEnsemblePairs#referenceTimeIterator()} method.
      */
 
     @Test
-    public void testBasisTimeIterator()
+    public void testReferenceTimeIterator()
     {
         //Build a time-series with three basis times 
         List<Event<EnsemblePair>> first = new ArrayList<>();
@@ -98,12 +100,12 @@ public final class TimeSeriesOfEnsemblePairsTest
                                              .setMetadata( meta )
                                              .build();
 
-        assertTrue( "Expected a time-series container with multiple basis times.", ts.hasMultipleTimeSeries() );
+        assertTrue( ts.getReferenceTimes().size() == 3 );
         //Iterate and test
         int nextValue = 1;
-        for ( TimeSeries<EnsemblePair> next : ts.basisTimeIterator() )
+        for ( TimeSeries<EnsemblePair> next : ts.referenceTimeIterator() )
         {
-            for ( Event<EnsemblePair> nextPair : next.timeIterator() )
+            for ( Event<EnsemblePair> nextPair : next.eventIterator() )
             {
                 assertTrue( "Unexpected pair in basis-time iteration of time-series.",
                             nextPair.getValue().equals( EnsemblePair.of( nextValue, new double[] { nextValue } ) ) );
@@ -166,20 +168,18 @@ public final class TimeSeriesOfEnsemblePairsTest
                                              .setMetadataForBaseline( meta )
                                              .build();
 
-        assertTrue( "Expected a regular time-series.", ts.isRegular() );
-
         //Iterate and test
         int nextValue = 1;
-        for ( TimeSeries<EnsemblePair> next : ts.durationIterator() )
+        for ( List<Event<EnsemblePair>> next : ts.durationIterator() )
         {
-            for ( Event<EnsemblePair> nextPair : next.timeIterator() )
+            Set<Instant> basisTimes = new HashSet<>();
+            for ( Event<EnsemblePair> nextPair : next )
             {
-                assertTrue( "Unexpected pair in lead-time iteration of time-series.",
-                            nextPair.getValue().equals( EnsemblePair.of( nextValue, new double[] { nextValue } ) ) );
+                assertTrue( nextPair.getValue().equals( EnsemblePair.of( nextValue, new double[] { nextValue } ) ) );
+                basisTimes.add( nextPair.getReferenceTime() );
             }
             //Three time-series
-            assertTrue( "Unexpected number of time-series in dataset.",
-                        next.getBasisTimes().size() == 3 );
+            assertTrue( basisTimes.size() == 3 );
             nextValue++;
         }
 
@@ -192,8 +192,8 @@ public final class TimeSeriesOfEnsemblePairsTest
                 (TimeSeriesOfEnsemblePairs) new TimeSeriesOfEnsemblePairsBuilder().addTimeSeries( fourth )
                                                                                   .setMetadata( meta )
                                                                                   .build();
-        assertTrue( "Unexpected regular duration for the regular time-series ",
-                    Duration.ofHours( 51 ).equals( durationCheck.getRegularDuration() ) );
+
+        assertTrue( Duration.ofHours( 51 ).equals( durationCheck.getDurations().first() ) );
     }
 
     /**
@@ -220,8 +220,7 @@ public final class TimeSeriesOfEnsemblePairsTest
         SampleMetadata meta = SampleMetadata.of();
         b.addTimeSeries( values ).setMetadata( meta );
         //Check dataset dimensions
-        assertTrue( "Unexpected baseline associated with time-series.",
-                    Objects.isNull( b.build().getBaselineData() ) );
+        assertTrue( Objects.isNull( b.build().getBaselineData() ) );
 
         b.addTimeSeriesDataForBaseline( values );
         b.setMetadataForBaseline( meta );
@@ -229,29 +228,27 @@ public final class TimeSeriesOfEnsemblePairsTest
         TimeSeriesOfEnsemblePairs baseline = b.build().getBaselineData();
 
         //Check dataset dimensions
-        assertTrue( "Expected a time-series with one basis time and three lead times.",
-                    baseline.getDurations().size() == 3 && baseline.getBasisTimes().size() == 1 );
+        assertTrue( baseline.getDurations().size() == 3 && baseline.getReferenceTimes().size() == 1 );
 
         //Check dataset
         //Iterate and test
         int nextValue = 1;
-        for ( TimeSeries<EnsemblePair> next : baseline.durationIterator() )
+        for ( List<Event<EnsemblePair>> next : baseline.durationIterator() )
         {
-            for ( Event<EnsemblePair> nextPair : next.timeIterator() )
+            for ( Event<EnsemblePair> nextPair : next )
             {
-                assertTrue( "Unexpected pair in lead-time iteration of baseline time-series.",
-                            nextPair.getValue().equals( EnsemblePair.of( nextValue, new double[] { nextValue } ) ) );
+                assertTrue( nextPair.getValue().equals( EnsemblePair.of( nextValue, new double[] { nextValue } ) ) );
                 nextValue++;
             }
         }
     }
 
     /**
-     * Tests the addition of several time-series with a common basis time.
+     * Tests the addition of several time-series with a common reference time.
      */
 
     @Test
-    public void testAddMultipleTimeSeriesWithSameBasisTime()
+    public void testAddMultipleTimeSeriesWithSameReferenceTime()
     {
         //Build a time-series with one basis times and three separate sets of data to append
         List<Event<EnsemblePair>> first = new ArrayList<>();
@@ -286,8 +283,7 @@ public final class TimeSeriesOfEnsemblePairsTest
         c.addTimeSeries( ts );
 
         //Check that climatology has been preserved
-        assertTrue( "Failed to perserve climatology when building new time-series.",
-                    climatology.equals( c.build().getClimatology() ) );
+        assertTrue( climatology.equals( c.build().getClimatology() ) );
 
         second.add( Event.of( basisTime,
                               Instant.parse( SECOND_TIME ),
@@ -315,18 +311,16 @@ public final class TimeSeriesOfEnsemblePairsTest
         TimeSeriesOfEnsemblePairs tsAppend = c.build();
 
         //Check dataset dimensions
-        assertTrue( "Expected a time-series with three basis times and three lead times.",
-                    tsAppend.getDurations().size() == 3 && StreamSupport.stream( tsAppend.basisTimeIterator()
+        assertTrue( tsAppend.getDurations().size() == 3 && StreamSupport.stream( tsAppend.referenceTimeIterator()
                                                                                          .spliterator(),
                                                                                  false )
                                                                         .count() == 3 );
         //Check dataset
         //Iterate and test
         int nextValue = 1;
-        for ( Event<EnsemblePair> nextPair : tsAppend.timeIterator() )
+        for ( Event<EnsemblePair> nextPair : tsAppend.eventIterator() )
         {
-            assertTrue( "Unexpected pair in lead-time iteration of baseline time-series.",
-                        nextPair.getValue().equals( EnsemblePair.of( nextValue, new double[] { nextValue } ) ) );
+            assertTrue( nextPair.getValue().equals( EnsemblePair.of( nextValue, new double[] { nextValue } ) ) );
             nextValue++;
         }
     }
@@ -361,22 +355,22 @@ public final class TimeSeriesOfEnsemblePairsTest
 
         //Iterate
         exception.expect( NoSuchElementException.class );
-        Iterator<TimeSeries<EnsemblePair>> noneSuchBasis = ts.basisTimeIterator().iterator();
+        Iterator<TimeSeries<EnsemblePair>> noneSuchBasis = ts.referenceTimeIterator().iterator();
         noneSuchBasis.forEachRemaining( Objects::isNull );
         noneSuchBasis.next();
 
-        Iterator<TimeSeries<EnsemblePair>> noneSuchDuration = ts.durationIterator().iterator();
+        Iterator<List<Event<EnsemblePair>>> noneSuchDuration = ts.durationIterator().iterator();
         noneSuchDuration.forEachRemaining( Objects::isNull );
         noneSuchDuration.next();
 
         //Mutate 
         exception.expect( UnsupportedOperationException.class );
 
-        Iterator<TimeSeries<EnsemblePair>> immutableBasis = ts.basisTimeIterator().iterator();
+        Iterator<TimeSeries<EnsemblePair>> immutableBasis = ts.referenceTimeIterator().iterator();
         immutableBasis.next();
         immutableBasis.remove();
 
-        Iterator<TimeSeries<EnsemblePair>> immutableDuration = ts.durationIterator().iterator();
+        Iterator<List<Event<EnsemblePair>>> immutableDuration = ts.durationIterator().iterator();
         immutableDuration.next();
         immutableDuration.remove();
     }
@@ -428,8 +422,7 @@ public final class TimeSeriesOfEnsemblePairsTest
         }
 
         b.addTimeSeries( otherValues );
-        assertTrue( "Unexpected string representation of compound time-series.",
-                    joiner.toString().equals( b.build().toString() ) );
+        assertTrue( joiner.toString().equals( b.build().toString() ) );
 
         //Check for equality of string representations when building in two different ways
         List<Event<EnsemblePair>> input = new ArrayList<>();
@@ -439,8 +432,7 @@ public final class TimeSeriesOfEnsemblePairsTest
         TimeSeriesOfEnsemblePairsBuilder a = new TimeSeriesOfEnsemblePairsBuilder();
         TimeSeriesOfEnsemblePairs pairs =
                 ( (TimeSeriesOfEnsemblePairsBuilder) a.addTimeSeries( input ).setMetadata( meta ) ).build();
-        assertTrue( "Unequal string representation of two time-series that should have an equal representation.",
-                    joiner.toString().equals( pairs.toString() ) );
+        assertTrue( joiner.toString().equals( pairs.toString() ) );
     }
 
     /**
@@ -506,18 +498,15 @@ public final class TimeSeriesOfEnsemblePairsTest
                                              .addTimeSeries( fourth )
                                              .setMetadata( meta )
                                              .build();
-
-        assertFalse( "Expected an irregular time-series.", ts.isRegular() );
-
+        
         //Iterate and test
         double[] expectedOrder = new double[] { 1, 7, 4, 10, 5, 11, 6, 12, 2, 8, 3, 9 };
         int nextIndex = 0;
-        for ( TimeSeries<EnsemblePair> next : ts.durationIterator() )
+        for ( List<Event<EnsemblePair>> next : ts.durationIterator() )
         {
-            for ( Event<EnsemblePair> nextPair : next.timeIterator() )
+            for ( Event<EnsemblePair> nextPair : next )
             {
-                assertTrue( "Unexpected pair in lead-time iteration of time-series.",
-                            nextPair.getValue()
+                assertTrue( nextPair.getValue()
                                     .equals( EnsemblePair.of( expectedOrder[nextIndex],
                                                               new double[] { expectedOrder[nextIndex] } ) ) );
                 nextIndex++;
@@ -561,8 +550,7 @@ public final class TimeSeriesOfEnsemblePairsTest
         c.addTimeSeries( ts );
 
         //Check that climatology has been preserved
-        assertTrue( "Failed to perserve climatology when building new time-series.",
-                    climatology.equals( c.build().getClimatology() ) );
+        assertTrue( climatology.equals( c.build().getClimatology() ) );
 
     }
 

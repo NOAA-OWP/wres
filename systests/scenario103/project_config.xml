@@ -54,7 +54,9 @@
         <!-- The evaluation is restricted to pairs that have a lead time of 42h. In general, 
              it may be more useful to evaluate a longer period of lead durations, setting 
              minimum to be "0" hours and maximum to be "120", "240", or even longer depending
-             on the objectives of the evaluation.
+             on the objectives of the evaluation. By default, one big pools is created for
+             all lead durations. To create one pool for each lead duration, use an explicit
+             leadTimesPoolingWindow.
         -->
         <leadHours minimum="42" maximum="42" />
 
@@ -65,15 +67,6 @@
             <period>24</period>
             <unit>hours</unit>
         </desiredTimeScale>
-
-        <!-- We place all pairs into a single pool that is zero-hours wide. This pool
-             is centered on a lead time of 42h, because that is the only lead time we
-             are considering here.
-        -->
-        <leadTimesPoolingWindow>
-            <period>0</period>
-            <unit>hours</unit>
-        </leadTimesPoolingWindow>
 
     </pair>
 

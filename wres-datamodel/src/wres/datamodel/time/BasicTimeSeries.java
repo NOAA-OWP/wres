@@ -58,13 +58,13 @@ public class BasicTimeSeries<T> implements TimeSeries<T>
      * Basis time iterator.
      */
 
-    private final Iterable<TimeSeries<T>> basisTimeIterator;
+    private final Iterable<TimeSeries<T>> referenceTimeIterator;
 
     /**
      * Duration iterator.
      */
 
-    private final Iterable<TimeSeries<T>> durationIterator;
+    private final Iterable<List<Event<T>>> durationIterator;
 
     /**
      * Event iterator.
@@ -116,98 +116,33 @@ public class BasicTimeSeries<T> implements TimeSeries<T>
     }
 
     @Override
-    public Iterable<Event<T>> timeIterator()
+    public Iterable<Event<T>> eventIterator()
     {
         return timeIterator;
     }
 
     @Override
-    public Iterable<TimeSeries<T>> basisTimeIterator()
+    public Iterable<TimeSeries<T>> referenceTimeIterator()
     {
-        return basisTimeIterator;
+        return referenceTimeIterator;
     }
 
     @Override
-    public Iterable<TimeSeries<T>> durationIterator()
+    public Iterable<List<Event<T>>> durationIterator()
     {
         return durationIterator;
     }
 
     @Override
-    public SortedSet<Instant> getBasisTimes()
+    public SortedSet<Instant> getReferenceTimes()
     {
         return Collections.unmodifiableSortedSet( this.basisTimes );
-    }
-
-    @Override
-    public Instant getEarliestBasisTime()
-    {
-        if ( this.getBasisTimes().isEmpty() )
-        {
-            return Instant.MIN;
-        }
-
-        return this.getBasisTimes().first();
-    }
-
-    @Override
-    public Instant getLatestBasisTime()
-    {
-        if ( this.getBasisTimes().isEmpty() )
-        {
-            return Instant.MAX;
-        }
-        return this.getBasisTimes().last();
     }
 
     @Override
     public SortedSet<Duration> getDurations()
     {
         return Collections.unmodifiableSortedSet( this.durations );
-    }
-
-    @Override
-    public boolean hasMultipleTimeSeries()
-    {
-        return data.size() > 1;
-    }
-
-    @Override
-    public boolean isRegular()
-    {
-        return Objects.nonNull( this.getRegularDuration() );
-    }
-
-    @Override
-    public Duration getRegularDuration()
-    {
-        if ( this.durations.size() == 1 )
-        {
-            return this.durations.first();
-        }
-        Duration gap = null;
-        Duration last = null;
-        for ( Duration next : this.durations )
-        {
-            if ( Objects.isNull( last ) )
-            {
-                last = this.durations.first();
-            }
-            else if ( Objects.isNull( gap ) )
-            {
-                gap = next.minus( last );
-                last = next;
-            }
-            else if ( !next.minus( last ).equals( gap ) )
-            {
-                return null;
-            }
-            else
-            {
-                last = next;
-            }
-        }
-        return gap;
     }
 
     @Override
@@ -221,7 +156,7 @@ public class BasicTimeSeries<T> implements TimeSeries<T>
      * 
      * @param data the raw data
      * @param baselineData the raw data for the baseline (may be empty, cannot be null)
-     * @param basisTimeIterator a basis time iterator
+     * @param referenceTimeIterator a basis time iterator
      * @param durationIterator a duration iterator
      * @throws SampleDataException if one or more inputs is invalid
      */
@@ -236,7 +171,7 @@ public class BasicTimeSeries<T> implements TimeSeries<T>
      * 
      * @param data the raw data
      * @param baselineData the raw data for the baseline (may be empty, cannot be null)
-     * @param basisTimeIterator a basis time iterator
+     * @param referenceTimeIterator a basis time iterator
      * @param durationIterator a duration iterator
      * @throws SampleDataException if one or more inputs is invalid
      */
@@ -290,7 +225,7 @@ public class BasicTimeSeries<T> implements TimeSeries<T>
                                    .collect( Collectors.toCollection( TreeSet::new ) );
 
         // Set the iterators
-        this.basisTimeIterator = BasicTimeSeries.getBasisTimeIterator( this.data );
+        this.referenceTimeIterator = BasicTimeSeries.getReferenceTimeIterator( this.data );
 
         this.durationIterator = BasicTimeSeries.getDurationIterator( this.data, this.durations );
 
@@ -358,7 +293,7 @@ public class BasicTimeSeries<T> implements TimeSeries<T>
      * @return an iterable view of the basis times
      */
 
-    private static <T> Iterable<TimeSeries<T>> getBasisTimeIterator( final List<List<Event<T>>> data )
+    private static <T> Iterable<TimeSeries<T>> getReferenceTimeIterator( final List<List<Event<T>>> data )
     {
         // The atomic time-series, one for each basis time in each inner list
         final List<List<Event<T>>> atomic = new ArrayList<>();
@@ -408,7 +343,7 @@ public class BasicTimeSeries<T> implements TimeSeries<T>
                     {
                         if ( !hasNext() )
                         {
-                            throw new NoSuchElementException( "No more basis times to iterate." );
+                            throw new NoSuchElementException( "No more reference times to iterate." );
                         }
 
                         BasicTimeSeries<T> returnMe = new BasicTimeSeries<>( Arrays.asList( atomic.get( returned ) ) );
@@ -436,16 +371,16 @@ public class BasicTimeSeries<T> implements TimeSeries<T>
      * @return an iterable view of the durations
      */
 
-    private static <T> Iterable<TimeSeries<T>> getDurationIterator( final List<List<Event<T>>> data,
+    private static <T> Iterable<List<Event<T>>> getDurationIterator( final List<List<Event<T>>> data,
                                                                     final SortedSet<Duration> durations )
     {
         //Construct an iterable view of the basis times
-        class IterableTimeSeries implements Iterable<TimeSeries<T>>
+        class IterableTimeSeries implements Iterable<List<Event<T>>>
         {
             @Override
-            public Iterator<TimeSeries<T>> iterator()
+            public Iterator<List<Event<T>>> iterator()
             {
-                return new Iterator<TimeSeries<T>>()
+                return new Iterator<List<Event<T>>>()
                 {
                     Iterator<Duration> iterator = durations.iterator();
 
@@ -456,7 +391,7 @@ public class BasicTimeSeries<T> implements TimeSeries<T>
                     }
 
                     @Override
-                    public TimeSeries<T> next()
+                    public List<Event<T>> next()
                     {
                         if ( !hasNext() )
                         {

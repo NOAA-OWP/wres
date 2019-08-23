@@ -57,63 +57,33 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
     }
 
     @Override
-    public Iterable<Event<EnsemblePair>> timeIterator()
+    public Iterable<Event<EnsemblePair>> eventIterator()
     {
-        return main.timeIterator();
+        return main.eventIterator();
     }
 
     @Override
-    public Iterable<TimeSeries<EnsemblePair>> basisTimeIterator()
+    public Iterable<TimeSeries<EnsemblePair>> referenceTimeIterator()
     {
-        return main.basisTimeIterator();
+        return main.referenceTimeIterator();
     }
 
     @Override
-    public Iterable<TimeSeries<EnsemblePair>> durationIterator()
+    public Iterable<List<Event<EnsemblePair>>> durationIterator()
     {
         return main.durationIterator();
     }
 
     @Override
-    public SortedSet<Instant> getBasisTimes()
+    public SortedSet<Instant> getReferenceTimes()
     {
-        return Collections.unmodifiableSortedSet( main.getBasisTimes() );
+        return Collections.unmodifiableSortedSet( main.getReferenceTimes() );
     }
 
     @Override
     public SortedSet<Duration> getDurations()
     {
         return Collections.unmodifiableSortedSet( main.getDurations() );
-    }
-
-    @Override
-    public boolean hasMultipleTimeSeries()
-    {
-        return main.hasMultipleTimeSeries();
-    }
-
-    @Override
-    public boolean isRegular()
-    {
-        return main.isRegular();
-    }
-
-    @Override
-    public Duration getRegularDuration()
-    {
-        return main.getRegularDuration();
-    }
-
-    @Override
-    public Instant getEarliestBasisTime()
-    {
-        return main.getEarliestBasisTime();
-    }
-
-    @Override
-    public Instant getLatestBasisTime()
-    {
-        return main.getLatestBasisTime();
     }
 
     @Override
@@ -188,7 +158,7 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
             Objects.requireNonNull( timeSeries, NULL_INPUT );
 
             List<Event<EnsemblePair>> values = new ArrayList<>();
-            timeSeries.timeIterator().forEach( values::add );
+            timeSeries.eventIterator().forEach( values::add );
             this.addTimeSeriesDataForBaseline( values );
 
             return this;
@@ -231,7 +201,7 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
             Objects.requireNonNull( timeSeries, NULL_INPUT );
             
             List<Event<EnsemblePair>> nextSource = new ArrayList<>();
-            timeSeries.timeIterator().forEach( nextSource::add );
+            timeSeries.eventIterator().forEach( nextSource::add );
 
             this.addTimeSeries( nextSource );
 
@@ -270,7 +240,7 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
             Objects.requireNonNull( timeSeries, NULL_INPUT );
             
             List<Event<EnsemblePair>> nextSource = new ArrayList<>();
-            timeSeries.timeIterator().forEach( nextSource::add );
+            timeSeries.eventIterator().forEach( nextSource::add );
 
             this.addTimeSeriesDataForBaseline( nextSource );
 

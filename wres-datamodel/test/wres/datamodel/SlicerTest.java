@@ -677,7 +677,7 @@ public final class SlicerTest
                                clim -> clim > 0 );
 
         List<Event<SingleValuedPair>> secondData = new ArrayList<>();
-        secondResult.timeIterator().forEach( secondData::add );
+        secondResult.eventIterator().forEach( secondData::add );
         List<Event<SingleValuedPair>> secondBenchmark = new ArrayList<>();
         secondBenchmark.addAll( second );
         secondBenchmark.addAll( third );
@@ -697,7 +697,7 @@ public final class SlicerTest
                                null );
 
         List<Event<SingleValuedPair>> thirdData = new ArrayList<>();
-        thirdResult.timeIterator().forEach( thirdData::add );
+        thirdResult.eventIterator().forEach( thirdData::add );
         List<Event<SingleValuedPair>> thirdBenchmark = new ArrayList<>();
         thirdBenchmark.addAll( third );
 
@@ -722,14 +722,14 @@ public final class SlicerTest
                                clim -> clim > 0 );
 
         List<Event<SingleValuedPair>> fifthData = new ArrayList<>();
-        fifthResult.timeIterator().forEach( fifthData::add );
+        fifthResult.eventIterator().forEach( fifthData::add );
 
         // Same as second benchmark for main data
         assertTrue( fifthData.equals( secondBenchmark ) );
 
         // Baseline data
         List<Event<SingleValuedPair>> fifthDataBase = new ArrayList<>();
-        fifthResult.getBaselineData().timeIterator().forEach( fifthDataBase::add );
+        fifthResult.getBaselineData().eventIterator().forEach( fifthDataBase::add );
         List<Event<SingleValuedPair>> fifthBenchmarkBase = new ArrayList<>();
         fifthBenchmarkBase.addAll( second );
 
@@ -738,12 +738,12 @@ public final class SlicerTest
     }
 
     /**
-     * Tests the {@link Slicer#filterByBasisTime(TimeSeriesOfEnsemblePairs, java.util.function.Predicate)} 
+     * Tests the {@link Slicer#filterByReferenceTime(TimeSeriesOfEnsemblePairs, java.util.function.Predicate)} 
      * method.
      */
 
     @Test
-    public void testFilterEnsembleTimeSeriesByBasisTime()
+    public void testFilterEnsembleTimeSeriesByReferenceTime()
     {
         //Build a time-series with three basis times 
         List<Event<EnsemblePair>> first = new ArrayList<>();
@@ -791,10 +791,10 @@ public final class SlicerTest
                                              .build();
         //Iterate and test
         TimeSeries<EnsemblePair> filtered =
-                Slicer.filterByBasisTime( ts, a -> a.equals( secondBasisTime ) );
-        assertTrue( filtered.getBasisTimes().size() == 1 );
-        assertTrue( filtered.getBasisTimes().first().equals( secondBasisTime ) );
-        assertTrue( filtered.timeIterator()
+                Slicer.filterByReferenceTime( ts, a -> a.equals( secondBasisTime ) );
+        assertTrue( filtered.getReferenceTimes().size() == 1 );
+        assertTrue( filtered.getReferenceTimes().first().equals( secondBasisTime ) );
+        assertTrue( filtered.eventIterator()
                             .iterator()
                             .next()
                             .getValue()
@@ -802,14 +802,14 @@ public final class SlicerTest
 
         //Check for empty output on none filter
         SortedSet<Instant> sliced =
-                Slicer.filterByBasisTime( ts, a -> a.equals( Instant.parse( "1985-01-04T00:00:00Z" ) ) )
-                      .getBasisTimes();
+                Slicer.filterByReferenceTime( ts, a -> a.equals( Instant.parse( "1985-01-04T00:00:00Z" ) ) )
+                      .getReferenceTimes();
         assertTrue( sliced.isEmpty() );
 
         //Check exceptional cases
         exception.expect( NullPointerException.class );
-        Slicer.filterByBasisTime( (TimeSeriesOfEnsemblePairs) null, null );
-        Slicer.filterByBasisTime( ts, null );
+        Slicer.filterByReferenceTime( (TimeSeriesOfEnsemblePairs) null, null );
+        Slicer.filterByReferenceTime( ts, null );
     }
 
     /**
@@ -865,19 +865,19 @@ public final class SlicerTest
                                              .setMetadata( meta )
                                              .build();
         //Iterate and test
-        TimeSeriesOfEnsemblePairs filtered = Slicer.filterByBasisTime( ts, p -> p.equals( secondBasisTime ) );
+        TimeSeriesOfEnsemblePairs filtered = Slicer.filterByReferenceTime( ts, p -> p.equals( secondBasisTime ) );
         filtered = Slicer.filterByDuration( filtered, q -> q.equals( Duration.ofHours( 3 ) ) );
 
         assertTrue( filtered.getDurations().size() == 1 );
         assertTrue( filtered.getDurations().first().equals( Duration.ofHours( 3 ) ) );
-        assertTrue( filtered.timeIterator()
+        assertTrue( filtered.eventIterator()
                             .iterator()
                             .next()
                             .getValue()
                             .equals( EnsemblePair.of( 6, new double[] { 6 } ) ) );
 
         //Check for empty output on none filter
-        Set<Duration> sliced = Slicer.filterByBasisTime( ts, p -> false ).getDurations();
+        Set<Duration> sliced = Slicer.filterByReferenceTime( ts, p -> false ).getDurations();
         assertTrue( sliced.isEmpty() );
 
         //Check exceptional cases
@@ -889,12 +889,12 @@ public final class SlicerTest
 
 
     /**
-     * Tests the {@link Slicer#filterByBasisTime(TimeSeriesOfSingleValuedPairs, java.util.function.Predicate)} 
+     * Tests the {@link Slicer#filterByReferenceTime(TimeSeriesOfSingleValuedPairs, java.util.function.Predicate)} 
      * method.
      */
 
     @Test
-    public void testFilterSingleValuedTimeSeriesByBasisTime()
+    public void testFilterSingleValuedTimeSeriesByReferenceTime()
     {
         //Build a time-series with three basis times 
         List<Event<SingleValuedPair>> first = new ArrayList<>();
@@ -923,15 +923,15 @@ public final class SlicerTest
                                                  .setMetadata( meta )
                                                  .build();
         //Iterate and test
-        TimeSeries<SingleValuedPair> filtered = Slicer.filterByBasisTime( ts, a -> a.equals( secondBasisTime ) );
-        assertTrue( filtered.getBasisTimes().size() == 1 );
-        assertTrue( filtered.getBasisTimes().first().equals( secondBasisTime ) );
-        assertTrue( filtered.timeIterator().iterator().next().getValue().equals( SingleValuedPair.of( 4, 4 ) ) );
+        TimeSeries<SingleValuedPair> filtered = Slicer.filterByReferenceTime( ts, a -> a.equals( secondBasisTime ) );
+        assertTrue( filtered.getReferenceTimes().size() == 1 );
+        assertTrue( filtered.getReferenceTimes().first().equals( secondBasisTime ) );
+        assertTrue( filtered.eventIterator().iterator().next().getValue().equals( SingleValuedPair.of( 4, 4 ) ) );
 
         //Check for empty output on none filter
         SortedSet<Instant> sliced =
-                Slicer.filterByBasisTime( ts, p -> p.equals( Instant.parse( "1985-01-04T00:00:00Z" ) ) )
-                      .getBasisTimes();
+                Slicer.filterByReferenceTime( ts, p -> p.equals( Instant.parse( "1985-01-04T00:00:00Z" ) ) )
+                      .getReferenceTimes();
         assertTrue( sliced.isEmpty() );
 
         //Check exceptional cases
@@ -976,15 +976,15 @@ public final class SlicerTest
                                                  .build();
 
         //Iterate and test
-        TimeSeriesOfSingleValuedPairs filtered = Slicer.filterByBasisTime( ts, p -> p.equals( secondBasisTime ) );
+        TimeSeriesOfSingleValuedPairs filtered = Slicer.filterByReferenceTime( ts, p -> p.equals( secondBasisTime ) );
         filtered = Slicer.filterByDuration( filtered, q -> q.equals( Duration.ofHours( 3 ) ) );
 
         assertTrue( filtered.getDurations().size() == 1 );
         assertTrue( filtered.getDurations().first().equals( Duration.ofHours( 3 ) ) );
-        assertTrue( filtered.timeIterator().iterator().next().getValue().equals( SingleValuedPair.of( 6, 6 ) ) );
+        assertTrue( filtered.eventIterator().iterator().next().getValue().equals( SingleValuedPair.of( 6, 6 ) ) );
 
         //Check for empty output on none filter
-        Set<Duration> sliced = Slicer.filterByBasisTime( ts, p -> false ).getDurations();
+        Set<Duration> sliced = Slicer.filterByReferenceTime( ts, p -> false ).getDurations();
         assertTrue( sliced.isEmpty() );
 
         //Check exceptional cases

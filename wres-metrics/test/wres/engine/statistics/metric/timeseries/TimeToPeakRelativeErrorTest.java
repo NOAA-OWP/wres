@@ -58,7 +58,7 @@ public final class TimeToPeakRelativeErrorTest
                                                                                                        "Streamflow" ) )
                                                                  .setTimeWindow( window )
                                                                  .build(),
-                                      input.getBasisTimes().size(),
+                                      input.getReferenceTimes().size(),
                                       MeasurementUnit.of( "DURATION IN RELATIVE HOURS" ),
                                       MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR,
                                       MetricConstants.MAIN );

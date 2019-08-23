@@ -31,7 +31,7 @@ public interface TimeSeriesBuilder<T>
         Objects.requireNonNull( timeSeries, "Specify non-null time-series input." );
 
         List<Event<T>> rawData = new ArrayList<>();
-        timeSeries.timeIterator().forEach( rawData::add );       
+        timeSeries.eventIterator().forEach( rawData::add );       
         this.addTimeSeries( Collections.unmodifiableList( rawData ) );
 
         return this;

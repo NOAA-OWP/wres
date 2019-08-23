@@ -41,7 +41,7 @@ public final class TimingErrorHelperTest
         // Generate some data
         TimeSeriesOfSingleValuedPairs input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
 
-        Iterator<TimeSeries<SingleValuedPair>> iterator = input.basisTimeIterator().iterator();
+        Iterator<TimeSeries<SingleValuedPair>> iterator = input.referenceTimeIterator().iterator();
         TimeSeries<SingleValuedPair> first = iterator.next();
         TimeSeries<SingleValuedPair> second = iterator.next();
 
