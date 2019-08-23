@@ -1,18 +1,15 @@
 package wres.datamodel.time;
 
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.Set;
 import java.util.StringJoiner;
 
 import org.junit.Before;
@@ -122,26 +119,6 @@ public final class BasicTimeSeriesTest
         expected.add( Event.of( Instant.parse( THIRD_TIME ),
                                 Instant.parse( FIFTH_TIME ),
                                 4.0 ) );
-
-        assertTrue( actual.equals( expected ) );
-    }
-
-    /**
-     * Test {@link BasicTimeSeries#durationIterator()}.
-     */
-
-    @Test
-    public void testDurationIterator()
-    {
-        // Actual durations
-        Set<Duration> actual = new HashSet<>();
-        defaultTimeSeries.durationIterator()
-                         .forEach( next -> next.forEach( inner -> actual.add( inner.getDuration() ) ) );
-
-        // Expected durations
-        Set<Duration> expected = new HashSet<>();
-        expected.add( Duration.ofDays( 1 ) );
-        expected.add( Duration.ofDays( 2 ) );
 
         assertTrue( actual.equals( expected ) );
     }
@@ -293,21 +270,6 @@ public final class BasicTimeSeriesTest
     }
 
     /**
-     * Confirms that the {@link BasicTimeSeries#durationIterator()} throws an iteration exception when expected.
-     */
-
-    @Test
-    public void testDurationIteratorThrowsNoSuchElementException()
-    {
-        exception.expect( NoSuchElementException.class );
-        exception.expectMessage( "No more durations to iterate." );
-
-        Iterator<List<Event<Double>>> noneSuchDuration = defaultTimeSeries.durationIterator().iterator();
-        noneSuchDuration.forEachRemaining( Objects::isNull );
-        noneSuchDuration.next();
-    }
-
-    /**
      * Confirms that the {@link BasicTimeSeries#eventIterator()} throws an exception when attempting to mutate the 
      * time-series.
      */
@@ -319,22 +281,6 @@ public final class BasicTimeSeriesTest
         exception.expectMessage( WHILE_ATTEMPTING_TO_MODIFY_AN_IMMUTABLE_TIME_SERIES );
 
         Iterator<Event<Double>> immutableTimeSeries = defaultTimeSeries.eventIterator().iterator();
-        immutableTimeSeries.next();
-        immutableTimeSeries.remove();
-    }
-
-    /**
-     * Confirms that the {@link BasicTimeSeries#durationIterator()} throws an exception when attempting to mutate the 
-     * time-series.
-     */
-
-    @Test
-    public void testDurationIteratorThrowsExceptionOnAttemptToMutate()
-    {
-        exception.expect( UnsupportedOperationException.class );
-        exception.expectMessage( WHILE_ATTEMPTING_TO_MODIFY_AN_IMMUTABLE_TIME_SERIES );
-
-        Iterator<List<Event<Double>>> immutableTimeSeries = defaultTimeSeries.durationIterator().iterator();
         immutableTimeSeries.next();
         immutableTimeSeries.remove();
     }

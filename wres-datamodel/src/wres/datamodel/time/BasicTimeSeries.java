@@ -18,7 +18,6 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleDataException;
 
 /**
@@ -59,12 +58,6 @@ public class BasicTimeSeries<T> implements TimeSeries<T>
      */
 
     private final Iterable<TimeSeries<T>> referenceTimeIterator;
-
-    /**
-     * Duration iterator.
-     */
-
-    private final Iterable<List<Event<T>>> durationIterator;
 
     /**
      * Event iterator.
@@ -125,12 +118,6 @@ public class BasicTimeSeries<T> implements TimeSeries<T>
     public Iterable<TimeSeries<T>> referenceTimeIterator()
     {
         return referenceTimeIterator;
-    }
-
-    @Override
-    public Iterable<List<Event<T>>> durationIterator()
-    {
-        return durationIterator;
     }
 
     @Override
@@ -226,8 +213,6 @@ public class BasicTimeSeries<T> implements TimeSeries<T>
 
         // Set the iterators
         this.referenceTimeIterator = BasicTimeSeries.getReferenceTimeIterator( this.data );
-
-        this.durationIterator = BasicTimeSeries.getDurationIterator( this.data, this.durations );
 
         this.timeIterator = BasicTimeSeries.getTimeIterator( this.data );
     }
@@ -351,58 +336,6 @@ public class BasicTimeSeries<T> implements TimeSeries<T>
                         returned++;
 
                         return returnMe;
-                    }
-
-                    @Override
-                    public void remove()
-                    {
-                        throw new UnsupportedOperationException( TimeSeriesHelper.UNSUPPORTED_MODIFICATION );
-                    }
-                };
-            }
-        }
-        return new IterableTimeSeries();
-    }
-
-    /**
-     * Returns an {@link Iterable} view of the atomic time-series by duration.
-     * 
-     * @param data the input data to iterate
-     * @return an iterable view of the durations
-     */
-
-    private static <T> Iterable<List<Event<T>>> getDurationIterator( final List<List<Event<T>>> data,
-                                                                    final SortedSet<Duration> durations )
-    {
-        //Construct an iterable view of the basis times
-        class IterableTimeSeries implements Iterable<List<Event<T>>>
-        {
-            @Override
-            public Iterator<List<Event<T>>> iterator()
-            {
-                return new Iterator<List<Event<T>>>()
-                {
-                    Iterator<Duration> iterator = durations.iterator();
-
-                    @Override
-                    public boolean hasNext()
-                    {
-                        return iterator.hasNext();
-                    }
-
-                    @Override
-                    public List<Event<T>> next()
-                    {
-                        if ( !hasNext() )
-                        {
-                            throw new NoSuchElementException( "No more durations to iterate." );
-                        }
-
-                        // Iterate
-                        Duration nextDuration = iterator.next();
-
-                        return Slicer.filterByDuration( new BasicTimeSeries<>( data ),
-                                                        isEqual -> isEqual.equals( nextDuration ) );
                     }
 
                     @Override

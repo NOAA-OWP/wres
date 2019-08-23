@@ -1,17 +1,15 @@
 package wres.datamodel.sampledata.pairs;
 
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.Set;
+import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.stream.StreamSupport;
 
@@ -19,6 +17,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfEnsemblePairs.TimeSeriesOfEnsemblePairsBuilder;
@@ -115,88 +114,6 @@ public final class TimeSeriesOfEnsemblePairsTest
     }
 
     /**
-     * Tests the {@link TimeSeriesOfEnsemblePairs#durationIterator()} method.
-     */
-
-    @Test
-    public void testDurationIterator()
-    {
-        //Build a time-series with three basis times 
-        List<Event<EnsemblePair>> first = new ArrayList<>();
-        List<Event<EnsemblePair>> second = new ArrayList<>();
-        List<Event<EnsemblePair>> third = new ArrayList<>();
-        TimeSeriesOfEnsemblePairsBuilder b = new TimeSeriesOfEnsemblePairsBuilder();
-
-        Instant firstBasisTime = Instant.parse( FIRST_TIME );
-        first.add( Event.of( firstBasisTime,
-                             Instant.parse( SECOND_TIME ),
-                             EnsemblePair.of( 1, new double[] { 1 } ) ) );
-        first.add( Event.of( firstBasisTime,
-                             Instant.parse( THIRD_TIME ),
-                             EnsemblePair.of( 2, new double[] { 2 } ) ) );
-        first.add( Event.of( firstBasisTime,
-                             Instant.parse( FOURTH_TIME ),
-                             EnsemblePair.of( 3, new double[] { 3 } ) ) );
-        Instant secondBasisTime = Instant.parse( FIFTH_TIME );
-        second.add( Event.of( secondBasisTime,
-                              Instant.parse( SIXTH_TIME ),
-                              EnsemblePair.of( 1, new double[] { 1 } ) ) );
-        second.add( Event.of( secondBasisTime,
-                              Instant.parse( SEVENTH_TIME ),
-                              EnsemblePair.of( 2, new double[] { 2 } ) ) );
-        second.add( Event.of( secondBasisTime,
-                              Instant.parse( EIGHTH_TIME ),
-                              EnsemblePair.of( 3, new double[] { 3 } ) ) );
-        Instant thirdBasisTime = Instant.parse( NINTH_TIME );
-        third.add( Event.of( thirdBasisTime,
-                             Instant.parse( TENTH_TIME ),
-                             EnsemblePair.of( 1, new double[] { 1 } ) ) );
-        third.add( Event.of( thirdBasisTime,
-                             Instant.parse( ELEVENTH_TIME ),
-                             EnsemblePair.of( 2, new double[] { 2 } ) ) );
-        third.add( Event.of( thirdBasisTime,
-                             Instant.parse( TWELFTH_TIME ),
-                             EnsemblePair.of( 3, new double[] { 3 } ) ) );
-        SampleMetadata meta = SampleMetadata.of();
-        //Add the time-series, with only one for baseline
-        TimeSeriesOfEnsemblePairs ts =
-                (TimeSeriesOfEnsemblePairs) b.addTimeSeries( first )
-                                             .addTimeSeries( second )
-                                             .addTimeSeries( third )
-                                             .addTimeSeriesDataForBaseline( first )
-                                             .setMetadata( meta )
-                                             .setMetadataForBaseline( meta )
-                                             .build();
-
-        //Iterate and test
-        int nextValue = 1;
-        for ( List<Event<EnsemblePair>> next : ts.durationIterator() )
-        {
-            Set<Instant> basisTimes = new HashSet<>();
-            for ( Event<EnsemblePair> nextPair : next )
-            {
-                assertTrue( nextPair.getValue().equals( EnsemblePair.of( nextValue, new double[] { nextValue } ) ) );
-                basisTimes.add( nextPair.getReferenceTime() );
-            }
-            //Three time-series
-            assertTrue( basisTimes.size() == 3 );
-            nextValue++;
-        }
-
-        //Check the regular duration of a time-series with one duration
-        List<Event<EnsemblePair>> fourth = new ArrayList<>();
-        fourth.add( Event.of( firstBasisTime,
-                              Instant.parse( TWELFTH_TIME ),
-                              EnsemblePair.of( 3, new double[] { 3 } ) ) );
-        TimeSeriesOfEnsemblePairs durationCheck =
-                (TimeSeriesOfEnsemblePairs) new TimeSeriesOfEnsemblePairsBuilder().addTimeSeries( fourth )
-                                                                                  .setMetadata( meta )
-                                                                                  .build();
-
-        assertTrue( Duration.ofHours( 51 ).equals( durationCheck.getDurations().first() ) );
-    }
-
-    /**
      * Tests the {@link TimeSeriesOfEnsemblePairs#getBaselineData()} method.
      */
 
@@ -233,9 +150,13 @@ public final class TimeSeriesOfEnsemblePairsTest
         //Check dataset
         //Iterate and test
         int nextValue = 1;
-        for ( List<Event<EnsemblePair>> next : baseline.durationIterator() )
+
+        SortedSet<Duration> durations = baseline.getDurations();
+
+        for ( Duration duration : durations )
         {
-            for ( Event<EnsemblePair> nextPair : next )
+            List<Event<EnsemblePair>> events = Slicer.filterByDuration( baseline, a -> a.equals( duration ) );
+            for ( Event<EnsemblePair> nextPair : events )
             {
                 assertTrue( nextPair.getValue().equals( EnsemblePair.of( nextValue, new double[] { nextValue } ) ) );
                 nextValue++;
@@ -359,10 +280,6 @@ public final class TimeSeriesOfEnsemblePairsTest
         noneSuchBasis.forEachRemaining( Objects::isNull );
         noneSuchBasis.next();
 
-        Iterator<List<Event<EnsemblePair>>> noneSuchDuration = ts.durationIterator().iterator();
-        noneSuchDuration.forEachRemaining( Objects::isNull );
-        noneSuchDuration.next();
-
         //Mutate 
         exception.expect( UnsupportedOperationException.class );
 
@@ -370,9 +287,6 @@ public final class TimeSeriesOfEnsemblePairsTest
         immutableBasis.next();
         immutableBasis.remove();
 
-        Iterator<List<Event<EnsemblePair>>> immutableDuration = ts.durationIterator().iterator();
-        immutableDuration.next();
-        immutableDuration.remove();
     }
 
     /**
@@ -498,13 +412,17 @@ public final class TimeSeriesOfEnsemblePairsTest
                                              .addTimeSeries( fourth )
                                              .setMetadata( meta )
                                              .build();
-        
+
         //Iterate and test
         double[] expectedOrder = new double[] { 1, 7, 4, 10, 5, 11, 6, 12, 2, 8, 3, 9 };
         int nextIndex = 0;
-        for ( List<Event<EnsemblePair>> next : ts.durationIterator() )
+
+        SortedSet<Duration> durations = ts.getDurations();
+
+        for ( Duration duration : durations )
         {
-            for ( Event<EnsemblePair> nextPair : next )
+            List<Event<EnsemblePair>> events = Slicer.filterByDuration( ts, a -> a.equals( duration ) );
+            for ( Event<EnsemblePair> nextPair : events )
             {
                 assertTrue( nextPair.getValue()
                                     .equals( EnsemblePair.of( expectedOrder[nextIndex],
@@ -512,6 +430,7 @@ public final class TimeSeriesOfEnsemblePairsTest
                 nextIndex++;
             }
         }
+
     }
 
     /**

@@ -69,12 +69,6 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
     }
 
     @Override
-    public Iterable<List<Event<EnsemblePair>>> durationIterator()
-    {
-        return main.durationIterator();
-    }
-
-    @Override
     public SortedSet<Instant> getReferenceTimes()
     {
         return Collections.unmodifiableSortedSet( main.getReferenceTimes() );
