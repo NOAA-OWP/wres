@@ -731,41 +731,6 @@ public final class Slicer
     }
 
     /**
-     * Filters the input time-series by the {@link Duration} associated with each pair. Applies to both the main pairs 
-     * and any baseline pairs. Does not modify the metadata associated with the input.
-     * 
-     * @param input the pairs to slice
-     * @param duration the duration condition on which to slice
-     * @return the subset of pairs that meet the condition
-     * @throws NullPointerException if either the input or condition is null
-     */
-
-    public static TimeSeriesOfSingleValuedPairs filterByDuration( TimeSeriesOfSingleValuedPairs input,
-                                                                  Predicate<Duration> duration )
-    {
-        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
-
-        Objects.requireNonNull( duration, NULL_PREDICATE_EXCEPTION );
-
-        //Iterate through the durations and append to the builder
-        //Throw an exception if attempting to construct an irregular time-series
-        TimeSeriesOfSingleValuedPairsBuilder builder = new TimeSeriesOfSingleValuedPairsBuilder();
-
-        // Set the metadata explicitly in case of an empty slice
-        builder.setMetadata( input.getMetadata() );
-
-        for ( List<Event<SingleValuedPair>> a : input.durationIterator() )
-        {
-            if ( duration.test( a.get( 0 ).getDuration() ) )
-            {
-                builder.addTimeSeries( a );
-            }
-        }
-
-        return builder.build();
-    }
-
-    /**
      * Filters the input time-series by basis time. Applies to both the main pairs and any baseline pairs. Does not 
      * modify the metadata associated with the input.
      * 
@@ -791,41 +756,6 @@ public final class Slicer
         for ( TimeSeries<SingleValuedPair> a : input.referenceTimeIterator() )
         {
             if ( referenceTime.test( a.getReferenceTimes().first() ) )
-            {
-                builder.addTimeSeries( a );
-            }
-        }
-
-        return builder.build();
-    }
-
-    /**
-     * Filters the input time-series by the {@link Duration} associated with each pair. Applies to both the main pairs 
-     * and any baseline pairs. Does not modify the metadata associated with the input.
-     * 
-     * @param input the pairs to slice
-     * @param condition the condition on which to slice
-     * @return the subset of pairs that meet the condition
-     * @throws NullPointerException if either the input or condition is null
-     */
-
-    public static TimeSeriesOfEnsemblePairs filterByDuration( TimeSeriesOfEnsemblePairs input,
-                                                              Predicate<Duration> condition )
-    {
-        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
-
-        Objects.requireNonNull( condition, NULL_PREDICATE_EXCEPTION );
-
-        //Iterate through the durations and append to the builder
-        //Throw an exception if attempting to construct an irregular time-series
-        TimeSeriesOfEnsemblePairsBuilder builder = new TimeSeriesOfEnsemblePairsBuilder();
-
-        // Set the metadata explicitly in case of an empty slice
-        builder.setMetadata( input.getMetadata() );
-
-        for ( List<Event<EnsemblePair>> a : input.durationIterator() )
-        {
-            if ( condition.test( a.get( 0 ).getDuration() ) )
             {
                 builder.addTimeSeries( a );
             }

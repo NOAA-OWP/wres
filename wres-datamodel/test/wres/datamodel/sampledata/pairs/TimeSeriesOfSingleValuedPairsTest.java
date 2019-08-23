@@ -1,7 +1,6 @@
 package wres.datamodel.sampledata.pairs;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.time.Duration;
@@ -13,6 +12,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.stream.StreamSupport;
 
@@ -20,6 +20,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
@@ -133,10 +134,14 @@ public final class TimeSeriesOfSingleValuedPairsTest
 
         //Iterate and test
         int nextValue = 1;
-        for ( List<Event<SingleValuedPair>> next : ts.durationIterator() )
+        
+        SortedSet<Duration> durations = ts.getDurations();
+
+        for ( Duration duration : durations )
         {
             Set<Instant> basisTimes = new HashSet<>();
-            for ( Event<SingleValuedPair> nextPair : next )
+            List<Event<SingleValuedPair>> events = Slicer.filterByDuration( ts, a -> a.equals( duration ) );
+            for ( Event<SingleValuedPair> nextPair : events )
             {
                 assertTrue( nextPair.getValue().equals( SingleValuedPair.of( nextValue, nextValue ) ) );
                 basisTimes.add( nextPair.getReferenceTime() );
@@ -186,15 +191,19 @@ public final class TimeSeriesOfSingleValuedPairsTest
 
         //Check dataset
         //Iterate and test
-        int nextValue = 1;
-        for ( List<Event<SingleValuedPair>> next : baseline.durationIterator() )
+        int nextValue = 1;      
+        SortedSet<Duration> durations = baseline.getDurations();
+
+        for ( Duration duration : durations )
         {
-            for ( Event<SingleValuedPair> nextPair : next )
+            List<Event<SingleValuedPair>> events = Slicer.filterByDuration( baseline, a -> a.equals( duration ) );
+            for ( Event<SingleValuedPair> nextPair : events )
             {
                 assertTrue( nextPair.getValue().equals( SingleValuedPair.of( nextValue, nextValue ) ) );
                 nextValue++;
             }
         }
+        
     }
 
     /**
@@ -318,36 +327,6 @@ public final class TimeSeriesOfSingleValuedPairsTest
     }
 
     /**
-     * Tests for an expected exception when attempting to mutate the basis times.
-     */
-
-    @Test
-    public void testLeadDurationsAreImmutable()
-    {
-        List<Event<SingleValuedPair>> first = new ArrayList<>();
-
-        Instant firstBasisTime = Instant.parse( FIRST_TIME );
-        first.add( Event.of( firstBasisTime, Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
-        first.add( Event.of( firstBasisTime, Instant.parse( THIRD_TIME ), SingleValuedPair.of( 2, 2 ) ) );
-        first.add( Event.of( firstBasisTime, Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 3, 3 ) ) );
-        final SampleMetadata meta = SampleMetadata.of();
-
-        //Check for exceptions on the iterators
-        TimeSeriesOfSingleValuedPairsBuilder d = new TimeSeriesOfSingleValuedPairsBuilder();
-        TimeSeriesOfSingleValuedPairs ts =
-                (TimeSeriesOfSingleValuedPairs) d.addTimeSeries( first )
-                                                 .setMetadata( meta )
-                                                 .build();
-
-        //Mutate 
-        exception.expect( UnsupportedOperationException.class );
-
-        Iterator<List<Event<SingleValuedPair>>> immutableDuration = ts.durationIterator().iterator();
-        immutableDuration.next();
-        immutableDuration.remove();
-    }
-
-    /**
      * Tests the {@link SafeTimeSeriesOfSingleValuedPairs#toString()} method.
      */
 
@@ -448,9 +427,15 @@ public final class TimeSeriesOfSingleValuedPairsTest
         //Iterate and test
         double[] expectedOrder = new double[] { 1, 7, 4, 10, 5, 11, 6, 12, 2, 8, 3, 9 };
         int nextIndex = 0;
-        for ( List<Event<SingleValuedPair>> next : ts.durationIterator() )
+        
+        
+        SortedSet<Duration> durations = ts.getDurations();
+
+        for ( Duration nextDuration : durations )
         {
-            for ( Event<SingleValuedPair> nextPair : next )
+            List<Event<SingleValuedPair>> events = Slicer.filterByDuration( ts, a -> a.equals( nextDuration ) );
+
+            for ( Event<SingleValuedPair> nextPair : events )
             {
                 assertTrue( "Unexpected pair in lead-time iteration of time-series.",
                             nextPair.getValue()
@@ -508,9 +493,14 @@ public final class TimeSeriesOfSingleValuedPairsTest
 
         // Iterate by duration
         int k = 1;
-        for ( List<Event<SingleValuedPair>> tsn : ts.durationIterator() )
+        
+        SortedSet<Duration> durations = ts.getDurations();
+
+        for ( Duration nextDuration : durations )       
         {
-            for ( Event<SingleValuedPair> next : tsn )
+            List<Event<SingleValuedPair>> events = Slicer.filterByDuration( ts, a -> a.equals( nextDuration ) );
+
+            for ( Event<SingleValuedPair> next : events )
             {
                 assertTrue( Duration.ZERO.equals(next.getDuration() ) );
                 

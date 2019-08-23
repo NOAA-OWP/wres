@@ -55,16 +55,6 @@ public interface TimeSeries<T>
     Iterable<TimeSeries<T>> referenceTimeIterator();
 
     /**
-     * Returns a duration view of the {@link TimeSeries} whereby each {@link List} contains all of the {@link Event} 
-     * associated with one {@link Duration} and each {@link Event} originates from a separate reference time. The 
-     * lists are are not returned in a guaranteed order.
-     * 
-     * @return an iteration over lists of events, each list containing the events for one duration
-     */
-
-    Iterable<List<Event<T>>> durationIterator();
-
-    /**
      * Returns the reference times associated with all the atomic time-series in the container. The times are ordered 
      * from the earliest {@link Instant} to the latest.
      * 

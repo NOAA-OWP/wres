@@ -69,12 +69,6 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
     }
 
     @Override
-    public Iterable<List<Event<SingleValuedPair>>> durationIterator()
-    {
-        return main.durationIterator();
-    }
-
-    @Override
     public SortedSet<Instant> getReferenceTimes()
     {
         return Collections.unmodifiableSortedSet( main.getReferenceTimes() );

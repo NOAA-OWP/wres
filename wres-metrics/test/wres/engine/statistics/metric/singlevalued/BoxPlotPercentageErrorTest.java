@@ -3,10 +3,12 @@ package wres.engine.statistics.metric.singlevalued;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.SortedSet;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -20,11 +22,14 @@ import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
+import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.StatisticMetadata;
+import wres.datamodel.time.Event;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
 /**
@@ -108,10 +113,16 @@ public final class BoxPlotPercentageErrorTest
         List<BoxPlotStatistic> actualRaw = new ArrayList<>();
 
         // Compute the metric for each duration separately
-        input.getDurations()
-             .forEach( next -> actualRaw.addAll( this.boxPlotPercentageError.apply( Slicer.filterByDuration( input,
-                                                                                                             a -> a.equals( next ) ) )
-                                                                            .getData() ) );
+        SortedSet<Duration> durations = input.getDurations();
+
+        for ( Duration duration : durations )
+        {
+            List<Event<SingleValuedPair>> events = Slicer.filterByDuration( input, a -> a.equals( duration ) );
+            TimeSeriesOfSingleValuedPairsBuilder builder = new TimeSeriesOfSingleValuedPairsBuilder();
+            builder.setMetadata( input.getMetadata() );
+            builder.addTimeSeries( events );
+            actualRaw.addAll( this.boxPlotPercentageError.apply( builder.build() ).getData() );
+        }
 
         BoxPlotStatistics actual = BoxPlotStatistics.of( actualRaw, meta );
 
