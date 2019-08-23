@@ -11,6 +11,7 @@ import wres.io.reading.fews.FEWSSource;
 import wres.io.reading.nwm.NWMSource;
 import wres.io.reading.s3.S3Reader;
 import wres.io.reading.usgs.USGSReader;
+import wres.io.reading.waterml.WaterMLBasicSource;
 import wres.io.reading.wrds.WRDSSource;
 import wres.system.DatabaseLockManager;
 import wres.util.NetCDF;
@@ -74,6 +75,11 @@ public class ReaderFactory {
                                         dataSource,
                                         lockManager );
                 break;
+            case WATERML:
+                source = new WaterMLBasicSource( projectConfig,
+                                                 dataSource,
+                                                 lockManager );
+                break;
 			default:
 				String message = "The uri '%s' is not a valid source of data.";
 				throw new IOException(String.format(message, dataSource.getUri()));
@@ -92,7 +98,16 @@ public class ReaderFactory {
 
         if ( filename.getScheme() != null && filename.getScheme().startsWith( "http" ) )
         {
-            type = Format.WRDS;
+            if ( filename.getHost()
+                         .toLowerCase()
+                         .contains( "usgs.gov" ) )
+            {
+                type = Format.WATERML;
+            }
+            else
+            {
+                type = Format.WRDS;
+            }
         }
 		else if (pathName.endsWith("tar.gz") || pathName.endsWith(".tgz"))
 		{
