@@ -3,69 +3,87 @@ package wres.io.reading.waterml;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.concurrent.CountDownLatch;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.commons.math3.util.Precision.EPSILON;
 
-import wres.io.concurrency.CopyExecutor;
+import wres.config.generated.ProjectConfig;
 import wres.io.data.caching.Features;
+import wres.io.data.caching.MeasurementUnits;
+import wres.io.data.caching.Variables;
 import wres.io.data.details.FeatureDetails;
+import wres.io.data.details.SourceCompletedDetails;
+import wres.io.data.details.SourceDetails;
+import wres.io.reading.DataSource;
+import wres.io.reading.IngestException;
+import wres.io.reading.IngestResult;
+import wres.io.reading.IngestedValues;
+import wres.io.reading.SourceCompleter;
+import wres.io.reading.waterml.timeseries.SiteCode;
 import wres.io.reading.waterml.timeseries.TimeSeries;
 import wres.io.reading.waterml.timeseries.TimeSeriesValue;
 import wres.io.reading.waterml.timeseries.TimeSeriesValues;
-import wres.io.utilities.Database;
-import wres.system.ProgressMonitor;
-import wres.system.SystemSettings;
+import wres.system.DatabaseLockManager;
 import wres.util.functional.ExceptionalConsumer;
-import wres.io.utilities.ScriptBuilder;
 
 /**
  * Saves WaterML Response objects to the database
- *
- * TODO: Fix database deadlocking issues that prevent heavy concurrency
  */
 public class WaterMLSource
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(WaterMLSource.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(
+            WaterMLSource.class);
 
-    private static final String OBSERVATION_HEADER = "wres.Observation ("
-                                                     + "variablefeature_id, "
-                                                     + "observation_id, "
-                                                     + "observation_time, "
-                                                     + "observed_value, "
-                                                     + "measurementunit_id, "
-                                                     + "source_id)";
-    private static final String DELIMITER = "|";
-    private static final String COPY_NULL = "\\N";
-
-    private final int sourceId;
     private final Response waterML;
-    private final SortedMap<String, Integer> variableFeatureIDs;
-    private final int variableId;
+    private final String hash;
+    private final SortedMap<Pair<String,String>, Integer> variableFeatureIDs = new TreeMap<>();
+    private final Map<String,Integer> measurementIds = new HashMap<>( 1 );
     private ExceptionalConsumer<TimeSeries, IOException> invalidSeriesHandler;
     private ExceptionalConsumer<TimeSeries, IOException> seriesReadCompleteHandler;
-    private final int waterMLMeasurementId;
-    private ScriptBuilder copyScript;
-    private int copyCount = 0;
-    private String copyHeader;
 
+    private final ProjectConfig projectConfig;
+    private final DataSource dataSource;
+    private final DatabaseLockManager lockManager;
+    private final Set<Pair<CountDownLatch,CountDownLatch>> latches = new HashSet<>();
 
-    public WaterMLSource( Response waterML,
-                          int sourceId,
-                          int waterMLMeasurementId,
-                          int variableId)
+    /**
+     * @param projectConfig the project declaration
+     * @param dataSource the data source information
+     * @param lockManager the lock manager to use
+     * @param waterML the deserialized waterML object
+     * @param hash the identifier of the waterML object
+     */
+
+    public WaterMLSource( ProjectConfig projectConfig,
+                          DataSource dataSource,
+                          DatabaseLockManager lockManager,
+                          Response waterML,
+                          String hash )
     {
+        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( dataSource );
+        Objects.requireNonNull( lockManager );
+        Objects.requireNonNull( waterML );
+        Objects.requireNonNull( hash );
+        this.projectConfig = projectConfig;
+        this.dataSource = dataSource;
+        this.lockManager = lockManager;
         this.waterML = waterML;
-        this.variableFeatureIDs = new TreeMap<>();
-        this.sourceId = sourceId;
-        this.waterMLMeasurementId = waterMLMeasurementId;
-        this.variableId = variableId;
+        this.hash = hash;
     }
 
     public void setInvalidSeriesHandler(ExceptionalConsumer<TimeSeries, IOException> handler)
@@ -95,47 +113,79 @@ public class WaterMLSource
         }
     }
 
-    public int readObservationResponse() throws IOException
+    IngestResult ingestObservationResponse() throws IOException
     {
-        this.copyHeader = WaterMLSource.OBSERVATION_HEADER;
         int readSeriesCount = 0;
 
-        if (this.waterML.getValue().getNumberOfPopulatedTimeSeries() > 0)
+        SourceDetails.SourceKey sourceKey =
+                new SourceDetails.SourceKey( this.dataSource.getUri(),
+                                             Instant.now().toString(),
+                                             null,
+                                             this.hash );
+
+        SourceDetails sourceDetails = this.createSourceDetails( sourceKey );
+
+        try
         {
+            sourceDetails.save();
+        }
+        catch ( SQLException se )
+        {
+            throw new IngestException( "Failed to ingest data source "
+                                       + sourceKey.getSourcePath(),
+                                       se );
+        }
 
-            LOGGER.debug(
-                    "There are a grand total of {} different locations "
-                    + "that we want to save data to.",
-                    this.waterML.getValue()
-                                .getNumberOfPopulatedTimeSeries() );
+        SourceCompleter sourceCompleter =
+                this.createSourceCompleter( sourceDetails.getId(),
+                                            this.lockManager );
+        boolean sourceCompleted;
 
-            for ( TimeSeries series : this.waterML.getValue().getTimeSeries() )
+        if ( sourceDetails.performedInsert() )
+        {
+            try
             {
-                boolean validSeries = this.readObservationSeries( series );
+                lockManager.lockSource( sourceDetails.getId() );
+            }
+            catch ( SQLException se )
+            {
+                throw new IngestException( "Unable to lock to ingest source id "
+                                           + sourceDetails.getId() + " named "
+                                           + this.dataSource.getUri(), se );
+            }
 
-                if ( validSeries )
+            if ( this.waterML.getValue().getNumberOfPopulatedTimeSeries() > 0 )
+            {
+                for ( TimeSeries series : this.waterML.getValue()
+                                                      .getTimeSeries() )
                 {
-                    readSeriesCount++;
+                    boolean validSeries = this.readObservationSeries( series,
+                                                                      sourceDetails );
+
+                    if ( validSeries )
+                    {
+                        readSeriesCount++;
+                    }
                 }
             }
 
-            LOGGER.debug( "Data for {} different locations have been saved.",
-                          readSeriesCount );
-
-            try
-            {
-                this.performCopy();
-            }
-            catch ( SQLException e )
-            {
-                LOGGER.error("Data couldn't be added to the database.", e);
-            }
+            sourceCompleter.complete( this.latches );
+            sourceCompleted = true;
+        }
+        else
+        {
+            sourceCompleted = this.wasCompleted( sourceDetails );
         }
 
-        return readSeriesCount;
+        return IngestResult.from( this.projectConfig,
+                                  this.dataSource,
+                                  this.hash,
+                                  !sourceDetails.performedInsert(),
+                                  !sourceCompleted );
     }
 
-    private boolean readObservationSeries( TimeSeries series )
+    private boolean readObservationSeries( TimeSeries series,
+                                           SourceDetails sourceDetails )
             throws IOException
     {
         if (!series.isPopulated())
@@ -143,6 +193,74 @@ public class WaterMLSource
             this.handleInvalidSeries( series );
             return false;
         }
+
+        // Get the first variable name from the series in the actual data.
+        if ( series.getVariable() == null
+             || series.getVariable().getVariableCode() == null
+             || series.getVariable().getVariableCode().length < 1
+             || series.getVariable().getVariableCode()[0].getValue() == null )
+        {
+            LOGGER.debug( "No variable found for timeseries {} in source {}",
+                          series, this );
+            this.handleInvalidSeries( series );
+            return false;
+        }
+
+        String variableName = series.getVariable()
+                                    .getVariableCode()[0]
+                                    .getValue();
+
+        // Get the measurement unit from the series in the actual data.
+        // (Assumes above check for variable has already happened as well)
+        if ( series.getVariable().getUnit() == null
+             || series.getVariable().getUnit().getUnitCode() == null )
+        {
+            LOGGER.warn( "No unit found for timeseries {} in source {}",
+                          series, this );
+            return false;
+        }
+
+        String unitCode = series.getVariable()
+                                .getUnit()
+                                .getUnitCode();
+
+        if ( series.getSourceInfo() == null
+             || series.getSourceInfo().getSiteCode() == null
+             || series.getSourceInfo().getSiteCode().length < 1 )
+        {
+            LOGGER.debug( "No unit code found for timeseries {} in source {}",
+                          series, this );
+            return false;
+        }
+
+        List<String> usgsSiteCodesFound = new ArrayList<>( 1 );
+
+        for ( SiteCode siteCode : series.getSourceInfo().getSiteCode() )
+        {
+            if ( siteCode.getAgencyCode() != null
+                 && siteCode.getAgencyCode()
+                            .toLowerCase()
+                            .equals( "usgs" )
+                 && siteCode.getValue() != null )
+            {
+                usgsSiteCodesFound.add( siteCode.getValue() );
+            }
+        }
+
+        if ( usgsSiteCodesFound.size() != 1 )
+        {
+            if ( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( "Expected exactly one USGS site code, but found {} for timeseries {} in source {}",
+                              usgsSiteCodesFound.size(),
+                              series,
+                              this );
+            }
+            return false;
+        }
+
+        String usgsSiteCode = usgsSiteCodesFound.get( 0 );
+        Pair<String,String> gageAndVariable = Pair.of( usgsSiteCode, variableName );
 
         for (TimeSeriesValues valueSet : series.getValues())
         {
@@ -163,9 +281,11 @@ public class WaterMLSource
                         readValue = null;
                     }
 
-                    this.addObservationValue( series.getSourceInfo().getSiteCode()[0].getValue(),
-                                   value.getDateTime(),
-                                   readValue);
+                    this.addObservationValue( gageAndVariable,
+                                              value.getDateTime(),
+                                              readValue,
+                                              sourceDetails,
+                                              unitCode );
                 }
                 catch ( SQLException e )
                 {
@@ -174,75 +294,121 @@ public class WaterMLSource
             }
         }
 
+        LOGGER.info( "A USGS time series has been parsed for site number {}",
+                     usgsSiteCode );
+
         this.handleReadComplete( series );
         return true;
     }
 
-    private void addObservationValue( String gageID, Instant observationTime, Double value)
+    private void addObservationValue( Pair<String,String> gageAndVariable,
+                                      Instant observationTime,
+                                      Double value,
+                                      SourceDetails sourceDetails,
+                                      String unitCode )
+            throws SQLException, IngestException
+    {
+        int variableFeatureId = this.getVariableFeatureID( gageAndVariable );
+        int measurementUnitId = this.getMeasurementUnitId( unitCode );
+        Pair<CountDownLatch, CountDownLatch> synchronizer =
+                IngestedValues.observed( value )
+                              .measuredIn( measurementUnitId )
+                              .at( observationTime )
+                              .forVariableAndFeatureID( variableFeatureId )
+                              .inSource( sourceDetails.getId() )
+                              .add();
+        this.latches.add( synchronizer );
+    }
+
+
+    private int getVariableFeatureID( Pair<String,String> gageAndVariable )
             throws SQLException
     {
-        if (this.copyScript == null)
+
+        if ( !this.variableFeatureIDs.containsKey( gageAndVariable ) )
         {
-            this.copyScript = new ScriptBuilder(  );
-        }
-
-        this.copyScript.add(this.getVariableFeatureID( gageID )).add(DELIMITER)
-                       .add("'" + observationTime + "'").add(DELIMITER);
-
-        this.copyScript.add( Objects.requireNonNullElse( value, COPY_NULL ) ).add( DELIMITER );
-
-        this.copyScript.add(this.waterMLMeasurementId).add(DELIMITER)
-                       .addLine(this.sourceId);
-
-        this.copyCount++;
-
-        if ( this.copyCount >= SystemSettings.getMaximumCopies())
-        {
-            this.performCopy();
-        }
-    }
-
-    private void performCopy() throws SQLException
-    {
-        if (this.copyCount > 0)
-        {
-            CopyExecutor copier = new CopyExecutor( this.copyHeader, this.copyScript.toString(), DELIMITER );
-
-            // TODO: If we want to only update the ProgressMonitor for files, remove these handlers
-            // Tell the copier to increase the number representing the
-            // total number of operations to perform when the thread starts.
-            // It is debatable whether we should increase the number in this
-            // thread or in the thread operating on the actual database copy
-            // statement
-            copier.setOnRun( ProgressMonitor.onThreadStartHandler() );
-
-            // Tell the copier to inform the ProgressMonitor that work has been
-            // completed when the thread has finished
-            copier.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
-
-            // Send the copier to the Database handler's task queue and add
-            // the resulting future to our list of copy operations
-            Database.ingest( copier );
-
-            // Reset the values to copy
-            this.copyScript = new ScriptBuilder(  );
-
-            // Reset the count of values to copy
-            this.copyCount = 0;
-
-        }
-    }
-
-    private int getVariableFeatureID(String gageId) throws SQLException
-    {
-        if (!this.variableFeatureIDs.containsKey( gageId ))
-        {
-            FeatureDetails feature = Features.getDetailsByGageID( gageId );
+            FeatureDetails feature = Features.getDetailsByGageID( gageAndVariable.getLeft() );
+            int variableId = Variables.getVariableID( gageAndVariable.getRight() );
             this.variableFeatureIDs.put(
-                    gageId,
-                    Features.getVariableFeatureByFeature( feature, this.variableId )
+                    gageAndVariable,
+                    Features.getVariableFeatureByFeature( feature, variableId )
             );
         }
-        return this.variableFeatureIDs.get(gageId);
+        return this.variableFeatureIDs.get( gageAndVariable );
+    }
+
+
+    private int getMeasurementUnitId( String unitCode )
+            throws SQLException
+    {
+        if ( !this.measurementIds.containsKey( unitCode ) )
+        {
+            Integer measurementId = MeasurementUnits.getMeasurementUnitID( unitCode );
+            this.measurementIds.put( unitCode, measurementId );
+        }
+
+        return this.measurementIds.get( unitCode );
+    }
+
+
+    /**
+     * Discover whether the source was completely ingested
+     * @param sourceDetails the source to query
+     * @throws IngestException when discovery fails due to SQLException
+     * @return true if the source has been marked as completed, false otherwise
+     */
+
+    private boolean wasCompleted( SourceDetails sourceDetails )
+            throws IngestException
+    {
+        SourceCompletedDetails completed =
+                this.createSourceCompletedDetails( sourceDetails );
+
+        try
+        {
+            return completed.wasCompleted();
+        }
+        catch ( SQLException se )
+        {
+            throw new IngestException( "Failed discover whether source "
+                                       + sourceDetails + " was completed.",
+                                       se );
+        }
+    }
+
+    /**
+     * This method facilitates testing, Pattern 1 at
+     * https://github.com/mockito/mockito/wiki/Mocking-Object-Creation
+     * @param sourceKey the first arg to SourceDetails
+     * @return a SourceDetails
+     */
+
+    SourceDetails createSourceDetails( SourceDetails.SourceKey sourceKey )
+    {
+        return new SourceDetails( sourceKey );
+    }
+
+    /**
+     * This method facilitates testing, Pattern 1 at
+     * https://github.com/mockito/mockito/wiki/Mocking-Object-Creation
+     * @param sourceId the first arg to SourceCompleter
+     * @param lockManager the second arg to SourceCompleter
+     * @return a SourceCompleter
+     */
+    SourceCompleter createSourceCompleter( int sourceId,
+                                           DatabaseLockManager lockManager )
+    {
+        return new SourceCompleter( sourceId, lockManager );
+    }
+
+    /**
+     * This method facilitates testing, Pattern 1 at
+     * https://github.com/mockito/mockito/wiki/Mocking-Object-Creation
+     * @param sourceDetails the first arg to SourceCompletedDetails
+     * @return a SourceCompleter
+     */
+    SourceCompletedDetails createSourceCompletedDetails( SourceDetails sourceDetails )
+    {
+        return new SourceCompletedDetails( sourceDetails );
     }
 }
