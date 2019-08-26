@@ -75,7 +75,7 @@ public final class TimingErrorDurationStatisticsTest
                                                                                                        STREAMFLOW ) )
                                                                  .setTimeWindow( timeWindow )
                                                                  .build(),
-                                      input.getReferenceTimes().size(),
+                                      input.get().size(),
                                       MeasurementUnit.of( DURATION ),
                                       MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
                                       MetricConstants.MEAN );
@@ -140,7 +140,7 @@ public final class TimingErrorDurationStatisticsTest
                                                                                                        STREAMFLOW ) )
                                                                  .setTimeWindow( timeWindow )
                                                                  .build(),
-                                      input.getReferenceTimes().size(),
+                                      input.get().size(),
                                       MeasurementUnit.of( DURATION ),
                                       MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
                                       null );
@@ -197,7 +197,7 @@ public final class TimingErrorDurationStatisticsTest
                                                                                                        STREAMFLOW ) )
                                                                  .setTimeWindow( timeWindow )
                                                                  .build(),
-                                      input.getReferenceTimes().size(),
+                                      input.get().size(),
                                       MeasurementUnit.of( DURATION ),
                                       MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
                                       MetricConstants.MEAN );
