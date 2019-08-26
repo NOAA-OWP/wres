@@ -43,11 +43,13 @@ public class TimeSeries<T>
      * @param <T> the event type
      * @param events the events
      * @return a time-series
-     * @throws NullPointerException if events are null or any one event is null
+     * @throws NullPointerException if the events are null or any one event is null
      */
 
     public static <T> TimeSeries<T> of( SortedSet<Event<T>> events )
     {
+        Objects.requireNonNull( events );
+
         Instant referenceTime = Instant.MIN;
 
         if ( !events.isEmpty() )
@@ -65,15 +67,15 @@ public class TimeSeries<T>
      * @param referenceTime the reference time
      * @param events the events
      * @return a time-series
-     * @throws NullPointerException if events are null or any one event is null
+     * @throws NullPointerException if the events are null or any one event is null
      */
 
     public static <T> TimeSeries<T> of( Instant referenceTime,
-                                         SortedSet<Event<T>> events )
+                                        SortedSet<Event<T>> events )
     {
         return new TimeSeries<>( referenceTime, ReferenceTimeType.UNKNOWN, events );
     }
-    
+
     /**
      * Returns a {@link TimeSeries}.
      * 
@@ -82,12 +84,12 @@ public class TimeSeries<T>
      * @param referenceTimeType the type of reference time
      * @param events the events
      * @return a time-series
-     * @throws NullPointerException if events are null or any one event is null
+     * @throws NullPointerException if the events are null or any one event is null
      */
 
     public static <T> TimeSeries<T> of( Instant referenceTime,
-                                         ReferenceTimeType referenceTimeType,
-                                         SortedSet<Event<T>> events )
+                                        ReferenceTimeType referenceTimeType,
+                                        SortedSet<Event<T>> events )
     {
         return new TimeSeries<>( referenceTime, referenceTimeType, events );
     }
