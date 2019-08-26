@@ -784,16 +784,19 @@ public final class Slicer
 
         List<Event<T>> returnMe = new ArrayList<>();
 
-        for ( Event<T> nextEvent : input.eventIterator() )
+        for ( TimeSeries<T> nextSeries : input.getTimeSeries() )
         {
-            Duration candidateDuration = nextEvent.getDuration();
-
-            if ( duration.test( candidateDuration ) )
+            for ( Event<T> nextEvent : nextSeries.getEvents() )
             {
-                returnMe.add( nextEvent );
+                Duration candidateDuration = nextEvent.getDuration();
+
+                if ( duration.test( candidateDuration ) )
+                {
+                    returnMe.add( nextEvent );
+                }
             }
         }
-
+    
         return Collections.unmodifiableList( returnMe );
     }
 

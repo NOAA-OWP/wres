@@ -22,15 +22,6 @@ public interface TimeSeriesCollection<T>
 {
 
     /**
-     * Returns an {@link Iterator} over all the {@link Event} in the {@link TimeSeriesCollection}. The times are returned in a 
-     * guaranteed order from the earliest time to the latest time.
-     * 
-     * @return iterable pairs of times and values
-     */
-
-    Iterable<Event<T>> eventIterator();
-
-    /**
      * Returns the {@link TimeSeries} in the collection.
      * 
      * @return an iterable atomic time-series by basis time

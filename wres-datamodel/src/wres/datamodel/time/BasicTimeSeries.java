@@ -4,9 +4,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -40,12 +38,6 @@ public class BasicTimeSeries<T> implements TimeSeriesCollection<T>
      */
 
     private final SortedSet<Duration> durations;
-
-    /**
-     * Event iterator.
-    */
-
-    private final Iterable<Event<T>> eventIterator;
 
     /**
      * Builds a time-series from the input.
@@ -87,12 +79,6 @@ public class BasicTimeSeries<T> implements TimeSeriesCollection<T>
             return this;
         }
 
-    }
-
-    @Override
-    public Iterable<Event<T>> eventIterator()
-    {
-        return eventIterator;
     }
     
     @Override
@@ -173,63 +159,6 @@ public class BasicTimeSeries<T> implements TimeSeriesCollection<T>
                                    .flatMap( SortedSet::stream )
                                    .map( Event::getReferenceTime )
                                    .collect( Collectors.toCollection( TreeSet::new ) );
-
-        this.eventIterator = BasicTimeSeries.getEventIterator( this.timeSeries );
-    }
-
-    /**
-     * Returns an {@link Iterable} view of the {@link Event}.
-     * 
-     * @param data the data
-     * @return an iterable view of the times and values
-     */
-
-    private static <T> Iterable<Event<T>> getEventIterator( final List<TimeSeries<T>> data )
-    {
-        // Unpack
-        List<Event<T>> unpacked =
-                data.stream().map( TimeSeries::getEvents ).flatMap( SortedSet::stream ).collect( Collectors.toList() );
-
-        //Construct an iterable view of the times and values
-        class IterableTimeSeries implements Iterable<Event<T>>
-        {
-            @Override
-            public Iterator<Event<T>> iterator()
-            {
-                return new Iterator<Event<T>>()
-                {
-                    int returned = 0;
-
-                    @Override
-                    public boolean hasNext()
-                    {
-                        return returned < unpacked.size();
-                    }
-
-                    @Override
-                    public Event<T> next()
-                    {
-                        if ( returned >= unpacked.size() )
-                        {
-                            throw new NoSuchElementException( "No more events to iterate." );
-                        }
-
-                        Event<T> returnMe = unpacked.get( returned );
-
-                        returned++;
-
-                        return returnMe;
-                    }
-
-                    @Override
-                    public void remove()
-                    {
-                        throw new UnsupportedOperationException( TimeSeriesHelper.UNSUPPORTED_MODIFICATION );
-                    }
-                };
-            }
-        }
-        return new IterableTimeSeries();
     }
 
 }

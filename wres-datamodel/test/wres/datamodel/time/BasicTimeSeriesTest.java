@@ -7,8 +7,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.TreeSet;
@@ -96,35 +94,6 @@ public final class BasicTimeSeriesTest
                                                        .addTimeSeries( TimeSeries.of( secondBasisTime,
                                                                                        second ) )
                                                        .build();
-    }
-
-    /**
-     * Test {@link BasicTimeSeries#eventIterator()}.
-     */
-
-    @Test
-    public void testTimeIterator()
-    {
-        // Actual events
-        List<Event<Double>> actual = new ArrayList<>();
-        defaultTimeSeries.eventIterator().forEach( actual::add );
-
-        // Expected events
-        List<Event<Double>> expected = new ArrayList<>();
-        expected.add( Event.of( Instant.parse( FIRST_TIME ),
-                                Instant.parse( SECOND_TIME ),
-                                1.0 ) );
-        expected.add( Event.of( Instant.parse( FIRST_TIME ),
-                                Instant.parse( THIRD_TIME ),
-                                2.0 ) );
-        expected.add( Event.of( Instant.parse( THIRD_TIME ),
-                                Instant.parse( FOURTH_TIME ),
-                                3.0 ) );
-        expected.add( Event.of( Instant.parse( THIRD_TIME ),
-                                Instant.parse( FIFTH_TIME ),
-                                4.0 ) );
-
-        assertTrue( actual.equals( expected ) );
     }
 
     /**
@@ -244,37 +213,6 @@ public final class BasicTimeSeriesTest
         assertTrue( b.build().getDurations().contains( Duration.ofDays( 1 ) ) );
         assertTrue( b.build().getDurations().contains( Duration.ofDays( 2 ) ) );
         assertTrue( b.build().getDurations().contains( Duration.ofDays( 3 ) ) );
-    }
-
-    /**
-     * Confirms that the {@link BasicTimeSeries#eventIterator()} throws an iteration exception when expected.
-     */
-
-    @Test
-    public void testTimeIteratorThrowsNoSuchElementException()
-    {
-        exception.expect( NoSuchElementException.class );
-        exception.expectMessage( "No more events to iterate." );
-
-        Iterator<Event<Double>> noneSuchElement = defaultTimeSeries.eventIterator().iterator();
-        noneSuchElement.forEachRemaining( Objects::isNull );
-        noneSuchElement.next();
-    }
-
-    /**
-     * Confirms that the {@link BasicTimeSeries#eventIterator()} throws an exception when attempting to mutate the 
-     * time-series.
-     */
-
-    @Test
-    public void testTimeIteratorThrowsExceptionOnAttemptToMutate()
-    {
-        exception.expect( UnsupportedOperationException.class );
-        exception.expectMessage( WHILE_ATTEMPTING_TO_MODIFY_AN_IMMUTABLE_TIME_SERIES );
-
-        Iterator<Event<Double>> immutableTimeSeries = defaultTimeSeries.eventIterator().iterator();
-        immutableTimeSeries.next();
-        immutableTimeSeries.remove();
     }
 
     /**

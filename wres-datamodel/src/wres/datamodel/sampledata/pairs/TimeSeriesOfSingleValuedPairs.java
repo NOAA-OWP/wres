@@ -64,12 +64,6 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
     }
 
     @Override
-    public Iterable<Event<SingleValuedPair>> eventIterator()
-    {
-        return main.eventIterator();
-    }
-
-    @Override
     public List<TimeSeries<SingleValuedPair>> getTimeSeries()
     {
         return main.getTimeSeries();

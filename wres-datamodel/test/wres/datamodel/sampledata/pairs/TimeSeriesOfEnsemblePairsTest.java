@@ -252,10 +252,13 @@ public final class TimeSeriesOfEnsemblePairsTest
         //Check dataset
         //Iterate and test
         int nextValue = 1;
-        for ( Event<EnsemblePair> nextPair : tsAppend.eventIterator() )
+        for ( TimeSeries<EnsemblePair> nextSeries : tsAppend.getTimeSeries() )
         {
-            assertTrue( nextPair.getValue().equals( EnsemblePair.of( nextValue, new double[] { nextValue } ) ) );
-            nextValue++;
+            for ( Event<EnsemblePair> nextPair : nextSeries.getEvents() )
+            {
+                assertTrue( nextPair.getValue().equals( EnsemblePair.of( nextValue, new double[] { nextValue } ) ) );
+                nextValue++;
+            }
         }
     }
 

@@ -658,11 +658,11 @@ public final class SlicerTest
         //Add the time-series
         TimeSeriesOfSingleValuedPairs firstSeries =
                 (TimeSeriesOfSingleValuedPairs) b.addTimeSeries( TimeSeries.of( firstBasisTime,
-                                                                                 first ) )
+                                                                                first ) )
                                                  .addTimeSeries( TimeSeries.of( secondBasisTime,
-                                                                                 second ) )
+                                                                                second ) )
                                                  .addTimeSeries( TimeSeries.of( thirdBasisTime,
-                                                                                 third ) )
+                                                                                third ) )
                                                  .setMetadata( meta )
                                                  .build();
 
@@ -681,7 +681,7 @@ public final class SlicerTest
                                clim -> clim > 0 );
 
         List<Event<SingleValuedPair>> secondData = new ArrayList<>();
-        secondResult.eventIterator().forEach( secondData::add );
+        secondResult.getTimeSeries().forEach( nextSeries -> nextSeries.getEvents().forEach( secondData::add ) );
         List<Event<SingleValuedPair>> secondBenchmark = new ArrayList<>();
         secondBenchmark.addAll( second );
         secondBenchmark.addAll( third );
@@ -701,7 +701,7 @@ public final class SlicerTest
                                null );
 
         List<Event<SingleValuedPair>> thirdData = new ArrayList<>();
-        thirdResult.eventIterator().forEach( thirdData::add );
+        thirdResult.getTimeSeries().forEach( nextSeries -> nextSeries.getEvents().forEach( thirdData::add ) );
         List<Event<SingleValuedPair>> thirdBenchmark = new ArrayList<>();
         thirdBenchmark.addAll( third );
 
@@ -726,14 +726,16 @@ public final class SlicerTest
                                clim -> clim > 0 );
 
         List<Event<SingleValuedPair>> fifthData = new ArrayList<>();
-        fifthResult.eventIterator().forEach( fifthData::add );
+        fifthResult.getTimeSeries().forEach( nextSeries -> nextSeries.getEvents().forEach( fifthData::add ) );
 
         // Same as second benchmark for main data
         assertTrue( fifthData.equals( secondBenchmark ) );
 
         // Baseline data
         List<Event<SingleValuedPair>> fifthDataBase = new ArrayList<>();
-        fifthResult.getBaselineData().eventIterator().forEach( fifthDataBase::add );
+        fifthResult.getBaselineData()
+                   .getTimeSeries()
+                   .forEach( nextSeries -> nextSeries.getEvents().forEach( fifthDataBase::add ) );
         List<Event<SingleValuedPair>> fifthBenchmarkBase = new ArrayList<>();
         fifthBenchmarkBase.addAll( second );
 
@@ -789,11 +791,11 @@ public final class SlicerTest
         //Add the time-series
         TimeSeriesOfEnsemblePairs ts =
                 (TimeSeriesOfEnsemblePairs) b.addTimeSeries( TimeSeries.of( firstBasisTime,
-                                                                             first ) )
+                                                                            first ) )
                                              .addTimeSeries( TimeSeries.of( secondBasisTime,
-                                                                             second ) )
+                                                                            second ) )
                                              .addTimeSeries( TimeSeries.of( thirdBasisTime,
-                                                                             third ) )
+                                                                            third ) )
                                              .setMetadata( meta )
                                              .build();
         //Iterate and test
@@ -801,9 +803,10 @@ public final class SlicerTest
                 Slicer.filterByReferenceTime( ts, a -> a.equals( secondBasisTime ) );
         assertTrue( filtered.getReferenceTimes().size() == 1 );
         assertTrue( filtered.getReferenceTimes().first().equals( secondBasisTime ) );
-        assertTrue( filtered.eventIterator()
-                            .iterator()
-                            .next()
+        assertTrue( filtered.getTimeSeries()
+                            .get( 0 )
+                            .getEvents()
+                            .first()
                             .getValue()
                             .equals( EnsemblePair.of( 4, new double[] { 4 } ) ) );
 
@@ -849,11 +852,11 @@ public final class SlicerTest
         //Add the time-series
         TimeSeriesOfSingleValuedPairs ts =
                 (TimeSeriesOfSingleValuedPairs) b.addTimeSeries( TimeSeries.of( firstBasisTime,
-                                                                                 first ) )
+                                                                                first ) )
                                                  .addTimeSeries( TimeSeries.of( secondBasisTime,
-                                                                                 second ) )
+                                                                                second ) )
                                                  .addTimeSeries( TimeSeries.of( thirdBasisTime,
-                                                                                 third ) )
+                                                                                third ) )
                                                  .setMetadata( meta )
                                                  .build();
         //Iterate and test
@@ -861,7 +864,12 @@ public final class SlicerTest
                 Slicer.filterByReferenceTime( ts, a -> a.equals( secondBasisTime ) );
         assertTrue( filtered.getReferenceTimes().size() == 1 );
         assertTrue( filtered.getReferenceTimes().first().equals( secondBasisTime ) );
-        assertTrue( filtered.eventIterator().iterator().next().getValue().equals( SingleValuedPair.of( 4, 4 ) ) );
+        assertTrue( filtered.getTimeSeries()
+                            .get( 0 )
+                            .getEvents()
+                            .first()
+                            .getValue()
+                            .equals( SingleValuedPair.of( 4, 4 ) ) );
 
         //Check for empty output on none filter
         SortedSet<Instant> sliced =
