@@ -104,8 +104,7 @@ public class TimeSeriesTest
     public void testHashCode()
     {
         // Equal objects have the same hashcode
-        assertTrue( this.testSeries.equals( this.testSeries )
-                    && this.testSeries.hashCode() == this.testSeries.hashCode() );
+        assertEquals( this.testSeries.hashCode(), this.testSeries.hashCode() );
 
         // Consistent when invoked multiple times
         TimeSeries<Double> test = TimeSeries.of( this.referenceTime,
