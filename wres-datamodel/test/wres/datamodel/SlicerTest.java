@@ -8,6 +8,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -46,6 +47,7 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
+import wres.datamodel.time.BasicTimeSeries;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesCollection;
@@ -801,8 +803,11 @@ public final class SlicerTest
         //Iterate and test
         TimeSeriesCollection<EnsemblePair> filtered =
                 Slicer.filterByReferenceTime( ts, a -> a.equals( secondBasisTime ) );
-        assertTrue( filtered.getReferenceTimes().size() == 1 );
-        assertTrue( filtered.getReferenceTimes().first().equals( secondBasisTime ) );
+
+        SortedSet<Instant> referenceTimes = Slicer.getReferenceTimes( filtered.getTimeSeries() );
+
+        assertTrue( referenceTimes.size() == 1 );
+        assertTrue( referenceTimes.first().equals( secondBasisTime ) );
         assertTrue( filtered.getTimeSeries()
                             .get( 0 )
                             .getEvents()
@@ -811,9 +816,11 @@ public final class SlicerTest
                             .equals( EnsemblePair.of( 4, new double[] { 4 } ) ) );
 
         //Check for empty output on none filter
-        SortedSet<Instant> sliced =
-                Slicer.filterByReferenceTime( ts, a -> a.equals( Instant.parse( "1985-01-04T00:00:00Z" ) ) )
-                      .getReferenceTimes();
+        TimeSeriesOfEnsemblePairs pairs =
+                Slicer.filterByReferenceTime( ts, a -> a.equals( Instant.parse( "1985-01-04T00:00:00Z" ) ) );
+
+        SortedSet<Instant> sliced = Slicer.getReferenceTimes( pairs.getTimeSeries() );
+
         assertTrue( sliced.isEmpty() );
 
         //Check exceptional cases
@@ -862,8 +869,11 @@ public final class SlicerTest
         //Iterate and test
         TimeSeriesCollection<SingleValuedPair> filtered =
                 Slicer.filterByReferenceTime( ts, a -> a.equals( secondBasisTime ) );
-        assertTrue( filtered.getReferenceTimes().size() == 1 );
-        assertTrue( filtered.getReferenceTimes().first().equals( secondBasisTime ) );
+
+        SortedSet<Instant> referenceTimes = Slicer.getReferenceTimes( filtered.getTimeSeries() );
+
+        assertTrue( referenceTimes.size() == 1 );
+        assertTrue( referenceTimes.first().equals( secondBasisTime ) );
         assertTrue( filtered.getTimeSeries()
                             .get( 0 )
                             .getEvents()
@@ -872,9 +882,11 @@ public final class SlicerTest
                             .equals( SingleValuedPair.of( 4, 4 ) ) );
 
         //Check for empty output on none filter
-        SortedSet<Instant> sliced =
-                Slicer.filterByReferenceTime( ts, p -> p.equals( Instant.parse( "1985-01-04T00:00:00Z" ) ) )
-                      .getReferenceTimes();
+        TimeSeriesOfSingleValuedPairs pairs =
+                Slicer.filterByReferenceTime( ts, a -> a.equals( Instant.parse( "1985-01-04T00:00:00Z" ) ) );
+
+        SortedSet<Instant> sliced = Slicer.getReferenceTimes( pairs.getTimeSeries() );
+        
         assertTrue( sliced.isEmpty() );
 
         //Check exceptional cases
@@ -1099,6 +1111,69 @@ public final class SlicerTest
                                                             Operator.GREATER,
                                                             ThresholdDataType.LEFT );
         assertEquals( expected, actual );
+    }
+
+
+    /**
+     * Tests {@link BasicTimeSeries#getReferenceTimes()}.
+     */
+
+    @Test
+    public void testGetReferenceTimes()
+    {
+        //Build a time-series with two basis times
+        SortedSet<Event<SingleValuedPair>> values = new TreeSet<>();
+        Instant basisTime = Instant.parse( FIRST_TIME );
+        values.add( Event.of( basisTime, Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
+
+        List<TimeSeries<SingleValuedPair>> timeSeries = new ArrayList<>();
+
+        timeSeries.add( TimeSeries.of( basisTime, values ) );
+
+        Instant nextBasisTime = Instant.parse( SECOND_TIME );
+        SortedSet<Event<SingleValuedPair>> otherValues = new TreeSet<>();
+        otherValues.add( Event.of( nextBasisTime, Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
+
+        timeSeries.add( TimeSeries.of( nextBasisTime, otherValues ) );
+
+        //Check dataset count
+        SortedSet<Instant> times = Slicer.getReferenceTimes( timeSeries );
+        assertEquals( 2, times.size() );
+
+        //Check the basis times
+        assertEquals( basisTime, times.first() );
+        Iterator<Instant> it = times.iterator();
+        it.next();
+        assertTrue( it.next().equals( nextBasisTime ) );
+    }
+
+    /**
+     * Tests the {@link BasicTimeSeries#getDurations()} method.
+     */
+
+    @Test
+    public void testGetDurations()
+    {
+        //Build a time-series with one basis time
+        List<TimeSeries<SingleValuedPair>> timeSeries = new ArrayList<>();
+
+        SortedSet<Event<SingleValuedPair>> values = new TreeSet<>();
+        Instant basisTime = Instant.parse( FIRST_TIME );
+        values.add( Event.of( basisTime, Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
+        values.add( Event.of( basisTime, Instant.parse( THIRD_TIME ), SingleValuedPair.of( 2, 2 ) ) );
+        values.add( Event.of( basisTime, Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 3, 3 ) ) );
+
+        timeSeries.add( TimeSeries.of( basisTime, values ) );
+
+        //Check dataset count
+        SortedSet<Duration> actual = Slicer.getDurations( timeSeries );
+        SortedSet<Duration> expected = new TreeSet<>();
+        expected.add( Duration.ofHours( 1 ) );
+        expected.add( Duration.ofHours( 2 ) );
+        expected.add( Duration.ofHours( 3 ) );
+
+        assertEquals( expected, actual );
+
     }
 
     /**

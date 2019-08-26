@@ -74,7 +74,7 @@ public final class TimeToPeakErrorTest
                                                                                                        "Streamflow" ) )
                                                                  .setTimeWindow( timeWindow )
                                                                  .build(),
-                                      input.getReferenceTimes().size(),
+                                      input.getTimeSeries().size(),
                                       MeasurementUnit.of( "DURATION" ),
                                       MetricConstants.TIME_TO_PEAK_ERROR,
                                       MetricConstants.MAIN );

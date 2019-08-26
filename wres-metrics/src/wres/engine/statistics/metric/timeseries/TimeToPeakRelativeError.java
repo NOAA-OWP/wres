@@ -113,7 +113,7 @@ public class TimeToPeakRelativeError extends TimingError
 
         // Create output metadata with the identifier of the statistic as the component identifier
         StatisticMetadata meta = StatisticMetadata.of( s.getMetadata(),
-                                                       s.getReferenceTimes().size(),
+                                                       s.getTimeSeries().size(),
                                                        MeasurementUnit.of( "DURATION IN RELATIVE HOURS" ),
                                                        this.getID(),
                                                        MetricConstants.MAIN );

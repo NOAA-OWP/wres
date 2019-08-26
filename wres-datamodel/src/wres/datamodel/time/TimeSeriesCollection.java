@@ -1,10 +1,7 @@
 package wres.datamodel.time;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.Iterator;
 import java.util.List;
-import java.util.SortedSet;
 
 /**
  * <p>A collection of one or more atomic time-series.
@@ -28,23 +25,5 @@ public interface TimeSeriesCollection<T>
      */
 
     List<TimeSeries<T>> getTimeSeries();
-
-    /**
-     * Returns the reference times associated with all the atomic time-series in the container. The times are ordered 
-     * from the earliest {@link Instant} to the latest.
-     * 
-     * @return the reference times
-     */
-
-    SortedSet<Instant> getReferenceTimes();
-
-    /**
-     * Returns the durations associated with all the atomic time-series in the container. The results are ordered 
-     * from the earliest duration to the latest.
-     * 
-     * @return the durations
-     */
-
-    SortedSet<Duration> getDurations();
     
 }

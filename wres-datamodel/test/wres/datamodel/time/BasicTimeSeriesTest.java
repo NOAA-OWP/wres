@@ -1,8 +1,8 @@
 package wres.datamodel.time;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -16,6 +16,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.time.BasicTimeSeries.BasicTimeSeriesBuilder;
@@ -140,79 +141,28 @@ public final class BasicTimeSeriesTest
     {
         //Build a time-series with one basis time
         SortedSet<Event<SingleValuedPair>> values = new TreeSet<>();
-        BasicTimeSeriesBuilder<SingleValuedPair> b = new BasicTimeSeriesBuilder<>();
+
         Instant basisTime = Instant.parse( FIRST_TIME );
         values.add( Event.of( basisTime, Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
-
-        b.addTimeSeries( TimeSeries.of( basisTime, values ) );
+        List<TimeSeries<SingleValuedPair>> timeSeries = new ArrayList<>();
+        
+        timeSeries.add( TimeSeries.of( basisTime, values ) );
 
         //Check dataset count
-        assertTrue( b.build().getReferenceTimes().size() == 1 );
+        SortedSet<Instant> referenceTimes = Slicer.getReferenceTimes( timeSeries );
+        
+        assertEquals( 1, referenceTimes.size() );
 
         //Add another time-series
         Instant nextBasisTime = Instant.parse( SECOND_TIME );
         SortedSet<Event<SingleValuedPair>> otherValues = new TreeSet<>();
         otherValues.add( Event.of( nextBasisTime, Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
 
-        b.addTimeSeries( TimeSeries.of( nextBasisTime, otherValues ) );
+        timeSeries.add( TimeSeries.of( nextBasisTime, otherValues ) );
 
-        assertTrue( b.build().getReferenceTimes().size() == 2 );
-    }
-
-    /**
-     * Tests {@link BasicTimeSeries#getReferenceTimes()}.
-     */
-
-    @Test
-    public void testGetReferenceTimes()
-    {
-        //Build a time-series with two basis times
-        SortedSet<Event<SingleValuedPair>> values = new TreeSet<>();
-        BasicTimeSeriesBuilder<SingleValuedPair> b = new BasicTimeSeriesBuilder<>();
-        Instant basisTime = Instant.parse( FIRST_TIME );
-        values.add( Event.of( basisTime, Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
-        b.addTimeSeries( TimeSeries.of( basisTime, ReferenceTimeType.UNKNOWN, values ) );
-
-        Instant nextBasisTime = Instant.parse( SECOND_TIME );
-        SortedSet<Event<SingleValuedPair>> otherValues = new TreeSet<>();
-        otherValues.add( Event.of( nextBasisTime, Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
-        b.addTimeSeries( TimeSeries.of( nextBasisTime, otherValues ) );
-
-        TimeSeriesCollection<SingleValuedPair> pairs = b.build();
-
-        //Check dataset count
-        assertTrue( pairs.getReferenceTimes().size() == 2 );
-
-        //Check the basis times
-        assertTrue( pairs.getReferenceTimes().first().equals( basisTime ) );
-        Iterator<Instant> it = pairs.getReferenceTimes().iterator();
-        it.next();
-        assertTrue( it.next().equals( nextBasisTime ) );
-    }
-
-    /**
-     * Tests the {@link BasicTimeSeries#getDurations()} method.
-     */
-
-    @Test
-    public void testGetDurations()
-    {
-        //Build a time-series with two basis times
-        SortedSet<Event<SingleValuedPair>> values = new TreeSet<>();
-        BasicTimeSeriesBuilder<SingleValuedPair> b = new BasicTimeSeriesBuilder<>();
-        Instant basisTime = Instant.parse( FIRST_TIME );
-        values.add( Event.of( basisTime, Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
-        values.add( Event.of( basisTime, Instant.parse( THIRD_TIME ), SingleValuedPair.of( 2, 2 ) ) );
-        values.add( Event.of( basisTime, Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 3, 3 ) ) );
-
-        b.addTimeSeries( TimeSeries.of( basisTime, values ) );
-
-        //Check dataset count
-        assertTrue( b.build().getDurations().size() == 3 );
-        //Check the lead times
-        assertTrue( b.build().getDurations().contains( Duration.ofDays( 1 ) ) );
-        assertTrue( b.build().getDurations().contains( Duration.ofDays( 2 ) ) );
-        assertTrue( b.build().getDurations().contains( Duration.ofDays( 3 ) ) );
+        SortedSet<Instant> referenceTimesTwo = Slicer.getReferenceTimes( timeSeries );
+        
+        assertEquals( 2, referenceTimesTwo.size() );
     }
 
     /**
@@ -221,7 +171,7 @@ public final class BasicTimeSeriesTest
      */
 
     @Test
-    public void testReferenceTimeIteratorThrowsExceptionOnAttemptToMutate()
+    public void testTimeSeriesIteratorThrowsExceptionOnAttemptToMutate()
     {
         exception.expect( UnsupportedOperationException.class );
 
