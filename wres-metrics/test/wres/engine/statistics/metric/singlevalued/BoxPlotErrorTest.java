@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.SortedSet;
+import java.util.TreeSet;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -29,6 +30,7 @@ import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.time.Event;
+import wres.datamodel.time.TimeSeriesA;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
 /**
@@ -117,7 +119,10 @@ public final class BoxPlotErrorTest
             List<Event<SingleValuedPair>> events = Slicer.filterByDuration( input, a -> a.equals( duration ) );
             TimeSeriesOfSingleValuedPairsBuilder builder = new TimeSeriesOfSingleValuedPairsBuilder();
             builder.setMetadata( input.getMetadata() );
-            builder.addTimeSeries( events );
+            for( Event<SingleValuedPair> next : events ) 
+            {
+                builder.addTimeSeries( TimeSeriesA.of( new TreeSet<>( Collections.singleton( next ) ) ) );
+            }
             actualRaw.addAll( this.boxPlotError.apply( builder.build() ).getData() );
         }
 

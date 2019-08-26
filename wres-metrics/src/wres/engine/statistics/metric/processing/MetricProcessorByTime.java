@@ -28,7 +28,7 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
 import wres.datamodel.thresholds.ThresholdsByMetric;
-import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesA;
 import wres.datamodel.time.TimeWindow;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricCollection;
@@ -200,7 +200,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
      * @throws IllegalStateException if the {@link Threshold#getDataType()} is not recognized
      */
 
-    static Predicate<TimeSeries<SingleValuedPair>> getFilterForTimeSeriesOfSingleValuedPairs( Threshold input )
+    static Predicate<TimeSeriesA<SingleValuedPair>> getFilterForTimeSeriesOfSingleValuedPairs( Threshold input )
     {
         switch ( input.getDataType() )
         {

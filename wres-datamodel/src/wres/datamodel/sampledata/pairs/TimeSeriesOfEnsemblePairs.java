@@ -13,16 +13,17 @@ import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.time.BasicTimeSeries;
 import wres.datamodel.time.Event;
-import wres.datamodel.time.TimeSeries;
-import wres.datamodel.time.TimeSeriesBuilder;
+import wres.datamodel.time.TimeSeriesA;
+import wres.datamodel.time.TimeSeriesCollection;
+import wres.datamodel.time.TimeSeriesCollectionBuilder;
 import wres.datamodel.time.TimeSeriesHelper;
 
 /**
- * Immutable implementation of a possibly irregular {@link TimeSeries} of {@link EnsemblePairs}.
+ * Immutable implementation of a possibly irregular {@link TimeSeriesCollection} of {@link EnsemblePairs}.
  * 
  * @author james.brown@hydrosolved.com
  */
-public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeries<EnsemblePair>
+public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeriesCollection<EnsemblePair>
 {
 
     /**
@@ -52,7 +53,13 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
         }
         
         TimeSeriesOfEnsemblePairsBuilder builder = new TimeSeriesOfEnsemblePairsBuilder();
-        builder.addTimeSeries( baseline ).setMetadata( getMetadataForBaseline() );
+        builder.setMetadata( this.getMetadataForBaseline() );
+        
+        for( TimeSeriesA<EnsemblePair> next : baseline.referenceTimeIterator() )
+        {
+            builder.addTimeSeries( next );
+        }
+        
         return builder.build();
     }
 
@@ -63,7 +70,7 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
     }
 
     @Override
-    public Iterable<TimeSeries<EnsemblePair>> referenceTimeIterator()
+    public Iterable<TimeSeriesA<EnsemblePair>> referenceTimeIterator()
     {
         return main.referenceTimeIterator();
     }
@@ -91,20 +98,20 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
      */
 
     public static class TimeSeriesOfEnsemblePairsBuilder extends EnsemblePairsBuilder
-            implements TimeSeriesBuilder<EnsemblePair>
+            implements TimeSeriesCollectionBuilder<EnsemblePair>
     {
 
         /**
          * The raw data.
          */
 
-        private List<List<Event<EnsemblePair>>> data = new ArrayList<>();
+        private List<TimeSeriesA<EnsemblePair>> data = new ArrayList<>();
 
         /**
          * The raw data for the baseline
          */
 
-        private List<List<Event<EnsemblePair>>> baselineData = null;
+        private List<TimeSeriesA<EnsemblePair>> baselineData = null;
         
         /**
          * Adds a time-series to the builder.
@@ -115,26 +122,17 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
          * @throws NullPointerException if the input is null
          */
         @Override
-        public TimeSeriesOfEnsemblePairsBuilder addTimeSeries( TimeSeries<EnsemblePair> timeSeries )
+        public TimeSeriesOfEnsemblePairsBuilder addTimeSeries( TimeSeriesA<EnsemblePair> timeSeries )
         {
-            TimeSeriesBuilder.super.addTimeSeries( timeSeries );
-            return this;
-        }
-
-        /**
-         * Adds a list of atomic time-series to the builder, each one stored against its basis time.
-         * 
-         * @param values the time-series, stored against their basis times
-         * @return the builder
-         * @throws NullPointerException if the input is null
-         */
-
-        public TimeSeriesOfEnsemblePairsBuilder addTimeSeries( List<Event<EnsemblePair>> values )
-        {
-            Objects.requireNonNull( values, NULL_INPUT );
-
-            this.data.add( values );
-            addData( values.stream().map( Event::getValue ).collect( Collectors.toList() ) );
+            Objects.requireNonNull( timeSeries, NULL_INPUT );
+            
+            this.data.add( timeSeries );
+            
+            this.addData( timeSeries.getEvents()
+                                    .stream()
+                                    .map( Event::getValue )
+                                    .collect( Collectors.toList() ) );
+            
             return this;
         }
         
@@ -147,37 +145,22 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
          * @throws NullPointerException if the input is null
          */
 
-        public TimeSeriesOfEnsemblePairsBuilder addTimeSeriesForBaseline( TimeSeries<EnsemblePair> timeSeries )
+        public TimeSeriesOfEnsemblePairsBuilder addTimeSeriesForBaseline( TimeSeriesA<EnsemblePair> timeSeries )
         {
             Objects.requireNonNull( timeSeries, NULL_INPUT );
-
-            List<Event<EnsemblePair>> values = new ArrayList<>();
-            timeSeries.eventIterator().forEach( values::add );
-            this.addTimeSeriesDataForBaseline( values );
-
-            return this;
-        }
-
-        /**
-         * Adds a list of atomic time-series to the builder for a baseline, each one stored against its basis time.
-         * 
-         * @param values the time-series, stored against their basis times
-         * @return the builder
-         */
-
-        public TimeSeriesOfEnsemblePairsBuilder addTimeSeriesDataForBaseline( List<Event<EnsemblePair>> values )
-        {
-            if ( Objects.nonNull( values ) )
-            {
-                if ( Objects.isNull( this.baselineData ) )
-                {
-                    this.baselineData = new ArrayList<>();
-                }
-
-                this.baselineData.add( values );
-                this.addDataForBaseline( values.stream().map( Event::getValue ).collect( Collectors.toList() ) );
-            }
             
+            if( Objects.isNull( this.baselineData ) )
+            {
+                this.baselineData = new ArrayList<>();
+            }
+
+            this.baselineData.add( timeSeries );
+            
+            this.addDataForBaseline( timeSeries.getEvents()
+                                               .stream()
+                                               .map( Event::getValue )
+                                               .collect( Collectors.toList() ) );
+
             return this;
         }
 
@@ -193,11 +176,11 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
         public TimeSeriesOfEnsemblePairsBuilder addTimeSeries( TimeSeriesOfEnsemblePairs timeSeries )
         {
             Objects.requireNonNull( timeSeries, NULL_INPUT );
-            
-            List<Event<EnsemblePair>> nextSource = new ArrayList<>();
-            timeSeries.eventIterator().forEach( nextSource::add );
 
-            this.addTimeSeries( nextSource );
+            for( TimeSeriesA<EnsemblePair> next : timeSeries.referenceTimeIterator() )
+            {
+                this.addTimeSeries( next );
+            }
 
             // Set the union of the current metadata and any previously added time-series
             List<SampleMetadata> mainMeta = new ArrayList<>();
@@ -233,10 +216,10 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
         {
             Objects.requireNonNull( timeSeries, NULL_INPUT );
             
-            List<Event<EnsemblePair>> nextSource = new ArrayList<>();
-            timeSeries.eventIterator().forEach( nextSource::add );
-
-            this.addTimeSeriesDataForBaseline( nextSource );
+            for( TimeSeriesA<EnsemblePair> next : timeSeries.referenceTimeIterator() )
+            {
+                this.addTimeSeriesForBaseline( next );
+            }
 
             // Set the union of the current metadata and any previously added time-series
             List<SampleMetadata> baselineMeta = new ArrayList<>();
@@ -247,6 +230,7 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
             {
                 baselineMeta.add( this.baselineMeta );
             }
+            
             this.setMetadataForBaseline( SampleMetadata.unionOf( baselineMeta ) );
 
             return this;

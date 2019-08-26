@@ -12,10 +12,11 @@ import java.text.DecimalFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -33,6 +34,8 @@ import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesO
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.scale.TimeScale.TimeScaleFunction;
 import wres.datamodel.time.Event;
+import wres.datamodel.time.ReferenceTimeType;
+import wres.datamodel.time.TimeSeriesA;
 import wres.datamodel.time.TimeWindow;
 
 /**
@@ -68,65 +71,74 @@ public final class SingleValuedPairsWriterTest
         // Create the pairs
         TimeSeriesOfSingleValuedPairsBuilder tsBuilder = new TimeSeriesOfSingleValuedPairsBuilder();
 
-        List<Event<SingleValuedPair>> listOfPairs = new ArrayList<>();
+        SortedSet<Event<SingleValuedPair>> setOfPairs = new TreeSet<>();
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        listOfPairs.add( Event.of( basisTime,
-                                   Instant.parse( "1985-01-01T01:00:00Z" ),
-                                   SingleValuedPair.of( 1.001, 2 ) ) );
-        listOfPairs.add( Event.of( basisTime, Instant.parse( "1985-01-01T02:00:00Z" ), SingleValuedPair.of( 3, 4 ) ) );
-        listOfPairs.add( Event.of( basisTime, Instant.parse( "1985-01-01T03:00:00Z" ), SingleValuedPair.of( 5, 6 ) ) );
+        setOfPairs.add( Event.of( basisTime,
+                                  Instant.parse( "1985-01-01T01:00:00Z" ),
+                                  SingleValuedPair.of( 1.001, 2 ) ) );
+        setOfPairs.add( Event.of( basisTime, Instant.parse( "1985-01-01T02:00:00Z" ), SingleValuedPair.of( 3, 4 ) ) );
+        setOfPairs.add( Event.of( basisTime, Instant.parse( "1985-01-01T03:00:00Z" ), SingleValuedPair.of( 5, 6 ) ) );
 
         SampleMetadata meta =
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
                                    DatasetIdentifier.of( Location.of( "PLUM" ), "RIFLE" ) );
 
-        pairs = (TimeSeriesOfSingleValuedPairs) tsBuilder.addTimeSeries( listOfPairs )
+        TimeSeriesA<SingleValuedPair> timeSeriesOne =
+                TimeSeriesA.of( basisTime, ReferenceTimeType.UNKNOWN, setOfPairs );
+
+        pairs = (TimeSeriesOfSingleValuedPairs) tsBuilder.addTimeSeries( timeSeriesOne )
                                                          .setMetadata( meta )
                                                          .build();
 
         // Create the second time-series of pairs
         TimeSeriesOfSingleValuedPairsBuilder tsBuilderTwo = new TimeSeriesOfSingleValuedPairsBuilder();
-        List<Event<SingleValuedPair>> listOfPairsTwo = new ArrayList<>();
+        SortedSet<Event<SingleValuedPair>> setOfPairsTwo = new TreeSet<>();
         Instant basisTimeTwo = Instant.parse( "1985-01-01T00:00:00Z" );
-        listOfPairsTwo.add( Event.of( basisTimeTwo,
-                                      Instant.parse( "1985-01-01T04:00:00Z" ),
-                                      SingleValuedPair.of( 7, 8 ) ) );
-        listOfPairsTwo.add( Event.of( basisTimeTwo,
-                                      Instant.parse( "1985-01-01T05:00:00Z" ),
-                                      SingleValuedPair.of( 9, 10 ) ) );
-        listOfPairsTwo.add( Event.of( basisTimeTwo,
-                                      Instant.parse( "1985-01-01T06:00:00Z" ),
-                                      SingleValuedPair.of( 11, 12 ) ) );
+        setOfPairsTwo.add( Event.of( basisTimeTwo,
+                                     Instant.parse( "1985-01-01T04:00:00Z" ),
+                                     SingleValuedPair.of( 7, 8 ) ) );
+        setOfPairsTwo.add( Event.of( basisTimeTwo,
+                                     Instant.parse( "1985-01-01T05:00:00Z" ),
+                                     SingleValuedPair.of( 9, 10 ) ) );
+        setOfPairsTwo.add( Event.of( basisTimeTwo,
+                                     Instant.parse( "1985-01-01T06:00:00Z" ),
+                                     SingleValuedPair.of( 11, 12 ) ) );
 
         SampleMetadata metaTwo =
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
                                    DatasetIdentifier.of( Location.of( "ORANGE" ), "PISTOL" ) );
 
-        pairsTwo = (TimeSeriesOfSingleValuedPairs) tsBuilderTwo.addTimeSeries( listOfPairsTwo )
+        TimeSeriesA<SingleValuedPair> timeSeriesTwo =
+                TimeSeriesA.of( basisTimeTwo, ReferenceTimeType.UNKNOWN, setOfPairsTwo );
+
+        pairsTwo = (TimeSeriesOfSingleValuedPairs) tsBuilderTwo.addTimeSeries( timeSeriesTwo )
                                                                .setMetadata( metaTwo )
                                                                .build();
 
 
         // Create the third time-series of pairs
         TimeSeriesOfSingleValuedPairsBuilder tsBuilderThree = new TimeSeriesOfSingleValuedPairsBuilder();
-        List<Event<SingleValuedPair>> listOfPairsThree = new ArrayList<>();
+        SortedSet<Event<SingleValuedPair>> setOfPairsThree = new TreeSet<>();
         Instant basisTimeThree = Instant.parse( "1985-01-01T00:00:00Z" );
-        listOfPairsThree.add( Event.of( basisTimeThree,
-                                        Instant.parse( "1985-01-01T07:00:00Z" ),
-                                        SingleValuedPair.of( 13, 14 ) ) );
-        listOfPairsThree.add( Event.of( basisTimeThree,
-                                        Instant.parse( "1985-01-01T08:00:00Z" ),
-                                        SingleValuedPair.of( 15, 16 ) ) );
-        listOfPairsThree.add( Event.of( basisTimeThree,
-                                        Instant.parse( "1985-01-01T09:00:00Z" ),
-                                        SingleValuedPair.of( 17, 18 ) ) );
+        setOfPairsThree.add( Event.of( basisTimeThree,
+                                       Instant.parse( "1985-01-01T07:00:00Z" ),
+                                       SingleValuedPair.of( 13, 14 ) ) );
+        setOfPairsThree.add( Event.of( basisTimeThree,
+                                       Instant.parse( "1985-01-01T08:00:00Z" ),
+                                       SingleValuedPair.of( 15, 16 ) ) );
+        setOfPairsThree.add( Event.of( basisTimeThree,
+                                       Instant.parse( "1985-01-01T09:00:00Z" ),
+                                       SingleValuedPair.of( 17, 18 ) ) );
 
         SampleMetadata metaThree =
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
                                    DatasetIdentifier.of( Location.of( "BANANA" ), "GRENADE" ) );
 
+        TimeSeriesA<SingleValuedPair> timeSeriesThree =
+                TimeSeriesA.of( basisTimeThree, ReferenceTimeType.UNKNOWN, setOfPairsThree );
+
         pairsThree =
-                (TimeSeriesOfSingleValuedPairs) tsBuilderThree.addTimeSeries( listOfPairsThree )
+                (TimeSeriesOfSingleValuedPairs) tsBuilderThree.addTimeSeries( timeSeriesThree )
                                                               .setMetadata( metaThree )
                                                               .build();
 
@@ -161,7 +173,7 @@ public final class SingleValuedPairsWriterTest
                                                .build();
 
             TimeSeriesOfSingleValuedPairs emptyPairs =
-                    (TimeSeriesOfSingleValuedPairs) tsBuilder.addTimeSeries( Collections.emptyList() )
+                    (TimeSeriesOfSingleValuedPairs) tsBuilder.addTimeSeries( TimeSeriesA.of( Collections.emptySortedSet() ) )
                                                              .setMetadata( meta )
                                                              .build();
 
@@ -200,10 +212,11 @@ public final class SingleValuedPairsWriterTest
 
             // Assert the expected results
             assertTrue( results.size() == 4 );
-            assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,"
-                                                 + "VALID TIME OF PAIR,"
-                                                 + "LEAD DURATION OF PAIR IN SECONDS,"
-                                                 + "LEFT IN SCOOBIES,RIGHT IN SCOOBIES" ) );
+            assertTrue( results.get( 0 )
+                               .equals( "FEATURE DESCRIPTION,"
+                                        + "VALID TIME OF PAIR,"
+                                        + "LEAD DURATION OF PAIR IN SECONDS,"
+                                        + "LEFT IN SCOOBIES,RIGHT IN SCOOBIES" ) );
             assertTrue( results.get( 1 ).equals( "PLUM,1985-01-01T01:00:00Z,3600,1.001,2.0" ) );
             assertTrue( results.get( 2 ).equals( "PLUM,1985-01-01T02:00:00Z,7200,3.0,4.0" ) );
             assertTrue( results.get( 3 ).equals( "PLUM,1985-01-01T03:00:00Z,10800,5.0,6.0" ) );
@@ -246,17 +259,18 @@ public final class SingleValuedPairsWriterTest
 
             // Assert the expected results
             assertTrue( results.size() == 4 );
-            assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,"
-                                                 + "EARLIEST ISSUE TIME,"
-                                                 + "LATEST ISSUE TIME,"
-                                                 + "EARLIEST VALID TIME,"
-                                                 + "LATEST VALID TIME,"
-                                                 + "EARLIEST LEAD TIME IN SECONDS,"
-                                                 + "LATEST LEAD TIME IN SECONDS,"
-                                                 + "VALID TIME OF PAIR,"
-                                                 + "LEAD DURATION OF PAIR IN SECONDS,"
-                                                 + "LEFT IN SCOOBIES,"
-                                                 + "RIGHT IN SCOOBIES" ) );
+            assertTrue( results.get( 0 )
+                               .equals( "FEATURE DESCRIPTION,"
+                                        + "EARLIEST ISSUE TIME,"
+                                        + "LATEST ISSUE TIME,"
+                                        + "EARLIEST VALID TIME,"
+                                        + "LATEST VALID TIME,"
+                                        + "EARLIEST LEAD TIME IN SECONDS,"
+                                        + "LATEST LEAD TIME IN SECONDS,"
+                                        + "VALID TIME OF PAIR,"
+                                        + "LEAD DURATION OF PAIR IN SECONDS,"
+                                        + "LEFT IN SCOOBIES,"
+                                        + "RIGHT IN SCOOBIES" ) );
 
             assertTrue( results.get( 1 )
                                .equals( "PLUM,1985-01-01T00:00:00Z,"
@@ -310,11 +324,12 @@ public final class SingleValuedPairsWriterTest
 
             // Assert the expected results
             assertTrue( results.size() == 7 );
-            assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,"
-                                                 + "VALID TIME OF PAIR,"
-                                                 + "LEAD DURATION OF PAIR IN SECONDS,"
-                                                 + "LEFT IN SCOOBIES,"
-                                                 + "RIGHT IN SCOOBIES" ) );
+            assertTrue( results.get( 0 )
+                               .equals( "FEATURE DESCRIPTION,"
+                                        + "VALID TIME OF PAIR,"
+                                        + "LEAD DURATION OF PAIR IN SECONDS,"
+                                        + "LEFT IN SCOOBIES,"
+                                        + "RIGHT IN SCOOBIES" ) );
             assertTrue( results.get( 1 ).equals( "PLUM,1985-01-01T01:00:00Z,3600,1.001,2.0" ) );
             assertTrue( results.get( 2 ).equals( "PLUM,1985-01-01T02:00:00Z,7200,3.0,4.0" ) );
             assertTrue( results.get( 3 ).equals( "PLUM,1985-01-01T03:00:00Z,10800,5.0,6.0" ) );
@@ -365,11 +380,12 @@ public final class SingleValuedPairsWriterTest
             assertTrue( results.get( 0 ).equals( "BANANA,1985-01-01T07:00:00Z,25200,13.0,14.0" ) );
             assertTrue( results.get( 1 ).equals( "BANANA,1985-01-01T08:00:00Z,28800,15.0,16.0" ) );
             assertTrue( results.get( 2 ).equals( "BANANA,1985-01-01T09:00:00Z,32400,17.0,18.0" ) );
-            assertTrue( results.get( 3 ).equals( "FEATURE DESCRIPTION,"
-                                                 + "VALID TIME OF PAIR,"
-                                                 + "LEAD DURATION OF PAIR IN SECONDS,"
-                                                 + "LEFT IN SCOOBIES,"
-                                                 + "RIGHT IN SCOOBIES" ) );
+            assertTrue( results.get( 3 )
+                               .equals( "FEATURE DESCRIPTION,"
+                                        + "VALID TIME OF PAIR,"
+                                        + "LEAD DURATION OF PAIR IN SECONDS,"
+                                        + "LEFT IN SCOOBIES,"
+                                        + "RIGHT IN SCOOBIES" ) );
             assertTrue( results.get( 4 ).equals( "ORANGE,1985-01-01T04:00:00Z,14400,7.0,8.0" ) );
             assertTrue( results.get( 5 ).equals( "ORANGE,1985-01-01T05:00:00Z,18000,9.0,10.0" ) );
             assertTrue( results.get( 6 ).equals( "ORANGE,1985-01-01T06:00:00Z,21600,11.0,12.0" ) );

@@ -47,7 +47,8 @@ import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.time.Event;
-import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesA;
+import wres.datamodel.time.TimeSeriesCollection;
 import wres.datamodel.time.TimeWindow;
 
 /**
@@ -627,9 +628,9 @@ public final class SlicerTest
     public void testFilterTimeSeriesOfSingleValuedPairs()
     {
         //Build a time-series with three basis times 
-        List<Event<SingleValuedPair>> first = new ArrayList<>();
-        List<Event<SingleValuedPair>> second = new ArrayList<>();
-        List<Event<SingleValuedPair>> third = new ArrayList<>();
+        SortedSet<Event<SingleValuedPair>> first = new TreeSet<>();
+        SortedSet<Event<SingleValuedPair>> second = new TreeSet<>();
+        SortedSet<Event<SingleValuedPair>> third = new TreeSet<>();
         TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
 
         Instant firstBasisTime = Instant.parse( FIRST_TIME );
@@ -656,9 +657,12 @@ public final class SlicerTest
 
         //Add the time-series
         TimeSeriesOfSingleValuedPairs firstSeries =
-                (TimeSeriesOfSingleValuedPairs) b.addTimeSeries( first )
-                                                 .addTimeSeries( second )
-                                                 .addTimeSeries( third )
+                (TimeSeriesOfSingleValuedPairs) b.addTimeSeries( TimeSeriesA.of( firstBasisTime,
+                                                                                 first ) )
+                                                 .addTimeSeries( TimeSeriesA.of( secondBasisTime,
+                                                                                 second ) )
+                                                 .addTimeSeries( TimeSeriesA.of( thirdBasisTime,
+                                                                                 third ) )
                                                  .setMetadata( meta )
                                                  .build();
 
@@ -711,8 +715,8 @@ public final class SlicerTest
         assertTrue( fourthResult.getClimatology().equals( climatologyExpected ) );
 
         // Also filter baseline data
-        b.addTimeSeriesDataForBaseline( first )
-         .addTimeSeriesDataForBaseline( second )
+        b.addTimeSeriesForBaseline( TimeSeriesA.of( firstBasisTime, first ) )
+         .addTimeSeriesForBaseline( TimeSeriesA.of( secondBasisTime, second ) )
          .setMetadataForBaseline( meta );
 
         // Filter all values where both sides are greater than 4
@@ -746,9 +750,9 @@ public final class SlicerTest
     public void testFilterEnsembleTimeSeriesByReferenceTime()
     {
         //Build a time-series with three basis times 
-        List<Event<EnsemblePair>> first = new ArrayList<>();
-        List<Event<EnsemblePair>> second = new ArrayList<>();
-        List<Event<EnsemblePair>> third = new ArrayList<>();
+        SortedSet<Event<EnsemblePair>> first = new TreeSet<>();
+        SortedSet<Event<EnsemblePair>> second = new TreeSet<>();
+        SortedSet<Event<EnsemblePair>> third = new TreeSet<>();
         TimeSeriesOfEnsemblePairsBuilder b = new TimeSeriesOfEnsemblePairsBuilder();
 
         Instant firstBasisTime = Instant.parse( FIRST_TIME );
@@ -784,13 +788,16 @@ public final class SlicerTest
         SampleMetadata meta = SampleMetadata.of();
         //Add the time-series
         TimeSeriesOfEnsemblePairs ts =
-                (TimeSeriesOfEnsemblePairs) b.addTimeSeries( first )
-                                             .addTimeSeries( second )
-                                             .addTimeSeries( third )
+                (TimeSeriesOfEnsemblePairs) b.addTimeSeries( TimeSeriesA.of( firstBasisTime,
+                                                                             first ) )
+                                             .addTimeSeries( TimeSeriesA.of( secondBasisTime,
+                                                                             second ) )
+                                             .addTimeSeries( TimeSeriesA.of( thirdBasisTime,
+                                                                             third ) )
                                              .setMetadata( meta )
                                              .build();
         //Iterate and test
-        TimeSeries<EnsemblePair> filtered =
+        TimeSeriesCollection<EnsemblePair> filtered =
                 Slicer.filterByReferenceTime( ts, a -> a.equals( secondBasisTime ) );
         assertTrue( filtered.getReferenceTimes().size() == 1 );
         assertTrue( filtered.getReferenceTimes().first().equals( secondBasisTime ) );
@@ -821,9 +828,9 @@ public final class SlicerTest
     public void testFilterSingleValuedTimeSeriesByReferenceTime()
     {
         //Build a time-series with three basis times 
-        List<Event<SingleValuedPair>> first = new ArrayList<>();
-        List<Event<SingleValuedPair>> second = new ArrayList<>();
-        List<Event<SingleValuedPair>> third = new ArrayList<>();
+        SortedSet<Event<SingleValuedPair>> first = new TreeSet<>();
+        SortedSet<Event<SingleValuedPair>> second = new TreeSet<>();
+        SortedSet<Event<SingleValuedPair>> third = new TreeSet<>();
         TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
 
         Instant firstBasisTime = Instant.parse( FIRST_TIME );
@@ -841,13 +848,17 @@ public final class SlicerTest
         SampleMetadata meta = SampleMetadata.of();
         //Add the time-series
         TimeSeriesOfSingleValuedPairs ts =
-                (TimeSeriesOfSingleValuedPairs) b.addTimeSeries( first )
-                                                 .addTimeSeries( second )
-                                                 .addTimeSeries( third )
+                (TimeSeriesOfSingleValuedPairs) b.addTimeSeries( TimeSeriesA.of( firstBasisTime,
+                                                                                 first ) )
+                                                 .addTimeSeries( TimeSeriesA.of( secondBasisTime,
+                                                                                 second ) )
+                                                 .addTimeSeries( TimeSeriesA.of( thirdBasisTime,
+                                                                                 third ) )
                                                  .setMetadata( meta )
                                                  .build();
         //Iterate and test
-        TimeSeries<SingleValuedPair> filtered = Slicer.filterByReferenceTime( ts, a -> a.equals( secondBasisTime ) );
+        TimeSeriesCollection<SingleValuedPair> filtered =
+                Slicer.filterByReferenceTime( ts, a -> a.equals( secondBasisTime ) );
         assertTrue( filtered.getReferenceTimes().size() == 1 );
         assertTrue( filtered.getReferenceTimes().first().equals( secondBasisTime ) );
         assertTrue( filtered.eventIterator().iterator().next().getValue().equals( SingleValuedPair.of( 4, 4 ) ) );
@@ -1058,12 +1069,12 @@ public final class SlicerTest
                           .isEmpty() );
 
     }
-    
+
     /**
      * Checks that a default quantile is returned by 
      * {@link Slicer#getQuantileFromProbability(Threshold, double[], Integer)} empty input.
      */
-    
+
     @Test
     public void testGetQuantileFromProbabilityReturnsDefaultQuantileForEmptyInput()
     {
@@ -1071,15 +1082,15 @@ public final class SlicerTest
         Threshold testA = Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.0 ),
                                                             Operator.GREATER,
                                                             ThresholdDataType.LEFT );
-        
+
         //Test for equality
-        Threshold actual = Slicer.getQuantileFromProbability( testA, sorted );  
-        
-        Threshold expected = Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( Double.NaN ),                                                            
+        Threshold actual = Slicer.getQuantileFromProbability( testA, sorted );
+
+        Threshold expected = Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( Double.NaN ),
                                                             OneOrTwoDoubles.of( 0.0 ),
                                                             Operator.GREATER,
                                                             ThresholdDataType.LEFT );
-        assertEquals( expected, actual );        
+        assertEquals( expected, actual );
     }
 
     /**

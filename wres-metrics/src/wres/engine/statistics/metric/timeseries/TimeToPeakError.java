@@ -16,7 +16,7 @@ import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
-import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesA;
 import wres.engine.statistics.metric.Metric;
 
 /**
@@ -63,7 +63,7 @@ public class TimeToPeakError extends TimingError
 
         // Iterate through the time-series by basis time, and find the peaks in left and right
         List<Pair<Instant, Duration>> returnMe = new ArrayList<>();
-        for ( TimeSeries<SingleValuedPair> next : s.referenceTimeIterator() )
+        for ( TimeSeriesA<SingleValuedPair> next : s.referenceTimeIterator() )
         {
             Pair<Instant, Instant> peak = TimingErrorHelper.getTimeToPeak( next, this.getRNG() );
 
@@ -71,7 +71,7 @@ public class TimeToPeakError extends TimingError
             Duration error = Duration.between( peak.getLeft(), peak.getRight() );
 
             // Add the time-to-peak error against the basis time
-            returnMe.add( Pair.of( next.getReferenceTimes().first(), error ) );
+            returnMe.add( Pair.of( next.getReferenceTime(), error ) );
         }
 
         // Create output metadata

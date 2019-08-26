@@ -19,7 +19,7 @@ import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
-import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesA;
 import wres.engine.statistics.metric.Metric;
 
 /**
@@ -72,7 +72,7 @@ public class TimeToPeakRelativeError extends TimingError
 
         // Iterate through the time-series by basis time, and find the peaks in left and right
         List<Pair<Instant, Duration>> returnMe = new ArrayList<>();
-        for ( TimeSeries<SingleValuedPair> next : s.referenceTimeIterator() )
+        for ( TimeSeriesA<SingleValuedPair> next : s.referenceTimeIterator() )
         {
             Pair<Instant, Instant> peak = TimingErrorHelper.getTimeToPeak( next, this.getRNG() );
 
@@ -80,7 +80,7 @@ public class TimeToPeakRelativeError extends TimingError
             Duration error = Duration.between( peak.getLeft(), peak.getRight() );
 
             // Compute the denominator
-            Duration denominator = Duration.between( next.getReferenceTimes().first(), peak.getLeft() );
+            Duration denominator = Duration.between( next.getReferenceTime(), peak.getLeft() );
 
             // Add the relative time-to-peak error against the basis time
             // If the horizon is zero, the relative error is undefined
@@ -106,7 +106,7 @@ public class TimeToPeakRelativeError extends TimingError
                 // Nearest whole second
                 seconds = seconds.setScale( 0, RoundingMode.HALF_UP );
 
-                returnMe.add( Pair.of( next.getReferenceTimes().first(),
+                returnMe.add( Pair.of( next.getReferenceTime(),
                                        Duration.ofSeconds( seconds.longValue() ) ) );
             }
         }

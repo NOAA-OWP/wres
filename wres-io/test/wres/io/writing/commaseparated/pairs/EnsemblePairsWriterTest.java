@@ -17,6 +17,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -34,6 +36,8 @@ import wres.datamodel.sampledata.pairs.TimeSeriesOfEnsemblePairs.TimeSeriesOfEns
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.scale.TimeScale.TimeScaleFunction;
 import wres.datamodel.time.Event;
+import wres.datamodel.time.ReferenceTimeType;
+import wres.datamodel.time.TimeSeriesA;
 
 /**
  * Tests the {@link EnsemblePairsWriter}.
@@ -68,15 +72,15 @@ public final class EnsemblePairsWriterTest
         // Create the pairs
         TimeSeriesOfEnsemblePairsBuilder tsBuilder = new TimeSeriesOfEnsemblePairsBuilder();
 
-        List<Event<EnsemblePair>> listOfPairs = new ArrayList<>();
+        SortedSet<Event<EnsemblePair>> setOfPairs = new TreeSet<>();
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        listOfPairs.add( Event.of( basisTime,
+        setOfPairs.add( Event.of( basisTime,
                                    Instant.parse( "1985-01-01T01:00:00Z" ),
                                    EnsemblePair.of( 1.001, new double[] { 2, 3, 4 } ) ) );
-        listOfPairs.add( Event.of( basisTime,
+        setOfPairs.add( Event.of( basisTime,
                                    Instant.parse( "1985-01-01T02:00:00Z" ),
                                    EnsemblePair.of( 5, new double[] { 6, 7, 8 } ) ) );
-        listOfPairs.add( Event.of( basisTime,
+        setOfPairs.add( Event.of( basisTime,
                                    Instant.parse( "1985-01-01T03:00:00Z" ),
                                    EnsemblePair.of( 9, new double[] { 10, 11, 12 } ) ) );
 
@@ -84,21 +88,24 @@ public final class EnsemblePairsWriterTest
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
                                    DatasetIdentifier.of( Location.of( "PLUM" ), "RIFLE" ) );
 
-        pairs = (TimeSeriesOfEnsemblePairs) tsBuilder.addTimeSeries( listOfPairs )
+        TimeSeriesA<EnsemblePair> timeSeriesOne =
+                TimeSeriesA.of( basisTime, ReferenceTimeType.UNKNOWN, setOfPairs );
+        
+        pairs = (TimeSeriesOfEnsemblePairs) tsBuilder.addTimeSeries( timeSeriesOne )
                                                      .setMetadata( meta )
                                                      .build();
 
         // Create the second time-series of pairs
         TimeSeriesOfEnsemblePairsBuilder tsBuilderTwo = new TimeSeriesOfEnsemblePairsBuilder();
-        List<Event<EnsemblePair>> listOfPairsTwo = new ArrayList<>();
+        SortedSet<Event<EnsemblePair>> setOfPairsTwo = new TreeSet<>();
         Instant basisTimeTwo = Instant.parse( "1985-01-01T00:00:00Z" );
-        listOfPairsTwo.add( Event.of( basisTimeTwo,
+        setOfPairsTwo.add( Event.of( basisTimeTwo,
                                       Instant.parse( "1985-01-01T04:00:00Z" ),
                                       EnsemblePair.of( 13, new double[] { 14, 15, 16 } ) ) );
-        listOfPairsTwo.add( Event.of( basisTimeTwo,
+        setOfPairsTwo.add( Event.of( basisTimeTwo,
                                       Instant.parse( "1985-01-01T05:00:00Z" ),
                                       EnsemblePair.of( 17, new double[] { 18, 19, 20 } ) ) );
-        listOfPairsTwo.add( Event.of( basisTimeTwo,
+        setOfPairsTwo.add( Event.of( basisTimeTwo,
                                       Instant.parse( "1985-01-01T06:00:00Z" ),
                                       EnsemblePair.of( 21, new double[] { 22, 23, 24 } ) ) );
 
@@ -106,22 +113,25 @@ public final class EnsemblePairsWriterTest
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
                                    DatasetIdentifier.of( Location.of( "ORANGE" ), "PISTOL" ) );
 
-        pairsTwo = (TimeSeriesOfEnsemblePairs) tsBuilderTwo.addTimeSeries( listOfPairsTwo )
+        TimeSeriesA<EnsemblePair> timeSeriesTwo =
+                TimeSeriesA.of( basisTimeTwo, ReferenceTimeType.UNKNOWN, setOfPairsTwo );
+        
+        pairsTwo = (TimeSeriesOfEnsemblePairs) tsBuilderTwo.addTimeSeries( timeSeriesTwo )
                                                            .setMetadata( metaTwo )
                                                            .build();
 
 
         // Create the third time-series of pairs
         TimeSeriesOfEnsemblePairsBuilder tsBuilderThree = new TimeSeriesOfEnsemblePairsBuilder();
-        List<Event<EnsemblePair>> listOfPairsThree = new ArrayList<>();
+        SortedSet<Event<EnsemblePair>> setOfPairsThree = new TreeSet<>();
         Instant basisTimeThree = Instant.parse( "1985-01-01T00:00:00Z" );
-        listOfPairsThree.add( Event.of( basisTimeThree,
+        setOfPairsThree.add( Event.of( basisTimeThree,
                                         Instant.parse( "1985-01-01T07:00:00Z" ),
                                         EnsemblePair.of( 25, new double[] { 26, 27, 28 } ) ) );
-        listOfPairsThree.add( Event.of( basisTimeThree,
+        setOfPairsThree.add( Event.of( basisTimeThree,
                                         Instant.parse( "1985-01-01T08:00:00Z" ),
                                         EnsemblePair.of( 29, new double[] { 30, 31, 32 } ) ) );
-        listOfPairsThree.add( Event.of( basisTimeThree,
+        setOfPairsThree.add( Event.of( basisTimeThree,
                                         Instant.parse( "1985-01-01T09:00:00Z" ),
                                         EnsemblePair.of( 33, new double[] { 34, 35, 36 } ) ) );
 
@@ -129,8 +139,11 @@ public final class EnsemblePairsWriterTest
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
                                    DatasetIdentifier.of( Location.of( "BANANA" ), "GRENADE" ) );
 
+        TimeSeriesA<EnsemblePair> timeSeriesThree =
+                TimeSeriesA.of( basisTimeThree, ReferenceTimeType.UNKNOWN, setOfPairsThree );
+        
         pairsThree =
-                (TimeSeriesOfEnsemblePairs) tsBuilderThree.addTimeSeries( listOfPairsThree )
+                (TimeSeriesOfEnsemblePairs) tsBuilderThree.addTimeSeries( timeSeriesThree )
                                                           .setMetadata( metaThree )
                                                           .build();
 
@@ -163,8 +176,10 @@ public final class EnsemblePairsWriterTest
                                                                             TimeScaleFunction.MEAN ) )
                                                .build();
 
+            TimeSeriesA<EnsemblePair> timeSeriesOne = TimeSeriesA.of( Collections.emptySortedSet() );
+            
             TimeSeriesOfEnsemblePairs emptyPairs =
-                    (TimeSeriesOfEnsemblePairs) tsBuilder.addTimeSeries( Collections.emptyList() )
+                    (TimeSeriesOfEnsemblePairs) tsBuilder.addTimeSeries( timeSeriesOne )
                                                          .setMetadata( meta )
                                                          .build();
 
@@ -202,10 +217,17 @@ public final class EnsemblePairsWriterTest
 
             TimeSeriesOfEnsemblePairsBuilder tsBuilder = new TimeSeriesOfEnsemblePairsBuilder();
 
-            tsBuilder.addTimeSeries( Arrays.asList( Event.of( Instant.MIN,
-                                                              Instant.MAX,
-                                                              EnsemblePair.of( Double.NaN,
-                                                                               new double[] { Double.NaN } ) ) ) );
+            SortedSet<Event<EnsemblePair>> setOfPairs = new TreeSet<>();
+            
+            Event<EnsemblePair> event = Event.of( Instant.MIN,
+                                                  Instant.MAX,
+                                                  EnsemblePair.of( Double.NaN,
+                                                                   new double[] { Double.NaN } ) );
+            
+            setOfPairs.add( event );
+            
+            TimeSeriesA<EnsemblePair> timeSeriesNaN = TimeSeriesA.of( setOfPairs );
+            tsBuilder.addTimeSeries( timeSeriesNaN );
 
             // Set the measurement units and time scale
             SampleMetadata meta =
@@ -216,8 +238,10 @@ public final class EnsemblePairsWriterTest
                                                                             TimeScaleFunction.MEAN ) )
                                                .build();
 
+            TimeSeriesA<EnsemblePair> timeSeriesOne = TimeSeriesA.of( Collections.emptySortedSet() );
+            
             TimeSeriesOfEnsemblePairs emptyPairs =
-                    (TimeSeriesOfEnsemblePairs) tsBuilder.addTimeSeries( Collections.emptyList() )
+                    (TimeSeriesOfEnsemblePairs) tsBuilder.addTimeSeries( timeSeriesOne )
                                                          .setMetadata( meta )
                                                          .build();
 
@@ -237,8 +261,8 @@ public final class EnsemblePairsWriterTest
                                             + "LEFT IN SCOOBIES,"
                                             + "RIGHT MEMBER 1 IN SCOOBIES" );
 
-            assertEquals( results.get( 1 ), "PINEAPPLE,+1000000000-12-31T23:59:59.999999999Z,"
-                    + "63113904031622399,NaN,NaN");
+            assertEquals( "PINEAPPLE,+1000000000-12-31T23:59:59.999999999Z,"
+                    + "0,NaN,NaN", results.get( 1 ) );
 
             // If all succeeded, remove the file, otherwise leave to help debugging
             Files.deleteIfExists( pathToFile );

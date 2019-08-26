@@ -4,13 +4,13 @@ import static org.junit.Assert.assertTrue;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.SortedSet;
 import java.util.StringJoiner;
+import java.util.TreeSet;
 import java.util.stream.StreamSupport;
 
 import org.junit.Rule;
@@ -22,7 +22,7 @@ import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfEnsemblePairs.TimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.time.Event;
-import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesA;
 
 /**
  * Tests the {@link TimeSeriesOfEnsemblePairs}.
@@ -56,9 +56,9 @@ public final class TimeSeriesOfEnsemblePairsTest
     public void testReferenceTimeIterator()
     {
         //Build a time-series with three basis times 
-        List<Event<EnsemblePair>> first = new ArrayList<>();
-        List<Event<EnsemblePair>> second = new ArrayList<>();
-        List<Event<EnsemblePair>> third = new ArrayList<>();
+        SortedSet<Event<EnsemblePair>> first = new TreeSet<>();
+        SortedSet<Event<EnsemblePair>> second = new TreeSet<>();
+        SortedSet<Event<EnsemblePair>> third = new TreeSet<>();
         TimeSeriesOfEnsemblePairsBuilder b = new TimeSeriesOfEnsemblePairsBuilder();
 
         Instant firstBasisTime = Instant.parse( FIRST_TIME );
@@ -93,18 +93,21 @@ public final class TimeSeriesOfEnsemblePairsTest
                              EnsemblePair.of( 9, new double[] { 9 } ) ) );
         final SampleMetadata meta = SampleMetadata.of();
         TimeSeriesOfEnsemblePairs ts =
-                (TimeSeriesOfEnsemblePairs) b.addTimeSeries( first )
-                                             .addTimeSeries( second )
-                                             .addTimeSeries( third )
+                (TimeSeriesOfEnsemblePairs) b.addTimeSeries( TimeSeriesA.of( firstBasisTime,
+                                                                             first ) )
+                                             .addTimeSeries( TimeSeriesA.of( secondBasisTime,
+                                                                             second ) )
+                                             .addTimeSeries( TimeSeriesA.of( thirdBasisTime,
+                                                                             third ) )
                                              .setMetadata( meta )
                                              .build();
 
         assertTrue( ts.getReferenceTimes().size() == 3 );
         //Iterate and test
         int nextValue = 1;
-        for ( TimeSeries<EnsemblePair> next : ts.referenceTimeIterator() )
+        for ( TimeSeriesA<EnsemblePair> next : ts.referenceTimeIterator() )
         {
-            for ( Event<EnsemblePair> nextPair : next.eventIterator() )
+            for ( Event<EnsemblePair> nextPair : next.getEvents() )
             {
                 assertTrue( "Unexpected pair in basis-time iteration of time-series.",
                             nextPair.getValue().equals( EnsemblePair.of( nextValue, new double[] { nextValue } ) ) );
@@ -121,7 +124,7 @@ public final class TimeSeriesOfEnsemblePairsTest
     public void testGetBaselineData()
     {
         //Build a time-series with two basis times
-        List<Event<EnsemblePair>> values = new ArrayList<>();
+        SortedSet<Event<EnsemblePair>> values = new TreeSet<>();
         TimeSeriesOfEnsemblePairsBuilder b = new TimeSeriesOfEnsemblePairsBuilder();
 
         Instant basisTime = Instant.parse( FIRST_TIME );
@@ -135,11 +138,15 @@ public final class TimeSeriesOfEnsemblePairsTest
                               Instant.parse( FOURTH_TIME ),
                               EnsemblePair.of( 3, new double[] { 3 } ) ) );
         SampleMetadata meta = SampleMetadata.of();
-        b.addTimeSeries( values ).setMetadata( meta );
+        b.addTimeSeries( TimeSeriesA.of( basisTime,
+                                         values ) );
+        b.setMetadata( meta );
+
         //Check dataset dimensions
         assertTrue( Objects.isNull( b.build().getBaselineData() ) );
 
-        b.addTimeSeriesDataForBaseline( values );
+        b.addTimeSeriesForBaseline( TimeSeriesA.of( basisTime,
+                                                    values ) );
         b.setMetadataForBaseline( meta );
 
         TimeSeriesOfEnsemblePairs baseline = b.build().getBaselineData();
@@ -172,9 +179,9 @@ public final class TimeSeriesOfEnsemblePairsTest
     public void testAddMultipleTimeSeriesWithSameReferenceTime()
     {
         //Build a time-series with one basis times and three separate sets of data to append
-        List<Event<EnsemblePair>> first = new ArrayList<>();
-        List<Event<EnsemblePair>> second = new ArrayList<>();
-        List<Event<EnsemblePair>> third = new ArrayList<>();
+        SortedSet<Event<EnsemblePair>> first = new TreeSet<>();
+        SortedSet<Event<EnsemblePair>> second = new TreeSet<>();
+        SortedSet<Event<EnsemblePair>> third = new TreeSet<>();
 
         TimeSeriesOfEnsemblePairsBuilder b = new TimeSeriesOfEnsemblePairsBuilder();
 
@@ -190,8 +197,10 @@ public final class TimeSeriesOfEnsemblePairsTest
                              EnsemblePair.of( 3, new double[] { 3 } ) ) );
         SampleMetadata meta = SampleMetadata.of();
         VectorOfDoubles climatology = VectorOfDoubles.of( 1, 2, 3 );
-        b.addTimeSeries( first )
-         .addTimeSeriesDataForBaseline( first )
+        b.addTimeSeries( TimeSeriesA.of( basisTime,
+                                         first ) )
+         .addTimeSeriesForBaseline( TimeSeriesA.of( basisTime,
+                                                    first ) )
          .setMetadata( meta )
          .setMetadataForBaseline( meta )
          .setClimatology( climatology );
@@ -224,10 +233,14 @@ public final class TimeSeriesOfEnsemblePairsTest
         third.add( Event.of( basisTime,
                              Instant.parse( FOURTH_TIME ),
                              EnsemblePair.of( 9, new double[] { 9 } ) ) );
-        c.addTimeSeries( second )
-         .addTimeSeries( third )
-         .addTimeSeriesDataForBaseline( second )
-         .addTimeSeriesDataForBaseline( third );
+        c.addTimeSeries( TimeSeriesA.of( basisTime,
+                                         second ) )
+         .addTimeSeries( TimeSeriesA.of( basisTime,
+                                         third ) )
+         .addTimeSeriesForBaseline( TimeSeriesA.of( basisTime,
+                                                    second ) )
+         .addTimeSeriesForBaseline( TimeSeriesA.of( basisTime,
+                                                    third ) );
 
         TimeSeriesOfEnsemblePairs tsAppend = c.build();
 
@@ -253,7 +266,7 @@ public final class TimeSeriesOfEnsemblePairsTest
     @Test
     public void testExceptions()
     {
-        List<Event<EnsemblePair>> first = new ArrayList<>();
+        SortedSet<Event<EnsemblePair>> first = new TreeSet<>();
 
         Instant firstBasisTime = Instant.parse( FIRST_TIME );
         first.add( Event.of( firstBasisTime,
@@ -270,20 +283,21 @@ public final class TimeSeriesOfEnsemblePairsTest
         //Check for exceptions on the iterators
         TimeSeriesOfEnsemblePairsBuilder d = new TimeSeriesOfEnsemblePairsBuilder();
         TimeSeriesOfEnsemblePairs ts =
-                (TimeSeriesOfEnsemblePairs) d.addTimeSeries( first )
+                (TimeSeriesOfEnsemblePairs) d.addTimeSeries( TimeSeriesA.of( firstBasisTime,
+                                                                             first ) )
                                              .setMetadata( meta )
                                              .build();
 
         //Iterate
         exception.expect( NoSuchElementException.class );
-        Iterator<TimeSeries<EnsemblePair>> noneSuchBasis = ts.referenceTimeIterator().iterator();
+        Iterator<TimeSeriesA<EnsemblePair>> noneSuchBasis = ts.referenceTimeIterator().iterator();
         noneSuchBasis.forEachRemaining( Objects::isNull );
         noneSuchBasis.next();
 
         //Mutate 
         exception.expect( UnsupportedOperationException.class );
 
-        Iterator<TimeSeries<EnsemblePair>> immutableBasis = ts.referenceTimeIterator().iterator();
+        Iterator<TimeSeriesA<EnsemblePair>> immutableBasis = ts.referenceTimeIterator().iterator();
         immutableBasis.next();
         immutableBasis.remove();
 
@@ -296,7 +310,7 @@ public final class TimeSeriesOfEnsemblePairsTest
     @Test
     public void testToString()
     {
-        List<Event<EnsemblePair>> values = new ArrayList<>();
+        SortedSet<Event<EnsemblePair>> values = new TreeSet<>();
         TimeSeriesOfEnsemblePairsBuilder b = new TimeSeriesOfEnsemblePairsBuilder();
 
         Instant basisTime = Instant.parse( FIRST_TIME );
@@ -314,14 +328,16 @@ public final class TimeSeriesOfEnsemblePairsTest
                         + ",key: "
                         + "1.0 value: [1.0])" );
         }
-        b.addTimeSeries( values ).setMetadata( meta );
+        b.addTimeSeries( TimeSeriesA.of( basisTime,
+                                         values ) )
+         .setMetadata( meta );
 
         //Check dataset count
         assertTrue( "Unexpected string representation of time-series.",
                     joiner.toString().equals( b.build().toString() ) );
         //Add another time-series
         Instant nextBasisTime = Instant.parse( FIFTH_TIME );
-        List<Event<EnsemblePair>> otherValues = new ArrayList<>();
+        SortedSet<Event<EnsemblePair>> otherValues = new TreeSet<>();
         for ( int i = 0; i < 5; i++ )
         {
             otherValues.add( Event.of( nextBasisTime,
@@ -335,18 +351,9 @@ public final class TimeSeriesOfEnsemblePairsTest
                         + "1.0 value: [1.0])" );
         }
 
-        b.addTimeSeries( otherValues );
+        b.addTimeSeries( TimeSeriesA.of( nextBasisTime,
+                                         otherValues ) );
         assertTrue( joiner.toString().equals( b.build().toString() ) );
-
-        //Check for equality of string representations when building in two different ways
-        List<Event<EnsemblePair>> input = new ArrayList<>();
-        input.addAll( values );
-        input.addAll( otherValues );
-
-        TimeSeriesOfEnsemblePairsBuilder a = new TimeSeriesOfEnsemblePairsBuilder();
-        TimeSeriesOfEnsemblePairs pairs =
-                ( (TimeSeriesOfEnsemblePairsBuilder) a.addTimeSeries( input ).setMetadata( meta ) ).build();
-        assertTrue( joiner.toString().equals( pairs.toString() ) );
     }
 
     /**
@@ -357,10 +364,10 @@ public final class TimeSeriesOfEnsemblePairsTest
     public void testIterateIrregularTimeSeriesByDuration()
     {
         //Build a time-series with three basis times 
-        List<Event<EnsemblePair>> first = new ArrayList<>();
-        List<Event<EnsemblePair>> second = new ArrayList<>();
-        List<Event<EnsemblePair>> third = new ArrayList<>();
-        List<Event<EnsemblePair>> fourth = new ArrayList<>();
+        SortedSet<Event<EnsemblePair>> first = new TreeSet<>();
+        SortedSet<Event<EnsemblePair>> second = new TreeSet<>();
+        SortedSet<Event<EnsemblePair>> third = new TreeSet<>();
+        SortedSet<Event<EnsemblePair>> fourth = new TreeSet<>();
         TimeSeriesOfEnsemblePairsBuilder b = new TimeSeriesOfEnsemblePairsBuilder();
 
         Instant firstBasisTime = Instant.parse( FIRST_TIME );
@@ -406,10 +413,14 @@ public final class TimeSeriesOfEnsemblePairsTest
         SampleMetadata meta = SampleMetadata.of();
         //Add the time-series, with only one for baseline
         TimeSeriesOfEnsemblePairs ts =
-                (TimeSeriesOfEnsemblePairs) b.addTimeSeries( first )
-                                             .addTimeSeries( second )
-                                             .addTimeSeries( third )
-                                             .addTimeSeries( fourth )
+                (TimeSeriesOfEnsemblePairs) b.addTimeSeries( TimeSeriesA.of( firstBasisTime,
+                                                                             first ) )
+                                             .addTimeSeries( TimeSeriesA.of( secondBasisTime,
+                                                                             second ) )
+                                             .addTimeSeries( TimeSeriesA.of( thirdBasisTime,
+                                                                             third ) )
+                                             .addTimeSeries( TimeSeriesA.of( fourthBasisTime,
+                                                                             fourth ) )
                                              .setMetadata( meta )
                                              .build();
 
@@ -441,7 +452,7 @@ public final class TimeSeriesOfEnsemblePairsTest
     public void testClimatologyIsPreserved()
     {
         //Build a time-series with one basis times and three separate sets of data to append
-        List<Event<EnsemblePair>> first = new ArrayList<>();
+        SortedSet<Event<EnsemblePair>> first = new TreeSet<>();
 
         TimeSeriesOfEnsemblePairsBuilder b = new TimeSeriesOfEnsemblePairsBuilder();
 
@@ -457,7 +468,8 @@ public final class TimeSeriesOfEnsemblePairsTest
                              EnsemblePair.of( 3, new double[] { 3 } ) ) );
         SampleMetadata meta = SampleMetadata.of();
         VectorOfDoubles climatology = VectorOfDoubles.of( 1, 2, 3 );
-        b.addTimeSeries( first )
+        b.addTimeSeries( TimeSeriesA.of( basisTime,
+                                         first ) )
          .setMetadata( meta )
          .setClimatology( climatology );
 

@@ -5,7 +5,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -14,6 +13,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringJoiner;
+import java.util.TreeSet;
 import java.util.stream.StreamSupport;
 
 import org.junit.Rule;
@@ -25,7 +25,7 @@ import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.time.Event;
-import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesA;
 
 /**
  * Tests the {@link SafeTimeSeriesOfSingleValuedPairs}.
@@ -59,9 +59,9 @@ public final class TimeSeriesOfSingleValuedPairsTest
     public void testReferenceTimeIterator()
     {
         //Build a time-series with three basis times 
-        List<Event<SingleValuedPair>> first = new ArrayList<>();
-        List<Event<SingleValuedPair>> second = new ArrayList<>();
-        List<Event<SingleValuedPair>> third = new ArrayList<>();
+        SortedSet<Event<SingleValuedPair>> first = new TreeSet<>();
+        SortedSet<Event<SingleValuedPair>> second = new TreeSet<>();
+        SortedSet<Event<SingleValuedPair>> third = new TreeSet<>();
         TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
 
         Instant firstBasisTime = Instant.parse( FIRST_TIME );
@@ -76,19 +76,24 @@ public final class TimeSeriesOfSingleValuedPairsTest
         third.add( Event.of( thirdBasisTime, Instant.parse( TENTH_TIME ), SingleValuedPair.of( 7, 7 ) ) );
         third.add( Event.of( thirdBasisTime, Instant.parse( ELEVENTH_TIME ), SingleValuedPair.of( 8, 8 ) ) );
         third.add( Event.of( thirdBasisTime, Instant.parse( TWELFTH_TIME ), SingleValuedPair.of( 9, 9 ) ) );
+
         final SampleMetadata meta = SampleMetadata.of();
+
         TimeSeriesOfSingleValuedPairs ts =
-                (TimeSeriesOfSingleValuedPairs) b.addTimeSeries( first )
-                                                 .addTimeSeries( second )
-                                                 .addTimeSeries( third )
+                (TimeSeriesOfSingleValuedPairs) b.addTimeSeries( TimeSeriesA.of( firstBasisTime,
+                                                                                 first ) )
+                                                 .addTimeSeries( TimeSeriesA.of( secondBasisTime,
+                                                                                 second ) )
+                                                 .addTimeSeries( TimeSeriesA.of( thirdBasisTime,
+                                                                                 third ) )
                                                  .setMetadata( meta )
                                                  .build();
         assertTrue( ts.getReferenceTimes().size() == 3 );
         //Iterate and test
         int nextValue = 1;
-        for ( TimeSeries<SingleValuedPair> next : ts.referenceTimeIterator() )
+        for ( TimeSeriesA<SingleValuedPair> next : ts.referenceTimeIterator() )
         {
-            for ( Event<SingleValuedPair> nextPair : next.eventIterator() )
+            for ( Event<SingleValuedPair> nextPair : next.getEvents() )
             {
                 assertTrue( nextPair.getValue().equals( SingleValuedPair.of( nextValue, nextValue ) ) );
                 nextValue++;
@@ -104,9 +109,9 @@ public final class TimeSeriesOfSingleValuedPairsTest
     public void testDurationIterator()
     {
         //Build a time-series with three basis times 
-        List<Event<SingleValuedPair>> first = new ArrayList<>();
-        List<Event<SingleValuedPair>> second = new ArrayList<>();
-        List<Event<SingleValuedPair>> third = new ArrayList<>();
+        SortedSet<Event<SingleValuedPair>> first = new TreeSet<>();
+        SortedSet<Event<SingleValuedPair>> second = new TreeSet<>();
+        SortedSet<Event<SingleValuedPair>> third = new TreeSet<>();
         TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
 
         Instant firstBasisTime = Instant.parse( FIRST_TIME );
@@ -124,17 +129,21 @@ public final class TimeSeriesOfSingleValuedPairsTest
         SampleMetadata meta = SampleMetadata.of();
         //Add the time-series, with only one for baseline
         TimeSeriesOfSingleValuedPairs ts =
-                (TimeSeriesOfSingleValuedPairs) b.addTimeSeries( first )
-                                                 .addTimeSeries( second )
-                                                 .addTimeSeries( third )
-                                                 .addTimeSeriesDataForBaseline( first )
+                (TimeSeriesOfSingleValuedPairs) b.addTimeSeries( TimeSeriesA.of( firstBasisTime,
+                                                                                 first ) )
+                                                 .addTimeSeries( TimeSeriesA.of( secondBasisTime,
+                                                                                 second ) )
+                                                 .addTimeSeries( TimeSeriesA.of( thirdBasisTime,
+                                                                                 third ) )
+                                                 .addTimeSeriesForBaseline( TimeSeriesA.of( firstBasisTime,
+                                                                                            first ) )
                                                  .setMetadata( meta )
                                                  .setMetadataForBaseline( meta )
                                                  .build();
 
         //Iterate and test
         int nextValue = 1;
-        
+
         SortedSet<Duration> durations = ts.getDurations();
 
         for ( Duration duration : durations )
@@ -152,12 +161,16 @@ public final class TimeSeriesOfSingleValuedPairsTest
         }
 
         //Check the regular duration of a time-series with one duration
-        List<Event<SingleValuedPair>> fourth = new ArrayList<>();
+        SortedSet<Event<SingleValuedPair>> fourth = new TreeSet<>();
         fourth.add( Event.of( firstBasisTime, Instant.parse( TWELFTH_TIME ), SingleValuedPair.of( 3, 3 ) ) );
+
+        TimeSeriesOfSingleValuedPairsBuilder bu = new TimeSeriesOfSingleValuedPairsBuilder();
+
         TimeSeriesOfSingleValuedPairs durationCheck =
-                (TimeSeriesOfSingleValuedPairs) new TimeSeriesOfSingleValuedPairsBuilder().addTimeSeries( fourth )
-                                                                                          .setMetadata( meta )
-                                                                                          .build();
+                (TimeSeriesOfSingleValuedPairs) bu.addTimeSeries( TimeSeriesA.of( firstBasisTime,
+                                                                                  fourth ) )
+                                                  .setMetadata( meta )
+                                                  .build();
         assertTrue( Duration.ofHours( 51 ).equals( durationCheck.getDurations().first() ) );
     }
 
@@ -169,7 +182,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
     public void testGetBaselineData()
     {
         //Build a time-series with two basis times
-        List<Event<SingleValuedPair>> values = new ArrayList<>();
+        SortedSet<Event<SingleValuedPair>> values = new TreeSet<>();
         TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
 
         Instant basisTime = Instant.parse( FIRST_TIME );
@@ -177,12 +190,15 @@ public final class TimeSeriesOfSingleValuedPairsTest
         values.add( Event.of( basisTime, Instant.parse( THIRD_TIME ), SingleValuedPair.of( 2, 2 ) ) );
         values.add( Event.of( basisTime, Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 3, 3 ) ) );
         SampleMetadata meta = SampleMetadata.of();
-        b.addTimeSeries( values ).setMetadata( meta );
+
+        TimeSeriesA<SingleValuedPair> timeSeries = TimeSeriesA.of( basisTime,
+                                                                   values );
+        b.addTimeSeries( timeSeries ).setMetadata( meta );
+
         //Check dataset dimensions
         assertTrue( Objects.isNull( b.build().getBaselineData() ) );
 
-        b.addTimeSeriesDataForBaseline( values );
-        b.setMetadataForBaseline( meta );
+        b.addTimeSeriesForBaseline( timeSeries ).setMetadataForBaseline( meta );
 
         TimeSeriesOfSingleValuedPairs baseline = b.build().getBaselineData();
 
@@ -191,7 +207,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
 
         //Check dataset
         //Iterate and test
-        int nextValue = 1;      
+        int nextValue = 1;
         SortedSet<Duration> durations = baseline.getDurations();
 
         for ( Duration duration : durations )
@@ -203,7 +219,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
                 nextValue++;
             }
         }
-        
+
     }
 
     /**
@@ -214,9 +230,9 @@ public final class TimeSeriesOfSingleValuedPairsTest
     public void testAddMultipleTimeSeriesWithSameBasisTime()
     {
         //Build a time-series with one basis times and three separate sets of data to append
-        List<Event<SingleValuedPair>> first = new ArrayList<>();
-        List<Event<SingleValuedPair>> second = new ArrayList<>();
-        List<Event<SingleValuedPair>> third = new ArrayList<>();
+        SortedSet<Event<SingleValuedPair>> first = new TreeSet<>();
+        SortedSet<Event<SingleValuedPair>> second = new TreeSet<>();
+        SortedSet<Event<SingleValuedPair>> third = new TreeSet<>();
 
         TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
 
@@ -226,8 +242,12 @@ public final class TimeSeriesOfSingleValuedPairsTest
         first.add( Event.of( basisTime, Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 3, 3 ) ) );
         SampleMetadata meta = SampleMetadata.of();
         VectorOfDoubles climatology = VectorOfDoubles.of( 1, 2, 3 );
-        b.addTimeSeries( first )
-         .addTimeSeriesDataForBaseline( first )
+
+        TimeSeriesA<SingleValuedPair> firstSeries = TimeSeriesA.of( basisTime,
+                                                                    first );
+
+        b.addTimeSeries( firstSeries )
+         .addTimeSeriesForBaseline( firstSeries )
          .setMetadata( meta )
          .setMetadataForBaseline( meta )
          .setClimatology( climatology );
@@ -242,13 +262,21 @@ public final class TimeSeriesOfSingleValuedPairsTest
         second.add( Event.of( basisTime, Instant.parse( SECOND_TIME ), SingleValuedPair.of( 4, 4 ) ) );
         second.add( Event.of( basisTime, Instant.parse( THIRD_TIME ), SingleValuedPair.of( 5, 5 ) ) );
         second.add( Event.of( basisTime, Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 6, 6 ) ) );
+
         third.add( Event.of( basisTime, Instant.parse( SECOND_TIME ), SingleValuedPair.of( 7, 7 ) ) );
         third.add( Event.of( basisTime, Instant.parse( THIRD_TIME ), SingleValuedPair.of( 8, 8 ) ) );
         third.add( Event.of( basisTime, Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 9, 9 ) ) );
-        c.addTimeSeries( second )
-         .addTimeSeries( third )
-         .addTimeSeriesDataForBaseline( second )
-         .addTimeSeriesDataForBaseline( third );
+
+        TimeSeriesA<SingleValuedPair> secondSeries = TimeSeriesA.of( basisTime,
+                                                                     second );
+
+        TimeSeriesA<SingleValuedPair> thirdSeries = TimeSeriesA.of( basisTime,
+                                                                    third );
+
+        c.addTimeSeries( secondSeries )
+         .addTimeSeries( thirdSeries )
+         .addTimeSeriesForBaseline( secondSeries )
+         .addTimeSeriesForBaseline( thirdSeries );
 
         TimeSeriesOfSingleValuedPairs tsAppend = c.build();
 
@@ -274,7 +302,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
     @Test
     public void testForNoSuchElementOnIteration()
     {
-        List<Event<SingleValuedPair>> first = new ArrayList<>();
+        SortedSet<Event<SingleValuedPair>> first = new TreeSet<>();
 
         Instant firstBasisTime = Instant.parse( FIRST_TIME );
         first.add( Event.of( firstBasisTime, Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
@@ -284,14 +312,16 @@ public final class TimeSeriesOfSingleValuedPairsTest
 
         //Check for exceptions on the iterators
         TimeSeriesOfSingleValuedPairsBuilder d = new TimeSeriesOfSingleValuedPairsBuilder();
+        TimeSeriesA<SingleValuedPair> firstSeries = TimeSeriesA.of( firstBasisTime,
+                                                                    first );
         TimeSeriesOfSingleValuedPairs ts =
-                (TimeSeriesOfSingleValuedPairs) d.addTimeSeries( first )
+                (TimeSeriesOfSingleValuedPairs) d.addTimeSeries( firstSeries )
                                                  .setMetadata( meta )
                                                  .build();
 
         //Iterate
         exception.expect( NoSuchElementException.class );
-        Iterator<TimeSeries<SingleValuedPair>> noneSuchBasis = ts.referenceTimeIterator().iterator();
+        Iterator<TimeSeriesA<SingleValuedPair>> noneSuchBasis = ts.referenceTimeIterator().iterator();
         noneSuchBasis.forEachRemaining( Objects::isNull );
         noneSuchBasis.next();
     }
@@ -303,7 +333,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
     @Test
     public void testBasisTimesAreImmutable()
     {
-        List<Event<SingleValuedPair>> first = new ArrayList<>();
+        SortedSet<Event<SingleValuedPair>> first = new TreeSet<>();
 
         Instant firstBasisTime = Instant.parse( FIRST_TIME );
         first.add( Event.of( firstBasisTime, Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
@@ -313,15 +343,17 @@ public final class TimeSeriesOfSingleValuedPairsTest
 
         //Check for exceptions on the iterators
         TimeSeriesOfSingleValuedPairsBuilder d = new TimeSeriesOfSingleValuedPairsBuilder();
+        TimeSeriesA<SingleValuedPair> firstSeries = TimeSeriesA.of( firstBasisTime,
+                                                                    first );
         TimeSeriesOfSingleValuedPairs ts =
-                (TimeSeriesOfSingleValuedPairs) d.addTimeSeries( first )
+                (TimeSeriesOfSingleValuedPairs) d.addTimeSeries( firstSeries )
                                                  .setMetadata( meta )
                                                  .build();
 
         //Mutate 
         exception.expect( UnsupportedOperationException.class );
 
-        Iterator<TimeSeries<SingleValuedPair>> immutableBasis = ts.referenceTimeIterator().iterator();
+        Iterator<TimeSeriesA<SingleValuedPair>> immutableBasis = ts.referenceTimeIterator().iterator();
         immutableBasis.next();
         immutableBasis.remove();
     }
@@ -333,7 +365,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
     @Test
     public void testToString()
     {
-        List<Event<SingleValuedPair>> values = new ArrayList<>();
+        SortedSet<Event<SingleValuedPair>> first = new TreeSet<>();
         TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
 
         Instant basisTime = Instant.parse( FIRST_TIME );
@@ -341,23 +373,27 @@ public final class TimeSeriesOfSingleValuedPairsTest
         StringJoiner joiner = new StringJoiner( System.lineSeparator() );
         for ( int i = 0; i < 5; i++ )
         {
-            values.add( Event.of( basisTime,
-                                  Instant.parse( "1985-01-01T" + String.format( "%02d", i ) + ZERO_ZEE ),
-                                  SingleValuedPair.of( 1, 1 ) ) );
+            first.add( Event.of( basisTime,
+                                 Instant.parse( "1985-01-01T" + String.format( "%02d", i ) + ZERO_ZEE ),
+                                 SingleValuedPair.of( 1, 1 ) ) );
             joiner.add( "(" + basisTime + ",1985-01-01T" + String.format( "%02d", i ) + ZERO_ZEE + "," + "1.0,1.0)" );
         }
-        b.addTimeSeries( values ).setMetadata( meta );
+
+        TimeSeriesA<SingleValuedPair> firstSeries = TimeSeriesA.of( basisTime,
+                                                                    first );
+
+        b.addTimeSeries( firstSeries ).setMetadata( meta );
 
         //Check dataset count
         assertTrue( joiner.toString().equals( b.build().toString() ) );
         //Add another time-series
         Instant nextBasisTime = Instant.parse( FIFTH_TIME );
-        List<Event<SingleValuedPair>> otherValues = new ArrayList<>();
+        SortedSet<Event<SingleValuedPair>> second = new TreeSet<>();
         for ( int i = 0; i < 5; i++ )
         {
-            otherValues.add( Event.of( nextBasisTime,
-                                       Instant.parse( "1985-01-02T" + String.format( "%02d", i ) + ZERO_ZEE ),
-                                       SingleValuedPair.of( 1, 1 ) ) );
+            second.add( Event.of( nextBasisTime,
+                                  Instant.parse( "1985-01-02T" + String.format( "%02d", i ) + ZERO_ZEE ),
+                                  SingleValuedPair.of( 1, 1 ) ) );
             joiner.add( "(" + nextBasisTime
                         + ",1985-01-02T"
                         + String.format( "%02d", i )
@@ -365,17 +401,11 @@ public final class TimeSeriesOfSingleValuedPairsTest
                         + ","
                         + "1.0,1.0)" );
         }
-        b.addTimeSeries( otherValues );
-        assertTrue( joiner.toString().equals( b.build().toString() ) );
 
-        //Check for equality of string representations when building in two different ways
-        List<Event<SingleValuedPair>> input = new ArrayList<>();
-        input.addAll( values );
-        input.addAll( otherValues );
-        TimeSeriesOfSingleValuedPairsBuilder a = new TimeSeriesOfSingleValuedPairsBuilder();
-        TimeSeriesOfSingleValuedPairs pairs =
-                ( (TimeSeriesOfSingleValuedPairsBuilder) a.addTimeSeries( input ).setMetadata( meta ) ).build();
-        assertTrue( joiner.toString().equals( pairs.toString() ) );
+        TimeSeriesA<SingleValuedPair> secondSeries = TimeSeriesA.of( nextBasisTime,
+                                                                     second );
+        b.addTimeSeries( secondSeries );
+        assertTrue( joiner.toString().equals( b.build().toString() ) );
     }
 
     /**
@@ -386,10 +416,11 @@ public final class TimeSeriesOfSingleValuedPairsTest
     public void testIterateIrregularTimeSeriesByDuration()
     {
         //Build a time-series with three basis times 
-        List<Event<SingleValuedPair>> first = new ArrayList<>();
-        List<Event<SingleValuedPair>> second = new ArrayList<>();
-        List<Event<SingleValuedPair>> third = new ArrayList<>();
-        List<Event<SingleValuedPair>> fourth = new ArrayList<>();
+        SortedSet<Event<SingleValuedPair>> first = new TreeSet<>();
+        SortedSet<Event<SingleValuedPair>> second = new TreeSet<>();
+        SortedSet<Event<SingleValuedPair>> third = new TreeSet<>();
+        SortedSet<Event<SingleValuedPair>> fourth = new TreeSet<>();
+
         TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
 
         Instant firstBasisTime = Instant.parse( FIRST_TIME );
@@ -417,18 +448,22 @@ public final class TimeSeriesOfSingleValuedPairsTest
         SampleMetadata meta = SampleMetadata.of();
         //Add the time-series, with only one for baseline
         TimeSeriesOfSingleValuedPairs ts =
-                (TimeSeriesOfSingleValuedPairs) b.addTimeSeries( first )
-                                                 .addTimeSeries( second )
-                                                 .addTimeSeries( third )
-                                                 .addTimeSeries( fourth )
+                (TimeSeriesOfSingleValuedPairs) b.addTimeSeries( TimeSeriesA.of( firstBasisTime,
+                                                                                 first ) )
+                                                 .addTimeSeries( TimeSeriesA.of( secondBasisTime,
+                                                                                 second ) )
+                                                 .addTimeSeries( TimeSeriesA.of( thirdBasisTime,
+                                                                                 third ) )
+                                                 .addTimeSeries( TimeSeriesA.of( fourthBasisTime,
+                                                                                 fourth ) )
                                                  .setMetadata( meta )
                                                  .build();
 
         //Iterate and test
         double[] expectedOrder = new double[] { 1, 7, 4, 10, 5, 11, 6, 12, 2, 8, 3, 9 };
         int nextIndex = 0;
-        
-        
+
+
         SortedSet<Duration> durations = ts.getDurations();
 
         for ( Duration nextDuration : durations )
@@ -453,7 +488,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
     @Test
     public void testIterateNonForecasts()
     {
-        List<Event<SingleValuedPair>> data = new ArrayList<>();
+        SortedSet<Event<SingleValuedPair>> data = new TreeSet<>();
         TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
 
         data.add( Event.of( Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
@@ -467,9 +502,10 @@ public final class TimeSeriesOfSingleValuedPairsTest
         data.add( Event.of( Instant.parse( "1985-01-01T09:00:00Z" ), SingleValuedPair.of( 9, 9 ) ) );
 
         SampleMetadata meta = SampleMetadata.of();
+
         //Add the time-series, with only one for baseline
         TimeSeriesOfSingleValuedPairs ts =
-                (TimeSeriesOfSingleValuedPairs) b.addTimeSeries( data )
+                (TimeSeriesOfSingleValuedPairs) b.addTimeSeries( TimeSeriesA.of( data ) )
                                                  .setMetadata( meta )
                                                  .build();
 
@@ -484,26 +520,26 @@ public final class TimeSeriesOfSingleValuedPairsTest
 
         // Iterate by basis time
         int j = 1;
-        for ( TimeSeries<SingleValuedPair> tsn : ts.referenceTimeIterator() )
+        for ( TimeSeriesA<SingleValuedPair> tsn : ts.referenceTimeIterator() )
         {
-            assertEquals( tsn.eventIterator().iterator().next().getValue(), SingleValuedPair.of( j, j ) );
+            assertEquals( tsn.getEvents().first().getValue(), SingleValuedPair.of( j, j ) );
             j++;
         }
-        assertEquals( 10, j ); // All elements iterated
+        assertEquals( 2, j ); // All elements iterated
 
         // Iterate by duration
         int k = 1;
-        
+
         SortedSet<Duration> durations = ts.getDurations();
 
-        for ( Duration nextDuration : durations )       
+        for ( Duration nextDuration : durations )
         {
             List<Event<SingleValuedPair>> events = Slicer.filterByDuration( ts, a -> a.equals( nextDuration ) );
 
             for ( Event<SingleValuedPair> next : events )
             {
-                assertTrue( Duration.ZERO.equals(next.getDuration() ) );
-                
+                assertTrue( Duration.ZERO.equals( next.getDuration() ) );
+
                 assertEquals( next.getValue(), SingleValuedPair.of( k, k ) );
                 k++;
             }
@@ -519,7 +555,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
     public void testClimatologyIsPreserved()
     {
         //Build a time-series with one basis times and three separate sets of data to append
-        List<Event<SingleValuedPair>> first = new ArrayList<>();
+        SortedSet<Event<SingleValuedPair>> first = new TreeSet<>();
 
         TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
 
@@ -529,7 +565,9 @@ public final class TimeSeriesOfSingleValuedPairsTest
         first.add( Event.of( basisTime, Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 3, 3 ) ) );
         SampleMetadata meta = SampleMetadata.of();
         VectorOfDoubles climatology = VectorOfDoubles.of( 1, 2, 3 );
-        b.addTimeSeries( first )
+
+        b.addTimeSeries( TimeSeriesA.of( basisTime,
+                                         first ) )
          .setMetadata( meta )
          .setClimatology( climatology );
 
