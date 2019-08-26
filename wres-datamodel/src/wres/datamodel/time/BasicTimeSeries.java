@@ -1,14 +1,11 @@
 package wres.datamodel.time;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.SortedSet;
-import java.util.TreeSet;
-import java.util.stream.Collectors;
+
+import java.util.function.Supplier;
 
 import wres.datamodel.sampledata.SampleDataException;
 
@@ -18,7 +15,7 @@ import wres.datamodel.sampledata.SampleDataException;
  * @param <T> the type of time-series data
  * @author james.brown@hydrosolved.com
  */
-public class BasicTimeSeries<T> implements TimeSeriesCollection<T>
+public class BasicTimeSeries<T> implements Supplier<List<TimeSeries<T>>>
 {
 
     /**
@@ -26,18 +23,6 @@ public class BasicTimeSeries<T> implements TimeSeriesCollection<T>
      */
 
     private final List<TimeSeries<T>> timeSeries;
-
-    /**
-     * Basis times for the data.
-     */
-
-    private final SortedSet<Instant> basisTimes;
-
-    /**
-     * Durations associated with the time-series.
-     */
-
-    private final SortedSet<Duration> durations;
 
     /**
      * Builds a time-series from the input.
@@ -56,7 +41,7 @@ public class BasicTimeSeries<T> implements TimeSeriesCollection<T>
      * A default builder to build a time-series incrementally. Also see {@link BasicTimeSeries#of(List)}.
      */
 
-    public static class BasicTimeSeriesBuilder<T> implements TimeSeriesCollectionBuilder<T>
+    public static class BasicTimeSeriesBuilder<T>
     {
 
         /**
@@ -65,14 +50,26 @@ public class BasicTimeSeries<T> implements TimeSeriesCollection<T>
 
         private List<TimeSeries<T>> data = new ArrayList<>();
 
-        @Override
+        /**
+         * Builds a time-series.
+         * 
+         * @return a time-series
+         */
+        
         public BasicTimeSeries<T> build()
         {
             return new BasicTimeSeries<>( this );
         }
 
-        @Override
-        public TimeSeriesCollectionBuilder<T> addTimeSeries( TimeSeries<T> timeSeries )
+        /**
+         * Adds a time-series to the builder.
+         * 
+         * @param timeSeries the list of events
+         * @return the builder
+         * @throws NullPointerException if the input is null
+         */
+        
+        public BasicTimeSeriesBuilder<T> addTimeSeries( TimeSeries<T> timeSeries )
         {
             this.data.add( timeSeries );
 
@@ -82,27 +79,15 @@ public class BasicTimeSeries<T> implements TimeSeriesCollection<T>
     }
     
     @Override
-    public List<TimeSeries<T>> getTimeSeries()
+    public List<TimeSeries<T>> get()
     {
         return Collections.unmodifiableList( this.timeSeries );
     }
 
     @Override
-    public SortedSet<Instant> getReferenceTimes()
-    {
-        return Collections.unmodifiableSortedSet( this.basisTimes );
-    }
-
-    @Override
-    public SortedSet<Duration> getDurations()
-    {
-        return Collections.unmodifiableSortedSet( this.durations );
-    }
-
-    @Override
     public String toString()
     {
-        return TimeSeriesHelper.toString( this );
+        return TimeSeriesHelper.toString( this.get() );
     }
 
     /**
@@ -145,20 +130,6 @@ public class BasicTimeSeries<T> implements TimeSeriesCollection<T>
         }
 
         this.timeSeries = Collections.unmodifiableList( data );
-        
-        // Set the durations
-        this.durations = this.timeSeries.stream()
-                                  .map( TimeSeries::getEvents )
-                                  .flatMap( SortedSet::stream )
-                                  .map( Event::getDuration )
-                                  .collect( Collectors.toCollection( TreeSet::new ) );
-
-        // Set the basis times
-        this.basisTimes = this.timeSeries.stream()
-                                   .map( TimeSeries::getEvents )
-                                   .flatMap( SortedSet::stream )
-                                   .map( Event::getReferenceTime )
-                                   .collect( Collectors.toCollection( TreeSet::new ) );
     }
 
 }

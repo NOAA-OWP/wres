@@ -10,6 +10,7 @@ import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -27,7 +28,6 @@ import wres.datamodel.sampledata.pairs.Pairs;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
-import wres.datamodel.time.TimeSeriesCollection;
 import wres.datamodel.time.TimeWindow;
 import wres.io.writing.WriteException;
 import wres.io.writing.commaseparated.CommaSeparatedUtilities;
@@ -46,7 +46,7 @@ import wres.util.TimeHelper;
  * @author james.brown@hydrosolved.com
  */
 
-public abstract class PairsWriter<S extends Pair<?,?>, T extends Pairs<S> & TimeSeriesCollection<S>>
+public abstract class PairsWriter<S extends Pair<?,?>, T extends Pairs<S> & Supplier<List<TimeSeries<S>>>>
         implements Consumer<T>, Supplier<Path>, Closeable
 {
 
@@ -255,7 +255,7 @@ public abstract class PairsWriter<S extends Pair<?,?>, T extends Pairs<S> & Time
                 {
 
                     // Iterate in time-series order
-                    for ( TimeSeries<S> nextSeries : pairs.getTimeSeries() )
+                    for ( TimeSeries<S> nextSeries : pairs.get() )
                     {
                         Instant basisTime = nextSeries.getReferenceTime();
 

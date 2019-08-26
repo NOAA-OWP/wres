@@ -66,7 +66,7 @@ public class TimeSeries<T>
      * @param referenceTime the reference time
      * @param events the events
      * @return a time-series
-     * @throws NullPointerException if the events are null or any one event is null
+     * @throws NullPointerException if any input is null or any individual event is null
      */
 
     public static <T> TimeSeries<T> of( Instant referenceTime,
@@ -83,7 +83,7 @@ public class TimeSeries<T>
      * @param referenceTimeType the type of reference time
      * @param events the events
      * @return a time-series
-     * @throws NullPointerException if the events are null or any one event is null
+     * @throws NullPointerException if any input is null or any individual event is null
      */
 
     public static <T> TimeSeries<T> of( Instant referenceTime,
@@ -150,24 +150,28 @@ public class TimeSeries<T>
     /**
      * Build a time-series.
      * 
-     * @param reference the reference datetime
+     * @param referenceTime the reference datetime
      * @param referenceTimeType the type of reference time
      * @param events the events
-     * @throws NullPointerException if the events are null or any individual event is null
+     * @throws NullPointerException if any input is null or any individual event is null
      */
 
-    private TimeSeries( Instant reference, ReferenceTimeType referenceTimeType, SortedSet<Event<T>> events )
+    private TimeSeries( Instant referenceTime, ReferenceTimeType referenceTimeType, SortedSet<Event<T>> events )
     {
-        Objects.requireNonNull( events );
+        // Set then validate, as this class includes a mutable builder
+        // as a possible source of input
+        this.events = Collections.unmodifiableSortedSet( events );
+        this.referenceTime = referenceTime;
+        this.referenceTimeType = referenceTimeType;
+        
+        Objects.requireNonNull( this.getReferenceTime() );
+     
+        Objects.requireNonNull( this.getReferenceTimeType() );
+        
+        Objects.requireNonNull( this.getEvents() );
 
         // No non-null events
-        events.forEach( Objects::requireNonNull );
-
-        this.events = Collections.unmodifiableSortedSet( events );
-
-        this.referenceTime = reference;
-
-        this.referenceTimeType = referenceTimeType;
+        this.getEvents().forEach( Objects::requireNonNull );
     }
 
     /**
@@ -211,25 +215,13 @@ public class TimeSeries<T>
          * Sets the reference time.
          * 
          * @param referenceTime the reference time
-         * @return the builder
-         */
-
-        public TimeSeriesBuilder<T> setReferenceTime( Instant referenceTime )
-        {
-            this.referenceTime = referenceTime;
-
-            return this;
-        }
-
-        /**
-         * Sets the reference time type.
-         * 
          * @param referenceTimeType the reference time type
          * @return the builder
          */
 
-        public TimeSeriesBuilder<T> setReferenceTimeType( ReferenceTimeType referenceTimeType )
+        public TimeSeriesBuilder<T> setReferenceTime( Instant referenceTime, ReferenceTimeType referenceTimeType )
         {
+            this.referenceTime = referenceTime;
             this.referenceTimeType = referenceTimeType;
 
             return this;

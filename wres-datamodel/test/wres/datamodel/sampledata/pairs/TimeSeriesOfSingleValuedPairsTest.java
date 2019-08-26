@@ -88,10 +88,14 @@ public final class TimeSeriesOfSingleValuedPairsTest
                                                                                 third ) )
                                                  .setMetadata( meta )
                                                  .build();
-        assertTrue( ts.getReferenceTimes().size() == 3 );
+
+        SortedSet<Instant> referenceTimes = Slicer.getReferenceTimes( ts.get() );
+
+        assertEquals( 3, referenceTimes.size() );
+
         //Iterate and test
         int nextValue = 1;
-        for ( TimeSeries<SingleValuedPair> next : ts.getTimeSeries() )
+        for ( TimeSeries<SingleValuedPair> next : ts.get() )
         {
             for ( Event<SingleValuedPair> nextPair : next.getEvents() )
             {
@@ -144,12 +148,12 @@ public final class TimeSeriesOfSingleValuedPairsTest
         //Iterate and test
         int nextValue = 1;
 
-        SortedSet<Duration> durations = ts.getDurations();
+        SortedSet<Duration> durations = Slicer.getDurations( ts.get() );
 
         for ( Duration duration : durations )
         {
             Set<Instant> basisTimes = new HashSet<>();
-            List<Event<SingleValuedPair>> events = Slicer.filterByDuration( ts, a -> a.equals( duration ) );
+            List<Event<SingleValuedPair>> events = Slicer.filterByDuration( ts.get(), a -> a.equals( duration ) );
             for ( Event<SingleValuedPair> nextPair : events )
             {
                 assertTrue( nextPair.getValue().equals( SingleValuedPair.of( nextValue, nextValue ) ) );
@@ -171,7 +175,10 @@ public final class TimeSeriesOfSingleValuedPairsTest
                                                                                  fourth ) )
                                                   .setMetadata( meta )
                                                   .build();
-        assertTrue( Duration.ofHours( 51 ).equals( durationCheck.getDurations().first() ) );
+
+        SortedSet<Duration> durationsTwo = Slicer.getDurations( durationCheck.get() );
+
+        assertEquals( Duration.ofHours( 51 ), durationsTwo.first() );
     }
 
     /**
@@ -203,16 +210,21 @@ public final class TimeSeriesOfSingleValuedPairsTest
         TimeSeriesOfSingleValuedPairs baseline = b.build().getBaselineData();
 
         //Check dataset dimensions
-        assertTrue( baseline.getDurations().size() == 3 && baseline.getReferenceTimes().size() == 1 );
+        SortedSet<Duration> durations = Slicer.getDurations( baseline.get() );
+
+        assertEquals( 3, durations.size() );
+
+        SortedSet<Instant> referenceTimes = Slicer.getReferenceTimes( baseline.get() );
+
+        assertEquals( 1, referenceTimes.size() );
 
         //Check dataset
         //Iterate and test
         int nextValue = 1;
-        SortedSet<Duration> durations = baseline.getDurations();
 
         for ( Duration duration : durations )
         {
-            List<Event<SingleValuedPair>> events = Slicer.filterByDuration( baseline, a -> a.equals( duration ) );
+            List<Event<SingleValuedPair>> events = Slicer.filterByDuration( baseline.get(), a -> a.equals( duration ) );
             for ( Event<SingleValuedPair> nextPair : events )
             {
                 assertTrue( nextPair.getValue().equals( SingleValuedPair.of( nextValue, nextValue ) ) );
@@ -281,14 +293,17 @@ public final class TimeSeriesOfSingleValuedPairsTest
         TimeSeriesOfSingleValuedPairs tsAppend = c.build();
 
         //Check dataset dimensions
-        assertTrue( tsAppend.getDurations().size() == 3 && StreamSupport.stream( tsAppend.getTimeSeries()
-                                                                                         .spliterator(),
-                                                                                 false )
-                                                                        .count() == 3 );
+        SortedSet<Duration> durations = Slicer.getDurations( tsAppend.get() );
+
+        assertEquals( 3, durations.size() );
+
+        assertTrue( StreamSupport.stream( tsAppend.get().spliterator(),
+                                          false )
+                                 .count() == 3 );
         //Check dataset
         //Iterate and test
         int nextValue = 1;
-        for ( TimeSeries<SingleValuedPair> nextSeries : tsAppend.getTimeSeries() )
+        for ( TimeSeries<SingleValuedPair> nextSeries : tsAppend.get() )
         {
             for ( Event<SingleValuedPair> nextPair : nextSeries.getEvents() )
             {
@@ -324,7 +339,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
 
         //Iterate
         exception.expect( NoSuchElementException.class );
-        Iterator<TimeSeries<SingleValuedPair>> noneSuchBasis = ts.getTimeSeries().iterator();
+        Iterator<TimeSeries<SingleValuedPair>> noneSuchBasis = ts.get().iterator();
         noneSuchBasis.forEachRemaining( Objects::isNull );
         noneSuchBasis.next();
     }
@@ -356,7 +371,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
         //Mutate 
         exception.expect( UnsupportedOperationException.class );
 
-        Iterator<TimeSeries<SingleValuedPair>> immutableBasis = ts.getTimeSeries().iterator();
+        Iterator<TimeSeries<SingleValuedPair>> immutableBasis = ts.get().iterator();
         immutableBasis.next();
         immutableBasis.remove();
     }
@@ -466,12 +481,11 @@ public final class TimeSeriesOfSingleValuedPairsTest
         double[] expectedOrder = new double[] { 1, 7, 4, 10, 5, 11, 6, 12, 2, 8, 3, 9 };
         int nextIndex = 0;
 
-
-        SortedSet<Duration> durations = ts.getDurations();
+        SortedSet<Duration> durations = Slicer.getDurations( ts.get() );
 
         for ( Duration nextDuration : durations )
         {
-            List<Event<SingleValuedPair>> events = Slicer.filterByDuration( ts, a -> a.equals( nextDuration ) );
+            List<Event<SingleValuedPair>> events = Slicer.filterByDuration( ts.get(), a -> a.equals( nextDuration ) );
 
             for ( Event<SingleValuedPair> nextPair : events )
             {
@@ -514,7 +528,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
 
         // Iterate by time
         int i = 1;
-        for ( TimeSeries<SingleValuedPair> nextSeries : ts.getTimeSeries() )
+        for ( TimeSeries<SingleValuedPair> nextSeries : ts.get() )
         {
             for ( Event<SingleValuedPair> nextPair : nextSeries.getEvents() )
             {
@@ -527,7 +541,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
 
         // Iterate by basis time
         int j = 1;
-        for ( TimeSeries<SingleValuedPair> tsn : ts.getTimeSeries() )
+        for ( TimeSeries<SingleValuedPair> tsn : ts.get() )
         {
             assertEquals( tsn.getEvents().first().getValue(), SingleValuedPair.of( j, j ) );
             j++;
@@ -537,11 +551,11 @@ public final class TimeSeriesOfSingleValuedPairsTest
         // Iterate by duration
         int k = 1;
 
-        SortedSet<Duration> durations = ts.getDurations();
+        SortedSet<Duration> durations = Slicer.getDurations( ts.get() );
 
         for ( Duration nextDuration : durations )
         {
-            List<Event<SingleValuedPair>> events = Slicer.filterByDuration( ts, a -> a.equals( nextDuration ) );
+            List<Event<SingleValuedPair>> events = Slicer.filterByDuration( ts.get(), a -> a.equals( nextDuration ) );
 
             for ( Event<SingleValuedPair> next : events )
             {

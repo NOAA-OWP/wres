@@ -58,8 +58,7 @@ public class TimeSeriesTest
 
         Iterator<Event<Double>> iterator = events.iterator();
 
-        testSeries = builder.setReferenceTime( this.referenceTime )
-                            .setReferenceTimeType( ReferenceTimeType.T0 )
+        testSeries = builder.setReferenceTime( this.referenceTime, ReferenceTimeType.T0 )
                             .addEvent( iterator.next() )
                             .addEvent( iterator.next() )
                             .addEvent( iterator.next() )
