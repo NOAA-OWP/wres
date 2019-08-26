@@ -11,16 +11,13 @@
     <inputs>
         <!-- Observations are provided in an NWSRFS datacard format file.  With such data
              typically being provided in local standard time, the zoneOffset attribute is 
-             included.  The unit is also provided and, if it conflicts with the unit specified
-             in the datacard file, an exception will occur.  The variable of QINE indicates
-             that the data is instantaneous streamflow.  Note that the variable must be 
-             specified; WRES will not parse the file name in order to identify the variable.
-             
-             HANK - DOUBLE CHECK THE ABOVE COMMENTS!!!
+             included to allow the user to specify it.  The variable of QINE indicates that
+	     the data is instantaneous streamflow.  Note that the variable must be specified;
+	     WRES will not parse the file name in order to identify the variable.
         -->
         <left label="Observations">
             <type>observations</type>
-            <source format="datacard" zoneOffset="CST" unit="CFS" >data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard</source>
+            <source format="datacard" zoneOffset="CST" >data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard</source>
             <variable>QINE</variable>
         </left>
         

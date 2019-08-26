@@ -54,7 +54,6 @@ public class ValidationTest
                         null,
                         Format.PI_XML,
                         null,
-                        null,
                         "-0500",
                         null,
                         null,

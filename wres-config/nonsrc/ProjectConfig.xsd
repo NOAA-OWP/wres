@@ -182,16 +182,6 @@
                                 </xs:annotation>
                             </xs:attribute>
 
-                            <!-- Can we remove unit below? Shouldn't the unit of the variable 
-                                suffice? -Jesse -->
-                            <xs:attribute name="unit" type="xs:string" default="">
-                                <xs:annotation>
-                                    <xs:documentation>Specifies the measurement unit of the data
-                                        being read. For example, "CFS" or "ft3/s".
-                                    </xs:documentation>
-                                </xs:annotation>
-                            </xs:attribute>
-
                             <xs:attribute name="locationId" type="xs:string" default="">
                                 <xs:annotation>
                                     <xs:documentation>CHECK THIS... Specify the locationId
