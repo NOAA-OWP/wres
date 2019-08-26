@@ -54,6 +54,7 @@
             <xs:enumeration value="archive" />
             <xs:enumeration value="wrds" />
             <xs:enumeration value="csv" />
+            <xs:enumeration value="waterml" />
         </xs:restriction>
     </xs:simpleType>
 
