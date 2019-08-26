@@ -145,28 +145,6 @@ public abstract class BasicSource
     }
 
     /**
-     * @return The suggested measurement unit of the variable to ingest.
-     * This should be ignored within data sources that define their own measurement unit.
-     * null if not found.
-     *
-     * Should likely be eliminated, due to every important dataset including the
-     * units already, also redundant/confusing "unit" available on both the
-     * "variable" tag and the "source" tag can be eliminated. See #55969, #62847
-     */
-    protected String getSpecifiedVariableUnit()
-    {
-        DataSourceConfig.Source sourceConfig = this.getDataSource()
-                                                   .getSource();
-
-        if ( sourceConfig != null )
-        {
-            return sourceConfig.getUnit();
-        }
-
-        return null;
-    }
-
-    /**
      * @return The specific location ID given by the source tag within the
      * data source configuration. This should be ignored in data sources that
      * define their own locations.

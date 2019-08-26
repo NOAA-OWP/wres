@@ -3441,7 +3441,6 @@ public class WRDSSourceTest
                                                                           null,
                                                                           null,
                                                                           null,
-                                                                          null,
                                                                           null );
 
         sourceList.add( confSource );
@@ -3574,7 +3573,6 @@ public class WRDSSourceTest
                                                                           null,
                                                                           null,
                                                                           null,
-                                                                          null,
                                                                           null );
 
         sourceList.add( confSource );
@@ -3698,7 +3696,6 @@ public class WRDSSourceTest
                                                                           null,
                                                                           null,
                                                                           null,
-                                                                          null,
                                                                           null );
 
         sourceList.add( confSource );
@@ -3792,7 +3789,6 @@ public class WRDSSourceTest
         Format format = Format.WRDS;
         DataSourceConfig.Source confSource = new DataSourceConfig.Source( fakeAhpsUri,
                                                                           format,
-                                                                          null,
                                                                           null,
                                                                           null,
                                                                           null,

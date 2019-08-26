@@ -128,7 +128,6 @@ public class DataCardSourceTest
 
         DataSourceConfig.Source confSource = new Source(current,
                                                         format,
-                                                        "IN",
                                                         "DRRC2",
                                                         "EST",
                                                         "-999.0",
@@ -225,7 +224,6 @@ public class DataCardSourceTest
 
         DataSourceConfig.Source confSource = new Source(current,
                                                         format,
-                                                        "IN",
                                                         "DRRC2",
                                                         "EST",
                                                         "-997",
