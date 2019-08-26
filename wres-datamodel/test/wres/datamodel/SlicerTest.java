@@ -47,7 +47,6 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
-import wres.datamodel.time.BasicTimeSeries;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindow;
@@ -1114,7 +1113,7 @@ public final class SlicerTest
 
 
     /**
-     * Tests {@link BasicTimeSeries#getReferenceTimes()}.
+     * Tests {@link Slicer#getReferenceTimes()}.
      */
 
     @Test
@@ -1147,7 +1146,7 @@ public final class SlicerTest
     }
 
     /**
-     * Tests the {@link BasicTimeSeries#getDurations()} method.
+     * Tests {@link Slicer#getDurations()}.
      */
 
     @Test
