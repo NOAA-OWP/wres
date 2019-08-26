@@ -47,7 +47,6 @@ import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdType;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
-import wres.datamodel.time.TimeSeriesCollection;
 import wres.datamodel.time.TimeWindow;
 
 /**
@@ -696,7 +695,7 @@ public final class Slicer
         builder.setMetadata( input.getMetadata() );
 
         // Filter the main pairs and add them
-        for ( TimeSeries<SingleValuedPair> next : input.getTimeSeries() )
+        for ( TimeSeries<SingleValuedPair> next : input.get() )
         {
             if ( condition.test( next ) )
             {
@@ -718,7 +717,7 @@ public final class Slicer
         {
             builder.setMetadataForBaseline( input.getBaselineData().getMetadata() );
 
-            for ( TimeSeries<SingleValuedPair> next : input.getBaselineData().getTimeSeries() )
+            for ( TimeSeries<SingleValuedPair> next : input.getBaselineData().get() )
             {
                 if ( condition.test( next ) )
                 {
@@ -754,7 +753,7 @@ public final class Slicer
         builder.setMetadata( input.getMetadata() );
 
         //Add the filtered data
-        for ( TimeSeries<SingleValuedPair> a : input.getTimeSeries() )
+        for ( TimeSeries<SingleValuedPair> a : input.get() )
         {
             if ( referenceTime.test( a.getReferenceTime() ) )
             {
@@ -776,7 +775,7 @@ public final class Slicer
      * @throws NullPointerException if either the input or condition is null
      */
 
-    public static <T> List<Event<T>> filterByDuration( TimeSeriesCollection<T> input, Predicate<Duration> duration )
+    public static <T> List<Event<T>> filterByDuration( List<TimeSeries<T>> input, Predicate<Duration> duration )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
@@ -784,7 +783,7 @@ public final class Slicer
 
         List<Event<T>> returnMe = new ArrayList<>();
 
-        for ( TimeSeries<T> nextSeries : input.getTimeSeries() )
+        for ( TimeSeries<T> nextSeries : input )
         {
             for ( Event<T> nextEvent : nextSeries.getEvents() )
             {
@@ -823,7 +822,7 @@ public final class Slicer
         builder.setMetadata( input.getMetadata() );
 
         //Add the filtered data
-        for ( TimeSeries<EnsemblePair> a : input.getTimeSeries() )
+        for ( TimeSeries<EnsemblePair> a : input.get() )
         {
             if ( referenceTime.test( a.getReferenceTime() ) )
             {
@@ -835,8 +834,8 @@ public final class Slicer
     }
 
     /**
-     * Returns a {@link TimeSeriesCollection} whose elements are filtered according to the zero-based index of the ensemble trace 
-     * or null if no such time-series exist.
+     * Returns a {@link TimeSeriesOfEnsemblePairs} whose elements are filtered according to the zero-based index of 
+     * the ensemble trace or null if no such time-series exist.
      * 
      * @param input the pairs to slice
      * @param traceIndex the trace index filter
@@ -857,7 +856,7 @@ public final class Slicer
         builder.setMetadata( input.getMetadata() );
 
         //Iterate through the basis times
-        for ( TimeSeries<EnsemblePair> nextSeries : input.getTimeSeries() )
+        for ( TimeSeries<EnsemblePair> nextSeries : input.get() )
         {
             SortedSet<Event<EnsemblePair>> rawInput = new TreeSet<>();
 
@@ -899,6 +898,7 @@ public final class Slicer
      * Returns the unique {@link Duration} associated with the input time-series, where a {@link Duration} is the
      * difference between the {@link Event#getTime()} and the {@link Event#getReferenceTime()}.
      * 
+     * @param <T> the type of event
      * @param timeSeries the time-series to search
      * @return the durations
      * @throws NullPointerException if the input is null
@@ -920,6 +920,7 @@ public final class Slicer
     /**
      * Returns the unique reference datetime {@link Instant} associated with the input time-series.
      * 
+     * @param <T> the type of event
      * @param timeSeries the time-series to search
      * @return the reference datetimes
      * @throws NullPointerException if the input is null

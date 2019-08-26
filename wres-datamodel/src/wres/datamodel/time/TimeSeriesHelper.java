@@ -2,6 +2,7 @@ package wres.datamodel.time;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
 
@@ -22,19 +23,19 @@ public class TimeSeriesHelper
     static final String UNSUPPORTED_MODIFICATION = "While attempting to modify an immutable time-series.";
 
     /**
-     * Returns a string representation of the {@link TimeSeriesCollection}.
+     * Returns a string representation of a list of {@link TimeSeries}.
      * @param <T> the type of time-series
      * @param timeSeries the input time-series
      * @return a string representation
      */
     
-    public static <T> String toString( TimeSeriesCollection<T> timeSeries )
+    public static <T> String toString( List<TimeSeries<T>> timeSeries )
     {
         Objects.requireNonNull( timeSeries );
         
         StringJoiner joiner = new StringJoiner( System.lineSeparator() );
         
-        for ( TimeSeries<T> nextSeries : timeSeries.getTimeSeries() )
+        for ( TimeSeries<T> nextSeries : timeSeries )
         {
             for ( Event<T> nextEvent : nextSeries.getEvents() )
             {

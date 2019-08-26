@@ -5,6 +5,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+import java.util.function.Supplier;
+
 import wres.datamodel.sampledata.SampleDataException;
 
 /**
@@ -13,7 +15,7 @@ import wres.datamodel.sampledata.SampleDataException;
  * @param <T> the type of time-series data
  * @author james.brown@hydrosolved.com
  */
-public class BasicTimeSeries<T> implements TimeSeriesCollection<T>
+public class BasicTimeSeries<T> implements Supplier<List<TimeSeries<T>>>
 {
 
     /**
@@ -39,7 +41,7 @@ public class BasicTimeSeries<T> implements TimeSeriesCollection<T>
      * A default builder to build a time-series incrementally. Also see {@link BasicTimeSeries#of(List)}.
      */
 
-    public static class BasicTimeSeriesBuilder<T> implements TimeSeriesCollectionBuilder<T>
+    public static class BasicTimeSeriesBuilder<T>
     {
 
         /**
@@ -48,14 +50,26 @@ public class BasicTimeSeries<T> implements TimeSeriesCollection<T>
 
         private List<TimeSeries<T>> data = new ArrayList<>();
 
-        @Override
+        /**
+         * Builds a time-series.
+         * 
+         * @return a time-series
+         */
+        
         public BasicTimeSeries<T> build()
         {
             return new BasicTimeSeries<>( this );
         }
 
-        @Override
-        public TimeSeriesCollectionBuilder<T> addTimeSeries( TimeSeries<T> timeSeries )
+        /**
+         * Adds a time-series to the builder.
+         * 
+         * @param timeSeries the list of events
+         * @return the builder
+         * @throws NullPointerException if the input is null
+         */
+        
+        public BasicTimeSeriesBuilder<T> addTimeSeries( TimeSeries<T> timeSeries )
         {
             this.data.add( timeSeries );
 
@@ -65,7 +79,7 @@ public class BasicTimeSeries<T> implements TimeSeriesCollection<T>
     }
     
     @Override
-    public List<TimeSeries<T>> getTimeSeries()
+    public List<TimeSeries<T>> get()
     {
         return Collections.unmodifiableList( this.timeSeries );
     }
@@ -73,7 +87,7 @@ public class BasicTimeSeries<T> implements TimeSeriesCollection<T>
     @Override
     public String toString()
     {
-        return TimeSeriesHelper.toString( this );
+        return TimeSeriesHelper.toString( this.get() );
     }
 
     /**
