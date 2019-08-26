@@ -13,7 +13,7 @@ import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.time.BasicTimeSeries;
 import wres.datamodel.time.Event;
-import wres.datamodel.time.TimeSeriesA;
+import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesCollection;
 import wres.datamodel.time.TimeSeriesCollectionBuilder;
 import wres.datamodel.time.TimeSeriesHelper;
@@ -55,7 +55,7 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
         TimeSeriesOfSingleValuedPairsBuilder builder = new TimeSeriesOfSingleValuedPairsBuilder();
         builder.setMetadata( this.getMetadataForBaseline() );
         
-        for( TimeSeriesA<SingleValuedPair> next : baseline.referenceTimeIterator() )
+        for( TimeSeries<SingleValuedPair> next : baseline.referenceTimeIterator() )
         {
             builder.addTimeSeries( next );
         }
@@ -70,7 +70,7 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
     }
 
     @Override
-    public Iterable<TimeSeriesA<SingleValuedPair>> referenceTimeIterator()
+    public Iterable<TimeSeries<SingleValuedPair>> referenceTimeIterator()
     {
         return main.referenceTimeIterator();
     }
@@ -105,13 +105,13 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
          * The raw data.
          */
 
-        private List<TimeSeriesA<SingleValuedPair>> data = new ArrayList<>();
+        private List<TimeSeries<SingleValuedPair>> data = new ArrayList<>();
 
         /**
          * The raw data for the baseline
          */
 
-        private List<TimeSeriesA<SingleValuedPair>> baselineData = null;
+        private List<TimeSeries<SingleValuedPair>> baselineData = null;
         
         /**
          * Adds a time-series to the builder.
@@ -122,7 +122,7 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
          * @throws NullPointerException if the input is null
          */
         @Override
-        public TimeSeriesOfSingleValuedPairsBuilder addTimeSeries( TimeSeriesA<SingleValuedPair> timeSeries )
+        public TimeSeriesOfSingleValuedPairsBuilder addTimeSeries( TimeSeries<SingleValuedPair> timeSeries )
         {
             Objects.requireNonNull( timeSeries, NULL_INPUT );
             
@@ -145,7 +145,7 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
          * @throws NullPointerException if the input is null
          */
 
-        public TimeSeriesOfSingleValuedPairsBuilder addTimeSeriesForBaseline( TimeSeriesA<SingleValuedPair> timeSeries )
+        public TimeSeriesOfSingleValuedPairsBuilder addTimeSeriesForBaseline( TimeSeries<SingleValuedPair> timeSeries )
         {
             Objects.requireNonNull( timeSeries, NULL_INPUT );
 
@@ -177,7 +177,7 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
         {
             Objects.requireNonNull( timeSeries, NULL_INPUT );
 
-            for( TimeSeriesA<SingleValuedPair> next : timeSeries.referenceTimeIterator() )
+            for( TimeSeries<SingleValuedPair> next : timeSeries.referenceTimeIterator() )
             {
                 this.addTimeSeries( next );
             }
@@ -216,7 +216,7 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
         {
             Objects.requireNonNull( timeSeries, NULL_INPUT );
             
-            for( TimeSeriesA<SingleValuedPair> next : timeSeries.referenceTimeIterator() )
+            for( TimeSeries<SingleValuedPair> next : timeSeries.referenceTimeIterator() )
             {
                 this.addTimeSeriesForBaseline( next );
             }

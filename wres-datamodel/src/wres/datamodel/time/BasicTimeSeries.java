@@ -27,7 +27,7 @@ public class BasicTimeSeries<T> implements TimeSeriesCollection<T>
      * The raw data, which retains the composition of each individual time-series.
      */
 
-    private final List<TimeSeriesA<T>> data;
+    private final List<TimeSeries<T>> data;
 
     /**
      * Basis times for the data.
@@ -45,7 +45,7 @@ public class BasicTimeSeries<T> implements TimeSeriesCollection<T>
      * Basis time iterator.
      */
 
-    private final Iterable<TimeSeriesA<T>> referenceTimeIterator;
+    private final Iterable<TimeSeries<T>> referenceTimeIterator;
 
     /**
      * Event iterator.
@@ -61,7 +61,7 @@ public class BasicTimeSeries<T> implements TimeSeriesCollection<T>
      * @return a time-series
      */
 
-    public static <T> BasicTimeSeries<T> of( List<TimeSeriesA<T>> timeSeries )
+    public static <T> BasicTimeSeries<T> of( List<TimeSeries<T>> timeSeries )
     {
         return new BasicTimeSeries<>( timeSeries );
     }
@@ -77,7 +77,7 @@ public class BasicTimeSeries<T> implements TimeSeriesCollection<T>
          * The raw data.
          */
 
-        private List<TimeSeriesA<T>> data = new ArrayList<>();
+        private List<TimeSeries<T>> data = new ArrayList<>();
 
         @Override
         public BasicTimeSeries<T> build()
@@ -86,7 +86,7 @@ public class BasicTimeSeries<T> implements TimeSeriesCollection<T>
         }
 
         @Override
-        public TimeSeriesCollectionBuilder<T> addTimeSeries( TimeSeriesA<T> timeSeries )
+        public TimeSeriesCollectionBuilder<T> addTimeSeries( TimeSeries<T> timeSeries )
         {
             this.data.add( timeSeries );
 
@@ -102,7 +102,7 @@ public class BasicTimeSeries<T> implements TimeSeriesCollection<T>
     }
 
     @Override
-    public Iterable<TimeSeriesA<T>> referenceTimeIterator()
+    public Iterable<TimeSeries<T>> referenceTimeIterator()
     {
         return referenceTimeIterator;
     }
@@ -150,7 +150,7 @@ public class BasicTimeSeries<T> implements TimeSeriesCollection<T>
      * @throws SampleDataException if one or more inputs is invalid
      */
 
-    BasicTimeSeries( final List<TimeSeriesA<T>> data )
+    BasicTimeSeries( final List<TimeSeries<T>> data )
     {
         // Time-series cannot be null
         if ( Objects.isNull( data ) )
@@ -168,14 +168,14 @@ public class BasicTimeSeries<T> implements TimeSeriesCollection<T>
         
         // Set the durations
         this.durations = this.data.stream()
-                                  .map( TimeSeriesA::getEvents )
+                                  .map( TimeSeries::getEvents )
                                   .flatMap( SortedSet::stream )
                                   .map( Event::getDuration )
                                   .collect( Collectors.toCollection( TreeSet::new ) );
 
         // Set the basis times
         this.basisTimes = this.data.stream()
-                                   .map( TimeSeriesA::getEvents )
+                                   .map( TimeSeries::getEvents )
                                    .flatMap( SortedSet::stream )
                                    .map( Event::getReferenceTime )
                                    .collect( Collectors.toCollection( TreeSet::new ) );
@@ -193,11 +193,11 @@ public class BasicTimeSeries<T> implements TimeSeriesCollection<T>
      * @return an iterable view of the times and values
      */
 
-    private static <T> Iterable<Event<T>> getEventIterator( final List<TimeSeriesA<T>> data )
+    private static <T> Iterable<Event<T>> getEventIterator( final List<TimeSeries<T>> data )
     {
         // Unpack
         List<Event<T>> unpacked =
-                data.stream().map( TimeSeriesA::getEvents ).flatMap( SortedSet::stream ).collect( Collectors.toList() );
+                data.stream().map( TimeSeries::getEvents ).flatMap( SortedSet::stream ).collect( Collectors.toList() );
 
         //Construct an iterable view of the times and values
         class IterableTimeSeries implements Iterable<Event<T>>
@@ -248,16 +248,16 @@ public class BasicTimeSeries<T> implements TimeSeriesCollection<T>
      * @return an iterable view of the basis times
      */
 
-    private static <T> Iterable<TimeSeriesA<T>> getReferenceTimeIterator( final List<TimeSeriesA<T>> data )
+    private static <T> Iterable<TimeSeries<T>> getReferenceTimeIterator( final List<TimeSeries<T>> data )
     {
         // Construct an iterable view of the basis times
-        class IterableTimeSeries implements Iterable<TimeSeriesA<T>>
+        class IterableTimeSeries implements Iterable<TimeSeries<T>>
         {
 
             @Override
-            public Iterator<TimeSeriesA<T>> iterator()
+            public Iterator<TimeSeries<T>> iterator()
             {
-                return new Iterator<TimeSeriesA<T>>()
+                return new Iterator<TimeSeries<T>>()
                 {
                     int returned = 0;
 
@@ -268,14 +268,14 @@ public class BasicTimeSeries<T> implements TimeSeriesCollection<T>
                     }
 
                     @Override
-                    public TimeSeriesA<T> next()
+                    public TimeSeries<T> next()
                     {
                         if ( !hasNext() )
                         {
                             throw new NoSuchElementException( "No more reference times to iterate." );
                         }
 
-                        TimeSeriesA<T> returnMe = data.get( returned );
+                        TimeSeries<T> returnMe = data.get( returned );
 
                         returned++;
 

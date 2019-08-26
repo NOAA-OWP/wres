@@ -47,7 +47,7 @@ import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.time.Event;
-import wres.datamodel.time.TimeSeriesA;
+import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesCollection;
 import wres.datamodel.time.TimeWindow;
 
@@ -657,11 +657,11 @@ public final class SlicerTest
 
         //Add the time-series
         TimeSeriesOfSingleValuedPairs firstSeries =
-                (TimeSeriesOfSingleValuedPairs) b.addTimeSeries( TimeSeriesA.of( firstBasisTime,
+                (TimeSeriesOfSingleValuedPairs) b.addTimeSeries( TimeSeries.of( firstBasisTime,
                                                                                  first ) )
-                                                 .addTimeSeries( TimeSeriesA.of( secondBasisTime,
+                                                 .addTimeSeries( TimeSeries.of( secondBasisTime,
                                                                                  second ) )
-                                                 .addTimeSeries( TimeSeriesA.of( thirdBasisTime,
+                                                 .addTimeSeries( TimeSeries.of( thirdBasisTime,
                                                                                  third ) )
                                                  .setMetadata( meta )
                                                  .build();
@@ -715,8 +715,8 @@ public final class SlicerTest
         assertTrue( fourthResult.getClimatology().equals( climatologyExpected ) );
 
         // Also filter baseline data
-        b.addTimeSeriesForBaseline( TimeSeriesA.of( firstBasisTime, first ) )
-         .addTimeSeriesForBaseline( TimeSeriesA.of( secondBasisTime, second ) )
+        b.addTimeSeriesForBaseline( TimeSeries.of( firstBasisTime, first ) )
+         .addTimeSeriesForBaseline( TimeSeries.of( secondBasisTime, second ) )
          .setMetadataForBaseline( meta );
 
         // Filter all values where both sides are greater than 4
@@ -788,11 +788,11 @@ public final class SlicerTest
         SampleMetadata meta = SampleMetadata.of();
         //Add the time-series
         TimeSeriesOfEnsemblePairs ts =
-                (TimeSeriesOfEnsemblePairs) b.addTimeSeries( TimeSeriesA.of( firstBasisTime,
+                (TimeSeriesOfEnsemblePairs) b.addTimeSeries( TimeSeries.of( firstBasisTime,
                                                                              first ) )
-                                             .addTimeSeries( TimeSeriesA.of( secondBasisTime,
+                                             .addTimeSeries( TimeSeries.of( secondBasisTime,
                                                                              second ) )
-                                             .addTimeSeries( TimeSeriesA.of( thirdBasisTime,
+                                             .addTimeSeries( TimeSeries.of( thirdBasisTime,
                                                                              third ) )
                                              .setMetadata( meta )
                                              .build();
@@ -848,11 +848,11 @@ public final class SlicerTest
         SampleMetadata meta = SampleMetadata.of();
         //Add the time-series
         TimeSeriesOfSingleValuedPairs ts =
-                (TimeSeriesOfSingleValuedPairs) b.addTimeSeries( TimeSeriesA.of( firstBasisTime,
+                (TimeSeriesOfSingleValuedPairs) b.addTimeSeries( TimeSeries.of( firstBasisTime,
                                                                                  first ) )
-                                                 .addTimeSeries( TimeSeriesA.of( secondBasisTime,
+                                                 .addTimeSeries( TimeSeries.of( secondBasisTime,
                                                                                  second ) )
-                                                 .addTimeSeries( TimeSeriesA.of( thirdBasisTime,
+                                                 .addTimeSeries( TimeSeries.of( thirdBasisTime,
                                                                                  third ) )
                                                  .setMetadata( meta )
                                                  .build();

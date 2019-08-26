@@ -37,7 +37,7 @@ public interface TimeSeriesCollection<T>
      * @return an iterable atomic time-series by basis time
      */
 
-    Iterable<TimeSeriesA<T>> referenceTimeIterator();
+    Iterable<TimeSeries<T>> referenceTimeIterator();
 
     /**
      * Returns the reference times associated with all the atomic time-series in the container. The times are ordered 

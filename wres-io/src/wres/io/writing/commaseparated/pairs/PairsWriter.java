@@ -26,7 +26,7 @@ import wres.datamodel.sampledata.pairs.Pair;
 import wres.datamodel.sampledata.pairs.Pairs;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.Event;
-import wres.datamodel.time.TimeSeriesA;
+import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesCollection;
 import wres.datamodel.time.TimeWindow;
 import wres.io.writing.WriteException;
@@ -255,7 +255,7 @@ public abstract class PairsWriter<S extends Pair<?,?>, T extends Pairs<S> & Time
                 {
 
                     // Iterate in time-series order
-                    for ( TimeSeriesA<S> nextSeries : pairs.referenceTimeIterator() )
+                    for ( TimeSeries<S> nextSeries : pairs.referenceTimeIterator() )
                     {
                         Instant basisTime = nextSeries.getReferenceTime();
 

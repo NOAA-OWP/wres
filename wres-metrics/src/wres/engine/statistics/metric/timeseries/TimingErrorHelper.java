@@ -10,7 +10,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.time.Event;
-import wres.datamodel.time.TimeSeriesA;
+import wres.datamodel.time.TimeSeries;
 
 /**
  * A helper class for computing timing errors.
@@ -30,7 +30,7 @@ class TimingErrorHelper
      * @throws NullPointerException if the input is null
      */
 
-    static Pair<Instant, Instant> getTimeToPeak( final TimeSeriesA<SingleValuedPair> timeSeries, final Random rng )
+    static Pair<Instant, Instant> getTimeToPeak( final TimeSeries<SingleValuedPair> timeSeries, final Random rng )
     {
         Objects.requireNonNull( timeSeries, "Specify a non-null time-series whose time-to-peak error is required." );
 

@@ -13,7 +13,7 @@ import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.time.BasicTimeSeries;
 import wres.datamodel.time.Event;
-import wres.datamodel.time.TimeSeriesA;
+import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesCollection;
 import wres.datamodel.time.TimeSeriesCollectionBuilder;
 import wres.datamodel.time.TimeSeriesHelper;
@@ -55,7 +55,7 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
         TimeSeriesOfEnsemblePairsBuilder builder = new TimeSeriesOfEnsemblePairsBuilder();
         builder.setMetadata( this.getMetadataForBaseline() );
         
-        for( TimeSeriesA<EnsemblePair> next : baseline.referenceTimeIterator() )
+        for( TimeSeries<EnsemblePair> next : baseline.referenceTimeIterator() )
         {
             builder.addTimeSeries( next );
         }
@@ -70,7 +70,7 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
     }
 
     @Override
-    public Iterable<TimeSeriesA<EnsemblePair>> referenceTimeIterator()
+    public Iterable<TimeSeries<EnsemblePair>> referenceTimeIterator()
     {
         return main.referenceTimeIterator();
     }
@@ -105,13 +105,13 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
          * The raw data.
          */
 
-        private List<TimeSeriesA<EnsemblePair>> data = new ArrayList<>();
+        private List<TimeSeries<EnsemblePair>> data = new ArrayList<>();
 
         /**
          * The raw data for the baseline
          */
 
-        private List<TimeSeriesA<EnsemblePair>> baselineData = null;
+        private List<TimeSeries<EnsemblePair>> baselineData = null;
         
         /**
          * Adds a time-series to the builder.
@@ -122,7 +122,7 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
          * @throws NullPointerException if the input is null
          */
         @Override
-        public TimeSeriesOfEnsemblePairsBuilder addTimeSeries( TimeSeriesA<EnsemblePair> timeSeries )
+        public TimeSeriesOfEnsemblePairsBuilder addTimeSeries( TimeSeries<EnsemblePair> timeSeries )
         {
             Objects.requireNonNull( timeSeries, NULL_INPUT );
             
@@ -145,7 +145,7 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
          * @throws NullPointerException if the input is null
          */
 
-        public TimeSeriesOfEnsemblePairsBuilder addTimeSeriesForBaseline( TimeSeriesA<EnsemblePair> timeSeries )
+        public TimeSeriesOfEnsemblePairsBuilder addTimeSeriesForBaseline( TimeSeries<EnsemblePair> timeSeries )
         {
             Objects.requireNonNull( timeSeries, NULL_INPUT );
             
@@ -177,7 +177,7 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
         {
             Objects.requireNonNull( timeSeries, NULL_INPUT );
 
-            for( TimeSeriesA<EnsemblePair> next : timeSeries.referenceTimeIterator() )
+            for( TimeSeries<EnsemblePair> next : timeSeries.referenceTimeIterator() )
             {
                 this.addTimeSeries( next );
             }
@@ -216,7 +216,7 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
         {
             Objects.requireNonNull( timeSeries, NULL_INPUT );
             
-            for( TimeSeriesA<EnsemblePair> next : timeSeries.referenceTimeIterator() )
+            for( TimeSeries<EnsemblePair> next : timeSeries.referenceTimeIterator() )
             {
                 this.addTimeSeriesForBaseline( next );
             }

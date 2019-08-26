@@ -35,7 +35,7 @@ import wres.datamodel.scale.TimeScale;
 import wres.datamodel.scale.TimeScale.TimeScaleFunction;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
-import wres.datamodel.time.TimeSeriesA;
+import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindow;
 
 /**
@@ -83,8 +83,8 @@ public final class SingleValuedPairsWriterTest
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
                                    DatasetIdentifier.of( Location.of( "PLUM" ), "RIFLE" ) );
 
-        TimeSeriesA<SingleValuedPair> timeSeriesOne =
-                TimeSeriesA.of( basisTime, ReferenceTimeType.UNKNOWN, setOfPairs );
+        TimeSeries<SingleValuedPair> timeSeriesOne =
+                TimeSeries.of( basisTime, ReferenceTimeType.UNKNOWN, setOfPairs );
 
         pairs = (TimeSeriesOfSingleValuedPairs) tsBuilder.addTimeSeries( timeSeriesOne )
                                                          .setMetadata( meta )
@@ -108,8 +108,8 @@ public final class SingleValuedPairsWriterTest
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
                                    DatasetIdentifier.of( Location.of( "ORANGE" ), "PISTOL" ) );
 
-        TimeSeriesA<SingleValuedPair> timeSeriesTwo =
-                TimeSeriesA.of( basisTimeTwo, ReferenceTimeType.UNKNOWN, setOfPairsTwo );
+        TimeSeries<SingleValuedPair> timeSeriesTwo =
+                TimeSeries.of( basisTimeTwo, ReferenceTimeType.UNKNOWN, setOfPairsTwo );
 
         pairsTwo = (TimeSeriesOfSingleValuedPairs) tsBuilderTwo.addTimeSeries( timeSeriesTwo )
                                                                .setMetadata( metaTwo )
@@ -134,8 +134,8 @@ public final class SingleValuedPairsWriterTest
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
                                    DatasetIdentifier.of( Location.of( "BANANA" ), "GRENADE" ) );
 
-        TimeSeriesA<SingleValuedPair> timeSeriesThree =
-                TimeSeriesA.of( basisTimeThree, ReferenceTimeType.UNKNOWN, setOfPairsThree );
+        TimeSeries<SingleValuedPair> timeSeriesThree =
+                TimeSeries.of( basisTimeThree, ReferenceTimeType.UNKNOWN, setOfPairsThree );
 
         pairsThree =
                 (TimeSeriesOfSingleValuedPairs) tsBuilderThree.addTimeSeries( timeSeriesThree )
@@ -173,7 +173,7 @@ public final class SingleValuedPairsWriterTest
                                                .build();
 
             TimeSeriesOfSingleValuedPairs emptyPairs =
-                    (TimeSeriesOfSingleValuedPairs) tsBuilder.addTimeSeries( TimeSeriesA.of( Collections.emptySortedSet() ) )
+                    (TimeSeriesOfSingleValuedPairs) tsBuilder.addTimeSeries( TimeSeries.of( Collections.emptySortedSet() ) )
                                                              .setMetadata( meta )
                                                              .build();
 

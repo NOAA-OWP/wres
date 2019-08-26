@@ -14,7 +14,7 @@ import java.util.TreeSet;
  * @author james.brown@hydrosolved.com
  */
 
-public class TimeSeriesA<T>
+public class TimeSeries<T>
 {
 
     /**
@@ -36,7 +36,7 @@ public class TimeSeriesA<T>
     private final SortedSet<Event<T>> events;
 
     /**
-     * Returns a {@link TimeSeriesA} with a reference time of {@link Instant#MIN} and a reference time type of
+     * Returns a {@link TimeSeries} with a reference time of {@link Instant#MIN} and a reference time type of
      * {@link ReferenceTimeType#UNKNOWN}.
      *
      * 
@@ -46,7 +46,7 @@ public class TimeSeriesA<T>
      * @throws NullPointerException if events are null or any one event is null
      */
 
-    public static <T> TimeSeriesA<T> of( SortedSet<Event<T>> events )
+    public static <T> TimeSeries<T> of( SortedSet<Event<T>> events )
     {
         Instant referenceTime = Instant.MIN;
 
@@ -55,11 +55,11 @@ public class TimeSeriesA<T>
             referenceTime = events.first().getTime();
         }
 
-        return TimeSeriesA.of( referenceTime, events );
+        return TimeSeries.of( referenceTime, events );
     }
 
     /**
-     * Returns a {@link TimeSeriesA} with a reference time type of {@link ReferenceTimeType#UNKNOWN}.
+     * Returns a {@link TimeSeries} with a reference time type of {@link ReferenceTimeType#UNKNOWN}.
      * 
      * @param <T> the event type
      * @param referenceTime the reference time
@@ -68,14 +68,14 @@ public class TimeSeriesA<T>
      * @throws NullPointerException if events are null or any one event is null
      */
 
-    public static <T> TimeSeriesA<T> of( Instant referenceTime,
+    public static <T> TimeSeries<T> of( Instant referenceTime,
                                          SortedSet<Event<T>> events )
     {
-        return new TimeSeriesA<>( referenceTime, ReferenceTimeType.UNKNOWN, events );
+        return new TimeSeries<>( referenceTime, ReferenceTimeType.UNKNOWN, events );
     }
     
     /**
-     * Returns a {@link TimeSeriesA}.
+     * Returns a {@link TimeSeries}.
      * 
      * @param <T> the event type
      * @param referenceTime the reference time
@@ -85,11 +85,11 @@ public class TimeSeriesA<T>
      * @throws NullPointerException if events are null or any one event is null
      */
 
-    public static <T> TimeSeriesA<T> of( Instant referenceTime,
+    public static <T> TimeSeries<T> of( Instant referenceTime,
                                          ReferenceTimeType referenceTimeType,
                                          SortedSet<Event<T>> events )
     {
-        return new TimeSeriesA<>( referenceTime, referenceTimeType, events );
+        return new TimeSeries<>( referenceTime, referenceTimeType, events );
     }
 
     /**
@@ -133,7 +133,7 @@ public class TimeSeriesA<T>
             return false;
         }
 
-        TimeSeriesA<?> input = (TimeSeriesA<?>) o;
+        TimeSeries<?> input = (TimeSeries<?>) o;
 
         return Objects.equals( this.getReferenceTimeType(), input.getReferenceTimeType() )
                && Objects.equals( this.getReferenceTime(), input.getReferenceTime() )
@@ -155,7 +155,7 @@ public class TimeSeriesA<T>
      * @throws NullPointerException if the events are null or any individual event is null
      */
 
-    private TimeSeriesA( Instant reference, ReferenceTimeType referenceTimeType, SortedSet<Event<T>> events )
+    private TimeSeries( Instant reference, ReferenceTimeType referenceTimeType, SortedSet<Event<T>> events )
     {
         Objects.requireNonNull( events );
 
@@ -174,7 +174,7 @@ public class TimeSeriesA<T>
      * 
      * @param builder the builder
      */
-    private TimeSeriesA( TimeSeriesBuilder<T> builder )
+    private TimeSeries( TimeSeriesBuilder<T> builder )
     {
         this( builder.referenceTime, builder.referenceTimeType, builder.events );
     }
@@ -264,9 +264,9 @@ public class TimeSeriesA<T>
          * @return a time-series
          */
 
-        public TimeSeriesA<T> build()
+        public TimeSeries<T> build()
         {
-            return new TimeSeriesA<>( this );
+            return new TimeSeries<>( this );
         }
 
     }
