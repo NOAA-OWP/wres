@@ -136,7 +136,7 @@ public final class BasicTimeSeriesTest
     {
         // Actual durations
         List<Instant> actual = new ArrayList<>();
-        defaultTimeSeries.referenceTimeIterator().forEach( next -> actual.add( next.getReferenceTime() ) );
+        defaultTimeSeries.getTimeSeries().forEach( next -> actual.add( next.getReferenceTime() ) );
 
         // Expected durations
         List<Instant> expected = new ArrayList<>();
@@ -262,21 +262,6 @@ public final class BasicTimeSeriesTest
     }
 
     /**
-     * Confirms that the {@link BasicTimeSeries#referenceTimeIterator()} throws an iteration exception when expected.
-     */
-
-    @Test
-    public void testReferenceTimeIteratorThrowsNoSuchElementException()
-    {
-        exception.expect( NoSuchElementException.class );
-        exception.expectMessage( "No more reference times to iterate." );
-
-        Iterator<TimeSeries<Double>> noneSuchBasis = defaultTimeSeries.referenceTimeIterator().iterator();
-        noneSuchBasis.forEachRemaining( Objects::isNull );
-        noneSuchBasis.next();
-    }
-
-    /**
      * Confirms that the {@link BasicTimeSeries#eventIterator()} throws an exception when attempting to mutate the 
      * time-series.
      */
@@ -298,12 +283,11 @@ public final class BasicTimeSeriesTest
      */
 
     @Test
-    public void testReferemceTimeIteratorThrowsExceptionOnAttemptToMutate()
+    public void testReferenceTimeIteratorThrowsExceptionOnAttemptToMutate()
     {
         exception.expect( UnsupportedOperationException.class );
-        exception.expectMessage( WHILE_ATTEMPTING_TO_MODIFY_AN_IMMUTABLE_TIME_SERIES );
 
-        Iterator<TimeSeries<Double>> immutableTimeSeries = defaultTimeSeries.referenceTimeIterator().iterator();
+        Iterator<TimeSeries<Double>> immutableTimeSeries = defaultTimeSeries.getTimeSeries().iterator();
         immutableTimeSeries.next();
         immutableTimeSeries.remove();
     }

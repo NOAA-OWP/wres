@@ -36,10 +36,9 @@ public class TimeSeries<T>
     private final SortedSet<Event<T>> events;
 
     /**
-     * Returns a {@link TimeSeries} with a reference time of {@link Instant#MIN} and a reference time type of
-     * {@link ReferenceTimeType#UNKNOWN}.
+     * Returns a {@link TimeSeries} with a reference time equal to the {@link Event#getTime()} of the first event or 
+     * {@link Instant#MIN} when the input is empty. Assumes a type of {@link ReferenceTimeType#UNKNOWN}.
      *
-     * 
      * @param <T> the event type
      * @param events the events
      * @return a time-series

@@ -3,6 +3,7 @@ package wres.datamodel.time;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Iterator;
+import java.util.List;
 import java.util.SortedSet;
 
 /**
@@ -30,14 +31,12 @@ public interface TimeSeriesCollection<T>
     Iterable<Event<T>> eventIterator();
 
     /**
-     * Returns a basis-time view of the {@link TimeSeriesCollection} whereby each atomic time-series originates from one basis 
-     * time and each element is associated with a separate {@link Duration}. The time-series are not returned in a 
-     * guaranteed order.
+     * Returns the {@link TimeSeries} in the collection.
      * 
      * @return an iterable atomic time-series by basis time
      */
 
-    Iterable<TimeSeries<T>> referenceTimeIterator();
+    List<TimeSeries<T>> getTimeSeries();
 
     /**
      * Returns the reference times associated with all the atomic time-series in the container. The times are ordered 

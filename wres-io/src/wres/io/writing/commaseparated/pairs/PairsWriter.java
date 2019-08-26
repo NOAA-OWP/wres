@@ -255,7 +255,7 @@ public abstract class PairsWriter<S extends Pair<?,?>, T extends Pairs<S> & Time
                 {
 
                     // Iterate in time-series order
-                    for ( TimeSeries<S> nextSeries : pairs.referenceTimeIterator() )
+                    for ( TimeSeries<S> nextSeries : pairs.getTimeSeries() )
                     {
                         Instant basisTime = nextSeries.getReferenceTime();
 

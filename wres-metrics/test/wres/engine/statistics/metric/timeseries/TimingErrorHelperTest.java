@@ -41,7 +41,7 @@ public final class TimingErrorHelperTest
         // Generate some data
         TimeSeriesOfSingleValuedPairs input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
 
-        Iterator<TimeSeries<SingleValuedPair>> iterator = input.referenceTimeIterator().iterator();
+        Iterator<TimeSeries<SingleValuedPair>> iterator = input.getTimeSeries().iterator();
         TimeSeries<SingleValuedPair> first = iterator.next();
         TimeSeries<SingleValuedPair> second = iterator.next();
 
@@ -73,7 +73,7 @@ public final class TimingErrorHelperTest
     {
         // Generate some data
         TimeSeriesOfSingleValuedPairs input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsFive();
-        Iterator<TimeSeries<SingleValuedPair>> iterator = input.referenceTimeIterator().iterator();
+        Iterator<TimeSeries<SingleValuedPair>> iterator = input.getTimeSeries().iterator();
         TimeSeries<SingleValuedPair> first = iterator.next();
 
         //Generate some data using an RNG for a uniform U[0,1] distribution with a fixed seed

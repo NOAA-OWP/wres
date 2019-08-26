@@ -91,7 +91,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
         assertTrue( ts.getReferenceTimes().size() == 3 );
         //Iterate and test
         int nextValue = 1;
-        for ( TimeSeries<SingleValuedPair> next : ts.referenceTimeIterator() )
+        for ( TimeSeries<SingleValuedPair> next : ts.getTimeSeries() )
         {
             for ( Event<SingleValuedPair> nextPair : next.getEvents() )
             {
@@ -281,7 +281,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
         TimeSeriesOfSingleValuedPairs tsAppend = c.build();
 
         //Check dataset dimensions
-        assertTrue( tsAppend.getDurations().size() == 3 && StreamSupport.stream( tsAppend.referenceTimeIterator()
+        assertTrue( tsAppend.getDurations().size() == 3 && StreamSupport.stream( tsAppend.getTimeSeries()
                                                                                          .spliterator(),
                                                                                  false )
                                                                         .count() == 3 );
@@ -321,7 +321,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
 
         //Iterate
         exception.expect( NoSuchElementException.class );
-        Iterator<TimeSeries<SingleValuedPair>> noneSuchBasis = ts.referenceTimeIterator().iterator();
+        Iterator<TimeSeries<SingleValuedPair>> noneSuchBasis = ts.getTimeSeries().iterator();
         noneSuchBasis.forEachRemaining( Objects::isNull );
         noneSuchBasis.next();
     }
@@ -353,7 +353,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
         //Mutate 
         exception.expect( UnsupportedOperationException.class );
 
-        Iterator<TimeSeries<SingleValuedPair>> immutableBasis = ts.referenceTimeIterator().iterator();
+        Iterator<TimeSeries<SingleValuedPair>> immutableBasis = ts.getTimeSeries().iterator();
         immutableBasis.next();
         immutableBasis.remove();
     }
@@ -520,7 +520,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
 
         // Iterate by basis time
         int j = 1;
-        for ( TimeSeries<SingleValuedPair> tsn : ts.referenceTimeIterator() )
+        for ( TimeSeries<SingleValuedPair> tsn : ts.getTimeSeries() )
         {
             assertEquals( tsn.getEvents().first().getValue(), SingleValuedPair.of( j, j ) );
             j++;

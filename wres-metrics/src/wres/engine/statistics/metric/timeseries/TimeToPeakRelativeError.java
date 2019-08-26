@@ -72,7 +72,7 @@ public class TimeToPeakRelativeError extends TimingError
 
         // Iterate through the time-series by basis time, and find the peaks in left and right
         List<Pair<Instant, Duration>> returnMe = new ArrayList<>();
-        for ( TimeSeries<SingleValuedPair> next : s.referenceTimeIterator() )
+        for ( TimeSeries<SingleValuedPair> next : s.getTimeSeries() )
         {
             Pair<Instant, Instant> peak = TimingErrorHelper.getTimeToPeak( next, this.getRNG() );
 

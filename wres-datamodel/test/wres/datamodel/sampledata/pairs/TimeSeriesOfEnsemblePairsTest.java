@@ -105,7 +105,7 @@ public final class TimeSeriesOfEnsemblePairsTest
         assertTrue( ts.getReferenceTimes().size() == 3 );
         //Iterate and test
         int nextValue = 1;
-        for ( TimeSeries<EnsemblePair> next : ts.referenceTimeIterator() )
+        for ( TimeSeries<EnsemblePair> next : ts.getTimeSeries() )
         {
             for ( Event<EnsemblePair> nextPair : next.getEvents() )
             {
@@ -245,7 +245,7 @@ public final class TimeSeriesOfEnsemblePairsTest
         TimeSeriesOfEnsemblePairs tsAppend = c.build();
 
         //Check dataset dimensions
-        assertTrue( tsAppend.getDurations().size() == 3 && StreamSupport.stream( tsAppend.referenceTimeIterator()
+        assertTrue( tsAppend.getDurations().size() == 3 && StreamSupport.stream( tsAppend.getTimeSeries()
                                                                                          .spliterator(),
                                                                                  false )
                                                                         .count() == 3 );
@@ -290,14 +290,14 @@ public final class TimeSeriesOfEnsemblePairsTest
 
         //Iterate
         exception.expect( NoSuchElementException.class );
-        Iterator<TimeSeries<EnsemblePair>> noneSuchBasis = ts.referenceTimeIterator().iterator();
+        Iterator<TimeSeries<EnsemblePair>> noneSuchBasis = ts.getTimeSeries().iterator();
         noneSuchBasis.forEachRemaining( Objects::isNull );
         noneSuchBasis.next();
 
         //Mutate 
         exception.expect( UnsupportedOperationException.class );
 
-        Iterator<TimeSeries<EnsemblePair>> immutableBasis = ts.referenceTimeIterator().iterator();
+        Iterator<TimeSeries<EnsemblePair>> immutableBasis = ts.getTimeSeries().iterator();
         immutableBasis.next();
         immutableBasis.remove();
 

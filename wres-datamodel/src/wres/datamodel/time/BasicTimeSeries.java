@@ -27,7 +27,7 @@ public class BasicTimeSeries<T> implements TimeSeriesCollection<T>
      * The raw data, which retains the composition of each individual time-series.
      */
 
-    private final List<TimeSeries<T>> data;
+    private final List<TimeSeries<T>> timeSeries;
 
     /**
      * Basis times for the data.
@@ -40,12 +40,6 @@ public class BasicTimeSeries<T> implements TimeSeriesCollection<T>
      */
 
     private final SortedSet<Duration> durations;
-
-    /**
-     * Basis time iterator.
-     */
-
-    private final Iterable<TimeSeries<T>> referenceTimeIterator;
 
     /**
      * Event iterator.
@@ -100,11 +94,11 @@ public class BasicTimeSeries<T> implements TimeSeriesCollection<T>
     {
         return eventIterator;
     }
-
+    
     @Override
-    public Iterable<TimeSeries<T>> referenceTimeIterator()
+    public List<TimeSeries<T>> getTimeSeries()
     {
-        return referenceTimeIterator;
+        return Collections.unmodifiableList( this.timeSeries );
     }
 
     @Override
@@ -128,7 +122,7 @@ public class BasicTimeSeries<T> implements TimeSeriesCollection<T>
     /**
      * Build the time-series.
      * 
-     * @param data the raw data
+     * @param timeSeries the raw data
      * @param baselineData the raw data for the baseline (may be empty, cannot be null)
      * @param referenceTimeIterator a basis time iterator
      * @param durationIterator a duration iterator
@@ -164,26 +158,23 @@ public class BasicTimeSeries<T> implements TimeSeriesCollection<T>
             throw new SampleDataException( "One or more time-series is null." );
         }
 
-        this.data = Collections.unmodifiableList( data );
+        this.timeSeries = Collections.unmodifiableList( data );
         
         // Set the durations
-        this.durations = this.data.stream()
+        this.durations = this.timeSeries.stream()
                                   .map( TimeSeries::getEvents )
                                   .flatMap( SortedSet::stream )
                                   .map( Event::getDuration )
                                   .collect( Collectors.toCollection( TreeSet::new ) );
 
         // Set the basis times
-        this.basisTimes = this.data.stream()
+        this.basisTimes = this.timeSeries.stream()
                                    .map( TimeSeries::getEvents )
                                    .flatMap( SortedSet::stream )
                                    .map( Event::getReferenceTime )
                                    .collect( Collectors.toCollection( TreeSet::new ) );
 
-        // Set the iterators
-        this.referenceTimeIterator = BasicTimeSeries.getReferenceTimeIterator( this.data );
-
-        this.eventIterator = BasicTimeSeries.getEventIterator( this.data );
+        this.eventIterator = BasicTimeSeries.getEventIterator( this.timeSeries );
     }
 
     /**
@@ -224,58 +215,6 @@ public class BasicTimeSeries<T> implements TimeSeriesCollection<T>
                         }
 
                         Event<T> returnMe = unpacked.get( returned );
-
-                        returned++;
-
-                        return returnMe;
-                    }
-
-                    @Override
-                    public void remove()
-                    {
-                        throw new UnsupportedOperationException( TimeSeriesHelper.UNSUPPORTED_MODIFICATION );
-                    }
-                };
-            }
-        }
-        return new IterableTimeSeries();
-    }
-
-    /**
-     * Returns an {@link Iterable} view of the atomic time-series by basis time.
-     * 
-     * @param data the input data to iterate
-     * @return an iterable view of the basis times
-     */
-
-    private static <T> Iterable<TimeSeries<T>> getReferenceTimeIterator( final List<TimeSeries<T>> data )
-    {
-        // Construct an iterable view of the basis times
-        class IterableTimeSeries implements Iterable<TimeSeries<T>>
-        {
-
-            @Override
-            public Iterator<TimeSeries<T>> iterator()
-            {
-                return new Iterator<TimeSeries<T>>()
-                {
-                    int returned = 0;
-
-                    @Override
-                    public boolean hasNext()
-                    {
-                        return returned < data.size();
-                    }
-
-                    @Override
-                    public TimeSeries<T> next()
-                    {
-                        if ( !hasNext() )
-                        {
-                            throw new NoSuchElementException( "No more reference times to iterate." );
-                        }
-
-                        TimeSeries<T> returnMe = data.get( returned );
 
                         returned++;
 
