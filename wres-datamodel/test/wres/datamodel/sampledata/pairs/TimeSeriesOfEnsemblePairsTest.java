@@ -1,5 +1,6 @@
 package wres.datamodel.sampledata.pairs;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.time.Duration;
@@ -102,7 +103,10 @@ public final class TimeSeriesOfEnsemblePairsTest
                                              .setMetadata( meta )
                                              .build();
 
-        assertTrue( ts.getReferenceTimes().size() == 3 );
+        SortedSet<Instant> sliced = Slicer.getReferenceTimes( ts.getTimeSeries() );
+        
+        assertEquals( 3, sliced.size() );
+        
         //Iterate and test
         int nextValue = 1;
         for ( TimeSeries<EnsemblePair> next : ts.getTimeSeries() )
@@ -152,13 +156,17 @@ public final class TimeSeriesOfEnsemblePairsTest
         TimeSeriesOfEnsemblePairs baseline = b.build().getBaselineData();
 
         //Check dataset dimensions
-        assertTrue( baseline.getDurations().size() == 3 && baseline.getReferenceTimes().size() == 1 );
+        SortedSet<Duration> durations = Slicer.getDurations( baseline.getTimeSeries() );
+        
+        assertEquals( 3, durations.size() );
+        
+        SortedSet<Instant> referenceTimes = Slicer.getReferenceTimes( baseline.getTimeSeries() );
+        
+        assertEquals( 1, referenceTimes.size() );
 
         //Check dataset
         //Iterate and test
         int nextValue = 1;
-
-        SortedSet<Duration> durations = baseline.getDurations();
 
         for ( Duration duration : durations )
         {
@@ -245,10 +253,12 @@ public final class TimeSeriesOfEnsemblePairsTest
         TimeSeriesOfEnsemblePairs tsAppend = c.build();
 
         //Check dataset dimensions
-        assertTrue( tsAppend.getDurations().size() == 3 && StreamSupport.stream( tsAppend.getTimeSeries()
-                                                                                         .spliterator(),
-                                                                                 false )
-                                                                        .count() == 3 );
+        SortedSet<Duration> durations = Slicer.getDurations( tsAppend.getTimeSeries() );
+        
+        assertEquals( 3, durations.size() );
+        
+        assertTrue( StreamSupport.stream( tsAppend.getTimeSeries().spliterator(), false ).count() == 3 );
+        
         //Check dataset
         //Iterate and test
         int nextValue = 1;
@@ -431,7 +441,7 @@ public final class TimeSeriesOfEnsemblePairsTest
         double[] expectedOrder = new double[] { 1, 7, 4, 10, 5, 11, 6, 12, 2, 8, 3, 9 };
         int nextIndex = 0;
 
-        SortedSet<Duration> durations = ts.getDurations();
+        SortedSet<Duration> durations = Slicer.getDurations( ts.getTimeSeries() );
 
         for ( Duration duration : durations )
         {

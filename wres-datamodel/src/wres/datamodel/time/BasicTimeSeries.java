@@ -1,14 +1,9 @@
 package wres.datamodel.time;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.SortedSet;
-import java.util.TreeSet;
-import java.util.stream.Collectors;
 
 import wres.datamodel.sampledata.SampleDataException;
 
@@ -26,18 +21,6 @@ public class BasicTimeSeries<T> implements TimeSeriesCollection<T>
      */
 
     private final List<TimeSeries<T>> timeSeries;
-
-    /**
-     * Basis times for the data.
-     */
-
-    private final SortedSet<Instant> basisTimes;
-
-    /**
-     * Durations associated with the time-series.
-     */
-
-    private final SortedSet<Duration> durations;
 
     /**
      * Builds a time-series from the input.
@@ -88,18 +71,6 @@ public class BasicTimeSeries<T> implements TimeSeriesCollection<T>
     }
 
     @Override
-    public SortedSet<Instant> getReferenceTimes()
-    {
-        return Collections.unmodifiableSortedSet( this.basisTimes );
-    }
-
-    @Override
-    public SortedSet<Duration> getDurations()
-    {
-        return Collections.unmodifiableSortedSet( this.durations );
-    }
-
-    @Override
     public String toString()
     {
         return TimeSeriesHelper.toString( this );
@@ -145,20 +116,6 @@ public class BasicTimeSeries<T> implements TimeSeriesCollection<T>
         }
 
         this.timeSeries = Collections.unmodifiableList( data );
-        
-        // Set the durations
-        this.durations = this.timeSeries.stream()
-                                  .map( TimeSeries::getEvents )
-                                  .flatMap( SortedSet::stream )
-                                  .map( Event::getDuration )
-                                  .collect( Collectors.toCollection( TreeSet::new ) );
-
-        // Set the basis times
-        this.basisTimes = this.timeSeries.stream()
-                                   .map( TimeSeries::getEvents )
-                                   .flatMap( SortedSet::stream )
-                                   .map( Event::getReferenceTime )
-                                   .collect( Collectors.toCollection( TreeSet::new ) );
     }
 
 }

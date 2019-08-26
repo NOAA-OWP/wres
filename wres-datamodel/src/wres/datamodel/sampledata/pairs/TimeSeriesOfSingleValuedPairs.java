@@ -1,12 +1,8 @@
 package wres.datamodel.sampledata.pairs;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.SortedSet;
 import java.util.stream.Collectors;
 
 import wres.datamodel.sampledata.SampleDataException;
@@ -67,18 +63,6 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
     public List<TimeSeries<SingleValuedPair>> getTimeSeries()
     {
         return main.getTimeSeries();
-    }
-
-    @Override
-    public SortedSet<Instant> getReferenceTimes()
-    {
-        return Collections.unmodifiableSortedSet( main.getReferenceTimes() );
-    }
-
-    @Override
-    public SortedSet<Duration> getDurations()
-    {
-        return Collections.unmodifiableSortedSet( main.getDurations() );
     }
 
     @Override

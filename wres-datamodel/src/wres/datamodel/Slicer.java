@@ -894,7 +894,48 @@ public final class Slicer
         //Return the time-series
         return builder.build();
     }
+    
+    /**
+     * Returns the unique {@link Duration} associated with the input time-series, where a {@link Duration} is the
+     * difference between the {@link Event#getTime()} and the {@link Event#getReferenceTime()}.
+     * 
+     * @param timeSeries the time-series to search
+     * @return the durations
+     * @throws NullPointerException if the input is null
+     */
+    
+    public static <T> SortedSet<Duration> getDurations( List<TimeSeries<T>> timeSeries )
+    {
+        Objects.requireNonNull( timeSeries );
+        
+        SortedSet<Duration> durations = timeSeries.stream()
+                                                  .map( TimeSeries::getEvents )
+                                                  .flatMap( SortedSet::stream )
+                                                  .map( Event::getDuration )
+                                                  .collect( Collectors.toCollection( TreeSet::new ) );
+        
+        return Collections.unmodifiableSortedSet( durations );
+    }
 
+    /**
+     * Returns the unique reference datetime {@link Instant} associated with the input time-series.
+     * 
+     * @param timeSeries the time-series to search
+     * @return the reference datetimes
+     * @throws NullPointerException if the input is null
+     */
+    
+    public static <T> SortedSet<Instant> getReferenceTimes( List<TimeSeries<T>> timeSeries )
+    {
+        Objects.requireNonNull( timeSeries );
+        
+        SortedSet<Instant> referenceTimes = timeSeries.stream()
+                                                      .map( TimeSeries::getReferenceTime )
+                                                      .collect( Collectors.toCollection( TreeSet::new ) );
+
+        return Collections.unmodifiableSortedSet( referenceTimes );
+    }
+    
     /**
      * <p>Returns a subset of metric outputs whose {@link StatisticMetadata} matches the supplied predicate. For 
      * example, to filter by a particular {@link TimeWindow} and {@link OneOrTwoThresholds} associated with the 

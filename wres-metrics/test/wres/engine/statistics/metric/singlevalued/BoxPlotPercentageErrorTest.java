@@ -115,7 +115,7 @@ public final class BoxPlotPercentageErrorTest
         List<BoxPlotStatistic> actualRaw = new ArrayList<>();
 
         // Compute the metric for each duration separately
-        SortedSet<Duration> durations = input.getDurations();
+        SortedSet<Duration> durations = Slicer.getDurations( input.getTimeSeries() );
 
         for ( Duration duration : durations )
         {
