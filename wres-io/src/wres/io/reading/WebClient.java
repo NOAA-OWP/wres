@@ -10,6 +10,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
+import java.util.zip.GZIPInputStream;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -41,7 +42,8 @@ public class WebClient
      * @param uri The URI to GET and transform the body into an InputStream.
      * @return A pair of the HTTP status (left) and InputStream of body (right).
      *         NullInputStream on right when 4xx response.
-     * @throws IOException When sending/receiving fails; when non-2xx non-4xx.
+     * @throws IOException When sending/receiving fails; when non-2xx non-4xx
+     *                     response, when wrapping response to decompress fails.
      * @throws IllegalArgumentException When non-http uri is passed in.
      * @throws NullPointerException When any argument is null.
      */
@@ -57,10 +59,12 @@ public class WebClient
      * @param retryOn A list of http status codes that should cause a retry.
      * @return A pair of the HTTP status (left) and InputStream of body (right).
      *         NullInputStream on right when 4xx response.
-     * @throws IOException When sending/receiving fails; when non-2xx non-4xx.
+     * @throws IOException When sending/receiving fails; when non-2xx non-4xx
+     *                     response, when wrapping response to decompress fails.
      * @throws IllegalArgumentException When non-http uri is passed in.
      * @throws NullPointerException When any argument is null.
      */
+
     public Pair<Integer, InputStream> getFromWeb( URI uri,
                                                   List<Integer> retryOn )
             throws IOException
@@ -80,10 +84,19 @@ public class WebClient
         {
             HttpRequest request = HttpRequest.newBuilder()
                                              .uri( uri )
+                                             .header( "Accept-Encoding", "gzip" )
                                              .build();
             HttpResponse<InputStream> httpResponse =
                     HTTP_CLIENT.send( request,
                                       HttpResponse.BodyHandlers.ofInputStream() );
+
+            if ( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( "For {}, request headers are {} response headers are {}",
+                              uri,
+                              request.headers(),
+                              httpResponse.headers() );
+            }
 
             int httpStatus = httpResponse.statusCode();
 
@@ -114,14 +127,20 @@ public class WebClient
                 }
             }
 
+            Instant end = Instant.now();
+            Duration duration = Duration.between( start, end );
+
             if ( httpStatus >= 200 && httpStatus < 300 )
             {
-                LOGGER.debug( "Successfully got data from {}", uri );
-                return Pair.of( httpStatus, httpResponse.body() );
+                LOGGER.debug( "Successfully got InputStream from {} in {}", uri,
+                              duration );
+                InputStream decodedStream = WebClient.getDecodedInputStream( httpResponse );
+                return Pair.of( httpStatus, decodedStream );
             }
             else if ( httpStatus >= 400 && httpStatus < 500 )
             {
-                LOGGER.debug( "Got empty/not-found data from {}", uri );
+                LOGGER.debug( "Got empty/not-found data from {} in {}", uri,
+                              duration );
                 return Pair.of( httpStatus, InputStream.nullInputStream() );
             }
             else
@@ -129,7 +148,8 @@ public class WebClient
                 throw new IngestException( "Failed to get data from "
                                            + uri
                                            + " due to status code "
-                                           + httpStatus );
+                                           + httpStatus
+                                           + " after " + duration );
             }
         }
         catch ( InterruptedException ie )
@@ -137,6 +157,42 @@ public class WebClient
             LOGGER.warn( "Interrupted while getting data from {}", uri, ie );
             Thread.currentThread().interrupt();
             return Pair.of( -1, InputStream.nullInputStream() );
+        }
+    }
+
+
+    /**
+     * Decode an HttpResponse<InputStream> based on encoding in the header.
+     * Only supports empty/non-existent encoding and gzip encoding.
+     * In other words, unwrap gzipped HTTP responses.
+     * Credit:
+     * https://stackoverflow.com/questions/53502626/does-java-http-client-handle-compression#answer-54064189
+     * @param response The HttpResponse having an InputStream.
+     * @return An InputStream ready for consumption.
+     * @throws IOException When creation of an underlying GZIPInputStream fails.
+     * @throws UnsupportedOperationException When encoding is neither blank nor gzip.
+     */
+
+    private static InputStream getDecodedInputStream( HttpResponse<InputStream> response )
+            throws IOException
+    {
+        InputStream rawStream = response.body();
+        String encoding = response.headers()
+                                  .firstValue( "Content-Encoding" )
+                                  .orElse( "" );
+
+        if ( encoding.equals( "" ) )
+        {
+            return rawStream;
+        }
+        else if ( encoding.equals( "gzip" ) )
+        {
+            return new GZIPInputStream( rawStream );
+        }
+        else
+        {
+            throw new UnsupportedOperationException( "Could not handle Content-Encoding "
+                                                     + encoding );
         }
     }
 }
