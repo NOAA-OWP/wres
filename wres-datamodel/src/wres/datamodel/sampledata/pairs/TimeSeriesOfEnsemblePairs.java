@@ -55,7 +55,7 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
         TimeSeriesOfEnsemblePairsBuilder builder = new TimeSeriesOfEnsemblePairsBuilder();
         builder.setMetadata( this.getMetadataForBaseline() );
         
-        for( TimeSeries<EnsemblePair> next : baseline.referenceTimeIterator() )
+        for( TimeSeries<EnsemblePair> next : baseline.getTimeSeries() )
         {
             builder.addTimeSeries( next );
         }
@@ -68,11 +68,11 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
     {
         return main.eventIterator();
     }
-
+    
     @Override
-    public Iterable<TimeSeries<EnsemblePair>> referenceTimeIterator()
+    public List<TimeSeries<EnsemblePair>> getTimeSeries()
     {
-        return main.referenceTimeIterator();
+        return main.getTimeSeries();
     }
 
     @Override
@@ -177,7 +177,7 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
         {
             Objects.requireNonNull( timeSeries, NULL_INPUT );
 
-            for( TimeSeries<EnsemblePair> next : timeSeries.referenceTimeIterator() )
+            for( TimeSeries<EnsemblePair> next : timeSeries.getTimeSeries() )
             {
                 this.addTimeSeries( next );
             }
@@ -216,7 +216,7 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
         {
             Objects.requireNonNull( timeSeries, NULL_INPUT );
             
-            for( TimeSeries<EnsemblePair> next : timeSeries.referenceTimeIterator() )
+            for( TimeSeries<EnsemblePair> next : timeSeries.getTimeSeries() )
             {
                 this.addTimeSeriesForBaseline( next );
             }

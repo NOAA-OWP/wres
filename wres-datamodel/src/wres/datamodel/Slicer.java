@@ -696,7 +696,7 @@ public final class Slicer
         builder.setMetadata( input.getMetadata() );
 
         // Filter the main pairs and add them
-        for ( TimeSeries<SingleValuedPair> next : input.referenceTimeIterator() )
+        for ( TimeSeries<SingleValuedPair> next : input.getTimeSeries() )
         {
             if ( condition.test( next ) )
             {
@@ -718,7 +718,7 @@ public final class Slicer
         {
             builder.setMetadataForBaseline( input.getBaselineData().getMetadata() );
 
-            for ( TimeSeries<SingleValuedPair> next : input.getBaselineData().referenceTimeIterator() )
+            for ( TimeSeries<SingleValuedPair> next : input.getBaselineData().getTimeSeries() )
             {
                 if ( condition.test( next ) )
                 {
@@ -754,7 +754,7 @@ public final class Slicer
         builder.setMetadata( input.getMetadata() );
 
         //Add the filtered data
-        for ( TimeSeries<SingleValuedPair> a : input.referenceTimeIterator() )
+        for ( TimeSeries<SingleValuedPair> a : input.getTimeSeries() )
         {
             if ( referenceTime.test( a.getReferenceTime() ) )
             {
@@ -820,7 +820,7 @@ public final class Slicer
         builder.setMetadata( input.getMetadata() );
 
         //Add the filtered data
-        for ( TimeSeries<EnsemblePair> a : input.referenceTimeIterator() )
+        for ( TimeSeries<EnsemblePair> a : input.getTimeSeries() )
         {
             if ( referenceTime.test( a.getReferenceTime() ) )
             {
@@ -854,7 +854,7 @@ public final class Slicer
         builder.setMetadata( input.getMetadata() );
 
         //Iterate through the basis times
-        for ( TimeSeries<EnsemblePair> nextSeries : input.referenceTimeIterator() )
+        for ( TimeSeries<EnsemblePair> nextSeries : input.getTimeSeries() )
         {
             SortedSet<Event<EnsemblePair>> rawInput = new TreeSet<>();
 

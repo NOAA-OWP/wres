@@ -55,7 +55,7 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
         TimeSeriesOfSingleValuedPairsBuilder builder = new TimeSeriesOfSingleValuedPairsBuilder();
         builder.setMetadata( this.getMetadataForBaseline() );
         
-        for( TimeSeries<SingleValuedPair> next : baseline.referenceTimeIterator() )
+        for( TimeSeries<SingleValuedPair> next : baseline.getTimeSeries() )
         {
             builder.addTimeSeries( next );
         }
@@ -70,9 +70,9 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
     }
 
     @Override
-    public Iterable<TimeSeries<SingleValuedPair>> referenceTimeIterator()
+    public List<TimeSeries<SingleValuedPair>> getTimeSeries()
     {
-        return main.referenceTimeIterator();
+        return main.getTimeSeries();
     }
 
     @Override
@@ -177,7 +177,7 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
         {
             Objects.requireNonNull( timeSeries, NULL_INPUT );
 
-            for( TimeSeries<SingleValuedPair> next : timeSeries.referenceTimeIterator() )
+            for( TimeSeries<SingleValuedPair> next : timeSeries.getTimeSeries() )
             {
                 this.addTimeSeries( next );
             }
@@ -216,7 +216,7 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
         {
             Objects.requireNonNull( timeSeries, NULL_INPUT );
             
-            for( TimeSeries<SingleValuedPair> next : timeSeries.referenceTimeIterator() )
+            for( TimeSeries<SingleValuedPair> next : timeSeries.getTimeSeries() )
             {
                 this.addTimeSeriesForBaseline( next );
             }
