@@ -43,7 +43,7 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
 import wres.datamodel.thresholds.ThresholdsByMetric;
-import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesA;
 import wres.datamodel.time.TimeWindow;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricCalculationException;
@@ -459,7 +459,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             // Filter the data if required
             if ( useMe.isFinite() )
             {
-                Predicate<TimeSeries<SingleValuedPair>> filter =
+                Predicate<TimeSeriesA<SingleValuedPair>> filter =
                         MetricProcessorByTime.getFilterForTimeSeriesOfSingleValuedPairs( useMe );
 
                 pairs = Slicer.filter( input, filter, null );

@@ -14,7 +14,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.SortedSet;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,8 +27,10 @@ import wres.config.generated.Feature;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
+import wres.datamodel.sampledata.pairs.Pair;
 import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.time.Event;
+import wres.datamodel.time.TimeSeriesA;
 import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
 import wres.io.config.OrderedSampleMetadata;
@@ -456,6 +460,75 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
         return Collections.unmodifiableList( eventPairs );
     }
     
+    /**
+     * Attempts to compose a list of {@link TimeSeriesA} from a list of events.
+     * 
+     * TODO: replace with retrieval based around uniquely identified time-series. In the presence of duplicate events
+     * whose values are different, it is impossible, by definition, to know the time-series to which a duplicate 
+     * belongs; rather time-series must be composed with reference to a time-series identifier.
+     *  
+     * @param <T> the type of event
+     * @param events the events
+     * @return a best guess about the time-series composed by the events
+     */
+
+    static <T extends Pair<?, ?>> List<TimeSeriesA<T>> getTimeSeriesFromListOfEvents( List<Event<T>> events )
+    {
+        Objects.requireNonNull( events );
+
+        // Map the events by reference datetime
+        // Place any duplicates in a separate list and call recursively until no duplicates exist
+        List<Event<T>> duplicates = new ArrayList<>();
+        Map<Instant, SortedSet<Event<T>>> eventsByReferenceTime = new TreeMap<>();
+        List<TimeSeriesA<T>> returnMe = new ArrayList<>();
+
+        // Iterate the events
+        for ( Event<T> nextEvent : events )
+        {
+            Instant referenceTime = nextEvent.getReferenceTime();
+
+            // Existing series
+            if ( eventsByReferenceTime.containsKey( referenceTime ) )
+            {
+                SortedSet<Event<T>> nextSeries = eventsByReferenceTime.get( referenceTime );
+
+                // Duplicate?
+                if ( nextSeries.contains( nextEvent ) )
+                {
+                    duplicates.add( nextEvent );
+                }
+                else
+                {
+                    nextSeries.add( nextEvent );
+                }
+            }
+            // New series
+            else
+            {
+                // Sorted set that checks for times only, not values
+                // In other words, a duplicate is a coincident measurement by time, not value
+                SortedSet<Event<T>> container = new TreeSet<>( ( e1, e2 ) -> e1.getTime().compareTo( e2.getTime() ) );
+
+                //Add the first value
+                container.add( nextEvent );
+                eventsByReferenceTime.put( referenceTime, container );
+            }
+        }
+
+        // Add the time-series
+        for ( Map.Entry<Instant, SortedSet<Event<T>>> nextEntry : eventsByReferenceTime.entrySet() )
+        {
+            returnMe.add( TimeSeriesA.of( nextEntry.getKey(), nextEntry.getValue() ) );
+        }
+        
+        // Add duplicates: this will be called recursively
+        if( !duplicates.isEmpty() )
+        {
+            returnMe.addAll( Retriever.getTimeSeriesFromListOfEvents( duplicates ) );
+        }
+
+        return Collections.unmodifiableList( returnMe );
+    }
     
     /**
      * Returns <code>true if the left value is finite and one or more of the right values is finite, otherwise 

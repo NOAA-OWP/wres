@@ -15,7 +15,7 @@ import org.junit.rules.ExpectedException;
 
 import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
-import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesA;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
 /**
@@ -30,7 +30,7 @@ public final class TimingErrorHelperTest
     public final ExpectedException exception = ExpectedException.none();
 
     /**
-     * Tests the {@link TimingErrorHelper#getTimeToPeak(wres.datamodel.time.TimeSeries, java.util.Random) with data
+     * Tests the {@link TimingErrorHelper#getTimeToPeak(wres.datamodel.time.TimeSeriesCollection, java.util.Random) with data
      * that does not contain ties.
      */
 
@@ -41,9 +41,9 @@ public final class TimingErrorHelperTest
         // Generate some data
         TimeSeriesOfSingleValuedPairs input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
 
-        Iterator<TimeSeries<SingleValuedPair>> iterator = input.referenceTimeIterator().iterator();
-        TimeSeries<SingleValuedPair> first = iterator.next();
-        TimeSeries<SingleValuedPair> second = iterator.next();
+        Iterator<TimeSeriesA<SingleValuedPair>> iterator = input.referenceTimeIterator().iterator();
+        TimeSeriesA<SingleValuedPair> first = iterator.next();
+        TimeSeriesA<SingleValuedPair> second = iterator.next();
 
         //Generate some data using an RNG for a uniform U[0,1] distribution with a fixed seed
         Random r = new Random( 12345678 );
@@ -64,7 +64,7 @@ public final class TimingErrorHelperTest
     }
 
     /**
-     * Tests the {@link TimingErrorHelper#getTimeToPeak(wres.datamodel.time.TimeSeries, java.util.Random) with data
+     * Tests the {@link TimingErrorHelper#getTimeToPeak(wres.datamodel.time.TimeSeriesCollection, java.util.Random) with data
      * that contains ties.
      */
 
@@ -73,11 +73,13 @@ public final class TimingErrorHelperTest
     {
         // Generate some data
         TimeSeriesOfSingleValuedPairs input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsFive();
+        Iterator<TimeSeriesA<SingleValuedPair>> iterator = input.referenceTimeIterator().iterator();
+        TimeSeriesA<SingleValuedPair> first = iterator.next();
 
         //Generate some data using an RNG for a uniform U[0,1] distribution with a fixed seed
         Random r = new Random( 12345678 );
 
-        Pair<Instant, Instant> actualPeaks = TimingErrorHelper.getTimeToPeak( input, r );
+        Pair<Instant, Instant> actualPeaks = TimingErrorHelper.getTimeToPeak( first, r );
 
         Pair<Instant, Instant> expectedPeaks =
                 Pair.of( Instant.parse( "1985-01-02T06:00:00Z" ), Instant.parse( "1985-01-02T18:00:00Z" ) );

@@ -30,6 +30,7 @@ import wres.datamodel.sampledata.pairs.TimeSeriesOfEnsemblePairs.TimeSeriesOfEns
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.time.Event;
+import wres.datamodel.time.TimeSeriesA;
 import wres.grid.client.Fetcher;
 import wres.grid.client.Request;
 import wres.grid.client.Response;
@@ -174,7 +175,8 @@ class SampleDataRetriever extends Retriever
 
         List<Event<SingleValuedPair>> events = this.getSingleValuedEvents( this.getPrimaryPairs() );
         
-        builder.addTimeSeries( events );
+        List<TimeSeriesA<SingleValuedPair>> timeSeries = Retriever.getTimeSeriesFromListOfEvents( events );
+        timeSeries.forEach( builder::addTimeSeries );
         builder.setMetadata( this.getSampleMetadata().getMetadata() );
 
         // #67532
@@ -183,7 +185,8 @@ class SampleDataRetriever extends Retriever
         if ( project.hasBaseline() )
         {
             events = this.getSingleValuedEvents( this.getBaselinePairs() );
-            builder.addTimeSeriesDataForBaseline( events );
+            List<TimeSeriesA<SingleValuedPair>> timeSeriesBase = Retriever.getTimeSeriesFromListOfEvents( events );
+            timeSeriesBase.forEach( builder::addTimeSeriesForBaseline );
             builder.setMetadataForBaseline( this.getSampleMetadata().getBaselineMetadata() );
         }
 
@@ -211,7 +214,8 @@ class SampleDataRetriever extends Retriever
 
         List<Event<EnsemblePair>> events = this.getPrimaryPairs();
 
-        builder.addTimeSeries( events );
+        List<TimeSeriesA<EnsemblePair>> timeSeries = Retriever.getTimeSeriesFromListOfEvents( events );
+        timeSeries.forEach( builder::addTimeSeries );
         builder.setMetadata( this.getSampleMetadata().getMetadata() );
          
         // #67532
@@ -220,7 +224,8 @@ class SampleDataRetriever extends Retriever
         if ( project.hasBaseline() )
         {
             events = this.getBaselinePairs();
-            builder.addTimeSeriesDataForBaseline( events );
+            List<TimeSeriesA<EnsemblePair>> timeSeriesBase = Retriever.getTimeSeriesFromListOfEvents( events );
+            timeSeriesBase.forEach( builder::addTimeSeriesForBaseline );
             builder.setMetadataForBaseline( this.getSampleMetadata().getBaselineMetadata() );
         }
 

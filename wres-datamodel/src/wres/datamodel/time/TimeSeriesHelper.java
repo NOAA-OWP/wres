@@ -22,13 +22,13 @@ public class TimeSeriesHelper
     static final String UNSUPPORTED_MODIFICATION = "While attempting to modify an immutable time-series.";
 
     /**
-     * Returns a string representation of the {@link TimeSeries}.
+     * Returns a string representation of the {@link TimeSeriesCollection}.
      * @param <T> the type of time-series
      * @param timeSeries the input time-series
      * @return a string representation
      */
     
-    public static <T> String toString( TimeSeries<T> timeSeries )
+    public static <T> String toString( TimeSeriesCollection<T> timeSeries )
     {
         StringJoiner joiner = new StringJoiner( System.lineSeparator() );
     

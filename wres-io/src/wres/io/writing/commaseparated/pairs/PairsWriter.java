@@ -26,7 +26,8 @@ import wres.datamodel.sampledata.pairs.Pair;
 import wres.datamodel.sampledata.pairs.Pairs;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.Event;
-import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesA;
+import wres.datamodel.time.TimeSeriesCollection;
 import wres.datamodel.time.TimeWindow;
 import wres.io.writing.WriteException;
 import wres.io.writing.commaseparated.CommaSeparatedUtilities;
@@ -45,7 +46,7 @@ import wres.util.TimeHelper;
  * @author james.brown@hydrosolved.com
  */
 
-public abstract class PairsWriter<S extends Pair<?,?>, T extends Pairs<S> & TimeSeries<S>>
+public abstract class PairsWriter<S extends Pair<?,?>, T extends Pairs<S> & TimeSeriesCollection<S>>
         implements Consumer<T>, Supplier<Path>, Closeable
 {
 
@@ -254,11 +255,11 @@ public abstract class PairsWriter<S extends Pair<?,?>, T extends Pairs<S> & Time
                 {
 
                     // Iterate in time-series order
-                    for ( TimeSeries<S> nextSeries : pairs.referenceTimeIterator() )
+                    for ( TimeSeriesA<S> nextSeries : pairs.referenceTimeIterator() )
                     {
-                        Instant basisTime = nextSeries.getReferenceTimes().first();
+                        Instant basisTime = nextSeries.getReferenceTime();
 
-                        for ( Event<S> nextPair : nextSeries.eventIterator() )
+                        for ( Event<S> nextPair : nextSeries.getEvents() )
                         {
 
                             // Move to next line

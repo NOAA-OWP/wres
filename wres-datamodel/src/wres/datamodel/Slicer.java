@@ -46,7 +46,8 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdType;
 import wres.datamodel.time.Event;
-import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesA;
+import wres.datamodel.time.TimeSeriesCollection;
 import wres.datamodel.time.TimeWindow;
 
 /**
@@ -287,7 +288,7 @@ public final class Slicer
      * @throws NullPointerException if the input is null
      */
 
-    public static Predicate<TimeSeries<SingleValuedPair>>
+    public static Predicate<TimeSeriesA<SingleValuedPair>>
             anyOfLeftInTimeSeriesOfSingleValuedPairs( DoublePredicate predicate )
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing a time-series by any of left." );
@@ -295,7 +296,7 @@ public final class Slicer
         return times -> {
 
             // Iterate the times
-            for ( Event<SingleValuedPair> next : times.eventIterator() )
+            for ( Event<SingleValuedPair> next : times.getEvents() )
             {
                 // Condition is met for one time
                 if ( predicate.test( next.getValue().getLeft() ) )
@@ -318,7 +319,7 @@ public final class Slicer
      * @throws NullPointerException if the input is null
      */
 
-    public static Predicate<TimeSeries<SingleValuedPair>>
+    public static Predicate<TimeSeriesA<SingleValuedPair>>
             anyOfRightInTimeSeriesOfSingleValuedPairs( DoublePredicate predicate )
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing a time-series by any of right." );
@@ -326,7 +327,7 @@ public final class Slicer
         return times -> {
 
             // Iterate the times
-            for ( Event<SingleValuedPair> next : times.eventIterator() )
+            for ( Event<SingleValuedPair> next : times.getEvents() )
             {
                 // Condition is met for one time
                 if ( predicate.test( next.getValue().getRight() ) )
@@ -350,7 +351,7 @@ public final class Slicer
      * @throws NullPointerException if the input is null
      */
 
-    public static Predicate<TimeSeries<SingleValuedPair>>
+    public static Predicate<TimeSeriesA<SingleValuedPair>>
             anyOfLeftAndAnyOfRightInTimeSeriesOfSingleValuedPairs( DoublePredicate predicate )
     {
         Objects.requireNonNull( predicate,
@@ -682,7 +683,7 @@ public final class Slicer
      */
 
     public static TimeSeriesOfSingleValuedPairs filter( TimeSeriesOfSingleValuedPairs input,
-                                                        Predicate<TimeSeries<SingleValuedPair>> condition,
+                                                        Predicate<TimeSeriesA<SingleValuedPair>> condition,
                                                         DoublePredicate applyToClimatology )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
@@ -695,7 +696,7 @@ public final class Slicer
         builder.setMetadata( input.getMetadata() );
 
         // Filter the main pairs and add them
-        for ( TimeSeries<SingleValuedPair> next : input.referenceTimeIterator() )
+        for ( TimeSeriesA<SingleValuedPair> next : input.referenceTimeIterator() )
         {
             if ( condition.test( next ) )
             {
@@ -717,7 +718,7 @@ public final class Slicer
         {
             builder.setMetadataForBaseline( input.getBaselineData().getMetadata() );
 
-            for ( TimeSeries<SingleValuedPair> next : input.getBaselineData().referenceTimeIterator() )
+            for ( TimeSeriesA<SingleValuedPair> next : input.getBaselineData().referenceTimeIterator() )
             {
                 if ( condition.test( next ) )
                 {
@@ -753,9 +754,9 @@ public final class Slicer
         builder.setMetadata( input.getMetadata() );
 
         //Add the filtered data
-        for ( TimeSeries<SingleValuedPair> a : input.referenceTimeIterator() )
+        for ( TimeSeriesA<SingleValuedPair> a : input.referenceTimeIterator() )
         {
-            if ( referenceTime.test( a.getReferenceTimes().first() ) )
+            if ( referenceTime.test( a.getReferenceTime() ) )
             {
                 builder.addTimeSeries( a );
             }
@@ -775,7 +776,7 @@ public final class Slicer
      * @throws NullPointerException if either the input or condition is null
      */
 
-    public static <T> List<Event<T>> filterByDuration( TimeSeries<T> input, Predicate<Duration> duration )
+    public static <T> List<Event<T>> filterByDuration( TimeSeriesCollection<T> input, Predicate<Duration> duration )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
@@ -819,9 +820,9 @@ public final class Slicer
         builder.setMetadata( input.getMetadata() );
 
         //Add the filtered data
-        for ( TimeSeries<EnsemblePair> a : input.referenceTimeIterator() )
+        for ( TimeSeriesA<EnsemblePair> a : input.referenceTimeIterator() )
         {
-            if ( referenceTime.test( a.getReferenceTimes().first() ) )
+            if ( referenceTime.test( a.getReferenceTime() ) )
             {
                 builder.addTimeSeries( a );
             }
@@ -831,7 +832,7 @@ public final class Slicer
     }
 
     /**
-     * Returns a {@link TimeSeries} whose elements are filtered according to the zero-based index of the ensemble trace 
+     * Returns a {@link TimeSeriesCollection} whose elements are filtered according to the zero-based index of the ensemble trace 
      * or null if no such time-series exist.
      * 
      * @param input the pairs to slice
@@ -853,12 +854,12 @@ public final class Slicer
         builder.setMetadata( input.getMetadata() );
 
         //Iterate through the basis times
-        for ( TimeSeries<EnsemblePair> nextSeries : input.referenceTimeIterator() )
+        for ( TimeSeriesA<EnsemblePair> nextSeries : input.referenceTimeIterator() )
         {
-            List<Event<EnsemblePair>> rawInput = new ArrayList<>();
+            SortedSet<Event<EnsemblePair>> rawInput = new TreeSet<>();
 
             //Iterate through the pairs
-            for ( Event<EnsemblePair> next : nextSeries.eventIterator() )
+            for ( Event<EnsemblePair> next : nextSeries.getEvents() )
             {
                 //Reform the pairs with a subset of ensemble members
                 double[] allTraces = next.getValue().getRight();
@@ -881,7 +882,10 @@ public final class Slicer
                                         EnsemblePair.of( next.getValue().getLeft(),
                                                          subTraces.toArray( new Double[subTraces.size()] ) ) ) );
             }
-            builder.addTimeSeries( rawInput );
+            
+            builder.addTimeSeries( TimeSeriesA.of( nextSeries.getReferenceTime(),
+                                                   nextSeries.getReferenceTimeType(),
+                                                   rawInput ) );
         }
 
         //Return the time-series
