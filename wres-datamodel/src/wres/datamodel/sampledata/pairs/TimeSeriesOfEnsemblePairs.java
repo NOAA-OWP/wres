@@ -62,12 +62,6 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
         
         return builder.build();
     }
-
-    @Override
-    public Iterable<Event<EnsemblePair>> eventIterator()
-    {
-        return main.eventIterator();
-    }
     
     @Override
     public List<TimeSeries<EnsemblePair>> getTimeSeries()

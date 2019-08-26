@@ -30,11 +30,16 @@ public class TimeSeriesHelper
     
     public static <T> String toString( TimeSeriesCollection<T> timeSeries )
     {
+        Objects.requireNonNull( timeSeries );
+        
         StringJoiner joiner = new StringJoiner( System.lineSeparator() );
-    
-        for ( Event<T> nextEvent : timeSeries.eventIterator() )
+        
+        for ( TimeSeries<T> nextSeries : timeSeries.getTimeSeries() )
         {
-            joiner.add( nextEvent.toString() );
+            for ( Event<T> nextEvent : nextSeries.getEvents() )
+            {
+                joiner.add( nextEvent.toString() );
+            }
         }
     
         return joiner.toString();
