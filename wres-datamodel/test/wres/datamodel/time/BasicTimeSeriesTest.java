@@ -106,7 +106,7 @@ public final class BasicTimeSeriesTest
     {
         // Actual durations
         List<Instant> actual = new ArrayList<>();
-        defaultTimeSeries.getTimeSeries().forEach( next -> actual.add( next.getReferenceTime() ) );
+        defaultTimeSeries.get().forEach( next -> actual.add( next.getReferenceTime() ) );
 
         // Expected durations
         List<Instant> expected = new ArrayList<>();
@@ -175,7 +175,7 @@ public final class BasicTimeSeriesTest
     {
         exception.expect( UnsupportedOperationException.class );
 
-        Iterator<TimeSeries<Double>> immutableTimeSeries = defaultTimeSeries.getTimeSeries().iterator();
+        Iterator<TimeSeries<Double>> immutableTimeSeries = defaultTimeSeries.get().iterator();
         immutableTimeSeries.next();
         immutableTimeSeries.remove();
     }

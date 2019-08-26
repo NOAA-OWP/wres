@@ -115,14 +115,14 @@ public final class BoxPlotPercentageErrorTest
         List<BoxPlotStatistic> actualRaw = new ArrayList<>();
 
         // Compute the metric for each duration separately
-        SortedSet<Duration> durations = Slicer.getDurations( input.getTimeSeries() );
+        SortedSet<Duration> durations = Slicer.getDurations( input.get() );
 
         for ( Duration duration : durations )
         {
-            List<Event<SingleValuedPair>> events = Slicer.filterByDuration( input, a -> a.equals( duration ) );
+            List<Event<SingleValuedPair>> events = Slicer.filterByDuration( input.get(), a -> a.equals( duration ) );
             TimeSeriesOfSingleValuedPairsBuilder builder = new TimeSeriesOfSingleValuedPairsBuilder();
             builder.setMetadata( input.getMetadata() );
-            for( Event<SingleValuedPair> next : events ) 
+            for ( Event<SingleValuedPair> next : events )
             {
                 builder.addTimeSeries( TimeSeries.of( new TreeSet<>( Collections.singleton( next ) ) ) );
             }

@@ -3,6 +3,7 @@ package wres.datamodel.sampledata.pairs;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import wres.datamodel.sampledata.SampleDataException;
@@ -10,24 +11,23 @@ import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.time.BasicTimeSeries;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
-import wres.datamodel.time.TimeSeriesCollection;
-import wres.datamodel.time.TimeSeriesCollectionBuilder;
 import wres.datamodel.time.TimeSeriesHelper;
 
 /**
- * <p>A {@link TimeSeriesCollection} of {@link SingleValuedPairs}.</p>
+ * <p>A collection of {@link TimeSeries} of {@link SingleValuedPairs}.</p>
  * 
  * @author james.brown@hydrosolved.com
  */
-public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements TimeSeriesCollection<SingleValuedPair>
+public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs
+        implements Supplier<List<TimeSeries<SingleValuedPair>>>
 {
 
     /**
      * Warning for null input.
      */
-    
+
     private static final String NULL_INPUT = "Specify non-null time-series input.";
-    
+
     /**
      * Instance of base class for a time-series of pairs.
      */
@@ -47,28 +47,28 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
         {
             return null;
         }
-        
+
         TimeSeriesOfSingleValuedPairsBuilder builder = new TimeSeriesOfSingleValuedPairsBuilder();
         builder.setMetadata( this.getMetadataForBaseline() );
-        
-        for( TimeSeries<SingleValuedPair> next : baseline.getTimeSeries() )
+
+        for ( TimeSeries<SingleValuedPair> next : baseline.get() )
         {
             builder.addTimeSeries( next );
         }
-        
+
         return builder.build();
     }
 
     @Override
-    public List<TimeSeries<SingleValuedPair>> getTimeSeries()
+    public List<TimeSeries<SingleValuedPair>> get()
     {
-        return main.getTimeSeries();
+        return main.get();
     }
 
     @Override
     public String toString()
     {
-        return TimeSeriesHelper.toString( this );
+        return TimeSeriesHelper.toString( this.get() );
     }
 
     /**
@@ -76,7 +76,6 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
      */
 
     public static class TimeSeriesOfSingleValuedPairsBuilder extends SingleValuedPairsBuilder
-            implements TimeSeriesCollectionBuilder<SingleValuedPair>
     {
 
         /**
@@ -90,7 +89,7 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
          */
 
         private List<TimeSeries<SingleValuedPair>> baselineData = null;
-        
+
         /**
          * Adds a time-series to the builder.
          * 
@@ -99,21 +98,21 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
          * @throws SampleDataException if the specified input is inconsistent with any existing input
          * @throws NullPointerException if the input is null
          */
-        @Override
+        
         public TimeSeriesOfSingleValuedPairsBuilder addTimeSeries( TimeSeries<SingleValuedPair> timeSeries )
         {
             Objects.requireNonNull( timeSeries, NULL_INPUT );
-            
+
             this.data.add( timeSeries );
-            
+
             this.addData( timeSeries.getEvents()
                                     .stream()
                                     .map( Event::getValue )
                                     .collect( Collectors.toList() ) );
-            
+
             return this;
         }
-        
+
         /**
          * Adds a time-series to the builder for a baseline dataset.
          * 
@@ -127,13 +126,13 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
         {
             Objects.requireNonNull( timeSeries, NULL_INPUT );
 
-            if( Objects.isNull( this.baselineData ) )
+            if ( Objects.isNull( this.baselineData ) )
             {
                 this.baselineData = new ArrayList<>();
             }
-            
+
             this.baselineData.add( timeSeries );
-            
+
             this.addDataForBaseline( timeSeries.getEvents()
                                                .stream()
                                                .map( Event::getValue )
@@ -155,7 +154,7 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
         {
             Objects.requireNonNull( timeSeries, NULL_INPUT );
 
-            for( TimeSeries<SingleValuedPair> next : timeSeries.getTimeSeries() )
+            for ( TimeSeries<SingleValuedPair> next : timeSeries.get() )
             {
                 this.addTimeSeries( next );
             }
@@ -193,8 +192,8 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
         public TimeSeriesOfSingleValuedPairsBuilder addTimeSeriesForBaseline( TimeSeriesOfSingleValuedPairs timeSeries )
         {
             Objects.requireNonNull( timeSeries, NULL_INPUT );
-            
-            for( TimeSeries<SingleValuedPair> next : timeSeries.getTimeSeries() )
+
+            for ( TimeSeries<SingleValuedPair> next : timeSeries.get() )
             {
                 this.addTimeSeriesForBaseline( next );
             }
