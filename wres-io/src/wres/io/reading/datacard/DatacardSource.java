@@ -71,6 +71,16 @@ public class DatacardSource extends BasicSource
         super( projectConfig, dataSource );
         this.lockManager = lockManager;
 	}
+    
+    private void setMeasurementUnitStr(String str)
+    {
+        this.measurementUnitStr = str;
+    }
+    
+    private String getMeasurementUnitStr()
+    {
+        return this.measurementUnitStr;
+    }
 
     private void setTimeInterval(String interval)
     {
@@ -153,7 +163,8 @@ public class DatacardSource extends BasicSource
         }
 
 		Path path = Paths.get(getFilename());
-										
+			
+		//Datacard reader.
 		try (BufferedReader reader = Files.newBufferedReader(path))
 		{
 			String line;
@@ -161,7 +172,8 @@ public class DatacardSource extends BasicSource
 			int obsValColWidth = 0;
 			int lastColIdx;
 			
-			//Process the comment lines. 
+			//Skip comment lines.  It is assumed that comments only exist at the beginning of the file, which
+			//I believe is consistent with format requirements.
 		    while ((line = reader.readLine()) != null && line.startsWith("$"))
 			{
 				lineNumber++;
@@ -169,18 +181,23 @@ public class DatacardSource extends BasicSource
                               lineNumber );
 			}
 
-            //First non-comment, header line.
+            //Process the first non-comment line if found, which is one of two header lines.
             if (line != null)
             {
+                //Store measurement unit, which is to be processed later.
+                setMeasurementUnitStr(line.substring( 24, 28 ).trim());
+                
+                //Process time interval.
                 setTimeInterval(line.substring(29, 31));
                 if ( line.length() > 45 )
                 {
+                    //Location id.  Currently using only the first five chars, trimmed.  Trimming is dangerous.
                     String locationId = line.substring( 34, 45 );
-                    // Currently using only the first five chars, trimmed
                     String lid = locationId.substring( 0, 5 )
                                            .trim();
                     setCurrentLocationId( lid );
 
+                    //Check for conflict between found location id and ids specified in configuration.
                     if ( getSpecifiedLocationID() != null
                          && !getSpecifiedLocationID().isEmpty()
                          && !lid.isEmpty()
@@ -226,7 +243,7 @@ public class DatacardSource extends BasicSource
                 throw new InvalidInputDataException( message );
             }
 
-			//Second non-comment, header line.
+			//Process the second non-comment header line.
 			if ((line = reader.readLine()) != null)
 			{
 			    lineNumber++;
@@ -249,6 +266,7 @@ public class DatacardSource extends BasicSource
                 throw new InvalidInputDataException( message );
             }
 
+			//Onto the rest of the file...
             LocalDateTime  localDateTime  = LocalDateTime.of( getFirstYear(),
                                                               getFirstMonth(),
                                                               1,
@@ -256,12 +274,13 @@ public class DatacardSource extends BasicSource
                                                               0,
                                                               0 );
             int valIdxInRecord;
-
 			int startIdx;
 			int endIdx;
 
             DataSourceConfig.Source source = this.getSourceConfig();
 
+            //Zone offset is required configuration since datacard does not specify
+            //its time zone.  Process it.
             ZoneOffset offset = ConfigHelper.getZoneOffset( source );
             LOGGER.debug( "{} is configured offset", offset );
 
@@ -278,13 +297,12 @@ public class DatacardSource extends BasicSource
                                  + "zoneOffset for this data file.";
                 throw new ProjectConfigException( source, message );
             }
-
             OffsetDateTime offsetDateTime = localDateTime.atOffset( offset );
             LocalDateTime utcDateTime =
                     offsetDateTime.withOffsetSameInstant( ZoneOffset.UTC )
                                   .toLocalDateTime();
 
-			//Process the lines one at a time.
+			//Process the data lines one at a time.
 			while ((line = reader.readLine()) != null)
 			{
 			    lineNumber++;
@@ -387,7 +405,7 @@ public class DatacardSource extends BasicSource
 	{
 		if(currentMeasurementUnitID == null)
 		{
-			currentMeasurementUnitID = MeasurementUnits.getMeasurementUnitID(getSpecifiedVariableUnit());
+			currentMeasurementUnitID = MeasurementUnits.getMeasurementUnitID(getMeasurementUnitStr());
 		}
 		
 		return currentMeasurementUnitID ;
@@ -588,6 +606,11 @@ public class DatacardSource extends BasicSource
 	private String creationDateTime = null;
 
 	private Integer VariableFeatureID = null;
+	
+	/**
+	 * Stores the measurement unit found in the datacard header, first line, characters 25:28.
+	 */
+	private String measurementUnitStr;
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(DatacardSource.class);
 
