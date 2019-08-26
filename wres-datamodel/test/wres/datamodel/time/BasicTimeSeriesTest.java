@@ -91,9 +91,9 @@ public final class BasicTimeSeriesTest
         second.add( Event.of( secondBasisTime, Instant.parse( FOURTH_TIME ), 3.0 ) );
         second.add( Event.of( secondBasisTime, Instant.parse( FIFTH_TIME ), 4.0 ) );
 
-        defaultTimeSeries = (BasicTimeSeries<Double>) b.addTimeSeries( TimeSeriesA.of( firstBasisTime,
+        defaultTimeSeries = (BasicTimeSeries<Double>) b.addTimeSeries( TimeSeries.of( firstBasisTime,
                                                                                        first ) )
-                                                       .addTimeSeries( TimeSeriesA.of( secondBasisTime,
+                                                       .addTimeSeries( TimeSeries.of( secondBasisTime,
                                                                                        second ) )
                                                        .build();
     }
@@ -175,7 +175,7 @@ public final class BasicTimeSeriesTest
         Instant basisTime = Instant.parse( FIRST_TIME );
         values.add( Event.of( basisTime, Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
 
-        b.addTimeSeries( TimeSeriesA.of( basisTime, values ) );
+        b.addTimeSeries( TimeSeries.of( basisTime, values ) );
 
         //Check dataset count
         assertTrue( b.build().getReferenceTimes().size() == 1 );
@@ -185,7 +185,7 @@ public final class BasicTimeSeriesTest
         SortedSet<Event<SingleValuedPair>> otherValues = new TreeSet<>();
         otherValues.add( Event.of( nextBasisTime, Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
 
-        b.addTimeSeries( TimeSeriesA.of( nextBasisTime, otherValues ) );
+        b.addTimeSeries( TimeSeries.of( nextBasisTime, otherValues ) );
 
         assertTrue( b.build().getReferenceTimes().size() == 2 );
     }
@@ -202,12 +202,12 @@ public final class BasicTimeSeriesTest
         BasicTimeSeriesBuilder<SingleValuedPair> b = new BasicTimeSeriesBuilder<>();
         Instant basisTime = Instant.parse( FIRST_TIME );
         values.add( Event.of( basisTime, Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
-        b.addTimeSeries( TimeSeriesA.of( basisTime, ReferenceTimeType.UNKNOWN, values ) );
+        b.addTimeSeries( TimeSeries.of( basisTime, ReferenceTimeType.UNKNOWN, values ) );
 
         Instant nextBasisTime = Instant.parse( SECOND_TIME );
         SortedSet<Event<SingleValuedPair>> otherValues = new TreeSet<>();
         otherValues.add( Event.of( nextBasisTime, Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
-        b.addTimeSeries( TimeSeriesA.of( nextBasisTime, otherValues ) );
+        b.addTimeSeries( TimeSeries.of( nextBasisTime, otherValues ) );
 
         TimeSeriesCollection<SingleValuedPair> pairs = b.build();
 
@@ -236,7 +236,7 @@ public final class BasicTimeSeriesTest
         values.add( Event.of( basisTime, Instant.parse( THIRD_TIME ), SingleValuedPair.of( 2, 2 ) ) );
         values.add( Event.of( basisTime, Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 3, 3 ) ) );
 
-        b.addTimeSeries( TimeSeriesA.of( basisTime, values ) );
+        b.addTimeSeries( TimeSeries.of( basisTime, values ) );
 
         //Check dataset count
         assertTrue( b.build().getDurations().size() == 3 );
@@ -271,7 +271,7 @@ public final class BasicTimeSeriesTest
         exception.expect( NoSuchElementException.class );
         exception.expectMessage( "No more reference times to iterate." );
 
-        Iterator<TimeSeriesA<Double>> noneSuchBasis = defaultTimeSeries.referenceTimeIterator().iterator();
+        Iterator<TimeSeries<Double>> noneSuchBasis = defaultTimeSeries.referenceTimeIterator().iterator();
         noneSuchBasis.forEachRemaining( Objects::isNull );
         noneSuchBasis.next();
     }
@@ -303,7 +303,7 @@ public final class BasicTimeSeriesTest
         exception.expect( UnsupportedOperationException.class );
         exception.expectMessage( WHILE_ATTEMPTING_TO_MODIFY_AN_IMMUTABLE_TIME_SERIES );
 
-        Iterator<TimeSeriesA<Double>> immutableTimeSeries = defaultTimeSeries.referenceTimeIterator().iterator();
+        Iterator<TimeSeries<Double>> immutableTimeSeries = defaultTimeSeries.referenceTimeIterator().iterator();
         immutableTimeSeries.next();
         immutableTimeSeries.remove();
     }
@@ -317,7 +317,7 @@ public final class BasicTimeSeriesTest
     {
         exception.expect( SampleDataException.class );
         exception.expectMessage( "One or more time-series is null." );
-        new BasicTimeSeriesBuilder<Double>().addTimeSeries( (TimeSeriesA<Double>) null ).build();
+        new BasicTimeSeriesBuilder<Double>().addTimeSeries( (TimeSeries<Double>) null ).build();
 
     }
 

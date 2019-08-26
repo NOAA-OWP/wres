@@ -36,7 +36,7 @@ import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
-import wres.datamodel.time.TimeSeriesA;
+import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindow;
 
 /**
@@ -572,10 +572,10 @@ public final class MetricTestDataFactory
 
         tsBuilder.setMetadata( metaData );
 
-        return tsBuilder.addTimeSeries( TimeSeriesA.of( basisTimeOne, ReferenceTimeType.UNKNOWN, first ) )
-                        .addTimeSeries( TimeSeriesA.of( basisTimeTwo, ReferenceTimeType.UNKNOWN, second ) )
-                        .addTimeSeries( TimeSeriesA.of( basisTimeThree, ReferenceTimeType.UNKNOWN, third ) )
-                        .addTimeSeries( TimeSeriesA.of( basisTimeFour, ReferenceTimeType.UNKNOWN, fourth ) )
+        return tsBuilder.addTimeSeries( TimeSeries.of( basisTimeOne, ReferenceTimeType.UNKNOWN, first ) )
+                        .addTimeSeries( TimeSeries.of( basisTimeTwo, ReferenceTimeType.UNKNOWN, second ) )
+                        .addTimeSeries( TimeSeries.of( basisTimeThree, ReferenceTimeType.UNKNOWN, third ) )
+                        .addTimeSeries( TimeSeries.of( basisTimeFour, ReferenceTimeType.UNKNOWN, fourth ) )
                         .build();
     }
 
@@ -1380,10 +1380,10 @@ public final class MetricTestDataFactory
                                                                    .setTimeWindow( window )
                                                                    .build();
         // Build the time-series
-        return (TimeSeriesOfSingleValuedPairs) builder.addTimeSeries( TimeSeriesA.of( firstId,
+        return (TimeSeriesOfSingleValuedPairs) builder.addTimeSeries( TimeSeries.of( firstId,
                                                                                       ReferenceTimeType.UNKNOWN,
                                                                                       firstValues ) )
-                                                      .addTimeSeries( TimeSeriesA.of( secondId,
+                                                      .addTimeSeries( TimeSeries.of( secondId,
                                                                                       ReferenceTimeType.UNKNOWN,
                                                                                       secondValues ) )
                                                       .setMetadata( metaData )
@@ -1420,7 +1420,7 @@ public final class MetricTestDataFactory
                                                                    .setTimeWindow( window )
                                                                    .build();
         // Build the time-series
-        return (TimeSeriesOfSingleValuedPairs) builder.addTimeSeries( TimeSeriesA.of( firstId,
+        return (TimeSeriesOfSingleValuedPairs) builder.addTimeSeries( TimeSeries.of( firstId,
                                                                                       ReferenceTimeType.UNKNOWN,
                                                                                       firstValues ) )
                                                       .setMetadata( metaData )
@@ -1461,7 +1461,7 @@ public final class MetricTestDataFactory
                                                                    .setTimeWindow( window )
                                                                    .build();
         // Build the time-series
-        return (TimeSeriesOfSingleValuedPairs) builder.addTimeSeries( TimeSeriesA.of( secondId,
+        return (TimeSeriesOfSingleValuedPairs) builder.addTimeSeries( TimeSeries.of( secondId,
                                                                                       ReferenceTimeType.UNKNOWN,
                                                                                       secondValues ) )
                                                       .setMetadata( metaData )
@@ -1532,7 +1532,7 @@ public final class MetricTestDataFactory
                                                                    .setTimeWindow( window )
                                                                    .build();
         // Build the time-series
-        return (TimeSeriesOfSingleValuedPairs) builder.addTimeSeries( TimeSeriesA.of( secondId,
+        return (TimeSeriesOfSingleValuedPairs) builder.addTimeSeries( TimeSeries.of( secondId,
                                                                                       ReferenceTimeType.UNKNOWN,
                                                                                       secondValues ) )
                                                       .setMetadata( metaData )

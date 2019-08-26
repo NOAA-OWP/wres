@@ -14,15 +14,15 @@ import java.util.TreeSet;
 import org.junit.Before;
 import org.junit.Test;
 
-import wres.datamodel.time.TimeSeriesA.TimeSeriesBuilder;
+import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 
 /**
- * Tests the {@link TimeSeriesA}
+ * Tests the {@link TimeSeries}
  * 
  * @author james.brown@hydrosolved.com
  */
 
-public class TimeSeriesATest
+public class TimeSeriesTest
 {
 
     /**
@@ -35,7 +35,7 @@ public class TimeSeriesATest
      * A time-series.
      */
 
-    private TimeSeriesA<Double> testSeries;
+    private TimeSeries<Double> testSeries;
 
     /**
      * A reference time.
@@ -67,7 +67,7 @@ public class TimeSeriesATest
     }
 
     /**
-     * Tests the {@link TimeSeriesA#getReferenceTime()}.
+     * Tests the {@link TimeSeries#getReferenceTime()}.
      */
 
     @Test
@@ -77,7 +77,7 @@ public class TimeSeriesATest
     }
 
     /**
-     * Tests the {@link TimeSeriesA#getReferenceTimeType()}.
+     * Tests the {@link TimeSeries#getReferenceTimeType()}.
      */
 
     @Test
@@ -87,7 +87,7 @@ public class TimeSeriesATest
     }
 
     /**
-     * Tests the {@link TimeSeriesA#getEvents()}.
+     * Tests the {@link TimeSeries#getEvents()}.
      */
 
     @Test
@@ -97,7 +97,7 @@ public class TimeSeriesATest
     }
 
     /**
-     * Tests the {@link TimeSeriesA#hashCode()}.
+     * Tests the {@link TimeSeries#hashCode()}.
      */
 
     @Test
@@ -108,7 +108,7 @@ public class TimeSeriesATest
                     && this.testSeries.hashCode() == this.testSeries.hashCode() );
 
         // Consistent when invoked multiple times
-        TimeSeriesA<Double> test = TimeSeriesA.of( this.referenceTime,
+        TimeSeries<Double> test = TimeSeries.of( this.referenceTime,
                                                    ReferenceTimeType.T0,
                                                    this.events );
         for ( int i = 0; i < 100; i++ )
@@ -119,7 +119,7 @@ public class TimeSeriesATest
     }
 
     /**
-     * Tests {@link TimeSeriesA#equals(Object)}.
+     * Tests {@link TimeSeries#equals(Object)}.
      */
 
     @Test
@@ -129,14 +129,14 @@ public class TimeSeriesATest
         assertTrue( this.testSeries.equals( this.testSeries ) );
 
         // Symmetric
-        TimeSeriesA<Double> anotherTestSeries = TimeSeriesA.of( this.referenceTime,
+        TimeSeries<Double> anotherTestSeries = TimeSeries.of( this.referenceTime,
                                                                 ReferenceTimeType.T0,
                                                                 this.events );
 
         assertTrue( anotherTestSeries.equals( this.testSeries ) && this.testSeries.equals( anotherTestSeries ) );
 
         // Transitive
-        TimeSeriesA<Double> oneMoreTestSeries = TimeSeriesA.of( this.referenceTime,
+        TimeSeries<Double> oneMoreTestSeries = TimeSeries.of( this.referenceTime,
                                                                 ReferenceTimeType.T0,
                                                                 this.events );
 
@@ -154,13 +154,13 @@ public class TimeSeriesATest
         assertNotEquals( anotherTestSeries, null );
 
         // Check unequal cases
-        TimeSeriesA<Double> unequalOnReferenceTime = TimeSeriesA.of( Instant.parse( "1990-03-01T12:00:00Z" ),
+        TimeSeries<Double> unequalOnReferenceTime = TimeSeries.of( Instant.parse( "1990-03-01T12:00:00Z" ),
                                                                      ReferenceTimeType.T0,
                                                                      this.events );
 
         assertNotEquals( unequalOnReferenceTime, this.testSeries );
 
-        TimeSeriesA<Double> unequalOnReferenceTimeType = TimeSeriesA.of( this.referenceTime,
+        TimeSeries<Double> unequalOnReferenceTimeType = TimeSeries.of( this.referenceTime,
                                                                          this.events );
 
         assertNotEquals( unequalOnReferenceTimeType, this.testSeries );
@@ -168,24 +168,24 @@ public class TimeSeriesATest
         SortedSet<Event<Double>> otherEvents = new TreeSet<>();
         otherEvents.add( Event.of( Instant.parse( "1985-01-06T12:00:00Z" ), 1.2 ) );
 
-        TimeSeriesA<Double> unequalOnEvents = TimeSeriesA.of( this.referenceTime,
+        TimeSeries<Double> unequalOnEvents = TimeSeries.of( this.referenceTime,
                                                               ReferenceTimeType.T0,
                                                               otherEvents );
 
         assertNotEquals( unequalOnEvents, this.testSeries );
 
-        TimeSeriesA<Double> unequalOnMultiple = TimeSeriesA.of( otherEvents );
+        TimeSeries<Double> unequalOnMultiple = TimeSeries.of( otherEvents );
 
         assertNotEquals( unequalOnMultiple, this.testSeries );
     }
 
     /**
-     * Asserts that a {@link TimeSeriesA} can have no events associated with it, i.e. can be empty.
+     * Asserts that a {@link TimeSeries} can have no events associated with it, i.e. can be empty.
      */
     @Test
     public void assertThatATimeSeriesCanBeEmpty()
     {
-        assertEquals( Collections.emptySortedSet(), TimeSeriesA.of( Collections.emptySortedSet() ).getEvents() );
+        assertEquals( Collections.emptySortedSet(), TimeSeries.of( Collections.emptySortedSet() ).getEvents() );
     }
 
     /**

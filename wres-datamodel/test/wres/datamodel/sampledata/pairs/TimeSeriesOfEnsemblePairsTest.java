@@ -22,7 +22,7 @@ import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfEnsemblePairs.TimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.time.Event;
-import wres.datamodel.time.TimeSeriesA;
+import wres.datamodel.time.TimeSeries;
 
 /**
  * Tests the {@link TimeSeriesOfEnsemblePairs}.
@@ -93,11 +93,11 @@ public final class TimeSeriesOfEnsemblePairsTest
                              EnsemblePair.of( 9, new double[] { 9 } ) ) );
         final SampleMetadata meta = SampleMetadata.of();
         TimeSeriesOfEnsemblePairs ts =
-                (TimeSeriesOfEnsemblePairs) b.addTimeSeries( TimeSeriesA.of( firstBasisTime,
+                (TimeSeriesOfEnsemblePairs) b.addTimeSeries( TimeSeries.of( firstBasisTime,
                                                                              first ) )
-                                             .addTimeSeries( TimeSeriesA.of( secondBasisTime,
+                                             .addTimeSeries( TimeSeries.of( secondBasisTime,
                                                                              second ) )
-                                             .addTimeSeries( TimeSeriesA.of( thirdBasisTime,
+                                             .addTimeSeries( TimeSeries.of( thirdBasisTime,
                                                                              third ) )
                                              .setMetadata( meta )
                                              .build();
@@ -105,7 +105,7 @@ public final class TimeSeriesOfEnsemblePairsTest
         assertTrue( ts.getReferenceTimes().size() == 3 );
         //Iterate and test
         int nextValue = 1;
-        for ( TimeSeriesA<EnsemblePair> next : ts.referenceTimeIterator() )
+        for ( TimeSeries<EnsemblePair> next : ts.referenceTimeIterator() )
         {
             for ( Event<EnsemblePair> nextPair : next.getEvents() )
             {
@@ -138,14 +138,14 @@ public final class TimeSeriesOfEnsemblePairsTest
                               Instant.parse( FOURTH_TIME ),
                               EnsemblePair.of( 3, new double[] { 3 } ) ) );
         SampleMetadata meta = SampleMetadata.of();
-        b.addTimeSeries( TimeSeriesA.of( basisTime,
+        b.addTimeSeries( TimeSeries.of( basisTime,
                                          values ) );
         b.setMetadata( meta );
 
         //Check dataset dimensions
         assertTrue( Objects.isNull( b.build().getBaselineData() ) );
 
-        b.addTimeSeriesForBaseline( TimeSeriesA.of( basisTime,
+        b.addTimeSeriesForBaseline( TimeSeries.of( basisTime,
                                                     values ) );
         b.setMetadataForBaseline( meta );
 
@@ -197,9 +197,9 @@ public final class TimeSeriesOfEnsemblePairsTest
                              EnsemblePair.of( 3, new double[] { 3 } ) ) );
         SampleMetadata meta = SampleMetadata.of();
         VectorOfDoubles climatology = VectorOfDoubles.of( 1, 2, 3 );
-        b.addTimeSeries( TimeSeriesA.of( basisTime,
+        b.addTimeSeries( TimeSeries.of( basisTime,
                                          first ) )
-         .addTimeSeriesForBaseline( TimeSeriesA.of( basisTime,
+         .addTimeSeriesForBaseline( TimeSeries.of( basisTime,
                                                     first ) )
          .setMetadata( meta )
          .setMetadataForBaseline( meta )
@@ -233,13 +233,13 @@ public final class TimeSeriesOfEnsemblePairsTest
         third.add( Event.of( basisTime,
                              Instant.parse( FOURTH_TIME ),
                              EnsemblePair.of( 9, new double[] { 9 } ) ) );
-        c.addTimeSeries( TimeSeriesA.of( basisTime,
+        c.addTimeSeries( TimeSeries.of( basisTime,
                                          second ) )
-         .addTimeSeries( TimeSeriesA.of( basisTime,
+         .addTimeSeries( TimeSeries.of( basisTime,
                                          third ) )
-         .addTimeSeriesForBaseline( TimeSeriesA.of( basisTime,
+         .addTimeSeriesForBaseline( TimeSeries.of( basisTime,
                                                     second ) )
-         .addTimeSeriesForBaseline( TimeSeriesA.of( basisTime,
+         .addTimeSeriesForBaseline( TimeSeries.of( basisTime,
                                                     third ) );
 
         TimeSeriesOfEnsemblePairs tsAppend = c.build();
@@ -283,21 +283,21 @@ public final class TimeSeriesOfEnsemblePairsTest
         //Check for exceptions on the iterators
         TimeSeriesOfEnsemblePairsBuilder d = new TimeSeriesOfEnsemblePairsBuilder();
         TimeSeriesOfEnsemblePairs ts =
-                (TimeSeriesOfEnsemblePairs) d.addTimeSeries( TimeSeriesA.of( firstBasisTime,
+                (TimeSeriesOfEnsemblePairs) d.addTimeSeries( TimeSeries.of( firstBasisTime,
                                                                              first ) )
                                              .setMetadata( meta )
                                              .build();
 
         //Iterate
         exception.expect( NoSuchElementException.class );
-        Iterator<TimeSeriesA<EnsemblePair>> noneSuchBasis = ts.referenceTimeIterator().iterator();
+        Iterator<TimeSeries<EnsemblePair>> noneSuchBasis = ts.referenceTimeIterator().iterator();
         noneSuchBasis.forEachRemaining( Objects::isNull );
         noneSuchBasis.next();
 
         //Mutate 
         exception.expect( UnsupportedOperationException.class );
 
-        Iterator<TimeSeriesA<EnsemblePair>> immutableBasis = ts.referenceTimeIterator().iterator();
+        Iterator<TimeSeries<EnsemblePair>> immutableBasis = ts.referenceTimeIterator().iterator();
         immutableBasis.next();
         immutableBasis.remove();
 
@@ -328,7 +328,7 @@ public final class TimeSeriesOfEnsemblePairsTest
                         + ",key: "
                         + "1.0 value: [1.0])" );
         }
-        b.addTimeSeries( TimeSeriesA.of( basisTime,
+        b.addTimeSeries( TimeSeries.of( basisTime,
                                          values ) )
          .setMetadata( meta );
 
@@ -351,7 +351,7 @@ public final class TimeSeriesOfEnsemblePairsTest
                         + "1.0 value: [1.0])" );
         }
 
-        b.addTimeSeries( TimeSeriesA.of( nextBasisTime,
+        b.addTimeSeries( TimeSeries.of( nextBasisTime,
                                          otherValues ) );
         assertTrue( joiner.toString().equals( b.build().toString() ) );
     }
@@ -413,13 +413,13 @@ public final class TimeSeriesOfEnsemblePairsTest
         SampleMetadata meta = SampleMetadata.of();
         //Add the time-series, with only one for baseline
         TimeSeriesOfEnsemblePairs ts =
-                (TimeSeriesOfEnsemblePairs) b.addTimeSeries( TimeSeriesA.of( firstBasisTime,
+                (TimeSeriesOfEnsemblePairs) b.addTimeSeries( TimeSeries.of( firstBasisTime,
                                                                              first ) )
-                                             .addTimeSeries( TimeSeriesA.of( secondBasisTime,
+                                             .addTimeSeries( TimeSeries.of( secondBasisTime,
                                                                              second ) )
-                                             .addTimeSeries( TimeSeriesA.of( thirdBasisTime,
+                                             .addTimeSeries( TimeSeries.of( thirdBasisTime,
                                                                              third ) )
-                                             .addTimeSeries( TimeSeriesA.of( fourthBasisTime,
+                                             .addTimeSeries( TimeSeries.of( fourthBasisTime,
                                                                              fourth ) )
                                              .setMetadata( meta )
                                              .build();
@@ -468,7 +468,7 @@ public final class TimeSeriesOfEnsemblePairsTest
                              EnsemblePair.of( 3, new double[] { 3 } ) ) );
         SampleMetadata meta = SampleMetadata.of();
         VectorOfDoubles climatology = VectorOfDoubles.of( 1, 2, 3 );
-        b.addTimeSeries( TimeSeriesA.of( basisTime,
+        b.addTimeSeries( TimeSeries.of( basisTime,
                                          first ) )
          .setMetadata( meta )
          .setClimatology( climatology );

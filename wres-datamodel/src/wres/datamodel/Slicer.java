@@ -46,7 +46,7 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdType;
 import wres.datamodel.time.Event;
-import wres.datamodel.time.TimeSeriesA;
+import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesCollection;
 import wres.datamodel.time.TimeWindow;
 
@@ -288,7 +288,7 @@ public final class Slicer
      * @throws NullPointerException if the input is null
      */
 
-    public static Predicate<TimeSeriesA<SingleValuedPair>>
+    public static Predicate<TimeSeries<SingleValuedPair>>
             anyOfLeftInTimeSeriesOfSingleValuedPairs( DoublePredicate predicate )
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing a time-series by any of left." );
@@ -319,7 +319,7 @@ public final class Slicer
      * @throws NullPointerException if the input is null
      */
 
-    public static Predicate<TimeSeriesA<SingleValuedPair>>
+    public static Predicate<TimeSeries<SingleValuedPair>>
             anyOfRightInTimeSeriesOfSingleValuedPairs( DoublePredicate predicate )
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing a time-series by any of right." );
@@ -351,7 +351,7 @@ public final class Slicer
      * @throws NullPointerException if the input is null
      */
 
-    public static Predicate<TimeSeriesA<SingleValuedPair>>
+    public static Predicate<TimeSeries<SingleValuedPair>>
             anyOfLeftAndAnyOfRightInTimeSeriesOfSingleValuedPairs( DoublePredicate predicate )
     {
         Objects.requireNonNull( predicate,
@@ -683,7 +683,7 @@ public final class Slicer
      */
 
     public static TimeSeriesOfSingleValuedPairs filter( TimeSeriesOfSingleValuedPairs input,
-                                                        Predicate<TimeSeriesA<SingleValuedPair>> condition,
+                                                        Predicate<TimeSeries<SingleValuedPair>> condition,
                                                         DoublePredicate applyToClimatology )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
@@ -696,7 +696,7 @@ public final class Slicer
         builder.setMetadata( input.getMetadata() );
 
         // Filter the main pairs and add them
-        for ( TimeSeriesA<SingleValuedPair> next : input.referenceTimeIterator() )
+        for ( TimeSeries<SingleValuedPair> next : input.referenceTimeIterator() )
         {
             if ( condition.test( next ) )
             {
@@ -718,7 +718,7 @@ public final class Slicer
         {
             builder.setMetadataForBaseline( input.getBaselineData().getMetadata() );
 
-            for ( TimeSeriesA<SingleValuedPair> next : input.getBaselineData().referenceTimeIterator() )
+            for ( TimeSeries<SingleValuedPair> next : input.getBaselineData().referenceTimeIterator() )
             {
                 if ( condition.test( next ) )
                 {
@@ -754,7 +754,7 @@ public final class Slicer
         builder.setMetadata( input.getMetadata() );
 
         //Add the filtered data
-        for ( TimeSeriesA<SingleValuedPair> a : input.referenceTimeIterator() )
+        for ( TimeSeries<SingleValuedPair> a : input.referenceTimeIterator() )
         {
             if ( referenceTime.test( a.getReferenceTime() ) )
             {
@@ -820,7 +820,7 @@ public final class Slicer
         builder.setMetadata( input.getMetadata() );
 
         //Add the filtered data
-        for ( TimeSeriesA<EnsemblePair> a : input.referenceTimeIterator() )
+        for ( TimeSeries<EnsemblePair> a : input.referenceTimeIterator() )
         {
             if ( referenceTime.test( a.getReferenceTime() ) )
             {
@@ -854,7 +854,7 @@ public final class Slicer
         builder.setMetadata( input.getMetadata() );
 
         //Iterate through the basis times
-        for ( TimeSeriesA<EnsemblePair> nextSeries : input.referenceTimeIterator() )
+        for ( TimeSeries<EnsemblePair> nextSeries : input.referenceTimeIterator() )
         {
             SortedSet<Event<EnsemblePair>> rawInput = new TreeSet<>();
 
@@ -883,7 +883,7 @@ public final class Slicer
                                                          subTraces.toArray( new Double[subTraces.size()] ) ) ) );
             }
             
-            builder.addTimeSeries( TimeSeriesA.of( nextSeries.getReferenceTime(),
+            builder.addTimeSeries( TimeSeries.of( nextSeries.getReferenceTime(),
                                                    nextSeries.getReferenceTimeType(),
                                                    rawInput ) );
         }

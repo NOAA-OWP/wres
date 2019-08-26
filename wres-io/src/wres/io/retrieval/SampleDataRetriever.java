@@ -30,7 +30,7 @@ import wres.datamodel.sampledata.pairs.TimeSeriesOfEnsemblePairs.TimeSeriesOfEns
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.time.Event;
-import wres.datamodel.time.TimeSeriesA;
+import wres.datamodel.time.TimeSeries;
 import wres.grid.client.Fetcher;
 import wres.grid.client.Request;
 import wres.grid.client.Response;
@@ -175,7 +175,7 @@ class SampleDataRetriever extends Retriever
 
         List<Event<SingleValuedPair>> events = this.getSingleValuedEvents( this.getPrimaryPairs() );
         
-        List<TimeSeriesA<SingleValuedPair>> timeSeries = Retriever.getTimeSeriesFromListOfEvents( events );
+        List<TimeSeries<SingleValuedPair>> timeSeries = Retriever.getTimeSeriesFromListOfEvents( events );
         timeSeries.forEach( builder::addTimeSeries );
         builder.setMetadata( this.getSampleMetadata().getMetadata() );
 
@@ -185,7 +185,7 @@ class SampleDataRetriever extends Retriever
         if ( project.hasBaseline() )
         {
             events = this.getSingleValuedEvents( this.getBaselinePairs() );
-            List<TimeSeriesA<SingleValuedPair>> timeSeriesBase = Retriever.getTimeSeriesFromListOfEvents( events );
+            List<TimeSeries<SingleValuedPair>> timeSeriesBase = Retriever.getTimeSeriesFromListOfEvents( events );
             timeSeriesBase.forEach( builder::addTimeSeriesForBaseline );
             builder.setMetadataForBaseline( this.getSampleMetadata().getBaselineMetadata() );
         }
@@ -214,7 +214,7 @@ class SampleDataRetriever extends Retriever
 
         List<Event<EnsemblePair>> events = this.getPrimaryPairs();
 
-        List<TimeSeriesA<EnsemblePair>> timeSeries = Retriever.getTimeSeriesFromListOfEvents( events );
+        List<TimeSeries<EnsemblePair>> timeSeries = Retriever.getTimeSeriesFromListOfEvents( events );
         timeSeries.forEach( builder::addTimeSeries );
         builder.setMetadata( this.getSampleMetadata().getMetadata() );
          
@@ -224,7 +224,7 @@ class SampleDataRetriever extends Retriever
         if ( project.hasBaseline() )
         {
             events = this.getBaselinePairs();
-            List<TimeSeriesA<EnsemblePair>> timeSeriesBase = Retriever.getTimeSeriesFromListOfEvents( events );
+            List<TimeSeries<EnsemblePair>> timeSeriesBase = Retriever.getTimeSeriesFromListOfEvents( events );
             timeSeriesBase.forEach( builder::addTimeSeriesForBaseline );
             builder.setMetadataForBaseline( this.getSampleMetadata().getBaselineMetadata() );
         }

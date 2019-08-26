@@ -37,7 +37,7 @@ import wres.datamodel.scale.TimeScale;
 import wres.datamodel.scale.TimeScale.TimeScaleFunction;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
-import wres.datamodel.time.TimeSeriesA;
+import wres.datamodel.time.TimeSeries;
 
 /**
  * Tests the {@link EnsemblePairsWriter}.
@@ -88,8 +88,8 @@ public final class EnsemblePairsWriterTest
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
                                    DatasetIdentifier.of( Location.of( "PLUM" ), "RIFLE" ) );
 
-        TimeSeriesA<EnsemblePair> timeSeriesOne =
-                TimeSeriesA.of( basisTime, ReferenceTimeType.UNKNOWN, setOfPairs );
+        TimeSeries<EnsemblePair> timeSeriesOne =
+                TimeSeries.of( basisTime, ReferenceTimeType.UNKNOWN, setOfPairs );
         
         pairs = (TimeSeriesOfEnsemblePairs) tsBuilder.addTimeSeries( timeSeriesOne )
                                                      .setMetadata( meta )
@@ -113,8 +113,8 @@ public final class EnsemblePairsWriterTest
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
                                    DatasetIdentifier.of( Location.of( "ORANGE" ), "PISTOL" ) );
 
-        TimeSeriesA<EnsemblePair> timeSeriesTwo =
-                TimeSeriesA.of( basisTimeTwo, ReferenceTimeType.UNKNOWN, setOfPairsTwo );
+        TimeSeries<EnsemblePair> timeSeriesTwo =
+                TimeSeries.of( basisTimeTwo, ReferenceTimeType.UNKNOWN, setOfPairsTwo );
         
         pairsTwo = (TimeSeriesOfEnsemblePairs) tsBuilderTwo.addTimeSeries( timeSeriesTwo )
                                                            .setMetadata( metaTwo )
@@ -139,8 +139,8 @@ public final class EnsemblePairsWriterTest
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
                                    DatasetIdentifier.of( Location.of( "BANANA" ), "GRENADE" ) );
 
-        TimeSeriesA<EnsemblePair> timeSeriesThree =
-                TimeSeriesA.of( basisTimeThree, ReferenceTimeType.UNKNOWN, setOfPairsThree );
+        TimeSeries<EnsemblePair> timeSeriesThree =
+                TimeSeries.of( basisTimeThree, ReferenceTimeType.UNKNOWN, setOfPairsThree );
         
         pairsThree =
                 (TimeSeriesOfEnsemblePairs) tsBuilderThree.addTimeSeries( timeSeriesThree )
@@ -176,7 +176,7 @@ public final class EnsemblePairsWriterTest
                                                                             TimeScaleFunction.MEAN ) )
                                                .build();
 
-            TimeSeriesA<EnsemblePair> timeSeriesOne = TimeSeriesA.of( Collections.emptySortedSet() );
+            TimeSeries<EnsemblePair> timeSeriesOne = TimeSeries.of( Collections.emptySortedSet() );
             
             TimeSeriesOfEnsemblePairs emptyPairs =
                     (TimeSeriesOfEnsemblePairs) tsBuilder.addTimeSeries( timeSeriesOne )
@@ -226,7 +226,7 @@ public final class EnsemblePairsWriterTest
             
             setOfPairs.add( event );
             
-            TimeSeriesA<EnsemblePair> timeSeriesNaN = TimeSeriesA.of( setOfPairs );
+            TimeSeries<EnsemblePair> timeSeriesNaN = TimeSeries.of( setOfPairs );
             tsBuilder.addTimeSeries( timeSeriesNaN );
 
             // Set the measurement units and time scale
@@ -238,7 +238,7 @@ public final class EnsemblePairsWriterTest
                                                                             TimeScaleFunction.MEAN ) )
                                                .build();
 
-            TimeSeriesA<EnsemblePair> timeSeriesOne = TimeSeriesA.of( Collections.emptySortedSet() );
+            TimeSeries<EnsemblePair> timeSeriesOne = TimeSeries.of( Collections.emptySortedSet() );
             
             TimeSeriesOfEnsemblePairs emptyPairs =
                     (TimeSeriesOfEnsemblePairs) tsBuilder.addTimeSeries( timeSeriesOne )

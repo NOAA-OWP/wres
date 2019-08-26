@@ -15,7 +15,7 @@ import org.junit.rules.ExpectedException;
 
 import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
-import wres.datamodel.time.TimeSeriesA;
+import wres.datamodel.time.TimeSeries;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
 /**
@@ -41,9 +41,9 @@ public final class TimingErrorHelperTest
         // Generate some data
         TimeSeriesOfSingleValuedPairs input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
 
-        Iterator<TimeSeriesA<SingleValuedPair>> iterator = input.referenceTimeIterator().iterator();
-        TimeSeriesA<SingleValuedPair> first = iterator.next();
-        TimeSeriesA<SingleValuedPair> second = iterator.next();
+        Iterator<TimeSeries<SingleValuedPair>> iterator = input.referenceTimeIterator().iterator();
+        TimeSeries<SingleValuedPair> first = iterator.next();
+        TimeSeries<SingleValuedPair> second = iterator.next();
 
         //Generate some data using an RNG for a uniform U[0,1] distribution with a fixed seed
         Random r = new Random( 12345678 );
@@ -73,8 +73,8 @@ public final class TimingErrorHelperTest
     {
         // Generate some data
         TimeSeriesOfSingleValuedPairs input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsFive();
-        Iterator<TimeSeriesA<SingleValuedPair>> iterator = input.referenceTimeIterator().iterator();
-        TimeSeriesA<SingleValuedPair> first = iterator.next();
+        Iterator<TimeSeries<SingleValuedPair>> iterator = input.referenceTimeIterator().iterator();
+        TimeSeries<SingleValuedPair> first = iterator.next();
 
         //Generate some data using an RNG for a uniform U[0,1] distribution with a fixed seed
         Random r = new Random( 12345678 );

@@ -18,7 +18,7 @@ public interface TimeSeriesCollectionBuilder<T>
      * @throws NullPointerException if the input is null
      */
 
-    TimeSeriesCollectionBuilder<T> addTimeSeries( TimeSeriesA<T> timeSeries );
+    TimeSeriesCollectionBuilder<T> addTimeSeries( TimeSeries<T> timeSeries );
 
     /**
      * Builds a time-series.

@@ -30,7 +30,7 @@ import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.datamodel.sampledata.pairs.Pair;
 import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.time.Event;
-import wres.datamodel.time.TimeSeriesA;
+import wres.datamodel.time.TimeSeries;
 import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
 import wres.io.config.OrderedSampleMetadata;
@@ -461,7 +461,7 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
     }
     
     /**
-     * Attempts to compose a list of {@link TimeSeriesA} from a list of events.
+     * Attempts to compose a list of {@link TimeSeries} from a list of events.
      * 
      * TODO: replace with retrieval based around uniquely identified time-series. In the presence of duplicate events
      * whose values are different, it is impossible, by definition, to know the time-series to which a duplicate 
@@ -470,17 +470,19 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
      * @param <T> the type of event
      * @param events the events
      * @return a best guess about the time-series composed by the events
+     * @throws NullPointerException if the input is null
      */
 
-    static <T extends Pair<?, ?>> List<TimeSeriesA<T>> getTimeSeriesFromListOfEvents( List<Event<T>> events )
+    static <T extends Pair<?, ?>> List<TimeSeries<T>> getTimeSeriesFromListOfEvents( List<Event<T>> events )
     {
         Objects.requireNonNull( events );
 
         // Map the events by reference datetime
-        // Place any duplicates in a separate list and call recursively until no duplicates exist
+        // Place any duplicates by valid time in a separate list 
+        // and call recursively until no duplicates exist
         List<Event<T>> duplicates = new ArrayList<>();
         Map<Instant, SortedSet<Event<T>>> eventsByReferenceTime = new TreeMap<>();
-        List<TimeSeriesA<T>> returnMe = new ArrayList<>();
+        List<TimeSeries<T>> returnMe = new ArrayList<>();
 
         // Iterate the events
         for ( Event<T> nextEvent : events )
@@ -518,10 +520,11 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
         // Add the time-series
         for ( Map.Entry<Instant, SortedSet<Event<T>>> nextEntry : eventsByReferenceTime.entrySet() )
         {
-            returnMe.add( TimeSeriesA.of( nextEntry.getKey(), nextEntry.getValue() ) );
+            returnMe.add( TimeSeries.of( nextEntry.getKey(), nextEntry.getValue() ) );
         }
         
         // Add duplicates: this will be called recursively
+        // until no duplicates are left
         if( !duplicates.isEmpty() )
         {
             returnMe.addAll( Retriever.getTimeSeriesFromListOfEvents( duplicates ) );

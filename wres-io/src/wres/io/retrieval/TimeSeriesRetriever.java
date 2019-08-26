@@ -20,7 +20,7 @@ import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.time.Event;
-import wres.datamodel.time.TimeSeriesA;
+import wres.datamodel.time.TimeSeries;
 import wres.io.config.ConfigHelper;
 import wres.io.config.OrderedSampleMetadata;
 import wres.io.retrieval.scripting.Scripter;
@@ -59,7 +59,7 @@ public class TimeSeriesRetriever extends Retriever
         // so this mapping isn't needed
         List<Event<SingleValuedPair>> events = new ArrayList<>();
         this.getPrimaryPairs().forEach( next -> events.addAll( Retriever.unwrapEnsembleEvent( next ) ) );       
-        List<TimeSeriesA<SingleValuedPair>> timeSeries = Retriever.getTimeSeriesFromListOfEvents( events );
+        List<TimeSeries<SingleValuedPair>> timeSeries = Retriever.getTimeSeriesFromListOfEvents( events );
         timeSeries.forEach( builder::addTimeSeries );
 
         return builder.build();
