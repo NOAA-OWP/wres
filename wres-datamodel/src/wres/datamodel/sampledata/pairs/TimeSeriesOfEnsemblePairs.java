@@ -1,17 +1,17 @@
 package wres.datamodel.sampledata.pairs;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.StringJoiner;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.time.BasicTimeSeries;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
-import wres.datamodel.time.TimeSeriesHelper;
 
 /**
  * A collection of {@link TimeSeries} of {@link EnsemblePairs}.
@@ -28,16 +28,16 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements Supplier
     private static final String NULL_INPUT = "Specify non-null time-series input.";
 
     /**
-     * Instance of base class for a time-series of pairs.
+     * Main pairs.
      */
 
-    private final BasicTimeSeries<EnsemblePair> main;
+    private final List<TimeSeries<EnsemblePair>> main;
 
     /**
-     * Instance of base class for a time-series of baseline pairs.
+     * Baseline pairs.
      */
 
-    private final BasicTimeSeries<EnsemblePair> baseline;
+    private final List<TimeSeries<EnsemblePair>> baseline;
 
     @Override
     public TimeSeriesOfEnsemblePairs getBaselineData()
@@ -50,7 +50,7 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements Supplier
         TimeSeriesOfEnsemblePairsBuilder builder = new TimeSeriesOfEnsemblePairsBuilder();
         builder.setMetadata( this.getMetadataForBaseline() );
 
-        for ( TimeSeries<EnsemblePair> next : baseline.get() )
+        for ( TimeSeries<EnsemblePair> next : baseline )
         {
             builder.addTimeSeries( next );
         }
@@ -61,13 +61,23 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements Supplier
     @Override
     public List<TimeSeries<EnsemblePair>> get()
     {
-        return main.get();
+        return main; // Immutable on construction
     }
 
     @Override
     public String toString()
     {
-        return TimeSeriesHelper.toString( this.get() );
+        StringJoiner joiner = new StringJoiner( System.lineSeparator() );
+        
+        for ( TimeSeries<EnsemblePair> nextSeries : this.main )
+        {
+            for ( Event<EnsemblePair> nextEvent : nextSeries.getEvents() )
+            {
+                joiner.add( nextEvent.toString() );
+            }
+        }
+    
+        return joiner.toString();
     }
 
     /**
@@ -236,11 +246,12 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements Supplier
     TimeSeriesOfEnsemblePairs( final TimeSeriesOfEnsemblePairsBuilder b )
     {
         super( b );
-        this.main = BasicTimeSeries.of( b.data );
+        this.main = Collections.unmodifiableList( b.data );
+        
         // Baseline data?
         if ( Objects.nonNull( b.baselineData ) )
         {
-            this.baseline = BasicTimeSeries.of( b.baselineData );
+            this.baseline = Collections.unmodifiableList( b.baselineData );
         }
         else
         {

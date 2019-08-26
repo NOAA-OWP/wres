@@ -1,17 +1,17 @@
 package wres.datamodel.sampledata.pairs;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.StringJoiner;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.time.BasicTimeSeries;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
-import wres.datamodel.time.TimeSeriesHelper;
 
 /**
  * <p>A collection of {@link TimeSeries} of {@link SingleValuedPairs}.</p>
@@ -29,16 +29,16 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs
     private static final String NULL_INPUT = "Specify non-null time-series input.";
 
     /**
-     * Instance of base class for a time-series of pairs.
+     * Main pairs.
      */
 
-    private final BasicTimeSeries<SingleValuedPair> main;
+    private final List<TimeSeries<SingleValuedPair>> main;
 
     /**
-     * Instance of base class for a baseline time-series of pairs.
+     * Baseline pairs.
      */
 
-    private final BasicTimeSeries<SingleValuedPair> baseline;
+    private final List<TimeSeries<SingleValuedPair>> baseline;
 
     @Override
     public TimeSeriesOfSingleValuedPairs getBaselineData()
@@ -51,7 +51,7 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs
         TimeSeriesOfSingleValuedPairsBuilder builder = new TimeSeriesOfSingleValuedPairsBuilder();
         builder.setMetadata( this.getMetadataForBaseline() );
 
-        for ( TimeSeries<SingleValuedPair> next : baseline.get() )
+        for ( TimeSeries<SingleValuedPair> next : baseline )
         {
             builder.addTimeSeries( next );
         }
@@ -62,13 +62,23 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs
     @Override
     public List<TimeSeries<SingleValuedPair>> get()
     {
-        return main.get();
+        return main; //Immutable on construction
     }
 
     @Override
     public String toString()
     {
-        return TimeSeriesHelper.toString( this.get() );
+        StringJoiner joiner = new StringJoiner( System.lineSeparator() );
+        
+        for ( TimeSeries<SingleValuedPair> nextSeries : this.main )
+        {
+            for ( Event<SingleValuedPair> nextEvent : nextSeries.getEvents() )
+            {
+                joiner.add( nextEvent.toString() );
+            }
+        }
+    
+        return joiner.toString();
     }
 
     /**
@@ -236,11 +246,12 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs
     TimeSeriesOfSingleValuedPairs( final TimeSeriesOfSingleValuedPairsBuilder b )
     {
         super( b );
-        this.main = BasicTimeSeries.of( b.data );
+        this.main = Collections.unmodifiableList( b.data );
+        
         // Baseline data?
         if ( Objects.nonNull( b.baselineData ) )
         {
-            this.baseline = BasicTimeSeries.of( b.baselineData );
+            this.baseline = Collections.unmodifiableList( b.baselineData );
         }
         else
         {
