@@ -33,7 +33,13 @@ public final class TimeSeriesSlicer
      * Failure to supply a non-null predicate.
      */
 
-    private static final String NULL_PREDICATE_EXCEPTION = "Specify a non-null predicate.";    
+    private static final String NULL_PREDICATE_EXCEPTION = "Specify a non-null predicate.";
+
+    /**
+     * Failure to supply a non-null reference time type.
+     */
+
+    private static final String NULL_REFERENCE_TIME_TYPE = "Specify a non-null reference time type.";
     
     /**
      * <p>Composes the input predicate as applying to the left side of any paired value within a time-series.
@@ -120,7 +126,7 @@ public final class TimeSeriesSlicer
             // Iterate the times
             boolean left = false;
             boolean right = false;
-            
+
             for ( Event<T> next : times.getEvents() )
             {
                 // Condition is met on either side at any point within the series
@@ -128,13 +134,13 @@ public final class TimeSeriesSlicer
                 {
                     left = true;
                 }
-                
+
                 if ( predicate.test( next.getValue().getRight() ) )
                 {
                     right = true;
                 }
-                
-                if( left && right )
+
+                if ( left && right )
                 {
                     return true;
                 }
@@ -146,51 +152,69 @@ public final class TimeSeriesSlicer
 
     /**
      * Returns the unique {@link Duration} associated with the input time-series, where a {@link Duration} is the
-     * difference between the {@link Event#getTime()} and the {@link TimeSeries#getReferenceTime()}.
+     * difference between the {@link Event#getTime()} and the {@link TimeSeries#getReferenceTimes()} that corresponds
+     * to the specified type.
      * 
      * @param <T> the type of event
      * @param timeSeries the time-series to search
+     * @param type the reference time type
      * @return the durations
      * @throws NullPointerException if the input is null
      */
-    
-    public static <T> SortedSet<Duration> getDurations( List<TimeSeries<T>> timeSeries )
+
+    public static <T> SortedSet<Duration> getDurations( List<TimeSeries<T>> timeSeries, ReferenceTimeType type )
     {
         Objects.requireNonNull( timeSeries );
-        
+
         SortedSet<Duration> durations = new TreeSet<>();
-        
-        for( TimeSeries<T> nextSeries : timeSeries )
+
+        for ( TimeSeries<T> nextSeries : timeSeries )
         {
-            for( Event<T> next : nextSeries.getEvents() )
+            if ( nextSeries.getReferenceTimes().containsKey( type ) )
             {
-                durations.add( Duration.between( nextSeries.getReferenceTime(), next.getTime() ) );
+                Instant referenceTime = nextSeries.getReferenceTimes().get( type );
+
+                for ( Event<T> next : nextSeries.getEvents() )
+                {
+                    durations.add( Duration.between( referenceTime, next.getTime() ) );
+                }
             }
         }
-        
+
         return Collections.unmodifiableSortedSet( durations );
     }
 
     /**
-     * Returns the unique reference datetime {@link Instant} associated with the input time-series.
+     * Returns the unique reference datetime {@link Instant} associated with the input time-series for a given type
      * 
      * @param <T> the type of event
      * @param timeSeries the time-series to search
+     * @param type the reference time type
      * @return the reference datetimes
-     * @throws NullPointerException if the input is null
+     * @throws NullPointerException if any input is null
      */
-    
-    public static <T> SortedSet<Instant> getReferenceTimes( List<TimeSeries<T>> timeSeries )
+
+    public static <T> SortedSet<Instant> getReferenceTimes( List<TimeSeries<T>> timeSeries, ReferenceTimeType type )
     {
         Objects.requireNonNull( timeSeries );
         
-        SortedSet<Instant> referenceTimes = timeSeries.stream()
-                                                      .map( TimeSeries::getReferenceTime )
-                                                      .collect( Collectors.toCollection( TreeSet::new ) );
-    
+        Objects.requireNonNull( type, NULL_REFERENCE_TIME_TYPE );
+
+        SortedSet<Instant> referenceTimes = new TreeSet<>();
+
+        for ( TimeSeries<T> nextSeries : timeSeries )
+        {
+            Instant next = nextSeries.getReferenceTimes().get( type );
+
+            if ( Objects.nonNull( next ) )
+            {
+                referenceTimes.add( next );
+            }
+        }
+
         return Collections.unmodifiableSortedSet( referenceTimes );
     }
-    
+
     /**
      * Filters the input time-series by the {@link Duration} associated with each value. Does not modify the metadata 
      * associated with the input.
@@ -198,31 +222,40 @@ public final class TimeSeriesSlicer
      * @param <T> the type of time-series data
      * @param input the input to slice
      * @param duration the duration condition on which to slice
+     * @param type the reference time type
      * @return the subset of the input that meets the condition
-     * @throws NullPointerException if either the input or condition is null
+     * @throws NullPointerException if any input is null
      */
-    
-    public static <T> List<Event<T>> filterByDuration( List<TimeSeries<T>> input, Predicate<Duration> duration )
+
+    public static <T> List<Event<T>>
+            filterByDuration( List<TimeSeries<T>> input, Predicate<Duration> duration, ReferenceTimeType type )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
-    
+
         Objects.requireNonNull( duration, NULL_PREDICATE_EXCEPTION );
-    
+        
+        Objects.requireNonNull( type, NULL_REFERENCE_TIME_TYPE );
+
         List<Event<T>> returnMe = new ArrayList<>();
-    
+
         for ( TimeSeries<T> nextSeries : input )
         {
-            for ( Event<T> nextEvent : nextSeries.getEvents() )
+            if ( nextSeries.getReferenceTimes().containsKey( type ) )
             {
-                Duration candidateDuration = Duration.between( nextSeries.getReferenceTime(), nextEvent.getTime() );
+                Instant referenceTime = nextSeries.getReferenceTimes().get( type );
 
-                if ( duration.test( candidateDuration ) )
+                for ( Event<T> nextEvent : nextSeries.getEvents() )
                 {
-                    returnMe.add( nextEvent );
+                    Duration candidateDuration = Duration.between( referenceTime, nextEvent.getTime() );
+
+                    if ( duration.test( candidateDuration ) )
+                    {
+                        returnMe.add( nextEvent );
+                    }
                 }
             }
         }
-    
+
         return Collections.unmodifiableList( returnMe );
     }
 
@@ -233,24 +266,29 @@ public final class TimeSeriesSlicer
      * @param <T> the type of time-series value
      * @param input the pairs to slice
      * @param referenceTime the reference time condition on which to slice
+     * @param type the reference time type
      * @return the subset of pairs that meet the condition
-     * @throws NullPointerException if either the input or condition is null
+     * @throws NullPointerException if any input is null
      */
-    
+
     public static <T> List<TimeSeries<T>> filterByReferenceTime( List<TimeSeries<T>> input,
-                                                                 Predicate<Instant> referenceTime )
+                                                                 Predicate<Instant> referenceTime,
+                                                                 ReferenceTimeType type )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
-    
+
         Objects.requireNonNull( referenceTime, NULL_PREDICATE_EXCEPTION );
-    
+        
+        Objects.requireNonNull( type, NULL_REFERENCE_TIME_TYPE );
+
         //Add the filtered data
         return input.stream()
-                    .filter( next -> referenceTime.test( next.getReferenceTime() ) )
+                    .filter( next -> next.getReferenceTimes().containsKey( type )
+                                     && referenceTime.test( next.getReferenceTimes().get( type ) ) )
                     .collect( Collectors.collectingAndThen( Collectors.toList(),
                                                             Collections::unmodifiableList ) );
     }
-    
+
     /**
      * Hidden constructor.
      */

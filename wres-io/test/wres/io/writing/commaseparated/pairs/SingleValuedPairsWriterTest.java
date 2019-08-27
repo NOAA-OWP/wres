@@ -83,7 +83,7 @@ public final class SingleValuedPairsWriterTest
                                    DatasetIdentifier.of( Location.of( "PLUM" ), "RIFLE" ) );
 
         TimeSeries<SingleValuedPair> timeSeriesOne =
-                TimeSeries.of( basisTime, ReferenceTimeType.UNKNOWN, setOfPairs );
+                TimeSeries.of( basisTime, ReferenceTimeType.DEFAULT, setOfPairs );
 
         pairs = (TimeSeriesOfSingleValuedPairs) tsBuilder.addTimeSeries( timeSeriesOne )
                                                          .setMetadata( meta )
@@ -105,7 +105,7 @@ public final class SingleValuedPairsWriterTest
                                    DatasetIdentifier.of( Location.of( "ORANGE" ), "PISTOL" ) );
 
         TimeSeries<SingleValuedPair> timeSeriesTwo =
-                TimeSeries.of( basisTimeTwo, ReferenceTimeType.UNKNOWN, setOfPairsTwo );
+                TimeSeries.of( basisTimeTwo, ReferenceTimeType.DEFAULT, setOfPairsTwo );
 
         pairsTwo = (TimeSeriesOfSingleValuedPairs) tsBuilderTwo.addTimeSeries( timeSeriesTwo )
                                                                .setMetadata( metaTwo )
@@ -128,7 +128,7 @@ public final class SingleValuedPairsWriterTest
                                    DatasetIdentifier.of( Location.of( "BANANA" ), "GRENADE" ) );
 
         TimeSeries<SingleValuedPair> timeSeriesThree =
-                TimeSeries.of( basisTimeThree, ReferenceTimeType.UNKNOWN, setOfPairsThree );
+                TimeSeries.of( basisTimeThree, ReferenceTimeType.DEFAULT, setOfPairsThree );
 
         pairsThree =
                 (TimeSeriesOfSingleValuedPairs) tsBuilderThree.addTimeSeries( timeSeriesThree )

@@ -85,7 +85,7 @@ public final class EnsemblePairsWriterTest
                                    DatasetIdentifier.of( Location.of( "PLUM" ), "RIFLE" ) );
 
         TimeSeries<EnsemblePair> timeSeriesOne =
-                TimeSeries.of( basisTime, ReferenceTimeType.UNKNOWN, setOfPairs );
+                TimeSeries.of( basisTime, ReferenceTimeType.DEFAULT, setOfPairs );
 
         pairs = (TimeSeriesOfEnsemblePairs) tsBuilder.addTimeSeries( timeSeriesOne )
                                                      .setMetadata( meta )
@@ -107,7 +107,7 @@ public final class EnsemblePairsWriterTest
                                    DatasetIdentifier.of( Location.of( "ORANGE" ), "PISTOL" ) );
 
         TimeSeries<EnsemblePair> timeSeriesTwo =
-                TimeSeries.of( basisTimeTwo, ReferenceTimeType.UNKNOWN, setOfPairsTwo );
+                TimeSeries.of( basisTimeTwo, ReferenceTimeType.DEFAULT, setOfPairsTwo );
 
         pairsTwo = (TimeSeriesOfEnsemblePairs) tsBuilderTwo.addTimeSeries( timeSeriesTwo )
                                                            .setMetadata( metaTwo )
@@ -130,7 +130,7 @@ public final class EnsemblePairsWriterTest
                                    DatasetIdentifier.of( Location.of( "BANANA" ), "GRENADE" ) );
 
         TimeSeries<EnsemblePair> timeSeriesThree =
-                TimeSeries.of( basisTimeThree, ReferenceTimeType.UNKNOWN, setOfPairsThree );
+                TimeSeries.of( basisTimeThree, ReferenceTimeType.DEFAULT, setOfPairsThree );
 
         pairsThree =
                 (TimeSeriesOfEnsemblePairs) tsBuilderThree.addTimeSeries( timeSeriesThree )

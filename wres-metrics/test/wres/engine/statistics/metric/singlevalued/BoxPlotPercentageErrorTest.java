@@ -30,6 +30,7 @@ import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.time.Event;
+import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.engine.statistics.metric.MetricTestDataFactory;
@@ -115,11 +116,13 @@ public final class BoxPlotPercentageErrorTest
         List<BoxPlotStatistic> actualRaw = new ArrayList<>();
 
         // Compute the metric for each duration separately
-        SortedSet<Duration> durations = TimeSeriesSlicer.getDurations( input.get() );
+        SortedSet<Duration> durations = TimeSeriesSlicer.getDurations( input.get(), ReferenceTimeType.DEFAULT );
 
         for ( Duration duration : durations )
         {
-            List<Event<SingleValuedPair>> events = TimeSeriesSlicer.filterByDuration( input.get(), a -> a.equals( duration ) );
+            List<Event<SingleValuedPair>> events = TimeSeriesSlicer.filterByDuration( input.get(),
+                                                                                      a -> a.equals( duration ),
+                                                                                      ReferenceTimeType.DEFAULT );
             TimeSeriesOfSingleValuedPairsBuilder builder = new TimeSeriesOfSingleValuedPairsBuilder();
             builder.setMetadata( input.getMetadata() );
             for ( Event<SingleValuedPair> next : events )

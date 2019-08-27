@@ -4,10 +4,13 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.MeasurementUnit;
@@ -16,6 +19,7 @@ import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
+import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.engine.statistics.metric.Metric;
 
@@ -30,6 +34,12 @@ import wres.engine.statistics.metric.Metric;
 public class TimeToPeakError extends TimingError
 {
 
+    /**
+     * Logger.
+     */
+    
+    private static final Logger LOGGER = LoggerFactory.getLogger( TimeToPeakError.class );
+    
     /**
      * Returns an instance.
      * 
@@ -70,8 +80,22 @@ public class TimeToPeakError extends TimingError
             // Duration.between is negative if the predicted/right or "end" is before the observed/left or "start"
             Duration error = Duration.between( peak.getLeft(), peak.getRight() );
 
-            // Add the time-to-peak error against the basis time
-            returnMe.add( Pair.of( next.getReferenceTime(), error ) );
+            // Add the time-to-peak error against the first available reference time
+            Map<ReferenceTimeType, Instant> referenceTimes = next.getReferenceTimes();
+            Map.Entry<ReferenceTimeType,Instant> firstEntry = referenceTimes.entrySet().iterator().next();
+            Instant referenceTime = firstEntry.getValue();
+            ReferenceTimeType referenceTimeType = firstEntry.getKey();
+            
+            if ( LOGGER.isTraceEnabled() )
+            {
+                LOGGER.trace( "Using reference time {} with type {} for instance of {} with input hash {}.",
+                              referenceTime,
+                              referenceTimeType,
+                              TimeToPeakError.class,
+                              s.hashCode() );
+            }
+            
+            returnMe.add( Pair.of( referenceTime, error ) );
         }
 
         // Create output metadata

@@ -58,7 +58,7 @@ public class TimeSeriesTest
 
         Iterator<Event<Double>> iterator = events.iterator();
 
-        testSeries = builder.setReferenceTime( this.referenceTime, ReferenceTimeType.T0 )
+        testSeries = builder.addReferenceTime( this.referenceTime, ReferenceTimeType.T0 )
                             .addEvent( iterator.next() )
                             .addEvent( iterator.next() )
                             .addEvent( iterator.next() )
@@ -66,23 +66,14 @@ public class TimeSeriesTest
     }
 
     /**
-     * Tests the {@link TimeSeries#getReferenceTime()}.
+     * Tests the {@link TimeSeries#getReferenceTimes()}.
      */
 
     @Test
-    public void testGetReferenceTime()
+    public void testGetReferenceTimes()
     {
-        assertEquals( Instant.parse( "2123-12-01T00:00:00Z" ), testSeries.getReferenceTime() );
-    }
-
-    /**
-     * Tests the {@link TimeSeries#getReferenceTimeType()}.
-     */
-
-    @Test
-    public void testGetReferenceTimeType()
-    {
-        assertEquals( ReferenceTimeType.T0, this.testSeries.getReferenceTimeType() );
+        assertEquals( Collections.singletonMap( ReferenceTimeType.T0, Instant.parse( "2123-12-01T00:00:00Z" ) ),
+                      testSeries.getReferenceTimes() );
     }
 
     /**
@@ -107,8 +98,8 @@ public class TimeSeriesTest
 
         // Consistent when invoked multiple times
         TimeSeries<Double> test = TimeSeries.of( this.referenceTime,
-                                                   ReferenceTimeType.T0,
-                                                   this.events );
+                                                 ReferenceTimeType.T0,
+                                                 this.events );
         for ( int i = 0; i < 100; i++ )
         {
             assertEquals( this.testSeries.hashCode(), test.hashCode() );
@@ -127,16 +118,16 @@ public class TimeSeriesTest
         assertTrue( this.testSeries.equals( this.testSeries ) );
 
         // Symmetric
-        TimeSeries<Double> anotherTestSeries = TimeSeries.of( this.referenceTime,
-                                                                ReferenceTimeType.T0,
-                                                                this.events );
+        TimeSeries<Double> anotherTestSeries =
+                TimeSeries.of( Collections.singletonMap( ReferenceTimeType.T0, this.referenceTime ),
+                               this.events );
 
         assertTrue( anotherTestSeries.equals( this.testSeries ) && this.testSeries.equals( anotherTestSeries ) );
 
         // Transitive
         TimeSeries<Double> oneMoreTestSeries = TimeSeries.of( this.referenceTime,
-                                                                ReferenceTimeType.T0,
-                                                                this.events );
+                                                              ReferenceTimeType.T0,
+                                                              this.events );
 
         assertTrue( this.testSeries.equals( anotherTestSeries ) && anotherTestSeries.equals( oneMoreTestSeries )
                     && this.testSeries.equals( oneMoreTestSeries ) );
@@ -153,13 +144,13 @@ public class TimeSeriesTest
 
         // Check unequal cases
         TimeSeries<Double> unequalOnReferenceTime = TimeSeries.of( Instant.parse( "1990-03-01T12:00:00Z" ),
-                                                                     ReferenceTimeType.T0,
-                                                                     this.events );
+                                                                   ReferenceTimeType.T0,
+                                                                   this.events );
 
         assertNotEquals( unequalOnReferenceTime, this.testSeries );
 
         TimeSeries<Double> unequalOnReferenceTimeType = TimeSeries.of( this.referenceTime,
-                                                                         this.events );
+                                                                       this.events );
 
         assertNotEquals( unequalOnReferenceTimeType, this.testSeries );
 
@@ -167,8 +158,8 @@ public class TimeSeriesTest
         otherEvents.add( Event.of( Instant.parse( "1985-01-06T12:00:00Z" ), 1.2 ) );
 
         TimeSeries<Double> unequalOnEvents = TimeSeries.of( this.referenceTime,
-                                                              ReferenceTimeType.T0,
-                                                              otherEvents );
+                                                            ReferenceTimeType.T0,
+                                                            otherEvents );
 
         assertNotEquals( unequalOnEvents, this.testSeries );
 
