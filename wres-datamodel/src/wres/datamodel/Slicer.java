@@ -2,8 +2,6 @@ package wres.datamodel;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -48,11 +46,13 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdType;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeSeriesSlicer;
 
 /**
  * A utility class for slicing/dicing and transforming datasets associated with verification metrics.
  * 
  * @author james.brown@hydrosolved.com
+ * @see     TimeSeriesSlicer
  */
 
 public final class Slicer
@@ -275,91 +275,6 @@ public final class Slicer
 
         return pair -> predicate.test( pair.getLeft() )
                        && predicate.test( transformer.applyAsDouble( pair.getRight() ) );
-    }
-
-    /**
-     * <p>Composes the input predicate as applying to the left side of any paired value within a time-series.
-     * 
-     * <p>Also see {@link #filter(TimeSeriesOfSingleValuedPairs, Predicate, DoublePredicate)}.
-     * 
-     * @param predicate the input predicate
-     * @return a composed predicate
-     * @throws NullPointerException if the input is null
-     */
-
-    public static Predicate<TimeSeries<SingleValuedPair>>
-            anyOfLeftInTimeSeriesOfSingleValuedPairs( DoublePredicate predicate )
-    {
-        Objects.requireNonNull( predicate, "Specify non-null input when slicing a time-series by any of left." );
-
-        return times -> {
-
-            // Iterate the times
-            for ( Event<SingleValuedPair> next : times.getEvents() )
-            {
-                // Condition is met for one time
-                if ( predicate.test( next.getValue().getLeft() ) )
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        };
-    }
-
-    /**
-     * <p>Composes the input predicate as applying to the right side of any paired value within a time-series.
-     * 
-     * <p>Also see {@link #filter(TimeSeriesOfSingleValuedPairs, Predicate, DoublePredicate)}.
-     * 
-     * @param predicate the input predicate
-     * @return a composed predicate
-     * @throws NullPointerException if the input is null
-     */
-
-    public static Predicate<TimeSeries<SingleValuedPair>>
-            anyOfRightInTimeSeriesOfSingleValuedPairs( DoublePredicate predicate )
-    {
-        Objects.requireNonNull( predicate, "Specify non-null input when slicing a time-series by any of right." );
-
-        return times -> {
-
-            // Iterate the times
-            for ( Event<SingleValuedPair> next : times.getEvents() )
-            {
-                // Condition is met for one time
-                if ( predicate.test( next.getValue().getRight() ) )
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        };
-    }
-
-    /**
-     * <p>Composes the input predicate as applying to the left side of any paired value within a time-series and,
-     * separately, to the right side of any paired value within that time-series.</p>
-     * 
-     * <p>Also see {@link #filter(TimeSeriesOfSingleValuedPairs, Predicate, DoublePredicate)}.
-     * 
-     * @param predicate the input predicate
-     * @return a composed predicate
-     * @throws NullPointerException if the input is null
-     */
-
-    public static Predicate<TimeSeries<SingleValuedPair>>
-            anyOfLeftAndAnyOfRightInTimeSeriesOfSingleValuedPairs( DoublePredicate predicate )
-    {
-        Objects.requireNonNull( predicate,
-                                "Specify non-null input when slicing a time-series by any of left"
-                                           + "and any of right." );
-
-        // Compose independently
-        return times -> Slicer.anyOfLeftInTimeSeriesOfSingleValuedPairs( predicate ).test( times )
-                        && Slicer.anyOfRightInTimeSeriesOfSingleValuedPairs( predicate ).test( times );
     }
 
     /**
@@ -731,109 +646,6 @@ public final class Slicer
     }
 
     /**
-     * Filters the input time-series by basis time. Applies to both the main pairs and any baseline pairs. Does not 
-     * modify the metadata associated with the input.
-     * 
-     * @param input the pairs to slice
-     * @param referenceTime the reference time condition on which to slice
-     * @return the subset of pairs that meet the condition
-     * @throws NullPointerException if either the input or condition is null
-     */
-
-    public static TimeSeriesOfSingleValuedPairs filterByReferenceTime( TimeSeriesOfSingleValuedPairs input,
-                                                                       Predicate<Instant> referenceTime )
-    {
-        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
-
-        Objects.requireNonNull( referenceTime, NULL_PREDICATE_EXCEPTION );
-
-        TimeSeriesOfSingleValuedPairsBuilder builder = new TimeSeriesOfSingleValuedPairsBuilder();
-
-        // Set the metadata explicitly in case of an empty slice
-        builder.setMetadata( input.getMetadata() );
-
-        //Add the filtered data
-        for ( TimeSeries<SingleValuedPair> a : input.get() )
-        {
-            if ( referenceTime.test( a.getReferenceTime() ) )
-            {
-                builder.addTimeSeries( a );
-            }
-        }
-
-        return builder.build();
-    }
-
-    /**
-     * Filters the input time-series by the {@link Duration} associated with each value. Does not modify the metadata 
-     * associated with the input.
-     * 
-     * @param <T> the type of time-series data
-     * @param input the input to slice
-     * @param duration the duration condition on which to slice
-     * @return the subset of the input that meets the condition
-     * @throws NullPointerException if either the input or condition is null
-     */
-
-    public static <T> List<Event<T>> filterByDuration( List<TimeSeries<T>> input, Predicate<Duration> duration )
-    {
-        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
-
-        Objects.requireNonNull( duration, NULL_PREDICATE_EXCEPTION );
-
-        List<Event<T>> returnMe = new ArrayList<>();
-
-        for ( TimeSeries<T> nextSeries : input )
-        {
-            for ( Event<T> nextEvent : nextSeries.getEvents() )
-            {
-                Duration candidateDuration = nextEvent.getDuration();
-
-                if ( duration.test( candidateDuration ) )
-                {
-                    returnMe.add( nextEvent );
-                }
-            }
-        }
-    
-        return Collections.unmodifiableList( returnMe );
-    }
-
-    /**
-     * Filters the input time-series by basis time. Applies to both the main pairs and any baseline pairs. Does not 
-     * modify the metadata associated with the input.
-     * 
-     * @param input the pairs to slice
-     * @param referenceTime the basis time condition on which to slice
-     * @return the subset of pairs that meet the condition
-     * @throws NullPointerException if either the input or condition is null
-     */
-
-    public static TimeSeriesOfEnsemblePairs filterByReferenceTime( TimeSeriesOfEnsemblePairs input,
-                                                                   Predicate<Instant> referenceTime )
-    {
-        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
-
-        Objects.requireNonNull( referenceTime, NULL_PREDICATE_EXCEPTION );
-
-        TimeSeriesOfEnsemblePairsBuilder builder = new TimeSeriesOfEnsemblePairsBuilder();
-
-        // Set the metadata explicitly in case of an empty slice
-        builder.setMetadata( input.getMetadata() );
-
-        //Add the filtered data
-        for ( TimeSeries<EnsemblePair> a : input.get() )
-        {
-            if ( referenceTime.test( a.getReferenceTime() ) )
-            {
-                builder.addTimeSeries( a );
-            }
-        }
-
-        return builder.build();
-    }
-
-    /**
      * Returns a {@link TimeSeriesOfEnsemblePairs} whose elements are filtered according to the zero-based index of 
      * the ensemble trace or null if no such time-series exist.
      * 
@@ -884,59 +696,16 @@ public final class Slicer
                                         EnsemblePair.of( next.getValue().getLeft(),
                                                          subTraces.toArray( new Double[subTraces.size()] ) ) ) );
             }
-            
+
             builder.addTimeSeries( TimeSeries.of( nextSeries.getReferenceTime(),
-                                                   nextSeries.getReferenceTimeType(),
-                                                   rawInput ) );
+                                                  nextSeries.getReferenceTimeType(),
+                                                  rawInput ) );
         }
 
         //Return the time-series
         return builder.build();
     }
-    
-    /**
-     * Returns the unique {@link Duration} associated with the input time-series, where a {@link Duration} is the
-     * difference between the {@link Event#getTime()} and the {@link Event#getReferenceTime()}.
-     * 
-     * @param <T> the type of event
-     * @param timeSeries the time-series to search
-     * @return the durations
-     * @throws NullPointerException if the input is null
-     */
-    
-    public static <T> SortedSet<Duration> getDurations( List<TimeSeries<T>> timeSeries )
-    {
-        Objects.requireNonNull( timeSeries );
-        
-        SortedSet<Duration> durations = timeSeries.stream()
-                                                  .map( TimeSeries::getEvents )
-                                                  .flatMap( SortedSet::stream )
-                                                  .map( Event::getDuration )
-                                                  .collect( Collectors.toCollection( TreeSet::new ) );
-        
-        return Collections.unmodifiableSortedSet( durations );
-    }
 
-    /**
-     * Returns the unique reference datetime {@link Instant} associated with the input time-series.
-     * 
-     * @param <T> the type of event
-     * @param timeSeries the time-series to search
-     * @return the reference datetimes
-     * @throws NullPointerException if the input is null
-     */
-    
-    public static <T> SortedSet<Instant> getReferenceTimes( List<TimeSeries<T>> timeSeries )
-    {
-        Objects.requireNonNull( timeSeries );
-        
-        SortedSet<Instant> referenceTimes = timeSeries.stream()
-                                                      .map( TimeSeries::getReferenceTime )
-                                                      .collect( Collectors.toCollection( TreeSet::new ) );
-
-        return Collections.unmodifiableSortedSet( referenceTimes );
-    }
-    
     /**
      * <p>Returns a subset of metric outputs whose {@link StatisticMetadata} matches the supplied predicate. For 
      * example, to filter by a particular {@link TimeWindow} and {@link OneOrTwoThresholds} associated with the 
@@ -1438,6 +1207,27 @@ public final class Slicer
     }
 
     /**
+     * Filters a {@link VectorOfDoubles}, returning a subset whose elements meet the condition.
+     * 
+     * @param input the input
+     * @param condition the condition
+     * @return the filtered vector
+     */
+
+    public static VectorOfDoubles filter( VectorOfDoubles input, DoublePredicate condition )
+    {
+        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
+
+        Objects.requireNonNull( input, NULL_PREDICATE_EXCEPTION );
+
+        double[] filtered = Arrays.stream( input.getDoubles() )
+                                  .filter( condition )
+                                  .toArray();
+
+        return VectorOfDoubles.of( filtered );
+    }
+
+    /**
      * Rounds the input to the prescribed number of decimal places using {@link BigDecimal#ROUND_HALF_UP}.
      * 
      * @return a function that rounds to a prescribed number of decimal places
@@ -1450,27 +1240,6 @@ public final class Slicer
             bd = bd.setScale( digits, RoundingMode.HALF_UP );
             return bd.doubleValue();
         };
-    }
-
-    /**
-     * Filters a {@link VectorOfDoubles}, returning a subset whose elements meet the condition.
-     * 
-     * @param input the input
-     * @param condition the condition
-     * @return the filtered vector
-     */
-
-    private static VectorOfDoubles filter( VectorOfDoubles input, DoublePredicate condition )
-    {
-        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
-
-        Objects.requireNonNull( input, NULL_PREDICATE_EXCEPTION );
-
-        double[] filtered = Arrays.stream( input.getDoubles() )
-                                  .filter( condition )
-                                  .toArray();
-
-        return VectorOfDoubles.of( filtered );
     }
 
     /**

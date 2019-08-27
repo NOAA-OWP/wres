@@ -17,7 +17,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleDataException;
@@ -31,6 +30,7 @@ import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesSlicer;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
 /**
@@ -112,11 +112,11 @@ public final class BoxPlotErrorTest
         List<BoxPlotStatistic> actualRaw = new ArrayList<>();
 
         // Compute the metric for each duration separately
-        SortedSet<Duration> durations = Slicer.getDurations( input.get() );
+        SortedSet<Duration> durations = TimeSeriesSlicer.getDurations( input.get() );
 
         for ( Duration duration : durations )
         {
-            List<Event<SingleValuedPair>> events = Slicer.filterByDuration( input.get(), a -> a.equals( duration ) );
+            List<Event<SingleValuedPair>> events = TimeSeriesSlicer.filterByDuration( input.get(), a -> a.equals( duration ) );
             TimeSeriesOfSingleValuedPairsBuilder builder = new TimeSeriesOfSingleValuedPairsBuilder();
             builder.setMetadata( input.getMetadata() );
             for ( Event<SingleValuedPair> next : events )

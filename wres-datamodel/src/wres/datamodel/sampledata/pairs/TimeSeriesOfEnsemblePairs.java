@@ -97,7 +97,7 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements Supplier
          * The raw data for the baseline
          */
 
-        private List<TimeSeries<EnsemblePair>> baselineData = null;
+        private List<TimeSeries<EnsemblePair>> baselineData = new ArrayList<>();
 
         /**
          * Adds a time-series to the builder.
@@ -134,11 +134,6 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements Supplier
         public TimeSeriesOfEnsemblePairsBuilder addTimeSeriesForBaseline( TimeSeries<EnsemblePair> timeSeries )
         {
             Objects.requireNonNull( timeSeries, NULL_INPUT );
-
-            if ( Objects.isNull( this.baselineData ) )
-            {
-                this.baselineData = new ArrayList<>();
-            }
 
             this.baselineData.add( timeSeries );
 
@@ -247,16 +242,7 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements Supplier
     {
         super( b );
         this.main = Collections.unmodifiableList( b.data );
-        
-        // Baseline data?
-        if ( Objects.nonNull( b.baselineData ) )
-        {
-            this.baseline = Collections.unmodifiableList( b.baselineData );
-        }
-        else
-        {
-            this.baseline = null;
-        }
+        this.baseline = Collections.unmodifiableList( b.baselineData );
     }
 
 }

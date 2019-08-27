@@ -18,12 +18,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfEnsemblePairs.TimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesSlicer;
 
 /**
  * Tests the {@link TimeSeriesOfEnsemblePairs}.
@@ -50,11 +50,11 @@ public final class TimeSeriesOfEnsemblePairsTest
     public final ExpectedException exception = ExpectedException.none();
 
     /**
-     * Tests the {@link TimeSeriesOfEnsemblePairs#referenceTimeIterator()} method.
+     * Tests the {@link TimeSeriesSlicer#getReferenceTimes(List)} method.
      */
 
     @Test
-    public void testReferenceTimeIterator()
+    public void testReferenceTimes()
     {
         //Build a time-series with three basis times 
         SortedSet<Event<EnsemblePair>> first = new TreeSet<>();
@@ -103,7 +103,7 @@ public final class TimeSeriesOfEnsemblePairsTest
                                              .setMetadata( meta )
                                              .build();
 
-        SortedSet<Instant> sliced = Slicer.getReferenceTimes( ts.get() );
+        SortedSet<Instant> sliced = TimeSeriesSlicer.getReferenceTimes( ts.get() );
 
         assertEquals( 3, sliced.size() );
 
@@ -156,11 +156,11 @@ public final class TimeSeriesOfEnsemblePairsTest
         TimeSeriesOfEnsemblePairs baseline = b.build().getBaselineData();
 
         //Check dataset dimensions
-        SortedSet<Duration> durations = Slicer.getDurations( baseline.get() );
+        SortedSet<Duration> durations = TimeSeriesSlicer.getDurations( baseline.get() );
 
         assertEquals( 3, durations.size() );
 
-        SortedSet<Instant> referenceTimes = Slicer.getReferenceTimes( baseline.get() );
+        SortedSet<Instant> referenceTimes = TimeSeriesSlicer.getReferenceTimes( baseline.get() );
 
         assertEquals( 1, referenceTimes.size() );
 
@@ -170,7 +170,8 @@ public final class TimeSeriesOfEnsemblePairsTest
 
         for ( Duration duration : durations )
         {
-            List<Event<EnsemblePair>> events = Slicer.filterByDuration( baseline.get(), a -> a.equals( duration ) );
+            List<Event<EnsemblePair>> events =
+                    TimeSeriesSlicer.filterByDuration( baseline.get(), a -> a.equals( duration ) );
             for ( Event<EnsemblePair> nextPair : events )
             {
                 assertTrue( nextPair.getValue().equals( EnsemblePair.of( nextValue, new double[] { nextValue } ) ) );
@@ -253,7 +254,7 @@ public final class TimeSeriesOfEnsemblePairsTest
         TimeSeriesOfEnsemblePairs tsAppend = c.build();
 
         //Check dataset dimensions
-        SortedSet<Duration> durations = Slicer.getDurations( tsAppend.get() );
+        SortedSet<Duration> durations = TimeSeriesSlicer.getDurations( tsAppend.get() );
 
         assertEquals( 3, durations.size() );
 
@@ -441,11 +442,11 @@ public final class TimeSeriesOfEnsemblePairsTest
         double[] expectedOrder = new double[] { 1, 7, 4, 10, 5, 11, 6, 12, 2, 8, 3, 9 };
         int nextIndex = 0;
 
-        SortedSet<Duration> durations = Slicer.getDurations( ts.get() );
+        SortedSet<Duration> durations = TimeSeriesSlicer.getDurations( ts.get() );
 
         for ( Duration duration : durations )
         {
-            List<Event<EnsemblePair>> events = Slicer.filterByDuration( ts.get(), a -> a.equals( duration ) );
+            List<Event<EnsemblePair>> events = TimeSeriesSlicer.filterByDuration( ts.get(), a -> a.equals( duration ) );
             for ( Event<EnsemblePair> nextPair : events )
             {
                 assertTrue( nextPair.getValue()
