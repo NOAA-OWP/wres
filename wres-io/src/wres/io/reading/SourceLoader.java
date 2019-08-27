@@ -58,6 +58,22 @@ public class SourceLoader
     private final ProjectConfig projectConfig;
     private final DatabaseLockManager lockManager;
 
+    private enum SourceStatus
+    {
+        /** The status of a source not present in the database at all. */
+        INCOMPLETE_WITH_NO_TASK_CLAIMING_AND_NO_TASK_CURRENTLY_INGESTING,
+        /** The status of a source begun and in progress. */
+        INCOMPLETE_WITH_TASK_CLAIMING_AND_TASK_CURRENTLY_INGESTING,
+        /** The status of a source ingested completely. */
+        COMPLETED,
+        /** The status of a source begun but abandoned by the claiming task. */
+        INCOMPLETE_WITH_TASK_CLAIMING_AND_NO_TASK_CURRENTLY_INGESTING,
+        /** The status of a source requiring decomposition, e.g. archive|web. */
+        REQUIRES_DECOMPOSITION,
+        /** The status of a source not able to be queried (it is invalid). */
+        INVALID
+    }
+
     /**
      * @param projectConfig the project configuration
      * @param lockManager the tool to manage ingest locks, shared per ingest
@@ -346,94 +362,94 @@ public class SourceLoader
                                                    source.getSource(),
                                                    source.getContext().getVariable().getValue(),
                                                    lockManager );
+        SourceStatus sourceStatus = checkIngest.getSourceStatus();
 
-        if ( checkIngest.shouldIngest() )
+        if ( sourceStatus.equals( SourceStatus.REQUIRES_DECOMPOSITION ) )
         {
             // When there is an archive, shouldIngest() will be true however
             // the hash will not yet have been computed, because the inner
             // source identities are what is important, and those inner sources
             // will be hashed later in the process.
-            if ( checkIngest.getHash() == null )
-            {
-                IngestSaver ingestSaver = IngestSaver.createTask()
-                                                     .withProject( projectConfig )
-                                                     .withDataSource( source )
-                                                     .withoutHash()
-                                                     .withProgressMonitoring()
-                                                     .withLockManager( lockManager )
-                                                     .build();
-                Future<List<IngestResult>> future = Executor.submit( ingestSaver );
-                tasks.add( future );
-            }
-            else
-            {
+            IngestSaver ingestSaver = IngestSaver.createTask()
+                                                 .withProject( projectConfig )
+                                                 .withDataSource( source )
+                                                 .withoutHash()
+                                                 .withProgressMonitoring()
+                                                 .withLockManager( lockManager )
+                                                 .build();
+            Future<List<IngestResult>> future = Executor.submit( ingestSaver );
+            tasks.add( future );
+        }
+        else if ( sourceStatus.equals( SourceStatus.INCOMPLETE_WITH_NO_TASK_CLAIMING_AND_NO_TASK_CURRENTLY_INGESTING )
+                  || sourceStatus.equals( SourceStatus.INCOMPLETE_WITH_TASK_CLAIMING_AND_TASK_CURRENTLY_INGESTING ) )
+        {
                 List<Future<List<IngestResult>>> futureList =
                         SourceLoader.ingestData( source,
                                                  projectConfig,
                                                  lockManager,
                                                  checkIngest.getHash() );
                 tasks.addAll( futureList );
+        }
+        else if ( sourceStatus.equals( SourceStatus.INCOMPLETE_WITH_TASK_CLAIMING_AND_NO_TASK_CURRENTLY_INGESTING ) )
+        {
+            // When the ingest requires retry and also is not in progress,
+            // attempt cleanup: some process trying to ingest the source
+            // died during ingest and data needs to be cleaned out.
+            String hash = checkIngest.getHash();
+            LOGGER.info(
+                    "Another WRES instance started to ingest a source like '{}' identified by '{}' but did not finish, cleaning up...",
+                    sourceUri,
+                    hash );
+            IncompleteIngest.removeSourceDataSafely( hash,
+                                                     lockManager );
+            List<Future<List<IngestResult>>> futureList =
+                    SourceLoader.ingestData( source,
+                                             projectConfig,
+                                             lockManager,
+                                             hash );
+            tasks.addAll( futureList );
+        }
+        else if ( sourceStatus.equals( SourceStatus.COMPLETED ) )
+        {
+            LOGGER.debug(
+                    "Data will not be loaded from '{}'. That data is already in the database",
+                    sourceUri );
+
+            // Fake a future, return result immediately.
+            tasks.add( IngestResult.fakeFutureSingleItemListFrom(
+                    projectConfig,
+                    source,
+                    checkIngest.getHash(),
+                    !checkIngest.ingestMarkedComplete() ) );
+
+            // Additional links required? The source already exists, but the links may not
+            for ( LeftOrRightOrBaseline nextLink : source.getLinks() )
+            {
+                // Get the context for the link
+                DataSourceConfig dataSourceconfig =
+                        SourceLoader.getDataSourceConfig( projectConfig,
+                                                          nextLink );
+                DataSource anotherDataSource =
+                        source.withContext( dataSourceconfig );
+
+                // Fake a future, return result immediately.
+                tasks.add( IngestResult.fakeFutureSingleItemListFrom(
+                        projectConfig,
+                        anotherDataSource,
+                        checkIngest.getHash() ) );
             }
+        }
+        else if ( sourceStatus.equals( SourceStatus.INVALID ) )
+        {
+            LOGGER.warn( "Data will not be loaded from invalid URI '{}'",
+                         sourceUri );
         }
         else
         {
-            if ( checkIngest.isValid() )
-            {
-                // When the ingest requires retry and also is not in progress,
-                // attempt cleanup: some process trying to ingest the source
-                // died during ingest and data needs to be cleaned out.
-                if ( !checkIngest.ingestMarkedComplete()
-                     && !checkIngest.ingestInProgress() )
-                {
-                    String hash = checkIngest.getHash();
-                    LOGGER.info( "Another WRES instance started to ingest a source like '{}' identified by '{}' but did not finish, cleaning up...",
-                                 sourceUri,
-                                 hash );
-                    IncompleteIngest.removeSourceDataSafely( hash,
-                                                             lockManager );
-                    List<Future<List<IngestResult>>> futureList =
-                            SourceLoader.ingestData( source,
-                                                     projectConfig,
-                                                     lockManager,
-                                                     hash );
-                    tasks.addAll( futureList );
-                }
-                else
-                {
-                    LOGGER.debug(
-                            "Data will not be loaded from '{}'. That data is already in the database",
-                            sourceUri );
-
-                    // Fake a future, return result immediately.
-                    tasks.add( IngestResult.fakeFutureSingleItemListFrom(
-                            projectConfig,
-                            source,
-                            checkIngest.getHash(),
-                            !checkIngest.ingestMarkedComplete() ) );
-
-                    // Additional links required? The source already exists, but the links may not
-                    for ( LeftOrRightOrBaseline nextLink : source.getLinks() )
-                    {
-                        // Get the context for the link
-                        DataSourceConfig dataSourceconfig =
-                                SourceLoader.getDataSourceConfig( projectConfig,
-                                                                  nextLink );
-                        DataSource anotherDataSource =
-                                source.withContext( dataSourceconfig );
-
-                        // Fake a future, return result immediately.
-                        tasks.add( IngestResult.fakeFutureSingleItemListFrom(
-                                projectConfig,
-                                anotherDataSource,
-                                checkIngest.getHash() ) );
-                    }
-                }
-            }
-            else
-            {
-                LOGGER.warn( "Data will not be loaded from invalid URI '{}'",
-                             sourceUri );
-            }
+            throw new IllegalStateException( "Unexpected SourceStatus "
+                                             + sourceStatus
+                                             + " for "
+                                             + source );
         }
 
         LOGGER.trace( "ingestData returning tasks {} for URI {}",
@@ -489,6 +505,10 @@ public class SourceLoader
                                                 final String variableName,
                                                 DatabaseLockManager lockManager )
     {
+        Objects.requireNonNull( filePath );
+        Objects.requireNonNull( source );
+        Objects.requireNonNull( variableName );
+
         Format specifiedFormat = source.getFormat();
         Format pathFormat = ReaderFactory.getFiletype( filePath );
 
@@ -499,14 +519,12 @@ public class SourceLoader
                           "determined that it is an archive that will need to " +
                           "be further evaluated.",
                           filePath);
-            return new FileEvaluation( true, true, null, false, false );
+            return new FileEvaluation( null, SourceStatus.REQUIRES_DECOMPOSITION );
         }
 
         boolean ingest = specifiedFormat == null ||
                          specifiedFormat.equals( pathFormat );
-        boolean anotherTaskStartedIngest = false;
-        boolean ingestMarkedComplete = false;
-        boolean ingestInProgress = false;
+        SourceStatus sourceStatus = null;
 
         String hash;
 
@@ -524,41 +542,23 @@ public class SourceLoader
                     hash = Strings.getMD5Checksum( filePath );
                 }
 
-                anotherTaskStartedIngest = anotherTaskIsResponsibleForSource( hash );
-
-                if ( anotherTaskStartedIngest )
-                {
-                    ingestMarkedComplete = wasSourceCompleted( hash );
-
-                    if ( !ingestMarkedComplete )
-                    {
-                        LOGGER.debug( "Another task is responsible for {} but has not yet finished it.", hash );
-                        ingestInProgress = ingestInProgress( hash, lockManager );
-                        LOGGER.debug( "Is another task currently ingesting {}? {}",
-                                      hash, ingestInProgress );
-                    }
-                }
+                sourceStatus = querySourceStatus( hash, lockManager );
 
                 // Added in debugging #58715-116
                 if ( LOGGER.isDebugEnabled() )
                 {
                     LOGGER.debug( "Determined that a source with URI {} and "
-                                  + "hash {} has the following status of "
-                                  + "completely existing within the database: "
-                                  + "{}, and status of another task claiming "
-                                  + "responsibility: {}, and status of another "
-                                  + "task currently ingesting: {}",
+                                  + "hash {} has the status of "
+                                  + "{}",
                                   filePath,
                                   hash,
-                                  ingestMarkedComplete,
-                                  anotherTaskStartedIngest,
-                                  ingestInProgress );
+                                  sourceStatus );
                 }
             }
-            catch ( IOException | SQLException e )
+            catch ( IOException ioe )
             {
                 throw new PreIngestException( "Could not determine whether to ingest '"
-                                              +  filePath + "'", e );
+                                              +  filePath + "'", ioe );
             }
         }
         else
@@ -569,14 +569,16 @@ public class SourceLoader
                           filePath,
                           specifiedFormat,
                           pathFormat );
-            return new FileEvaluation( false,
-                                       false,
-                                       null,
-                                       false,
-                                       false );
+            return new FileEvaluation(  null,
+                                       SourceStatus.INVALID );
         }
 
-        return new FileEvaluation( true, !anotherTaskStartedIngest, hash, ingestMarkedComplete, ingestInProgress );
+        if ( sourceStatus == null )
+        {
+            throw new IllegalStateException( "Expected sourceStatus to always be set by now." );
+        }
+
+        return new FileEvaluation( hash, sourceStatus );
     }
 
     /**
@@ -710,33 +712,25 @@ public class SourceLoader
      */
     private static class FileEvaluation
     {
-        private final boolean isValid;
-        private final boolean shouldIngest;
         private final String hash;
-        private final boolean ingestMarkedComplete;
-        private final boolean ingestInProgress;
+        private final SourceStatus sourceStatus;
 
-        FileEvaluation( boolean isValid,
-                        boolean shouldIngest,
-                        String hash,
-                        boolean ingestMarkedComplete,
-                        boolean ingestInProgress )
+        FileEvaluation( String hash,
+                        SourceStatus sourceStatus )
         {
-            this.isValid = isValid;
-            this.shouldIngest = shouldIngest;
             this.hash = hash;
-            this.ingestMarkedComplete = ingestMarkedComplete;
-            this.ingestInProgress = ingestInProgress;
+            this.sourceStatus = sourceStatus;
         }
 
         public boolean isValid()
         {
-            return this.isValid;
+            return !this.sourceStatus.equals( SourceStatus.INVALID );
         }
 
         boolean shouldIngest()
         {
-            return this.shouldIngest;
+            return this.sourceStatus.equals( SourceStatus.INCOMPLETE_WITH_NO_TASK_CLAIMING_AND_NO_TASK_CURRENTLY_INGESTING )
+                    || this.sourceStatus.equals( SourceStatus.REQUIRES_DECOMPOSITION );
         }
 
         public String getHash()
@@ -744,14 +738,19 @@ public class SourceLoader
             return this.hash;
         }
 
-        public boolean ingestMarkedComplete()
+        boolean ingestMarkedComplete()
         {
-            return this.ingestMarkedComplete;
+            return this.sourceStatus.equals( SourceStatus.COMPLETED );
         }
 
-        public boolean ingestInProgress()
+        boolean ingestInProgress()
         {
-            return this.ingestInProgress;
+            return this.sourceStatus.equals( SourceStatus.INCOMPLETE_WITH_TASK_CLAIMING_AND_TASK_CURRENTLY_INGESTING );
+        }
+
+        SourceStatus getSourceStatus()
+        {
+            return this.sourceStatus;
         }
     }
 
@@ -1006,5 +1005,62 @@ public class SourceLoader
             }
         }
 
+    }
+
+
+    /**
+     * Returns the likely status of a given source hash based on state in db.
+     * @param hash The natural identifier of the source.
+     * @param lockManager The lock manager to use to query status.
+     * @return the source status
+     * @throws PreIngestException When communication with the database fails.
+     */
+
+    static SourceStatus querySourceStatus( String hash, DatabaseLockManager lockManager )
+    {
+        boolean anotherTaskStartedIngest = false;
+        boolean ingestMarkedComplete = false;
+        boolean ingestInProgress = false;
+
+        try
+        {
+            anotherTaskStartedIngest = anotherTaskIsResponsibleForSource( hash );
+
+            if ( anotherTaskStartedIngest )
+            {
+                ingestMarkedComplete = wasSourceCompleted( hash );
+
+                if ( ingestMarkedComplete )
+                {
+                    return SourceStatus.COMPLETED;
+                }
+                else
+                {
+                    LOGGER.debug( "Another task is responsible for {} but has not yet finished it.",
+                                  hash );
+                    ingestInProgress = ingestInProgress( hash, lockManager );
+                    LOGGER.debug( "Is another task currently ingesting {}? {}",
+                                  hash, ingestInProgress );
+                    if ( ingestInProgress )
+                    {
+                        return SourceStatus.INCOMPLETE_WITH_TASK_CLAIMING_AND_TASK_CURRENTLY_INGESTING;
+                    }
+                    else
+                    {
+                        return SourceStatus.INCOMPLETE_WITH_TASK_CLAIMING_AND_NO_TASK_CURRENTLY_INGESTING;
+                    }
+                }
+            }
+            else
+            {
+                // No task claimed this source as of a moment ago
+                return SourceStatus.INCOMPLETE_WITH_NO_TASK_CLAIMING_AND_NO_TASK_CURRENTLY_INGESTING;
+            }
+        }
+        catch ( SQLException se )
+        {
+            throw new PreIngestException( "Unable to query status of the source identified by "
+                                          + hash, se );
+        }
     }
 }
