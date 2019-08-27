@@ -146,7 +146,7 @@ public final class TimeSeriesSlicer
 
     /**
      * Returns the unique {@link Duration} associated with the input time-series, where a {@link Duration} is the
-     * difference between the {@link Event#getTime()} and the {@link Event#getReferenceTime()}.
+     * difference between the {@link Event#getTime()} and the {@link TimeSeries#getReferenceTime()}.
      * 
      * @param <T> the type of event
      * @param timeSeries the time-series to search
@@ -158,15 +158,18 @@ public final class TimeSeriesSlicer
     {
         Objects.requireNonNull( timeSeries );
         
-        SortedSet<Duration> durations = timeSeries.stream()
-                                                  .map( TimeSeries::getEvents )
-                                                  .flatMap( SortedSet::stream )
-                                                  .map( Event::getDuration )
-                                                  .collect( Collectors.toCollection( TreeSet::new ) );
+        SortedSet<Duration> durations = new TreeSet<>();
+        
+        for( TimeSeries<T> nextSeries : timeSeries )
+        {
+            for( Event<T> next : nextSeries.getEvents() )
+            {
+                durations.add( Duration.between( nextSeries.getReferenceTime(), next.getTime() ) );
+            }
+        }
         
         return Collections.unmodifiableSortedSet( durations );
     }
-
 
     /**
      * Returns the unique reference datetime {@link Instant} associated with the input time-series.
@@ -211,8 +214,8 @@ public final class TimeSeriesSlicer
         {
             for ( Event<T> nextEvent : nextSeries.getEvents() )
             {
-                Duration candidateDuration = nextEvent.getDuration();
-    
+                Duration candidateDuration = Duration.between( nextSeries.getReferenceTime(), nextEvent.getTime() );
+
                 if ( duration.test( candidateDuration ) )
                 {
                     returnMe.add( nextEvent );

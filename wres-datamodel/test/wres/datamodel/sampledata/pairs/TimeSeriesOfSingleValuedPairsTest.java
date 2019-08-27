@@ -563,8 +563,6 @@ public final class TimeSeriesOfSingleValuedPairsTest
 
             for ( Event<SingleValuedPair> next : events )
             {
-                assertTrue( Duration.ZERO.equals( next.getDuration() ) );
-
                 assertEquals( next.getValue(), SingleValuedPair.of( k, k ) );
                 k++;
             }

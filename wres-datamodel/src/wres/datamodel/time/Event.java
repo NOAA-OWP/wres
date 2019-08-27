@@ -1,6 +1,5 @@
 package wres.datamodel.time;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
 
@@ -101,18 +100,6 @@ public class Event<T> implements Comparable<Event<T>>
     {
         return this.value;
     }
-
-    /**
-     * Returns the {@link Duration} between the {@link #referenceTime} and the {@link #eventTime} as 
-     * <code>Duration.between( this.getReferenceTime(), this.getTime() )</code>.
-     * 
-     * @return the duration between the reference time and the event time
-     */
-    
-    public Duration getDuration()
-    {
-        return Duration.between( this.getReferenceTime(), this.getTime() );
-    }
     
     @Override
     public String toString()
@@ -164,8 +151,7 @@ public class Event<T> implements Comparable<Event<T>>
 
     /**
      * Compares this {@link Event} against the input {@link Event}, returning a negative integer, zero or positive 
-     * integer as this {@link Event} is less than, equal to, or greater than the input {@link Event}. The comparison 
-     * is made firstly on {@link Event#getReferenceTime()} and secondly on {@link Event#getTime()}.
+     * integer as this {@link Event} is less than, equal to, or greater than the input {@link Event}.
      * 
      * @return a negative integer, zero or positive integer as this object is less than, equal to or greater than 
      *            the input
@@ -176,14 +162,27 @@ public class Event<T> implements Comparable<Event<T>>
     {
         Objects.requireNonNull( o, "Specify a non-null input for comparison." );
         
-        int returnMe = this.referenceTime.compareTo( o.referenceTime );
+        int returnMe = this.getReferenceTime().compareTo( o.getReferenceTime() );
         
         if( returnMe != 0 )
         {
             return returnMe;
         }
             
-        return this.eventTime.compareTo( o.eventTime );
+        returnMe = this.getTime().compareTo( o.getTime() );        
+        
+        if( returnMe != 0 )
+        {
+            return returnMe;
+        }
+        
+        // Consistent with equals
+        if( o.getValue().equals( this.getValue() ) )
+        {
+            return 0;
+        }
+        
+        return -1;
     }
 
 }
