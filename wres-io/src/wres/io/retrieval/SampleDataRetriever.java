@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -173,18 +174,19 @@ class SampleDataRetriever extends Retriever
 
         TimeSeriesOfSingleValuedPairsBuilder builder = new TimeSeriesOfSingleValuedPairsBuilder();
 
-        List<Event<SingleValuedPair>> events = this.getSingleValuedEvents( this.getPrimaryPairs() );
-        
+        List<Pair<Instant, Event<SingleValuedPair>>> events = this.getSingleValuedEvents( this.getPrimaryPairs() );
+
         List<TimeSeries<SingleValuedPair>> timeSeries = Retriever.getTimeSeriesFromListOfEvents( events );
         timeSeries.forEach( builder::addTimeSeries );
         builder.setMetadata( this.getSampleMetadata().getMetadata() );
 
         // #67532
         Project project = this.getProjectDetails();
-        
+
         if ( project.hasBaseline() )
         {
-            List<Event<SingleValuedPair>> baselineEvents = this.getSingleValuedEvents( this.getBaselinePairs() );
+            List<Pair<Instant, Event<SingleValuedPair>>> baselineEvents =
+                    this.getSingleValuedEvents( this.getBaselinePairs() );
             List<TimeSeries<SingleValuedPair>> timeSeriesBase =
                     Retriever.getTimeSeriesFromListOfEvents( baselineEvents );
             timeSeriesBase.forEach( builder::addTimeSeriesForBaseline );
@@ -213,7 +215,7 @@ class SampleDataRetriever extends Retriever
 
         TimeSeriesOfEnsemblePairsBuilder builder = new TimeSeriesOfEnsemblePairsBuilder();
 
-        List<Event<EnsemblePair>> events = this.getPrimaryPairs();
+        List<Pair<Instant,Event<EnsemblePair>>> events = this.getPrimaryPairs();
 
         List<TimeSeries<EnsemblePair>> timeSeries = Retriever.getTimeSeriesFromListOfEvents( events );
         timeSeries.forEach( builder::addTimeSeries );
@@ -221,10 +223,10 @@ class SampleDataRetriever extends Retriever
          
         // #67532
         Project project = this.getProjectDetails();
-        
+
         if ( project.hasBaseline() )
         {
-            List<Event<EnsemblePair>> baselineEvents = this.getBaselinePairs();
+            List<Pair<Instant, Event<EnsemblePair>>> baselineEvents = this.getBaselinePairs();
             List<TimeSeries<EnsemblePair>> timeSeriesBase = Retriever.getTimeSeriesFromListOfEvents( baselineEvents );
             timeSeriesBase.forEach( builder::addTimeSeriesForBaseline );
             builder.setMetadataForBaseline( this.getSampleMetadata().getBaselineMetadata() );
@@ -235,11 +237,12 @@ class SampleDataRetriever extends Retriever
         return builder.build();
     }
 
-    private List<Event<SingleValuedPair>> getSingleValuedEvents(List<Event<EnsemblePair>> pairs)
+    private List<Pair<Instant, Event<SingleValuedPair>>>
+            getSingleValuedEvents( List<Pair<Instant, Event<EnsemblePair>>> pairs )
     {
-        List<Event<SingleValuedPair>> events = new ArrayList<>(  );
+        List<Pair<Instant, Event<SingleValuedPair>>> events = new ArrayList<>();
 
-        for (Event<EnsemblePair> pair : pairs)
+        for ( Pair<Instant, Event<EnsemblePair>> pair : pairs )
         {
             events.addAll( Retriever.unwrapEnsembleEvent( pair ) );
         }
@@ -252,9 +255,9 @@ class SampleDataRetriever extends Retriever
      * @return A list of basis times from a set of packaged pairs
      */
     private static List<Instant>
-    extractBasisTimes( List<Event<EnsemblePair>> pairs )
+    extractBasisTimes( List<Pair<Instant,Event<EnsemblePair>>> pairs )
     {
-        return pairs.stream().map( Event::getReferenceTime ).collect( Collectors.toUnmodifiableList() );
+        return pairs.stream().map( Pair::getLeft ).collect( Collectors.toUnmodifiableList() );
     }
 
     /**
@@ -617,7 +620,7 @@ class SampleDataRetriever extends Retriever
      * @param primaryPairs The set of primary pairs that have already been packaged
      * @throws RetrievalFailedException Thrown if pairs could not be formed
      */
-    private void createPersistencePairs( DataSourceConfig dataSourceConfig, List<Event<EnsemblePair>> primaryPairs )
+    private void createPersistencePairs( DataSourceConfig dataSourceConfig, List<Pair<Instant,Event<EnsemblePair>>> primaryPairs )
             throws RetrievalFailedException
     {
         String loadScript;
@@ -761,9 +764,9 @@ class SampleDataRetriever extends Retriever
         boolean shouldAggregate = mostCommonFrequency > 1;
 
         // Third, for each primary pair, we want to find the latest set of aggregated observations
-        for ( Event<EnsemblePair> primaryPair : primaryPairs )
+        for ( Pair<Instant,Event<EnsemblePair>> primaryPair : primaryPairs )
         {
-            Event<EnsemblePair> persistencePair;
+            Pair<Instant,Event<EnsemblePair>> persistencePair;
             if ( shouldAggregate )
             {
                 persistencePair =
@@ -796,12 +799,16 @@ class SampleDataRetriever extends Retriever
      * @throws IllegalArgumentException when no persistence pair can be found
      */
 
-    private Event<EnsemblePair> getLatestPairFromRawPairs( Event<EnsemblePair> primaryPair,
-                                                           List<RawPersistenceRow> rawPersistenceValues )
+    private Pair<Instant, Event<EnsemblePair>>
+            getLatestPairFromRawPairs( Pair<Instant, Event<EnsemblePair>> primaryPair,
+                                       List<RawPersistenceRow> rawPersistenceValues )
     {
+        Instant referenceTime = primaryPair.getLeft();
+        Instant validTime = primaryPair.getValue().getTime();
+
         for ( RawPersistenceRow rawPair : rawPersistenceValues )
         {
-            if ( rawPair.getValidTime().isBefore( primaryPair.getReferenceTime() ) )
+            if ( rawPair.getValidTime().isBefore( referenceTime ) )
             {
                 // Convert units!
                 Double convertedValue =
@@ -810,9 +817,9 @@ class SampleDataRetriever extends Retriever
 
                 double[] wrappedValue = { convertedValue };
 
-                EnsemblePair pair = EnsemblePair.of( primaryPair.getValue().getLeft(), wrappedValue );
+                EnsemblePair pair = EnsemblePair.of( primaryPair.getValue().getValue().getLeft(), wrappedValue );
 
-                return Event.of( primaryPair.getReferenceTime(), primaryPair.getTime(), pair );
+                return Pair.of( referenceTime, Event.of( validTime, pair ) );
             }
         }
 
@@ -830,11 +837,15 @@ class SampleDataRetriever extends Retriever
      * @return a persistence forecasted pair
      */
 
-    private Event<EnsemblePair> getAggregatedPairFromRawPairs( Event<EnsemblePair> primaryPair,
-                                                               List<RawPersistenceRow> rawPersistenceValues,
-                                                               int countOfValuesInAGoodWindow,
-                                                               TimeScaleConfig scaleConfig )
+    private Pair<Instant, Event<EnsemblePair>>
+            getAggregatedPairFromRawPairs( Pair<Instant, Event<EnsemblePair>> primaryPair,
+                                           List<RawPersistenceRow> rawPersistenceValues,
+                                           int countOfValuesInAGoodWindow,
+                                           TimeScaleConfig scaleConfig )
     {
+        Instant referenceTime = primaryPair.getLeft();
+        Instant validTime = primaryPair.getValue().getTime();
+        
         List<Double> valuesToAggregate = new ArrayList<>( 0 );
 
         for ( int i = 0; i < rawPersistenceValues.size(); i++ )
@@ -845,7 +856,7 @@ class SampleDataRetriever extends Retriever
             valuesToAggregate = new ArrayList<>( countOfValuesInAGoodWindow );
 
             // We want to gather values to aggregate if our anchor happens to occur after the primary pair
-            if ( primaryPair.getReferenceTime().isAfter( currentEvent.getValidTime() ) )
+            if ( referenceTime.isAfter( currentEvent.getValidTime() ) )
             {
                 // We want to gather all values between our anchor and the last value that happens
                 // to come after the earliest time for the anchor
@@ -893,9 +904,9 @@ class SampleDataRetriever extends Retriever
 
         double[] aggregatedWrapped = { aggregated };
 
-        EnsemblePair pair = EnsemblePair.of( primaryPair.getValue().getLeft(), aggregatedWrapped );
+        EnsemblePair pair = EnsemblePair.of( primaryPair.getValue().getValue().getLeft(), aggregatedWrapped );
 
-        return Event.of( primaryPair.getReferenceTime(), primaryPair.getTime(), pair );
+        return Pair.of( referenceTime, Event.of( validTime, pair ) );
     }
 
 

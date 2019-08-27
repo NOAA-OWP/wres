@@ -691,8 +691,7 @@ public final class Slicer
                 {
                     return null;
                 }
-                rawInput.add( Event.of( nextSeries.getReferenceTime(),
-                                        next.getTime(),
+                rawInput.add( Event.of( next.getTime(),
                                         EnsemblePair.of( next.getValue().getLeft(),
                                                          subTraces.toArray( new Double[subTraces.size()] ) ) ) );
             }
