@@ -19,10 +19,11 @@ public class SourceCompletedDetails
 
     /**
      * @param sourceDetails an already existing source complete with non-null id
-     * @throws NullPointerException when sourceDetails has a null id
+     * @throws NullPointerException when sourceDetails is null or has a null id
      */
     public SourceCompletedDetails( SourceDetails sourceDetails )
     {
+        Objects.requireNonNull( sourceDetails );
         Objects.requireNonNull( sourceDetails.getId(), "Invalid SourceDetails!" );
         this.sourceId = sourceDetails.getId();
     }

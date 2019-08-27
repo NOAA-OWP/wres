@@ -42,6 +42,15 @@ public class IncompleteIngest
         {
             SourceDetails sourceDetails =
                     DataSources.getExistingSource( sourceHash );
+
+            if ( sourceDetails == null )
+            {
+                // This means a source has been removed by some Thread after the
+                // call to this method but prior to getExistingSource.
+                LOGGER.warn( "Another task removed source {}, not removing.",
+                             sourceHash );
+                return false;
+            }
             return IncompleteIngest.removeSourceDataSafely( sourceDetails,
                                                             lockManager );
         }
