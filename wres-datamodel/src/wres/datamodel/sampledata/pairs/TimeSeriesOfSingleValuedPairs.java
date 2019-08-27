@@ -98,7 +98,7 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs
          * The raw data for the baseline
          */
 
-        private List<TimeSeries<SingleValuedPair>> baselineData = null;
+        private List<TimeSeries<SingleValuedPair>> baselineData = new ArrayList<>();
 
         /**
          * Adds a time-series to the builder.
@@ -135,11 +135,6 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs
         public TimeSeriesOfSingleValuedPairsBuilder addTimeSeriesForBaseline( TimeSeries<SingleValuedPair> timeSeries )
         {
             Objects.requireNonNull( timeSeries, NULL_INPUT );
-
-            if ( Objects.isNull( this.baselineData ) )
-            {
-                this.baselineData = new ArrayList<>();
-            }
 
             this.baselineData.add( timeSeries );
 
@@ -247,16 +242,7 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs
     {
         super( b );
         this.main = Collections.unmodifiableList( b.data );
-        
-        // Baseline data?
-        if ( Objects.nonNull( b.baselineData ) )
-        {
-            this.baseline = Collections.unmodifiableList( b.baselineData );
-        }
-        else
-        {
-            this.baseline = null;
-        }
+        this.baseline = Collections.unmodifiableList( b.baselineData );
     }
 
 }

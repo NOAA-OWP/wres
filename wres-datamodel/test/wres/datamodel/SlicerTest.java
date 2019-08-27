@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.BiFunction;
+import java.util.function.DoublePredicate;
 import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -34,8 +35,6 @@ import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.datamodel.sampledata.pairs.EnsemblePairs;
 import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfEnsemblePairs;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfEnsemblePairs.TimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.statistics.DataModelTestDataFactory;
@@ -49,6 +48,7 @@ import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeWindow;
 
 /**
@@ -669,7 +669,7 @@ public final class SlicerTest
         // Filter all values where the left side is greater than 0
         TimeSeriesOfSingleValuedPairs firstResult =
                 Slicer.filter( firstSeries,
-                               Slicer.anyOfLeftInTimeSeriesOfSingleValuedPairs( value -> value > 0 ),
+                               TimeSeriesSlicer.anyOfLeftInTimeSeries( value -> value > 0 ),
                                null );
 
         assertTrue( firstResult.getRawData().equals( firstSeries.getRawData() ) );
@@ -677,7 +677,7 @@ public final class SlicerTest
         // Filter all values where the left side is greater than 3
         TimeSeriesOfSingleValuedPairs secondResult =
                 Slicer.filter( firstSeries,
-                               Slicer.anyOfLeftInTimeSeriesOfSingleValuedPairs( value -> value > 3 ),
+                               TimeSeriesSlicer.anyOfLeftInTimeSeries( value -> value > 3 ),
                                clim -> clim > 0 );
 
         List<Event<SingleValuedPair>> secondData = new ArrayList<>();
@@ -697,7 +697,7 @@ public final class SlicerTest
         // Filter all values where the left and right sides are both greater than 7
         TimeSeriesOfSingleValuedPairs thirdResult =
                 Slicer.filter( firstSeries,
-                               Slicer.anyOfLeftAndAnyOfRightInTimeSeriesOfSingleValuedPairs( value -> value > 7 ),
+                               TimeSeriesSlicer.anyOfLeftAndAnyOfRightInTimeSeries( value -> value > 7 ),
                                null );
 
         List<Event<SingleValuedPair>> thirdData = new ArrayList<>();
@@ -710,7 +710,7 @@ public final class SlicerTest
         // Filter on climatology simultaneously
         TimeSeriesOfSingleValuedPairs fourthResult =
                 Slicer.filter( b.build(),
-                               Slicer.anyOfLeftAndAnyOfRightInTimeSeriesOfSingleValuedPairs( value -> value > 7 ),
+                               TimeSeriesSlicer.anyOfLeftAndAnyOfRightInTimeSeries( value -> value > 7 ),
                                Double::isFinite );
         assertTrue( fourthResult.getClimatology().equals( climatologyExpected ) );
 
@@ -722,7 +722,7 @@ public final class SlicerTest
         // Filter all values where both sides are greater than 4
         TimeSeriesOfSingleValuedPairs fifthResult =
                 Slicer.filter( b.build(),
-                               Slicer.anyOfLeftInTimeSeriesOfSingleValuedPairs( value -> value > 4 ),
+                               TimeSeriesSlicer.anyOfLeftInTimeSeries( value -> value > 4 ),
                                clim -> clim > 0 );
 
         List<Event<SingleValuedPair>> fifthData = new ArrayList<>();
@@ -741,156 +741,6 @@ public final class SlicerTest
 
         assertTrue( fifthDataBase.equals( fifthBenchmarkBase ) );
 
-    }
-
-    /**
-     * Tests the {@link Slicer#filterByReferenceTime(TimeSeriesOfEnsemblePairs, java.util.function.Predicate)} 
-     * method.
-     */
-
-    @Test
-    public void testFilterEnsembleTimeSeriesByReferenceTime()
-    {
-        //Build a time-series with three basis times 
-        SortedSet<Event<EnsemblePair>> first = new TreeSet<>();
-        SortedSet<Event<EnsemblePair>> second = new TreeSet<>();
-        SortedSet<Event<EnsemblePair>> third = new TreeSet<>();
-        TimeSeriesOfEnsemblePairsBuilder b = new TimeSeriesOfEnsemblePairsBuilder();
-
-        Instant firstBasisTime = Instant.parse( FIRST_TIME );
-        first.add( Event.of( firstBasisTime,
-                             Instant.parse( SECOND_TIME ),
-                             EnsemblePair.of( 1, new double[] { 1 } ) ) );
-        first.add( Event.of( firstBasisTime,
-                             Instant.parse( THIRD_TIME ),
-                             EnsemblePair.of( 2, new double[] { 2 } ) ) );
-        first.add( Event.of( firstBasisTime,
-                             Instant.parse( FOURTH_TIME ),
-                             EnsemblePair.of( 3, new double[] { 3 } ) ) );
-        Instant secondBasisTime = Instant.parse( FIFTH_TIME );
-        second.add( Event.of( secondBasisTime,
-                              Instant.parse( SIXTH_TIME ),
-                              EnsemblePair.of( 4, new double[] { 4 } ) ) );
-        second.add( Event.of( secondBasisTime,
-                              Instant.parse( SEVENTH_TIME ),
-                              EnsemblePair.of( 5, new double[] { 5 } ) ) );
-        second.add( Event.of( secondBasisTime,
-                              Instant.parse( EIGHTH_TIME ),
-                              EnsemblePair.of( 6, new double[] { 6 } ) ) );
-        Instant thirdBasisTime = Instant.parse( NINTH_TIME );
-        third.add( Event.of( thirdBasisTime,
-                             Instant.parse( TENTH_TIME ),
-                             EnsemblePair.of( 7, new double[] { 7 } ) ) );
-        third.add( Event.of( thirdBasisTime,
-                             Instant.parse( ELEVENTH_TIME ),
-                             EnsemblePair.of( 8, new double[] { 8 } ) ) );
-        third.add( Event.of( thirdBasisTime,
-                             Instant.parse( TWELFTH_TIME ),
-                             EnsemblePair.of( 9, new double[] { 9 } ) ) );
-        SampleMetadata meta = SampleMetadata.of();
-        //Add the time-series
-        TimeSeriesOfEnsemblePairs ts =
-                (TimeSeriesOfEnsemblePairs) b.addTimeSeries( TimeSeries.of( firstBasisTime,
-                                                                            first ) )
-                                             .addTimeSeries( TimeSeries.of( secondBasisTime,
-                                                                            second ) )
-                                             .addTimeSeries( TimeSeries.of( thirdBasisTime,
-                                                                            third ) )
-                                             .setMetadata( meta )
-                                             .build();
-        //Iterate and test
-        TimeSeriesOfEnsemblePairs filtered =
-                Slicer.filterByReferenceTime( ts, a -> a.equals( secondBasisTime ) );
-
-        SortedSet<Instant> referenceTimes = Slicer.getReferenceTimes( filtered.get() );
-
-        assertTrue( referenceTimes.size() == 1 );
-        assertTrue( referenceTimes.first().equals( secondBasisTime ) );
-        assertTrue( filtered.get()
-                            .get( 0 )
-                            .getEvents()
-                            .first()
-                            .getValue()
-                            .equals( EnsemblePair.of( 4, new double[] { 4 } ) ) );
-
-        //Check for empty output on none filter
-        TimeSeriesOfEnsemblePairs pairs =
-                Slicer.filterByReferenceTime( ts, a -> a.equals( Instant.parse( "1985-01-04T00:00:00Z" ) ) );
-
-        SortedSet<Instant> sliced = Slicer.getReferenceTimes( pairs.get() );
-
-        assertTrue( sliced.isEmpty() );
-
-        //Check exceptional cases
-        exception.expect( NullPointerException.class );
-        Slicer.filterByReferenceTime( (TimeSeriesOfEnsemblePairs) null, null );
-        Slicer.filterByReferenceTime( ts, null );
-    }
-
-    /**
-     * Tests the {@link Slicer#filterByReferenceTime(TimeSeriesOfSingleValuedPairs, java.util.function.Predicate)} 
-     * method.
-     */
-
-    @Test
-    public void testFilterSingleValuedTimeSeriesByReferenceTime()
-    {
-        //Build a time-series with three basis times 
-        SortedSet<Event<SingleValuedPair>> first = new TreeSet<>();
-        SortedSet<Event<SingleValuedPair>> second = new TreeSet<>();
-        SortedSet<Event<SingleValuedPair>> third = new TreeSet<>();
-        TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
-
-        Instant firstBasisTime = Instant.parse( FIRST_TIME );
-        first.add( Event.of( firstBasisTime, Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
-        first.add( Event.of( firstBasisTime, Instant.parse( THIRD_TIME ), SingleValuedPair.of( 2, 2 ) ) );
-        first.add( Event.of( firstBasisTime, Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 3, 3 ) ) );
-        Instant secondBasisTime = Instant.parse( FIFTH_TIME );
-        second.add( Event.of( secondBasisTime, Instant.parse( SIXTH_TIME ), SingleValuedPair.of( 4, 4 ) ) );
-        second.add( Event.of( secondBasisTime, Instant.parse( SEVENTH_TIME ), SingleValuedPair.of( 5, 5 ) ) );
-        second.add( Event.of( secondBasisTime, Instant.parse( EIGHTH_TIME ), SingleValuedPair.of( 6, 6 ) ) );
-        Instant thirdBasisTime = Instant.parse( NINTH_TIME );
-        third.add( Event.of( thirdBasisTime, Instant.parse( TENTH_TIME ), SingleValuedPair.of( 7, 7 ) ) );
-        third.add( Event.of( thirdBasisTime, Instant.parse( ELEVENTH_TIME ), SingleValuedPair.of( 8, 8 ) ) );
-        third.add( Event.of( thirdBasisTime, Instant.parse( TWELFTH_TIME ), SingleValuedPair.of( 9, 9 ) ) );
-        SampleMetadata meta = SampleMetadata.of();
-        //Add the time-series
-        TimeSeriesOfSingleValuedPairs ts =
-                (TimeSeriesOfSingleValuedPairs) b.addTimeSeries( TimeSeries.of( firstBasisTime,
-                                                                                first ) )
-                                                 .addTimeSeries( TimeSeries.of( secondBasisTime,
-                                                                                second ) )
-                                                 .addTimeSeries( TimeSeries.of( thirdBasisTime,
-                                                                                third ) )
-                                                 .setMetadata( meta )
-                                                 .build();
-        //Iterate and test
-        TimeSeriesOfSingleValuedPairs filtered =
-                Slicer.filterByReferenceTime( ts, a -> a.equals( secondBasisTime ) );
-
-        SortedSet<Instant> referenceTimes = Slicer.getReferenceTimes( filtered.get() );
-
-        assertTrue( referenceTimes.size() == 1 );
-        assertTrue( referenceTimes.first().equals( secondBasisTime ) );
-        assertTrue( filtered.get()
-                            .get( 0 )
-                            .getEvents()
-                            .first()
-                            .getValue()
-                            .equals( SingleValuedPair.of( 4, 4 ) ) );
-
-        //Check for empty output on none filter
-        TimeSeriesOfSingleValuedPairs pairs =
-                Slicer.filterByReferenceTime( ts, a -> a.equals( Instant.parse( "1985-01-04T00:00:00Z" ) ) );
-
-        SortedSet<Instant> sliced = Slicer.getReferenceTimes( pairs.get() );
-
-        assertTrue( sliced.isEmpty() );
-
-        //Check exceptional cases
-        exception.expect( NullPointerException.class );
-        Slicer.filterByDuration( (List<TimeSeries<Object>>) null, null );
-        Slicer.filterByDuration( ts.get(), null );
     }
 
     /**
@@ -1111,67 +961,19 @@ public final class SlicerTest
         assertEquals( expected, actual );
     }
 
-
     /**
-     * Tests {@link Slicer#getReferenceTimes()}.
+     * Tests the {@link Slicer#filter( VectorOfDoubles DoublePredicate )}.
      */
 
     @Test
-    public void testGetReferenceTimes()
+    public void testFilter()
     {
-        //Build a time-series with two basis times
-        SortedSet<Event<SingleValuedPair>> values = new TreeSet<>();
-        Instant basisTime = Instant.parse( FIRST_TIME );
-        values.add( Event.of( basisTime, Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
+        VectorOfDoubles input = VectorOfDoubles.of( 1, 2, 3, 4, 5, 6, 7 );
+        VectorOfDoubles expectedOutput = VectorOfDoubles.of( 1, 3, 5, 7 );
+        DoublePredicate predicate = d -> ( d == 1 || d == 3 || d == 5 || d == 7 );
+        VectorOfDoubles actualOutput = Slicer.filter( input, predicate );
 
-        List<TimeSeries<SingleValuedPair>> timeSeries = new ArrayList<>();
-
-        timeSeries.add( TimeSeries.of( basisTime, values ) );
-
-        Instant nextBasisTime = Instant.parse( SECOND_TIME );
-        SortedSet<Event<SingleValuedPair>> otherValues = new TreeSet<>();
-        otherValues.add( Event.of( nextBasisTime, Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
-
-        timeSeries.add( TimeSeries.of( nextBasisTime, otherValues ) );
-
-        //Check dataset count
-        SortedSet<Instant> times = Slicer.getReferenceTimes( timeSeries );
-        assertEquals( 2, times.size() );
-
-        //Check the basis times
-        assertEquals( basisTime, times.first() );
-        Iterator<Instant> it = times.iterator();
-        it.next();
-        assertTrue( it.next().equals( nextBasisTime ) );
-    }
-
-    /**
-     * Tests {@link Slicer#getDurations()}.
-     */
-
-    @Test
-    public void testGetDurations()
-    {
-        //Build a time-series with one basis time
-        List<TimeSeries<SingleValuedPair>> timeSeries = new ArrayList<>();
-
-        SortedSet<Event<SingleValuedPair>> values = new TreeSet<>();
-        Instant basisTime = Instant.parse( FIRST_TIME );
-        values.add( Event.of( basisTime, Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
-        values.add( Event.of( basisTime, Instant.parse( THIRD_TIME ), SingleValuedPair.of( 2, 2 ) ) );
-        values.add( Event.of( basisTime, Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 3, 3 ) ) );
-
-        timeSeries.add( TimeSeries.of( basisTime, values ) );
-
-        //Check dataset count
-        SortedSet<Duration> actual = Slicer.getDurations( timeSeries );
-        SortedSet<Duration> expected = new TreeSet<>();
-        expected.add( Duration.ofHours( 1 ) );
-        expected.add( Duration.ofHours( 2 ) );
-        expected.add( Duration.ofHours( 3 ) );
-
-        assertEquals( expected, actual );
-
+        assertEquals( expectedOutput, actualOutput );
     }
 
     /**

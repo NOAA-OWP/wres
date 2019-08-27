@@ -114,7 +114,7 @@ public abstract class Pairs<T extends Pair<?,?>> implements SampleData<T>
         /**
          * Pairs for baseline.
          */
-        List<T> baselineSampleData = null;
+        List<T> baselineSampleData = new ArrayList<>();
 
         /**
          * Climatology.
@@ -184,11 +184,6 @@ public abstract class Pairs<T extends Pair<?,?>> implements SampleData<T>
         @Override
         public PairsBuilder<T> addDataForBaseline( T baselineInput )
         {
-            if ( Objects.isNull( this.baselineSampleData ) )
-            {
-                this.baselineSampleData = new ArrayList<>();
-            }
-
             this.baselineSampleData.add( baselineInput );
 
             return this;
@@ -208,11 +203,6 @@ public abstract class Pairs<T extends Pair<?,?>> implements SampleData<T>
         public PairsBuilder<T> addDataForBaseline( List<T> baselineSampleData )
         {
             Objects.requireNonNull( baselineSampleData, "Specify non-null sample data for the baseline." );
-            
-            if ( Objects.isNull( this.baselineSampleData ) )
-            {
-                this.baselineSampleData = new ArrayList<>();
-            }
             
             this.baselineSampleData.addAll( baselineSampleData );
             
@@ -262,8 +252,11 @@ public abstract class Pairs<T extends Pair<?,?>> implements SampleData<T>
         this.mainMeta = b.mainMeta;
         this.climatology = b.climatology;
 
+        // Always set baseline metadata because null-status is validated
+        this.baselineMeta = b.baselineMeta;
+        
         // Baseline data?
-        if ( Objects.nonNull( b.baselineSampleData ) )
+        if ( Objects.nonNull( b.baselineMeta ) )
         {
             this.baselineSampleData = Collections.unmodifiableList( b.baselineSampleData );
         }
@@ -271,9 +264,6 @@ public abstract class Pairs<T extends Pair<?,?>> implements SampleData<T>
         {
             this.baselineSampleData = null;
         }
-
-        // Always set baseline metadata because null-status is validated
-        this.baselineMeta = b.baselineMeta;
 
         //Validate
         this.validateMainInput();
@@ -318,7 +308,11 @@ public abstract class Pairs<T extends Pair<?,?>> implements SampleData<T>
         if ( Objects.isNull( baselineSampleData ) != Objects.isNull( baselineMeta ) )
         {
             throw new SampleDataException( "Specify a non-null baseline input and associated metadata or leave both "
-                                           + "null." );
+                                           + "null. The null status of the data and metadata, respectively, is: ["
+                                           + Objects.isNull( baselineSampleData )
+                                           + ","
+                                           + Objects.isNull( baselineMeta )
+                                           + "]" );
         }
 
         if ( Objects.nonNull( baselineSampleData ) && baselineSampleData.contains( (T) null ) )

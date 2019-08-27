@@ -29,6 +29,7 @@ import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeWindow;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricCollection;
@@ -205,15 +206,15 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
         switch ( input.getDataType() )
         {
             case LEFT:
-                return Slicer.anyOfLeftInTimeSeriesOfSingleValuedPairs( input::test );
+                return TimeSeriesSlicer.anyOfLeftInTimeSeries( input::test );
             case LEFT_AND_RIGHT:
             case LEFT_AND_ANY_RIGHT:
             case LEFT_AND_RIGHT_MEAN:
-                return Slicer.anyOfLeftAndAnyOfRightInTimeSeriesOfSingleValuedPairs( input::test );
+                return TimeSeriesSlicer.anyOfLeftAndAnyOfRightInTimeSeries( input::test );
             case RIGHT:
             case ANY_RIGHT:
             case RIGHT_MEAN:
-                return Slicer.anyOfRightInTimeSeriesOfSingleValuedPairs( input::test );
+                return TimeSeriesSlicer.anyOfRightInTimeSeries( input::test );
             default:
                 throw new IllegalStateException( "Unrecognized threshold type '" + input.getDataType() + "'." );
         }
