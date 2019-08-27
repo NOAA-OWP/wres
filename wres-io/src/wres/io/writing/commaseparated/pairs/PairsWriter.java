@@ -11,6 +11,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -27,6 +28,7 @@ import wres.datamodel.sampledata.pairs.Pair;
 import wres.datamodel.sampledata.pairs.Pairs;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.Event;
+import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindow;
 import wres.io.writing.WriteException;
@@ -257,7 +259,11 @@ public abstract class PairsWriter<S extends Pair<?,?>, T extends Pairs<S> & Supp
                     // Iterate in time-series order
                     for ( TimeSeries<S> nextSeries : pairs.get() )
                     {
-                        Instant basisTime = nextSeries.getReferenceTime();
+                        // There is always one reference datetime, and the pairs format can only support one
+                        // and does not yet qualify the type
+                        Map<ReferenceTimeType,Instant> referenceTimes = nextSeries.getReferenceTimes();
+                        
+                        Instant basisTime = referenceTimes.values().iterator().next();
 
                         for ( Event<S> nextPair : nextSeries.getEvents() )
                         {

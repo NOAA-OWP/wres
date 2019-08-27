@@ -696,8 +696,7 @@ public final class Slicer
                                                          subTraces.toArray( new Double[subTraces.size()] ) ) ) );
             }
 
-            builder.addTimeSeries( TimeSeries.of( nextSeries.getReferenceTime(),
-                                                  nextSeries.getReferenceTimeType(),
+            builder.addTimeSeries( TimeSeries.of( nextSeries.getReferenceTimes(),
                                                   rawInput ) );
         }
 

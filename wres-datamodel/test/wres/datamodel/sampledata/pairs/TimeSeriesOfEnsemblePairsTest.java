@@ -22,6 +22,7 @@ import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfEnsemblePairs.TimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.time.Event;
+import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesSlicer;
 
@@ -94,7 +95,7 @@ public final class TimeSeriesOfEnsemblePairsTest
                                              .setMetadata( meta )
                                              .build();
 
-        SortedSet<Instant> sliced = TimeSeriesSlicer.getReferenceTimes( ts.get() );
+        SortedSet<Instant> sliced = TimeSeriesSlicer.getReferenceTimes( ts.get(), ReferenceTimeType.DEFAULT );
 
         assertEquals( 3, sliced.size() );
 
@@ -144,11 +145,12 @@ public final class TimeSeriesOfEnsemblePairsTest
         TimeSeriesOfEnsemblePairs baseline = b.build().getBaselineData();
 
         //Check dataset dimensions
-        SortedSet<Duration> durations = TimeSeriesSlicer.getDurations( baseline.get() );
+        SortedSet<Duration> durations = TimeSeriesSlicer.getDurations( baseline.get(), ReferenceTimeType.DEFAULT );
 
         assertEquals( 3, durations.size() );
 
-        SortedSet<Instant> referenceTimes = TimeSeriesSlicer.getReferenceTimes( baseline.get() );
+        SortedSet<Instant> referenceTimes =
+                TimeSeriesSlicer.getReferenceTimes( baseline.get(), ReferenceTimeType.DEFAULT );
 
         assertEquals( 1, referenceTimes.size() );
 
@@ -159,7 +161,9 @@ public final class TimeSeriesOfEnsemblePairsTest
         for ( Duration duration : durations )
         {
             List<Event<EnsemblePair>> events =
-                    TimeSeriesSlicer.filterByDuration( baseline.get(), a -> a.equals( duration ) );
+                    TimeSeriesSlicer.filterByDuration( baseline.get(),
+                                                       a -> a.equals( duration ),
+                                                       ReferenceTimeType.DEFAULT );
             for ( Event<EnsemblePair> nextPair : events )
             {
                 assertTrue( nextPair.getValue().equals( EnsemblePair.of( nextValue, new double[] { nextValue } ) ) );
@@ -233,7 +237,7 @@ public final class TimeSeriesOfEnsemblePairsTest
         TimeSeriesOfEnsemblePairs tsAppend = c.build();
 
         //Check dataset dimensions
-        SortedSet<Duration> durations = TimeSeriesSlicer.getDurations( tsAppend.get() );
+        SortedSet<Duration> durations = TimeSeriesSlicer.getDurations( tsAppend.get(), ReferenceTimeType.DEFAULT );
 
         assertEquals( 3, durations.size() );
 
@@ -309,10 +313,10 @@ public final class TimeSeriesOfEnsemblePairsTest
         for ( int i = 0; i < 5; i++ )
         {
             String validTime = "1985-01-01T" + String.format( "%02d", i ) + ZERO_ZEE;
-            
+
             values.add( Event.of( Instant.parse( validTime ),
                                   EnsemblePair.of( 1, new double[] { 1 } ) ) );
-            joiner.add( "(" 
+            joiner.add( "("
                         + validTime
                         + ",key: "
                         + "1.0 value: [1.0])" );
@@ -320,7 +324,7 @@ public final class TimeSeriesOfEnsemblePairsTest
         b.addTimeSeries( TimeSeries.of( basisTime,
                                         values ) )
          .setMetadata( meta );
-        
+
         //Check dataset count
         assertTrue( "Unexpected string representation of time-series.",
                     joiner.toString().equals( b.build().toString() ) );
@@ -330,18 +334,18 @@ public final class TimeSeriesOfEnsemblePairsTest
         for ( int i = 0; i < 5; i++ )
         {
             String validTime = "1985-01-02T" + String.format( "%02d", i ) + ZERO_ZEE;
-            
+
             otherValues.add( Event.of( Instant.parse( "1985-01-02T" + String.format( "%02d", i ) + ZERO_ZEE ),
                                        EnsemblePair.of( 1, new double[] { 1 } ) ) );
-            joiner.add( "(" 
-                    + validTime
-                    + ",key: "
-                    + "1.0 value: [1.0])" );
+            joiner.add( "("
+                        + validTime
+                        + ",key: "
+                        + "1.0 value: [1.0])" );
         }
 
         b.addTimeSeries( TimeSeries.of( nextBasisTime,
                                         otherValues ) );
-        
+
         assertTrue( joiner.toString().equals( b.build().toString() ) );
     }
 
@@ -405,11 +409,12 @@ public final class TimeSeriesOfEnsemblePairsTest
         double[] expectedOrder = new double[] { 1, 7, 4, 10, 5, 11, 6, 12, 2, 8, 3, 9 };
         int nextIndex = 0;
 
-        SortedSet<Duration> durations = TimeSeriesSlicer.getDurations( ts.get() );
+        SortedSet<Duration> durations = TimeSeriesSlicer.getDurations( ts.get(), ReferenceTimeType.DEFAULT );
 
         for ( Duration duration : durations )
         {
-            List<Event<EnsemblePair>> events = TimeSeriesSlicer.filterByDuration( ts.get(), a -> a.equals( duration ) );
+            List<Event<EnsemblePair>> events =
+                    TimeSeriesSlicer.filterByDuration( ts.get(), a -> a.equals( duration ), ReferenceTimeType.DEFAULT );
             for ( Event<EnsemblePair> nextPair : events )
             {
                 assertTrue( nextPair.getValue()

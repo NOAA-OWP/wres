@@ -61,7 +61,7 @@ public final class TimeSeriesSlicerTest
         timeSeries.add( TimeSeries.of( nextBasisTime, otherValues ) );
 
         //Check dataset count
-        SortedSet<Instant> times = TimeSeriesSlicer.getReferenceTimes( timeSeries );
+        SortedSet<Instant> times = TimeSeriesSlicer.getReferenceTimes( timeSeries, ReferenceTimeType.DEFAULT );
         assertEquals( 2, times.size() );
 
         //Check the basis times
@@ -90,7 +90,7 @@ public final class TimeSeriesSlicerTest
         timeSeries.add( TimeSeries.of( basisTime, values ) );
 
         //Check dataset count
-        SortedSet<Duration> actual = TimeSeriesSlicer.getDurations( timeSeries );
+        SortedSet<Duration> actual = TimeSeriesSlicer.getDurations( timeSeries, ReferenceTimeType.DEFAULT );
         SortedSet<Duration> expected = new TreeSet<>();
         expected.add( Duration.ofHours( 1 ) );
         expected.add( Duration.ofHours( 2 ) );
@@ -136,9 +136,11 @@ public final class TimeSeriesSlicerTest
 
         //Iterate and test
         List<TimeSeries<SingleValuedPair>> filtered =
-                TimeSeriesSlicer.filterByReferenceTime( ts, a -> a.equals( secondBasisTime ) );
+                TimeSeriesSlicer.filterByReferenceTime( ts,
+                                                        a -> a.equals( secondBasisTime ),
+                                                        ReferenceTimeType.DEFAULT );
 
-        SortedSet<Instant> referenceTimes = TimeSeriesSlicer.getReferenceTimes( filtered );
+        SortedSet<Instant> referenceTimes = TimeSeriesSlicer.getReferenceTimes( filtered, ReferenceTimeType.DEFAULT );
 
         assertTrue( referenceTimes.size() == 1 );
         assertTrue( referenceTimes.first().equals( secondBasisTime ) );
@@ -150,17 +152,25 @@ public final class TimeSeriesSlicerTest
 
         //Check for empty output on none filter
         List<TimeSeries<SingleValuedPair>> pairs =
-                TimeSeriesSlicer.filterByReferenceTime( ts, a -> a.equals( Instant.parse( "1985-01-04T00:00:00Z" ) ) );
+                TimeSeriesSlicer.filterByReferenceTime( ts,
+                                                        a -> a.equals( Instant.parse( "1985-01-04T00:00:00Z" ) ),
+                                                        ReferenceTimeType.DEFAULT );
 
-        SortedSet<Instant> sliced = TimeSeriesSlicer.getReferenceTimes( pairs );
+        SortedSet<Instant> sliced = TimeSeriesSlicer.getReferenceTimes( pairs, ReferenceTimeType.DEFAULT );
 
         assertTrue( sliced.isEmpty() );
 
         //Check exceptional cases
         assertThrows( NullPointerException.class,
-                      () -> TimeSeriesSlicer.filterByReferenceTime( (List<TimeSeries<SingleValuedPair>>) null, null ) );
+                      () -> TimeSeriesSlicer.filterByReferenceTime( (List<TimeSeries<SingleValuedPair>>) null,
+                                                                    null,
+                                                                    ReferenceTimeType.DEFAULT ) );
         assertThrows( NullPointerException.class,
-                      () -> TimeSeriesSlicer.filterByReferenceTime( ts, null ) );
+                      () -> TimeSeriesSlicer.filterByReferenceTime( ts, null, ReferenceTimeType.DEFAULT ) );
+        assertThrows( NullPointerException.class,
+                      () -> TimeSeriesSlicer.filterByReferenceTime( ts,
+                                                                    a -> a.equals( Instant.parse( "1985-01-04T00:00:00Z" ) ),
+                                                                    null ) );
     }
 
 }

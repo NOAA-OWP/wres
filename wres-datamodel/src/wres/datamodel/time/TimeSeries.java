@@ -2,15 +2,24 @@ package wres.datamodel.time;
 
 import java.time.Instant;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Objects;
 import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.TreeSet;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
- * A time-series contains a time-ordered set of {@link Event}, together with a reference datetime and associated 
- * {@link ReferenceTimeType}.
+ * <p>A time-series contains a time-ordered set of {@link Event}, together with one or more reference datetimes and 
+ * associated {@link ReferenceTimeType}.
  * 
- * @param <T> the type of data
+ * <p><b>Implementation Notes:</b>
+ * 
+ * <p>This class is immutable and thread-safe.
+ * 
+ * @param <T> the type of time-series data
  * @author james.brown@hydrosolved.com
  */
 
@@ -18,16 +27,16 @@ public class TimeSeries<T>
 {
 
     /**
-     * The reference datetime associated with the time-series.
+     * Logger.
      */
 
-    private final Instant referenceTime;
+    private static final Logger LOGGER = LoggerFactory.getLogger( TimeSeries.class );
 
     /**
-     * The type of reference time.
+     * The one or more reference datetimes associated with the time-series.
      */
 
-    private final ReferenceTimeType referenceTimeType;
+    private final Map<ReferenceTimeType, Instant> referenceTimes;
 
     /**
      * The events.
@@ -37,7 +46,7 @@ public class TimeSeries<T>
 
     /**
      * Returns a {@link TimeSeries} with a reference time equal to the {@link Event#getTime()} of the first event or 
-     * {@link Instant#MIN} when the input is empty. Assumes a type of {@link ReferenceTimeType#UNKNOWN}.
+     * {@link Instant#MIN} when the input is empty. Assumes a type of {@link ReferenceTimeType#DEFAULT}.
      *
      * @param <T> the event type
      * @param events the events
@@ -47,20 +56,11 @@ public class TimeSeries<T>
 
     public static <T> TimeSeries<T> of( SortedSet<Event<T>> events )
     {
-        Objects.requireNonNull( events );
-
-        Instant referenceTime = Instant.MIN;
-
-        if ( !events.isEmpty() )
-        {
-            referenceTime = events.first().getTime();
-        }
-
-        return TimeSeries.of( referenceTime, events );
+        return new TimeSeries<>( Collections.emptyMap(), events );
     }
 
     /**
-     * Returns a {@link TimeSeries} with a reference time type of {@link ReferenceTimeType#UNKNOWN}.
+     * Returns a {@link TimeSeries} with a reference time type of {@link ReferenceTimeType#DEFAULT}.
      * 
      * @param <T> the event type
      * @param referenceTime the reference time
@@ -72,7 +72,7 @@ public class TimeSeries<T>
     public static <T> TimeSeries<T> of( Instant referenceTime,
                                         SortedSet<Event<T>> events )
     {
-        return new TimeSeries<>( referenceTime, ReferenceTimeType.UNKNOWN, events );
+        return new TimeSeries<>( Collections.singletonMap( ReferenceTimeType.DEFAULT, referenceTime ), events );
     }
 
     /**
@@ -90,7 +90,23 @@ public class TimeSeries<T>
                                         ReferenceTimeType referenceTimeType,
                                         SortedSet<Event<T>> events )
     {
-        return new TimeSeries<>( referenceTime, referenceTimeType, events );
+        return new TimeSeries<>( Collections.singletonMap( referenceTimeType, referenceTime ), events );
+    }
+    
+    /**
+     * Returns a {@link TimeSeries}.
+     * 
+     * @param <T> the event type
+     * @param referenceTimes the reference times
+     * @param events the events
+     * @return a time-series
+     * @throws NullPointerException if any input is null or any individual event is null
+     */
+
+    public static <T> TimeSeries<T> of( Map<ReferenceTimeType, Instant> referenceTimes,
+                                        SortedSet<Event<T>> events )
+    {
+        return new TimeSeries<>( referenceTimes, events );
     }
 
     /**
@@ -110,67 +126,80 @@ public class TimeSeries<T>
      * @return the reference datetime
      */
 
-    public Instant getReferenceTime()
+    public Map<ReferenceTimeType, Instant> getReferenceTimes()
     {
-        return this.referenceTime;
+        return this.referenceTimes; //Rendered immutable on construction
     }
-
-    /**
-     * Returns the type of reference datetime.
-     * 
-     * @return the reference time type
-     */
-
-    public ReferenceTimeType getReferenceTimeType()
-    {
-        return this.referenceTimeType;
-    }
-
+    
     @Override
     public boolean equals( Object o )
     {
-        if ( Objects.isNull( o ) )
+        if ( ! ( o instanceof TimeSeries<?> ) )
         {
             return false;
         }
 
         TimeSeries<?> input = (TimeSeries<?>) o;
 
-        return Objects.equals( this.getReferenceTimeType(), input.getReferenceTimeType() )
-               && Objects.equals( this.getReferenceTime(), input.getReferenceTime() )
+        return Objects.equals( this.getReferenceTimes(), input.getReferenceTimes() )
                && Objects.equals( this.getEvents(), input.getEvents() );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( this.getReferenceTimeType(), this.getReferenceTime(), this.getEvents() );
+        return Objects.hash( this.getReferenceTimes(), this.getEvents() );
     }
 
     /**
      * Build a time-series.
      * 
-     * @param referenceTime the reference datetime
-     * @param referenceTimeType the type of reference time
+     * @param referenceTimes the reference datetimes associated with the time-series
      * @param events the events
      * @throws NullPointerException if any input is null or any individual event is null
      */
 
-    private TimeSeries( Instant referenceTime, ReferenceTimeType referenceTimeType, SortedSet<Event<T>> events )
+    private TimeSeries( Map<ReferenceTimeType, Instant> referenceTimes, SortedSet<Event<T>> events )
     {
         // Set then validate, as this class includes a mutable builder
         // as a possible source of input
         this.events = Collections.unmodifiableSortedSet( events );
-        this.referenceTime = referenceTime;
-        this.referenceTimeType = referenceTimeType;
-        
-        Objects.requireNonNull( this.getReferenceTime() );
-     
-        Objects.requireNonNull( this.getReferenceTimeType() );
-        
+
+        Map<ReferenceTimeType, Instant> localMap = new TreeMap<>( referenceTimes );
+
+        // Add a default reference time if needed
+        if ( localMap.isEmpty() )
+        {
+            Instant defaultTime = Instant.MIN;
+            ReferenceTimeType defaultType = ReferenceTimeType.DEFAULT;
+
+            if ( !this.getEvents().isEmpty() )
+            {
+                defaultTime = this.getEvents().first().getTime();
+            }
+
+            localMap.put( defaultType, defaultTime );
+
+            LOGGER.trace( "Added a default reference time of {} and type {} for time-series {}.",
+                          defaultTime,
+                          defaultType,
+                          this.hashCode() );
+        }
+
+        this.referenceTimes = Collections.unmodifiableMap( localMap );
+
+        // All reference datetimes and types must be non-null
+        for ( Map.Entry<ReferenceTimeType, Instant> nextEntry : this.getReferenceTimes().entrySet() )
+        {
+            Objects.requireNonNull( nextEntry.getKey() );
+
+            Objects.requireNonNull( nextEntry.getValue() );
+        }
+
+        // No null collection of events
         Objects.requireNonNull( this.getEvents() );
 
-        // No non-null events
+        // No null events
         this.getEvents().forEach( Objects::requireNonNull );
     }
 
@@ -181,7 +210,7 @@ public class TimeSeries<T>
      */
     private TimeSeries( TimeSeriesBuilder<T> builder )
     {
-        this( builder.referenceTime, builder.referenceTimeType, builder.events );
+        this( builder.referenceTimes, builder.events );
     }
 
     /**
@@ -203,13 +232,7 @@ public class TimeSeries<T>
          * The reference datetime associated with the time-series.
          */
 
-        private Instant referenceTime;
-
-        /**
-         * The type of reference time.
-         */
-
-        private ReferenceTimeType referenceTimeType;
+        private Map<ReferenceTimeType, Instant> referenceTimes = new TreeMap<>();
 
         /**
          * Sets the reference time.
@@ -219,10 +242,9 @@ public class TimeSeries<T>
          * @return the builder
          */
 
-        public TimeSeriesBuilder<T> setReferenceTime( Instant referenceTime, ReferenceTimeType referenceTimeType )
+        public TimeSeriesBuilder<T> addReferenceTime( Instant referenceTime, ReferenceTimeType referenceTimeType )
         {
-            this.referenceTime = referenceTime;
-            this.referenceTimeType = referenceTimeType;
+            this.referenceTimes.put( referenceTimeType, referenceTime );
 
             return this;
         }

@@ -22,6 +22,7 @@ import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.time.Event;
+import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesSlicer;
 
@@ -87,7 +88,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
                                                  .setMetadata( meta )
                                                  .build();
 
-        SortedSet<Instant> referenceTimes = TimeSeriesSlicer.getReferenceTimes( ts.get() );
+        SortedSet<Instant> referenceTimes = TimeSeriesSlicer.getReferenceTimes( ts.get(), ReferenceTimeType.DEFAULT );
 
         assertEquals( 3, referenceTimes.size() );
 
@@ -146,19 +147,19 @@ public final class TimeSeriesOfSingleValuedPairsTest
         //Iterate and test
         int nextValue = 1;
 
-        SortedSet<Duration> durations = TimeSeriesSlicer.getDurations( ts.get() );
+        SortedSet<Duration> durations = TimeSeriesSlicer.getDurations( ts.get(), ReferenceTimeType.DEFAULT );
 
         for ( Duration duration : durations )
         {
             List<Event<SingleValuedPair>> events =
-                    TimeSeriesSlicer.filterByDuration( ts.get(), a -> a.equals( duration ) );
+                    TimeSeriesSlicer.filterByDuration( ts.get(), a -> a.equals( duration ), ReferenceTimeType.DEFAULT );
             for ( Event<SingleValuedPair> nextPair : events )
             {
                 assertTrue( nextPair.getValue().equals( SingleValuedPair.of( nextValue, nextValue ) ) );
             }
-            
+
             //Three time-series
-            assertTrue( TimeSeriesSlicer.getReferenceTimes( ts.get() ).size() == 3 );
+            assertTrue( TimeSeriesSlicer.getReferenceTimes( ts.get(), ReferenceTimeType.DEFAULT ).size() == 3 );
             nextValue++;
         }
 
@@ -174,7 +175,8 @@ public final class TimeSeriesOfSingleValuedPairsTest
                                                   .setMetadata( meta )
                                                   .build();
 
-        SortedSet<Duration> durationsTwo = TimeSeriesSlicer.getDurations( durationCheck.get() );
+        SortedSet<Duration> durationsTwo =
+                TimeSeriesSlicer.getDurations( durationCheck.get(), ReferenceTimeType.DEFAULT );
 
         assertEquals( Duration.ofHours( 51 ), durationsTwo.first() );
     }
@@ -208,11 +210,12 @@ public final class TimeSeriesOfSingleValuedPairsTest
         TimeSeriesOfSingleValuedPairs baseline = b.build().getBaselineData();
 
         //Check dataset dimensions
-        SortedSet<Duration> durations = TimeSeriesSlicer.getDurations( baseline.get() );
+        SortedSet<Duration> durations = TimeSeriesSlicer.getDurations( baseline.get(), ReferenceTimeType.DEFAULT );
 
         assertEquals( 3, durations.size() );
 
-        SortedSet<Instant> referenceTimes = TimeSeriesSlicer.getReferenceTimes( baseline.get() );
+        SortedSet<Instant> referenceTimes =
+                TimeSeriesSlicer.getReferenceTimes( baseline.get(), ReferenceTimeType.DEFAULT );
 
         assertEquals( 1, referenceTimes.size() );
 
@@ -223,7 +226,9 @@ public final class TimeSeriesOfSingleValuedPairsTest
         for ( Duration duration : durations )
         {
             List<Event<SingleValuedPair>> events =
-                    TimeSeriesSlicer.filterByDuration( baseline.get(), a -> a.equals( duration ) );
+                    TimeSeriesSlicer.filterByDuration( baseline.get(),
+                                                       a -> a.equals( duration ),
+                                                       ReferenceTimeType.DEFAULT );
             for ( Event<SingleValuedPair> nextPair : events )
             {
                 assertTrue( nextPair.getValue().equals( SingleValuedPair.of( nextValue, nextValue ) ) );
@@ -292,7 +297,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
         TimeSeriesOfSingleValuedPairs tsAppend = c.build();
 
         //Check dataset dimensions
-        SortedSet<Duration> durations = TimeSeriesSlicer.getDurations( tsAppend.get() );
+        SortedSet<Duration> durations = TimeSeriesSlicer.getDurations( tsAppend.get(), ReferenceTimeType.DEFAULT );
 
         assertEquals( 3, durations.size() );
 
@@ -480,12 +485,14 @@ public final class TimeSeriesOfSingleValuedPairsTest
         double[] expectedOrder = new double[] { 1, 7, 4, 10, 5, 11, 6, 12, 2, 8, 3, 9 };
         int nextIndex = 0;
 
-        SortedSet<Duration> durations = TimeSeriesSlicer.getDurations( ts.get() );
+        SortedSet<Duration> durations = TimeSeriesSlicer.getDurations( ts.get(), ReferenceTimeType.DEFAULT );
 
         for ( Duration nextDuration : durations )
         {
             List<Event<SingleValuedPair>> events =
-                    TimeSeriesSlicer.filterByDuration( ts.get(), a -> a.equals( nextDuration ) );
+                    TimeSeriesSlicer.filterByDuration( ts.get(),
+                                                       a -> a.equals( nextDuration ),
+                                                       ReferenceTimeType.DEFAULT );
 
             for ( Event<SingleValuedPair> nextPair : events )
             {
@@ -551,12 +558,14 @@ public final class TimeSeriesOfSingleValuedPairsTest
         // Iterate by duration
         int k = 1;
 
-        SortedSet<Duration> durations = TimeSeriesSlicer.getDurations( ts.get() );
+        SortedSet<Duration> durations = TimeSeriesSlicer.getDurations( ts.get(), ReferenceTimeType.DEFAULT );
 
         for ( Duration nextDuration : durations )
         {
             List<Event<SingleValuedPair>> events =
-                    TimeSeriesSlicer.filterByDuration( ts.get(), a -> a.equals( nextDuration ) );
+                    TimeSeriesSlicer.filterByDuration( ts.get(),
+                                                       a -> a.equals( nextDuration ),
+                                                       ReferenceTimeType.DEFAULT );
 
             for ( Event<SingleValuedPair> next : events )
             {

@@ -7,10 +7,13 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.MeasurementUnit;
@@ -19,6 +22,7 @@ import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
+import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.engine.statistics.metric.Metric;
 
@@ -38,7 +42,12 @@ import wres.engine.statistics.metric.Metric;
  */
 public class TimeToPeakRelativeError extends TimingError
 {
-
+    /**
+     * Logger.
+     */
+    
+    private static final Logger LOGGER = LoggerFactory.getLogger( TimeToPeakRelativeError.class );
+    
     /**
      * Returns an instance.
      * 
@@ -74,13 +83,29 @@ public class TimeToPeakRelativeError extends TimingError
         List<Pair<Instant, Duration>> returnMe = new ArrayList<>();
         for ( TimeSeries<SingleValuedPair> next : s.get() )
         {
+
+            // Get the first reference time
+            Map<ReferenceTimeType, Instant> referenceTimes = next.getReferenceTimes();
+            Map.Entry<ReferenceTimeType,Instant> firstEntry = referenceTimes.entrySet().iterator().next();
+            Instant referenceTime = firstEntry.getValue();
+            ReferenceTimeType referenceTimeType = firstEntry.getKey();
+            
+            if ( LOGGER.isTraceEnabled() )
+            {
+                LOGGER.trace( "Using reference time {} with type {} for instance of {} with input hash {}.",
+                              referenceTime,
+                              referenceTimeType,
+                              TimeToPeakRelativeError.class,
+                              s.hashCode() );
+            }
+            
             Pair<Instant, Instant> peak = TimingErrorHelper.getTimeToPeak( next, this.getRNG() );
 
             // Duration.between is negative if the predicted/right or "end" is before the observed/left or "start"
             Duration error = Duration.between( peak.getLeft(), peak.getRight() );
 
             // Compute the denominator
-            Duration denominator = Duration.between( next.getReferenceTime(), peak.getLeft() );
+            Duration denominator = Duration.between( referenceTime, peak.getLeft() );
 
             // Add the relative time-to-peak error against the basis time
             // If the horizon is zero, the relative error is undefined
@@ -105,8 +130,8 @@ public class TimeToPeakRelativeError extends TimingError
 
                 // Nearest whole second
                 seconds = seconds.setScale( 0, RoundingMode.HALF_UP );
-
-                returnMe.add( Pair.of( next.getReferenceTime(),
+                
+                returnMe.add( Pair.of( referenceTime,
                                        Duration.ofSeconds( seconds.longValue() ) ) );
             }
         }
