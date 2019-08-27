@@ -1,10 +1,10 @@
 package wres.datamodel.time;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
-import java.time.Duration;
 import java.time.Instant;
 
 import org.junit.Rule;
@@ -69,27 +69,7 @@ public final class EventTest
         assertTrue( "The event has an unexpected reference time.",
                     Instant.parse( FOURTH_TIME ).equals( eventTwo.getReferenceTime() ) );
 
-    }
-    
-    /**
-     * Constructs an {@link Event} and confirms that the {@link Event#getDuration()} returns the expected result.
-     */
-
-    @Test
-    public void testGetDuration()
-    {
-        Event<String> event = Event.of( Instant.parse( FIFTH_TIME ), EVENT_VALUE );
-        assertTrue( "The event has an unexpected duration.",
-                    Duration.ZERO.equals( event.getDuration() ) );
-
-        Event<String> eventTwo = Event.of( Instant.parse( FOURTH_TIME ),
-                                           Instant.parse( FIFTH_TIME ),
-                                           EVENT_VALUE );
-        
-        assertTrue( "The event has an unexpected duration.",
-                    Duration.ofDays( 1 ).equals( eventTwo.getDuration() ) );
-
-    }    
+    }   
 
     /**
      * Constructs an {@link Event} and tests {@link Event#equals(Object)} against other instances.
@@ -189,6 +169,14 @@ public final class EventTest
         assertTrue( eventTwo.compareTo( isEqualTwo ) == 0 );
         assertTrue( eventTwo.compareTo( isLessTwo ) < 0 );
         assertTrue( eventTwo.compareTo( isGreaterTwo ) > 0 );
+        
+        // Consistent with equals
+        Event<String> eventOneEqual = Event.of( basisTime, Instant.parse( FIRST_TIME ), EVENT_VALUE );
+        Event<String> eventTwoEqual = Event.of( basisTime, Instant.parse( FIRST_TIME ), EVENT_VALUE );
+        Event<String> eventOneUnequalOnValue = Event.of( basisTime, Instant.parse( FIRST_TIME ), "differentValue" );
+        
+        assertEquals( 0, eventOneEqual.compareTo( eventTwoEqual ) );
+        assertNotEquals( 0, eventOneEqual.compareTo( eventOneUnequalOnValue ) );        
     }
 
     /**
