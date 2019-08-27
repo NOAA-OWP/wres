@@ -48,7 +48,7 @@ public final class TimeSeriesSlicerTest
         //Build a time-series with two basis times
         SortedSet<Event<SingleValuedPair>> values = new TreeSet<>();
         Instant basisTime = Instant.parse( FIRST_TIME );
-        values.add( Event.of( basisTime, Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
+        values.add( Event.of( Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
 
         List<TimeSeries<SingleValuedPair>> timeSeries = new ArrayList<>();
 
@@ -56,7 +56,7 @@ public final class TimeSeriesSlicerTest
 
         Instant nextBasisTime = Instant.parse( SECOND_TIME );
         SortedSet<Event<SingleValuedPair>> otherValues = new TreeSet<>();
-        otherValues.add( Event.of( nextBasisTime, Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
+        otherValues.add( Event.of( Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
 
         timeSeries.add( TimeSeries.of( nextBasisTime, otherValues ) );
 
@@ -83,9 +83,9 @@ public final class TimeSeriesSlicerTest
 
         SortedSet<Event<SingleValuedPair>> values = new TreeSet<>();
         Instant basisTime = Instant.parse( FIRST_TIME );
-        values.add( Event.of( basisTime, Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
-        values.add( Event.of( basisTime, Instant.parse( THIRD_TIME ), SingleValuedPair.of( 2, 2 ) ) );
-        values.add( Event.of( basisTime, Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 3, 3 ) ) );
+        values.add( Event.of( Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
+        values.add( Event.of( Instant.parse( THIRD_TIME ), SingleValuedPair.of( 2, 2 ) ) );
+        values.add( Event.of( Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 3, 3 ) ) );
 
         timeSeries.add( TimeSeries.of( basisTime, values ) );
 
@@ -114,17 +114,17 @@ public final class TimeSeriesSlicerTest
         SortedSet<Event<SingleValuedPair>> third = new TreeSet<>();
 
         Instant firstBasisTime = Instant.parse( FIRST_TIME );
-        first.add( Event.of( firstBasisTime, Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
-        first.add( Event.of( firstBasisTime, Instant.parse( THIRD_TIME ), SingleValuedPair.of( 2, 2 ) ) );
-        first.add( Event.of( firstBasisTime, Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 3, 3 ) ) );
+        first.add( Event.of( Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
+        first.add( Event.of( Instant.parse( THIRD_TIME ), SingleValuedPair.of( 2, 2 ) ) );
+        first.add( Event.of( Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 3, 3 ) ) );
         Instant secondBasisTime = Instant.parse( FIFTH_TIME );
-        second.add( Event.of( secondBasisTime, Instant.parse( SIXTH_TIME ), SingleValuedPair.of( 4, 4 ) ) );
-        second.add( Event.of( secondBasisTime, Instant.parse( SEVENTH_TIME ), SingleValuedPair.of( 5, 5 ) ) );
-        second.add( Event.of( secondBasisTime, Instant.parse( EIGHTH_TIME ), SingleValuedPair.of( 6, 6 ) ) );
+        second.add( Event.of( Instant.parse( SIXTH_TIME ), SingleValuedPair.of( 4, 4 ) ) );
+        second.add( Event.of( Instant.parse( SEVENTH_TIME ), SingleValuedPair.of( 5, 5 ) ) );
+        second.add( Event.of( Instant.parse( EIGHTH_TIME ), SingleValuedPair.of( 6, 6 ) ) );
         Instant thirdBasisTime = Instant.parse( NINTH_TIME );
-        third.add( Event.of( thirdBasisTime, Instant.parse( TENTH_TIME ), SingleValuedPair.of( 7, 7 ) ) );
-        third.add( Event.of( thirdBasisTime, Instant.parse( ELEVENTH_TIME ), SingleValuedPair.of( 8, 8 ) ) );
-        third.add( Event.of( thirdBasisTime, Instant.parse( TWELFTH_TIME ), SingleValuedPair.of( 9, 9 ) ) );
+        third.add( Event.of( Instant.parse( TENTH_TIME ), SingleValuedPair.of( 7, 7 ) ) );
+        third.add( Event.of( Instant.parse( ELEVENTH_TIME ), SingleValuedPair.of( 8, 8 ) ) );
+        third.add( Event.of( Instant.parse( TWELFTH_TIME ), SingleValuedPair.of( 9, 9 ) ) );
 
         //Add the time-series
         List<TimeSeries<SingleValuedPair>> ts = List.of( TimeSeries.of( firstBasisTime,

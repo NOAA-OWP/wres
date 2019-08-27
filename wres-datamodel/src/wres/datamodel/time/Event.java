@@ -4,8 +4,7 @@ import java.time.Instant;
 import java.util.Objects;
 
 /**
- * An event at a specific {@link Instant} on the timeline. Additionally, an event may have a reference time, which is 
- * also represented by an {@link Instant}. The default reference time is equal to the event time.
+ * An outcome or value at a specific {@link Instant} on the timeline.
  * 
  * @param <T> the the type of event
  * @author james.brown@hydrosolved.com
@@ -19,12 +18,6 @@ public class Event<T> implements Comparable<Event<T>>
      */
 
     private final Instant eventTime;
-
-    /**
-     * The reference time.
-     */
-
-    private final Instant referenceTime;
 
     /**
      * The event.
@@ -44,28 +37,7 @@ public class Event<T> implements Comparable<Event<T>>
 
     public static <T> Event<T> of( Instant time, T value )
     {
-        return new Event<>( time, time, value );
-    }
-    
-    /**
-     * Returns an {@link Event}.
-     * 
-     * @param <T> the event type
-     * @param time the event time
-     * @param referenceTime the optional reference time
-     * @param value the event value
-     * @return an event
-     * @throws NullPointerException if the time or value are null
-     */
-
-    public static <T> Event<T> of( Instant referenceTime, Instant time, T value )
-    {
-        if( Objects.isNull( referenceTime ) )
-        {
-            return new Event<>( time, time, value );
-        }
-        
-        return new Event<>( referenceTime, time, value );
+        return new Event<>( time, value );
     }
 
     /**
@@ -78,17 +50,6 @@ public class Event<T> implements Comparable<Event<T>>
     {
         return this.eventTime;
     }
-    
-    /**
-     * Return the reference time as an {@link Instant}.
-     * 
-     * @return the reference time
-     */
-
-    public Instant getReferenceTime()
-    {
-        return this.referenceTime;
-    }    
 
     /**
      * Returns the event value.
@@ -104,7 +65,7 @@ public class Event<T> implements Comparable<Event<T>>
     @Override
     public String toString()
     {
-        return "(" + referenceTime + "," + eventTime + "," + value + ")";
+        return "(" + eventTime + "," + value + ")";
     }
 
     @Override
@@ -117,36 +78,31 @@ public class Event<T> implements Comparable<Event<T>>
 
         Event<?> inEvent = (Event<?>) o;
 
-        return inEvent.value.equals( this.value ) && inEvent.eventTime.equals( this.eventTime )
-               && inEvent.referenceTime.equals( this.referenceTime );
+        return inEvent.value.equals( this.value ) && inEvent.eventTime.equals( this.eventTime );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( this.value, this.eventTime, this.referenceTime );
+        return Objects.hash( this.value, this.eventTime );
     }
 
     /**
      * Build an event with a time, reference time and value.
      * 
-     * @param referenceTime the reference time
      * @param eventTime the required time
      * @param event the required event
      * @throws NullPointerException if the eventTime is null or the event is null
      */
 
-    private Event( Instant referenceTime, Instant eventTime, T event )
+    private Event( Instant eventTime, T event )
     {
         Objects.requireNonNull( eventTime, "Specify a non-null time for the event." );
 
         Objects.requireNonNull( event, "Specify a non-null value for the event." );
-        
-        Objects.requireNonNull( referenceTime, "Specify a non-null reference time." );
 
         this.value = event;       
         this.eventTime = eventTime;
-        this.referenceTime = referenceTime;
     }
 
     /**
@@ -162,14 +118,7 @@ public class Event<T> implements Comparable<Event<T>>
     {
         Objects.requireNonNull( o, "Specify a non-null input for comparison." );
         
-        int returnMe = this.getReferenceTime().compareTo( o.getReferenceTime() );
-        
-        if( returnMe != 0 )
-        {
-            return returnMe;
-        }
-            
-        returnMe = this.getTime().compareTo( o.getTime() );        
+        int returnMe = this.getTime().compareTo( o.getTime() );        
         
         if( returnMe != 0 )
         {

@@ -18,6 +18,7 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +28,6 @@ import wres.config.generated.Feature;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
-import wres.datamodel.sampledata.pairs.Pair;
 import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
@@ -83,14 +83,14 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
     private CacheRetriever getLeftValues;
 
     /**
-     * The listing of all pairs between left and right data
+     * The listing of all pairs between left and right data, together with their reference times
      */
-    private final List<Event<EnsemblePair>> primaryPairs = new ArrayList<>();
+    private final List<Pair<Instant,Event<EnsemblePair>>> primaryPairs = new ArrayList<>();
 
     /**
      * The Listing of all pairs between left and baseline data
      */
-    private final List<Event<EnsemblePair>> baselinePairs = new ArrayList<>(  );
+    private final List<Pair<Instant,Event<EnsemblePair>>> baselinePairs = new ArrayList<>(  );
 
     /**
      * The total set of climatology data to group with the pairs
@@ -112,12 +112,12 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
         this.climatology = climatology;
     }
 
-    List<Event<EnsemblePair>> getPrimaryPairs()
+    List<Pair<Instant,Event<EnsemblePair>>> getPrimaryPairs()
     {
         return this.primaryPairs;
     }
 
-    List<Event<EnsemblePair>> getBaselinePairs()
+    List<Pair<Instant,Event<EnsemblePair>>> getBaselinePairs()
     {
         return this.baselinePairs;
     }
@@ -132,12 +132,12 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
         return this.sampleMetadata.getFeature();
     }
 
-    void addPrimaryPair(final Event<EnsemblePair> pair)
+    void addPrimaryPair(final Pair<Instant,Event<EnsemblePair>> pair)
     {
         this.primaryPairs.add(pair);
     }
 
-    void addBaselinePair(final Event<EnsemblePair> pair)
+    void addBaselinePair(final Pair<Instant,Event<EnsemblePair>> pair)
     {
         this.baselinePairs.add(pair);
     }
@@ -245,10 +245,11 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
                                                                                TimeHelper.LEAD_RESOLUTION ) );
                 }
 
-                Event<EnsemblePair> packagedPair =
-                        Event.of( pivottedValues.getValidTime().minus( pivottedValues.getLeadDuration() ),
-                                  pivottedValues.getValidTime(),
-                                  pair );
+                Instant referenceTime = pivottedValues.getValidTime().minus( pivottedValues.getLeadDuration() );
+                Pair<Instant, Event<EnsemblePair>> packagedPair =
+                        Pair.of( referenceTime,
+                                 Event.of( pivottedValues.getValidTime(),
+                                           pair ) );
 
                 if (this.getProjectDetails().getInputName( dataSourceConfig ).equals(Project.RIGHT_MEMBER))
                 {
@@ -447,14 +448,19 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
      * generic container.
      */
     
-    static List<Event<SingleValuedPair>> unwrapEnsembleEvent( Event<EnsemblePair> pair )
+    static List<Pair<Instant,Event<SingleValuedPair>>> unwrapEnsembleEvent( Pair<Instant,Event<EnsemblePair>> pair )
     {
-        List<Event<SingleValuedPair>> eventPairs = new ArrayList<>();
-        for ( double rightValue : pair.getValue().getRight() )
-        {
-            eventPairs.add( Event.of( pair.getReferenceTime(),
-                                      pair.getTime(),
-                                      SingleValuedPair.of( pair.getValue().getLeft(), rightValue ) ) );
+        List<Pair<Instant,Event<SingleValuedPair>>> eventPairs = new ArrayList<>();
+        
+        Instant referenceTime = pair.getLeft();
+        Instant validTime = pair.getRight().getTime();
+        EnsemblePair values = pair.getRight().getValue();
+        
+        for ( double rightValue : values.getRight() )
+        {          
+            eventPairs.add( Pair.of( referenceTime,
+                                      Event.of( validTime,
+                                      SingleValuedPair.of( values.getLeft(), rightValue ) ) ) );
         }
         
         return Collections.unmodifiableList( eventPairs );
@@ -473,21 +479,24 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
      * @throws NullPointerException if the input is null
      */
 
-    static <T extends Pair<?, ?>> List<TimeSeries<T>> getTimeSeriesFromListOfEvents( List<Event<T>> events )
+    static <T extends wres.datamodel.sampledata.pairs.Pair<?, ?>> List<TimeSeries<T>>
+            getTimeSeriesFromListOfEvents( List<Pair<Instant, Event<T>>> events )
     {
         Objects.requireNonNull( events );
 
         // Map the events by reference datetime
         // Place any duplicates by valid time in a separate list 
         // and call recursively until no duplicates exist
-        List<Event<T>> duplicates = new ArrayList<>();
+        List<Pair<Instant,Event<T>>> duplicates = new ArrayList<>();
         Map<Instant, SortedSet<Event<T>>> eventsByReferenceTime = new TreeMap<>();
         List<TimeSeries<T>> returnMe = new ArrayList<>();
 
         // Iterate the events
-        for ( Event<T> nextEvent : events )
+        for ( Pair<Instant,Event<T>> nextPair : events )
         {
-            Instant referenceTime = nextEvent.getReferenceTime();
+            Event<T> nextEvent = nextPair.getRight();
+            
+            Instant referenceTime = nextPair.getLeft();
 
             // Existing series
             if ( eventsByReferenceTime.containsKey( referenceTime ) )
@@ -497,7 +506,7 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
                 // Duplicate?
                 if ( nextSeries.contains( nextEvent ) )
                 {
-                    duplicates.add( nextEvent );
+                    duplicates.add( nextPair );
                 }
                 else
                 {

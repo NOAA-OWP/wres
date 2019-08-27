@@ -13,7 +13,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -74,15 +73,12 @@ public final class EnsemblePairsWriterTest
 
         SortedSet<Event<EnsemblePair>> setOfPairs = new TreeSet<>();
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        setOfPairs.add( Event.of( basisTime,
-                                   Instant.parse( "1985-01-01T01:00:00Z" ),
-                                   EnsemblePair.of( 1.001, new double[] { 2, 3, 4 } ) ) );
-        setOfPairs.add( Event.of( basisTime,
-                                   Instant.parse( "1985-01-01T02:00:00Z" ),
-                                   EnsemblePair.of( 5, new double[] { 6, 7, 8 } ) ) );
-        setOfPairs.add( Event.of( basisTime,
-                                   Instant.parse( "1985-01-01T03:00:00Z" ),
-                                   EnsemblePair.of( 9, new double[] { 10, 11, 12 } ) ) );
+        setOfPairs.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ),
+                                  EnsemblePair.of( 1.001, new double[] { 2, 3, 4 } ) ) );
+        setOfPairs.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ),
+                                  EnsemblePair.of( 5, new double[] { 6, 7, 8 } ) ) );
+        setOfPairs.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ),
+                                  EnsemblePair.of( 9, new double[] { 10, 11, 12 } ) ) );
 
         SampleMetadata meta =
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
@@ -90,7 +86,7 @@ public final class EnsemblePairsWriterTest
 
         TimeSeries<EnsemblePair> timeSeriesOne =
                 TimeSeries.of( basisTime, ReferenceTimeType.UNKNOWN, setOfPairs );
-        
+
         pairs = (TimeSeriesOfEnsemblePairs) tsBuilder.addTimeSeries( timeSeriesOne )
                                                      .setMetadata( meta )
                                                      .build();
@@ -99,15 +95,12 @@ public final class EnsemblePairsWriterTest
         TimeSeriesOfEnsemblePairsBuilder tsBuilderTwo = new TimeSeriesOfEnsemblePairsBuilder();
         SortedSet<Event<EnsemblePair>> setOfPairsTwo = new TreeSet<>();
         Instant basisTimeTwo = Instant.parse( "1985-01-01T00:00:00Z" );
-        setOfPairsTwo.add( Event.of( basisTimeTwo,
-                                      Instant.parse( "1985-01-01T04:00:00Z" ),
-                                      EnsemblePair.of( 13, new double[] { 14, 15, 16 } ) ) );
-        setOfPairsTwo.add( Event.of( basisTimeTwo,
-                                      Instant.parse( "1985-01-01T05:00:00Z" ),
-                                      EnsemblePair.of( 17, new double[] { 18, 19, 20 } ) ) );
-        setOfPairsTwo.add( Event.of( basisTimeTwo,
-                                      Instant.parse( "1985-01-01T06:00:00Z" ),
-                                      EnsemblePair.of( 21, new double[] { 22, 23, 24 } ) ) );
+        setOfPairsTwo.add( Event.of( Instant.parse( "1985-01-01T04:00:00Z" ),
+                                     EnsemblePair.of( 13, new double[] { 14, 15, 16 } ) ) );
+        setOfPairsTwo.add( Event.of( Instant.parse( "1985-01-01T05:00:00Z" ),
+                                     EnsemblePair.of( 17, new double[] { 18, 19, 20 } ) ) );
+        setOfPairsTwo.add( Event.of( Instant.parse( "1985-01-01T06:00:00Z" ),
+                                     EnsemblePair.of( 21, new double[] { 22, 23, 24 } ) ) );
 
         SampleMetadata metaTwo =
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
@@ -115,7 +108,7 @@ public final class EnsemblePairsWriterTest
 
         TimeSeries<EnsemblePair> timeSeriesTwo =
                 TimeSeries.of( basisTimeTwo, ReferenceTimeType.UNKNOWN, setOfPairsTwo );
-        
+
         pairsTwo = (TimeSeriesOfEnsemblePairs) tsBuilderTwo.addTimeSeries( timeSeriesTwo )
                                                            .setMetadata( metaTwo )
                                                            .build();
@@ -125,15 +118,12 @@ public final class EnsemblePairsWriterTest
         TimeSeriesOfEnsemblePairsBuilder tsBuilderThree = new TimeSeriesOfEnsemblePairsBuilder();
         SortedSet<Event<EnsemblePair>> setOfPairsThree = new TreeSet<>();
         Instant basisTimeThree = Instant.parse( "1985-01-01T00:00:00Z" );
-        setOfPairsThree.add( Event.of( basisTimeThree,
-                                        Instant.parse( "1985-01-01T07:00:00Z" ),
-                                        EnsemblePair.of( 25, new double[] { 26, 27, 28 } ) ) );
-        setOfPairsThree.add( Event.of( basisTimeThree,
-                                        Instant.parse( "1985-01-01T08:00:00Z" ),
-                                        EnsemblePair.of( 29, new double[] { 30, 31, 32 } ) ) );
-        setOfPairsThree.add( Event.of( basisTimeThree,
-                                        Instant.parse( "1985-01-01T09:00:00Z" ),
-                                        EnsemblePair.of( 33, new double[] { 34, 35, 36 } ) ) );
+        setOfPairsThree.add( Event.of( Instant.parse( "1985-01-01T07:00:00Z" ),
+                                       EnsemblePair.of( 25, new double[] { 26, 27, 28 } ) ) );
+        setOfPairsThree.add( Event.of( Instant.parse( "1985-01-01T08:00:00Z" ),
+                                       EnsemblePair.of( 29, new double[] { 30, 31, 32 } ) ) );
+        setOfPairsThree.add( Event.of( Instant.parse( "1985-01-01T09:00:00Z" ),
+                                       EnsemblePair.of( 33, new double[] { 34, 35, 36 } ) ) );
 
         SampleMetadata metaThree =
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
@@ -141,7 +131,7 @@ public final class EnsemblePairsWriterTest
 
         TimeSeries<EnsemblePair> timeSeriesThree =
                 TimeSeries.of( basisTimeThree, ReferenceTimeType.UNKNOWN, setOfPairsThree );
-        
+
         pairsThree =
                 (TimeSeriesOfEnsemblePairs) tsBuilderThree.addTimeSeries( timeSeriesThree )
                                                           .setMetadata( metaThree )
@@ -177,7 +167,7 @@ public final class EnsemblePairsWriterTest
                                                .build();
 
             TimeSeries<EnsemblePair> timeSeriesOne = TimeSeries.of( Collections.emptySortedSet() );
-            
+
             TimeSeriesOfEnsemblePairs emptyPairs =
                     (TimeSeriesOfEnsemblePairs) tsBuilder.addTimeSeries( timeSeriesOne )
                                                          .setMetadata( meta )
@@ -210,7 +200,7 @@ public final class EnsemblePairsWriterTest
         // Formatter
         DecimalFormat formatter = new DecimalFormat();
         formatter.applyPattern( "0.0" );
-        
+
         // Create the writer
         try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( pathToFile, ChronoUnit.SECONDS, formatter ) )
         {
@@ -218,14 +208,13 @@ public final class EnsemblePairsWriterTest
             TimeSeriesOfEnsemblePairsBuilder tsBuilder = new TimeSeriesOfEnsemblePairsBuilder();
 
             SortedSet<Event<EnsemblePair>> setOfPairs = new TreeSet<>();
-            
-            Event<EnsemblePair> event = Event.of( Instant.MIN,
-                                                  Instant.MAX,
+
+            Event<EnsemblePair> event = Event.of( Instant.MAX,
                                                   EnsemblePair.of( Double.NaN,
                                                                    new double[] { Double.NaN } ) );
-            
+
             setOfPairs.add( event );
-            
+
             TimeSeries<EnsemblePair> timeSeriesNaN = TimeSeries.of( setOfPairs );
             tsBuilder.addTimeSeries( timeSeriesNaN );
 
@@ -239,7 +228,7 @@ public final class EnsemblePairsWriterTest
                                                .build();
 
             TimeSeries<EnsemblePair> timeSeriesOne = TimeSeries.of( Collections.emptySortedSet() );
-            
+
             TimeSeriesOfEnsemblePairs emptyPairs =
                     (TimeSeriesOfEnsemblePairs) tsBuilder.addTimeSeries( timeSeriesOne )
                                                          .setMetadata( meta )
@@ -262,13 +251,14 @@ public final class EnsemblePairsWriterTest
                                             + "RIGHT MEMBER 1 IN SCOOBIES" );
 
             assertEquals( "PINEAPPLE,+1000000000-12-31T23:59:59.999999999Z,"
-                    + "0,NaN,NaN", results.get( 1 ) );
+                          + "0,NaN,NaN",
+                          results.get( 1 ) );
 
             // If all succeeded, remove the file, otherwise leave to help debugging
             Files.deleteIfExists( pathToFile );
         }
-    }    
-    
+    }
+
     /**
      * Builds a {@link EnsemblePairsWriter}, writes some pairs, and checks that the written output matches the
      * expected output.
@@ -293,13 +283,14 @@ public final class EnsemblePairsWriterTest
 
             // Assert the expected results
             assertTrue( results.size() == 4 );
-            assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,"
-                                                 + "VALID TIME OF PAIR,"
-                                                 + "LEAD DURATION OF PAIR IN SECONDS,"
-                                                 + "LEFT IN SCOOBIES,"
-                                                 + "RIGHT MEMBER 1 IN SCOOBIES,"
-                                                 + "RIGHT MEMBER 2 IN SCOOBIES,"
-                                                 + "RIGHT MEMBER 3 IN SCOOBIES" ) );
+            assertTrue( results.get( 0 )
+                               .equals( "FEATURE DESCRIPTION,"
+                                        + "VALID TIME OF PAIR,"
+                                        + "LEAD DURATION OF PAIR IN SECONDS,"
+                                        + "LEFT IN SCOOBIES,"
+                                        + "RIGHT MEMBER 1 IN SCOOBIES,"
+                                        + "RIGHT MEMBER 2 IN SCOOBIES,"
+                                        + "RIGHT MEMBER 3 IN SCOOBIES" ) );
             assertTrue( results.get( 1 ).equals( "PLUM,1985-01-01T01:00:00Z,3600,1.001,2.0,3.0,4.0" ) );
             assertTrue( results.get( 2 ).equals( "PLUM,1985-01-01T02:00:00Z,7200,5.0,6.0,7.0,8.0" ) );
             assertTrue( results.get( 3 ).equals( "PLUM,1985-01-01T03:00:00Z,10800,9.0,10.0,11.0,12.0" ) );
@@ -334,13 +325,14 @@ public final class EnsemblePairsWriterTest
 
             // Assert the expected results
             assertTrue( results.size() == 7 );
-            assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,"
-                                                 + "VALID TIME OF PAIR,"
-                                                 + "LEAD DURATION OF PAIR IN SECONDS,"
-                                                 + "LEFT IN SCOOBIES,"
-                                                 + "RIGHT MEMBER 1 IN SCOOBIES,"
-                                                 + "RIGHT MEMBER 2 IN SCOOBIES,"
-                                                 + "RIGHT MEMBER 3 IN SCOOBIES" ) );
+            assertTrue( results.get( 0 )
+                               .equals( "FEATURE DESCRIPTION,"
+                                        + "VALID TIME OF PAIR,"
+                                        + "LEAD DURATION OF PAIR IN SECONDS,"
+                                        + "LEFT IN SCOOBIES,"
+                                        + "RIGHT MEMBER 1 IN SCOOBIES,"
+                                        + "RIGHT MEMBER 2 IN SCOOBIES,"
+                                        + "RIGHT MEMBER 3 IN SCOOBIES" ) );
             assertTrue( results.get( 1 ).equals( "PLUM,1985-01-01T01:00:00Z,3600,1.001,2.0,3.0,4.0" ) );
             assertTrue( results.get( 2 ).equals( "PLUM,1985-01-01T02:00:00Z,7200,5.0,6.0,7.0,8.0" ) );
             assertTrue( results.get( 3 ).equals( "PLUM,1985-01-01T03:00:00Z,10800,9.0,10.0,11.0,12.0" ) );
@@ -361,7 +353,7 @@ public final class EnsemblePairsWriterTest
      * @throws InterruptedException the the execution is interrupted 
      */
 
-    @Test 
+    @Test
     public void testAcceptForThreeSetsOfPairsWrittenAsync() throws IOException, InterruptedException, ExecutionException
     {
         // Create the path
@@ -390,13 +382,14 @@ public final class EnsemblePairsWriterTest
             assertTrue( results.get( 0 ).equals( "BANANA,1985-01-01T07:00:00Z,25200,25.0,26.0,27.0,28.0" ) );
             assertTrue( results.get( 1 ).equals( "BANANA,1985-01-01T08:00:00Z,28800,29.0,30.0,31.0,32.0" ) );
             assertTrue( results.get( 2 ).equals( "BANANA,1985-01-01T09:00:00Z,32400,33.0,34.0,35.0,36.0" ) );
-            assertTrue( results.get( 3 ).equals( "FEATURE DESCRIPTION,"
-                                                 + "VALID TIME OF PAIR,"
-                                                 + "LEAD DURATION OF PAIR IN SECONDS,"
-                                                 + "LEFT IN SCOOBIES,"
-                                                 + "RIGHT MEMBER 1 IN SCOOBIES,"
-                                                 + "RIGHT MEMBER 2 IN SCOOBIES,"
-                                                 + "RIGHT MEMBER 3 IN SCOOBIES" ) );
+            assertTrue( results.get( 3 )
+                               .equals( "FEATURE DESCRIPTION,"
+                                        + "VALID TIME OF PAIR,"
+                                        + "LEAD DURATION OF PAIR IN SECONDS,"
+                                        + "LEFT IN SCOOBIES,"
+                                        + "RIGHT MEMBER 1 IN SCOOBIES,"
+                                        + "RIGHT MEMBER 2 IN SCOOBIES,"
+                                        + "RIGHT MEMBER 3 IN SCOOBIES" ) );
             assertTrue( results.get( 4 ).equals( "ORANGE,1985-01-01T04:00:00Z,14400,13.0,14.0,15.0,16.0" ) );
             assertTrue( results.get( 5 ).equals( "ORANGE,1985-01-01T05:00:00Z,18000,17.0,18.0,19.0,20.0" ) );
             assertTrue( results.get( 6 ).equals( "ORANGE,1985-01-01T06:00:00Z,21600,21.0,22.0,23.0,24.0" ) );
@@ -408,7 +401,7 @@ public final class EnsemblePairsWriterTest
             Files.deleteIfExists( pathToFile );
         }
     }
-    
+
     /**
      * Builds a {@link EnsemblePairsWriter}, writes a large number of pairs asynchronously, and checks that the written 
      * output contains the expected number of rows.
@@ -451,7 +444,7 @@ public final class EnsemblePairsWriterTest
             // If all succeeded, remove the file, otherwise leave to help debugging
             Files.deleteIfExists( pathToFile );
         }
-    }    
+    }
 
     /**
      * Builds a {@link EnsemblePairsWriter}, writes some pairs, and checks that the 

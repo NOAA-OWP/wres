@@ -411,152 +411,108 @@ public final class MetricTestDataFactory
         Instant basisTimeOne = Instant.parse( "2551-03-17T12:00:00Z" );
         SortedSet<Event<SingleValuedPair>> first = new TreeSet<>();
 
-        first.add( Event.of( basisTimeOne,
-                             Instant.parse( "2551-03-17T15:00:00Z" ),
+        first.add( Event.of( Instant.parse( "2551-03-17T15:00:00Z" ),
                              SingleValuedPair.of( 409.67, 73.00 ) ) );
-        first.add( Event.of( basisTimeOne,
-                             Instant.parse( "2551-03-17T18:00:00Z" ),
+        first.add( Event.of( Instant.parse( "2551-03-17T18:00:00Z" ),
                              SingleValuedPair.of( 428.33, 79.00 ) ) );
-        first.add( Event.of( basisTimeOne,
-                             Instant.parse( "2551-03-17T21:00:00Z" ),
+        first.add( Event.of( Instant.parse( "2551-03-17T21:00:00Z" ),
                              SingleValuedPair.of( 443.67, 83.00 ) ) );
-        first.add( Event.of( basisTimeOne,
-                             Instant.parse( "2551-03-18T00:00:00Z" ),
+        first.add( Event.of( Instant.parse( "2551-03-18T00:00:00Z" ),
                              SingleValuedPair.of( 460.33, 89.00 ) ) );
-        first.add( Event.of( basisTimeOne,
-                             Instant.parse( "2551-03-18T03:00:00Z" ),
+        first.add( Event.of( Instant.parse( "2551-03-18T03:00:00Z" ),
                              SingleValuedPair.of( 477.67, 97.00 ) ) );
-        first.add( Event.of( basisTimeOne,
-                             Instant.parse( "2551-03-18T06:00:00Z" ),
+        first.add( Event.of( Instant.parse( "2551-03-18T06:00:00Z" ),
                              SingleValuedPair.of( 497.67, 101.00 ) ) );
-        first.add( Event.of( basisTimeOne,
-                             Instant.parse( "2551-03-18T09:00:00Z" ),
+        first.add( Event.of( Instant.parse( "2551-03-18T09:00:00Z" ),
                              SingleValuedPair.of( 517.67, 103.00 ) ) );
-        first.add( Event.of( basisTimeOne,
-                             Instant.parse( SEVENTH_TIME ),
+        first.add( Event.of( Instant.parse( SEVENTH_TIME ),
                              SingleValuedPair.of( 548.33, 107.00 ) ) );
-        first.add( Event.of( basisTimeOne,
-                             Instant.parse( EIGHTH_TIME ),
+        first.add( Event.of( Instant.parse( EIGHTH_TIME ),
                              SingleValuedPair.of( 567.67, 109.00 ) ) );
-        first.add( Event.of( basisTimeOne,
-                             Instant.parse( NINTH_TIME ),
+        first.add( Event.of( Instant.parse( NINTH_TIME ),
                              SingleValuedPair.of( 585.67, 113.00 ) ) );
-        first.add( Event.of( basisTimeOne,
-                             Instant.parse( TENTH_TIME ),
+        first.add( Event.of( Instant.parse( TENTH_TIME ),
                              SingleValuedPair.of( 602.33, 127.00 ) ) );
 
         // Add second time-series
         Instant basisTimeTwo = Instant.parse( "2551-03-18T00:00:00Z" );
         SortedSet<Event<SingleValuedPair>> second = new TreeSet<>();
 
-        second.add( Event.of( basisTimeTwo,
-                              Instant.parse( "2551-03-18T03:00:00Z" ),
+        second.add( Event.of( Instant.parse( "2551-03-18T03:00:00Z" ),
                               SingleValuedPair.of( 477.67, 131.00 ) ) );
-        second.add( Event.of( basisTimeTwo,
-                              Instant.parse( "2551-03-18T06:00:00Z" ),
+        second.add( Event.of( Instant.parse( "2551-03-18T06:00:00Z" ),
                               SingleValuedPair.of( 497.67, 137.00 ) ) );
-        second.add( Event.of( basisTimeTwo,
-                              Instant.parse( "2551-03-18T09:00:00Z" ),
+        second.add( Event.of( Instant.parse( "2551-03-18T09:00:00Z" ),
                               SingleValuedPair.of( 517.67, 139.00 ) ) );
-        second.add( Event.of( basisTimeTwo,
-                              Instant.parse( SEVENTH_TIME ),
+        second.add( Event.of( Instant.parse( SEVENTH_TIME ),
                               SingleValuedPair.of( 548.33, 149.00 ) ) );
-        second.add( Event.of( basisTimeTwo,
-                              Instant.parse( EIGHTH_TIME ),
+        second.add( Event.of( Instant.parse( EIGHTH_TIME ),
                               SingleValuedPair.of( 567.67, 151.00 ) ) );
-        second.add( Event.of( basisTimeTwo,
-                              Instant.parse( NINTH_TIME ),
+        second.add( Event.of( Instant.parse( NINTH_TIME ),
                               SingleValuedPair.of( 585.67, 157.00 ) ) );
-        second.add( Event.of( basisTimeTwo,
-                              Instant.parse( TENTH_TIME ),
+        second.add( Event.of( Instant.parse( TENTH_TIME ),
                               SingleValuedPair.of( 602.33, 163.00 ) ) );
-        second.add( Event.of( basisTimeTwo,
-                              Instant.parse( ELEVENTH_TIME ),
+        second.add( Event.of( Instant.parse( ELEVENTH_TIME ),
                               SingleValuedPair.of( 616.33, 167.00 ) ) );
-        second.add( Event.of( basisTimeTwo,
-                              Instant.parse( TWELFTH_TIME ),
+        second.add( Event.of( Instant.parse( TWELFTH_TIME ),
                               SingleValuedPair.of( 638.33, 173.00 ) ) );
-        second.add( Event.of( basisTimeTwo,
-                              Instant.parse( THIRTEENTH_TIME ),
+        second.add( Event.of( Instant.parse( THIRTEENTH_TIME ),
                               SingleValuedPair.of( 653.00, 179.00 ) ) );
-        second.add( Event.of( basisTimeTwo,
-                              Instant.parse( FOURTEENTH_TIME ),
+        second.add( Event.of( Instant.parse( FOURTEENTH_TIME ),
                               SingleValuedPair.of( 670.33, 181.00 ) ) );
 
         // Add third time-series
         Instant basisTimeThree = Instant.parse( SEVENTH_TIME );
         SortedSet<Event<SingleValuedPair>> third = new TreeSet<>();
 
-        third.add( Event.of( basisTimeThree,
-                             Instant.parse( EIGHTH_TIME ),
+        third.add( Event.of( Instant.parse( EIGHTH_TIME ),
                              SingleValuedPair.of( 567.67, 191.00 ) ) );
-        third.add( Event.of( basisTimeThree,
-                             Instant.parse( NINTH_TIME ),
+        third.add( Event.of( Instant.parse( NINTH_TIME ),
                              SingleValuedPair.of( 585.67, 193.00 ) ) );
-        third.add( Event.of( basisTimeThree,
-                             Instant.parse( TENTH_TIME ),
+        third.add( Event.of( Instant.parse( TENTH_TIME ),
                              SingleValuedPair.of( 602.33, 197.00 ) ) );
-        third.add( Event.of( basisTimeThree,
-                             Instant.parse( ELEVENTH_TIME ),
+        third.add( Event.of( Instant.parse( ELEVENTH_TIME ),
                              SingleValuedPair.of( 616.33, 199.00 ) ) );
-        third.add( Event.of( basisTimeThree,
-                             Instant.parse( TWELFTH_TIME ),
+        third.add( Event.of( Instant.parse( TWELFTH_TIME ),
                              SingleValuedPair.of( 638.33, 211.00 ) ) );
-        third.add( Event.of( basisTimeThree,
-                             Instant.parse( THIRTEENTH_TIME ),
+        third.add( Event.of( Instant.parse( THIRTEENTH_TIME ),
                              SingleValuedPair.of( 653.00, 223.00 ) ) );
-        third.add( Event.of( basisTimeThree,
-                             Instant.parse( FOURTEENTH_TIME ),
+        third.add( Event.of( Instant.parse( FOURTEENTH_TIME ),
                              SingleValuedPair.of( 670.33, 227.00 ) ) );
-        third.add( Event.of( basisTimeThree,
-                             Instant.parse( "2551-03-19T12:00:00Z" ),
+        third.add( Event.of( Instant.parse( "2551-03-19T12:00:00Z" ),
                              SingleValuedPair.of( 691.67, 229.00 ) ) );
-        third.add( Event.of( basisTimeThree,
-                             Instant.parse( "2551-03-19T15:00:00Z" ),
+        third.add( Event.of( Instant.parse( "2551-03-19T15:00:00Z" ),
                              SingleValuedPair.of( 718.33, 233.00 ) ) );
-        third.add( Event.of( basisTimeThree,
-                             Instant.parse( "2551-03-19T18:00:00Z" ),
+        third.add( Event.of( Instant.parse( "2551-03-19T18:00:00Z" ),
                              SingleValuedPair.of( 738.33, 239.00 ) ) );
-        third.add( Event.of( basisTimeThree,
-                             Instant.parse( "2551-03-19T21:00:00Z" ),
+        third.add( Event.of( Instant.parse( "2551-03-19T21:00:00Z" ),
                              SingleValuedPair.of( 756.33, 241.00 ) ) );
 
         // Add third time-series
         Instant basisTimeFour = Instant.parse( ELEVENTH_TIME );
         SortedSet<Event<SingleValuedPair>> fourth = new TreeSet<>();
 
-        fourth.add( Event.of( basisTimeFour,
-                              Instant.parse( TWELFTH_TIME ),
+        fourth.add( Event.of( Instant.parse( TWELFTH_TIME ),
                               SingleValuedPair.of( 638.33, 251.00 ) ) );
-        fourth.add( Event.of( basisTimeFour,
-                              Instant.parse( THIRTEENTH_TIME ),
+        fourth.add( Event.of( Instant.parse( THIRTEENTH_TIME ),
                               SingleValuedPair.of( 653.00, 257.00 ) ) );
-        fourth.add( Event.of( basisTimeFour,
-                              Instant.parse( FOURTEENTH_TIME ),
+        fourth.add( Event.of( Instant.parse( FOURTEENTH_TIME ),
                               SingleValuedPair.of( 670.33, 263.00 ) ) );
-        fourth.add( Event.of( basisTimeFour,
-                              Instant.parse( "2551-03-19T12:00:00Z" ),
+        fourth.add( Event.of( Instant.parse( "2551-03-19T12:00:00Z" ),
                               SingleValuedPair.of( 691.67, 269.00 ) ) );
-        fourth.add( Event.of( basisTimeFour,
-                              Instant.parse( "2551-03-19T15:00:00Z" ),
+        fourth.add( Event.of( Instant.parse( "2551-03-19T15:00:00Z" ),
                               SingleValuedPair.of( 718.33, 271.00 ) ) );
-        fourth.add( Event.of( basisTimeFour,
-                              Instant.parse( "2551-03-19T18:00:00Z" ),
+        fourth.add( Event.of( Instant.parse( "2551-03-19T18:00:00Z" ),
                               SingleValuedPair.of( 738.33, 277.00 ) ) );
-        fourth.add( Event.of( basisTimeFour,
-                              Instant.parse( "2551-03-19T21:00:00Z" ),
+        fourth.add( Event.of( Instant.parse( "2551-03-19T21:00:00Z" ),
                               SingleValuedPair.of( 756.33, 281.00 ) ) );
-        fourth.add( Event.of( basisTimeFour,
-                              Instant.parse( "2551-03-20T00:00:00Z" ),
+        fourth.add( Event.of( Instant.parse( "2551-03-20T00:00:00Z" ),
                               SingleValuedPair.of( 776.33, 283.00 ) ) );
-        fourth.add( Event.of( basisTimeFour,
-                              Instant.parse( "2551-03-20T03:00:00Z" ),
+        fourth.add( Event.of( Instant.parse( "2551-03-20T03:00:00Z" ),
                               SingleValuedPair.of( 805.67, 293.00 ) ) );
-        fourth.add( Event.of( basisTimeFour,
-                              Instant.parse( "2551-03-20T06:00:00Z" ),
+        fourth.add( Event.of( Instant.parse( "2551-03-20T06:00:00Z" ),
                               SingleValuedPair.of( 823.67, 307.00 ) ) );
-        fourth.add( Event.of( basisTimeFour,
-                              Instant.parse( "2551-03-20T09:00:00Z" ),
+        fourth.add( Event.of( Instant.parse( "2551-03-20T09:00:00Z" ),
                               SingleValuedPair.of( 840.33, 311.00 ) ) );
 
         final TimeWindow window = TimeWindow.of( Instant.parse( "2551-03-17T00:00:00Z" ),
@@ -1356,18 +1312,18 @@ public final class MetricTestDataFactory
         SortedSet<Event<SingleValuedPair>> firstValues = new TreeSet<>();
 
         // Add some values
-        firstValues.add( Event.of( firstId, Instant.parse( "1985-01-01T06:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
-        firstValues.add( Event.of( firstId, Instant.parse( "1985-01-01T12:00:00Z" ), SingleValuedPair.of( 1, 5 ) ) );
-        firstValues.add( Event.of( firstId, Instant.parse( "1985-01-01T18:00:00Z" ), SingleValuedPair.of( 5, 1 ) ) );
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T06:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T12:00:00Z" ), SingleValuedPair.of( 1, 5 ) ) );
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T18:00:00Z" ), SingleValuedPair.of( 5, 1 ) ) );
 
         // Add another time-series
         Instant secondId = Instant.parse( THIRD_TIME );
         SortedSet<Event<SingleValuedPair>> secondValues = new TreeSet<>();
 
         // Add some values
-        secondValues.add( Event.of( secondId, Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 10, 1 ) ) );
-        secondValues.add( Event.of( secondId, Instant.parse( FIFTH_TIME ), SingleValuedPair.of( 1, 1 ) ) );
-        secondValues.add( Event.of( secondId, Instant.parse( SIXTH_TIME ), SingleValuedPair.of( 1, 10 ) ) );
+        secondValues.add( Event.of( Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 10, 1 ) ) );
+        secondValues.add( Event.of( Instant.parse( FIFTH_TIME ), SingleValuedPair.of( 1, 1 ) ) );
+        secondValues.add( Event.of( Instant.parse( SIXTH_TIME ), SingleValuedPair.of( 1, 10 ) ) );
 
         // Create some default metadata for the time-series
         final TimeWindow window = TimeWindow.of( Instant.parse( FIRST_TIME ),
@@ -1381,11 +1337,11 @@ public final class MetricTestDataFactory
                                                                    .build();
         // Build the time-series
         return (TimeSeriesOfSingleValuedPairs) builder.addTimeSeries( TimeSeries.of( firstId,
-                                                                                      ReferenceTimeType.UNKNOWN,
-                                                                                      firstValues ) )
+                                                                                     ReferenceTimeType.UNKNOWN,
+                                                                                     firstValues ) )
                                                       .addTimeSeries( TimeSeries.of( secondId,
-                                                                                      ReferenceTimeType.UNKNOWN,
-                                                                                      secondValues ) )
+                                                                                     ReferenceTimeType.UNKNOWN,
+                                                                                     secondValues ) )
                                                       .setMetadata( metaData )
                                                       .build();
     }
@@ -1405,9 +1361,9 @@ public final class MetricTestDataFactory
         Instant firstId = Instant.parse( FIRST_TIME );
         SortedSet<Event<SingleValuedPair>> firstValues = new TreeSet<>();
         // Add some values
-        firstValues.add( Event.of( firstId, Instant.parse( "1985-01-01T06:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
-        firstValues.add( Event.of( firstId, Instant.parse( "1985-01-01T12:00:00Z" ), SingleValuedPair.of( 1, 5 ) ) );
-        firstValues.add( Event.of( firstId, Instant.parse( "1985-01-01T18:00:00Z" ), SingleValuedPair.of( 5, 1 ) ) );
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T06:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T12:00:00Z" ), SingleValuedPair.of( 1, 5 ) ) );
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T18:00:00Z" ), SingleValuedPair.of( 5, 1 ) ) );
 
         // Create some default metadata for the time-series
         final TimeWindow window = TimeWindow.of( Instant.parse( FIRST_TIME ),
@@ -1421,8 +1377,8 @@ public final class MetricTestDataFactory
                                                                    .build();
         // Build the time-series
         return (TimeSeriesOfSingleValuedPairs) builder.addTimeSeries( TimeSeries.of( firstId,
-                                                                                      ReferenceTimeType.UNKNOWN,
-                                                                                      firstValues ) )
+                                                                                     ReferenceTimeType.UNKNOWN,
+                                                                                     firstValues ) )
                                                       .setMetadata( metaData )
                                                       .build();
     }
@@ -1445,9 +1401,9 @@ public final class MetricTestDataFactory
         SortedSet<Event<SingleValuedPair>> secondValues = new TreeSet<>();
 
         // Add some values
-        secondValues.add( Event.of( secondId, Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 10, 1 ) ) );
-        secondValues.add( Event.of( secondId, Instant.parse( FIFTH_TIME ), SingleValuedPair.of( 1, 1 ) ) );
-        secondValues.add( Event.of( secondId, Instant.parse( SIXTH_TIME ), SingleValuedPair.of( 1, 10 ) ) );
+        secondValues.add( Event.of( Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 10, 1 ) ) );
+        secondValues.add( Event.of( Instant.parse( FIFTH_TIME ), SingleValuedPair.of( 1, 1 ) ) );
+        secondValues.add( Event.of( Instant.parse( SIXTH_TIME ), SingleValuedPair.of( 1, 10 ) ) );
 
         // Create some default metadata for the time-series
         final TimeWindow window = TimeWindow.of( Instant.parse( THIRD_TIME ),
@@ -1462,8 +1418,8 @@ public final class MetricTestDataFactory
                                                                    .build();
         // Build the time-series
         return (TimeSeriesOfSingleValuedPairs) builder.addTimeSeries( TimeSeries.of( secondId,
-                                                                                      ReferenceTimeType.UNKNOWN,
-                                                                                      secondValues ) )
+                                                                                     ReferenceTimeType.UNKNOWN,
+                                                                                     secondValues ) )
                                                       .setMetadata( metaData )
                                                       .build();
     }
@@ -1513,13 +1469,12 @@ public final class MetricTestDataFactory
         SortedSet<Event<SingleValuedPair>> secondValues = new TreeSet<>();
 
         // Add some values
-        secondValues.add( Event.of( secondId, Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 10, 1 ) ) );
-        secondValues.add( Event.of( secondId, Instant.parse( FIFTH_TIME ), SingleValuedPair.of( 1, 1 ) ) );
-        secondValues.add( Event.of( secondId,
-                                    Instant.parse( SIXTH_TIME ),
+        secondValues.add( Event.of( Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 10, 1 ) ) );
+        secondValues.add( Event.of( Instant.parse( FIFTH_TIME ), SingleValuedPair.of( 1, 1 ) ) );
+        secondValues.add( Event.of( Instant.parse( SIXTH_TIME ),
                                     SingleValuedPair.of( 10, 10 ) ) );
-        secondValues.add( Event.of( secondId, Instant.parse( "1985-01-03T00:00:00Z" ), SingleValuedPair.of( 2, 10 ) ) );
-        secondValues.add( Event.of( secondId, Instant.parse( "1985-01-03T06:00:00Z" ), SingleValuedPair.of( 4, 7 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-03T00:00:00Z" ), SingleValuedPair.of( 2, 10 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-03T06:00:00Z" ), SingleValuedPair.of( 4, 7 ) ) );
 
         // Create some default metadata for the time-series
         final TimeWindow window = TimeWindow.of( Instant.parse( THIRD_TIME ),
@@ -1533,8 +1488,8 @@ public final class MetricTestDataFactory
                                                                    .build();
         // Build the time-series
         return (TimeSeriesOfSingleValuedPairs) builder.addTimeSeries( TimeSeries.of( secondId,
-                                                                                      ReferenceTimeType.UNKNOWN,
-                                                                                      secondValues ) )
+                                                                                     ReferenceTimeType.UNKNOWN,
+                                                                                     secondValues ) )
                                                       .setMetadata( metaData )
                                                       .build();
     }

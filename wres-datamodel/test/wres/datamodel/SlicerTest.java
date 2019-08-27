@@ -8,7 +8,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -634,25 +633,22 @@ public final class SlicerTest
         TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
 
         Instant firstBasisTime = Instant.parse( FIRST_TIME );
-        first.add( Event.of( firstBasisTime, Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 10 ) ) );
-        first.add( Event.of( firstBasisTime, Instant.parse( THIRD_TIME ), SingleValuedPair.of( 2, 11 ) ) );
-        first.add( Event.of( firstBasisTime, Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 3, 12 ) ) );
+        first.add( Event.of( Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 10 ) ) );
+        first.add( Event.of( Instant.parse( THIRD_TIME ), SingleValuedPair.of( 2, 11 ) ) );
+        first.add( Event.of( Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 3, 12 ) ) );
 
         Instant secondBasisTime = Instant.parse( FIFTH_TIME );
-        second.add( Event.of( secondBasisTime,
-                              Instant.parse( SIXTH_TIME ),
+        second.add( Event.of( Instant.parse( SIXTH_TIME ),
                               SingleValuedPair.of( 4, 13 ) ) );
-        second.add( Event.of( secondBasisTime,
-                              Instant.parse( SEVENTH_TIME ),
+        second.add( Event.of( Instant.parse( SEVENTH_TIME ),
                               SingleValuedPair.of( 5, 14 ) ) );
-        second.add( Event.of( secondBasisTime,
-                              Instant.parse( EIGHTH_TIME ),
+        second.add( Event.of( Instant.parse( EIGHTH_TIME ),
                               SingleValuedPair.of( 6, 15 ) ) );
 
         Instant thirdBasisTime = Instant.parse( NINTH_TIME );
-        third.add( Event.of( thirdBasisTime, Instant.parse( TENTH_TIME ), SingleValuedPair.of( 7, 16 ) ) );
-        third.add( Event.of( thirdBasisTime, Instant.parse( ELEVENTH_TIME ), SingleValuedPair.of( 8, 17 ) ) );
-        third.add( Event.of( thirdBasisTime, Instant.parse( TWELFTH_TIME ), SingleValuedPair.of( 9, 18 ) ) );
+        third.add( Event.of( Instant.parse( TENTH_TIME ), SingleValuedPair.of( 7, 16 ) ) );
+        third.add( Event.of( Instant.parse( ELEVENTH_TIME ), SingleValuedPair.of( 8, 17 ) ) );
+        third.add( Event.of( Instant.parse( TWELFTH_TIME ), SingleValuedPair.of( 9, 18 ) ) );
         SampleMetadata meta = SampleMetadata.of();
 
         //Add the time-series

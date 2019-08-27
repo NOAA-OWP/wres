@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,7 +58,7 @@ public class TimeSeriesRetriever extends Retriever
         // One single-valued pair per ensemble member
         // TODO: retrieve single-valued pairs separately from ensemble pairs
         // so this mapping isn't needed
-        List<Event<SingleValuedPair>> events = new ArrayList<>();
+        List<Pair<Instant,Event<SingleValuedPair>>> events = new ArrayList<>();
         this.getPrimaryPairs().forEach( next -> events.addAll( Retriever.unwrapEnsembleEvent( next ) ) );       
         List<TimeSeries<SingleValuedPair>> timeSeries = Retriever.getTimeSeriesFromListOfEvents( events );
         timeSeries.forEach( builder::addTimeSeries );
@@ -217,10 +218,10 @@ public class TimeSeriesRetriever extends Retriever
                         continue;
                     }
 
-                    this.addPrimaryPair( Event.of( pivottedValues.getValidTime()
-                                                                 .minus( pivottedValues.getLeadDuration() ),
-                                                   pivottedValues.getValidTime(),
-                                                   ensemblePair ) );
+                    this.addPrimaryPair( Pair.of( pivottedValues.getValidTime()
+                                                                .minus( pivottedValues.getLeadDuration() ),
+                                                  Event.of( pivottedValues.getValidTime(),
+                                                            ensemblePair ) ) );
                 }
             }
         }

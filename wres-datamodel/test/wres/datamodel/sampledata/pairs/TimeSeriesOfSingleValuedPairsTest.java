@@ -5,12 +5,10 @@ import static org.junit.Assert.assertTrue;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.TreeSet;
@@ -65,17 +63,17 @@ public final class TimeSeriesOfSingleValuedPairsTest
         TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
 
         Instant firstBasisTime = Instant.parse( FIRST_TIME );
-        first.add( Event.of( firstBasisTime, Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
-        first.add( Event.of( firstBasisTime, Instant.parse( THIRD_TIME ), SingleValuedPair.of( 2, 2 ) ) );
-        first.add( Event.of( firstBasisTime, Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 3, 3 ) ) );
+        first.add( Event.of( Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
+        first.add( Event.of( Instant.parse( THIRD_TIME ), SingleValuedPair.of( 2, 2 ) ) );
+        first.add( Event.of( Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 3, 3 ) ) );
         Instant secondBasisTime = Instant.parse( FIFTH_TIME );
-        second.add( Event.of( secondBasisTime, Instant.parse( SIXTH_TIME ), SingleValuedPair.of( 4, 4 ) ) );
-        second.add( Event.of( secondBasisTime, Instant.parse( SEVENTH_TIME ), SingleValuedPair.of( 5, 5 ) ) );
-        second.add( Event.of( secondBasisTime, Instant.parse( EIGHTH_TIME ), SingleValuedPair.of( 6, 6 ) ) );
+        second.add( Event.of( Instant.parse( SIXTH_TIME ), SingleValuedPair.of( 4, 4 ) ) );
+        second.add( Event.of( Instant.parse( SEVENTH_TIME ), SingleValuedPair.of( 5, 5 ) ) );
+        second.add( Event.of( Instant.parse( EIGHTH_TIME ), SingleValuedPair.of( 6, 6 ) ) );
         Instant thirdBasisTime = Instant.parse( NINTH_TIME );
-        third.add( Event.of( thirdBasisTime, Instant.parse( TENTH_TIME ), SingleValuedPair.of( 7, 7 ) ) );
-        third.add( Event.of( thirdBasisTime, Instant.parse( ELEVENTH_TIME ), SingleValuedPair.of( 8, 8 ) ) );
-        third.add( Event.of( thirdBasisTime, Instant.parse( TWELFTH_TIME ), SingleValuedPair.of( 9, 9 ) ) );
+        third.add( Event.of( Instant.parse( TENTH_TIME ), SingleValuedPair.of( 7, 7 ) ) );
+        third.add( Event.of( Instant.parse( ELEVENTH_TIME ), SingleValuedPair.of( 8, 8 ) ) );
+        third.add( Event.of( Instant.parse( TWELFTH_TIME ), SingleValuedPair.of( 9, 9 ) ) );
 
         final SampleMetadata meta = SampleMetadata.of();
 
@@ -119,17 +117,17 @@ public final class TimeSeriesOfSingleValuedPairsTest
         TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
 
         Instant firstBasisTime = Instant.parse( FIRST_TIME );
-        first.add( Event.of( firstBasisTime, Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
-        first.add( Event.of( firstBasisTime, Instant.parse( THIRD_TIME ), SingleValuedPair.of( 2, 2 ) ) );
-        first.add( Event.of( firstBasisTime, Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 3, 3 ) ) );
+        first.add( Event.of( Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
+        first.add( Event.of( Instant.parse( THIRD_TIME ), SingleValuedPair.of( 2, 2 ) ) );
+        first.add( Event.of( Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 3, 3 ) ) );
         Instant secondBasisTime = Instant.parse( FIFTH_TIME );
-        second.add( Event.of( secondBasisTime, Instant.parse( SIXTH_TIME ), SingleValuedPair.of( 1, 1 ) ) );
-        second.add( Event.of( secondBasisTime, Instant.parse( SEVENTH_TIME ), SingleValuedPair.of( 2, 2 ) ) );
-        second.add( Event.of( secondBasisTime, Instant.parse( EIGHTH_TIME ), SingleValuedPair.of( 3, 3 ) ) );
+        second.add( Event.of( Instant.parse( SIXTH_TIME ), SingleValuedPair.of( 1, 1 ) ) );
+        second.add( Event.of( Instant.parse( SEVENTH_TIME ), SingleValuedPair.of( 2, 2 ) ) );
+        second.add( Event.of( Instant.parse( EIGHTH_TIME ), SingleValuedPair.of( 3, 3 ) ) );
         Instant thirdBasisTime = Instant.parse( NINTH_TIME );
-        third.add( Event.of( thirdBasisTime, Instant.parse( TENTH_TIME ), SingleValuedPair.of( 1, 1 ) ) );
-        third.add( Event.of( thirdBasisTime, Instant.parse( ELEVENTH_TIME ), SingleValuedPair.of( 2, 2 ) ) );
-        third.add( Event.of( thirdBasisTime, Instant.parse( TWELFTH_TIME ), SingleValuedPair.of( 3, 3 ) ) );
+        third.add( Event.of( Instant.parse( TENTH_TIME ), SingleValuedPair.of( 1, 1 ) ) );
+        third.add( Event.of( Instant.parse( ELEVENTH_TIME ), SingleValuedPair.of( 2, 2 ) ) );
+        third.add( Event.of( Instant.parse( TWELFTH_TIME ), SingleValuedPair.of( 3, 3 ) ) );
         SampleMetadata meta = SampleMetadata.of();
         //Add the time-series, with only one for baseline
         TimeSeriesOfSingleValuedPairs ts =
@@ -152,22 +150,21 @@ public final class TimeSeriesOfSingleValuedPairsTest
 
         for ( Duration duration : durations )
         {
-            Set<Instant> basisTimes = new HashSet<>();
             List<Event<SingleValuedPair>> events =
                     TimeSeriesSlicer.filterByDuration( ts.get(), a -> a.equals( duration ) );
             for ( Event<SingleValuedPair> nextPair : events )
             {
                 assertTrue( nextPair.getValue().equals( SingleValuedPair.of( nextValue, nextValue ) ) );
-                basisTimes.add( nextPair.getReferenceTime() );
             }
+            
             //Three time-series
-            assertTrue( basisTimes.size() == 3 );
+            assertTrue( TimeSeriesSlicer.getReferenceTimes( ts.get() ).size() == 3 );
             nextValue++;
         }
 
         //Check the regular duration of a time-series with one duration
         SortedSet<Event<SingleValuedPair>> fourth = new TreeSet<>();
-        fourth.add( Event.of( firstBasisTime, Instant.parse( TWELFTH_TIME ), SingleValuedPair.of( 3, 3 ) ) );
+        fourth.add( Event.of( Instant.parse( TWELFTH_TIME ), SingleValuedPair.of( 3, 3 ) ) );
 
         TimeSeriesOfSingleValuedPairsBuilder bu = new TimeSeriesOfSingleValuedPairsBuilder();
 
@@ -194,9 +191,9 @@ public final class TimeSeriesOfSingleValuedPairsTest
         TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
 
         Instant basisTime = Instant.parse( FIRST_TIME );
-        values.add( Event.of( basisTime, Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
-        values.add( Event.of( basisTime, Instant.parse( THIRD_TIME ), SingleValuedPair.of( 2, 2 ) ) );
-        values.add( Event.of( basisTime, Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 3, 3 ) ) );
+        values.add( Event.of( Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
+        values.add( Event.of( Instant.parse( THIRD_TIME ), SingleValuedPair.of( 2, 2 ) ) );
+        values.add( Event.of( Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 3, 3 ) ) );
         SampleMetadata meta = SampleMetadata.of();
 
         TimeSeries<SingleValuedPair> timeSeries = TimeSeries.of( basisTime,
@@ -251,9 +248,9 @@ public final class TimeSeriesOfSingleValuedPairsTest
         TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
 
         Instant basisTime = Instant.parse( FIRST_TIME );
-        first.add( Event.of( basisTime, Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
-        first.add( Event.of( basisTime, Instant.parse( THIRD_TIME ), SingleValuedPair.of( 2, 2 ) ) );
-        first.add( Event.of( basisTime, Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 3, 3 ) ) );
+        first.add( Event.of( Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
+        first.add( Event.of( Instant.parse( THIRD_TIME ), SingleValuedPair.of( 2, 2 ) ) );
+        first.add( Event.of( Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 3, 3 ) ) );
         SampleMetadata meta = SampleMetadata.of();
         VectorOfDoubles climatology = VectorOfDoubles.of( 1, 2, 3 );
 
@@ -273,13 +270,13 @@ public final class TimeSeriesOfSingleValuedPairsTest
         TimeSeriesOfSingleValuedPairsBuilder c = new TimeSeriesOfSingleValuedPairsBuilder();
         c.addTimeSeries( ts );
 
-        second.add( Event.of( basisTime, Instant.parse( SECOND_TIME ), SingleValuedPair.of( 4, 4 ) ) );
-        second.add( Event.of( basisTime, Instant.parse( THIRD_TIME ), SingleValuedPair.of( 5, 5 ) ) );
-        second.add( Event.of( basisTime, Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 6, 6 ) ) );
+        second.add( Event.of( Instant.parse( SECOND_TIME ), SingleValuedPair.of( 4, 4 ) ) );
+        second.add( Event.of( Instant.parse( THIRD_TIME ), SingleValuedPair.of( 5, 5 ) ) );
+        second.add( Event.of( Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 6, 6 ) ) );
 
-        third.add( Event.of( basisTime, Instant.parse( SECOND_TIME ), SingleValuedPair.of( 7, 7 ) ) );
-        third.add( Event.of( basisTime, Instant.parse( THIRD_TIME ), SingleValuedPair.of( 8, 8 ) ) );
-        third.add( Event.of( basisTime, Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 9, 9 ) ) );
+        third.add( Event.of( Instant.parse( SECOND_TIME ), SingleValuedPair.of( 7, 7 ) ) );
+        third.add( Event.of( Instant.parse( THIRD_TIME ), SingleValuedPair.of( 8, 8 ) ) );
+        third.add( Event.of( Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 9, 9 ) ) );
 
         TimeSeries<SingleValuedPair> secondSeries = TimeSeries.of( basisTime,
                                                                    second );
@@ -325,9 +322,9 @@ public final class TimeSeriesOfSingleValuedPairsTest
         SortedSet<Event<SingleValuedPair>> first = new TreeSet<>();
 
         Instant firstBasisTime = Instant.parse( FIRST_TIME );
-        first.add( Event.of( firstBasisTime, Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
-        first.add( Event.of( firstBasisTime, Instant.parse( THIRD_TIME ), SingleValuedPair.of( 2, 2 ) ) );
-        first.add( Event.of( firstBasisTime, Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 3, 3 ) ) );
+        first.add( Event.of( Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
+        first.add( Event.of( Instant.parse( THIRD_TIME ), SingleValuedPair.of( 2, 2 ) ) );
+        first.add( Event.of( Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 3, 3 ) ) );
         final SampleMetadata meta = SampleMetadata.of();
 
         //Check for exceptions on the iterators
@@ -356,9 +353,9 @@ public final class TimeSeriesOfSingleValuedPairsTest
         SortedSet<Event<SingleValuedPair>> first = new TreeSet<>();
 
         Instant firstBasisTime = Instant.parse( FIRST_TIME );
-        first.add( Event.of( firstBasisTime, Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
-        first.add( Event.of( firstBasisTime, Instant.parse( THIRD_TIME ), SingleValuedPair.of( 2, 2 ) ) );
-        first.add( Event.of( firstBasisTime, Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 3, 3 ) ) );
+        first.add( Event.of( Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
+        first.add( Event.of( Instant.parse( THIRD_TIME ), SingleValuedPair.of( 2, 2 ) ) );
+        first.add( Event.of( Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 3, 3 ) ) );
         final SampleMetadata meta = SampleMetadata.of();
 
         //Check for exceptions on the iterators
@@ -393,10 +390,14 @@ public final class TimeSeriesOfSingleValuedPairsTest
         StringJoiner joiner = new StringJoiner( System.lineSeparator() );
         for ( int i = 0; i < 5; i++ )
         {
-            first.add( Event.of( basisTime,
-                                 Instant.parse( "1985-01-01T" + String.format( "%02d", i ) + ZERO_ZEE ),
+            String validTime = "1985-01-01T" + String.format( "%02d", i ) + ZERO_ZEE;
+
+            first.add( Event.of( Instant.parse( validTime ),
                                  SingleValuedPair.of( 1, 1 ) ) );
-            joiner.add( "(" + basisTime + ",1985-01-01T" + String.format( "%02d", i ) + ZERO_ZEE + "," + "1.0,1.0)" );
+            joiner.add( "("
+                        + validTime
+                        + ","
+                        + "1.0,1.0)" );
         }
 
         TimeSeries<SingleValuedPair> firstSeries = TimeSeries.of( basisTime,
@@ -411,13 +412,12 @@ public final class TimeSeriesOfSingleValuedPairsTest
         SortedSet<Event<SingleValuedPair>> second = new TreeSet<>();
         for ( int i = 0; i < 5; i++ )
         {
-            second.add( Event.of( nextBasisTime,
-                                  Instant.parse( "1985-01-02T" + String.format( "%02d", i ) + ZERO_ZEE ),
+            String validTime = "1985-01-02T" + String.format( "%02d", i ) + ZERO_ZEE;
+
+            second.add( Event.of( Instant.parse( validTime ),
                                   SingleValuedPair.of( 1, 1 ) ) );
-            joiner.add( "(" + nextBasisTime
-                        + ",1985-01-02T"
-                        + String.format( "%02d", i )
-                        + ZERO_ZEE
+            joiner.add( "("
+                        + validTime
                         + ","
                         + "1.0,1.0)" );
         }
@@ -444,26 +444,23 @@ public final class TimeSeriesOfSingleValuedPairsTest
         TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
 
         Instant firstBasisTime = Instant.parse( FIRST_TIME );
-        first.add( Event.of( firstBasisTime, Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
-        first.add( Event.of( firstBasisTime, Instant.parse( "1985-01-01T08:00:00Z" ), SingleValuedPair.of( 2, 2 ) ) );
-        first.add( Event.of( firstBasisTime, Instant.parse( "1985-01-01T09:00:00Z" ), SingleValuedPair.of( 3, 3 ) ) );
+        first.add( Event.of( Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T08:00:00Z" ), SingleValuedPair.of( 2, 2 ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T09:00:00Z" ), SingleValuedPair.of( 3, 3 ) ) );
         Instant secondBasisTime = Instant.parse( FIFTH_TIME );
-        second.add( Event.of( secondBasisTime, Instant.parse( SEVENTH_TIME ), SingleValuedPair.of( 4, 4 ) ) );
-        second.add( Event.of( secondBasisTime, Instant.parse( "1985-01-02T04:00:00Z" ), SingleValuedPair.of( 5, 5 ) ) );
-        second.add( Event.of( secondBasisTime, Instant.parse( "1985-01-02T06:00:00Z" ), SingleValuedPair.of( 6, 6 ) ) );
+        second.add( Event.of( Instant.parse( SEVENTH_TIME ), SingleValuedPair.of( 4, 4 ) ) );
+        second.add( Event.of( Instant.parse( "1985-01-02T04:00:00Z" ), SingleValuedPair.of( 5, 5 ) ) );
+        second.add( Event.of( Instant.parse( "1985-01-02T06:00:00Z" ), SingleValuedPair.of( 6, 6 ) ) );
         Instant thirdBasisTime = Instant.parse( NINTH_TIME );
-        third.add( Event.of( thirdBasisTime, Instant.parse( TENTH_TIME ), SingleValuedPair.of( 7, 7 ) ) );
-        third.add( Event.of( thirdBasisTime, Instant.parse( "1985-01-03T08:00:00Z" ), SingleValuedPair.of( 8, 8 ) ) );
-        third.add( Event.of( thirdBasisTime, Instant.parse( "1985-01-03T09:00:00Z" ), SingleValuedPair.of( 9, 9 ) ) );
+        third.add( Event.of( Instant.parse( TENTH_TIME ), SingleValuedPair.of( 7, 7 ) ) );
+        third.add( Event.of( Instant.parse( "1985-01-03T08:00:00Z" ), SingleValuedPair.of( 8, 8 ) ) );
+        third.add( Event.of( Instant.parse( "1985-01-03T09:00:00Z" ), SingleValuedPair.of( 9, 9 ) ) );
         Instant fourthBasisTime = Instant.parse( "1985-01-04T00:00:00Z" );
-        fourth.add( Event.of( fourthBasisTime,
-                              Instant.parse( "1985-01-04T02:00:00Z" ),
+        fourth.add( Event.of( Instant.parse( "1985-01-04T02:00:00Z" ),
                               SingleValuedPair.of( 10, 10 ) ) );
-        fourth.add( Event.of( fourthBasisTime,
-                              Instant.parse( "1985-01-04T04:00:00Z" ),
+        fourth.add( Event.of( Instant.parse( "1985-01-04T04:00:00Z" ),
                               SingleValuedPair.of( 11, 11 ) ) );
-        fourth.add( Event.of( fourthBasisTime,
-                              Instant.parse( "1985-01-04T06:00:00Z" ),
+        fourth.add( Event.of( Instant.parse( "1985-01-04T06:00:00Z" ),
                               SingleValuedPair.of( 12, 12 ) ) );
         SampleMetadata meta = SampleMetadata.of();
         //Add the time-series, with only one for baseline
@@ -583,9 +580,9 @@ public final class TimeSeriesOfSingleValuedPairsTest
         TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
 
         Instant basisTime = Instant.parse( FIRST_TIME );
-        first.add( Event.of( basisTime, Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
-        first.add( Event.of( basisTime, Instant.parse( THIRD_TIME ), SingleValuedPair.of( 2, 2 ) ) );
-        first.add( Event.of( basisTime, Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 3, 3 ) ) );
+        first.add( Event.of( Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
+        first.add( Event.of( Instant.parse( THIRD_TIME ), SingleValuedPair.of( 2, 2 ) ) );
+        first.add( Event.of( Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 3, 3 ) ) );
         SampleMetadata meta = SampleMetadata.of();
         VectorOfDoubles climatology = VectorOfDoubles.of( 1, 2, 3 );
 
