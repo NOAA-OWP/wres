@@ -19,6 +19,8 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
+import static wres.io.config.LeftOrRightOrBaseline.*;
+
 import wres.io.config.LeftOrRightOrBaseline;
 import wres.io.project.Project;
 import wres.io.reading.IngestException;
@@ -287,20 +289,25 @@ public class Projects
 
         for ( IngestResult ingestResult : ingestResults )
         {
+            int countAdded = 0;
+
             if ( ingestResult.getLeftOrRightOrBaseline()
                              .equals( LeftOrRightOrBaseline.LEFT ) )
             {
                 leftHashes.add( ingestResult.getHash() );
+                countAdded++;
             }
             else if ( ingestResult.getLeftOrRightOrBaseline()
                                   .equals( LeftOrRightOrBaseline.RIGHT ) )
             {
                 rightHashes.add( ingestResult.getHash() );
+                countAdded++;
             }
             else if ( ingestResult.getLeftOrRightOrBaseline()
                                   .equals( LeftOrRightOrBaseline.BASELINE ) )
             {
                 baselineHashes.add( ingestResult.getHash() );
+                countAdded++;
             }
             else
             {
@@ -309,11 +316,51 @@ public class Projects
                                                     + " associated with it: "
                                                     + ingestResult );
             }
+
+            // Additionally include links when a source is re-used in a project.
+            for ( LeftOrRightOrBaseline leftOrRightOrBaseline :
+                    ingestResult.getDataSource()
+                                .getLinks() )
+            {
+                if ( leftOrRightOrBaseline.equals( LEFT ) )
+                {
+                    leftHashes.add( ingestResult.getHash() );
+                    countAdded++;
+                }
+                else if ( leftOrRightOrBaseline.equals( RIGHT ) )
+                {
+                    rightHashes.add( ingestResult.getHash() );
+                    countAdded++;
+                }
+                else if ( leftOrRightOrBaseline.equals( BASELINE ) )
+                {
+                    baselineHashes.add( ingestResult.getHash() );
+                    countAdded++;
+                }
+            }
+
+            LOGGER.debug( "Noticed {} has {} links.", ingestResult, countAdded );
         }
 
         List<String> finalLeftHashes = Collections.unmodifiableList( leftHashes );
         List<String> finalRightHashes = Collections.unmodifiableList( rightHashes );
         List<String> finalBaselineHashes = Collections.unmodifiableList( baselineHashes );
+
+        // Check assumption that at least one left and one right source have
+        // been created.
+        int leftCount = finalLeftHashes.size();
+        int rightCount = finalRightHashes.size();
+
+        if ( leftCount < 1 || rightCount < 1 )
+        {
+            throw new IllegalStateException( "At least one source for left and "
+                                             + "one source for right must be "
+                                             + "linked, but left had "
+                                             + leftCount + " sources and right "
+                                             + "had " + rightCount
+                                             + " sources." );
+        }
+
         Pair<Project,Boolean> detailsResult =
                 Projects.getProject( projectConfig,
                                      finalLeftHashes,
@@ -354,6 +401,14 @@ public class Projects
                 copyStatement.add( details.getId() + delimiter
                                    + sourceID + delimiter
                                    + ingestResult.getLeftOrRightOrBaseline().value() );
+
+                for ( LeftOrRightOrBaseline additionalLink :
+                        ingestResult.getDataSource().getLinks() )
+                {
+                    copyStatement.add( details.getId() + delimiter
+                                       + sourceID + delimiter
+                                       + additionalLink.value() );
+                }
             }
 
             String allCopyValues = copyStatement.toString();
