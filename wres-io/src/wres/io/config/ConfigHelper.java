@@ -1182,16 +1182,17 @@ public class ConfigHelper
 
     /**
      * Given a config and a data source, return which kind the datasource is
-     * 
-     * TODO: this method cannot work. Two or more source declarations can be equal and the LRB context 
+     *
+     * TODO: this method cannot work. Two or more source declarations can be equal and the LRB context
      * is not part of the declaration. See #67774.
+     * The above comment is one opinion about whether to use a method like this.
      * 
      * @param projectConfig the project config the source belongs to
      * @param config the config we wonder about
      * @return left or right or baseline
      * @throws IllegalArgumentException when the config doesn't belong to project
      */
-    @Deprecated(since="1.15", forRemoval=true)
+
     public static LeftOrRightOrBaseline getLeftOrRightOrBaseline( ProjectConfig projectConfig,
                                                                   DataSourceConfig config )
     {
@@ -1199,16 +1200,19 @@ public class ConfigHelper
         DataSourceConfig right = projectConfig.getInputs().getRight();
         DataSourceConfig baseline = projectConfig.getInputs().getBaseline();
 
-        if ( config.equals( left ) )
+        if ( config == left )
         {
+            LOGGER.debug( "Config {} is a left config.", config );
             return LeftOrRightOrBaseline.LEFT;
         }
-        else if ( config.equals( right ) )
+        else if ( config == right )
         {
+            LOGGER.debug( "Config {} is a right config.", config );
             return LeftOrRightOrBaseline.RIGHT;
         }
-        else if ( config.equals( baseline ) )
+        else if ( config == baseline )
         {
+            LOGGER.debug( "Config {} is a baseline config.", config );
             return LeftOrRightOrBaseline.BASELINE;
         }
         else
