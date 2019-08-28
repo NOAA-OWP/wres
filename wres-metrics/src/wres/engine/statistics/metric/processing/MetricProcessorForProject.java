@@ -58,16 +58,7 @@ public class MetricProcessorForProject
 
         Set<StatisticGroup> mergeTheseResults = MetricConfigHelper.getCacheListFromProjectConfig( projectConfig );
 
-        if ( type.equals( DatasourceType.SINGLE_VALUED_FORECASTS ) || type.equals( DatasourceType.SIMULATIONS ) )
-        {
-            singleValuedProcessor = MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( projectConfig,
-                                                                                            externalThresholds,
-                                                                                            thresholdExecutor,
-                                                                                            metricExecutor,
-                                                                                            mergeTheseResults );
-            ensembleProcessor = null;
-        }
-        else
+        if ( type.equals( DatasourceType.ENSEMBLE_FORECASTS ) )
         {
             ensembleProcessor = MetricFactory.ofMetricProcessorByTimeEnsemblePairs( projectConfig,
                                                                                     externalThresholds,
@@ -75,6 +66,15 @@ public class MetricProcessorForProject
                                                                                     metricExecutor,
                                                                                     mergeTheseResults );
             singleValuedProcessor = null;
+        }
+        else
+        {
+            singleValuedProcessor = MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( projectConfig,
+                                                                                            externalThresholds,
+                                                                                            thresholdExecutor,
+                                                                                            metricExecutor,
+                                                                                            mergeTheseResults );
+            ensembleProcessor = null;
         }
     }
 
