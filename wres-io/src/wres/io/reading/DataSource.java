@@ -183,17 +183,17 @@ public class DataSource
         
         StringJoiner joiner = new StringJoiner( ";", "(", ")" );
 
-        joiner.add( "URI: '" + this.getUri() + "'" );
-        joiner.add( " Type: '" + this.getContext().getType() + "'" );
+        joiner.add( "URI: " + this.getUri() );
+        joiner.add( " Type: " + this.getContext().getType() );
 
         if ( Objects.nonNull( this.getSource().getFormat() ) )
         {
-            joiner.add( " Format: '" + this.getSource().getFormat() + "'" );
+            joiner.add( " Format: " + this.getSource().getFormat() );
         }
 
         if ( !this.getLinks().isEmpty() )
         {
-            joiner.add( " Links to other contexts: '" + this.getLinks() );
+            joiner.add( " Links to other contexts: " + this.getLinks() );
         }
 
         return joiner.toString();

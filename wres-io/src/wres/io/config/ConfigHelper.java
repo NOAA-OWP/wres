@@ -17,7 +17,6 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -353,7 +352,6 @@ public class ConfigHelper
                                      Feature feature )
             throws SQLException
     {
-        final String NEWLINE = System.lineSeparator();
         Integer variableId;
         String member;
 
@@ -1184,12 +1182,16 @@ public class ConfigHelper
 
     /**
      * Given a config and a data source, return which kind the datasource is
+     * 
+     * TODO: this method cannot work. Two or more source declarations can be equal and the LRB context 
+     * is not part of the declaration. See #67774.
+     * 
      * @param projectConfig the project config the source belongs to
      * @param config the config we wonder about
      * @return left or right or baseline
      * @throws IllegalArgumentException when the config doesn't belong to project
      */
-
+    @Deprecated(since="1.15", forRemoval=true)
     public static LeftOrRightOrBaseline getLeftOrRightOrBaseline( ProjectConfig projectConfig,
                                                                   DataSourceConfig config )
     {

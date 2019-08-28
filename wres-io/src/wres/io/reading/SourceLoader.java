@@ -187,6 +187,8 @@ public class SourceLoader
      * See {@link #ingestData(DataSource, ProjectConfig, DatabaseLockManager)}
      * for how this is done with a file source.
      * 
+     * See #67774
+     * 
      * @param source the data source
      * @return a single future list of results or null if source was file-like
      */
