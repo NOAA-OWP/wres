@@ -232,7 +232,7 @@ public class TimeSeries<T>
          * The reference datetime associated with the time-series.
          */
 
-        private Map<ReferenceTimeType, Instant> referenceTimes = new TreeMap<>();
+        private final Map<ReferenceTimeType, Instant> referenceTimes = new TreeMap<>();
 
         /**
          * Sets the reference time.
