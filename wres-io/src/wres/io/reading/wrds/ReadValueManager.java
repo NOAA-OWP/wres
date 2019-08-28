@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
@@ -21,6 +22,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.compress.utils.IOUtils;
@@ -89,6 +91,7 @@ public class ReadValueManager
         {
             Pair<Integer,InputStream> response = this.webClient.getFromWeb( location );
             int httpStatus = response.getLeft();
+            LOGGER.debug( "Got HTTP response code {} for {}", httpStatus, location );
 
             if ( httpStatus >= 400 && httpStatus < 500 )
             {
@@ -164,6 +167,14 @@ public class ReadValueManager
         // here in memory temporarily.
         byte[] rawForecast = IOUtils.toByteArray( forecastData );
 
+        if ( LOGGER.isTraceEnabled() )
+        {
+            LOGGER.trace( "Forecast as bytes: {} and as UTF-8: {}",
+                          rawForecast,
+                          new String( rawForecast,
+                                      StandardCharsets.UTF_8 ) );
+        }
+
         MessageDigest md5Name;
 
         try
@@ -185,9 +196,18 @@ public class ReadValueManager
         SourceDetails source;
         SourceCompletedDetails completedDetails;
 
+        // Cannot trust the DataSources.get() method to accurately
+        // report performedInsert(). Use other means here.
+        SourceDetails.SourceKey sourceKey =
+                new SourceDetails.SourceKey( location,
+                                             now.toString(),
+                                             null,
+                                             hash );
+
         try
         {
-            source = DataSources.get( location, now.toString(), null, hash );
+            source = this.createSourceDetails( sourceKey );
+            source.save();
             foundAlready = !source.performedInsert();
         }
         catch ( SQLException e )
@@ -224,12 +244,12 @@ public class ReadValueManager
                     dataSaved = dataSaved || saved;
                 }
             }
-            catch ( JsonMappingException jme )
+            catch ( JsonMappingException | JsonParseException je )
             {
                 throw new PreIngestException( "Failed to parse the response body"
                                               + " from WRDS url "
                                               + location,
-                                              jme );
+                                              je );
             }
             catch ( IngestException e )
             {

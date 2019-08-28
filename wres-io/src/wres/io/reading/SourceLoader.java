@@ -653,20 +653,10 @@ public class SourceLoader
 
         LOGGER.info( "Attempting retry of {}.", ingestResult );
 
-        boolean fullyIngestedAlready;
+        SourceStatus sourceStatus = querySourceStatus( ingestResult.getHash(),
+                                                       this.lockManager );
 
-        try
-        {
-            fullyIngestedAlready = wasSourceCompleted( ingestResult.getHash() );
-        }
-        catch ( SQLException se )
-        {
-            throw new PreIngestException( "Failed to determine if source identified by "
-                                          + ingestResult.getHash()
-                                          + " was completed.", se );
-        }
-
-        if ( fullyIngestedAlready )
+        if ( sourceStatus.equals( SourceStatus.COMPLETED ) )
         {
             LOGGER.debug( "Already finished source {}, changing to say requiresRetry=false",
                           ingestResult );
@@ -677,35 +667,39 @@ public class SourceLoader
                                                                false );
             return List.of( futureResult );
         }
-
-        LOGGER.debug( "Source {} not fully ingested, attempting to remove data.",
-                      ingestResult );
-
-        // First, try to safely remove it:
-        boolean removed = IncompleteIngest.removeSourceDataSafely( ingestResult.getHash(),
-                                                                   this.lockManager );
-        if ( removed )
+        else if ( sourceStatus.equals( SourceStatus.INCOMPLETE_WITH_TASK_CLAIMING_AND_NO_TASK_CURRENTLY_INGESTING ) )
         {
-            LOGGER.debug( "Successfully removed abandoned data source {}, creating new ingest task.",
-                          ingestResult );
-            return SourceLoader.ingestData( ingestResult.getDataSource(),
-                                            this.projectConfig,
-                                            this.lockManager,
-                                            ingestResult.getHash() );
+            LOGGER.debug(
+                    "Source {} with status {} not fully ingested, attempting to remove data.",
+                    ingestResult,
+                    sourceStatus );
+
+            // First, try to safely remove it:
+            boolean removed = IncompleteIngest.removeSourceDataSafely( ingestResult.getHash(),
+                                                                       this.lockManager );
+            if ( removed )
+            {
+                LOGGER.debug( "Successfully removed abandoned data source {}, creating new ingest task.",
+                              ingestResult );
+                return SourceLoader.ingestData( ingestResult.getDataSource(),
+                                                this.projectConfig,
+                                                this.lockManager,
+                                                ingestResult.getHash() );
+            }
+            else
+            {
+                LOGGER.debug( "Failed to remove source {}, will examine again next retry.",
+                              ingestResult );
+            }
         }
-        else
-        {
-            LOGGER.debug( "Failed to remove source {}, will examine again next retry.",
-                          ingestResult );
-            // The reason for not removing could be that it is complete or that
-            // it is still in progress. Either way, retry is required.
-            Future<List<IngestResult>> futureResult =
-                    IngestResult.fakeFutureSingleItemListFrom( this.projectConfig,
-                                                               ingestResult.getDataSource(),
-                                                               ingestResult.getHash(),
-                                                               true );
-            return List.of( futureResult );
-        }
+
+        // For whatever reason, retry is required.
+        Future<List<IngestResult>> futureResult =
+                IngestResult.fakeFutureSingleItemListFrom( this.projectConfig,
+                                                           ingestResult.getDataSource(),
+                                                           ingestResult.getHash(),
+                                                           true );
+        return List.of( futureResult );
     }
 
     /**
