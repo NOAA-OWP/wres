@@ -270,7 +270,8 @@ class SampleDataRetriever extends Retriever
     {
         String loadScript;
 
-        if ( this.getProjectDetails().getRight().equals(dataSourceConfig))
+        // Use reference equality (rather than value) on purpose, see #67774.
+        if ( this.getProjectDetails().getRight() == dataSourceConfig )
         {
             loadScript = Scripter.getLoadScript( this.getSampleMetadata(),
                                                  dataSourceConfig);

@@ -313,22 +313,13 @@ public class Project
      */
     public String getInputName( DataSourceConfig dataSourceConfig )
     {
-        String name = null;
-
-        if ( dataSourceConfig.equals( this.getLeft() ) )
-        {
-            name = Project.LEFT_MEMBER;
-        }
-        else if ( dataSourceConfig.equals( this.getRight() ) )
-        {
-            name = Project.RIGHT_MEMBER;
-        }
-        else if ( dataSourceConfig.equals( this.getBaseline() ) )
-        {
-            name = Project.BASELINE_MEMBER;
-        }
-
-        return name;
+        // Use reference equality (rather than value) on purpose, see #67774.
+        return "'"
+               + ConfigHelper.getLeftOrRightOrBaseline( this.getProjectConfig(),
+                                                        dataSourceConfig )
+                             .value()
+                             .toLowerCase()
+               + "'";
     }
 
     /**
