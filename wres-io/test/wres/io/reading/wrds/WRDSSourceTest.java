@@ -3517,7 +3517,9 @@ public class WRDSSourceTest
         Mockito.doReturn( this.mockSourceCompleter )
                .when( readValueManager )
                .createSourceCompleter( 0, this.fakeLockManager );
-
+        Mockito.doReturn( this.mockSourceDetails )
+               .when( readValueManager )
+               .createSourceDetails( any( SourceDetails.SourceKey.class ) );
         Mockito.doReturn( readValueManager )
                .when( wrdsSource )
                .createReadValueManager( projectConfig,
@@ -3649,6 +3651,9 @@ public class WRDSSourceTest
         Mockito.doReturn( this.mockSourceCompleter )
                .when( readValueManager )
                .createSourceCompleter( 0, this.fakeLockManager );
+        Mockito.doReturn( this.mockSourceDetails )
+               .when( readValueManager )
+               .createSourceDetails( any( SourceDetails.SourceKey.class ) );
 
         Mockito.doReturn( readValueManager )
                .when( wrdsSource )
@@ -3758,7 +3763,22 @@ public class WRDSSourceTest
                                                        LeftOrRightOrBaseline.RIGHT ),
                                                fakeAhpsUri );
 
-        WRDSSource wrdsSource = new WRDSSource( projectConfig, dataSource, this.fakeLockManager );
+        WRDSSource wrdsSource = Mockito.spy(
+                new WRDSSource( projectConfig,
+                                dataSource,
+                                this.fakeLockManager ) );
+        ReadValueManager readValueManager = Mockito.spy(
+                new ReadValueManager( projectConfig,
+                                      dataSource,
+                                      this.fakeLockManager ) );
+        Mockito.doReturn( this.mockSourceDetails )
+               .when( readValueManager )
+               .createSourceDetails( any( SourceDetails.SourceKey.class ) );
+        Mockito.doReturn( readValueManager )
+               .when( wrdsSource )
+               .createReadValueManager( projectConfig,
+                                        dataSource,
+                                        this.fakeLockManager );
 
         // Expect a PreIngestException during attempt to save invalid data
         assertThrows( PreIngestException.class, wrdsSource::save );
