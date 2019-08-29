@@ -37,6 +37,7 @@ import static java.time.temporal.TemporalAdjusters.previousOrSame;
 import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DateCondition;
+import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.IngestSaver;
 import wres.io.config.ConfigHelper;
@@ -194,6 +195,17 @@ class WebSource implements Callable<List<IngestResult>>
             {
                 for ( Pair<Instant, Instant> range : weekRanges )
                 {
+                    boolean shouldCreateUri = shouldCreateUri( this.getBaseUri(),
+                                                               range,
+                                                               featureDetails );
+
+                    if ( !shouldCreateUri )
+                    {
+                        LOGGER.warn( "Unable or unwilling to create a URI for feature {}, skipping it.",
+                                     featureDetails );
+                        continue;
+                    }
+
                     URI uri = createUri( this.getBaseUri(),
                                          range,
                                          featureDetails );
@@ -377,6 +389,34 @@ class WebSource implements Callable<List<IngestResult>>
     }
 
 
+    /**
+     * Tests if createUri call should succeed. Kind of awkward, but better than
+     * having createUri() return null, allows createUri to guarantee a URI.
+     * @param baseUri
+     * @param range
+     * @param featureDetails
+     * @return
+     */
+    private boolean shouldCreateUri( URI baseUri,
+                                     Pair<Instant,Instant> range,
+                                     FeatureDetails featureDetails )
+    {
+        Objects.requireNonNull( baseUri );
+        Objects.requireNonNull( range );
+        Objects.requireNonNull( featureDetails );
+
+        if ( baseUri.getHost()
+                    .toLowerCase()
+                    .contains( "usgs.gov" )
+            && ( Objects.isNull( featureDetails.getGageID() )
+                 || featureDetails.getGageID().isBlank() ) )
+        {
+            return false;
+        }
+
+        return true;
+    }
+
     private URI createUri( URI baseUri,
                            Pair<Instant,Instant> range,
                            FeatureDetails featureDetails )
@@ -419,6 +459,12 @@ class WebSource implements Callable<List<IngestResult>>
                                Pair<Instant,Instant> range,
                                FeatureDetails featureDetails )
     {
+        Objects.requireNonNull( baseUri );
+        Objects.requireNonNull( range );
+        Objects.requireNonNull( featureDetails );
+        Objects.requireNonNull( range.getLeft() );
+        Objects.requireNonNull( range.getRight() );
+
         // example "?format=json&sites=09165000&parameterCd=00060&startDT=2018-10-01T00:00:0
         if ( !baseUri.getHost()
                      .toLowerCase()
@@ -427,6 +473,11 @@ class WebSource implements Callable<List<IngestResult>>
             throw new IllegalArgumentException( "Expected URI like '"
                                                 + "https://nwis.waterservices.usgs.gov/nwis/iv"
                                                 + " but instead got " + baseUri.toString() );
+        }
+
+        if ( Objects.isNull( featureDetails.getGageID() ) )
+        {
+            return URI.create( "" );
         }
 
         Map<String, String> urlParameters = createUsgsUrlParameters( range,
@@ -498,12 +549,23 @@ class WebSource implements Callable<List<IngestResult>>
      * Specific to USGS NWIS API, get date range url parameters
      * @param range the date range to set parameters for
      * @return the key/value parameters
+     * @throws NullPointerException When arg or value enclosed inside arg is null
      */
 
     private Map<String,String> createUsgsUrlParameters( Pair<Instant,Instant> range,
                                                         FeatureDetails featureDetails,
                                                         DataSource dataSource )
     {
+        LOGGER.trace( "Called createUsgsUrlParameters with {}, {}, {}",
+                      range, featureDetails, dataSource );
+        Objects.requireNonNull( range );
+        Objects.requireNonNull( featureDetails );
+        Objects.requireNonNull( dataSource );
+        Objects.requireNonNull( range.getLeft() );
+        Objects.requireNonNull( range.getRight() );
+        Objects.requireNonNull( featureDetails.getGageID() );
+        Objects.requireNonNull( dataSource.getVariable() );
+        Objects.requireNonNull( dataSource.getVariable().getValue() );
         return Map.of( "format", "json",
                        "parameterCd", dataSource.getVariable().getValue(),
                        "startDT", range.getLeft().toString(),
