@@ -72,7 +72,7 @@ public class SourceCompleter
         {
             try
             {
-                Duration eachWait = Duration.ofMillis( 100 / latches.size() );
+                Duration eachWait = Duration.ofMillis( 1 );
 
                 for ( Pair<CountDownLatch, CountDownLatch> latchPair : latches )
                 {
