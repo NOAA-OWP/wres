@@ -1,6 +1,7 @@
 package wres.io.retrieval.dao;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.LongFunction;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
@@ -15,19 +16,19 @@ import java.util.stream.Stream;
  * @param <T> the type of object
  */
 
-public interface WresDAO<T> 
+public interface WresDAO<T>
 {
 
     /**
      * Reads an object with a prescribed identifier.
      * 
      * @param identifier the object identifier
-     * @return the object
+     * @return the possible object
      * @throws DataAccessException if the data could not be accessed for whatever reason
      */
-    
-    T get( long identifier );
-     
+
+    Optional<T> get( long identifier );
+
     /**
      * Reads a collection of objects, by unique identifier, into a stream.
      * 
@@ -35,19 +36,22 @@ public interface WresDAO<T>
      * @return a stream over the identified objects
      * @throws NullPointerException if the input is null
      */
-    
+
     default Stream<T> get( long... identifiers )
     {
         Objects.nonNull( identifiers );
 
         // Create the supplier of objects from the object identifiers
-        LongFunction<T> supplier = this::get;
-        
+        LongFunction<Optional<T>> supplier = this::get;
+
         // Create the stream of object identifiers
         LongStream ids = LongStream.of( identifiers );
-        
+
         // Map the object identifiers to objects in a stream view
-        return ids.mapToObj( supplier );
+        Stream<Optional<T>> optionals = ids.mapToObj( supplier );
+
+        // Filter for objects that exist
+        return optionals.filter( Optional::isPresent ).map( Optional::get );
     }
-    
+
 }

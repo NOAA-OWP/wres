@@ -5,6 +5,7 @@ import java.text.MessageFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
+import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,13 +76,13 @@ public class SingleValuedForecastDAO implements WresDAO<TimeSeries<Double>>
     {
         return new SingleValuedForecastDAO( timeFilter );
     }
-    
+
     @Override
-    public TimeSeries<Double> get( long identifier )
+    public Optional<TimeSeries<Double>> get( long identifier )
     {
         // TODO: abstract away this boilerplate for other forecast implementations,
         // like ensemble forecasts
-        
+
         // Get the time constraints       
         long lowerLead = Integer.MIN_VALUE;
         long upperLead = Integer.MAX_VALUE;
@@ -138,7 +139,7 @@ public class SingleValuedForecastDAO implements WresDAO<TimeSeries<Double>>
                       System.lineSeparator(),
                       script );
 
-        return SingleValuedForecastDAO.getTimeSeriesFromScript( script );
+        return Optional.of( SingleValuedForecastDAO.getTimeSeriesFromScript( script ) );
     }
 
     /**
