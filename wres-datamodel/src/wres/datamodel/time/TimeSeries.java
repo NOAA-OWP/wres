@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.SortedSet;
+import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
@@ -92,7 +93,7 @@ public class TimeSeries<T>
     {
         return new TimeSeries<>( Collections.singletonMap( referenceTimeType, referenceTime ), events );
     }
-    
+
     /**
      * Returns a {@link TimeSeries}.
      * 
@@ -130,7 +131,7 @@ public class TimeSeries<T>
     {
         return this.referenceTimes; //Rendered immutable on construction
     }
-    
+
     @Override
     public boolean equals( Object o )
     {
@@ -149,6 +150,18 @@ public class TimeSeries<T>
     public int hashCode()
     {
         return Objects.hash( this.getReferenceTimes(), this.getEvents() );
+    }
+
+    @Override
+    public String toString()
+    {
+        StringJoiner joiner = new StringJoiner( ", ", "[", "]" );
+
+        joiner.add( "TimeSeries@" + this.hashCode() );
+        joiner.add( "Reference times: " + this.getReferenceTimes().toString() );
+        joiner.add( "Events: " + this.getEvents() );
+
+        return joiner.toString();
     }
 
     /**

@@ -198,4 +198,24 @@ public class TimeSeriesTest
                       exception.getMessage() );
     }
 
+    /**
+     * Tests the {@link TimeSeries#toString()}.
+     */
+
+    @Test
+    public void testToString()
+    {
+        String actual = this.testSeries.toString();
+
+        String expected = "["
+                          + "TimeSeries@"
+                          + this.testSeries.hashCode()
+                          + ", "
+                          + "Reference times: {T0=2123-12-01T00:00:00Z}, "
+                          + "Events: [(2123-12-01T06:00:00Z,1.0), (2123-12-01T12:00:00Z,2.0), (2123-12-01T18:00:00Z,3.0)]"
+                          + "]";
+
+        assertEquals( expected, actual );
+    }
+
 }

@@ -179,7 +179,7 @@ public final class EventTest
     {
         exception.expect( NullPointerException.class );
 
-        Event.of( Instant.parse( FIRST_TIME ), null );
+        Event.of( Instant.parse( FOURTH_TIME ), null );
     }
 
     /**
@@ -191,7 +191,7 @@ public final class EventTest
     {
         exception.expect( NullPointerException.class );
 
-        Event.of( Instant.parse( FIRST_TIME ), "someEvent" ).compareTo( null );
+        Event.of( Instant.parse( FOURTH_TIME ), "someEvent" ).compareTo( null );
     }
 
 }
