@@ -78,7 +78,7 @@ public class WaterMLBasicSource extends BasicSource
             Pair<Integer,InputStream> response = this.webClient.getFromWeb( location );
             int httpStatus = response.getLeft();
 
-            if ( httpStatus >= 400 && httpStatus < 500 )
+            if ( httpStatus == 404 )
             {
                 LOGGER.warn( "Treating HTTP response code {} as no data found from URI {}",
                              httpStatus,
@@ -133,9 +133,16 @@ public class WaterMLBasicSource extends BasicSource
                                                e );
                 }
             }
-            else
+            else if ( httpStatus >= 200 && httpStatus < 300 )
             {
                 data = response.getRight();
+            }
+            else
+            {
+                throw new PreIngestException( "Failed to get data from '"
+                                              + location +
+                                              "' due to HTTP status code "
+                                              + httpStatus );
             }
         }
         else
@@ -166,13 +173,13 @@ public class WaterMLBasicSource extends BasicSource
         catch ( JsonMappingException jme )
         {
             throw new PreIngestException( "Failed to parse the response body"
-                                          + " from WRDS url "
+                                          + " from USGS url "
                                           + location,
                                           jme );
         }
         catch ( IngestException e )
         {
-            throw new IngestException( "Values from WRDS url "
+            throw new IngestException( "Values from USGS url "
                                        + location
                                        + " could not be ingested.",
                                        e );
