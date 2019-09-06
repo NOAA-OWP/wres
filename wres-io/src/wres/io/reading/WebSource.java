@@ -236,17 +236,14 @@ class WebSource implements Callable<List<IngestResult>>
                     DataSource dataSource =
                             DataSource.of( this.getSourceConfig(),
                                            this.getDataSourceConfig(),
-                                           // The following is not exactly
-                                           // correct because the same
-                                           // source may exist in another
-                                           // left/right/baseline, not just
-                                           // the instance this one came from.
-                                           Set.of( ConfigHelper.getLeftOrRightOrBaseline( this.getProjectConfig(),
-                                                                                          this.getDataSourceConfig() ) ),
-                                                           uri );
-                    // TODO: hash contents, not the URL
-                    // Should already be happening... double check that we use
-                    // and save the data hash not the URL hash.
+                                           // Pass through the links because we
+                                           // trust the SourceLoader to have
+                                           // deduplicated this source if it was
+                                           // repeated in other contexts.
+                                           this.getDataSource()
+                                               .getLinks(),
+                                           uri );
+                    LOGGER.debug( "Created datasource {}", dataSource);
 
                     IngestSaver ingestSaver =
                             IngestSaver.createTask()
@@ -607,9 +604,16 @@ class WebSource implements Callable<List<IngestResult>>
             siteJoiner.add( site );
         }
 
+        // The start datetime needs to be one second later than the next
+        // week-range's end datetime or we end up with duplicates.
+        // This follows the "pools are inclusive/exclusive" convention of WRES.
+        // For some reason, 1 to 999 milliseconds are not enough.
+        Instant startDateTime = range.getLeft()
+                                     .plusSeconds( 1 );
+
         return Map.of( "format", "json",
                        "parameterCd", dataSource.getVariable().getValue(),
-                       "startDT", range.getLeft().toString(),
+                       "startDT", startDateTime.toString(),
                        "endDT", range.getRight().toString(),
                        "sites", siteJoiner.toString() );
     }
