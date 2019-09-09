@@ -938,15 +938,19 @@ final class ProjectScriptGenerator
         DataScripter script = new DataScripter();
         script.addLine("WITH initialization_lag AS");
         script.addLine("(");
-        script.addTab().addLine("SELECT (");
-        script.addTab(  2  ).addLine("EXTRACT (");
-        script.addTab(   3   ).addLine( "epoch FROM AGE (");
-        script.addTab(    4    ).addLine( "TS.initialization_date,");
-        script.addTab(    4    ).addLine( "(");
-        script.addTab(     5     ).addLine("LAG(TS.initialization_date) OVER (ORDER BY TS.initialization_date)");
-        script.addTab(    4    ).addLine( ")");
-        script.addTab(   3   ).addLine(")");
-        script.addTab(  2  ).addLine(") / 60)::int AS lag -- Divide by 60 to convert seconds into minutes");
+        script.addTab().addLine("SELECT");
+        script.addTab(  2  ).addLine("TS.initialization_date,");
+        script.addTab(  2  ).addLine("TS.timeseries_id, -- Also group by timeseries_id, #68177");
+        script.addTab(  2  ).addLine("(");
+        script.addTab(  3    ).addLine("EXTRACT (");
+        script.addTab(   4     ).addLine( "epoch FROM AGE (");
+        script.addTab(    5      ).addLine( "TS.initialization_date,");
+        script.addTab(    5      ).addLine( "(");
+        script.addTab(     6       ).addLine("LAG(TS.initialization_date, 1, TS.initialization_date) OVER (ORDER BY TS.initialization_date) -- Default lag of 0 in case of one time-series, #68177");
+        script.addTab(    5      ).addLine( ")");
+        script.addTab(   4     ).addLine(")");
+        script.addTab(  3    ).addLine(") / 60");
+        script.addTab(  2  ).addLine(")::int AS lag -- Divide by 60 to convert seconds into minutes");     
         script.addTab().addLine("FROM wres.TimeSeries TS");
         script.addTab().add("WHERE ");
         try
@@ -974,7 +978,7 @@ final class ProjectScriptGenerator
         script.addTab(    4    ).addLine("AND PS.member = ", project.getInputName( dataSourceConfig ));
         script.addTab(    4    ).addLine("AND TSS.timeseries_id = TS.timeseries_id");
         script.addTab(  2  ).addLine(")");
-        script.addTab().addLine("GROUP BY TS.initialization_date");
+        script.addTab().addLine("GROUP BY TS.initialization_date, TS.timeseries_id");
         script.addTab().addLine("ORDER BY TS.initialization_date");
         script.addLine(")");
         script.addLine("SELECT max(IL.lag) AS typical_gap");
