@@ -28,30 +28,47 @@ public interface WresDAO<T>
      */
 
     Optional<T> get( long identifier );
+    
+    /**
+     * Returns the identifiers associated with all objects.
+     * 
+     * @return the identifiers
+     * @throws DataAccessException if the identifiers could not be accessed for whatever reason
+     */
 
+    LongStream getAllIdentifiers();
+    
     /**
      * Reads a collection of objects, by unique identifier, into a stream.
      * 
-     * @param identifiers the array of zero or more identifiers
+     * @param identifiers the stream of identifiers
      * @return a stream over the identified objects
      * @throws NullPointerException if the input is null
      */
 
-    default Stream<T> get( long... identifiers )
+    default Stream<T> get( LongStream identifiers )
     {
         Objects.nonNull( identifiers );
 
         // Create the supplier of objects from the object identifiers
         LongFunction<Optional<T>> supplier = this::get;
 
-        // Create the stream of object identifiers
-        LongStream ids = LongStream.of( identifiers );
-
         // Map the object identifiers to objects in a stream view
-        Stream<Optional<T>> optionals = ids.mapToObj( supplier );
+        Stream<Optional<T>> optionals = identifiers.mapToObj( supplier );
 
         // Filter for objects that exist
         return optionals.filter( Optional::isPresent ).map( Optional::get );
     }
+    
+    /**
+     * Reads all objects.
+     * @return the possible object
+     * @throws DataAccessException if the data could not be accessed for whatever reason
+     */
 
+    default Stream<T> getAll()
+    {
+        return this.get( this.getAllIdentifiers() );
+    }
+    
 }
