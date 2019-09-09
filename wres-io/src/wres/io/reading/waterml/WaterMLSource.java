@@ -2,6 +2,7 @@ package wres.io.reading.waterml;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -22,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import static org.apache.commons.math3.util.Precision.EPSILON;
 
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.scale.TimeScale;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
@@ -261,6 +263,20 @@ public class WaterMLSource
 
         String usgsSiteCode = usgsSiteCodesFound.get( 0 );
         Pair<String,String> gageAndVariable = Pair.of( usgsSiteCode, variableName );
+        TimeScale.TimeScaleFunction function = TimeScale.TimeScaleFunction.UNKNOWN;
+        Duration period = null;
+
+        // Assume that USGS "IV" service implies "instantaneous" values, which
+        // we model as having a period of 1 minute due to 1 minute being the
+        // finest forecasted-value time-step granularity as of this commit.
+        // Perhaps this could be refactored into a isNwisIvService() method if
+        // it is needed more than once.
+        if ( dataSource.getUri()
+                       .toString()
+                       .contains( "usgs.gov/nwis/iv" ) )
+        {
+            period = Duration.ofMinutes( 1 );
+        }
 
         for (TimeSeriesValues valueSet : series.getValues())
         {
@@ -285,7 +301,9 @@ public class WaterMLSource
                                               value.getDateTime(),
                                               readValue,
                                               sourceDetails,
-                                              unitCode );
+                                              unitCode,
+                                              function,
+                                              period );
                 }
                 catch ( SQLException e )
                 {
@@ -305,7 +323,9 @@ public class WaterMLSource
                                       Instant observationTime,
                                       Double value,
                                       SourceDetails sourceDetails,
-                                      String unitCode )
+                                      String unitCode,
+                                      TimeScale.TimeScaleFunction scaleFunction,
+                                      Duration scalePeriod )
             throws SQLException, IngestException
     {
         int variableFeatureId = this.getVariableFeatureID( gageAndVariable );
@@ -316,6 +336,8 @@ public class WaterMLSource
                               .at( observationTime )
                               .forVariableAndFeatureID( variableFeatureId )
                               .inSource( sourceDetails.getId() )
+                              .scaledBy( scaleFunction )
+                              .scaleOf( scalePeriod )
                               .add();
         this.latches.add( synchronizer );
     }
