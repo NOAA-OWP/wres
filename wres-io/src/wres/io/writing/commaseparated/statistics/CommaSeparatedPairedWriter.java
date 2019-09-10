@@ -45,9 +45,9 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedStatisticsWr
     /**
      * Set of paths that this writer actually wrote to
      */
-    
-    private final Set<Path> pathsWrittenTo = new HashSet<>();    
-    
+
+    private final Set<Path> pathsWrittenTo = new HashSet<>();
+
     /**
      * Returns an instance of a writer.
      * 
@@ -112,7 +112,7 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedStatisticsWr
         }
 
     }
-    
+
     /**
      * Return a snapshot of the paths written to (so far)
      * 
@@ -123,7 +123,7 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedStatisticsWr
     public Set<Path> get()
     {
         return this.getPathsWrittenTo();
-    }    
+    }
 
     /**
      * Writes all output for one paired type.
@@ -152,11 +152,12 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedStatisticsWr
         SortedSet<MetricConstants> metrics = Slicer.discover( output, next -> next.getMetadata().getMetricID() );
         for ( MetricConstants m : metrics )
         {
-            StringJoiner headerRow = CommaSeparatedUtilities.getPartialTimeWindowHeaderFromSampleMetadata( output.getData()
-                                                                                                          .get( 0 )
-                                                                                                          .getMetadata()
-                                                                                                          .getSampleMetadata(),
-                                                                                                    durationUnits );
+            StringJoiner headerRow =
+                    CommaSeparatedUtilities.getPartialTimeWindowHeaderFromSampleMetadata( output.getData()
+                                                                                                .get( 0 )
+                                                                                                .getMetadata()
+                                                                                                .getSampleMetadata(),
+                                                                                          durationUnits );
 
             ListOfStatistics<PairedStatistic<S, T>> nextOutput = Slicer.filter( output, m );
 
@@ -228,6 +229,7 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedStatisticsWr
                                                                             data -> data.getSampleMetadata()
                                                                                         .getThresholds()
                                                                                         .equals( t ) );
+
             // Loop across the outputs
             for ( PairedStatistic<S, T> next : sliced )
             {
@@ -235,19 +237,24 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedStatisticsWr
                 for ( Pair<S, T> nextPair : next )
                 {
                     CommaSeparatedStatisticsWriter.addRowToInput( returnMe,
-                                                        next.getMetadata().getSampleMetadata().getTimeWindow(),
-                                                        Arrays.asList( nextPair.getLeft(), nextPair.getRight() ),
-                                                        formatter,
-                                                        true,
-                                                        durationUnits,
-                                                        nextPair.getLeft().toString() );
+                                                                  next.getMetadata()
+                                                                      .getSampleMetadata()
+                                                                      .getTimeWindow(),
+                                                                  Arrays.asList( nextPair.getLeft(),
+                                                                                 nextPair.getRight() ),
+                                                                  formatter,
+                                                                  // Append if there are multiple thresholds
+                                                                  // otherwise, create a new row
+                                                                  thresholds.size() > 1,
+                                                                  durationUnits,
+                                                                  nextPair.getLeft().toString() );
                 }
             }
         }
 
         return returnMe;
     }
-    
+
     /**
      * Return a snapshot of the paths written to (so far)
      * 
@@ -269,9 +276,9 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedStatisticsWr
      * @throws ProjectConfigException if the project configuration is not valid for writing 
      */
 
-    private CommaSeparatedPairedWriter(ProjectConfig projectConfig,
-                                       ChronoUnit durationUnits,
-                                       Path outputDirectory )
+    private CommaSeparatedPairedWriter( ProjectConfig projectConfig,
+                                        ChronoUnit durationUnits,
+                                        Path outputDirectory )
     {
         super( projectConfig, durationUnits, outputDirectory );
     }
