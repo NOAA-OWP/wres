@@ -89,7 +89,7 @@ class PoolingSampleDataIterator extends SampleDataIterator
         if ( this.getSampleCount() == 0)
         {
             LOGGER.debug( "No windows could be generated for '{}'. First "
-                    + "attemped lead duration bounds were '{}'.", this.getFeature(), leadBounds );
+                    + "attempted lead duration bounds were '{}'.", this.getFeature(), leadBounds );
         }
     }
 

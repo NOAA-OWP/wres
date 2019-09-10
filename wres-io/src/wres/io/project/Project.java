@@ -2341,12 +2341,11 @@ public class Project
     {
         // Only determine lead offsets when they are absolutely required    
         
-        // Do not need offsets for simulations because there is no forecast horizon
-        if ( ConfigHelper.isSimulation( this.getRight() ) )
+        // Do not need offsets for non-forecasts because there is no forecast horizon
+        if ( !ConfigHelper.isForecast( this.getRight() ) )
         {
-
-            LOGGER.debug( "Lead offsets were not computed because the right source contains simulations "
-                    + "and offsets are only needed for forecasts." );
+            LOGGER.debug( "Lead offsets were not computed because the right source does not contain " 
+                    + "forecasts and offsets are only needed for forecasts." );
 
             return Collections.emptyMap();
         }

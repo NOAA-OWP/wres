@@ -3,6 +3,8 @@ package wres.io.reading;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -14,6 +16,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.SortedSet;
+import java.util.StringJoiner;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
@@ -23,7 +30,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.function.IntPredicate;
 
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.client.utils.URIBuilder;
@@ -37,12 +46,13 @@ import static java.time.temporal.TemporalAdjusters.previousOrSame;
 import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DateCondition;
-import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.IngestSaver;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Features;
 import wres.io.data.details.FeatureDetails;
+import wres.io.utilities.DataProvider;
+import wres.io.utilities.DataScripter;
 import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
 
@@ -189,6 +199,11 @@ class WebSource implements Callable<List<IngestResult>>
                                                                   this.getDataSource(),
                                                                   this.getNow() );
 
+        Set<URI> alreadySubmittedUris = new HashSet<>();
+        SortedSet<String> allKnownUsgsGageIds = this.getAllKnownUsgsGageIds();
+
+        LOGGER.debug( "Found all these gage ids: {}", allKnownUsgsGageIds );
+
         try
         {
             for ( FeatureDetails featureDetails : features )
@@ -208,22 +223,27 @@ class WebSource implements Callable<List<IngestResult>>
 
                     URI uri = createUri( this.getBaseUri(),
                                          range,
-                                         featureDetails );
+                                         featureDetails,
+                                         allKnownUsgsGageIds );
+
+                    if ( alreadySubmittedUris.contains( uri ) )
+                    {
+                        LOGGER.debug( "Already submitted uri {}, not re-submitting it.",
+                                      uri );
+                        continue;
+                    }
 
                     DataSource dataSource =
                             DataSource.of( this.getSourceConfig(),
                                            this.getDataSourceConfig(),
-                                           // The following is not exactly
-                                           // correct because the same
-                                           // source may exist in another
-                                           // left/right/baseline, not just
-                                           // the instance this one came from.
-                                           Set.of( ConfigHelper.getLeftOrRightOrBaseline( this.getProjectConfig(),
-                                                                                          this.getDataSourceConfig() ) ),
-                                                           uri );
-                    // TODO: hash contents, not the URL
-                    // Should already be happening... double check that we use
-                    // and save the data hash not the URL hash.
+                                           // Pass through the links because we
+                                           // trust the SourceLoader to have
+                                           // deduplicated this source if it was
+                                           // repeated in other contexts.
+                                           this.getDataSource()
+                                               .getLinks(),
+                                           uri );
+                    LOGGER.debug( "Created datasource {}", dataSource);
 
                     IngestSaver ingestSaver =
                             IngestSaver.createTask()
@@ -237,6 +257,8 @@ class WebSource implements Callable<List<IngestResult>>
                             this.getIngestSaverExecutor()
                                 .submit( ingestSaver );
                     this.ingests.add( future );
+
+                    alreadySubmittedUris.add( uri );
 
                     // Check that all is well with previously submitted tasks, but
                     // only after a handful have been submitted. This means that
@@ -419,13 +441,14 @@ class WebSource implements Callable<List<IngestResult>>
 
     private URI createUri( URI baseUri,
                            Pair<Instant,Instant> range,
-                           FeatureDetails featureDetails )
+                           FeatureDetails featureDetails,
+                           SortedSet<String> allKnownUsgsGageIds )
     {
         if ( baseUri.getHost()
                     .toLowerCase()
                     .contains( "usgs.gov" ) )
         {
-            return this.createUsgsUri( baseUri, range, featureDetails );
+            return this.createUsgsUri( baseUri, range, featureDetails, allKnownUsgsGageIds );
         }
         else if ( baseUri.getPath()
                          .toLowerCase()
@@ -457,11 +480,13 @@ class WebSource implements Callable<List<IngestResult>>
 
     private URI createUsgsUri( URI baseUri,
                                Pair<Instant,Instant> range,
-                               FeatureDetails featureDetails )
+                               FeatureDetails featureDetails,
+                               SortedSet<String> allKnownUsgsGageIds )
     {
         Objects.requireNonNull( baseUri );
         Objects.requireNonNull( range );
         Objects.requireNonNull( featureDetails );
+        Objects.requireNonNull( allKnownUsgsGageIds );
         Objects.requireNonNull( range.getLeft() );
         Objects.requireNonNull( range.getRight() );
 
@@ -482,7 +507,8 @@ class WebSource implements Callable<List<IngestResult>>
 
         Map<String, String> urlParameters = createUsgsUrlParameters( range,
                                                                      featureDetails,
-                                                                     this.getDataSource() );
+                                                                     this.getDataSource(),
+                                                                     allKnownUsgsGageIds );
         return getURIWithParameters( this.getBaseUri(),
                                      urlParameters );
     }
@@ -554,7 +580,8 @@ class WebSource implements Callable<List<IngestResult>>
 
     private Map<String,String> createUsgsUrlParameters( Pair<Instant,Instant> range,
                                                         FeatureDetails featureDetails,
-                                                        DataSource dataSource )
+                                                        DataSource dataSource,
+                                                        SortedSet<String> allKnownUsgsGageIds )
     {
         LOGGER.trace( "Called createUsgsUrlParameters with {}, {}, {}",
                       range, featureDetails, dataSource );
@@ -566,11 +593,29 @@ class WebSource implements Callable<List<IngestResult>>
         Objects.requireNonNull( featureDetails.getGageID() );
         Objects.requireNonNull( dataSource.getVariable() );
         Objects.requireNonNull( dataSource.getVariable().getValue() );
+
+        SortedSet<String> sites = this.getCompanionUsgsGageIds( featureDetails,
+                                                                allKnownUsgsGageIds );
+
+        StringJoiner siteJoiner = new StringJoiner( "," );
+
+        for ( String site: sites )
+        {
+            siteJoiner.add( site );
+        }
+
+        // The start datetime needs to be one second later than the next
+        // week-range's end datetime or we end up with duplicates.
+        // This follows the "pools are inclusive/exclusive" convention of WRES.
+        // For some reason, 1 to 999 milliseconds are not enough.
+        Instant startDateTime = range.getLeft()
+                                     .plusSeconds( 1 );
+
         return Map.of( "format", "json",
                        "parameterCd", dataSource.getVariable().getValue(),
-                       "startDT", range.getLeft().toString(),
+                       "startDT", startDateTime.toString(),
                        "endDT", range.getRight().toString(),
-                       "sites", featureDetails.getGageID() );
+                       "sites", siteJoiner.toString() );
     }
 
 
@@ -597,13 +642,19 @@ class WebSource implements Callable<List<IngestResult>>
      * <p>Not specific to a particular API.</p>
      * @param uri the uri to build upon
      * @param urlParameters the parameters to add to the uri
-     * @return the uri with the urlParameters added
+     * @return the uri with the urlParameters added, in repeatable/sorted order.
+     * @throws NullPointerException When any argument is null.
      */
+
     private URI getURIWithParameters( URI uri, Map<String,String> urlParameters )
     {
-        URIBuilder uriBuilder = new URIBuilder( uri );
+        Objects.requireNonNull( uri );
+        Objects.requireNonNull( urlParameters );
 
-        for ( Map.Entry<String,String> parameter : urlParameters.entrySet() )
+        URIBuilder uriBuilder = new URIBuilder( uri );
+        SortedMap<String,String> sortedUrlParameters = new TreeMap<>( urlParameters );
+
+        for ( Map.Entry<String,String> parameter : sortedUrlParameters.entrySet() )
         {
             uriBuilder.setParameter( parameter.getKey(), parameter.getValue() );
         }
@@ -620,5 +671,138 @@ class WebSource implements Callable<List<IngestResult>>
                                                 + uri.toString() + " and "
                                                 + urlParameters.toString(), e );
         }
+    }
+
+
+    /**
+     * Given a WRES feature with a USGS gage id, get list of companion USGS ids.
+     *
+     * <p>Specific to use of USGS NWIS API.</p>
+     *
+     * <p>The use of this is solely for NWIS retrieval. NWIS has several hundred
+     * milliseconds of waiting time per request, regardless of the count of gage
+     * ids in the request, so to speed things up, we want to bundle gages
+     * into a request. But we also want to bundle the same gages because one
+     * request will become one source, so that re-use across evaluations can
+     * happen, slowing the growth of the database.</p>
+     * @param featureDetails The feature with a USGS gage id to find companions.
+     * @param allKnownUsgsGageIds A sorted set of all known USGS gage ids.
+     * @return USGS gage ids that are companions to the passed featureDetails,
+     * no more than 100 elements, includes the gage id passed in.
+     * @throws NullPointerException When arg is null or gage id in it is null.
+     * @throws PreIngestException When md5sum is unavailable.
+     */
+
+    private SortedSet<String> getCompanionUsgsGageIds( FeatureDetails featureDetails,
+                                                       SortedSet<String> allKnownUsgsGageIds )
+    {
+        Objects.requireNonNull( featureDetails );
+        Objects.requireNonNull( allKnownUsgsGageIds );
+        Objects.requireNonNull( featureDetails.getGageID() );
+
+        String gageId = featureDetails.getGageID();
+
+        MessageDigest md5Name;
+
+        try
+        {
+            md5Name = MessageDigest.getInstance( "MD5" );
+        }
+        catch ( NoSuchAlgorithmException nsae )
+        {
+            throw new PreIngestException( "Couldn't use MD5 algorithm.", nsae );
+        }
+
+        DigestUtils digestUtils = new DigestUtils( md5Name );
+        byte[] hash = digestUtils.digest( gageId );
+
+        if ( hash.length < 16 )
+        {
+            throw new PreIngestException( "The MD5 sum of " + gageId
+                                          + " was shorter than expected." );
+        }
+
+        LOGGER.debug( "Hash of gageId {} is {}", gageId, hash );
+
+        // This only happens to work because we have around 10,000 gages known.
+        // This means we'll have around 30-50 gages per leading 256 bits.
+        // If we were to have more than 20,000 gages, we risk having > 100 and
+        // would need to use the third digit too to reduce the chances of > 100.
+        // Why do we need < 100? Because USGS NWIS will reject the request for
+        // more than 100 gages at a time.
+
+        SortedSet<String> companions = new TreeSet<>();
+
+        for ( String someGageId : allKnownUsgsGageIds )
+        {
+            DigestUtils someGageDigest = new DigestUtils( md5Name );
+            byte[] someGageIdHash = someGageDigest.digest( someGageId );
+
+            LOGGER.debug( "Hash of someGageId {} is {}", someGageId,
+                          someGageIdHash );
+
+            if ( someGageIdHash[0] == hash[0] )
+            {
+                companions.add( someGageId );
+            }
+        }
+
+        if ( companions.size() > 100 && LOGGER.isWarnEnabled() )
+        {
+            LOGGER.warn( "Expected 100 or fewer gages as companions of gage id {} but got {}. A request to NWIS may fail, sites: {}",
+                         gageId, companions.size(), companions );
+        }
+
+        return Collections.unmodifiableSortedSet( companions );
+    }
+
+
+    /**
+     * Low level function that probably does not belong here but is only used
+     * here, so here it is.
+     * @return The sorted set of all known-to-WRES-db usgs gage ids.
+     * @throws PreIngestException When communication with the database fails.
+     */
+
+    private SortedSet<String> getAllKnownUsgsGageIds()
+    {
+        SortedSet<String> gageIds = new TreeSet<>();
+
+        // Avoiding regex in query due to dbms implementation differences.
+        DataScripter script = new DataScripter( "SELECT gage_id "
+                                                + "FROM wres.Feature "
+                                                + "WHERE CHARACTER_LENGTH( gage_id ) >= 8 " );
+
+        try
+        {
+            try ( DataProvider data = script.getData() )
+            {
+                while ( data.next() )
+                {
+                    String gageId = data.getString( "gage_id" );
+
+                    // We want only ascii 0 through 9 in gages ids.
+                    IntPredicate asciiNumeric = i -> i >= 48 && i <= 57;
+                    if ( gageId.strip()
+                               .chars()
+                               .allMatch( asciiNumeric ) )
+                    {
+                        gageIds.add( gageId );
+                    }
+                    else
+                    {
+                        LOGGER.warn( "Invalid USGS gage_id in WRES feature table: {}",
+                                     gageId );
+                    }
+                }
+            }
+        }
+        catch ( SQLException se )
+        {
+            throw new PreIngestException( "Failed to communicate with database when getting usgs gage ids.",
+                                          se );
+        }
+
+        return Collections.unmodifiableSortedSet( gageIds );
     }
 }
