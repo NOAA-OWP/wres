@@ -147,12 +147,12 @@ do
 				ssh -q $REMOTE_USER@$DESTINATION_HOST test -f $DESTINATION_DIR/$DStore_Dir/$range_dir/$rangeFile 2> /dev/null
 				if [ $? -eq 0 ] # if download successed
 				then
-					# check the target file size
+					# check the target file size, remote execute file size by word count bytes (wc -c)
 					remoteFileSize=`ssh -q $REMOTE_USER@$DESTINATION_HOST wc -c $DESTINATION_DIR/$DStore_Dir/$range_dir/$rangeFile 2> /dev/null | gawk '{printf("%d", $1)}'`
 				fi
-				if [ -z "$remoteFileSize" ] # unable to detected the target file siize
+				if [ -z "$remoteFileSize" ] # unable to detected the target file size
 				then
-					echo "WARN: unable downloaded file $DESTINATION_DIR/$DStore_Dir/$range_dir/$rangeFile size is empty" | tee --append $LOGFILE
+					echo "WARN: unable detected $DESTINATION_DIR/$DStore_Dir/$range_dir/$rangeFile file size." | tee --append $LOGFILE
 				elif [ -n "$remoteFileSize" ] # make sure the file size isn't an empty string
 				then
 					if [ $dStoreFileSize -ne $remoteFileSize ] # compare the file sizes with digital number
