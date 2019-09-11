@@ -139,7 +139,7 @@ public class Project
     /**
      * Protects access and generation of the feature collection
      */
-    private static final Object FEATURE_LOCK = new Object();
+    private final Object featureLock = new Object();
 
     private Integer projectID = null;
     private final ProjectConfig projectConfig;
@@ -343,7 +343,7 @@ public class Project
             // Check for features that potentially have intersecting values.
             // The query in getIntersectingFeatures checks that there is some
             // data for each feature on each side, but does not guarantee pairs.
-            synchronized ( Project.FEATURE_LOCK )
+            synchronized ( this.featureLock )
             {
                 LOGGER.debug( "Features so far: {}", this.features );
                 this.features = this.getIntersectingFeatures();
@@ -403,7 +403,7 @@ public class Project
      */
     public Set<FeatureDetails> getFeatures() throws SQLException
     {
-        synchronized ( Project.FEATURE_LOCK )
+        synchronized ( this.featureLock )
         {
             if ( this.features == null )
             {
@@ -1237,7 +1237,7 @@ public class Project
     private void populateFeatures() throws SQLException
     {
         LOGGER.trace( "populateFeatures entered for {}", this );
-        synchronized ( Project.FEATURE_LOCK )
+        synchronized ( this.featureLock )
         {
             if ( this.usesGriddedData( this.getRight() ) )
             {
