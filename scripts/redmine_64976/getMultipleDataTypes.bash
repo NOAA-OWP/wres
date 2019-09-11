@@ -79,6 +79,7 @@ then
 	rm -v $LOGFILE # remove the old log file
 fi
 
+echo " -w option $WHATDATES" | tee --append $LOGFILE
 TODATE=`echo $WHATDATES | gawk '{print($NF)}'`
 FROMDATE=`echo $WHATDATES | gawk '{print($1)}'`
 if [ $FROMDATE -gt $TODATE ]
@@ -87,15 +88,18 @@ then
 	exit 2
 fi
 
+echo "get files from $FROMDATE and $TODATE" | tee --append $LOGFILE
+
 while [ $FROMDATE -le $TODATE ] # get the data files from yyyymmdd1 to yyyymmdd2
 do
 	WHATDATE=$FROMDATE
-	echo $WHATDATE
+	echo "get files for $WHATDATE" | tee --append $LOGFILE 
 	DStore_Dir="nwm/$DATAVERSION/nwm.$WHATDATE" # presumable
 	for DATATYPE in $DATATYPES # get data type1, type2, ... typeN
 	do
-		echo $DATATYPE
+		echo "get data type $DATATYPE" | tee --append $LOGFILE 
 		./getNplace_DStore_data.bash -t $DATATYPE -h $DESTINATION_HOST -d $DESTINATION_DIR -u $REMOTE_USER -s $SCRIPT_DIR -V $DATAVERSION -w $WHATDATE -l $LOGFILE -k $SSHKEYS 
 	done
 	FROMDATE=`expr $FROMDATE + 1` # increment by 1 day
+	echo "Increment date to $FROMDATE" | tee --append $LOGFILE
 done
