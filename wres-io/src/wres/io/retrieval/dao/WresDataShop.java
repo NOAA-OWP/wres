@@ -8,15 +8,14 @@ import java.util.stream.Stream;
 
 /**
  * <p>An API for performing (C)reate (R)ead (U)update and (D)elete operations on data objects of type <code>T</code>. 
- * In general, the WRES does *not* encourage mutation and, thus, support (U)pdate. Data Access Objects (DAOs) that
- * perform CRUD operations on specific data types, <code>T</code>, in specific data stores should implement this 
- * interface.
+ * In general, the WRES does *not* encourage mutation and, thus, support (U)pdate. Data accessors that perform CRUD 
+ * operations on specific data types, <code>T</code>, in specific data stores should implement this interface.
  * 
  * @author james.brown@hydrosolved.com
  * @param <T> the type of object
  */
 
-public interface WresDAO<T>
+public interface WresDataShop<T>
 {
 
     /**
@@ -39,7 +38,8 @@ public interface WresDAO<T>
     LongStream getAllIdentifiers();
     
     /**
-     * Reads a collection of objects, by unique identifier, into a stream.
+     * Reads a collection of objects, by unique identifier, into a stream. This implementation reads each object
+     * sequentially. Implementations that benefit from reading multiple objects at once should override this default.
      * 
      * @param identifiers the stream of identifiers
      * @return a stream over the identified objects
@@ -48,7 +48,7 @@ public interface WresDAO<T>
 
     default Stream<T> get( LongStream identifiers )
     {
-        Objects.nonNull( identifiers );
+        Objects.requireNonNull( identifiers );
 
         // Create the supplier of objects from the object identifiers
         LongFunction<Optional<T>> supplier = this::get;
@@ -61,7 +61,9 @@ public interface WresDAO<T>
     }
     
     /**
-     * Reads all objects.
+     * Reads all objects. This implementation reads each object sequentially. Implementations that benefit from reading 
+     * multiple objects at once should override this default.
+     * 
      * @return the possible object
      * @throws DataAccessException if the data could not be accessed for whatever reason
      */
