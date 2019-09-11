@@ -1,11 +1,9 @@
 package wres.datamodel.sampledata.pairs;
 
-import java.util.Arrays;
 import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.stream.Stream;
-
-import wres.datamodel.DataFactory;
+import wres.datamodel.Ensemble;
 
 /**
  * Immutable pair composed of a primitive double on the left side and an ensemble of doubles on the right side.
@@ -13,7 +11,7 @@ import wres.datamodel.DataFactory;
  * @author jesse
  * @author james.brown@hydrosolved.com
  */
-public class EnsemblePair implements Pair<Double,double[]>, Comparable<EnsemblePair>
+public class EnsemblePair implements Pair<Double,Ensemble>, Comparable<EnsemblePair>
 {
 
     /**
@@ -26,7 +24,7 @@ public class EnsemblePair implements Pair<Double,double[]>, Comparable<EnsembleP
      * The right side of the pair.
      */
 
-    private final double[] right;
+    private final Ensemble right;
 
     /**
      * Builds a pair from primitive left and right values.
@@ -39,7 +37,7 @@ public class EnsemblePair implements Pair<Double,double[]>, Comparable<EnsembleP
 
     public static EnsemblePair of( final double left, final double[] right )
     {
-        return new EnsemblePair( left, right );
+        return new EnsemblePair( left, Ensemble.of( right ) );
     }
 
     /**
@@ -58,7 +56,8 @@ public class EnsemblePair implements Pair<Double,double[]>, Comparable<EnsembleP
         final double[] unboxedDoubles = Stream.of( right )
                                               .mapToDouble( Double::doubleValue )
                                               .toArray();
-        return new EnsemblePair( left.doubleValue(), unboxedDoubles );
+        
+        return new EnsemblePair( left.doubleValue(), Ensemble.of( unboxedDoubles ) );
     }
 
     /**
@@ -69,7 +68,7 @@ public class EnsemblePair implements Pair<Double,double[]>, Comparable<EnsembleP
 
     public Double getLeft()
     {
-        return left;
+        return this.left;
     }
 
     /**
@@ -77,9 +76,9 @@ public class EnsemblePair implements Pair<Double,double[]>, Comparable<EnsembleP
      * 
      * @return the right value
      */
-    public double[] getRight()
+    public Ensemble getRight()
     {
-        return right.clone();
+        return this.right;
     }
 
     @Override
@@ -88,7 +87,7 @@ public class EnsemblePair implements Pair<Double,double[]>, Comparable<EnsembleP
         StringJoiner s = new StringJoiner( ",",
                                            "key: " + getLeft() + " value: [",
                                            "]" );
-        for ( final double d : getRight() )
+        for ( final double d : getRight().getMembers() )
         {
             s.add( Double.toString( d ) );
         }
@@ -105,8 +104,7 @@ public class EnsemblePair implements Pair<Double,double[]>, Comparable<EnsembleP
         }
         else if ( Double.compare( this.getLeft(), other.getLeft() ) == 0 )
         {
-            return DataFactory.compareDoubleArray( this.getRight(),
-                                                   other.getRight() );
+            return this.getRight().compareTo( other.getRight() );
         }
         else if ( this.getLeft() < other.getLeft() )
         {
@@ -136,7 +134,7 @@ public class EnsemblePair implements Pair<Double,double[]>, Comparable<EnsembleP
     @Override
     public int hashCode()
     {
-        return Objects.hash( this.getLeft(), Arrays.hashCode( this.getRight() ) );
+        return Objects.hash( this.getLeft(), this.getRight() );
     }
 
     /**
@@ -147,12 +145,12 @@ public class EnsemblePair implements Pair<Double,double[]>, Comparable<EnsembleP
      * @throws NullPointerException if the right input is null
      */
 
-    private EnsemblePair( final double itemOne, final double[] itemTwo )
+    private EnsemblePair( final double itemOne, final Ensemble itemTwo )
     {
         Objects.requireNonNull( itemTwo, "Specify a non-null right side for the pair." );
 
         this.left = itemOne;
-        this.right = itemTwo.clone();
+        this.right = itemTwo;
     }
     
 }

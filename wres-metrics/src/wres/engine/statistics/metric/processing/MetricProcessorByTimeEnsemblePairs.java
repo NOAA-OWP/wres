@@ -64,9 +64,9 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
     /**
      * Logger instance.
      */
-    
+
     private static final Logger LOGGER = LoggerFactory.getLogger( MetricProcessorByTimeEnsemblePairs.class );
-    
+
     /**
      * Function that computes an average from an array.
      */
@@ -273,7 +273,9 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
 
         //Construct the default mapper from ensembles to single-values: this is not currently configurable
         this.toSingleValues = in -> SingleValuedPair.of( in.getLeft(),
-                                                         Arrays.stream( in.getRight() ).average().getAsDouble() );
+                                                         Arrays.stream( in.getRight().getMembers() )
+                                                               .average()
+                                                               .getAsDouble() );
 
         //Construct the default mapper from ensembles to probabilities: this is not currently configurable
         this.toDiscreteProbabilities = Slicer::toDiscreteProbabilityPair;
@@ -282,7 +284,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         // This is also called by the constructor of the superclass, but local parameters must be validated too
         this.validate( config );
     }
-    
+
     /**
      * <p>Removes a duplicate instance of the {@link MetricConstants.SAMPLE_SIZE}, which may appear in more than one
      * context.
@@ -298,11 +300,12 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      */
 
     @Override
-    MetricConstants[] getMetrics( SampleDataGroup inGroup, StatisticGroup outGroup ) {
-        
+    MetricConstants[] getMetrics( SampleDataGroup inGroup, StatisticGroup outGroup )
+    {
+
         Set<MetricConstants> metrics = new HashSet<>( Arrays.asList( super.getMetrics( inGroup, outGroup ) ) );
-        
-        if( inGroup == SampleDataGroup.SINGLE_VALUED && metrics.contains( MetricConstants.SAMPLE_SIZE ) )
+
+        if ( inGroup == SampleDataGroup.SINGLE_VALUED && metrics.contains( MetricConstants.SAMPLE_SIZE ) )
         {
             metrics.remove( MetricConstants.SAMPLE_SIZE );
         }

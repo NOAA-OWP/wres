@@ -196,7 +196,7 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Ensemble
     private double[] getSumCRPS( final List<EnsemblePair> pairs )
     {
         //Number of ensemble members
-        int members = pairs.get( 0 ).getRight().length;
+        int members = pairs.get( 0 ).getRight().size();
 
         double totCRPS = 0.0;
 
@@ -210,7 +210,7 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Ensemble
                 //Combine and sort forecast
                 double[] sorted = new double[members + 1];
                 sorted[0] = nextPair.getLeft();
-                System.arraycopy( nextPair.getRight(), 0, sorted, 1, members );
+                System.arraycopy( nextPair.getRight().getMembers(), 0, sorted, 1, members );
                 Arrays.sort( sorted, 1, members + 1 );
                 //Increment
                 summer.accept( sorted, incrementer );

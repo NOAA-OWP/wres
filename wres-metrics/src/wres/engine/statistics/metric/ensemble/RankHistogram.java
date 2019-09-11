@@ -15,6 +15,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.MissingValues;
 import wres.datamodel.Slicer;
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.datamodel.sampledata.pairs.EnsemblePairs;
@@ -92,7 +93,7 @@ public class RankHistogram extends Diagram<EnsemblePairs, DiagramStatistic>
             if ( useMe.isPresent() )
             {
                 //Set the ranked positions as 1:N+1
-                ranks = IntStream.range( 1, useMe.get().get( 0 ).getRight().length + 2 ).asDoubleStream().toArray();
+                ranks = IntStream.range( 1, useMe.get().get( 0 ).getRight().size() + 2 ).asDoubleStream().toArray();
                 double[] sumRanks = new double[ranks.length]; //Total falling in each ranked position
 
                 //Compute the sum of ranks
@@ -105,17 +106,17 @@ public class RankHistogram extends Diagram<EnsemblePairs, DiagramStatistic>
         }
 
         //Set and return the results
-        Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
-        output.put( MetricDimension.RANK_ORDER, ranks );
-        output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, relativeFrequencies );
+        Map<MetricDimension, VectorOfDoubles> statistic = new EnumMap<>( MetricDimension.class );
+        statistic.put( MetricDimension.RANK_ORDER, VectorOfDoubles.of( ranks ) );
+        statistic.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, VectorOfDoubles.of( relativeFrequencies ) );
         final StatisticMetadata metOut =
                 StatisticMetadata.of( s.getMetadata(),
-                                    this.getID(),
-                                    MetricConstants.MAIN,
-                                    this.hasRealUnits(),
-                                    s.getRawData().size(),
-                                    null );
-        return DiagramStatistic.ofDiagramStatistic( output, metOut );
+                                      this.getID(),
+                                      MetricConstants.MAIN,
+                                      this.hasRealUnits(),
+                                      s.getRawData().size(),
+                                      null );
+        return DiagramStatistic.of( statistic, metOut );
     }
 
     @Override
@@ -174,7 +175,7 @@ public class RankHistogram extends Diagram<EnsemblePairs, DiagramStatistic>
         final TriConsumer<double[], Double, double[]> containedRanker = getContainedRanker( rng );
         return ( pair, sumRanks ) -> {
             //Sort the RHS
-            double[] sorted = pair.getRight();
+            double[] sorted = pair.getRight().getMembers();
             double obs = pair.getLeft();
             Arrays.sort( sorted );
             //Miss low

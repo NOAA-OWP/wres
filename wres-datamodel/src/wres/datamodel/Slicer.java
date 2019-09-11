@@ -179,7 +179,7 @@ public final class Slicer
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing by all of right." );
 
-        return pair -> Arrays.stream( pair.getRight() ).allMatch( predicate );
+        return pair -> Arrays.stream( pair.getRight().getMembers() ).allMatch( predicate );
     }
 
     /**
@@ -196,7 +196,7 @@ public final class Slicer
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing by any of right." );
 
-        return pair -> Arrays.stream( pair.getRight() ).anyMatch( predicate );
+        return pair -> Arrays.stream( pair.getRight().getMembers() ).anyMatch( predicate );
     }
 
     /**
@@ -213,7 +213,8 @@ public final class Slicer
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing by left and all of right." );
 
-        return pair -> predicate.test( pair.getLeft() ) && Arrays.stream( pair.getRight() ).allMatch( predicate );
+        return pair -> predicate.test( pair.getLeft() )
+                       && Arrays.stream( pair.getRight().getMembers() ).allMatch( predicate );
     }
 
     /**
@@ -230,7 +231,8 @@ public final class Slicer
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing by left and any of right." );
 
-        return pair -> predicate.test( pair.getLeft() ) && Arrays.stream( pair.getRight() ).anyMatch( predicate );
+        return pair -> predicate.test( pair.getLeft() )
+                       && Arrays.stream( pair.getRight().getMembers() ).anyMatch( predicate );
     }
 
     /**
@@ -251,7 +253,7 @@ public final class Slicer
 
         Objects.requireNonNull( transformer, "Specify a non-null transformer when slicing by right." );
 
-        return pair -> predicate.test( transformer.applyAsDouble( pair.getRight() ) );
+        return pair -> predicate.test( transformer.applyAsDouble( pair.getRight().getMembers() ) );
     }
 
     /**
@@ -274,7 +276,7 @@ public final class Slicer
         Objects.requireNonNull( transformer, "Specify a non-null transformer when slicing by left and right." );
 
         return pair -> predicate.test( pair.getLeft() )
-                       && predicate.test( transformer.applyAsDouble( pair.getRight() ) );
+                       && predicate.test( transformer.applyAsDouble( pair.getRight().getMembers() ) );
     }
 
     /**
@@ -324,7 +326,8 @@ public final class Slicer
 
         for ( EnsemblePair next : pairs )
         {
-            if ( predicate.test( next.getLeft() ) && Arrays.stream( next.getRight() ).anyMatch( predicate ) )
+            if ( predicate.test( next.getLeft() )
+                 && Arrays.stream( next.getRight().getMembers() ).anyMatch( predicate ) )
             {
                 return true;
             }
@@ -368,7 +371,7 @@ public final class Slicer
             //Left meets condition
             if ( predicate.test( pair.getLeft() ) )
             {
-                double[] filtered = Arrays.stream( pair.getRight() )
+                double[] filtered = Arrays.stream( pair.getRight().getMembers() )
                                           .filter( predicate )
                                           .toArray();
 
@@ -676,7 +679,7 @@ public final class Slicer
             for ( Event<EnsemblePair> next : nextSeries.getEvents() )
             {
                 //Reform the pairs with a subset of ensemble members
-                double[] allTraces = next.getValue().getRight();
+                double[] allTraces = next.getValue().getRight().getMembers();
                 List<Double> subTraces = new ArrayList<>();
                 for ( int i = 0; i < allTraces.length; i++ )
                 {
@@ -822,7 +825,7 @@ public final class Slicer
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
-        return input.stream().collect( Collectors.groupingBy( pair -> pair.getRight().length ) );
+        return input.stream().collect( Collectors.groupingBy( pair -> pair.getRight().size() ) );
     }
 
     /**
@@ -1068,7 +1071,10 @@ public final class Slicer
 
         Objects.requireNonNull( threshold, NULL_INPUT_EXCEPTION );
 
-        double rhs = Arrays.stream( pair.getRight() ).map( a -> threshold.test( a ) ? 1 : 0 ).average().getAsDouble();
+        double rhs = Arrays.stream( pair.getRight().getMembers() )
+                           .map( a -> threshold.test( a ) ? 1 : 0 )
+                           .average()
+                           .getAsDouble();
         return DiscreteProbabilityPair.of( threshold.test( pair.getLeft() ) ? 1 : 0, rhs );
     }
 
@@ -1086,7 +1092,7 @@ public final class Slicer
     {
         Objects.requireNonNull( transformer, NULL_INPUT_EXCEPTION );
 
-        return pair -> SingleValuedPair.of( pair.getLeft(), transformer.applyAsDouble( pair.getRight() ) );
+        return pair -> SingleValuedPair.of( pair.getLeft(), transformer.applyAsDouble( pair.getRight().getMembers() ) );
     }
 
     /**

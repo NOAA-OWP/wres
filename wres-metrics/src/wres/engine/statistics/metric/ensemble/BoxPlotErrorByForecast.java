@@ -98,7 +98,7 @@ public class BoxPlotErrorByForecast extends EnsembleBoxPlot
     {
         //Get the sorted errors
         double[] probs = this.probabilities.getDoubles();
-        double[] sorted = pair.getRight();
+        double[] sorted = pair.getRight().getMembers();
         Arrays.sort( sorted );
         double[] sortedErrors = Arrays.stream( sorted ).map( x -> x - pair.getLeft() ).toArray();
 

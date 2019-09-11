@@ -54,31 +54,31 @@ public final class DataFactoryTest
     /**
      * Expected exception on null input.
      */
-    
-    private static final String EXPECTED_EXCEPTION_ON_NULL = 
+
+    private static final String EXPECTED_EXCEPTION_ON_NULL =
             "Specify input configuration with a non-null identifier to map.";
 
     /**
      * Location for metadata.
      */
-    
+
     private static final String DRRC2 = "DRRC2";
 
     /**
      * Second time for testing.
      */
-    
+
     private static final String SECOND_TIME = "1986-01-01T00:00:00Z";
 
     /**
      * First time for testing.
      */
-    
+
     private static final String FIRST_TIME = "1985-01-01T00:00:00Z";
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
-    
+
     public static final double THRESHOLD = 0.00001;
 
     /**
@@ -91,7 +91,7 @@ public final class DataFactoryTest
 
         final Location l = Location.of( DRRC2 );
         final SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of(),
-                                                         DatasetIdentifier.of( l, "SQIN", "HEFS" ) );
+                                                     DatasetIdentifier.of( l, "SQIN", "HEFS" ) );
         final List<DichotomousPair> input = new ArrayList<>();
         input.add( DichotomousPair.of( true, false ) );
         assertNotNull( DichotomousPairs.ofDichotomousPairs( input, m1 ) );
@@ -100,10 +100,10 @@ public final class DataFactoryTest
         dInput.add( DiscreteProbabilityPair.of( 0.0, 1.0 ) );
         final Location l2 = Location.of( DRRC2 );
         final SampleMetadata m2 = SampleMetadata.of( MeasurementUnit.of(),
-                                                         DatasetIdentifier.of( l2, "SQIN", "HEFS" ) );
+                                                     DatasetIdentifier.of( l2, "SQIN", "HEFS" ) );
         final Location l3 = Location.of( DRRC2 );
         final SampleMetadata m3 = SampleMetadata.of( MeasurementUnit.of(),
-                                                         DatasetIdentifier.of( l3, "SQIN", "ESP" ) );
+                                                     DatasetIdentifier.of( l3, "SQIN", "ESP" ) );
         assertNotNull( DiscreteProbabilityPairs.of( dInput, m2 ) );
         assertNotNull( DiscreteProbabilityPairs.of( dInput, dInput, m2, m3 ) );
 
@@ -172,8 +172,8 @@ public final class DataFactoryTest
         final EnsemblePair tuple = EnsemblePair.of( 1.0, arrOne );
         assertNotNull( tuple );
         assertEquals( 1.0, tuple.getLeft(), THRESHOLD );
-        assertEquals( 2.0, tuple.getRight()[0], THRESHOLD );
-        assertEquals( 3.0, tuple.getRight()[1], THRESHOLD );
+        assertEquals( 2.0, tuple.getRight().getMembers()[0], THRESHOLD );
+        assertEquals( 3.0, tuple.getRight().getMembers()[1], THRESHOLD );
         // check that toString() does not throw exception and is not null
         assertNotNull( tuple.toString() );
     }
@@ -187,8 +187,8 @@ public final class DataFactoryTest
         arrOne[1] = 5.0;
         assertNotNull( tuple );
         assertEquals( 1.0, tuple.getLeft(), THRESHOLD );
-        assertEquals( 2.0, tuple.getRight()[0], THRESHOLD );
-        assertEquals( 3.0, tuple.getRight()[1], THRESHOLD );
+        assertEquals( 2.0, tuple.getRight().getMembers()[0], THRESHOLD );
+        assertEquals( 3.0, tuple.getRight().getMembers()[1], THRESHOLD );
     }
 
     @Test
@@ -203,8 +203,8 @@ public final class DataFactoryTest
         arrOne[1] = 5.0;
 
         assertEquals( 1.0, tuple.getLeft(), THRESHOLD );
-        assertEquals( 2.0, tuple.getRight()[0], THRESHOLD );
-        assertEquals( 3.0, tuple.getRight()[1], THRESHOLD );
+        assertEquals( 2.0, tuple.getRight().getMembers()[0], THRESHOLD );
+        assertEquals( 3.0, tuple.getRight().getMembers()[1], THRESHOLD );
         // check that toString() does not throw exception and is not null
         assertNotNull( tuple.toString() );
     }
@@ -224,16 +224,16 @@ public final class DataFactoryTest
     {
         boolean one = true;
         boolean two = false;
-        
+
         DichotomousPair bools = DichotomousPair.of( one, two );
-        
+
         one = false;
         two = true;
-        
+
         DichotomousPair boolsTwo = DichotomousPair.of( one, two );
-        
-        assertNotEquals(bools, boolsTwo );
-        
+
+        assertNotEquals( bools, boolsTwo );
+
         assertTrue( bools.getLeft() );
         assertFalse( bools.getRight() );
     }
@@ -265,29 +265,29 @@ public final class DataFactoryTest
         Pair<TimeWindow, Threshold> first = Pair.of( TimeWindow.of( Instant.MIN,
                                                                     Instant.MAX ),
                                                      Threshold.of( OneOrTwoDoubles.of( 1.0 ),
-                                                                              Operator.GREATER,
-                                                                              ThresholdDataType.LEFT ) );
+                                                                   Operator.GREATER,
+                                                                   ThresholdDataType.LEFT ) );
         Pair<TimeWindow, Threshold> second = Pair.of( TimeWindow.of( Instant.MIN,
                                                                      Instant.MAX ),
                                                       Threshold.of( OneOrTwoDoubles.of( 1.0 ),
-                                                                               Operator.GREATER,
-                                                                               ThresholdDataType.LEFT ) );
+                                                                    Operator.GREATER,
+                                                                    ThresholdDataType.LEFT ) );
         assertTrue( first.compareTo( second ) == 0 && second.compareTo( first ) == 0 && first.equals( second ) );
         //Test inequality and anticommutativity 
         //Earliest date
         Pair<TimeWindow, Threshold> third = Pair.of( TimeWindow.of( Instant.parse( FIRST_TIME ),
                                                                     Instant.MAX ),
                                                      Threshold.of( OneOrTwoDoubles.of( 1.0 ),
-                                                                              Operator.GREATER,
-                                                                              ThresholdDataType.LEFT ) );
+                                                                   Operator.GREATER,
+                                                                   ThresholdDataType.LEFT ) );
         assertTrue( third.compareTo( first ) > 0 );
         assertTrue( first.compareTo( third ) + third.compareTo( first ) == 0 );
         //Latest date
         Pair<TimeWindow, Threshold> fourth = Pair.of( TimeWindow.of( Instant.parse( FIRST_TIME ),
                                                                      Instant.parse( SECOND_TIME ) ),
                                                       Threshold.of( OneOrTwoDoubles.of( 1.0 ),
-                                                                               Operator.GREATER,
-                                                                               ThresholdDataType.LEFT ) );
+                                                                    Operator.GREATER,
+                                                                    ThresholdDataType.LEFT ) );
         assertTrue( third.compareTo( fourth ) > 0 );
         assertTrue( third.compareTo( fourth ) + fourth.compareTo( third ) == 0 );
         //Valid time
@@ -296,8 +296,8 @@ public final class DataFactoryTest
                                                                     Instant.parse( FIRST_TIME ),
                                                                     Instant.parse( SECOND_TIME ) ),
                                                      Threshold.of( OneOrTwoDoubles.of( 1.0 ),
-                                                                              Operator.GREATER,
-                                                                              ThresholdDataType.LEFT ) );
+                                                                   Operator.GREATER,
+                                                                   ThresholdDataType.LEFT ) );
         assertTrue( fourth.compareTo( fifth ) < 0 );
         assertTrue( fourth.compareTo( fifth ) + fifth.compareTo( fourth ) == 0 );
         //Threshold
@@ -306,11 +306,11 @@ public final class DataFactoryTest
                                                                     Instant.parse( FIRST_TIME ),
                                                                     Instant.parse( SECOND_TIME ) ),
                                                      Threshold.of( OneOrTwoDoubles.of( 0.0 ),
-                                                                              Operator.GREATER,
-                                                                              ThresholdDataType.LEFT ) );
+                                                                   Operator.GREATER,
+                                                                   ThresholdDataType.LEFT ) );
         assertTrue( fifth.compareTo( sixth ) > 0 );
-        assertTrue( fifth.compareTo( sixth )  +  sixth.compareTo( fifth ) == 0 );
-        
+        assertTrue( fifth.compareTo( sixth ) + sixth.compareTo( fifth ) == 0 );
+
         //Check nullity contract
         exception.expect( NullPointerException.class );
         first.compareTo( null );
@@ -328,30 +328,30 @@ public final class DataFactoryTest
         Pair<TimeWindow, Threshold> zeroeth = Pair.of( TimeWindow.of( Instant.MIN,
                                                                       Instant.MAX ),
                                                        Threshold.of( OneOrTwoDoubles.of( 1.0 ),
-                                                                                Operator.GREATER,
-                                                                                ThresholdDataType.LEFT ) );
+                                                                     Operator.GREATER,
+                                                                     ThresholdDataType.LEFT ) );
         Pair<TimeWindow, Threshold> first = Pair.of( TimeWindow.of( Instant.MIN,
                                                                     Instant.MAX ),
                                                      Threshold.of( OneOrTwoDoubles.of( 1.0 ),
-                                                                              Operator.GREATER,
-                                                                              ThresholdDataType.LEFT ) );
+                                                                   Operator.GREATER,
+                                                                   ThresholdDataType.LEFT ) );
         Pair<TimeWindow, Threshold> second = Pair.of( TimeWindow.of( Instant.MIN,
                                                                      Instant.MAX ),
                                                       Threshold.of( OneOrTwoDoubles.of( 1.0 ),
-                                                                               Operator.GREATER,
-                                                                               ThresholdDataType.LEFT ) );
+                                                                    Operator.GREATER,
+                                                                    ThresholdDataType.LEFT ) );
         //Reflexive
         assertEquals( first, first );
-        
+
         //Symmetric 
         assertTrue( first.equals( second ) && second.equals( first ) );
-        
+
         //Transitive 
         assertTrue( zeroeth.equals( first ) && first.equals( second ) && zeroeth.equals( second ) );
-        
+
         //Nullity
         assertNotNull( first );
-        
+
         //Check hashcode
         assertEquals( first.hashCode(), second.hashCode() );
 
@@ -360,36 +360,36 @@ public final class DataFactoryTest
         Pair<TimeWindow, Threshold> third = Pair.of( TimeWindow.of( Instant.parse( FIRST_TIME ),
                                                                     Instant.MAX ),
                                                      Threshold.of( OneOrTwoDoubles.of( 1.0 ),
-                                                                              Operator.GREATER,
-                                                                              ThresholdDataType.LEFT ) );
+                                                                   Operator.GREATER,
+                                                                   ThresholdDataType.LEFT ) );
         assertNotEquals( third, first );
-        
+
         //Latest date
         Pair<TimeWindow, Threshold> fourth = Pair.of( TimeWindow.of( Instant.parse( FIRST_TIME ),
                                                                      Instant.parse( SECOND_TIME ) ),
                                                       Threshold.of( OneOrTwoDoubles.of( 1.0 ),
-                                                                               Operator.GREATER,
-                                                                               ThresholdDataType.LEFT ) );
-        assertNotEquals( third,fourth );
-        
+                                                                    Operator.GREATER,
+                                                                    ThresholdDataType.LEFT ) );
+        assertNotEquals( third, fourth );
+
         //Valid time
         Pair<TimeWindow, Threshold> fifth = Pair.of( TimeWindow.of( Instant.parse( FIRST_TIME ),
                                                                     Instant.parse( SECOND_TIME ),
                                                                     Instant.parse( FIRST_TIME ),
                                                                     Instant.parse( SECOND_TIME ) ),
                                                      Threshold.of( OneOrTwoDoubles.of( 1.0 ),
-                                                                              Operator.GREATER,
-                                                                              ThresholdDataType.LEFT ) );
+                                                                   Operator.GREATER,
+                                                                   ThresholdDataType.LEFT ) );
         assertNotEquals( fourth, fifth );
-        
+
         //Threshold
         Pair<TimeWindow, Threshold> sixth = Pair.of( TimeWindow.of( Instant.parse( FIRST_TIME ),
                                                                     Instant.parse( SECOND_TIME ),
                                                                     Instant.parse( FIRST_TIME ),
                                                                     Instant.parse( SECOND_TIME ) ),
                                                      Threshold.of( OneOrTwoDoubles.of( 0.0 ),
-                                                                              Operator.GREATER,
-                                                                              ThresholdDataType.LEFT ) );
+                                                                   Operator.GREATER,
+                                                                   ThresholdDataType.LEFT ) );
         assertNotEquals( fifth, sixth );
     }
 
@@ -427,13 +427,13 @@ public final class DataFactoryTest
 
         //Test exception cases
         exception.expect( NullPointerException.class );
-        
+
         DataFactory.getThresholdOperator( (ThresholdsConfig) null );
 
         DataFactory.getThresholdOperator( new ThresholdsConfig( null,
-                                                                   null,
-                                                                   null,
-                                                                   null ) );
+                                                                null,
+                                                                null,
+                                                                null ) );
     }
 
     /**
@@ -469,7 +469,7 @@ public final class DataFactoryTest
 
         DataFactory.getMetricName( (MetricConfigName) null );
     }
-    
+
     /**
      * Tests the {@link DataFactory#getMetricName(wres.config.generated.TimeSeriesMetricConfigName)}.
      */
@@ -502,8 +502,8 @@ public final class DataFactoryTest
         exception.expectMessage( EXPECTED_EXCEPTION_ON_NULL );
 
         DataFactory.getMetricName( (TimeSeriesMetricConfigName) null );
-    }    
-    
+    }
+
     /**
      * Tests the {@link DataFactory#getThresholdDataType(wres.config.generated.ThresholdDataType)}.
      */
@@ -531,8 +531,8 @@ public final class DataFactoryTest
         exception.expectMessage( EXPECTED_EXCEPTION_ON_NULL );
 
         DataFactory.getThresholdDataType( null );
-    }  
-    
+    }
+
     /**
      * Tests the {@link DataFactory#getThresholdGroup(wres.config.generated.ThresholdType)}.
      */
@@ -559,6 +559,6 @@ public final class DataFactoryTest
         exception.expectMessage( EXPECTED_EXCEPTION_ON_NULL );
 
         DataFactory.getThresholdGroup( null );
-    }      
-    
+    }
+
 }
