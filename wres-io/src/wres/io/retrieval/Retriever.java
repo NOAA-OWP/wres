@@ -456,7 +456,7 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
         Instant validTime = pair.getRight().getTime();
         EnsemblePair values = pair.getRight().getValue();
         
-        for ( double rightValue : values.getRight() )
+        for ( double rightValue : values.getRight().getMembers() )
         {          
             eventPairs.add( Pair.of( referenceTime,
                                       Event.of( validTime,
@@ -566,7 +566,7 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
         // No right values are finite
         // In other words, check for the absence of any finite value
         // and reverse, because that is not a valid pair
-        double[] right = pair.getRight();
+        double[] right = pair.getRight().getMembers();
 
         return !Arrays.stream( right ).noneMatch( Double::isFinite );
     }

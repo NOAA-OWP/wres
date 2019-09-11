@@ -66,7 +66,8 @@ public class BoxPlotErrorByObserved extends EnsembleBoxPlot
     {
         //Get the sorted errors
         double[] probs = probabilities.getDoubles();
-        double[] sortedErrors = Arrays.stream( pair.getRight() ).map( x -> x - pair.getLeft() ).sorted().toArray();
+        double[] sortedErrors =
+                Arrays.stream( pair.getRight().getMembers() ).map( x -> x - pair.getLeft() ).sorted().toArray();
         //Compute the quantiles
         double[] box =
                 Arrays.stream( probs ).map( Slicer.getQuantileFunction( sortedErrors ) ).toArray();

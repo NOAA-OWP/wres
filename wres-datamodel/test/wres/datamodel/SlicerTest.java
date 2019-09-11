@@ -212,7 +212,8 @@ public final class SlicerTest
         SampleMetadata meta = SampleMetadata.of();
         EnsemblePairs input = EnsemblePairs.of( values, values, meta, meta, null );
         Function<EnsemblePair, SingleValuedPair> mapper =
-                in -> SingleValuedPair.of( in.getLeft(), Arrays.stream( in.getRight() ).average().getAsDouble() );
+                in -> SingleValuedPair.of( in.getLeft(),
+                                           Arrays.stream( in.getRight().getMembers() ).average().getAsDouble() );
         double[] expected = new double[] { 3.0, 8.0, 13.0, 18.0, 23.0, 28.0 };
         //Test without baseline
         double[] actualNoBase =

@@ -58,7 +58,7 @@ public class EnsemblePairsWriter extends PairsWriter<EnsemblePair, TimeSeriesOfE
 
         if ( !pairs.getRawData().isEmpty() )
         {
-            int memberCount = pairs.getRawData().get( 0 ).getRight().length;
+            int memberCount = pairs.getRawData().get( 0 ).getRight().size();
             for ( int i = 1; i <= memberCount; i++ )
             {
                 joiner.add( "RIGHT MEMBER " + i + " IN " + pairs.getMetadata().getMeasurementUnit().getUnit() );
@@ -112,7 +112,7 @@ public class EnsemblePairsWriter extends PairsWriter<EnsemblePair, TimeSeriesOfE
             joiner.add( handleNaNs.apply( pair.getLeft() ) );
 
             // Add right members
-            Arrays.stream( pair.getRight() )
+            Arrays.stream( pair.getRight().getMembers() )
                   .forEach( nextMember -> joiner.add( handleNaNs.apply( nextMember ) ) );
 
             return joiner.toString();
