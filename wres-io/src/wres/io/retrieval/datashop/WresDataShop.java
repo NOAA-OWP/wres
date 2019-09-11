@@ -1,4 +1,4 @@
-package wres.io.retrieval.dao;
+package wres.io.retrieval.datashop;
 
 import java.util.Objects;
 import java.util.Optional;

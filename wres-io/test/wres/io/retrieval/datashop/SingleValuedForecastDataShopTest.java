@@ -1,4 +1,4 @@
-package wres.io.retrieval.dao;
+package wres.io.retrieval.datashop;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -16,7 +16,9 @@ import org.junit.Test;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindow;
 import wres.io.config.LeftOrRightOrBaseline;
-import wres.io.retrieval.dao.SingleValuedForecastDataShop;
+import wres.io.retrieval.datashop.SingleValuedForecastDataShop;
+import wres.io.retrieval.datashop.TimeSeriesDataShop;
+import wres.io.retrieval.datashop.WresDataShop;
 
 /**
  * Class that illustrates reading of single-valued forecasts.
