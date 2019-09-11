@@ -29,8 +29,8 @@ public class Scenario701
                                               .getSimpleName()
                                               .toLowerCase(),
                                           baseDirectory );
-        LOGGER.info( "####>> Cleaning the database..." );
-        Operations.cleanDatabase();
+        //LOGGER.info( "####>> Cleaning the database..." );
+        //Operations.cleanDatabase();
         //ScenarioHelper.deleteOldOutputDirectories( scenarioInfo.getScenarioDirectory() );
         ScenarioHelper.setAllPropertiesFromEnvVars( scenarioInfo );
     }
