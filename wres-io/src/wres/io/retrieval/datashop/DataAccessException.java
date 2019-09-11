@@ -1,4 +1,4 @@
-package wres.io.retrieval.dao;
+package wres.io.retrieval.datashop;
 
 /**
  * Runtime exception associated with data access.

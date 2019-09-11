@@ -1,4 +1,4 @@
-package wres.io.retrieval.dao;
+package wres.io.retrieval.datashop;
 
 import java.sql.SQLException;
 import java.text.MessageFormat;
