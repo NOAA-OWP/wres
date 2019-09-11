@@ -1,8 +1,10 @@
 package wres.io.retrieval.dao;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
@@ -14,7 +16,7 @@ import org.junit.Test;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindow;
 import wres.io.config.LeftOrRightOrBaseline;
-import wres.io.retrieval.dao.SingleValuedForecastDAO;
+import wres.io.retrieval.dao.SingleValuedForecastDataShop;
 
 /**
  * Class that illustrates reading of single-valued forecasts.
@@ -24,7 +26,7 @@ import wres.io.retrieval.dao.SingleValuedForecastDAO;
  * @author james.brown@hydrosolved.com
  */
 
-public class SingleValuedForecastDAOTest
+public class SingleValuedForecastDataShopTest
 {
 
     /**
@@ -47,7 +49,7 @@ public class SingleValuedForecastDAOTest
         // No assertions made, purely illustrative
 
         // Create the DAO to access the single-valued forecast data
-        WresDAO<TimeSeries<Double>> dao = SingleValuedForecastDAO.of();
+        WresDataShop<TimeSeries<Double>> dao = new SingleValuedForecastDataShop.Builder().build();
 
         // Define three time-series identifiers
         // These identifiers are completely arbitrary 
@@ -70,7 +72,8 @@ public class SingleValuedForecastDAOTest
 
         // Create the DAO for the filtered data
         // When these filters get numerous, a builder will help
-        WresDAO<TimeSeries<Double>> daoFiltered = SingleValuedForecastDAO.of( filter );
+        WresDataShop<TimeSeries<Double>> daoFiltered =
+                new SingleValuedForecastDataShop.Builder().setTimeWindow( filter ).build();
 
         Stream<TimeSeries<Double>> timeSeriesFiltered = daoFiltered.get( LongStream.of( timeSeriesToRetrieve ) );
 
@@ -79,13 +82,13 @@ public class SingleValuedForecastDAOTest
 
         assertEquals( 3, listOfFilteredSeries.size() );
 
-        TimeSeriesDAO<Double> timeSeriesData =
-                new SingleValuedForecastDAO.Builder().setProjectId( 1 )
-                                                     .setVariableFeatureId( 1 )
-                                                     .setLeftOrRightOrBaseline( LeftOrRightOrBaseline.RIGHT )
-                                                     .build();
+        TimeSeriesDataShop<Double> timeSeriesData =
+                new SingleValuedForecastDataShop.Builder().setProjectId( 1 )
+                                                          .setVariableFeatureId( 1 )
+                                                          .setLeftOrRightOrBaseline( LeftOrRightOrBaseline.RIGHT )
+                                                          .build();
 
-        assertEquals( LongStream.of( 1,2 ), timeSeriesData.getAllIdentifiers() );
+        assertTrue( Arrays.equals( new long[] { 1, 2 }, timeSeriesData.getAllIdentifiers().toArray() ) );
 
     }
 
