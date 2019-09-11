@@ -1,4 +1,4 @@
-package wres.io.data.caching;
+package wres.io.project;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -18,7 +18,7 @@ import wres.io.config.ConfigHelper;
 import static wres.io.config.LeftOrRightOrBaseline.*;
 
 import wres.io.config.LeftOrRightOrBaseline;
-import wres.io.project.Project;
+import wres.io.data.caching.DataSources;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.utilities.DataProvider;
@@ -26,10 +26,9 @@ import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 
 /**
- * Cache of available types of forecast
+ * Create or find existing wres.project rows in the database, represented by
+ * Project instances.
  */
-// TODO: Find a way to remove the projects cache
-@Deprecated(forRemoval = true) // We shouldn't cache; there will only ever be one project
 public class Projects
 {
     private static final String NEWLINE = System.lineSeparator();
