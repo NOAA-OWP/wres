@@ -709,7 +709,6 @@ public final class Operations {
         MeasurementUnits.invalidateGlobalCache();
         UnitConversions.invalidateGlobalCache();
         USGSParameters.invalidateGlobalCache();
-        Projects.invalidateGlobalCache();
         Variables.invalidateGlobalCache();
         
         LOGGER.debug( "Finished invalidating the application cache." );

@@ -1,17 +1,13 @@
 package wres.io.data.caching;
 
 import java.io.IOException;
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.StringJoiner;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -28,7 +24,6 @@ import wres.io.reading.IngestResult;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
-import wres.util.LRUMap;
 
 /**
  * Cache of available types of forecast
@@ -38,144 +33,7 @@ import wres.util.LRUMap;
 public class Projects
 {
     private static final String NEWLINE = System.lineSeparator();
-
-    private Map<Integer, Integer> keyIndex;
-    private ConcurrentMap<Integer, Project> details;
-
     private static final Logger LOGGER = LoggerFactory.getLogger(Projects.class);
-    private static Projects instance = null;
-    private static final Object CACHE_LOCK = new Object();
-
-    private static final Object DETAIL_LOCK = new Object();
-    private static final Object KEY_LOCK = new Object();
-
-    private static Projects getCache ()
-    {
-        synchronized (CACHE_LOCK)
-        {
-            if ( instance == null)
-            {
-                instance = new Projects();
-                instance.init();
-            }
-            return instance;
-        }
-    }
-
-    private Map<Integer, Integer> getKeyIndex()
-    {
-        synchronized ( Projects.KEY_LOCK )
-        {
-            if ( keyIndex == null )
-            {
-                keyIndex = new LRUMap<>( this.getMaxDetails(), eldest -> {
-                    if ( this.details != null )
-                    {
-                        details.remove( eldest.getValue() );
-                    }
-                } );
-            }
-        }
-
-        return this.keyIndex;
-    }
-
-    final ConcurrentMap<Integer, Project> getDetails()
-    {
-        synchronized ( Projects.DETAIL_LOCK )
-        {
-            this.initializeDetails();
-            return this.details;
-        }
-    }
-
-    /**
-     * <p>Invalidates the global cache of the singleton associated with this class, {@link #instance}.
-     * 
-     * <p>See #61206.
-     */
-    
-    public static void invalidateGlobalCache()
-    {
-        synchronized ( CACHE_LOCK )
-        {
-            if ( Objects.nonNull( instance ) )
-            {
-                Projects.instance.details = null;
-            }
-        }
-    }
-    
-    private void initializeDetails()
-    {
-        synchronized ( Projects.DETAIL_LOCK )
-        {
-            if (this.details == null)
-            {
-                this.details = new ConcurrentHashMap<>( this.getMaxDetails() );
-            }
-        }
-    }
-
-    private boolean hasID(Integer key)
-    {
-        boolean hasIt;
-
-        synchronized ( Projects.KEY_LOCK )
-        {
-            hasIt = this.getKeyIndex().containsKey(key);
-        }
-
-        return hasIt;
-    }
-
-    private Integer getID(Integer key)
-    {
-        Integer id = null;
-
-        synchronized (Projects.KEY_LOCK)
-        {
-            if (this.getKeyIndex().containsKey(key))
-            {
-                id = this.getKeyIndex().get(key);
-            }
-        }
-
-        return id;
-    }
-
-    private Project get( Integer id)
-    {
-        return this.getDetails().get(id);
-    }
-
-    /**
-     * Adds the details to the instance cache. If the details don't exist in the database, they are added.
-     * <br><br>
-     * Since only a limited amount of data is stored within the instanced cache, the least recently used item from the
-     * instanced cache is removed if the amount surpasses the maximum allowable number of stored details
-     * @param element The details to add to the instanced cache
-     * @throws SQLException Thrown if the ID of the element could not be retrieved or the cache could not be
-     * updated
-     */
-    private void addElement( Project element ) throws SQLException
-    {
-        element.save();
-        this.add(element);
-    }
-
-    private void add( Project project )
-    {
-        synchronized (Projects.KEY_LOCK)
-        {
-            this.getKeyIndex().put(project.getInputCode(), project.getId());
-
-            if (this.details != null && !this.details.containsKey(project.getId()))
-            {
-                this.getDetails().put(project.getId(), project);
-            }
-        }
-    }
 
     private static Pair<Project,Boolean> getProject( ProjectConfig projectConfig,
                                                      List<String> leftHashes,
@@ -183,8 +41,10 @@ public class Projects
                                                      List<String> baselineHashes )
             throws SQLException
     {
-        Project details = null;
-        boolean thisCallCausedInsert = false;
+        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( leftHashes );
+        Objects.requireNonNull( rightHashes );
+        Objects.requireNonNull( baselineHashes );
         Integer inputCode = ConfigHelper.hashProject(
                 projectConfig,
                 leftHashes,
@@ -192,82 +52,14 @@ public class Projects
                 baselineHashes
         );
 
-        if (Projects.getCache().hasID( inputCode ))
-        {
-            LOGGER.debug( "Found project with key {} in cache.", inputCode );
-            details = Projects.getCache().get( Projects.getCache().getID( inputCode )  );
-        }
-
-        if (details == null)
-        {
-            LOGGER.debug( "Did NOT find project with key {} in cache.",
-                          inputCode );
-
-            details = new Project( projectConfig,
-                                   inputCode );
-
-            // Caller cannot trust the boolean flag on the details since we are
-            // caching the exact details object. Only the creator of the details
-            // can reliably say "hey I was the one who caused this row to be
-            // inserted."
-            Projects.getCache().addElement( details );
-
-            // addElement will call .save() on the details, which then allows us
-            // to interrogate the same details object we passed in. Maybe this
-            // should be more direct.
-            thisCallCausedInsert = details.performedInsert();
-            LOGGER.debug( "Did the ProjectDetails created by this Thread insert into the database first? {}",
-                          thisCallCausedInsert );
-        }
-
+        Project details = new Project( projectConfig,
+                                       inputCode );
+        details.save();
+        boolean thisCallCausedInsert = details.performedInsert();
+        LOGGER.debug( "Did the ProjectDetails created by this Thread insert into the database first? {}",
+                      thisCallCausedInsert );
 
         return Pair.of( details, thisCallCausedInsert );
-    }
-
-    private int getMaxDetails() {
-        return 10;
-    }
-
-    private void init()
-    {
-        this.initializeDetails();
-
-        Connection connection = null;
-
-        try
-        {
-            connection = Database.getHighPriorityConnection();
-
-            try (DataProvider data = new DataScripter( "SELECT * FROM wres.Project").getData())
-            {
-                data.consume(
-                        dataset -> {
-                            Integer projectId = dataset.getInt( "project_id" );
-                            Integer inputCode = dataset.getInt( "input_code" );
-                            this.getKeyIndex().put(
-                                    inputCode,
-                                    projectId
-                            );
-                        }
-                );
-            }
-            
-            LOGGER.debug( "Finished populating the Projects details." );
-
-        }
-        catch (SQLException error)
-        {
-            // Failure to pre-populate cache should not affect primary outputs.
-            LOGGER.warn( "An error was encountered when trying to populate the Project cache.",
-                         error );
-        }
-        finally
-        {
-            if (connection != null)
-            {
-                Database.returnHighPriorityConnection(connection);
-            }
-        }
     }
 
     /**
