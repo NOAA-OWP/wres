@@ -111,23 +111,30 @@ do
 	do
 		# check the file size in source (D-Store)
 		dStoreFileSize=`/usr/bin/curl -s --head $DStore_Site/$DStore_Dir/$range_dir/$rangeFile | gawk '/^Content-Length/ { printf("%d", $2)}'`
+		if [ -z "$dStoreFileSize" ]
+		then
+			echo "WARN: Unable to detected DStore $DStore_Site/$DStore_Dir/$range_dir/$rangeFile file size" | tee --append $LOGFILE
+			dStoreFileSize=`ssh -q $REMOTE_USER@$DESTINATION_HOST ls -l $DESTINATION_DIR/$DStore_Dir/$range_dir/$rangeFile 2> /dev/null | gawk '{printf("%d", $5)}'`
+		elif [ -n "$dStoreFileSize" ]
+		then
+			echo "DStore $DStore_Site/$DStore_Dir/$range_dir/$rangeFile file size $dStoreFileSize" | tee --append $LOGFILE
+		fi
 
 		# get each file
 		if [ "$SSHKEYS" = "YES" ]
 		then
 			ssh -q $REMOTE_USER@$DESTINATION_HOST test -f $DESTINATION_DIR/$DStore_Dir/$range_dir/$rangeFile 2> /dev/null
-			if [ $? -eq 0 ] # if test -f file exists (true), the return status $? is 0
+			if [ $? -eq 0 ] # if test -f file exists (true), then return status $? is 0
 			then
-				#echo "$? --> INFO: $DESTINATION_DIR/$DStore_Dir/$range_dir/$rangeFile is already exitsted"  | tee --append $LOGFILE 2>&1
 				remoteFileSize=`ssh -q $REMOTE_USER@$DESTINATION_HOST ls -l $DESTINATION_DIR/$DStore_Dir/$range_dir/$rangeFile 2> /dev/null | gawk '{printf("%d", $5)}'`
 				if [ -z "$remoteFileSize" ] # for some reason unable to get its file size
 				then
-					echo "WARN: target file existed $DESTINATION_DIR/$DStore_Dir/$range_dir/$rangeFile, but its size is empty" | tee --append $LOGFILE
+					echo "WARN: unable detected $DESTINATION_DIR/$DStore_Dir/$range_dir/$rangeFile file size or it's empty file." | tee --append $LOGFILE
 					# remove the corrupted target file and re-download it
 					ssh -q $REMOTE_USER@$DESTINATION_HOST rm -v $DESTINATION_DIR/$DStore_Dir/$range_dir/$rangeFile 2> /dev/null | tee --append $LOGFILE
 					ssh -q $REMOTE_USER@$DESTINATION_HOST /usr/bin/curl $DStore_Site/$DStore_Dir/$range_dir/$rangeFile --silent --show-error --connect-timeout 10 --max-time 30 --retry 2 --retry-delay 1 --retry-max-time 2 --data-binary --remote-time --output $DESTINATION_DIR/$DStore_Dir/$range_dir/$rangeFile 2> /dev/null
 					fileCount=`expr $fileCount + 1`
-				elif [ -n "$remoteFileSize" ] # make sure the file size isn't an empty string
+				elif [ -n "$remoteFileSize" -a -n "$dStoreFileSize" ] # make sure the file size isn't an empty string
 				then
 					if [ $dStoreFileSize -ne $remoteFileSize ] # compare the file sizes with digital number
 					then
@@ -152,8 +159,9 @@ do
 				fi
 				if [ -z "$remoteFileSize" ] # unable to detected the target file size
 				then
-					echo "WARN: unable detected $DESTINATION_DIR/$DStore_Dir/$range_dir/$rangeFile file size." | tee --append $LOGFILE
-				elif [ -n "$remoteFileSize" ] # make sure the file size isn't an empty string
+					echo "WARN: unable detected $DESTINATION_DIR/$DStore_Dir/$range_dir/$rangeFile file size or it's empty file." | tee --append $LOGFILE
+					ssh -q $REMOTE_USER@$DESTINATION_HOST ls -l $DESTINATION_DIR/$DStore_Dir/$range_dir/$rangeFile | tee --append $LOGFILE
+				elif [ -n "$remoteFileSize" -a -n "$dStoreFileSize" ] # make sure the file size isn't an empty string
 				then
 					if [ $dStoreFileSize -ne $remoteFileSize ] # compare the file sizes with digital number
 					then
@@ -167,7 +175,6 @@ do
 		elif [ "$SSHKEYS" = "NO" ]
 		then
 			echo "Please setup your SSH keys first before you execute this script." | tee --append $LOGFILE
-			#/usr/bin/curl $DStore_Site/$DStore_Dir/$range_dir/$rangeFile --silent --show-error --connect-timeout 10 --max-time 30 --retry 2 --retry-delay 1 --retry-max-time 2 --data-binary --remote-time --output $DESTINATION_DIR/$DStore_Dir/$range_dir/$rangeFile
 		fi
 	done # ends the inner for loop
 	rm -v "$range_dir"_index.html | tee --append $LOGFILE
