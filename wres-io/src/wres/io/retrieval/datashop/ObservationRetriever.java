@@ -1,7 +1,8 @@
 package wres.io.retrieval.datashop;
 
-import java.util.Arrays;
+import java.time.Instant;
 import java.util.Optional;
+
 import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
 import java.util.stream.LongStream;
@@ -10,33 +11,28 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.datamodel.Ensemble;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeWindow;
+import wres.io.config.LeftOrRightOrBaseline;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.ScriptBuilder;
 
 /**
- * Retrieves {@link TimeSeries} of ensemble forecasts from the WRES database.
+ * Retrieves a {@link TimeSeries} from the @wres.Observation@ table in the WRES database.
  * 
  * @author james.brown@hydrosolved.com
  */
 
-class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
+class ObservationRetriever extends TimeSeriesRetriever<Double>
 {
-
+    
     /**
-     * Script string re-used several times. 
+     * Error message when attempting to retrieve by identifier. See #68334 and #56214-56.
      */
 
-    private static final String FROM_WRES_TIME_SERIES_TS = "FROM wres.TimeSeries TS";
-
-    /**
-     * Error message when attempting to retrieve by identifier. See #68334.
-     */
-
-    private static final String NO_IDENTIFIER_ERROR = "Retrieval of ensemble time-series by identifier is not "
+    private static final String NO_IDENTIFIER_ERROR = "Retrieval of observed time-series by identifier is not "
                                                       + "currently possible because there is no identifier for "
-                                                      + "ensemble time-series in the WRES database.";
+                                                      + "observed time-series in the WRES database.";    
 
     /**
      * Log message.
@@ -49,25 +45,25 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
      */
 
     private static final String GET_ALL_TIME_SERIES_SCRIPT =
-            EnsembleForecastRetriever.getScriptForGetAllTimeSeries();
+            ObservationRetriever.getScriptForGetAllTimeSeries();
 
     /**
      * Logger.
      */
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( EnsembleForecastRetriever.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( ObservationRetriever.class );
 
     /**
      * Builder.
      */
 
-    public static class Builder extends TimeSeriesDataShopBuilder<Ensemble>
+    public static class Builder extends TimeSeriesDataShopBuilder<Double>
     {
 
         @Override
-        EnsembleForecastRetriever build()
+        ObservationRetriever build()
         {
-            return new EnsembleForecastRetriever( this );
+            return new ObservationRetriever( this );
         }
 
     }
@@ -75,26 +71,24 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
     /**
      * Reads a time-series by <code>wres.TimeSeries.timeseries_id</code>.
      * 
-     * TODO: implement this method when there is a composition identifier for an ensemble. See #68334.
+     * TODO: implement this method when there is an identifier for an observed time-series. See #68334 and #56214-56.
      * 
      * @param identifier the <code>wres.TimeSeries.timeseries_id</code>
      * @return a possible time-series for the given identifier
-     * @throws UnsupportedOperationException in all cases - see #68334.
      */
 
     @Override
-    public Optional<TimeSeries<Ensemble>> get( long identifier )
+    public Optional<TimeSeries<Double>> get( long identifier )
     {
         throw new UnsupportedOperationException( NO_IDENTIFIER_ERROR );
     }
 
     /**
-     * Returns all of the <code>wres.TimeSeries.timeseries_id</code> associated with this instance. 
+     * Returns all of the <code>wres.TimeSeries.timeseries_id</code> associated with this instance.
      * 
-     * TODO: implement this method when there is a composition identifier for an ensemble. See #68334.
+     * TODO: implement this method when there is an identifier for an observed time-series. See #68334 and #56214-56.
      * 
      * @return a stream of<code>wres.TimeSeries.timeseries_id</code>
-     * @throws UnsupportedOperationException in all cases - see #68334.
      */
 
     @Override
@@ -107,20 +101,34 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
      * Overrides the default implementation to get all specified time-series in one pull, rather than one pull for 
      * each series.
      * 
-     * TODO: implement this method when there is a composition identifier for an ensemble. See #68334.
+     * TODO: implement this method when there is an identifier for an observed time-series. See #68334 and #56214-56.
      * 
      * @param identifiers the stream of identifiers
      * @return a stream over the identified objects
-     * @throws UnsupportedOperationException in all cases - see #68334.
      * @throws NullPointerException if the input is null
-    
      */
     @Override
-    public Stream<TimeSeries<Ensemble>> get( LongStream identifiers )
+    public Stream<TimeSeries<Double>> get( LongStream identifiers )
     {
         throw new UnsupportedOperationException( NO_IDENTIFIER_ERROR );
     }
+    
+    public static void main (String[] args)
+    {
+        TimeWindow filter =
+                TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ), Instant.parse( "1990-01-01T00:00:00Z" ) );
 
+        TimeSeriesRetriever<Double> timeSeriesData =
+                new ObservationRetriever.Builder().setProjectId( 7 )
+                                                          .setVariableFeatureId( 1 )
+                                                          .setTimeWindow( filter )
+                                                          .setLeftOrRightOrBaseline( LeftOrRightOrBaseline.LEFT )
+                                                          .build();
+
+        timeSeriesData.getAll();
+        
+    }   
+    
     /**
      * Overrides the default implementation to get all time-series in one pull, rather than one pull for each series.
      * 
@@ -129,7 +137,7 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
      */
 
     @Override
-    public Stream<TimeSeries<Ensemble>> getAll()
+    public Stream<TimeSeries<Double>> getAll()
     {
         this.validateForMultiSeriesRetrieval();
 
@@ -141,11 +149,8 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
         // Add time window constraint
         this.addTimeWindowClause( scripter );
 
-        // Add GROUP BY clause
-        scripter.addLine( "GROUP BY TS.initialization_date, TSV.lead" );
-
         // Add ORDER BY clause
-        scripter.addLine( "ORDER BY TS.initialization_date, TSV.lead;" );
+        scripter.addLine( "ORDER BY O.observation_time;" );
 
         String script = scripter.toString();
 
@@ -156,43 +161,36 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
                           System.lineSeparator(),
                           script );
         }
-
+        
         return this.getTimeSeriesFromScript( script, this.getDataSupplier() ).stream();
     }
 
     @Override
     boolean isForecastRetriever()
     {
-        return true;
+        return false;
     }
-
+    
     /**
      * Returns a function that obtains the measured value in the desired units.
-     * 
-     * TODO: include the labels too, once they are needed. See #56214-37 for the amended script. When processing these, 
-     * obtain the labels from a local cache, because they will be repeated across many ensembles, typically, and 
-     * String[] are comparatively expensive.
      * 
      * @return a function to obtain the measured value in the correct units
      */
 
-    private Function<DataProvider, Ensemble> getDataSupplier()
+    private Function<DataProvider, Double> getDataSupplier()
     {
-        return provider -> {
-
+        return provider -> {           
+            // Raw value
+            double unmapped = provider.getDouble( "observation" );
+            
             // Existing units
             int measurementUnitId = provider.getInt( "measurementunit_id" );
-
+            
             // Units mapper
             DoubleUnaryOperator mapper = this.getMeasurementUnitMapper().getUnitMapper( measurementUnitId );
-
-            // Map the units
-            double[] mapped = Arrays.stream( provider.getDoubleArray( "ensemble_members" ) )
-                                    .mapToDouble( Double::doubleValue )
-                                    .map( mapper )
-                                    .toArray();
-
-            return Ensemble.of( mapped );
+            
+            // Convert
+            return mapper.applyAsDouble( unmapped );
         };
     }
 
@@ -207,22 +205,13 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
         ScriptBuilder scripter = new ScriptBuilder();
 
         scripter.addLine( "SELECT " );
-        scripter.addTab().addLine( "MIN(TS.timeseries_id) AS series_id," );
-        scripter.addTab().addLine( "TS.initialization_date + INTERVAL '1 MINUTE' * TSV.lead AS valid_time," );
-        scripter.addTab().addLine( "TS.initialization_date AS reference_time," );
-        scripter.addTab().addLine( "ARRAY_AGG(" );
-        scripter.addTab( 2 ).addLine( "TSV.series_value" );
-        scripter.addTab( 2 ).addLine( "ORDER BY TS.ensemble_id" );
-        scripter.addTab().addLine( ") AS ensemble_members," );
-        scripter.addTab().addLine( "TS.measurementunit_id" );
-        scripter.addLine( FROM_WRES_TIME_SERIES_TS );
-        scripter.addLine( "INNER JOIN wres.TimeSeriesValue TSV" );
-        scripter.addTab().addLine( "ON TSV.timeseries_id = TS.timeseries_id" );
-        scripter.addLine( "INNER JOIN wres.TimeSeriesSource TSS" );
-        scripter.addTab().addLine( "ON TSS.timeseries_id = TS.timeseries_id" );
-        scripter.addTab( 2 ).addLine( "AND (TSS.lead IS NULL OR TSS.lead = TSV.lead)" );
+        scripter.addTab().addLine( "1 AS series_id," );  // Facilitates a unary mapping across series types: #56214-56
+        scripter.addTab().addLine( "O.observation_time AS valid_time," );
+        scripter.addTab().addLine( "O.observed_value AS observation," );
+        scripter.addTab().addLine( "O.measurementunit_id" );       
+        scripter.addLine( "FROM wres.Observation O" );
         scripter.addLine( "INNER JOIN wres.ProjectSource PS" );
-        scripter.addTab().addLine( "ON PS.source_id = TSS.source_id" );
+        scripter.addTab().addLine( "ON PS.source_id = O.source_id" );
         scripter.addLine( "INNER JOIN wres.Project P" );
         scripter.addTab().addLine( "ON P.project_id = PS.project_id" );
 
@@ -236,7 +225,7 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
      * @throws NullPointerException if the filter is null
      */
 
-    private EnsembleForecastRetriever( Builder builder )
+    private ObservationRetriever( Builder builder )
     {
         super( builder );
     }

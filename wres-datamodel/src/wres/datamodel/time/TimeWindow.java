@@ -118,22 +118,22 @@ public final class TimeWindow implements Comparable<TimeWindow>
 
     /**
      * Constructs a {@link TimeWindow} where the earliest lead durations is {@link TimeWindow#DURATION_MIN}, the 
-     * latest lead duration is {@link TimeWindow#DURATION_MAX}, the earliest valid time is {@link Instant#MIN}, the 
-     * latest valid time is {@link Instant#MAX}, and the reference times are given.
+     * latest lead duration is {@link TimeWindow#DURATION_MAX}, the earliest reference time is {@link Instant#MIN}, the 
+     * latest reference time is {@link Instant#MAX}, and the valid times are given.
      * 
-     * @param earliestReferenceTime the earliest time
-     * @param latestReferenceTime the latest time
+     * @param earliestValidTime the earliest time
+     * @param latestValidTime the latest time
      * @return a time window
-     * @throws IllegalArgumentException if the latestReferenceTime is before the earliestReferenceTime
+     * @throws IllegalArgumentException if the latestValidTime is before the earliestValidTime
      * @throws NullPointerException if any input is null
      */
 
-    public static TimeWindow of( Instant earliestReferenceTime, Instant latestReferenceTime )
+    public static TimeWindow of( Instant earliestValidTime, Instant latestValidTime )
     {
-        return new Builder().setEarliestReferenceTime( earliestReferenceTime )
-                            .setLatestReferenceTime( latestReferenceTime )
-                            .setEarliestValidTime( Instant.MIN )
-                            .setLatestValidTime( Instant.MAX )
+        return new Builder().setEarliestValidTime( earliestValidTime )
+                            .setLatestValidTime( latestValidTime )
+                            .setEarliestReferenceTime( Instant.MIN )
+                            .setLatestReferenceTime( Instant.MAX )
                             .setEarliestLeadDuration( TimeWindow.DURATION_MIN )
                             .setLatestLeadDuration( TimeWindow.DURATION_MAX )
                             .build();

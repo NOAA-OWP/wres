@@ -198,7 +198,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         scripter.addTab().addLine( "AND TS.timeseries_id = ANY( '", joiner.toString(), "' )::integer[]" );
 
         // Add ORDER BY clause
-        scripter.addLine( "ORDER BY TS.initialization_date, TSV.lead" );
+        scripter.addLine( "ORDER BY TS.initialization_date, TSV.lead;" );
 
         String script = scripter.toString();
 
