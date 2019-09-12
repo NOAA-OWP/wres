@@ -25,7 +25,7 @@ import wres.io.utilities.ScriptBuilder;
  * @author james.brown@hydrosolved.com
  */
 
-public class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
+class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
 {
 
     /**

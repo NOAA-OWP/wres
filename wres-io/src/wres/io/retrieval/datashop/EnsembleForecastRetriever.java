@@ -21,7 +21,7 @@ import wres.io.utilities.ScriptBuilder;
  * @author james.brown@hydrosolved.com
  */
 
-public class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
+class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
 {
 
     /**
