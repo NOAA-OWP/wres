@@ -8,7 +8,10 @@ package wres.io.retrieval.datashop;
 
 public class DataAccessException extends RuntimeException
 {
-
+    /**
+     * Serial identifier.
+     */
+    
     private static final long serialVersionUID = 2826302222876172482L;
 
     /**

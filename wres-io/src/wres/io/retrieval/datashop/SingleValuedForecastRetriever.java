@@ -6,6 +6,8 @@ import java.util.Objects;
 import java.util.Optional;
 
 import java.util.StringJoiner;
+import java.util.function.DoubleUnaryOperator;
+import java.util.function.Function;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
@@ -18,12 +20,12 @@ import wres.io.utilities.DataScripter;
 import wres.io.utilities.ScriptBuilder;
 
 /**
- * A DAO for the retrieval of forecasts of double values as {@link TimeSeries}.
+ * Retrieves {@link TimeSeries} of single-valued forecasts from the WRES database.
  * 
  * @author james.brown@hydrosolved.com
  */
 
-public class SingleValuedForecastDataShop extends TimeSeriesDataShop<Double>
+public class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
 {
 
     /**
@@ -49,39 +51,39 @@ public class SingleValuedForecastDataShop extends TimeSeriesDataShop<Double>
      */
 
     private static final String GET_ONE_TIME_SERIES_SCRIPT =
-            SingleValuedForecastDataShop.getScriptForGetOneTimeSeries();
+            SingleValuedForecastRetriever.getScriptForGetOneTimeSeries();
 
     /**
      * Template script for the {@link #getAllIdentifiers()}.
      */
 
     private static final String GET_ALL_IDENTIFIERS_SCRIPT =
-            SingleValuedForecastDataShop.getScriptForGetAllIdentifiers();
+            SingleValuedForecastRetriever.getScriptForGetAllIdentifiers();
 
     /**
      * Template script for the {@link #getAll()}.
      */
 
     private static final String GET_ALL_TIME_SERIES_SCRIPT =
-            SingleValuedForecastDataShop.getScriptForGetAllTimeSeries();
+            SingleValuedForecastRetriever.getScriptForGetAllTimeSeries();
 
     /**
      * Logger.
      */
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( SingleValuedForecastDataShop.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( SingleValuedForecastRetriever.class );
 
     /**
      * Builder.
      */
 
-    public static class Builder extends TimeSeriesDAOBuilder<Double>
+    public static class Builder extends TimeSeriesDataShopBuilder<Double>
     {
 
         @Override
-        SingleValuedForecastDataShop build()
+        SingleValuedForecastRetriever build()
         {
-            return new SingleValuedForecastDataShop( this );
+            return new SingleValuedForecastRetriever( this );
         }
 
     }
@@ -116,7 +118,7 @@ public class SingleValuedForecastDataShop extends TimeSeriesDataShop<Double>
                           script );
         }
 
-        return this.getTimeSeriesFromScript( script, provider -> provider.getDouble( MEASUREMENT ) )
+        return this.getTimeSeriesFromScript( script, this.getDataSupplier() )
                    .stream()
                    .findFirst();
     }
@@ -196,7 +198,7 @@ public class SingleValuedForecastDataShop extends TimeSeriesDataShop<Double>
         scripter.addTab().addLine( "AND TS.timeseries_id = ANY( '", joiner.toString(), "' )::integer[]" );
 
         // Add ORDER BY clause
-        scripter.addLine( "ORDER BY TS.initialization_date, TSV.lead;" );
+        scripter.addLine( "ORDER BY TS.initialization_date, TSV.lead" );
 
         String script = scripter.toString();
 
@@ -208,9 +210,9 @@ public class SingleValuedForecastDataShop extends TimeSeriesDataShop<Double>
                           script );
         }
 
-        return this.getTimeSeriesFromScript( script, provider -> provider.getDouble( MEASUREMENT ) ).stream();
+        return this.getTimeSeriesFromScript( script, this.getDataSupplier() ).stream();
     }
-
+    
     /**
      * Overrides the default implementation to get all time-series in one pull, rather than one pull for each series.
      * 
@@ -243,8 +245,8 @@ public class SingleValuedForecastDataShop extends TimeSeriesDataShop<Double>
                           System.lineSeparator(),
                           script );
         }
-
-        return this.getTimeSeriesFromScript( script, provider -> provider.getDouble( MEASUREMENT ) ).stream();
+        
+        return this.getTimeSeriesFromScript( script, this.getDataSupplier() ).stream();
     }
 
     @Override
@@ -252,7 +254,30 @@ public class SingleValuedForecastDataShop extends TimeSeriesDataShop<Double>
     {
         return true;
     }
+    
+    /**
+     * Returns a function that obtains the measured value in the desired units.
+     * 
+     * @return a function to obtain the measured value in the correct units
+     */
 
+    private Function<DataProvider, Double> getDataSupplier()
+    {
+        return provider -> {           
+            // Raw value
+            double unmapped = provider.getDouble( MEASUREMENT );
+            
+            // Existing units
+            int measurementUnitId = provider.getInt( "measurementunit_id" );
+            
+            // Units mapper
+            DoubleUnaryOperator mapper = this.getMeasurementUnitMapper().getUnitMapper( measurementUnitId );
+            
+            // Convert
+            return mapper.applyAsDouble( unmapped );
+        };
+    }
+    
     /**
      * Returns an unpopulated script to acquire a time-series from the WRES database. The placeholders are in the
      * {@link MessageFormat} format. This is akin to a prepared statement string.
@@ -267,7 +292,8 @@ public class SingleValuedForecastDataShop extends TimeSeriesDataShop<Double>
         scripter.addLine( "SELECT " );
         scripter.addTab().addLine( "TS.initialization_date + INTERVAL ''1 MINUTE'' * TSV.lead AS valid_time," );
         scripter.addTab().addLine( "TS.initialization_date AS reference_time," );
-        scripter.addTab().addLine( "TSV.series_value AS measurement" );
+        scripter.addTab().addLine( "TSV.series_value AS measurement," );
+        scripter.addTab().addLine( "TS.measurementunit_id" ); 
         scripter.addLine( "FROM (" );
         scripter.addTab().addLine( "SELECT TS.initialization_date, TS.timeseries_id" );
         scripter.addTab().addLine( FROM_WRES_TIME_SERIES_TS );
@@ -291,9 +317,10 @@ public class SingleValuedForecastDataShop extends TimeSeriesDataShop<Double>
 
         scripter.addLine( "SELECT " );
         scripter.addTab().addLine( "TS.timeseries_id AS series_id," );
-        scripter.addTab().addLine( "TS.initialization_date + INTERVAL ''1 MINUTE'' * TSV.lead AS valid_time," );
+        scripter.addTab().addLine( "TS.initialization_date + INTERVAL '1 MINUTE' * TSV.lead AS valid_time," );
         scripter.addTab().addLine( "TS.initialization_date AS reference_time," );
-        scripter.addTab().addLine( "TSV.series_value AS measurement" );
+        scripter.addTab().addLine( "TSV.series_value AS measurement," );
+        scripter.addTab().addLine( "TS.measurementunit_id" );       
         scripter.addLine( FROM_WRES_TIME_SERIES_TS );
         scripter.addLine( "INNER JOIN wres.TimeSeriesValue TSV" );
         scripter.addTab().addLine( "ON TSV.timeseries_id = TS.timeseries_id" );
@@ -337,7 +364,7 @@ public class SingleValuedForecastDataShop extends TimeSeriesDataShop<Double>
      * @throws NullPointerException if the filter is null
      */
 
-    private SingleValuedForecastDataShop( Builder builder )
+    private SingleValuedForecastRetriever( Builder builder )
     {
         super( builder );
     }

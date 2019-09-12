@@ -24,19 +24,19 @@ import wres.io.utilities.DataScripter;
 import wres.io.utilities.ScriptBuilder;
 
 /**
- * An abstract DAO for the retrieval of {@link TimeSeries} from the WRES database.
+ * Abstract base class for retrieving {@link TimeSeries} from the WRES database.
  * 
  * @author james.brown@hydrosolved.com
  */
 
-abstract class TimeSeriesDataShop<T> implements WresDataShop<TimeSeries<T>>
+abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 {
 
     /**
      * Logger.
      */
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( TimeSeriesDataShop.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( TimeSeriesRetriever.class );
 
     /**
      * Time window filter.
@@ -61,6 +61,12 @@ abstract class TimeSeriesDataShop<T> implements WresDataShop<TimeSeries<T>>
      */
 
     private final LeftOrRightOrBaseline lrb;
+
+    /**
+     * Mapper for changing measurement units.
+     */
+
+    private final UnitMapper unitMapper;
 
     /**
      * Returns true if the retriever supplies forecast data.
@@ -365,6 +371,17 @@ abstract class TimeSeriesDataShop<T> implements WresDataShop<TimeSeries<T>>
     }
 
     /**
+     * Returns the measurement unit mapper.
+     * 
+     * @return the measurement unit mapper.
+     */
+
+    UnitMapper getMeasurementUnitMapper()
+    {
+        return this.unitMapper;
+    }
+
+    /**
      * Adds a clause to a script according to the start of the last available clause. When the last available clause
      * starts with <code>WHERE</code>, then the clause added starts with <code>AND</code>, otherwise <code>WHERE</code>. 
      * 
@@ -388,7 +405,7 @@ abstract class TimeSeriesDataShop<T> implements WresDataShop<TimeSeries<T>>
         }
 
         String lastLine = lines[lines.length - 1];
-        
+
         // Compose the clause elements into a clause
         String clause = Arrays.stream( clauseElements )
                               .map( Object::toString )
@@ -442,7 +459,7 @@ abstract class TimeSeriesDataShop<T> implements WresDataShop<TimeSeries<T>>
      * @param <S> the type of time-series to build
      */
 
-    abstract static class TimeSeriesDAOBuilder<S>
+    abstract static class TimeSeriesDataShopBuilder<S>
     {
         /**
          * Time window filter.
@@ -469,13 +486,19 @@ abstract class TimeSeriesDataShop<T> implements WresDataShop<TimeSeries<T>>
         private LeftOrRightOrBaseline lrb;
 
         /**
+         * The measurement unit mapper.
+         */
+
+        private UnitMapper unitMapper;
+
+        /**
          * Sets the <code>wres.Project.project_id</code>.
          * 
          * @param projectId the <code>wres.Project.project_id</code>
          * @return the builder
          */
 
-        TimeSeriesDAOBuilder<S> setProjectId( int projectId )
+        TimeSeriesDataShopBuilder<S> setProjectId( int projectId )
         {
             this.projectId = projectId;
             return this;
@@ -488,7 +511,7 @@ abstract class TimeSeriesDataShop<T> implements WresDataShop<TimeSeries<T>>
          * @return the builder
          */
 
-        TimeSeriesDAOBuilder<S> setVariableFeatureId( int variableFeatureId )
+        TimeSeriesDataShopBuilder<S> setVariableFeatureId( int variableFeatureId )
         {
             this.variableFeatureId = variableFeatureId;
             return this;
@@ -501,7 +524,7 @@ abstract class TimeSeriesDataShop<T> implements WresDataShop<TimeSeries<T>>
          * @return the builder
          */
 
-        TimeSeriesDAOBuilder<S> setLeftOrRightOrBaseline( LeftOrRightOrBaseline lrb )
+        TimeSeriesDataShopBuilder<S> setLeftOrRightOrBaseline( LeftOrRightOrBaseline lrb )
         {
             this.lrb = lrb;
             return this;
@@ -514,20 +537,33 @@ abstract class TimeSeriesDataShop<T> implements WresDataShop<TimeSeries<T>>
          * @return the builder
          */
 
-        TimeSeriesDAOBuilder<S> setTimeWindow( TimeWindow timeWindow )
+        TimeSeriesDataShopBuilder<S> setTimeWindow( TimeWindow timeWindow )
         {
             this.timeWindow = timeWindow;
             return this;
         }
 
-        abstract TimeSeriesDataShop<S> build();
+        /**
+         * Sets the measurement unit mapper.
+         * 
+         * @param unitMapper the measurement unit mapper
+         * @return the builder
+         */
+
+        TimeSeriesDataShopBuilder<S> setUnitMapper( UnitMapper unitMapper )
+        {
+            this.unitMapper = unitMapper;
+            return this;
+        }
+
+        abstract TimeSeriesRetriever<S> build();
     }
 
     /**
      * Construct.
      */
 
-    TimeSeriesDataShop( TimeSeriesDAOBuilder<T> builder )
+    TimeSeriesRetriever( TimeSeriesDataShopBuilder<T> builder )
     {
         Objects.requireNonNull( builder );
 
@@ -535,6 +571,13 @@ abstract class TimeSeriesDataShop<T> implements WresDataShop<TimeSeries<T>>
         this.variableFeatureId = builder.variableFeatureId;
         this.lrb = builder.lrb;
         this.timeWindow = builder.timeWindow;
+        this.unitMapper = builder.unitMapper;
+
+        // Validate
+        Objects.requireNonNull( this.getMeasurementUnitMapper(),
+                                "Cannot build a time-series retriever without a "
+                                                                 + "measurement unit mapper." );
+
     }
 
 }

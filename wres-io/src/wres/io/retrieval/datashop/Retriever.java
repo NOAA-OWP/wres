@@ -7,15 +7,14 @@ import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 /**
- * <p>An API for performing (C)reate (R)ead (U)update and (D)elete operations on data objects of type <code>T</code>. 
- * In general, the WRES does *not* encourage mutation and, thus, support (U)pdate. Data accessors that perform CRUD 
- * operations on specific data types, <code>T</code>, in specific data stores should implement this interface.
+ * <p>An API for performing read operations on data objects of type <code>T</code>. Retrievers that read specific data 
+ * types, <code>T</code>, from specific data stores should implement this interface.
  * 
  * @author james.brown@hydrosolved.com
  * @param <T> the type of object
  */
 
-public interface WresDataShop<T>
+public interface Retriever<T>
 {
 
     /**
