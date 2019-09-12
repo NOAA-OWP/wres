@@ -11,7 +11,7 @@ import java.util.stream.Stream;
  * types, <code>T</code>, from specific data stores should implement this interface.
  * 
  * @author james.brown@hydrosolved.com
- * @param <T> the type of object
+ * @param <T> the type of object to retrieve
  */
 
 public interface Retriever<T>
