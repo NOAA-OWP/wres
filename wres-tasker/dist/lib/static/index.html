@@ -39,14 +39,21 @@
     </style>
 </head>
 <body>
-<h1>Welcome to a guide to the WRES HTTP API</h1>
+<h1>Welcome to a guide to the COWRES HTTP API</h1>
 <p>
-    One may use this html and plaintext example to learn the WRES HTTP API.
+    One may use this html and plaintext example to learn the COWRES HTTP API.
     The intended users of the HTTP API are programs that request evaluations,
     which may be written in any language. For more information on how to set up
     WRES evaluation configurations as well as how to get help, please visit
     <a href="https://***REMOVED***/redmine/projects/wres-user-support/wiki">
         https://***REMOVED***/redmine/projects/wres-user-support/wiki
+    </a>
+</p>
+<p>
+    If you are not writing a program to interact with the COWRES HTTP API, you
+    may be looking for an instance of the WRES GUI at NWCAL which is at
+    <a href="https://***REMOVED***wresgui-ti01.***REMOVED***.***REMOVED***/">
+        https://***REMOVED***wresgui-ti01.***REMOVED***.***REMOVED***
     </a>
 </p>
 <p>
@@ -57,13 +64,8 @@
         https://***REMOVED***/redmine/projects/wres-user-support/wiki/Import_Certificate_Authority_in_Browser_for_Access_to_WRES_Web_Front-End
     </a>
 </p>
-<p>
-    If you do not have access to any of the above pages or if your first name
-    is not accepted by the HTTP API please contact the WRES team for help.
-</p>
 
 <form action="/job" method="post">
-    Your first name: <input type="text" name="userName" /><br />
     Evaluation project configuration full text:<br />
     <textarea id="projectConfig" class="evaluation" name="projectConfig" required="true">
 <?xml version="1.0" encoding="UTF-8"?>
