@@ -228,15 +228,6 @@ public class WresJobTest
     }
 
     @Test
-    public void testNotFound()
-    {
-        System.setProperty( "wres.secrets_dir", WresJobTest.tempDir.toString() );
-        WresJob wresJob = new WresJob();
-        Response response = wresJob.postWresJob( "fake", "fake", null );
-        assertEquals( "Expected a 404 not found.", 404, response.getStatus() );
-    }
-
-    @Test
     public void testBadRequest()
     {
         System.setProperty( "wres.secrets_dir", WresJobTest.tempDir.toString() );

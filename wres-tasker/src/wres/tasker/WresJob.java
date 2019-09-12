@@ -58,8 +58,6 @@ public class WresJob
 
     private static final Random RANDOM = new Random( System.currentTimeMillis() );
 
-    private static final String ENVIRONMENT_NAME = Environment.getEnvironmentSuffix();
-
     static
     {
         // Determine the actual broker name, whether from -D or default
@@ -94,30 +92,9 @@ public class WresJob
     @Consumes( APPLICATION_FORM_URLENCODED )
     @Produces( TEXT_HTML )
     public Response postWresJob( @FormParam( "projectConfig" ) String projectConfig,
-                                 @FormParam( "userName" ) String wresUser,
+                                 @Deprecated @FormParam( "userName" ) String wresUser,
                                  @FormParam( "verb" ) String verb )
     {
-        String databaseUrl = Users.getDatabaseHost( wresUser, ENVIRONMENT_NAME );
-        String databaseName = Users.getDatabaseName( wresUser, ENVIRONMENT_NAME );
-        String databaseUser = Users.getDatabaseUser( wresUser, ENVIRONMENT_NAME );
-
-        // If all three are missing, call it a 404 not found
-        if ( databaseUrl == null && databaseName == null && databaseUser == null )
-        {
-            return WresJob.notFound( "Could not find any record of user '"
-                                     + wresUser
-                                     + "' in the "
-                                     + ENVIRONMENT_NAME
-                                     + " system. Please correct the user name or contact WRES team." );
-        }
-        // If only one of the three is missing, mistake on our end 500
-        else if ( databaseUrl == null || databaseName == null || databaseUser == null )
-        {
-            return WresJob.internalServerError( "Not your fault. Found incomplete information on user '"
-                                                + wresUser
-                                                + "' in the system. Please let WRES team know." );
-        }
-
         // Default to execute per tradition and majority case.
         Verb actualVerb = null;
 
@@ -150,9 +127,6 @@ public class WresJob
         }
 
         Job.job jobMessage = Job.job.newBuilder()
-                                    .setDatabaseHostname( databaseUrl )
-                                    .setDatabaseName( databaseName )
-                                    .setDatabaseUsername( databaseUser )
                                     .setProjectConfig( projectConfig )
                                     .setVerb( actualVerb )
                                     .build();
