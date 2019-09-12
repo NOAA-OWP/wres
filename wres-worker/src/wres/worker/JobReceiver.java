@@ -151,10 +151,7 @@ class JobReceiver extends DefaultConsumer
             throw new IllegalArgumentException( "Bad message received", ipbe );
         }
 
-        String javaOpts = "-Dwres.url=" + jobMessage.getDatabaseHostname()
-                          + " -Dwres.databaseName=" + jobMessage.getDatabaseName()
-                          + " -Dwres.username=" + jobMessage.getDatabaseUsername()
-                          + " -Djava.io.tmpdir=" + outputDirectory.toString();
+        String javaOpts = " -Djava.io.tmpdir=" + outputDirectory.toString();
 
         List<String> result = new ArrayList<>();
 
