@@ -16,9 +16,9 @@ import org.junit.Test;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindow;
 import wres.io.config.LeftOrRightOrBaseline;
-import wres.io.retrieval.datashop.SingleValuedForecastDataShop;
-import wres.io.retrieval.datashop.TimeSeriesDataShop;
-import wres.io.retrieval.datashop.WresDataShop;
+import wres.io.retrieval.datashop.SingleValuedForecastRetriever;
+import wres.io.retrieval.datashop.TimeSeriesRetriever;
+import wres.io.retrieval.datashop.Retriever;
 
 /**
  * Class that illustrates reading of single-valued forecasts.
@@ -28,7 +28,7 @@ import wres.io.retrieval.datashop.WresDataShop;
  * @author james.brown@hydrosolved.com
  */
 
-public class SingleValuedForecastDataShopTest
+public class SingleValuedForecastRetrieverTest
 {
 
     /**
@@ -50,8 +50,12 @@ public class SingleValuedForecastDataShopTest
         //         and a time window filter
         // No assertions made, purely illustrative
 
+        // Create a units mapper for the desired measurement units
+        UnitMapper mapper = UnitMapper.of( "CMS" );
+
         // Create the DAO to access the single-valued forecast data
-        WresDataShop<TimeSeries<Double>> dao = new SingleValuedForecastDataShop.Builder().build();
+        Retriever<TimeSeries<Double>> dao =
+                new SingleValuedForecastRetriever.Builder().setUnitMapper( mapper ).build();
 
         // Define three time-series identifiers
         // These identifiers are completely arbitrary 
@@ -74,8 +78,10 @@ public class SingleValuedForecastDataShopTest
 
         // Create the DAO for the filtered data
         // When these filters get numerous, a builder will help
-        WresDataShop<TimeSeries<Double>> daoFiltered =
-                new SingleValuedForecastDataShop.Builder().setTimeWindow( filter ).build();
+        Retriever<TimeSeries<Double>> daoFiltered =
+                new SingleValuedForecastRetriever.Builder().setUnitMapper( mapper )
+                                                          .setTimeWindow( filter )
+                                                          .build();
 
         Stream<TimeSeries<Double>> timeSeriesFiltered = daoFiltered.get( LongStream.of( timeSeriesToRetrieve ) );
 
@@ -84,9 +90,10 @@ public class SingleValuedForecastDataShopTest
 
         assertEquals( 3, listOfFilteredSeries.size() );
 
-        TimeSeriesDataShop<Double> timeSeriesData =
-                new SingleValuedForecastDataShop.Builder().setProjectId( 1 )
+        TimeSeriesRetriever<Double> timeSeriesData =
+                new SingleValuedForecastRetriever.Builder().setProjectId( 1 )
                                                           .setVariableFeatureId( 1 )
+                                                          .setUnitMapper( mapper )
                                                           .setLeftOrRightOrBaseline( LeftOrRightOrBaseline.RIGHT )
                                                           .build();
 
