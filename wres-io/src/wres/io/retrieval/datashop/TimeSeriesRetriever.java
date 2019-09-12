@@ -219,8 +219,17 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             if ( !filter.getEarliestValidTime().equals( Instant.MIN ) )
             {
                 String lowerValidTime = filter.getEarliestValidTime().toString();
+
+                String clause = "TS.initialization_date + INTERVAL '1 MINUTE' * TSV.lead >= '";
+
+                // Observation?
+                if ( !this.isForecastRetriever() )
+                {
+                    clause = "O.observation_time >= '";
+                }
+
                 this.addWhereOrAndClause( script,
-                                          "TS.initialization_date + INTERVAL '1 MINUTE' * TSV.lead >= '",
+                                          clause,
                                           lowerValidTime,
                                           "'" );
             }
@@ -229,8 +238,17 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             if ( !filter.getLatestValidTime().equals( Instant.MAX ) )
             {
                 String upperValidTime = filter.getLatestValidTime().toString();
+
+                String clause = "TS.initialization_date + INTERVAL '1 MINUTE' * TSV.lead <= '";
+
+                // Observation?
+                if ( !this.isForecastRetriever() )
+                {
+                    clause = "O.observation_time <= '";
+                }
+
                 this.addWhereOrAndClause( script,
-                                          "TS.initialization_date + INTERVAL '1 MINUTE' * TSV.lead <= '",
+                                          clause,
                                           upperValidTime,
                                           "'" );
             }
@@ -314,7 +332,14 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         // variablefeature_id
         if ( Objects.nonNull( this.getVariableFeatureId() ) )
         {
-            this.addWhereOrAndClause( script, "TS.variablefeature_id = '", this.getVariableFeatureId(), "'" );
+            if ( this.isForecastRetriever() )
+            {
+                this.addWhereOrAndClause( script, "TS.variablefeature_id = '", this.getVariableFeatureId(), "'" );
+            }
+            else
+            {
+                this.addWhereOrAndClause( script, "O.variablefeature_id = '", this.getVariableFeatureId(), "'" );
+            }
         }
         // member
         if ( Objects.nonNull( this.getLeftOrRightOrBaseline() ) )

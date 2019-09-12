@@ -54,7 +54,9 @@ public final class TimeWindowTest
         //Test mid-point of window 
         assertTrue( "Unexpected error in mid-point of time window.",
                     TimeWindow.of( Instant.parse( SECOND_TIME ),
-                                   Instant.parse( "1985-01-10T00:00:00Z" ) )
+                                   Instant.parse( "1985-01-10T00:00:00Z" ),
+                                   Duration.ofHours( 6 ),
+                                   Duration.ofHours( 120 ) )
                               .getMidPointBetweenEarliestAndLatestReferenceTimes()
                               .equals( Instant.parse( "1985-01-05T12:00:00Z" ) ) );
     }
@@ -73,7 +75,9 @@ public final class TimeWindowTest
                                            Duration.ofSeconds( Long.MAX_VALUE, 999_999_999 ) );
 
         TimeWindow equalWindow = TimeWindow.of( Instant.parse( SECOND_TIME ),
-                                                Instant.parse( FIFTH_TIME ) );
+                                                Instant.parse( FIFTH_TIME ),
+                                                TimeWindow.DURATION_MIN,
+                                                TimeWindow.DURATION_MAX );
         assertTrue( window.equals( equalWindow ) );
         assertNotEquals( Double.valueOf( 1.0 ), window );
         assertTrue( !window.equals( TimeWindow.of( Instant.parse( "1985-01-01T00:00:01Z" ),
@@ -123,7 +127,9 @@ public final class TimeWindowTest
                                           Duration.ofSeconds( Long.MIN_VALUE ),
                                           Duration.ofSeconds( Long.MAX_VALUE, 999_999_999 ) );
         TimeWindow second = TimeWindow.of( Instant.parse( SECOND_TIME ),
-                                           Instant.parse( FIFTH_TIME ) );
+                                           Instant.parse( FIFTH_TIME ),
+                                           TimeWindow.DURATION_MIN,
+                                           TimeWindow.DURATION_MAX );
 
         TimeWindow third = TimeWindow.of( Instant.parse( SECOND_TIME ),
                                           Instant.parse( FIFTH_TIME ),

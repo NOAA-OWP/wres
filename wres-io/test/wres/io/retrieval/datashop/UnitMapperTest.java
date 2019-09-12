@@ -33,7 +33,7 @@ import wres.system.SystemSettings;
  * @author james.brown@hydrosolved.com
  */
 
-@RunWith( PowerMockRunner.class)
+@RunWith( PowerMockRunner.class )
 @PrepareForTest( { SystemSettings.class } )
 @PowerMockIgnore( { "javax.management.*", "java.io.*", "javax.xml.*", "com.sun.*", "org.xml.*" } )
 public class UnitMapperTest
@@ -42,7 +42,6 @@ public class UnitMapperTest
     private static ComboPooledDataSource dataSource;
     private Connection rawConnection;
     private @Mock DatabaseConnectionSupplier mockConnectionSupplier;
-    private Database liquibaseDatabase;
 
     @BeforeClass
     public static void oneTimeSetup()
@@ -86,12 +85,12 @@ public class UnitMapperTest
         PowerMockito.when( SystemSettings.class, "getHighPriorityConnectionPool" )
                     .thenReturn( UnitMapperTest.dataSource );
 
-        // Set up a liquibase database to run migrations against.
-        this.liquibaseDatabase = UnitMapperTest.testDatabase.createNewLiquibaseDatabase( this.rawConnection );
-        
+        // Set up a liquibase database to run migrations against.       
+        Database liquibaseDatabase = UnitMapperTest.testDatabase.createNewLiquibaseDatabase( this.rawConnection );
+
         // Create the wres.MeasurementUnit table and the wres.UnitConversion table
-        UnitMapperTest.testDatabase.createMeasurementUnitTable( this.liquibaseDatabase );
-        UnitMapperTest.testDatabase.createUnitConversionTable( this.liquibaseDatabase );
+        UnitMapperTest.testDatabase.createMeasurementUnitTable( liquibaseDatabase );
+        UnitMapperTest.testDatabase.createUnitConversionTable( liquibaseDatabase );
     }
 
     @Test
@@ -99,31 +98,31 @@ public class UnitMapperTest
     {
         // Create the unit mapper for CMS
         UnitMapper mapper = UnitMapper.of( "CMS" );
-        
+
         // Get the identifier for CFS
         String script = "SELECT measurementunit_id "
                         + "FROM wres.MeasurementUnit "
                         + "WHERE unit_name = 'CFS'";
 
         DataScripter scripter = new DataScripter( script );
-        
+
         Integer measurementUnitId;
-        
-        try( DataProvider provider = scripter.buffer() )
+
+        try ( DataProvider provider = scripter.buffer() )
         {
             measurementUnitId = provider.getInt( "measurementunit_id" );
         }
-        
+
         DoubleUnaryOperator converter = mapper.getUnitMapper( measurementUnitId );
-        
+
         // 1.0 CFS = 35.3147 CMS. Check with delta 5 d.p.
         assertEquals( 1.0, converter.applyAsDouble( 35.3147 ), 0.00001 );
-        
+
         // Assertions completed, drop the tables
         UnitMapperTest.testDatabase.dropMeasurementUnitTable( this.rawConnection );
-        UnitMapperTest.testDatabase.dropUnitConversionTable( this.rawConnection );  
+        UnitMapperTest.testDatabase.dropUnitConversionTable( this.rawConnection );
     }
-    
+
     @After
     public void tearDown() throws SQLException
     {
