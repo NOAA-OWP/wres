@@ -238,7 +238,7 @@ public class ObservationRetrieverTest
         // There is no wres abstraction to help with this, but there is a static helper
         this.variableFeatureId = Features.getVariableFeatureByFeature( feature, variable.getId() );
 
-        assertNotNull( variable.getId() );
+        assertNotNull( this.variableFeatureId );
 
         // Get the measurement units for CFS
         MeasurementDetails measurement = new MeasurementDetails();
