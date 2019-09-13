@@ -15,13 +15,11 @@ import wres.io.utilities.DataScripter;
 import wres.io.utilities.ScriptBuilder;
 
 /**
- * A collection of functions for mapping between measurement units, as recognized by the WRES database. Supplies a
- * {@link DoubleUnaryOperator} to map between an existing unit, which is known at conversion time, and a desired unit, 
- * which is known on construction. In other words, this class contains a cache of all possible unit conversions for
- * the desired unit supplied on construction. 
- * 
- * double values in a required unit, supplied on construction, from an existing
- * <code>measurementunit_id</code>, which is known at runtime.
+ * A collection of functions for mapping between measurement units, as recognized by the WRES database. Construct 
+ * with a desired measurement unit then call {@link #getUnitMapper(Integer)} with the existing unit, identified with 
+ * its <code>measurementunit_id</code>, which is known at conversion time. In other words, this class contains a cache 
+ * of all possible unit conversions for the desired unit supplied on construction. Create one instance of this class
+ * per evaluation and inject wherever a unit conversion is needed.
  * 
  * @author james.brown@hydrosolved.com
  */
