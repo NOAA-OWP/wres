@@ -121,6 +121,9 @@ class UnitMapper
         }
 
         DataScripter dataScripter = new DataScripter( script );
+        
+        // Set high priority
+        dataScripter.setHighPriority( true );
 
         // Retrieve the conversions
         try ( DataProvider provider = dataScripter.buffer() )

@@ -12,7 +12,7 @@
             </not>
         </preConditions>
         <createTable tableName="MeasurementUnit" schemaName="wres">
-            <column name="measurementunit_id" type="SMALLINT" autoIncrement="true">
+            <column name="measurementunit_id" type="INTEGER" autoIncrement="true">
                 <constraints nullable="false" primaryKey="true"/>
             </column>
             <column name="unit_name" type="VARCHAR" remarks="Name or abbreviation for a unit of measurement">

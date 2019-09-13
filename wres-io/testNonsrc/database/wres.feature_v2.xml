@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="wres.Feature - Create feature table for any dbms" author="James Brown" onValidationFail="MARK_RAN">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="Feature" schemaName="wres" />
+            </not>
+        </preConditions>
+        <createTable tableName="Feature" schemaName="wres">
+            <column name="feature_id" type="serial" autoIncrement="true">
+                <constraints nullable="false" primaryKeyName="feature_pk" primaryKey="true" />
+            </column>
+            <column name="comid" type="int" remarks="NHDPlus Common Identifier"/>
+            <column name="lid" type="VARCHAR" remarks="Location ID" />
+            <column name="gage_id" type="VARCHAR" remarks="Unique ID for a gage" />
+            <column name="region" type="VARCHAR" remarks="The region that contains the feature" />
+            <column name="state" type="VARCHAR" remarks="The state which contains the feature" />
+            <column name="huc" type="VARCHAR" remarks="The Hydrologic Unit Code for the feature" />
+            <column name="feature_name" type="VARCHAR" remarks="The long form name for the feature" />
+            <column name="latitude" type="real" remarks="The latitude of the feature" />
+            <column name="longitude" type="real" remarks="The longitude of the feature" />
+        </createTable>
+        <createIndex tableName="Feature" schemaName="wres" indexName="feature_lid_idx">
+            <column name="lid" />
+        </createIndex>
+        <comment>
+            The wres.Feature table has been created.
+        </comment>
+    </changeSet>
+</databaseChangeLog>

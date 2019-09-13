@@ -119,7 +119,6 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         }
 
         return this.getTimeSeriesFromScript( script, this.getDataSupplier() )
-                   .stream()
                    .findFirst();
     }
 
@@ -210,7 +209,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
                           script );
         }
 
-        return this.getTimeSeriesFromScript( script, this.getDataSupplier() ).stream();
+        return this.getTimeSeriesFromScript( script, this.getDataSupplier() );
     }
     
     /**
@@ -246,7 +245,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
                           script );
         }
         
-        return this.getTimeSeriesFromScript( script, this.getDataSupplier() ).stream();
+        return this.getTimeSeriesFromScript( script, this.getDataSupplier() );
     }
 
     @Override

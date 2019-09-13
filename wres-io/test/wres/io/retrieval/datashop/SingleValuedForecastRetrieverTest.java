@@ -16,9 +16,6 @@ import org.junit.Test;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindow;
 import wres.io.config.LeftOrRightOrBaseline;
-import wres.io.retrieval.datashop.SingleValuedForecastRetriever;
-import wres.io.retrieval.datashop.TimeSeriesRetriever;
-import wres.io.retrieval.datashop.Retriever;
 
 /**
  * Class that illustrates reading of single-valued forecasts.
