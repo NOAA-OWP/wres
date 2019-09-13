@@ -70,7 +70,7 @@ public class ObservationRetrieverTest
      * A project_id for testing;
      */
 
-    private final Integer projectId = 1;
+    private static final Integer PROJECT_ID = 1;
 
     /**
      * A variablefeature_id for testing.
@@ -82,13 +82,13 @@ public class ObservationRetrieverTest
      * A {@link LeftOrRightOrBaseline} for testing.
      */
 
-    private final LeftOrRightOrBaseline lrb = LeftOrRightOrBaseline.LEFT;
+    private static final LeftOrRightOrBaseline LRB = LeftOrRightOrBaseline.LEFT;
 
     /**
      * The measurement units for testing.
      */
 
-    private final String units = "CFS";
+    private static final String UNITS = "CFS";
 
     @BeforeClass
     public static void oneTimeSetup()
@@ -111,7 +111,7 @@ public class ObservationRetrieverTest
     public void setup() throws Exception
     {
         this.createTheConnectionAndSchema();
-        this.addTheDatabaseTables();
+        this.addTheDatabaseAndTables();
         this.addAnObservedTimeSeriesWithTenEventsToTheDatabase();
     }
 
@@ -151,7 +151,7 @@ public class ObservationRetrieverTest
      * @throws LiquibaseException if the tables could not be created
      */
 
-    private void addTheDatabaseTables() throws LiquibaseException
+    private void addTheDatabaseAndTables() throws LiquibaseException
     {
         // Create the required tables
         Database liquibaseDatabase =
@@ -197,12 +197,12 @@ public class ObservationRetrieverTest
 
         // Add a project 
         Project project =
-                new Project( new ProjectConfig( null, null, null, null, null, "test_project" ), this.projectId );
+                new Project( new ProjectConfig( null, null, null, null, null, "test_project" ), PROJECT_ID );
         project.save();
 
         assertTrue( project.performedInsert() );
 
-        assertEquals( projectId, project.getId() );
+        assertEquals( PROJECT_ID, project.getId() );
 
         // Add a project source
         // There is no wres abstraction to help with this
@@ -211,9 +211,9 @@ public class ObservationRetrieverTest
 
         //Format 
         projectSourceInsert = MessageFormat.format( projectSourceInsert,
-                                                    this.projectId,
+                                                    PROJECT_ID,
                                                     sourceId,
-                                                    this.lrb.value() );
+                                                    LRB.value() );
 
         DataScripter script = new DataScripter( projectSourceInsert );
         int rows = script.execute();
@@ -243,7 +243,7 @@ public class ObservationRetrieverTest
         // Get the measurement units for CFS
         MeasurementDetails measurement = new MeasurementDetails();
 
-        measurement.setUnit( this.units );
+        measurement.setUnit( UNITS );
         measurement.save();
         Integer measurementUnitId = measurement.getId();
 
@@ -305,17 +305,17 @@ public class ObservationRetrieverTest
     }
 
     @Test
-    public void testRetrievalOfObservedTimeSeriesWithTenEvents() throws SQLException
+    public void testRetrievalOfObservedTimeSeriesWithTenEvents()
     {
         // Desired units are the same as the existing units
-        UnitMapper mapper = UnitMapper.of( this.units );
+        UnitMapper mapper = UnitMapper.of( UNITS );
 
         // Build the retriever
         TimeSeriesRetriever<Double> observedRetriever =
-                new ObservationRetriever.Builder().setProjectId( this.projectId )
+                new ObservationRetriever.Builder().setProjectId( PROJECT_ID )
                                                   .setVariableFeatureId( this.variableFeatureId )
                                                   .setUnitMapper( mapper )
-                                                  .setLeftOrRightOrBaseline( this.lrb )
+                                                  .setLeftOrRightOrBaseline( LRB )
                                                   .build();
 
         // Get the time-series
@@ -324,7 +324,7 @@ public class ObservationRetrieverTest
         // Stream into a collection
         List<TimeSeries<Double>> actualCollection = observedSeries.collect( Collectors.toList() );
 
-        // There is only one time-series
+        // There is only one time-series, so assert that
         assertEquals( 1, actualCollection.size() );
         TimeSeries<Double> actualSeries = actualCollection.get( 0 );
 
