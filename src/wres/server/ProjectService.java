@@ -61,7 +61,11 @@ public class ProjectService
             ProjectConfigPlus projectPlus =
                     ProjectConfigPlus.from( rawProjectConfig,
                                             "a web request" );
-            projectId = RANDOM.nextLong();
+
+            // Guarantee a positive number. Using Math.abs would open up failure
+            // in edge cases. A while loop seems complex. Thanks to Ted Hopp
+            // on StackOverflow question id 5827023.
+            projectId = RANDOM.nextLong() & Long.MAX_VALUE;
 
             Control control = new Control();
             control.accept( projectPlus );

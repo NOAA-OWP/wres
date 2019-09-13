@@ -241,7 +241,11 @@ public class WresJob
 
         try ( Channel channel = connection.createChannel() )
         {
-            long someRandomNumber = RANDOM.nextLong();
+            // Guarantee a positive number. Using Math.abs would open up failure
+            // in edge cases. A while loop seems complex. Thanks to Ted Hopp
+            // on StackOverflow question id 5827023.
+            long someRandomNumber = RANDOM.nextLong() & Long.MAX_VALUE;
+
             String jobId = String.valueOf( someRandomNumber );
 
             channel.queueDeclare( SEND_QUEUE_NAME, false, false, false, null );
