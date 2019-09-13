@@ -23,8 +23,7 @@ import org.powermock.modules.junit4.PowerMockRunner;
 import static org.junit.Assert.assertEquals;
 
 import wres.system.DatabaseConnectionSupplier;
-import wres.io.utilities.DataProvider;
-import wres.io.utilities.DataScripter;
+import wres.io.data.details.MeasurementDetails;
 import wres.io.utilities.TestDatabase;
 import wres.system.SystemSettings;
 
@@ -94,33 +93,22 @@ public class UnitMapperTest
     }
 
     @Test
-    public void checkConversionOfCFSToCMS() throws SQLException
+    public void testConversionOfCFSToCMS() throws SQLException
     {
         // Create the unit mapper for CMS
         UnitMapper mapper = UnitMapper.of( "CMS" );
 
-        // Get the identifier for CFS
-        String script = "SELECT measurementunit_id "
-                        + "FROM wres.MeasurementUnit "
-                        + "WHERE unit_name = 'CFS'";
-
-        DataScripter scripter = new DataScripter( script );
-
-        Integer measurementUnitId;
-
-        try ( DataProvider provider = scripter.buffer() )
-        {
-            measurementUnitId = provider.getInt( "measurementunit_id" );
-        }
+        // Obtain the measurement units for CFS
+        MeasurementDetails measurement = new MeasurementDetails();
+        String units = "CFS";
+        measurement.setUnit( units );
+        measurement.save();
+        Integer measurementUnitId = measurement.getId();
 
         DoubleUnaryOperator converter = mapper.getUnitMapper( measurementUnitId );
 
         // 1.0 CFS = 35.3147 CMS. Check with delta 5 d.p.
         assertEquals( 1.0, converter.applyAsDouble( 35.3147 ), 0.00001 );
-
-        // Assertions completed, drop the tables
-        UnitMapperTest.testDatabase.dropMeasurementUnitTable( this.rawConnection );
-        UnitMapperTest.testDatabase.dropUnitConversionTable( this.rawConnection );
     }
 
     @After

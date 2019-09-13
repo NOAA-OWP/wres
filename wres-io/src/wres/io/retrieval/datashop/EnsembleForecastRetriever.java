@@ -157,7 +157,7 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
                           script );
         }
 
-        return this.getTimeSeriesFromScript( script, this.getDataSupplier() ).stream();
+        return this.getTimeSeriesFromScript( script, this.getDataSupplier() );
     }
 
     @Override

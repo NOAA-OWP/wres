@@ -177,7 +177,7 @@ public class TestDatabase
      * Create the WRES source table using given liquibase database.
      * Expected to be called within a test requiring the source table. If you
      * call createSourceTable at the beginning of a test, you must call
-     * dropSourcesTable at the end of the test. You must also call
+     * dropSourceTable at the end of the test. You must also call
      * dropLiquibaseChangeTables at the end of the test.
      * @param liquibaseDatabase the Liquibase Database instance to use
      * @throws LiquibaseException when liquibase migration fails
@@ -208,6 +208,191 @@ public class TestDatabase
             statement.execute( "DROP TABLE wres.Source" );
         }
     }
+    
+    
+    /**
+     * Create the WRES source table using given liquibase database.
+     * Expected to be called within a test requiring the source table. If you
+     * call createProjectSourceTable at the beginning of a test, you must call
+     * dropProjectSourceTable at the end of the test. You must also call
+     * dropLiquibaseChangeTables at the end of the test.
+     * @param liquibaseDatabase the Liquibase Database instance to use
+     * @throws LiquibaseException when liquibase migration fails
+     */
+
+    public void createProjectSourceTable( Database liquibaseDatabase )
+            throws LiquibaseException
+    {
+        Liquibase liquibase = new Liquibase( "database/wres.projectsource_v4.xml",
+                                             new ClassLoaderResourceAccessor(),
+                                             liquibaseDatabase );
+        liquibase.update( new Contexts() );
+
+    }
+
+
+    /**
+     * Drop the WRES source table using given connection.
+     * Expected to be called at the same level as createProjectSourceTable, namely
+     * within a test that requires the sources table, at the end of the test.
+     * @param connection the connection to use
+     * @throws SQLException when drop fails
+     */
+    public void dropProjectSourceTable( Connection connection ) throws SQLException
+    {
+        try ( Statement statement = connection.createStatement() )
+        {
+            statement.execute( "DROP TABLE wres.ProjectSource" );
+        }
+    }        
+    
+    
+    /**
+     * Create the WRES source table using given liquibase database.
+     * Expected to be called within a test requiring the source table. If you
+     * call createVariableFeatureTable at the beginning of a test, you must call
+     * dropVariableFeatureTable at the end of the test. You must also call
+     * dropLiquibaseChangeTables at the end of the test.
+     * @param liquibaseDatabase the Liquibase Database instance to use
+     * @throws LiquibaseException when liquibase migration fails
+     */
+
+    public void createVariableFeatureTable( Database liquibaseDatabase )
+            throws LiquibaseException
+    {
+        Liquibase liquibase = new Liquibase( "database/wres.variablefeature_v3.xml",
+                                             new ClassLoaderResourceAccessor(),
+                                             liquibaseDatabase );
+        liquibase.update( new Contexts() );
+
+    }
+
+
+    /**
+     * Drop the WRES source table using given connection.
+     * Expected to be called at the same level as createVariableFeatureTable, namely
+     * within a test that requires the sources table, at the end of the test.
+     * @param connection the connection to use
+     * @throws SQLException when drop fails
+     */
+    public void dropVariableFeatureTable( Connection connection ) throws SQLException
+    {
+        try ( Statement statement = connection.createStatement() )
+        {
+            statement.execute( "DROP TABLE wres.VariableFeature" );
+        }
+    }  
+    
+    
+    /**
+     * Create the WRES source table using given liquibase database.
+     * Expected to be called within a test requiring the source table. If you
+     * call createVariableTable at the beginning of a test, you must call
+     * dropVariableTable at the end of the test. You must also call
+     * dropLiquibaseChangeTables at the end of the test.
+     * @param liquibaseDatabase the Liquibase Database instance to use
+     * @throws LiquibaseException when liquibase migration fails
+     */
+
+    public void createVariableTable( Database liquibaseDatabase )
+            throws LiquibaseException
+    {
+        Liquibase liquibase = new Liquibase( "database/wres.variable_v2.xml",
+                                             new ClassLoaderResourceAccessor(),
+                                             liquibaseDatabase );
+        liquibase.update( new Contexts() );
+
+    }
+
+
+    /**
+     * Drop the WRES source table using given connection.
+     * Expected to be called at the same level as createVariableTable, namely
+     * within a test that requires the sources table, at the end of the test.
+     * @param connection the connection to use
+     * @throws SQLException when drop fails
+     */
+    public void dropVariableTable( Connection connection ) throws SQLException
+    {
+        try ( Statement statement = connection.createStatement() )
+        {
+            statement.execute( "DROP TABLE wres.VariableFeature" );
+        }
+    }  
+    
+    
+    /**
+     * Create the WRES source table using given liquibase database.
+     * Expected to be called within a test requiring the source table. If you
+     * call createFeatureTable at the beginning of a test, you must call
+     * dropFeatureTable at the end of the test. You must also call
+     * dropLiquibaseChangeTables at the end of the test.
+     * @param liquibaseDatabase the Liquibase Database instance to use
+     * @throws LiquibaseException when liquibase migration fails
+     */
+
+    public void createFeatureTable( Database liquibaseDatabase )
+            throws LiquibaseException
+    {
+        Liquibase liquibase = new Liquibase( "database/wres.feature_v2.xml",
+                                             new ClassLoaderResourceAccessor(),
+                                             liquibaseDatabase );
+        liquibase.update( new Contexts() );
+
+    }
+
+
+    /**
+     * Drop the WRES source table using given connection.
+     * Expected to be called at the same level as createFeatureTable, namely
+     * within a test that requires the sources table, at the end of the test.
+     * @param connection the connection to use
+     * @throws SQLException when drop fails
+     */
+    public void dropFeatureTable( Connection connection ) throws SQLException
+    {
+        try ( Statement statement = connection.createStatement() )
+        {
+            statement.execute( "DROP TABLE wres.Feature" );
+        }
+    }  
+    
+    
+    /**
+     * Create the WRES source table using given liquibase database.
+     * Expected to be called within a test requiring the source table. If you
+     * call createObservationTable at the beginning of a test, you must call
+     * dropObservationTable at the end of the test. You must also call
+     * dropLiquibaseChangeTables at the end of the test.
+     * @param liquibaseDatabase the Liquibase Database instance to use
+     * @throws LiquibaseException when liquibase migration fails
+     */
+
+    public void createObservationTable( Database liquibaseDatabase )
+            throws LiquibaseException
+    {
+        Liquibase liquibase = new Liquibase( "database/wres.observation_v4.xml",
+                                             new ClassLoaderResourceAccessor(),
+                                             liquibaseDatabase );
+        liquibase.update( new Contexts() );
+
+    }
+
+
+    /**
+     * Drop the WRES source table using given connection.
+     * Expected to be called at the same level as createObservationTable, namely
+     * within a test that requires the sources table, at the end of the test.
+     * @param connection the connection to use
+     * @throws SQLException when drop fails
+     */
+    public void dropObservationbTable( Connection connection ) throws SQLException
+    {
+        try ( Statement statement = connection.createStatement() )
+        {
+            statement.execute( "DROP TABLE wres.Observation" );
+        }
+    }      
     
     
     /**

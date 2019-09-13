@@ -1,6 +1,5 @@
 package wres.io.retrieval.datashop;
 
-import java.time.Instant;
 import java.util.Optional;
 
 import java.util.function.DoubleUnaryOperator;
@@ -12,8 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.datamodel.time.TimeSeries;
-import wres.datamodel.time.TimeWindow;
-import wres.io.config.LeftOrRightOrBaseline;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.ScriptBuilder;
 
@@ -111,23 +108,7 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
     public Stream<TimeSeries<Double>> get( LongStream identifiers )
     {
         throw new UnsupportedOperationException( NO_IDENTIFIER_ERROR );
-    }
-    
-    public static void main (String[] args)
-    {
-        TimeWindow filter =
-                TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ), Instant.parse( "1990-01-01T00:00:00Z" ) );
-
-        TimeSeriesRetriever<Double> timeSeriesData =
-                new ObservationRetriever.Builder().setProjectId( 7 )
-                                                          .setVariableFeatureId( 1 )
-                                                          .setTimeWindow( filter )
-                                                          .setLeftOrRightOrBaseline( LeftOrRightOrBaseline.LEFT )
-                                                          .build();
-
-        timeSeriesData.getAll();
-        
-    }   
+    } 
     
     /**
      * Overrides the default implementation to get all time-series in one pull, rather than one pull for each series.
@@ -162,7 +143,7 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
                           script );
         }
         
-        return this.getTimeSeriesFromScript( script, this.getDataSupplier() ).stream();
+        return this.getTimeSeriesFromScript( script, this.getDataSupplier() );
     }
 
     @Override

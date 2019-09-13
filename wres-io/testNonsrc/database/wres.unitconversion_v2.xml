@@ -35,6 +35,18 @@
             <column name="from_unit" type="smallint" />
             <column name="to_unit" type="smallint" />
         </createIndex>
+        <comment>Adding identity conversions</comment>
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit)
+            SELECT measurementunit_id, measurementunit_id
+            FROM wres.MeasurementUnit M
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.UnitConversion UC
+                WHERE UC.from_unit = M.measurementunit_id
+                    AND UC.to_unit = M.measurementunit_id
+            );
+        </sql>
     </changeSet>
     <changeSet id="Volumn and Flow UnitConversion v1.0" author="James Brown">
         <sql>

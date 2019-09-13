@@ -3,12 +3,14 @@ package wres.io.retrieval.datashop;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,7 +88,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * @throws DataAccessException if data could not be accessed for whatever reason
      */
 
-    <S> Set<TimeSeries<S>> getTimeSeriesFromScript( String script, Function<DataProvider, S> mapper )
+    <S> Stream<TimeSeries<S>> getTimeSeriesFromScript( String script, Function<DataProvider, S> mapper )
     {
         // Acquire the raw time-series data from the db for the input time-series identifier
         DataScripter scripter = new DataScripter( script );
@@ -95,11 +97,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
         try ( DataProvider provider = scripter.buffer() )
         {
-
-            // Identifier for the last series read
-            int lastSeriesId = Integer.MIN_VALUE;
-
-            TimeSeriesBuilder<S> builder = new TimeSeriesBuilder<>();
+            Map<Integer,TimeSeriesBuilder<S>> builders = new TreeMap<>();;
 
             Set<TimeSeries<S>> returnMe = new HashSet<>();
 
@@ -107,14 +105,15 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             {
                 int seriesId = provider.getInt( "series_id" );
 
+                TimeSeriesBuilder<S> builder = builders.get( seriesId );
+                
                 // Start a new series when required                 
-                if ( seriesId != lastSeriesId )
+                if ( Objects.isNull( builder ) )
                 {
-                    lastSeriesId = seriesId;
-                    returnMe.add( builder.build() );
                     builder = new TimeSeriesBuilder<>();
+                    builders.put( seriesId, builder );
                 }
-
+                
                 // Get the valid time
                 Instant validTime = provider.getInstant( "valid_time" );
 
@@ -134,7 +133,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                           script.hashCode(),
                           returnMe.size() );
 
-            return Collections.unmodifiableSet( returnMe );
+            return builders.values().stream().map( TimeSeriesBuilder::build );
         }
         catch ( SQLException e )
         {
