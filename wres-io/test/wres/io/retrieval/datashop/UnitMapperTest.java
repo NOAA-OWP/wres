@@ -45,11 +45,10 @@ public class UnitMapperTest
     @BeforeClass
     public static void oneTimeSetup()
     {
-        // TODO: with HikariCP #54944, try to move this to @BeforeTest rather
+        // TODO: with HikariCP #54944, try to move this to @Before rather
         // than having a static one-time db. The only reason we have the static
         // variable instead of an instance variable is because c3p0 didn't work
         // properly with the instance variable.
-
         UnitMapperTest.testDatabase = new TestDatabase( "UnitMapperTest" );
 
         // Even when pool is closed/nulled/re-instantiated for each test, the
