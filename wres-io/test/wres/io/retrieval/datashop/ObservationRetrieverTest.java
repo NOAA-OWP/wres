@@ -12,8 +12,6 @@ import java.text.MessageFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -176,8 +174,6 @@ public class ObservationRetrieverTest
 
     private void addAnObservedTimeSeriesWithTenEventsToTheDatabase() throws SQLException
     {
-        // Add some data to the database
-
         // Add a source
         SourceDetails.SourceKey sourceKey = SourceDetails.createKey( URI.create( "/this/is/just/a/test" ),
                                                                      "2017-06-16 11:13:00",
@@ -265,9 +261,6 @@ public class ObservationRetrieverTest
                                    + "source_id, scale_period, scale_function) "
                                    + "VALUES ({0},''{1}'',{2},{3},{4},{5},''{6}'')";
 
-        // Collect the expected events for testing on retrieval
-        SortedSet<Event<Double>> expectedEvents = new TreeSet<>();
-
         // Insert 10 observed events into the db
         Instant observationTime = seriesStart;
         double observedValue = valueStart;
@@ -276,8 +269,6 @@ public class ObservationRetrieverTest
             // Increment the valid datetime and value
             observationTime = observationTime.plus( seriesIncrement );
             observedValue = observedValue + valueIncrement;
-
-            expectedEvents.add( Event.of( observationTime, observedValue ) );
 
             // Insert
             // Note that H2 attempts to convert Z to local time and stores that, whereas postgres
