@@ -335,19 +335,19 @@ public abstract class Chart2DTestDataGenerator
                         }
                     }
 
-                    final Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
-                    output.put( MetricDimension.FORECAST_PROBABILITY, res[0] ); //Forecast probabilities
-                    output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, res[1] ); //Observed | forecast probabilities
-                    output.put( MetricDimension.SAMPLE_SIZE, res[2] ); //Observed | forecast probabilities
+                    final Map<MetricDimension, VectorOfDoubles> output = new EnumMap<>( MetricDimension.class );
+                    output.put( MetricDimension.FORECAST_PROBABILITY, VectorOfDoubles.of( res[0] ) ); //Forecast probabilities
+                    output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, VectorOfDoubles.of( res[1] ) ); //Observed | forecast probabilities
+                    output.put( MetricDimension.SAMPLE_SIZE, VectorOfDoubles.of( res[2] ) ); //Observed | forecast probabilities
                     final DiagramStatistic value =
-                            DiagramStatistic.ofDiagramStatistic( output,
-                                                                      StatisticMetadata.of( SampleMetadata.of( source,
-                                                                                                               window,
-                                                                                                               OneOrTwoThresholds.of( q ) ),
-                                                                                            1000,
-                                                                                            MeasurementUnit.of(),
-                                                                                            MetricConstants.RELIABILITY_DIAGRAM,
-                                                                                            MetricConstants.MAIN ) );
+                            DiagramStatistic.of( output,
+                                                 StatisticMetadata.of( SampleMetadata.of( source,
+                                                                                          window,
+                                                                                          OneOrTwoThresholds.of( q ) ),
+                                                                       1000,
+                                                                       MeasurementUnit.of(),
+                                                                       MetricConstants.RELIABILITY_DIAGRAM,
+                                                                       MetricConstants.MAIN ) );
 
                     //Append result
                     rawData.add( value );
@@ -438,18 +438,18 @@ public abstract class Chart2DTestDataGenerator
                         }
                     }
 
-                    final Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
-                    output.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, roc[0] ); //PoFD
-                    output.put( MetricDimension.PROBABILITY_OF_DETECTION, roc[1] ); //PoD
+                    final Map<MetricDimension, VectorOfDoubles> output = new EnumMap<>( MetricDimension.class );
+                    output.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, VectorOfDoubles.of( roc[0] ) ); //PoFD
+                    output.put( MetricDimension.PROBABILITY_OF_DETECTION, VectorOfDoubles.of( roc[1] ) ); //PoD
                     final DiagramStatistic value =
-                            DiagramStatistic.ofDiagramStatistic( output,
-                                                                      StatisticMetadata.of( SampleMetadata.of( source,
-                                                                                                               window,
-                                                                                                               OneOrTwoThresholds.of( q ) ),
-                                                                                            1000,
-                                                                                            MeasurementUnit.of(),
-                                                                                            MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
-                                                                                            MetricConstants.MAIN ) );
+                            DiagramStatistic.of( output,
+                                                 StatisticMetadata.of( SampleMetadata.of( source,
+                                                                                          window,
+                                                                                          OneOrTwoThresholds.of( q ) ),
+                                                                       1000,
+                                                                       MeasurementUnit.of(),
+                                                                       MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
+                                                                       MetricConstants.MAIN ) );
 
                     //Append result
                     rawData.add( value );
@@ -533,18 +533,18 @@ public abstract class Chart2DTestDataGenerator
                     }
                 }
 
-                final Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
-                output.put( MetricDimension.RANK_ORDER, rh[0] );
-                output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, rh[1] );
+                final Map<MetricDimension, VectorOfDoubles> output = new EnumMap<>( MetricDimension.class );
+                output.put( MetricDimension.RANK_ORDER, VectorOfDoubles.of( rh[0] ) );
+                output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, VectorOfDoubles.of( rh[1] ) );
                 final DiagramStatistic value =
-                        DiagramStatistic.ofDiagramStatistic( output,
-                                                                  StatisticMetadata.of( SampleMetadata.of( source,
-                                                                                                           window,
-                                                                                                           OneOrTwoThresholds.of( q ) ),
-                                                                                        1000,
-                                                                                        MeasurementUnit.of(),
-                                                                                        MetricConstants.RANK_HISTOGRAM,
-                                                                                        MetricConstants.MAIN ) );
+                        DiagramStatistic.of( output,
+                                             StatisticMetadata.of( SampleMetadata.of( source,
+                                                                                      window,
+                                                                                      OneOrTwoThresholds.of( q ) ),
+                                                                   1000,
+                                                                   MeasurementUnit.of(),
+                                                                   MetricConstants.RANK_HISTOGRAM,
+                                                                   MetricConstants.MAIN ) );
 
                 //Append result
                 rawData.add( value );
@@ -610,18 +610,18 @@ public abstract class Chart2DTestDataGenerator
             final DoubleMatrix2DResult t = (DoubleMatrix2DResult) data.getResult( leadTime );
             final double[][] qq = t.getResult().toArray();
 
-            final Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
-            output.put( MetricDimension.PREDICTED_QUANTILES, qq[0] );
-            output.put( MetricDimension.OBSERVED_QUANTILES, qq[1] );
+            final Map<MetricDimension, VectorOfDoubles> output = new EnumMap<>( MetricDimension.class );
+            output.put( MetricDimension.PREDICTED_QUANTILES, VectorOfDoubles.of( qq[0] ) );
+            output.put( MetricDimension.OBSERVED_QUANTILES, VectorOfDoubles.of( qq[1] ) );
             final DiagramStatistic value =
-                    DiagramStatistic.ofDiagramStatistic( output,
-                                                              StatisticMetadata.of( SampleMetadata.of( source,
-                                                                                                       window,
-                                                                                                       threshold ),
-                                                                                    1000,
-                                                                                    MeasurementUnit.of( "MILLIMETER" ),
-                                                                                    MetricConstants.QUANTILE_QUANTILE_DIAGRAM,
-                                                                                    MetricConstants.MAIN ) );
+                    DiagramStatistic.of( output,
+                                         StatisticMetadata.of( SampleMetadata.of( source,
+                                                                                  window,
+                                                                                  threshold ),
+                                                               1000,
+                                                               MeasurementUnit.of( "MILLIMETER" ),
+                                                               MetricConstants.QUANTILE_QUANTILE_DIAGRAM,
+                                                               MetricConstants.MAIN ) );
 
             //Append result
             rawData.add( value );

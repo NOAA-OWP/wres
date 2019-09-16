@@ -45,26 +45,6 @@ public class DiagramStatistic implements Statistic<Map<MetricDimension, VectorOf
     }
 
     /**
-     * Return a {@link DiagramStatistic}.
-     * 
-     * @param statistic the statistic data
-     * @param meta the metadata
-     * @return a {@link DiagramStatistic}
-     * @throws NullPointerException if the statistic is null
-     */
-    @Deprecated
-    public static DiagramStatistic ofDiagramStatistic( Map<MetricDimension, double[]> statistic,
-                                                       StatisticMetadata meta )
-    {
-        Objects.requireNonNull( statistic, "Specify a non-null map of inputs." );
-
-        EnumMap<MetricDimension, VectorOfDoubles> map = new EnumMap<>( MetricDimension.class );
-        statistic.forEach( ( key, value ) -> map.put( key, VectorOfDoubles.of( value ) ) );
-
-        return DiagramStatistic.of( map, meta );
-    }
-
-    /**
      * Returns a prescribed vector from the map or null if no mapping exists.
      * 
      * @param identifier the identifier

@@ -12,6 +12,7 @@ import java.text.MessageFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.TimeZone;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -20,7 +21,6 @@ import liquibase.database.Database;
 import liquibase.exception.LiquibaseException;
 
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -38,6 +38,7 @@ import wres.datamodel.scale.TimeScale.TimeScaleFunction;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
+import wres.datamodel.time.TimeWindow;
 import wres.io.config.LeftOrRightOrBaseline;
 import wres.io.data.caching.Features;
 import wres.io.data.details.FeatureDetails;
@@ -59,8 +60,8 @@ import wres.system.SystemSettings;
 @PowerMockIgnore( { "javax.management.*", "java.io.*", "javax.xml.*", "com.sun.*", "org.xml.*" } )
 public class ObservationRetrieverTest
 {
-    private static TestDatabase testDatabase;
-    private static ComboPooledDataSource dataSource;
+    private TestDatabase testDatabase;
+    private ComboPooledDataSource dataSource;
     private Connection rawConnection;
     private @Mock DatabaseConnectionSupplier mockConnectionSupplier;
 
@@ -91,27 +92,21 @@ public class ObservationRetrieverTest
     @BeforeClass
     public static void oneTimeSetup()
     {
-        // TODO: with HikariCP #54944, try to move this to @Before rather
-        // than having a static one-time db. The only reason we have the static
-        // variable instead of an instance variable is because c3p0 didn't work
-        // properly with the instance variable.
-        ObservationRetrieverTest.testDatabase = new TestDatabase( "ObservationRetrieverTest" );
-
-        // Even when pool is closed/nulled/re-instantiated for each test, the
-        // old c3p0 pool is somehow found by the 2nd and following test runs.
-        // Got around it by having a single pool for all the tests.
-        // Create our own test data source connecting to in-memory H2 database
-        ObservationRetrieverTest.dataSource = ObservationRetrieverTest.testDatabase.getNewComboPooledDataSource();
+        // Set the JVM timezone for use by H2. Needs to happen before anything else
+        TimeZone.setDefault( TimeZone.getTimeZone( "UTC" ) );
     }
 
     @Before
     public void setup() throws Exception
     {
+        this.testDatabase = new TestDatabase( "ObservationRetrieverTest" );
+        this.dataSource = this.testDatabase.getNewComboPooledDataSource();
+        
         this.createTheConnectionAndSchema();
         this.addTheDatabaseAndTables();
         this.addAnObservedTimeSeriesWithTenEventsToTheDatabase();
     }
-
+    
     /**
      * Does the basic set-up work to create a connection and schema.
      * 
@@ -121,11 +116,11 @@ public class ObservationRetrieverTest
     private void createTheConnectionAndSchema() throws Exception
     {
         // Also mock a plain datasource (which works per test unlike c3p0)
-        this.rawConnection = DriverManager.getConnection( ObservationRetrieverTest.testDatabase.getJdbcString() );
+        this.rawConnection = DriverManager.getConnection( this.testDatabase.getJdbcString() );
         Mockito.when( this.mockConnectionSupplier.get() ).thenReturn( this.rawConnection );
 
         // Set up a bare bones database with only the schema
-        ObservationRetrieverTest.testDatabase.createWresSchema( this.rawConnection );
+        this.testDatabase.createWresSchema( this.rawConnection );
 
         // Substitute raw connection where needed:
         PowerMockito.mockStatic( SystemSettings.class );
@@ -138,33 +133,44 @@ public class ObservationRetrieverTest
 
         // Substitute our H2 connection pool for both pools:
         PowerMockito.when( SystemSettings.class, "getConnectionPool" )
-                    .thenReturn( ObservationRetrieverTest.dataSource );
+                    .thenReturn( this.dataSource );
         PowerMockito.when( SystemSettings.class, "getHighPriorityConnectionPool" )
-                    .thenReturn( ObservationRetrieverTest.dataSource );
+                    .thenReturn( this.dataSource );
     }
 
     /**
      * Adds the required tables for the tests presented here, which is a subset of all tables.
      * @throws LiquibaseException if the tables could not be created
+     * @throws SQLException 
      */
 
-    private void addTheDatabaseAndTables() throws LiquibaseException
+    private void addTheDatabaseAndTables() throws LiquibaseException, SQLException
     {
         // Create the required tables
         Database liquibaseDatabase =
-                ObservationRetrieverTest.testDatabase.createNewLiquibaseDatabase( this.rawConnection );
+                this.testDatabase.createNewLiquibaseDatabase( this.rawConnection );
 
-        ObservationRetrieverTest.testDatabase.createSourceTable( liquibaseDatabase );
-        ObservationRetrieverTest.testDatabase.createProjectTable( liquibaseDatabase );
-        ObservationRetrieverTest.testDatabase.createProjectSourceTable( liquibaseDatabase );
-        ObservationRetrieverTest.testDatabase.createVariableTable( liquibaseDatabase );
-        ObservationRetrieverTest.testDatabase.createFeatureTable( liquibaseDatabase );
-        ObservationRetrieverTest.testDatabase.createVariableFeatureTable( liquibaseDatabase );
-        ObservationRetrieverTest.testDatabase.createObservationTable( liquibaseDatabase );
-        ObservationRetrieverTest.testDatabase.createMeasurementUnitTable( liquibaseDatabase );
-        ObservationRetrieverTest.testDatabase.createUnitConversionTable( liquibaseDatabase );
+        this.testDatabase.createSourceTable( liquibaseDatabase );
+        this.testDatabase.createProjectTable( liquibaseDatabase );
+        this.testDatabase.createProjectSourceTable( liquibaseDatabase );
+        this.testDatabase.createVariableTable( liquibaseDatabase );
+        this.testDatabase.createFeatureTable( liquibaseDatabase );
+        this.testDatabase.createVariableFeatureTable( liquibaseDatabase );
+        this.testDatabase.createObservationTable( liquibaseDatabase );
+        this.testDatabase.createMeasurementUnitTable( liquibaseDatabase );
+        this.testDatabase.createUnitConversionTable( liquibaseDatabase );
     }
 
+    /**
+     * Drops the schema, cascading to all tables.
+     * @throws SQLException if any tables or the schema failed to drop
+     */
+    private void dropTheTablesAndSchema() throws SQLException
+    {
+        this.testDatabase.dropWresSchema( this.rawConnection );
+        this.testDatabase.dropLiquibaseChangeTables( this.rawConnection ); 
+    }
+    
     /**
      * Performs the detailed set-up work to add one time-series to the database. Some assertions are made here, which
      * could fail, in order to clarify the source of a failure.
@@ -277,7 +283,7 @@ public class ObservationRetrieverTest
             // Thus, need to remove Z from the instant string
             String insert = MessageFormat.format( observationInsert,
                                                   this.variableFeatureId,
-                                                  observationTime.toString().replace( "Z", "" ),
+                                                  observationTime.toString(),
                                                   observedValue,
                                                   measurementUnitId,
                                                   sourceId,
@@ -336,21 +342,63 @@ public class ObservationRetrieverTest
         // Actual series equals expected series
         assertEquals( expectedSeries, actualSeries );
     }
+    
+    @Test
+    public void testRetrievalOfPoolShapedObservedTimeSeriesWithSevenEvents()
+    {
+        // Desired units are the same as the existing units
+        UnitMapper mapper = UnitMapper.of( UNITS );
+
+        // Build the pool boundaries
+        TimeWindow poolBoundaries =
+                TimeWindow.of( Instant.parse( "2023-04-01T03:00:00Z" ), Instant.parse( "2023-04-01T09:00:00Z" ) );
+        
+        // Build the retriever
+        TimeSeriesRetriever<Double> observedRetriever =
+                new ObservationRetriever.Builder().setProjectId( PROJECT_ID )
+                                                  .setVariableFeatureId( this.variableFeatureId )
+                                                  .setUnitMapper( mapper )
+                                                  .setTimeWindow( poolBoundaries )
+                                                  .setLeftOrRightOrBaseline( LRB )
+                                                  .build();
+
+        // Get the time-series
+        Stream<TimeSeries<Double>> observedSeries = observedRetriever.getAll();
+
+        // Stream into a collection
+        List<TimeSeries<Double>> actualCollection = observedSeries.collect( Collectors.toList() );
+
+        // There is only one time-series, so assert that
+        assertEquals( 1, actualCollection.size() );
+        TimeSeries<Double> actualSeries = actualCollection.get( 0 );
+
+        // Assert correct number of events
+        assertEquals( 7, actualSeries.getEvents().size() );
+        
+        // Create the expected series
+        TimeSeriesBuilder<Double> builder = new TimeSeriesBuilder<>();
+        TimeSeries<Double> expectedSeries =
+                builder.addEvent( Event.of( Instant.parse( "2023-04-01T03:00:00Z" ), 44.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T04:00:00Z" ), 51.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T05:00:00Z" ), 58.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T06:00:00Z" ), 65.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T07:00:00Z" ), 72.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T08:00:00Z" ), 79.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T09:00:00Z" ), 86.0 ) )
+                       .build();
+
+        // Actual series equals expected series
+        assertEquals( expectedSeries, actualSeries );
+    }    
 
     @After
     public void tearDown() throws SQLException
     {
-        ObservationRetrieverTest.testDatabase.dropWresSchema( this.rawConnection );
+        this.dropTheTablesAndSchema();
         this.rawConnection.close();
         this.rawConnection = null;
+        this.testDatabase = null;
+        this.dataSource = null;
     }
-
-    @AfterClass
-    public static void tearDownAfterAllTests()
-    {
-        ObservationRetrieverTest.dataSource.close();
-        ObservationRetrieverTest.dataSource = null;
-        ObservationRetrieverTest.testDatabase = null;
-    }
-
+    
 }

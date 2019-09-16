@@ -16,7 +16,7 @@ import wres.datamodel.VectorOfDoubles;
  * 
  * @author james.brown@hydrosolved.com
  */
-public interface SampleData<S> extends Iterable<S>
+public interface SampleData<S>
 {
 
     /**

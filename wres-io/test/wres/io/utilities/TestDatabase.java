@@ -316,7 +316,7 @@ public class TestDatabase
     {
         try ( Statement statement = connection.createStatement() )
         {
-            statement.execute( "DROP TABLE wres.VariableFeature" );
+            statement.execute( "DROP TABLE wres.Variable" );
         }
     }  
     
@@ -386,7 +386,7 @@ public class TestDatabase
      * @param connection the connection to use
      * @throws SQLException when drop fails
      */
-    public void dropObservationbTable( Connection connection ) throws SQLException
+    public void dropObservationTable( Connection connection ) throws SQLException
     {
         try ( Statement statement = connection.createStatement() )
         {

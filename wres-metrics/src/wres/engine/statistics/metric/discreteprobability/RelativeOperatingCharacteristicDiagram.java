@@ -11,6 +11,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.MissingValues;
 import wres.datamodel.Slicer;
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.DichotomousPair;
 import wres.datamodel.sampledata.pairs.DichotomousPairs;
@@ -114,9 +115,9 @@ public class RelativeOperatingCharacteristicDiagram extends Diagram<DiscreteProb
         }
 
         //Set the results
-        Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
-        output.put( MetricDimension.PROBABILITY_OF_DETECTION, pOD );
-        output.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, pOFD );
+        Map<MetricDimension, VectorOfDoubles> output = new EnumMap<>( MetricDimension.class );
+        output.put( MetricDimension.PROBABILITY_OF_DETECTION, VectorOfDoubles.of( pOD ) );
+        output.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, VectorOfDoubles.of( pOFD ) );
         final StatisticMetadata metOut =
                 StatisticMetadata.of( s.getMetadata(),
                                          this.getID(),
@@ -124,7 +125,7 @@ public class RelativeOperatingCharacteristicDiagram extends Diagram<DiscreteProb
                                          this.hasRealUnits(),
                                          s.getRawData().size(),
                                          null );
-        return DiagramStatistic.ofDiagramStatistic( output, metOut );
+        return DiagramStatistic.of( output, metOut );
     }
 
     @Override

@@ -14,6 +14,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.Location;
@@ -73,22 +74,35 @@ public final class ReliabilityDiagramTest
 
         //Check the results       
         final DiagramStatistic actual = rel.apply( input );
-        double[] expectedFProb = new double[] { 0.05490196078431369, 0.19999999999999984, 0.3000000000000002,
-                                                0.40000000000000013, 0.5, 0.5999999999999998, 0.6999999999999996,
-                                                0.8000000000000003, 0.9000000000000002,
-                                                1.0 };
-        double[] expectedOProb = new double[] { 0.0196078431372549, 0.0847457627118644, 0.12195121951219512,
-                                                0.21052631578947367, 0.36363636363636365, 0.2727272727272727,
-                                                0.47058823529411764, 0.6666666666666666,
-                                                0.7272727272727273, 0.8461538461538461 };
-        double[] expectedSample = new double[] { 102.0, 59.0, 41.0, 19.0, 22.0, 22.0, 34.0, 24.0, 11.0, 13.0 };
+        VectorOfDoubles expectedFProb = VectorOfDoubles.of( 0.05490196078431369,
+                                                            0.19999999999999984,
+                                                            0.3000000000000002,
+                                                            0.40000000000000013,
+                                                            0.5,
+                                                            0.5999999999999998,
+                                                            0.6999999999999996,
+                                                            0.8000000000000003,
+                                                            0.9000000000000002,
+                                                            1.0 );
+        VectorOfDoubles expectedOProb = VectorOfDoubles.of( 0.0196078431372549,
+                                                            0.0847457627118644,
+                                                            0.12195121951219512,
+                                                            0.21052631578947367,
+                                                            0.36363636363636365,
+                                                            0.2727272727272727,
+                                                            0.47058823529411764,
+                                                            0.6666666666666666,
+                                                            0.7272727272727273,
+                                                            0.8461538461538461 );
+        VectorOfDoubles expectedSample =
+                VectorOfDoubles.of( 102.0, 59.0, 41.0, 19.0, 22.0, 22.0, 34.0, 24.0, 11.0, 13.0 );
 
-        Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
+        Map<MetricDimension, VectorOfDoubles> output = new EnumMap<>( MetricDimension.class );
         output.put( MetricDimension.FORECAST_PROBABILITY, expectedFProb );
         output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, expectedOProb );
         output.put( MetricDimension.SAMPLE_SIZE, expectedSample );
 
-        final DiagramStatistic expected = DiagramStatistic.ofDiagramStatistic( output, m1 );
+        final DiagramStatistic expected = DiagramStatistic.of( output, m1 );
 
         assertTrue( "Difference between actual and expected Reliability Diagram.", actual.equals( expected ) );
     }
@@ -139,8 +153,8 @@ public final class ReliabilityDiagramTest
 
         DiscreteProbabilityPairs input =
                 DiscreteProbabilityPairs.of( data,
-                                                        SampleMetadata.of( MeasurementUnit.of(),
-                                                                                     identifier ) );
+                                             SampleMetadata.of( MeasurementUnit.of(),
+                                                                identifier ) );
 
         //Metadata for the output
         final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(), identifier ),
@@ -151,19 +165,26 @@ public final class ReliabilityDiagramTest
 
         //Check the results       
         final DiagramStatistic actual = rel.apply( input );
-        double[] expectedFProb = new double[] { 0.013605442176870748, 0.11224489795918367, 0.22448979591836735,
-                                                0.3469387755102041, Double.NaN, Double.NaN, 0.6326530612244898,
-                                                0.7755102040816326, 0.8520408163265306, 0.989010989010989 };
-        double[] expectedOProb =
-                new double[] { 0.16666666666666666, 0.0, 0.0, 0.0, Double.NaN, Double.NaN, 1.0, 1.0, 1.0, 1.0 };
-        double[] expectedSample = new double[] { 6.0, 2.0, 2.0, 1.0, 0.0, 0.0, 1.0, 1.0, 4.0, 13.0 };
+        VectorOfDoubles expectedFProb = VectorOfDoubles.of( 0.013605442176870748,
+                                                            0.11224489795918367,
+                                                            0.22448979591836735,
+                                                            0.3469387755102041,
+                                                            Double.NaN,
+                                                            Double.NaN,
+                                                            0.6326530612244898,
+                                                            0.7755102040816326,
+                                                            0.8520408163265306,
+                                                            0.989010989010989 );
+        VectorOfDoubles expectedOProb =
+                VectorOfDoubles.of( 0.16666666666666666, 0.0, 0.0, 0.0, Double.NaN, Double.NaN, 1.0, 1.0, 1.0, 1.0 );
+        VectorOfDoubles expectedSample = VectorOfDoubles.of( 6.0, 2.0, 2.0, 1.0, 0.0, 0.0, 1.0, 1.0, 4.0, 13.0 );
 
-        Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
+        Map<MetricDimension, VectorOfDoubles> output = new EnumMap<>( MetricDimension.class );
         output.put( MetricDimension.FORECAST_PROBABILITY, expectedFProb );
         output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, expectedOProb );
         output.put( MetricDimension.SAMPLE_SIZE, expectedSample );
 
-        final DiagramStatistic expected = DiagramStatistic.ofDiagramStatistic( output, m1 );
+        final DiagramStatistic expected = DiagramStatistic.of( output, m1 );
 
         assertTrue( "Difference between actual and expected Reliability Diagram.", actual.equals( expected ) );
     }

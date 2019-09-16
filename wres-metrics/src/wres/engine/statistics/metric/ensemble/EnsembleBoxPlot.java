@@ -73,7 +73,7 @@ abstract class EnsembleBoxPlot extends Diagram<EnsemblePairs, BoxPlotStatistics>
                                                          null );
         
         //Create each box
-        for ( EnsemblePair next : s )
+        for ( EnsemblePair next : s.getRawData() )
         {
             boxes.add( this.getBox( next, metOut ) );
         }
