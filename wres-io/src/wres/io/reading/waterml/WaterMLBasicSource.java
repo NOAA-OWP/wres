@@ -39,10 +39,10 @@ import wres.util.Strings;
 public class WaterMLBasicSource extends BasicSource
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( WaterMLBasicSource.class );
+    private static final WebClient WEB_CLIENT = new WebClient();
 
     private static final String MD5SUM_OF_EMPTY_STRING = "68b329da9893e34099c7d8ad5cb9c940";
     private final DatabaseLockManager lockManager;
-    private final WebClient webClient = new WebClient();
 
     public WaterMLBasicSource( ProjectConfig projectConfig,
                                DataSource dataSource,
@@ -75,7 +75,7 @@ public class WaterMLBasicSource extends BasicSource
                           .toLowerCase()
                           .startsWith( "http" ) )
         {
-            Pair<Integer,InputStream> response = this.webClient.getFromWeb( location );
+            Pair<Integer,InputStream> response = WEB_CLIENT.getFromWeb( location );
             int httpStatus = response.getLeft();
 
             if ( httpStatus == 404 )

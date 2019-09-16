@@ -65,7 +65,7 @@ import wres.system.DatabaseLockManager;
 @PrepareForTest( { DataSources.class, Ensembles.class, MeasurementUnits.class,
                          Database.class, Variables.class, Features.class, TimeSeries.class } )
 // See https://github.com/powermock/powermock/issues/864
-@PowerMockIgnore( {"javax.management.*", "com.sun.org.apache.xerces.*", "javax.xml.*", "org.xml.*"} )
+@PowerMockIgnore( {"javax.management.*", "com.sun.org.apache.xerces.*", "javax.xml.*", "org.xml.*", "javax.net.*" } )
 public class WRDSSourceTest
 {
     private static ClientAndServer mockServer;

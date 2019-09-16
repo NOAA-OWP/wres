@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.zip.GZIPInputStream;
 
+import javax.net.ssl.SSLContext;
+
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,15 +28,35 @@ public class WebClient
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( WebClient.class );
     private static final Duration MAX_RETRY_DURATION = Duration.ofSeconds( 30 );
-    private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
-                                                            .followRedirects( HttpClient.Redirect.NORMAL )
-                                                            .build();
     private static final List<Integer> DEFAULT_RETRY_STATI = List.of( 500,
                                                                       502,
                                                                       503,
                                                                       504,
                                                                       523,
                                                                       524 );
+
+    private final HttpClient httpClient;
+
+    public WebClient()
+    {
+        this.httpClient = HttpClient.newBuilder()
+                                    .followRedirects( HttpClient.Redirect.NORMAL )
+                                    .build();
+    }
+
+    public WebClient( SSLContext sslContext )
+    {
+        Objects.requireNonNull( sslContext );
+        this.httpClient = HttpClient.newBuilder()
+                                    .followRedirects( HttpClient.Redirect.NORMAL )
+                                    .sslContext( sslContext )
+                                    .build();
+    }
+
+    private HttpClient getHttpClient()
+    {
+        return this.httpClient;
+    }
 
     /**
      * Get a pair of HTTP status and InputStream of body of given URI, using
@@ -87,8 +109,9 @@ public class WebClient
                                              .header( "Accept-Encoding", "gzip" )
                                              .build();
             HttpResponse<InputStream> httpResponse =
-                    HTTP_CLIENT.send( request,
-                                      HttpResponse.BodyHandlers.ofInputStream() );
+                    this.getHttpClient()
+                        .send( request,
+                               HttpResponse.BodyHandlers.ofInputStream() );
 
             if ( LOGGER.isDebugEnabled() )
             {
@@ -111,8 +134,9 @@ public class WebClient
                     LOGGER.warn( "Retrying {} in a bit due to http status {}.",
                                  uri, httpStatus );
                     Thread.sleep( sleepMillis );
-                    httpResponse = HTTP_CLIENT.send( request,
-                                                     HttpResponse.BodyHandlers.ofInputStream() );
+                    httpResponse = this.getHttpClient()
+                                       .send( request,
+                                              HttpResponse.BodyHandlers.ofInputStream() );
                     httpStatus = httpResponse.statusCode();
                     Instant now = Instant.now();
                     retry = start.plus( MAX_RETRY_DURATION )
