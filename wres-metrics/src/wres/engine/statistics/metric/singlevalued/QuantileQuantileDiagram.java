@@ -9,6 +9,7 @@ import java.util.function.DoubleUnaryOperator;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.Slicer;
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.statistics.DiagramStatistic;
@@ -78,9 +79,9 @@ public class QuantileQuantileDiagram extends Diagram<SingleValuedPairs, DiagramS
         }
 
         //Set and return the results
-        Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
-        output.put( MetricDimension.OBSERVED_QUANTILES, observedQ );
-        output.put( MetricDimension.PREDICTED_QUANTILES, predictedQ );
+        Map<MetricDimension, VectorOfDoubles> output = new EnumMap<>( MetricDimension.class );
+        output.put( MetricDimension.OBSERVED_QUANTILES, VectorOfDoubles.of( observedQ ) );
+        output.put( MetricDimension.PREDICTED_QUANTILES, VectorOfDoubles.of( predictedQ ) );
         final StatisticMetadata metOut =
                 StatisticMetadata.of( s.getMetadata(),
                                     this.getID(),
@@ -88,7 +89,7 @@ public class QuantileQuantileDiagram extends Diagram<SingleValuedPairs, DiagramS
                                     this.hasRealUnits(),
                                     s.getRawData().size(),
                                     null );
-        return DiagramStatistic.ofDiagramStatistic( output, metOut );
+        return DiagramStatistic.of( output, metOut );
     }
 
     @Override

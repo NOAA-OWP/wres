@@ -9,9 +9,7 @@ import com.mchange.v2.c3p0.ComboPooledDataSource;
 import liquibase.database.Database;
 import liquibase.exception.LiquibaseException;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -35,38 +33,31 @@ import wres.system.SystemSettings;
 @PowerMockIgnore( { "javax.management.*", "java.io.*", "javax.xml.*", "com.sun.*", "org.xml.*" } )
 public class DetailsTest
 {
-    private static TestDatabase testDatabase;
-    private static ComboPooledDataSource dataSource;
+    private TestDatabase testDatabase;
+    private ComboPooledDataSource dataSource;
     private Connection rawConnection;
     private @Mock DatabaseConnectionSupplier mockConnectionSupplier;
     private Database liquibaseDatabase;
 
-    @BeforeClass
-    public static void oneTimeSetup()
-    {
-        // TODO: with HikariCP #54944, try to move this to @BeforeTest rather
-        // than having a static one-time db. The only reason we have the static
-        // variable instead of an instance variable is because c3p0 didn't work
-        // properly with the instance variable.
-
-        DetailsTest.testDatabase = new TestDatabase( "DetailsTest" );
-
-        // Even when pool is closed/nulled/re-instantiated for each test, the
-        // old c3p0 pool is somehow found by the 2nd and following test runs.
-        // Got around it by having a single pool for all the tests.
-        // Create our own test data source connecting to in-memory H2 database
-        DetailsTest.dataSource = DetailsTest.testDatabase.getNewComboPooledDataSource();
-    }
-
     @Before
     public void setup() throws Exception
     {
+        
+        // Previously, this used a test database and connection pool per class, 
+        // rather than per test. This was due to issues with one or more layers, 
+        // such as c3p0 or the H2 driver, but there were updates to these 
+        // dependencies after the earlier observations. As of this changeset, it 
+        // works. See #56214-92 ish for more
+        this.testDatabase = new TestDatabase( "DetailsTest" );
+        
+        this.dataSource = this.testDatabase.getNewComboPooledDataSource();
+        
         // Also mock a plain datasource (which works per test unlike c3p0)
-        this.rawConnection = DriverManager.getConnection( DetailsTest.testDatabase.getJdbcString() );
+        this.rawConnection = DriverManager.getConnection( this.testDatabase.getJdbcString() );
         Mockito.when( this.mockConnectionSupplier.get() ).thenReturn( this.rawConnection );
 
         // Set up a bare bones database with only the schema
-        DetailsTest.testDatabase.createWresSchema( this.rawConnection );
+        this.testDatabase.createWresSchema( this.rawConnection );
 
         // Substitute raw connection where needed:
         PowerMockito.mockStatic( SystemSettings.class );
@@ -79,19 +70,19 @@ public class DetailsTest
 
         // Substitute our H2 connection pool for both pools:
         PowerMockito.when( SystemSettings.class, "getConnectionPool" )
-                    .thenReturn( DetailsTest.dataSource );
+                    .thenReturn( this.dataSource );
         PowerMockito.when( SystemSettings.class, "getHighPriorityConnectionPool" )
-                    .thenReturn( DetailsTest.dataSource );
+                    .thenReturn( this.dataSource );
 
         // Set up a liquibase database to run migrations against.
-        this.liquibaseDatabase = DetailsTest.testDatabase.createNewLiquibaseDatabase( this.rawConnection );
+        this.liquibaseDatabase = this.testDatabase.createNewLiquibaseDatabase( this.rawConnection );        
     }
 
     @Test
     public void saveSourceDetails() throws SQLException, LiquibaseException
     {
         // Add the source table
-        DetailsTest.testDatabase.createSourceTable( this.liquibaseDatabase );
+        this.testDatabase.createSourceTable( this.liquibaseDatabase );
 
         SourceDetails.SourceKey sourceKey = SourceDetails.createKey( URI.create( "/this/is/just/a/test" ),
                                                                      "2017-06-16 11:13:00",
@@ -105,15 +96,15 @@ public class DetailsTest
                        sourceDetails.getId() );
 
         // Remove the source table now that assertions have finished.
-        DetailsTest.testDatabase.dropSourceTable( this.rawConnection );
-        DetailsTest.testDatabase.dropLiquibaseChangeTables( this.rawConnection );
+        this.testDatabase.dropSourceTable( this.rawConnection );
+        this.testDatabase.dropLiquibaseChangeTables( this.rawConnection );
     }
 
     @Test
     public void saveProjectDetails() throws SQLException, LiquibaseException
     {
         // Add the project table
-        DetailsTest.testDatabase.createProjectTable( this.liquibaseDatabase );
+        this.testDatabase.createProjectTable( this.liquibaseDatabase );
 
         Project project = new Project( new ProjectConfig( null, null, null, null, null, null ),
                                                      321 );
@@ -124,23 +115,16 @@ public class DetailsTest
                        project.getId() );
 
         // Remove the project table and liquibase tables
-        DetailsTest.testDatabase.dropProjectTable( this.rawConnection );
-        DetailsTest.testDatabase.dropLiquibaseChangeTables( this.rawConnection );
+        this.testDatabase.dropProjectTable( this.rawConnection );
+        this.testDatabase.dropLiquibaseChangeTables( this.rawConnection );
     }
 
     @After
     public void tearDown() throws SQLException
     {
-        DetailsTest.testDatabase.dropWresSchema( this.rawConnection );
+        this.testDatabase.dropWresSchema( this.rawConnection );
         this.rawConnection.close();
         this.rawConnection = null;
     }
 
-    @AfterClass
-    public static void tearDownAfterAllTests()
-    {
-        DetailsTest.dataSource.close();
-        DetailsTest.dataSource = null;
-        DetailsTest.testDatabase = null;
-    }
 }

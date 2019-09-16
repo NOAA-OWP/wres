@@ -306,17 +306,16 @@ public class WriterTestHelper
                                       MetricConstants.RELIABILITY_DIAGRAM,
                                       null );
 
-        Map<MetricDimension, double[]> fakeOutputs = new HashMap<>();
+        Map<MetricDimension, VectorOfDoubles> fakeOutputs = new HashMap<>();
         fakeOutputs.put( MetricDimension.FORECAST_PROBABILITY,
-                         new double[] { 0.08625, 0.2955, 0.50723, 0.70648, 0.92682 } );
+                         VectorOfDoubles.of( 0.08625, 0.2955, 0.50723, 0.70648, 0.92682 ) );
         fakeOutputs.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY,
-                         new double[] { 0.06294, 0.2938, 0.5, 0.73538, 0.93937 } );
-        fakeOutputs.put( MetricDimension.SAMPLE_SIZE, new double[] { 5926, 371, 540, 650, 1501 } );
+                         VectorOfDoubles.of( 0.06294, 0.2938, 0.5, 0.73538, 0.93937 ) );
+        fakeOutputs.put( MetricDimension.SAMPLE_SIZE, VectorOfDoubles.of( 5926, 371, 540, 650, 1501 ) );
 
         // Fake output wrapper.
         ListOfStatistics<DiagramStatistic> fakeOutputData =
-                ListOfStatistics.of( Collections.singletonList( DiagramStatistic.ofDiagramStatistic( fakeOutputs,
-                                                                                                          fakeMetadata ) ) );
+                ListOfStatistics.of( Collections.singletonList( DiagramStatistic.of( fakeOutputs, fakeMetadata ) ) );
 
         return fakeOutputData;
     }

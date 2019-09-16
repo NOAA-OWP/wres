@@ -12,6 +12,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.Location;
@@ -71,18 +72,32 @@ public final class RelativeOperatingCharacteristicDiagramTest
 
         //Check the results       
         final DiagramStatistic actual = roc.apply( input );
-        double[] expectedPOD = new double[] { 0.0, 0.13580246913580246, 0.2345679012345679, 0.43209876543209874,
-                                              0.6296296296296297, 0.7037037037037037, 0.8024691358024691,
-                                              0.8518518518518519, 0.9135802469135802,
-                                              0.9753086419753086, 1.0 };
-        double[] expectedPOFD = new double[] { 0.0, 0.007518796992481203, 0.018796992481203006, 0.04887218045112782,
-                                               0.11654135338345864, 0.17669172932330826, 0.22932330827067668,
-                                               0.2857142857142857, 0.42105263157894735,
-                                               0.6240601503759399, 1.0 };
-        Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
+        VectorOfDoubles expectedPOD = VectorOfDoubles.of( 0.0,
+                                                          0.13580246913580246,
+                                                          0.2345679012345679,
+                                                          0.43209876543209874,
+                                                          0.6296296296296297,
+                                                          0.7037037037037037,
+                                                          0.8024691358024691,
+                                                          0.8518518518518519,
+                                                          0.9135802469135802,
+                                                          0.9753086419753086,
+                                                          1.0 );
+        VectorOfDoubles expectedPOFD = VectorOfDoubles.of( 0.0,
+                                                           0.007518796992481203,
+                                                           0.018796992481203006,
+                                                           0.04887218045112782,
+                                                           0.11654135338345864,
+                                                           0.17669172932330826,
+                                                           0.22932330827067668,
+                                                           0.2857142857142857,
+                                                           0.42105263157894735,
+                                                           0.6240601503759399,
+                                                           1.0 );
+        Map<MetricDimension, VectorOfDoubles> output = new EnumMap<>( MetricDimension.class );
         output.put( MetricDimension.PROBABILITY_OF_DETECTION, expectedPOD );
         output.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, expectedPOFD );
-        final DiagramStatistic expected = DiagramStatistic.ofDiagramStatistic( output, m1 );
+        final DiagramStatistic expected = DiagramStatistic.of( output, m1 );
         assertTrue( "Difference between actual and expected ROC.", actual.equals( expected ) );
     }
 

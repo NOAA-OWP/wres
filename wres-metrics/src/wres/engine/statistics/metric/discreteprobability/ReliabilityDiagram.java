@@ -11,6 +11,7 @@ import java.util.function.Consumer;
 import org.apache.commons.math3.util.Precision;
 
 import wres.datamodel.MetricConstants;
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.MissingValues;
 import wres.datamodel.sampledata.SampleDataException;
@@ -114,10 +115,10 @@ public class ReliabilityDiagram extends Diagram<DiscreteProbabilityPairs, Diagra
         }
 
         // Set the results
-        Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
-        output.put( MetricDimension.FORECAST_PROBABILITY, fProb );
-        output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, oProb );
-        output.put( MetricDimension.SAMPLE_SIZE, samples );
+        Map<MetricDimension, VectorOfDoubles> output = new EnumMap<>( MetricDimension.class );
+        output.put( MetricDimension.FORECAST_PROBABILITY, VectorOfDoubles.of( fProb ) );
+        output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, VectorOfDoubles.of( oProb ) );
+        output.put( MetricDimension.SAMPLE_SIZE, VectorOfDoubles.of( samples ) );
 
         StatisticMetadata metOut =
                 StatisticMetadata.of( s.getMetadata(),
@@ -127,7 +128,7 @@ public class ReliabilityDiagram extends Diagram<DiscreteProbabilityPairs, Diagra
                                     s.getRawData().size(),
                                     null );
 
-        return DiagramStatistic.ofDiagramStatistic( output, metOut );
+        return DiagramStatistic.of( output, metOut );
     }
 
     @Override

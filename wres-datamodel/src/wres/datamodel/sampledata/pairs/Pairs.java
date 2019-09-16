@@ -3,7 +3,6 @@ package wres.datamodel.sampledata.pairs;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
@@ -69,12 +68,6 @@ public abstract class Pairs<T extends Pair<?,?>> implements SampleData<T>
     public VectorOfDoubles getClimatology()
     {
         return climatology;
-    }
-
-    @Override
-    public Iterator<T> iterator()
-    {
-        return sampleData.iterator();
     }
 
     @Override

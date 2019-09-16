@@ -64,24 +64,24 @@ public final class DiagramStatisticTest
                                                            MeasurementUnit.of(),
                                                            MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
                                                            MetricConstants.MAIN );
-        Map<MetricDimension, double[]> mva = new EnumMap<>( MetricDimension.class );
-        Map<MetricDimension, double[]> mvb = new EnumMap<>( MetricDimension.class );
-        Map<MetricDimension, double[]> mvc = new EnumMap<>( MetricDimension.class );
-        mva.put( MetricDimension.PROBABILITY_OF_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
-        mva.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
-        mvb.put( MetricDimension.PROBABILITY_OF_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
-        mvb.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
-        mvc.put( MetricDimension.PROBABILITY_OF_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4, 0.5 } );
-        mvc.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4, 0.5 } );
-        final DiagramStatistic s = DiagramStatistic.ofDiagramStatistic( mva, m1 );
-        final DiagramStatistic t = DiagramStatistic.ofDiagramStatistic( mvb, m1 );
+        Map<MetricDimension, VectorOfDoubles> mva = new EnumMap<>( MetricDimension.class );
+        Map<MetricDimension, VectorOfDoubles> mvb = new EnumMap<>( MetricDimension.class );
+        Map<MetricDimension, VectorOfDoubles> mvc = new EnumMap<>( MetricDimension.class );
+        mva.put( MetricDimension.PROBABILITY_OF_DETECTION, VectorOfDoubles.of( 0.1, 0.2, 0.3, 0.4 ) );
+        mva.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, VectorOfDoubles.of( 0.1, 0.2, 0.3, 0.4 ) );
+        mvb.put( MetricDimension.PROBABILITY_OF_DETECTION, VectorOfDoubles.of( 0.1, 0.2, 0.3, 0.4 ) );
+        mvb.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, VectorOfDoubles.of( 0.1, 0.2, 0.3, 0.4 ) );
+        mvc.put( MetricDimension.PROBABILITY_OF_DETECTION, VectorOfDoubles.of( 0.1, 0.2, 0.3, 0.4, 0.5 ) );
+        mvc.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, VectorOfDoubles.of( 0.1, 0.2, 0.3, 0.4, 0.5 ) );
+        final DiagramStatistic s = DiagramStatistic.of( mva, m1 );
+        final DiagramStatistic t = DiagramStatistic.of( mvb, m1 );
         assertTrue( s.equals( t ) );
         assertNotEquals( null, s );
         assertNotEquals( Double.valueOf( 1.0 ), s );
-        assertTrue( !s.equals( DiagramStatistic.ofDiagramStatistic( mvc, m1 ) ) );
-        assertTrue( !s.equals( DiagramStatistic.ofDiagramStatistic( mvc, m2 ) ) );
-        final DiagramStatistic q = DiagramStatistic.ofDiagramStatistic( mva, m2 );
-        final DiagramStatistic r = DiagramStatistic.ofDiagramStatistic( mvb, m3 );
+        assertTrue( !s.equals( DiagramStatistic.of( mvc, m1 ) ) );
+        assertTrue( !s.equals( DiagramStatistic.of( mvc, m2 ) ) );
+        final DiagramStatistic q = DiagramStatistic.of( mva, m2 );
+        final DiagramStatistic r = DiagramStatistic.of( mvb, m3 );
         assertTrue( q.equals( q ) );
         assertFalse( s.equals( q ) );
         assertFalse( q.equals( s ) );
@@ -113,11 +113,11 @@ public final class DiagramStatisticTest
                                                            MeasurementUnit.of(),
                                                            MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
                                                            MetricConstants.MAIN );
-        Map<MetricDimension, double[]> mva = new EnumMap<>( MetricDimension.class );
-        mva.put( MetricDimension.PROBABILITY_OF_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
-        mva.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
-        final DiagramStatistic q = DiagramStatistic.ofDiagramStatistic( mva, m1 );
-        final DiagramStatistic r = DiagramStatistic.ofDiagramStatistic( mva, m2 );
+        Map<MetricDimension, VectorOfDoubles> mva = new EnumMap<>( MetricDimension.class );
+        mva.put( MetricDimension.PROBABILITY_OF_DETECTION, VectorOfDoubles.of( 0.1, 0.2, 0.3, 0.4 ) );
+        mva.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, VectorOfDoubles.of( 0.1, 0.2, 0.3, 0.4 ) );
+        final DiagramStatistic q = DiagramStatistic.of( mva, m1 );
+        final DiagramStatistic r = DiagramStatistic.of( mva, m2 );
         assertTrue( "Expected unequal dimensions.", !q.getMetadata().equals( r.getMetadata() ) );
     }
 
@@ -156,18 +156,18 @@ public final class DiagramStatisticTest
                                                            MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
                                                            MetricConstants.MAIN );
 
-        Map<MetricDimension, double[]> mva = new EnumMap<>( MetricDimension.class );
-        Map<MetricDimension, double[]> mvb = new EnumMap<>( MetricDimension.class );
-        Map<MetricDimension, double[]> mvc = new EnumMap<>( MetricDimension.class );
-        mva.put( MetricDimension.PROBABILITY_OF_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
-        mva.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
-        mvb.put( MetricDimension.PROBABILITY_OF_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
-        mvb.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
-        mvc.put( MetricDimension.PROBABILITY_OF_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4, 0.5 } );
-        mvc.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4, 0.5 } );
-        final DiagramStatistic q = DiagramStatistic.ofDiagramStatistic( mva, m1 );
-        final DiagramStatistic r = DiagramStatistic.ofDiagramStatistic( mvb, m2 );
-        final DiagramStatistic s = DiagramStatistic.ofDiagramStatistic( mvc, m3 );
+        Map<MetricDimension, VectorOfDoubles> mva = new EnumMap<>( MetricDimension.class );
+        Map<MetricDimension, VectorOfDoubles> mvb = new EnumMap<>( MetricDimension.class );
+        Map<MetricDimension, VectorOfDoubles> mvc = new EnumMap<>( MetricDimension.class );
+        mva.put( MetricDimension.PROBABILITY_OF_DETECTION, VectorOfDoubles.of( 0.1, 0.2, 0.3, 0.4 ) );
+        mva.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, VectorOfDoubles.of( 0.1, 0.2, 0.3, 0.4 ) );
+        mvb.put( MetricDimension.PROBABILITY_OF_DETECTION, VectorOfDoubles.of( 0.1, 0.2, 0.3, 0.4 ) );
+        mvb.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, VectorOfDoubles.of( 0.1, 0.2, 0.3, 0.4 ) );
+        mvc.put( MetricDimension.PROBABILITY_OF_DETECTION, VectorOfDoubles.of( 0.1, 0.2, 0.3, 0.4, 0.5 ) );
+        mvc.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, VectorOfDoubles.of( 0.1, 0.2, 0.3, 0.4, 0.5 ) );
+        final DiagramStatistic q = DiagramStatistic.of( mva, m1 );
+        final DiagramStatistic r = DiagramStatistic.of( mvb, m2 );
+        final DiagramStatistic s = DiagramStatistic.of( mvc, m3 );
         assertTrue( "Expected equal hash codes.", q.hashCode() == r.hashCode() );
         assertTrue( "Expected unequal hash codes.", q.hashCode() != s.hashCode() );
     }
@@ -188,10 +188,10 @@ public final class DiagramStatisticTest
                                                            MeasurementUnit.of(),
                                                            MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
                                                            MetricConstants.MAIN );
-        Map<MetricDimension, double[]> mva = new EnumMap<>( MetricDimension.class );
-        mva.put( MetricDimension.PROBABILITY_OF_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
-        mva.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
-        final DiagramStatistic s = DiagramStatistic.ofDiagramStatistic( mva, m1 );
+        Map<MetricDimension, VectorOfDoubles> mva = new EnumMap<>( MetricDimension.class );
+        mva.put( MetricDimension.PROBABILITY_OF_DETECTION, VectorOfDoubles.of( 0.1, 0.2, 0.3, 0.4 ) );
+        mva.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, VectorOfDoubles.of( 0.1, 0.2, 0.3, 0.4 ) );
+        final DiagramStatistic s = DiagramStatistic.of( mva, m1 );
         assertTrue( "Expected a " + MetricDimension.PROBABILITY_OF_DETECTION
                     + ".",
                     s.containsKey( MetricDimension.PROBABILITY_OF_DETECTION ) );

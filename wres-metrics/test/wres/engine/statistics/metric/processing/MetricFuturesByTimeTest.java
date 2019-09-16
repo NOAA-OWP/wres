@@ -20,6 +20,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.datamodel.OneOrTwoDoubles;
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.BoxPlotStatistics;
@@ -155,13 +156,13 @@ public final class MetricFuturesByTimeTest
 
         // Add multi-vector output
         multivector =
-                ListOfStatistics.of( Collections.singletonList( DiagramStatistic.ofDiagramStatistic( Collections.singletonMap( MetricDimension.FORECAST_PROBABILITY,
-                                                                                                                                    new double[] { 1 } ),
-                                                                                                          StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
-                                                                                                                                1,
-                                                                                                                                MeasurementUnit.of(),
-                                                                                                                                MetricConstants.CONTINGENCY_TABLE,
-                                                                                                                                MetricConstants.MAIN ) ) ) );
+                ListOfStatistics.of( Collections.singletonList( DiagramStatistic.of( Collections.singletonMap( MetricDimension.FORECAST_PROBABILITY,
+                                                                                                               VectorOfDoubles.of( 1 ) ),
+                                                                                     StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                                                                           1,
+                                                                                                           MeasurementUnit.of(),
+                                                                                                           MetricConstants.CONTINGENCY_TABLE,
+                                                                                                           MetricConstants.MAIN ) ) ) );
 
         builder.addMultiVectorOutput( CompletableFuture.completedFuture( multivector ) );
 
