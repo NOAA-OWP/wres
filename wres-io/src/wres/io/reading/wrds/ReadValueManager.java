@@ -22,6 +22,8 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
 
+import javax.net.ssl.SSLContext;
+
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -34,7 +36,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.scale.TimeScale;
-import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
@@ -51,11 +52,15 @@ import wres.io.reading.PreIngestException;
 import wres.io.reading.SourceCompleter;
 import wres.io.reading.WebClient;
 import wres.system.DatabaseLockManager;
+import wres.system.SSLStuffThatTrustsOneCertificate;
 import wres.util.TimeHelper;
 
 public class ReadValueManager
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( ReadValueManager.class );
+    private static SSLContext SSL_CONTEXT = ReadValueManager.getSslContextTrustingDodSigner();
+
+    private static final WebClient WEB_CLIENT = new WebClient( SSL_CONTEXT );
 
     private static final String MD5SUM_OF_EMPTY_STRING = "68b329da9893e34099c7d8ad5cb9c940";
 
@@ -63,7 +68,6 @@ public class ReadValueManager
     private final DataSource dataSource;
     private final DatabaseLockManager lockManager;
     private final Set<Pair<CountDownLatch,CountDownLatch>> latches = new HashSet<>();
-    private final WebClient webClient = new WebClient();
 
     ReadValueManager( final ProjectConfig projectConfig,
                       final DataSource datasource,
@@ -89,7 +93,7 @@ public class ReadValueManager
                           .toLowerCase()
                           .startsWith( "http" ) )
         {
-            Pair<Integer,InputStream> response = this.webClient.getFromWeb( location );
+            Pair<Integer,InputStream> response = WEB_CLIENT.getFromWeb( location );
             int httpStatus = response.getLeft();
             LOGGER.debug( "Got HTTP response code {} for {}", httpStatus, location );
 
@@ -557,5 +561,50 @@ public class ReadValueManager
     private URI getLocation()
     {
         return this.dataSource.getUri();
+    }
+
+
+    /**
+     * Get an SSLContext that has a dod intermediate certificate trusted.
+     * Uses a pem on the classpath.
+     * @return the resulting SSLContext or the default SSLContext if not found.
+     */
+    private static SSLContext getSslContextTrustingDodSigner()
+    {
+        String trustFileOnClassPath = "dod_sw_ca-54_expires_2022-11.pem";
+        try ( InputStream inputStream = ReadValueManager.class
+                .getClassLoader()
+                .getResourceAsStream( trustFileOnClassPath ) )
+        {
+            // Avoid sending null, log a warning instead, use default.
+            if ( inputStream == null )
+            {
+                LOGGER.warn( "Failed to load {} from classpath. Using default SSLContext.",
+                             trustFileOnClassPath );
+                return SSLContext.getDefault();
+            }
+            SSLStuffThatTrustsOneCertificate sslGoo =
+                    new SSLStuffThatTrustsOneCertificate( inputStream );
+            return sslGoo.getSSLContext();
+        }
+        catch ( IOException ioe )
+        {
+            throw new PreIngestException( "Unable to read "
+                                          + trustFileOnClassPath
+                                          + " from classpath in order to add it"
+                                          + " to trusted certificate list for "
+                                          + "requests made to WRDS services.",
+                                          ioe );
+        }
+        catch ( NoSuchAlgorithmException nsae )
+        {
+            throw new PreIngestException( "Unable to find "
+                                          + trustFileOnClassPath
+                                          + " on classpath in order to add it"
+                                          + " to trusted certificate list for "
+                                          + "requests made to WRDS services "
+                                          + "and furthermore could not get the "
+                                          + "default SSLContext.", nsae );
+        }
     }
 }

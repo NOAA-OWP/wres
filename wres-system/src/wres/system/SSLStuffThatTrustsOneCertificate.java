@@ -11,6 +11,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
+import java.util.Objects;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
@@ -27,7 +28,7 @@ import javax.net.ssl.X509TrustManager;
  * Tries to fail early, on construction, by doing its work during construction.
  */
 
-class SSLStuffThatTrustsOneCertificate
+public class SSLStuffThatTrustsOneCertificate
 {
     private final TrustManager trustManager;
     private final SSLContext sslContext;
@@ -38,7 +39,7 @@ class SSLStuffThatTrustsOneCertificate
      * @param derEncodedCertificate the certificate, intermediate cert, or CA
      * @throws IllegalStateException when any exceptions occur setting up SSL
      */
-    SSLStuffThatTrustsOneCertificate( InputStream derEncodedCertificate )
+    public SSLStuffThatTrustsOneCertificate( InputStream derEncodedCertificate )
     {
         this.trustManager = getTrustManagerWithOneAuthority( derEncodedCertificate );
         this.sslContext = getSSLContextWithTrustManager( this.trustManager );
@@ -76,7 +77,7 @@ class SSLStuffThatTrustsOneCertificate
         return this.trustManager;
     }
 
-    SSLContext getSSLContext()
+    public SSLContext getSSLContext()
     {
         return this.sslContext;
     }
@@ -90,6 +91,7 @@ class SSLStuffThatTrustsOneCertificate
 
     private TrustManager getTrustManagerWithOneAuthority( InputStream derEncodedCertificate )
     {
+        Objects.requireNonNull( derEncodedCertificate );
         KeyStore customTrustStore;
 
         try
