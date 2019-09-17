@@ -243,6 +243,7 @@ public class TimeSeries
         DataScripter scriptTwo = new DataScripter();
         scriptTwo.addLine( "INSERT INTO wres.TimeSeriesSource ( timeseries_id, source_id )" );
         scriptTwo.addTab( 1 ).addLine( "VALUES ( ?, ? );" );
+        //scriptTwo.addTab( 1 ).addLine( "VALUES ( "+this.timeSeriesID+", "+this.sourceID+" );" );
         scriptTwo.addArgument( this.timeSeriesID );
         scriptTwo.addArgument( this.sourceID );
         scriptTwo.execute();

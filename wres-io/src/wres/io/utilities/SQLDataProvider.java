@@ -189,7 +189,16 @@ public class SQLDataProvider implements DataProvider
     @Override
     public int getColumnIndex( String columnName )
     {
-        return this.columnNames.indexOf( columnName );
+        // Find the string, ignoring case
+        for( int i = 0; i < this.columnNames.size(); i++ )
+        {
+            if( this.columnNames.get( i ).equalsIgnoreCase( columnName ) )
+            {
+                return i;
+            }
+        }
+        
+        return -1;
     }
 
     @Override
@@ -214,13 +223,17 @@ public class SQLDataProvider implements DataProvider
     @Override
     public boolean isNull( String columnName )
     {
-        return this.getObject( columnName ) == null;
+        return this.columnNames.stream()
+                               .filter( next -> next.equalsIgnoreCase( columnName ) )
+                               .findFirst()
+                               .isEmpty();
     }
 
     @Override
     public boolean hasColumn( String columnName )
     {
-        return this.columnNames.contains( columnName );
+        return this.columnNames.stream()
+                               .anyMatch( next -> next.equalsIgnoreCase( columnName ) );
     }
 
     @Override

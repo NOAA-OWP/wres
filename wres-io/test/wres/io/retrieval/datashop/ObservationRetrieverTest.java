@@ -60,6 +60,8 @@ import wres.system.SystemSettings;
 @PowerMockIgnore( { "javax.management.*", "java.io.*", "javax.xml.*", "com.sun.*", "org.xml.*" } )
 public class ObservationRetrieverTest
 {
+    private static final String SECOND_TIME = "2023-04-01T09:00:00Z";
+    private static final String FIRST_TIME = "2023-04-01T03:00:00Z";
     private TestDatabase testDatabase;
     private ComboPooledDataSource dataSource;
     private Connection rawConnection;
@@ -99,12 +101,119 @@ public class ObservationRetrieverTest
     @Before
     public void setup() throws Exception
     {
+        // Create the database and connection pool
         this.testDatabase = new TestDatabase( "ObservationRetrieverTest" );
         this.dataSource = this.testDatabase.getNewComboPooledDataSource();
         
+        // Create the connection and schema
         this.createTheConnectionAndSchema();
+        
+        // Create the tables
         this.addTheDatabaseAndTables();
+        
+        // Add some data for testing
         this.addAnObservedTimeSeriesWithTenEventsToTheDatabase();
+    }
+
+    @Test
+    public void testRetrievalOfObservedTimeSeriesWithTenEvents()
+    {
+        // Desired units are the same as the existing units
+        UnitMapper mapper = UnitMapper.of( UNITS );
+
+        // Build the retriever
+        TimeSeriesRetriever<Double> observedRetriever =
+                new ObservationRetriever.Builder().setProjectId( PROJECT_ID )
+                                                  .setVariableFeatureId( this.variableFeatureId )
+                                                  .setUnitMapper( mapper )
+                                                  .setLeftOrRightOrBaseline( LRB )
+                                                  .build();
+
+        // Get the time-series
+        Stream<TimeSeries<Double>> observedSeries = observedRetriever.getAll();
+
+        // Stream into a collection
+        List<TimeSeries<Double>> actualCollection = observedSeries.collect( Collectors.toList() );
+
+        // There is only one time-series, so assert that
+        assertEquals( 1, actualCollection.size() );
+        TimeSeries<Double> actualSeries = actualCollection.get( 0 );
+
+        // Create the expected series
+        TimeSeriesBuilder<Double> builder = new TimeSeriesBuilder<>();
+        TimeSeries<Double> expectedSeries =
+                builder.addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ), 30.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T02:00:00Z" ), 37.0 ) )
+                       .addEvent( Event.of( Instant.parse( FIRST_TIME ), 44.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T04:00:00Z" ), 51.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T05:00:00Z" ), 58.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T06:00:00Z" ), 65.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T07:00:00Z" ), 72.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T08:00:00Z" ), 79.0 ) )
+                       .addEvent( Event.of( Instant.parse( SECOND_TIME ), 86.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T10:00:00Z" ), 93.0 ) )
+                       .build();
+
+        // Actual series equals expected series
+        assertEquals( expectedSeries, actualSeries );
+    }
+    
+    @Test
+    public void testRetrievalOfPoolShapedObservedTimeSeriesWithSevenEvents()
+    {
+        // Desired units are the same as the existing units
+        UnitMapper mapper = UnitMapper.of( UNITS );
+
+        // Build the pool boundaries
+        TimeWindow poolBoundaries =
+                TimeWindow.of( Instant.parse( FIRST_TIME ), Instant.parse( SECOND_TIME ) );
+        
+        // Build the retriever
+        TimeSeriesRetriever<Double> observedRetriever =
+                new ObservationRetriever.Builder().setProjectId( PROJECT_ID )
+                                                  .setVariableFeatureId( this.variableFeatureId )
+                                                  .setUnitMapper( mapper )
+                                                  .setTimeWindow( poolBoundaries )
+                                                  .setLeftOrRightOrBaseline( LRB )
+                                                  .build();
+
+        // Get the time-series
+        Stream<TimeSeries<Double>> observedSeries = observedRetriever.getAll();
+
+        // Stream into a collection
+        List<TimeSeries<Double>> actualCollection = observedSeries.collect( Collectors.toList() );
+
+        // There is only one time-series, so assert that
+        assertEquals( 1, actualCollection.size() );
+        TimeSeries<Double> actualSeries = actualCollection.get( 0 );
+
+        // Assert correct number of events
+        assertEquals( 7, actualSeries.getEvents().size() );
+        
+        // Create the expected series
+        TimeSeriesBuilder<Double> builder = new TimeSeriesBuilder<>();
+        TimeSeries<Double> expectedSeries =
+                builder.addEvent( Event.of( Instant.parse( FIRST_TIME ), 44.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T04:00:00Z" ), 51.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T05:00:00Z" ), 58.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T06:00:00Z" ), 65.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T07:00:00Z" ), 72.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T08:00:00Z" ), 79.0 ) )
+                       .addEvent( Event.of( Instant.parse( SECOND_TIME ), 86.0 ) )
+                       .build();
+
+        // Actual series equals expected series
+        assertEquals( expectedSeries, actualSeries );
+    }    
+
+    @After
+    public void tearDown() throws SQLException
+    {
+        this.dropTheTablesAndSchema();
+        this.rawConnection.close();
+        this.rawConnection = null;
+        this.testDatabase = null;
+        this.dataSource = null;
     }
     
     /**
@@ -141,10 +250,9 @@ public class ObservationRetrieverTest
     /**
      * Adds the required tables for the tests presented here, which is a subset of all tables.
      * @throws LiquibaseException if the tables could not be created
-     * @throws SQLException 
      */
 
-    private void addTheDatabaseAndTables() throws LiquibaseException, SQLException
+    private void addTheDatabaseAndTables() throws LiquibaseException
     {
         // Create the required tables
         Database liquibaseDatabase =
@@ -277,10 +385,6 @@ public class ObservationRetrieverTest
             observedValue = observedValue + valueIncrement;
 
             // Insert
-            // Note that H2 attempts to convert Z to local time and stores that, whereas postgres
-            // takes the time string as given. In both cases, the observation_time is a TIMESTAMP 
-            // WITHOUT TIME ZONE. See discussion around #56214-70
-            // Thus, need to remove Z from the instant string
             String insert = MessageFormat.format( observationInsert,
                                                   this.variableFeatureId,
                                                   observationTime.toString(),
@@ -298,107 +402,6 @@ public class ObservationRetrieverTest
             assertEquals( 1, row );
         }
 
-    }
-
-    @Test
-    public void testRetrievalOfObservedTimeSeriesWithTenEvents()
-    {
-        // Desired units are the same as the existing units
-        UnitMapper mapper = UnitMapper.of( UNITS );
-
-        // Build the retriever
-        TimeSeriesRetriever<Double> observedRetriever =
-                new ObservationRetriever.Builder().setProjectId( PROJECT_ID )
-                                                  .setVariableFeatureId( this.variableFeatureId )
-                                                  .setUnitMapper( mapper )
-                                                  .setLeftOrRightOrBaseline( LRB )
-                                                  .build();
-
-        // Get the time-series
-        Stream<TimeSeries<Double>> observedSeries = observedRetriever.getAll();
-
-        // Stream into a collection
-        List<TimeSeries<Double>> actualCollection = observedSeries.collect( Collectors.toList() );
-
-        // There is only one time-series, so assert that
-        assertEquals( 1, actualCollection.size() );
-        TimeSeries<Double> actualSeries = actualCollection.get( 0 );
-
-        // Create the expected series
-        TimeSeriesBuilder<Double> builder = new TimeSeriesBuilder<>();
-        TimeSeries<Double> expectedSeries =
-                builder.addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ), 30.0 ) )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T02:00:00Z" ), 37.0 ) )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T03:00:00Z" ), 44.0 ) )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T04:00:00Z" ), 51.0 ) )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T05:00:00Z" ), 58.0 ) )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T06:00:00Z" ), 65.0 ) )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T07:00:00Z" ), 72.0 ) )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T08:00:00Z" ), 79.0 ) )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T09:00:00Z" ), 86.0 ) )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T10:00:00Z" ), 93.0 ) )
-                       .build();
-
-        // Actual series equals expected series
-        assertEquals( expectedSeries, actualSeries );
-    }
-    
-    @Test
-    public void testRetrievalOfPoolShapedObservedTimeSeriesWithSevenEvents()
-    {
-        // Desired units are the same as the existing units
-        UnitMapper mapper = UnitMapper.of( UNITS );
-
-        // Build the pool boundaries
-        TimeWindow poolBoundaries =
-                TimeWindow.of( Instant.parse( "2023-04-01T03:00:00Z" ), Instant.parse( "2023-04-01T09:00:00Z" ) );
-        
-        // Build the retriever
-        TimeSeriesRetriever<Double> observedRetriever =
-                new ObservationRetriever.Builder().setProjectId( PROJECT_ID )
-                                                  .setVariableFeatureId( this.variableFeatureId )
-                                                  .setUnitMapper( mapper )
-                                                  .setTimeWindow( poolBoundaries )
-                                                  .setLeftOrRightOrBaseline( LRB )
-                                                  .build();
-
-        // Get the time-series
-        Stream<TimeSeries<Double>> observedSeries = observedRetriever.getAll();
-
-        // Stream into a collection
-        List<TimeSeries<Double>> actualCollection = observedSeries.collect( Collectors.toList() );
-
-        // There is only one time-series, so assert that
-        assertEquals( 1, actualCollection.size() );
-        TimeSeries<Double> actualSeries = actualCollection.get( 0 );
-
-        // Assert correct number of events
-        assertEquals( 7, actualSeries.getEvents().size() );
-        
-        // Create the expected series
-        TimeSeriesBuilder<Double> builder = new TimeSeriesBuilder<>();
-        TimeSeries<Double> expectedSeries =
-                builder.addEvent( Event.of( Instant.parse( "2023-04-01T03:00:00Z" ), 44.0 ) )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T04:00:00Z" ), 51.0 ) )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T05:00:00Z" ), 58.0 ) )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T06:00:00Z" ), 65.0 ) )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T07:00:00Z" ), 72.0 ) )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T08:00:00Z" ), 79.0 ) )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T09:00:00Z" ), 86.0 ) )
-                       .build();
-
-        // Actual series equals expected series
-        assertEquals( expectedSeries, actualSeries );
     }    
-
-    @After
-    public void tearDown() throws SQLException
-    {
-        this.dropTheTablesAndSchema();
-        this.rawConnection.close();
-        this.rawConnection = null;
-        this.testDatabase = null;
-        this.dataSource = null;
-    }
     
 }

@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.StringJoiner;
+import java.sql.ResultSet;
 
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
@@ -26,7 +27,9 @@ import wres.util.functional.ExceptionalConsumer;
 import wres.util.functional.ExceptionalFunction;
 
 /**
- * Provides access and operations on tabular data
+ * <p>Provides access and operations on tabular data.
+ * 
+ * <p>Column names used as input to getter methods are case insensitive, much like a {@link ResultSet}.
  */
 public interface DataProvider extends AutoCloseable
 {

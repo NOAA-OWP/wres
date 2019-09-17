@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -120,7 +121,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                 // Add the reference time
                 if ( provider.hasColumn( "reference_time" ) )
                 {
-                    Instant referenceTime = provider.getInstant( "reference_time" );
+                    Instant referenceTime = provider.getInstant( "reference_time" );                   
                     builder.addReferenceTime( referenceTime, ReferenceTimeType.DEFAULT );
                 }
 

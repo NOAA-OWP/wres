@@ -316,7 +316,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
 
         scripter.addLine( "SELECT " );
         scripter.addTab().addLine( "TS.timeseries_id AS series_id," );
-        scripter.addTab().addLine( "TS.initialization_date + INTERVAL '1 MINUTE' * TSV.lead AS valid_time," );
+        scripter.addTab().addLine( "TS.initialization_date + INTERVAL '1' MINUTE * TSV.lead AS valid_time," );
         scripter.addTab().addLine( "TS.initialization_date AS reference_time," );
         scripter.addTab().addLine( "TSV.series_value AS measurement," );
         scripter.addTab().addLine( "TS.measurementunit_id" );       
