@@ -137,12 +137,12 @@ public class SingleValuedForecastRetrieverTest
         // Stream into a collection
         List<TimeSeries<Double>> actualCollection = forecastSeries.collect( Collectors.toList() );
 
-        // There is only one time-series, so assert that
+        // There are two time-series, so assert that
         assertEquals( 2, actualCollection.size() );
         TimeSeries<Double> actualSeriesOne = actualCollection.get( 0 );
         TimeSeries<Double> actualSeriesTwo = actualCollection.get( 1 );
         
-        // Create the expected series
+        // Create the first expected series
         TimeSeriesBuilder<Double> builderOne = new TimeSeriesBuilder<>();
         TimeSeries<Double> expectedSeriesOne =
                 builderOne.addReferenceTime( Instant.parse( "2023-04-01T00:00:00Z" ), ReferenceTimeType.DEFAULT )
@@ -156,6 +156,7 @@ public class SingleValuedForecastRetrieverTest
         // Actual series equals expected series
         assertEquals( expectedSeriesOne, actualSeriesOne );
 
+        // Create the second expected series
         TimeSeriesBuilder<Double> builderTwo = new TimeSeriesBuilder<>();
         TimeSeries<Double> expectedSeriesTwo =
                 builderTwo.addReferenceTime( Instant.parse( "2023-04-01T17:00:00Z" ), ReferenceTimeType.DEFAULT )
