@@ -6,7 +6,7 @@ services:
         volumes:
          - /mnt/wres_share:/mnt/wres_share
          - /mnt/wres_secrets:/wres_secrets:ro
-	 - /home:/home:ro
+         - /home:/home:ro
         network_mode: "host"
         environment:
          - JAVA_OPTS=-Dwres.broker=***REMOVED***wres-broker${WRES_ENV_SUFFIX} -Djava.io.tmpdir=/mnt/wres_share/evaluations -XX:HeapDumpPath=/mnt/wres_share/ -XX:OnOutOfMemoryError='mv /mnt/wres_share/java_pid%p.hprof /mnt/wres_share/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/java_pid%p_`hostname`.hprof'
