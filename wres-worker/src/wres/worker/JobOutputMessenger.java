@@ -187,6 +187,7 @@ class JobOutputMessenger implements Runnable, Closeable
         catch ( InterruptedException ie )
         {
             LOGGER.warn( "Interrupted while looking for innermost output directory.", ie );
+            Thread.currentThread().interrupt();
         }
         catch ( IOException ioe )
         {
@@ -282,6 +283,7 @@ class JobOutputMessenger implements Runnable, Closeable
         catch ( InterruptedException ie )
         {
             LOGGER.warn( "Interrupted while looking for output files.", ie );
+            Thread.currentThread().interrupt();
         }
         catch ( IOException ioe )
         {
