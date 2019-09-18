@@ -125,10 +125,10 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
         ScriptBuilder scripter = new ScriptBuilder( GET_ALL_TIME_SERIES_SCRIPT );
 
         // Add basic constraints
-        this.addProjectVariableAndMemberConstraints( scripter );
+        this.addProjectVariableAndMemberConstraints( scripter, 0 );
 
         // Add time window constraint
-        this.addTimeWindowClause( scripter );
+        this.addTimeWindowClause( scripter, 0 );
 
         // Add ORDER BY clause
         scripter.addLine( "ORDER BY O.observation_time;" );
@@ -193,8 +193,6 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
         scripter.addLine( "FROM wres.Observation O" );
         scripter.addLine( "INNER JOIN wres.ProjectSource PS" );
         scripter.addTab().addLine( "ON PS.source_id = O.source_id" );
-        scripter.addLine( "INNER JOIN wres.Project P" );
-        scripter.addTab().addLine( "ON P.project_id = PS.project_id" );
 
         return scripter.toString();
     }

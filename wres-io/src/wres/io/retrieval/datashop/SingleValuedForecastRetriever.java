@@ -61,12 +61,19 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
             SingleValuedForecastRetriever.getScriptForGetAllIdentifiers();
 
     /**
-     * Template script for the {@link #getAll()}.
+     * Start of script for {@link #getAll()}.
      */
 
-    private static final String GET_ALL_TIME_SERIES_SCRIPT =
-            SingleValuedForecastRetriever.getScriptForGetAllTimeSeries();
+    private static final String GET_ALL_TIME_SERIES_SCRIPT_START =
+            SingleValuedForecastRetriever.getStartOfScriptForGetAllTimeSeries();
 
+    /**
+     * End of script for {@link #getAll()}.
+     */
+
+    private static final String GET_ALL_TIME_SERIES_SCRIPT_END =
+            SingleValuedForecastRetriever.getEndOfScriptForGetAllTimeSeries();   
+    
     /**
      * Logger.
      */
@@ -103,7 +110,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         ScriptBuilder scripter = new ScriptBuilder( script );
 
         // Time window constraint for individual series?
-        this.addTimeWindowClause( scripter );
+        this.addTimeWindowClause( scripter, 0 );
 
         // Add ORDER BY clause
         scripter.addLine( "ORDER BY TSV.lead;" );
@@ -136,7 +143,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         ScriptBuilder scripter = new ScriptBuilder( GET_ALL_IDENTIFIERS_SCRIPT );
 
         // Add basic constraints
-        this.addProjectVariableAndMemberConstraints( scripter );
+        this.addProjectVariableAndMemberConstraints( scripter, 0 );
 
         String script = scripter.toString();
 
@@ -183,18 +190,20 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
 
         this.validateForMultiSeriesRetrieval();
 
-        ScriptBuilder scripter = new ScriptBuilder( GET_ALL_TIME_SERIES_SCRIPT );
+        ScriptBuilder scripter = new ScriptBuilder( GET_ALL_TIME_SERIES_SCRIPT_START );
 
         // Add basic constraints
-        this.addProjectVariableAndMemberConstraints( scripter );
+        this.addProjectVariableAndMemberConstraints( scripter, 1 );
 
         // Time window constraint
-        this.addTimeWindowClause( scripter );
-
+        this.addTimeWindowClause( scripter, 1 );
+        
         // Add constraint on the timeseries_ids provided
         StringJoiner joiner = new StringJoiner( ",", "{", "}" );
         identifiers.forEach( next -> joiner.add( Long.toString( next ) ) );
-        scripter.addTab().addLine( "AND TS.timeseries_id = ANY( '", joiner.toString(), "' )::integer[]" );
+        scripter.addTab( 2 ).addLine( "AND TS.timeseries_id = ANY( '", joiner.toString(), "' )::integer[]" );
+        
+        scripter.add( GET_ALL_TIME_SERIES_SCRIPT_END );
 
         // Add ORDER BY clause
         scripter.addLine( "ORDER BY TS.initialization_date, TSV.lead;" );
@@ -224,15 +233,19 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
     {
         this.validateForMultiSeriesRetrieval();
 
-        ScriptBuilder scripter = new ScriptBuilder( GET_ALL_TIME_SERIES_SCRIPT );
+        ScriptBuilder scripter = new ScriptBuilder( GET_ALL_TIME_SERIES_SCRIPT_START );
 
         // Add basic constraints
-        this.addProjectVariableAndMemberConstraints( scripter );
-
-        // Add time window constraint
-        this.addTimeWindowClause( scripter );
-
+        this.addProjectVariableAndMemberConstraints( scripter, 1 );
+        
         // Add ORDER BY clause
+        scripter.addTab().addLine( "ORDER BY TS.timeseries_id -- Can lead to faster joins on TSV" );
+        
+        scripter.add( GET_ALL_TIME_SERIES_SCRIPT_END );
+        
+        // Add time window constraint
+        this.addTimeWindowClause( scripter, 0 );
+        
         scripter.addLine( "ORDER BY TS.initialization_date, TSV.lead;" );
 
         String script = scripter.toString();
@@ -310,7 +323,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
      * @return the start of a script for the time-series
      */
 
-    private static String getScriptForGetAllTimeSeries()
+    private static String getStartOfScriptForGetAllTimeSeries()
     {
         ScriptBuilder scripter = new ScriptBuilder();
 
@@ -319,20 +332,39 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         scripter.addTab().addLine( "TS.initialization_date + INTERVAL '1' MINUTE * TSV.lead AS valid_time," );
         scripter.addTab().addLine( "TS.initialization_date AS reference_time," );
         scripter.addTab().addLine( "TSV.series_value AS measurement," );
-        scripter.addTab().addLine( "TS.measurementunit_id" );       
-        scripter.addLine( FROM_WRES_TIME_SERIES_TS );
-        scripter.addLine( "INNER JOIN wres.TimeSeriesValue TSV" );
-        scripter.addTab().addLine( "ON TSV.timeseries_id = TS.timeseries_id" );
-        scripter.addLine( "INNER JOIN wres.TimeSeriesSource TSS" );
-        scripter.addTab().addLine( "ON TSS.timeseries_id = TS.timeseries_id" );
-        scripter.addTab( 2 ).addLine( "AND (TSS.lead IS NULL OR TSS.lead = TSV.lead)" );
-        scripter.addLine( "INNER JOIN wres.ProjectSource PS" );
-        scripter.addTab().addLine( "ON PS.source_id = TSS.source_id" );
-        scripter.addLine( "INNER JOIN wres.Project P" );
-        scripter.addTab().addLine( "ON P.project_id = PS.project_id" );
+        scripter.addTab().addLine( "TS.measurementunit_id" );
+        scripter.addLine( "FROM (" );
+        scripter.addTab().addLine( "SELECT " );
+        scripter.addTab( 2 ).addLine( "TS.timeseries_id," );
+        scripter.addTab( 2 ).addLine( "TS.initialization_date," );
+        scripter.addTab( 2 ).addLine( "TS.measurementunit_id," );
+        scripter.addTab( 2 ).addLine( "TSS.lead" );
+        scripter.addTab().addLine( FROM_WRES_TIME_SERIES_TS );
+        scripter.addTab().addLine( "INNER JOIN wres.TimeSeriesSource TSS" );
+        scripter.addTab( 2 ).addLine( "ON TSS.timeseries_id = TS.timeseries_id" );
+        scripter.addTab().addLine( "INNER JOIN wres.ProjectSource PS" );
+        scripter.addTab( 2 ).addLine( "ON PS.source_id = TSS.source_id" );
 
         return scripter.toString();
     }
+    
+    /**
+     * Returns the end of a script to acquire a time-series from the WRES database for all time-series.
+     * 
+     * @return the end of a script for the time-series
+     */
+
+    private static String getEndOfScriptForGetAllTimeSeries()
+    {
+        ScriptBuilder scripter = new ScriptBuilder();
+
+        scripter.addLine( ") AS TS" );
+        scripter.addLine( "INNER JOIN wres.TimeSeriesValue TSV" );
+        scripter.addTab().addLine( "ON TSV.timeseries_id = TS.timeseries_id" );
+        scripter.addTab( 2 ).addLine( "AND (TS.lead IS NULL OR TS.lead = TSV.lead)" );
+        
+        return scripter.toString();
+    }    
 
     /**
      * Returns the start of a script to acquire the time-series identifiers.
@@ -350,8 +382,6 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         scripter.addTab().addLine( "ON TS.timeseries_id = TSS.timeseries_id" );
         scripter.addLine( "INNER JOIN wres.ProjectSource PS" );
         scripter.addTab().addLine( "ON TSS.source_id = PS.source_id" );
-        scripter.addLine( "INNER JOIN wres.Project P" );
-        scripter.addTab().addLine( "ON PS.project_id = P.project_id" );
 
         return scripter.toString();
     }

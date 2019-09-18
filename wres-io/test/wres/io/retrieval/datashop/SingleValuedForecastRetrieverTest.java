@@ -42,6 +42,7 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
+import wres.datamodel.time.TimeWindow;
 import wres.io.config.LeftOrRightOrBaseline;
 import wres.io.data.caching.Features;
 import wres.io.data.details.EnsembleDetails;
@@ -141,7 +142,7 @@ public class SingleValuedForecastRetrieverTest
         assertEquals( 2, actualCollection.size() );
         TimeSeries<Double> actualSeriesOne = actualCollection.get( 0 );
         TimeSeries<Double> actualSeriesTwo = actualCollection.get( 1 );
-        
+
         // Create the first expected series
         TimeSeriesBuilder<Double> builderOne = new TimeSeriesBuilder<>();
         TimeSeries<Double> expectedSeriesOne =
@@ -165,6 +166,63 @@ public class SingleValuedForecastRetrieverTest
                           .addEvent( Event.of( Instant.parse( "2023-04-01T20:00:00Z" ), 79.0 ) )
                           .addEvent( Event.of( Instant.parse( "2023-04-01T21:00:00Z" ), 86.0 ) )
                           .addEvent( Event.of( Instant.parse( "2023-04-01T22:00:00Z" ), 93.0 ) )
+                          .build();
+
+        // Actual series equals expected series
+        assertEquals( expectedSeriesTwo, actualSeriesTwo );
+    }
+
+    @Test
+    public void testRetrievalOfTwoForecastTimeSeriesWithinTimeWindow()
+    {
+        // Desired units are the same as the existing units
+        UnitMapper mapper = UnitMapper.of( UNITS );
+
+        // Set the time window filter, aka pool boundaries
+        Instant referenceStart = Instant.parse( "2023-04-01T00:00:00Z" );
+        Instant referenceEnd = Instant.parse( "2023-04-01T18:00:00Z" );
+        Instant validStart = Instant.parse( "2023-04-01T03:00:00Z" );
+        Instant validEnd = Instant.parse( "2023-04-01T19:00:00Z" );
+        Duration leadStart = Duration.ofHours( 1 );
+        Duration leadEnd = Duration.ofHours( 4 );
+
+        TimeWindow timeWindow = TimeWindow.of( referenceStart, referenceEnd, validStart, validEnd, leadStart, leadEnd );
+
+        // Build the retriever
+        TimeSeriesRetriever<Double> forecastRetriever =
+                new SingleValuedForecastRetriever.Builder().setProjectId( PROJECT_ID )
+                                                           .setVariableFeatureId( this.variableFeatureId )
+                                                           .setUnitMapper( mapper )
+                                                           .setTimeWindow( timeWindow )
+                                                           .setLeftOrRightOrBaseline( LRB )
+                                                           .build();
+
+        // Get the time-series
+        Stream<TimeSeries<Double>> forecastSeries = forecastRetriever.getAll();
+
+        // Stream into a collection
+        List<TimeSeries<Double>> actualCollection = forecastSeries.collect( Collectors.toList() );
+
+        // There are two time-series, so assert that
+        assertEquals( 2, actualCollection.size() );
+        TimeSeries<Double> actualSeriesOne = actualCollection.get( 0 );
+        TimeSeries<Double> actualSeriesTwo = actualCollection.get( 1 );
+
+        // Create the first expected series
+        TimeSeriesBuilder<Double> builderOne = new TimeSeriesBuilder<>();
+        TimeSeries<Double> expectedSeriesOne =
+                builderOne.addReferenceTime( Instant.parse( "2023-04-01T00:00:00Z" ), ReferenceTimeType.DEFAULT )
+                          .addEvent( Event.of( Instant.parse( "2023-04-01T03:00:00Z" ), 44.0 ) )
+                          .build();
+
+        // Actual series equals expected series
+        assertEquals( expectedSeriesOne, actualSeriesOne );
+
+        // Create the second expected series
+        TimeSeriesBuilder<Double> builderTwo = new TimeSeriesBuilder<>();
+        TimeSeries<Double> expectedSeriesTwo =
+                builderTwo.addReferenceTime( Instant.parse( "2023-04-01T17:00:00Z" ), ReferenceTimeType.DEFAULT )
+                          .addEvent( Event.of( Instant.parse( "2023-04-01T18:00:00Z" ), 65.0 ) )
                           .build();
 
         // Actual series equals expected series
@@ -464,7 +522,7 @@ public class SingleValuedForecastRetrieverTest
                 assertEquals( 1, row );
             }
         }
-        
+
     }
 
 }
