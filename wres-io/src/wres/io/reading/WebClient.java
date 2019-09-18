@@ -40,6 +40,7 @@ public class WebClient
     public WebClient()
     {
         this.httpClient = HttpClient.newBuilder()
+                                    .version( HttpClient.Version.HTTP_1_1 )
                                     .followRedirects( HttpClient.Redirect.NORMAL )
                                     .build();
     }
@@ -48,6 +49,7 @@ public class WebClient
     {
         Objects.requireNonNull( sslContext );
         this.httpClient = HttpClient.newBuilder()
+                                    .version( HttpClient.Version.HTTP_1_1 )
                                     .followRedirects( HttpClient.Redirect.NORMAL )
                                     .sslContext( sslContext )
                                     .build();
