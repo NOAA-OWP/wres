@@ -32,7 +32,7 @@ services:
         # rabbitmq.conf should have 180m specified as high watermark
         mem_limit: 360m
     worker:
-        image: "${DOCKER_REGISTRY}/wres/wres-worker:20190913-f604926"
+        image: "${DOCKER_REGISTRY}/wres/wres-worker:20190918-bbfd2ba"
         restart: always
         depends_on:
          - "broker"
@@ -41,6 +41,8 @@ services:
          - /mnt/wres_share:/mnt/wres_share
          # For certificates, keys that correspond to them, and .pgpass:
          - /mnt/wres_secrets:/wres_secrets:ro
+         # For input data:
+         - /home:/home:ro
         environment:
          - JAVA_OPTS=-Dwres.broker=broker -Djava.io.tmpdir=/mnt/wres_share/evaluations -XX:HeapDumpPath=/mnt/wres_share/ -XX:OnOutOfMemoryError='mv /mnt/wres_share/java_pid%p.hprof /mnt/wres_share/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/java_pid%p_`hostname`.hprof'
          - PGPASSFILE=/wres_secrets/.pgpass
