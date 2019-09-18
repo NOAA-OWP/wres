@@ -136,10 +136,10 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
         ScriptBuilder scripter = new ScriptBuilder( GET_ALL_TIME_SERIES_SCRIPT );
 
         // Add basic constraints
-        this.addProjectVariableAndMemberConstraints( scripter );
+        this.addProjectVariableAndMemberConstraints( scripter, 0 );
 
         // Add time window constraint
-        this.addTimeWindowClause( scripter );
+        this.addTimeWindowClause( scripter, 0 );
 
         // Add GROUP BY clause
         scripter.addLine( "GROUP BY TS.initialization_date, TSV.lead" );
@@ -223,8 +223,6 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
         scripter.addTab( 2 ).addLine( "AND (TSS.lead IS NULL OR TSS.lead = TSV.lead)" );
         scripter.addLine( "INNER JOIN wres.ProjectSource PS" );
         scripter.addTab().addLine( "ON PS.source_id = TSS.source_id" );
-        scripter.addLine( "INNER JOIN wres.Project P" );
-        scripter.addTab().addLine( "ON P.project_id = PS.project_id" );
 
         return scripter.toString();
     }

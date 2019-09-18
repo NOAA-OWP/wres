@@ -7,7 +7,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.TimeZone;
+import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -98,8 +98,8 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
         try ( DataProvider provider = scripter.buffer() )
         {
-            Map<Integer,TimeSeriesBuilder<S>> builders = new TreeMap<>();;
-
+            Map<Integer, TimeSeriesBuilder<S>> builders = new TreeMap<>();
+            
             Set<TimeSeries<S>> returnMe = new HashSet<>();
 
             while ( provider.next() )
@@ -107,21 +107,21 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                 int seriesId = provider.getInt( "series_id" );
 
                 TimeSeriesBuilder<S> builder = builders.get( seriesId );
-                
+
                 // Start a new series when required                 
                 if ( Objects.isNull( builder ) )
                 {
                     builder = new TimeSeriesBuilder<>();
                     builders.put( seriesId, builder );
                 }
-                
+
                 // Get the valid time
                 Instant validTime = provider.getInstant( "valid_time" );
 
                 // Add the reference time
                 if ( provider.hasColumn( "reference_time" ) )
                 {
-                    Instant referenceTime = provider.getInstant( "reference_time" );                   
+                    Instant referenceTime = provider.getInstant( "reference_time" );
                     builder.addReferenceTime( referenceTime, ReferenceTimeType.DEFAULT );
                 }
 
@@ -143,13 +143,14 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     }
 
     /**
-     * Adds an empty {@link TimeWindow} constraint to the retrieval script.
+     * Adds an empty {@link TimeWindow} constraint to the retrieval script. All intervals are treated as left-closed.
      * 
      * @param script the script to augment
+     * @param tabsIn the number of tabs in for the outermost clause
      * @throws NullPointerException if the input is null
      */
 
-    void addTimeWindowClause( ScriptBuilder script )
+    void addTimeWindowClause( ScriptBuilder script, int tabsIn )
     {
         Objects.requireNonNull( script );
 
@@ -160,26 +161,27 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             // Forecasts?
             if ( this.isForecastRetriever() )
             {
-                this.addLeadBoundsToScript( script, filter );
-                this.addReferenceTimeBoundsToScript( script, filter );
-                this.addValidTimeBoundsToForecastScript( script, filter );
+                this.addLeadBoundsToScript( script, filter, tabsIn );
+                this.addReferenceTimeBoundsToScript( script, filter, tabsIn );
+                this.addValidTimeBoundsToForecastScript( script, filter, tabsIn );
             }
             else
             {
-                this.addValidTimeBoundsToObservedScript( script, filter );
+                this.addValidTimeBoundsToObservedScript( script, filter, tabsIn );
             }
         }
     }
 
     /**
-     * Adds the lead duration bounds (if any) to the script.
+     * Adds the lead duration bounds (if any) to the script. The interval is left-closed.
      * 
      * @param script the script to augment
+     * @param tabsIn the number of tabs in for the outermost clause
      * @param filter the time window filter
      * @throws NullPointerException if the script is null
      */
 
-    void addLeadBoundsToScript( ScriptBuilder script, TimeWindow filter )
+    void addLeadBoundsToScript( ScriptBuilder script, TimeWindow filter, int tabsIn )
     {
         Objects.requireNonNull( script );
 
@@ -189,27 +191,28 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             if ( !filter.getEarliestLeadDuration().equals( TimeWindow.DURATION_MIN ) )
             {
                 long lowerLead = filter.getEarliestLeadDuration().toMinutes();
-                this.addWhereOrAndClause( script, "TSV.lead >= '", lowerLead, "'" );
+                this.addWhereOrAndClause( script, tabsIn, "TSV.lead >= '", lowerLead, "'" );
             }
 
             // Upper bound
             if ( !filter.getLatestLeadDuration().equals( TimeWindow.DURATION_MAX ) )
             {
                 long upperLead = filter.getLatestLeadDuration().toMinutes();
-                this.addWhereOrAndClause( script, "TSV.lead <= '", upperLead, "'" );
+                this.addWhereOrAndClause( script, tabsIn, "TSV.lead < '", upperLead, "'" );
             }
         }
     }
 
     /**
-     * Adds the valid time bounds (if any) to the script.
+     * Adds the valid time bounds (if any) to the script. The interval is left-closed.
      * 
      * @param script the script to augment
      * @param filter the time window filter
+     * @param tabsIn the number of tabs in for the outermost clause
      * @throws NullPointerException if the script is null
      */
 
-    void addValidTimeBoundsToForecastScript( ScriptBuilder script, TimeWindow filter )
+    void addValidTimeBoundsToForecastScript( ScriptBuilder script, TimeWindow filter, int tabsIn )
     {
         Objects.requireNonNull( script );
 
@@ -220,7 +223,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             {
                 String lowerValidTime = filter.getEarliestValidTime().toString();
 
-                String clause = "TS.initialization_date + INTERVAL '1 MINUTE' * TSV.lead >= '";
+                String clause = "TS.initialization_date + INTERVAL '1' MINUTE * TSV.lead >= '";
 
                 // Observation?
                 if ( !this.isForecastRetriever() )
@@ -229,6 +232,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                 }
 
                 this.addWhereOrAndClause( script,
+                                          tabsIn,
                                           clause,
                                           lowerValidTime,
                                           "'" );
@@ -239,15 +243,16 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             {
                 String upperValidTime = filter.getLatestValidTime().toString();
 
-                String clause = "TS.initialization_date + INTERVAL '1 MINUTE' * TSV.lead <= '";
+                String clause = "TS.initialization_date + INTERVAL '1' MINUTE * TSV.lead < '";
 
                 // Observation?
                 if ( !this.isForecastRetriever() )
                 {
-                    clause = "O.observation_time <= '";
+                    clause = "O.observation_time < '";
                 }
 
                 this.addWhereOrAndClause( script,
+                                          tabsIn,
                                           clause,
                                           upperValidTime,
                                           "'" );
@@ -256,14 +261,15 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     }
 
     /**
-     * Adds the valid time bounds (if any) to the script.
+     * Adds the valid time bounds (if any) to the script. The interval is left-closed.
      * 
      * @param script the script to augment
      * @param filter the time window filter
+     * @param tabsIn the number of tabs in for the outermost clause
      * @throws NullPointerException if the script is null
      */
 
-    void addValidTimeBoundsToObservedScript( ScriptBuilder script, TimeWindow filter )
+    void addValidTimeBoundsToObservedScript( ScriptBuilder script, TimeWindow filter, int tabsIn )
     {
         Objects.requireNonNull( script );
 
@@ -273,14 +279,14 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             if ( !filter.getEarliestValidTime().equals( Instant.MIN ) )
             {
                 String lowerValidTime = filter.getEarliestValidTime().toString();
-                this.addWhereOrAndClause( script, "O.observation_time >= '", lowerValidTime, "'" );
+                this.addWhereOrAndClause( script, tabsIn, "O.observation_time >= '", lowerValidTime, "'" );
             }
 
             // Upper bound
             if ( !filter.getLatestValidTime().equals( Instant.MAX ) )
             {
                 String upperValidTime = filter.getLatestValidTime().toString();
-                this.addWhereOrAndClause( script, "O.observation_time <= '", upperValidTime, "'" );
+                this.addWhereOrAndClause( script, tabsIn, "O.observation_time < '", upperValidTime, "'" );
             }
         }
     }
@@ -290,10 +296,11 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * 
      * @param script the script to augment
      * @param filter the time window filter
+     * @param tabsIn the number of tabs in for the outermost clause
      * @throws NullPointerException if the script is null
      */
 
-    void addReferenceTimeBoundsToScript( ScriptBuilder script, TimeWindow filter )
+    void addReferenceTimeBoundsToScript( ScriptBuilder script, TimeWindow filter, int tabsIn )
     {
         Objects.requireNonNull( script );
 
@@ -303,14 +310,14 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             if ( !filter.getEarliestReferenceTime().equals( Instant.MIN ) )
             {
                 String lowerReferenceTime = filter.getEarliestReferenceTime().toString();
-                this.addWhereOrAndClause( script, "TS.initialization_date >= '", lowerReferenceTime, "'" );
+                this.addWhereOrAndClause( script, tabsIn, "TS.initialization_date >= '", lowerReferenceTime, "'" );
             }
 
             // Upper bound
             if ( !filter.getLatestReferenceTime().equals( Instant.MAX ) )
             {
                 String upperReferenceTime = filter.getLatestReferenceTime().toString();
-                this.addWhereOrAndClause( script, "TS.initialization_date <= '", upperReferenceTime, "'" );
+                this.addWhereOrAndClause( script, tabsIn, "TS.initialization_date < '", upperReferenceTime, "'" );
             }
         }
     }
@@ -320,31 +327,41 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * {@link #getVariableFeatureId()} and {@ #getLeftOrRightOrBaseline()}.
      * 
      * @param script the script to augment
+     * @param tabsIn the number of tabs in for the outermost clause
      */
 
-    void addProjectVariableAndMemberConstraints( ScriptBuilder script )
+    void addProjectVariableAndMemberConstraints( ScriptBuilder script, int tabsIn )
     {
         // project_id
         if ( Objects.nonNull( this.getProjectId() ) )
         {
-            this.addWhereOrAndClause( script, "P.project_id = '", this.getProjectId(), "'" );
+            this.addWhereOrAndClause( script, tabsIn, "PS.project_id = '", this.getProjectId(), "'" );
         }
         // variablefeature_id
         if ( Objects.nonNull( this.getVariableFeatureId() ) )
         {
             if ( this.isForecastRetriever() )
             {
-                this.addWhereOrAndClause( script, "TS.variablefeature_id = '", this.getVariableFeatureId(), "'" );
+                this.addWhereOrAndClause( script,
+                                          tabsIn,
+                                          "TS.variablefeature_id = '",
+                                          this.getVariableFeatureId(),
+                                          "'" );
             }
             else
             {
-                this.addWhereOrAndClause( script, "O.variablefeature_id = '", this.getVariableFeatureId(), "'" );
+                this.addWhereOrAndClause( script,
+                                          tabsIn,
+                                          "O.variablefeature_id = '",
+                                          this.getVariableFeatureId(),
+                                          "'" );
             }
         }
         // member
         if ( Objects.nonNull( this.getLeftOrRightOrBaseline() ) )
         {
             this.addWhereOrAndClause( script,
+                                      tabsIn,
                                       "PS.member = '",
                                       this.getLeftOrRightOrBaseline().toString().toLowerCase(),
                                       "'" );
@@ -411,10 +428,11 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * starts with <code>WHERE</code>, then the clause added starts with <code>AND</code>, otherwise <code>WHERE</code>. 
      * 
      * @param script the script
+     * @param tabsIn the number of tabs in for the outermost clause
      * @param clauseElements the clause elements
      */
 
-    void addWhereOrAndClause( ScriptBuilder script, Object... clauseElements )
+    void addWhereOrAndClause( ScriptBuilder script, int tabsIn, Object... clauseElements )
     {
         Objects.requireNonNull( script );
 
@@ -435,14 +453,23 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         String clause = Arrays.stream( clauseElements )
                               .map( Object::toString )
                               .collect( Collectors.joining() );
-
-        if ( lastLine.contains( "WHERE" ) || lastLine.contains( "AND" ) )
+        
+        StringJoiner joiner = new StringJoiner( "" );
+        String tab = "    ";
+        for(int i = 0; i < tabsIn; i++ )
         {
-            script.addTab().addLine( "AND ", clause );
+            joiner.add( tab );
+        }
+
+        // Last lines starts with a WHERE or an AND at the same tabs
+        String tabs = joiner.toString();
+        if ( lastLine.startsWith( tabs + "WHERE" ) || lastLine.startsWith( tabs + tab + "AND" ) )
+        {
+            script.addTab( tabsIn + 1 ).addLine( "AND ", clause );
         }
         else
         {
-            script.addLine( "WHERE ", clause );
+            script.addTab( tabsIn ).addLine( "WHERE ", clause );
         }
     }
 

@@ -166,7 +166,7 @@ public class ObservationRetrieverTest
 
         // Build the pool boundaries
         TimeWindow poolBoundaries =
-                TimeWindow.of( Instant.parse( FIRST_TIME ), Instant.parse( SECOND_TIME ) );
+                TimeWindow.of( Instant.parse( FIRST_TIME ), Instant.parse( "2023-04-01T10:00:00Z" ) );
         
         // Build the retriever
         TimeSeriesRetriever<Double> observedRetriever =

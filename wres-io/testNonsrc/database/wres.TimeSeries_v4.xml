@@ -7,7 +7,7 @@
         objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
     <changeSet id="ScaleFunction - Create a scalefunction for any dbms that supports ENUM" author="James Brown">
         <sql>
-            CREATE TYPE scale_function AS ENUM('UNKNOWN', 'MEAN', 'MINIMUM', 'MAXIMUM', 'TOTAL');
+            CREATE TYPE IF NOT EXISTS scale_function AS ENUM('UNKNOWN', 'MEAN', 'MINIMUM', 'MAXIMUM', 'TOTAL');
         </sql>
         <comment>
             Added the scale_function data type.
