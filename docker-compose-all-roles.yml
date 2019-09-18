@@ -43,6 +43,8 @@ services:
          - /mnt/wres_secrets:/wres_secrets:ro
          # For input data:
          - /home:/home:ro
+         # For logs (inside container, avoid writing to read-only /home)
+         - /container_home
         environment:
          - JAVA_OPTS=-Dwres.broker=broker -Djava.io.tmpdir=/mnt/wres_share/evaluations -XX:HeapDumpPath=/mnt/wres_share/ -XX:OnOutOfMemoryError='mv /mnt/wres_share/java_pid%p.hprof /mnt/wres_share/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/java_pid%p_`hostname`.hprof'
          - PGPASSFILE=/wres_secrets/.pgpass

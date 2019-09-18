@@ -48,7 +48,7 @@ RUN yum install -y \
 
 # For examples of the following for alpine or debian, see git history.
 RUN groupadd --gid 1370800073 wres \
-    && useradd --uid 498 --gid 1370800073 wres_docker
+    && useradd --uid 498 --gid 1370800073 wres_docker --home-dir /container_home
 
 # Specifies which version of the main WRES version to use.
 ARG version
