@@ -51,7 +51,7 @@ public class GriddedReader
 
     private final boolean isForecast;
 
-    private static GridFileReader getReader(final String filePath, final String variableName, final boolean isForecast)
+    private static GridFileReader getReader(final String filePath, final boolean isForecast)
             throws IOException
     {
         synchronized ( READER_LOCK )
@@ -61,7 +61,7 @@ public class GriddedReader
             // If the reader isn't in the collection, add it
             if (!GriddedReader.FILE_READERS.containsKey( filePath ))
             {
-                reader = new GridFileReader( filePath, variableName, isForecast );
+                reader = new GridFileReader( filePath, isForecast );
                 GriddedReader.FILE_READERS.put( filePath, reader );
             }
             else
@@ -112,7 +112,7 @@ public class GriddedReader
         while (!this.paths.isEmpty())
         {
             String path = this.paths.remove();
-            GridFileReader reader = GriddedReader.getReader( path, this.getVariable_name(), this.isForecast );
+            GridFileReader reader = GriddedReader.getReader( path, this.isForecast );
 
             if (reader.isLocked())
             {
@@ -128,6 +128,7 @@ public class GriddedReader
                     // not the... time!
                     value = reader.read(
                             null,
+                            this.getVariable_name(), 
                             feature.getCoordinate().getLatitude(),
                             feature.getCoordinate().getLongitude()
                     );
@@ -189,15 +190,14 @@ public class GriddedReader
 
     private static class GridFileReader
     {
-        GridFileReader(final String path, final String variableName, final boolean isForecast)
+        GridFileReader(final String path, final boolean isForecast)
         {
             this.path = path;
             this.isForecast = isForecast;
-            this.variableName = variableName;
             this.readLock = new ReentrantLock(  );
         }
 
-        GridValue read(Integer time, final double latitude, final double longitude)
+        GridValue read(Integer time, String variableName, final double latitude, final double longitude)
                 throws IOException, InvalidRangeException
         {
             if (time == null)
@@ -211,7 +211,7 @@ public class GriddedReader
             DatasetUrl url = new DatasetUrl( ServiceType.File, this.path );
             try (NetcdfDataset dataset = NetcdfDataset.acquireDataset( url, null ); GridDataset gridDataset = new GridDataset( dataset ))
             {
-                GridDatatype variable = gridDataset.findGridDatatype( this.variableName );
+                GridDatatype variable = gridDataset.findGridDatatype( variableName );
 
                 // Returns XY from YX parameters
                 int[] xIndexYIndex = variable.getCoordinateSystem().findXYindexFromLatLon( latitude, longitude, null );
@@ -271,6 +271,5 @@ public class GriddedReader
         private Instant validTime = null;
         private final ReentrantLock readLock;
         private final boolean isForecast;
-        private final String variableName;
     }
 }
