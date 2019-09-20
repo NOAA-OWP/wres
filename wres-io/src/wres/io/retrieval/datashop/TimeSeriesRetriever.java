@@ -1,6 +1,7 @@
 package wres.io.retrieval.datashop;
 
 import java.sql.SQLException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -16,6 +17,7 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
@@ -99,8 +101,10 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         try ( DataProvider provider = scripter.buffer() )
         {
             Map<Integer, TimeSeriesBuilder<S>> builders = new TreeMap<>();
-            
+
             Set<TimeSeries<S>> returnMe = new HashSet<>();
+
+            TimeScale timeScale = null;
 
             while ( provider.next() )
             {
@@ -127,7 +131,31 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
                 // Add the event     
                 S value = mapper.apply( provider );
-                builder.addEvent( Event.of( validTime, value ) );
+                Event<S> event = Event.of( validTime, value );
+                builder.addEvent( event );
+
+                // Add the time-scale info
+                String functionString = provider.getString( "scale_function" );
+                Duration period = provider.getDuration( "scale_period" );
+
+                TimeScale.TimeScaleFunction function =
+                        TimeScale.TimeScaleFunction.valueOf( functionString.toUpperCase() );
+
+                TimeScale latestScale = TimeScale.of( period, function );
+
+                if ( Objects.nonNull( timeScale ) && !latestScale.equals( timeScale ) )
+                {
+                    throw new DataAccessException( "The time scale information associated with event '" + event
+                                                   + "' is '"
+                                                   + latestScale
+                                                   + "' but other events in the same series have a different time "
+                                                   + "scale of '"
+                                                   + timeScale
+                                                   + "', which is not allowed." );
+                }
+
+                timeScale = latestScale;
+                builder.addTimeScale( latestScale );
             }
 
             LOGGER.debug( "Finished execute script with hash {}, which retrieved {} time-series.",
@@ -453,10 +481,10 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         String clause = Arrays.stream( clauseElements )
                               .map( Object::toString )
                               .collect( Collectors.joining() );
-        
+
         StringJoiner joiner = new StringJoiner( "" );
         String tab = "    ";
-        for(int i = 0; i < tabsIn; i++ )
+        for ( int i = 0; i < tabsIn; i++ )
         {
             joiner.add( tab );
         }
