@@ -35,7 +35,7 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
      * Log message.
      */
 
-    private static final String LOG_SCRIPT = "Built the following script with hash {} for time-series retrieval:{}{}";
+    private static final String LOG_SCRIPT = "Built {} for the retrieval of observations with the following script:{}{}";
 
     /**
      * Template script for the {@link #getAll()}.
@@ -138,7 +138,7 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
         if ( LOGGER.isDebugEnabled() )
         {
             LOGGER.debug( LOG_SCRIPT,
-                          script.hashCode(),
+                          this,
                           System.lineSeparator(),
                           script );
         }
