@@ -189,6 +189,8 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
         scripter.addTab().addLine( "1 AS series_id," );  // Facilitates a unary mapping across series types: #56214-56
         scripter.addTab().addLine( "O.observation_time AS valid_time," );
         scripter.addTab().addLine( "O.observed_value AS observation," );
+        scripter.addTab().addLine( "O.scale_period," );
+        scripter.addTab().addLine( "O.scale_function," );
         scripter.addTab().addLine( "O.measurementunit_id" );       
         scripter.addLine( "FROM wres.Observation O" );
         scripter.addLine( "INNER JOIN wres.ProjectSource PS" );

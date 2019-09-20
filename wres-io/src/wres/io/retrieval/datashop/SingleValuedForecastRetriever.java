@@ -333,11 +333,16 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         scripter.addTab().addLine( "TS.initialization_date + INTERVAL '1' MINUTE * TSV.lead AS valid_time," );
         scripter.addTab().addLine( "TS.initialization_date AS reference_time," );
         scripter.addTab().addLine( "TSV.series_value AS measurement," );
-        scripter.addTab().addLine( "TS.measurementunit_id" );
+        scripter.addTab().addLine( "TS.measurementunit_id," );
+        scripter.addTab().addLine( "TS.scale_period," );
+        scripter.addTab().addLine( "TS.scale_function," );
+        scripter.addTab().addLine( "TS.measurementunit_id" ); 
         scripter.addLine( "FROM (" );
         scripter.addTab().addLine( "SELECT " );
         scripter.addTab( 2 ).addLine( "TS.timeseries_id," );
         scripter.addTab( 2 ).addLine( "TS.initialization_date," );
+        scripter.addTab( 2 ).addLine( "TS.scale_period," );
+        scripter.addTab( 2 ).addLine( "TS.scale_function," );
         scripter.addTab( 2 ).addLine( "TS.measurementunit_id," );
         scripter.addTab( 2 ).addLine( "TSS.lead" );
         scripter.addTab().addLine( FROM_WRES_TIME_SERIES_TS );

@@ -3,6 +3,7 @@ package wres.datamodel.time;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.SortedSet;
@@ -11,13 +12,16 @@ import java.util.TreeSet;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
+import wres.datamodel.sampledata.pairs.PairingException;
+import wres.datamodel.scale.TimeScale;
+
 /**
- * Tests the {@link CrispPairerByValidTime}
+ * Tests the {@link TimeSeriesPairerByExactValidTime}
  * 
  * @author james.brown@hydrosolved.com
  */
 
-public class CrispPairerByValidTimeTest
+public class TimeSeriesPairerByExactValidTimeTest
 {
 
     private static final String SIXTH_TIME = "2039-01-12T11:00:00Z";
@@ -55,7 +59,7 @@ public class CrispPairerByValidTimeTest
 
         TimeSeries<String> right = TimeSeries.of( rightEvents );
 
-        TimeSeriesPairer<String, String> pairer = CrispPairerByValidTime.of();
+        TimeSeriesPairer<String, String> pairer = TimeSeriesPairerByExactValidTime.of();
 
         // Create the actual pairs
         TimeSeries<Pair<String, String>> actualPairs = pairer.pair( left, right );
@@ -89,7 +93,7 @@ public class CrispPairerByValidTimeTest
 
         TimeSeries<String> right = TimeSeries.of( rightEvents );
 
-        TimeSeriesPairer<String, String> pairer = CrispPairerByValidTime.of();
+        TimeSeriesPairer<String, String> pairer = TimeSeriesPairerByExactValidTime.of();
 
         // Create the actual pairs
         TimeSeries<Pair<String, String>> actualPairs = pairer.pair( left, right );
@@ -131,7 +135,7 @@ public class CrispPairerByValidTimeTest
 
         TimeSeries<Double> right = TimeSeries.of( referenceTime, rightEvents );
 
-        TimeSeriesPairer<Double, Double> pairer = CrispPairerByValidTime.of();
+        TimeSeriesPairer<Double, Double> pairer = TimeSeriesPairerByExactValidTime.of();
 
         // Create the actual pairs
         TimeSeries<Pair<Double, Double>> actualPairs = pairer.pair( left, right );
@@ -152,7 +156,7 @@ public class CrispPairerByValidTimeTest
     @Test
     public void testPairThrowsExceptionWhenNullLeftIsNull()
     {
-        TimeSeriesPairer<Double, Double> pairer = CrispPairerByValidTime.of();
+        TimeSeriesPairer<Double, Double> pairer = TimeSeriesPairerByExactValidTime.of();
         TimeSeries<Double> series =
                 TimeSeries.of( new TreeSet<>( Collections.singleton( Event.of( Instant.now(), 1.0 ) ) ) );
 
@@ -165,7 +169,7 @@ public class CrispPairerByValidTimeTest
     @Test
     public void testPairThrowsExceptionWhenRightIsNull()
     {
-        TimeSeriesPairer<Double, Double> pairer = CrispPairerByValidTime.of();
+        TimeSeriesPairer<Double, Double> pairer = TimeSeriesPairerByExactValidTime.of();
         TimeSeries<Double> series =
                 TimeSeries.of( new TreeSet<>( Collections.singleton( Event.of( Instant.now(), 1.0 ) ) ) );
 
@@ -173,6 +177,28 @@ public class CrispPairerByValidTimeTest
                                                        () -> pairer.pair( series, null ) );
 
         assertEquals( "Cannot pair a right time-series that is null.", exception.getMessage() );
+    }
+
+    @Test
+    public void testPairThrowsExceptionWhenLeftAndRightHaveDifferentTimeScales()
+    {
+        TimeSeriesPairer<Object, Object> pairer = TimeSeriesPairerByExactValidTime.of();
+
+        TimeSeries<Object> seriesOne =
+                new TimeSeries.TimeSeriesBuilder<>().build();
+
+        TimeSeries<Object> seriesTwo =
+                new TimeSeries.TimeSeriesBuilder<>().addTimeScale( TimeScale.of( Duration.ofHours( 1 ) ) ).build();
+
+
+        TimeSeries.of( new TreeSet<>( Collections.singleton( Event.of( Instant.now(), 1.0 ) ) ) );
+
+        PairingException exception = assertThrows( PairingException.class,
+                                                   () -> pairer.pair( seriesOne, seriesTwo ) );
+
+        assertEquals( "Cannot pair two datasets with different time scales. The left time-series has a time-scale of "
+                      + "'[INSTANTANEOUS]' and the right time-series has a time-scale of '[PT1H,UNKNOWN]'.",
+                      exception.getMessage() );
     }
 
 }

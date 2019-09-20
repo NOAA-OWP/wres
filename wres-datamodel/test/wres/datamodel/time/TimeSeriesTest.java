@@ -14,6 +14,7 @@ import java.util.TreeSet;
 import org.junit.Before;
 import org.junit.Test;
 
+import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 
 /**
@@ -86,6 +87,16 @@ public class TimeSeriesTest
         assertEquals( this.events, this.testSeries.getEvents() );
     }
 
+    /**
+     * Tests the {@link TimeSeries#getTimeScale()}.
+     */
+
+    @Test
+    public void testGetTimeScale()
+    {
+        assertEquals( TimeScale.of(), this.testSeries.getTimeScale() );
+    }
+    
     /**
      * Tests the {@link TimeSeries#hashCode()}.
      */
@@ -212,8 +223,8 @@ public class TimeSeriesTest
                           + this.testSeries.hashCode()
                           + ", "
                           + "Reference times: {T0=2123-12-01T00:00:00Z}, "
-                          + "Events: [(2123-12-01T06:00:00Z,1.0), (2123-12-01T12:00:00Z,2.0), (2123-12-01T18:00:00Z,3.0)]"
-                          + "]";
+                          + "Events: [(2123-12-01T06:00:00Z,1.0), (2123-12-01T12:00:00Z,2.0), (2123-12-01T18:00:00Z,3.0)], "
+                          + "TimeScale: [INSTANTANEOUS]]";
 
         assertEquals( expected, actual );
     }

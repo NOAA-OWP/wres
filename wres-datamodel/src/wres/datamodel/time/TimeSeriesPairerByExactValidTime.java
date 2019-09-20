@@ -9,6 +9,8 @@ import java.util.TreeSet;
 
 import org.apache.commons.lang3.tuple.Pair;
 
+import wres.datamodel.sampledata.pairs.PairingException;
+
 /**
  * Implements pairing of two {@link TimeSeries} by valid time with exact matching. In other words, pairs are created
  * for each corresponding {@link Instant} in the left and right inputs. Additionally, when the left and right inputs 
@@ -21,7 +23,7 @@ import org.apache.commons.lang3.tuple.Pair;
  * @author james.brown@hydrosolved.com
  */
 
-public class CrispPairerByValidTime<L, R> implements TimeSeriesPairer<L, R>
+public class TimeSeriesPairerByExactValidTime<L, R> implements TimeSeriesPairer<L, R>
 {
 
     /**
@@ -34,9 +36,9 @@ public class CrispPairerByValidTime<L, R> implements TimeSeriesPairer<L, R>
      * @return an instance of the pairer
      */
 
-    public static <L, R> CrispPairerByValidTime<L, R> of()
+    public static <L, R> TimeSeriesPairerByExactValidTime<L, R> of()
     {
-        return new CrispPairerByValidTime<>();
+        return new TimeSeriesPairerByExactValidTime<>();
     }
 
 
@@ -45,6 +47,16 @@ public class CrispPairerByValidTime<L, R> implements TimeSeriesPairer<L, R>
     {
         Objects.requireNonNull( left, "Cannot pair a left time-series that is null." );
         Objects.requireNonNull( right, "Cannot pair a right time-series that is null." );
+
+        if ( !left.getTimeScale().equals( right.getTimeScale() ) )
+        {
+            throw new PairingException( "Cannot pair two datasets with different time scales. The left time-series "
+                                        + "has a time-scale of '"
+                                        + left.getTimeScale()
+                                        + "' and the right time-series has a time-scale of '"
+                                        + right.getTimeScale()
+                                        + "'." );
+        }
 
         Map<Instant, Event<L>> mapper = new TreeMap<>();
 
@@ -71,7 +83,7 @@ public class CrispPairerByValidTime<L, R> implements TimeSeriesPairer<L, R>
      * Hidden constructor.
      */
 
-    private CrispPairerByValidTime()
+    private TimeSeriesPairerByExactValidTime()
     {
     }
 

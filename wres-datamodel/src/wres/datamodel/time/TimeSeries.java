@@ -12,6 +12,8 @@ import java.util.TreeSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.datamodel.scale.TimeScale;
+
 /**
  * <p>A time-series contains a time-ordered set of {@link Event}, together with one or more reference datetimes and 
  * associated {@link ReferenceTimeType}.
@@ -46,8 +48,15 @@ public class TimeSeries<T>
     private final SortedSet<Event<T>> events;
 
     /**
+     * The {@link TimeScale} associated with the events in the time-series.
+     */
+
+    private final TimeScale timeScale;
+
+    /**
      * Returns a {@link TimeSeries} with a reference time equal to the {@link Event#getTime()} of the first event or 
-     * {@link Instant#MIN} when the input is empty. Assumes a type of {@link ReferenceTimeType#DEFAULT}.
+     * {@link Instant#MIN} when the input is empty. Assumes a type of {@link ReferenceTimeType#DEFAULT}. Also assumes
+     * a time-scale of {@link TimeScale#of()}.
      *
      * @param <T> the event type
      * @param events the events
@@ -57,11 +66,12 @@ public class TimeSeries<T>
 
     public static <T> TimeSeries<T> of( SortedSet<Event<T>> events )
     {
-        return new TimeSeries<>( Collections.emptyMap(), events );
+        return TimeSeries.of( Collections.emptyMap(), events );
     }
 
     /**
-     * Returns a {@link TimeSeries} with a reference time type of {@link ReferenceTimeType#DEFAULT}.
+     * Returns a {@link TimeSeries} with a reference time type of {@link ReferenceTimeType#DEFAULT}. Assumes a 
+     * time-scale of {@link TimeScale#of()}.
      * 
      * @param <T> the event type
      * @param referenceTime the reference time
@@ -73,11 +83,11 @@ public class TimeSeries<T>
     public static <T> TimeSeries<T> of( Instant referenceTime,
                                         SortedSet<Event<T>> events )
     {
-        return new TimeSeries<>( Collections.singletonMap( ReferenceTimeType.DEFAULT, referenceTime ), events );
+        return TimeSeries.of( Collections.singletonMap( ReferenceTimeType.DEFAULT, referenceTime ), events );
     }
 
     /**
-     * Returns a {@link TimeSeries}.
+     * Returns a {@link TimeSeries}.  Also assumes a time-scale of {@link TimeScale#of()}.
      * 
      * @param <T> the event type
      * @param referenceTime the reference time
@@ -91,11 +101,11 @@ public class TimeSeries<T>
                                         ReferenceTimeType referenceTimeType,
                                         SortedSet<Event<T>> events )
     {
-        return new TimeSeries<>( Collections.singletonMap( referenceTimeType, referenceTime ), events );
+        return TimeSeries.of( Collections.singletonMap( referenceTimeType, referenceTime ), events );
     }
 
     /**
-     * Returns a {@link TimeSeries}.
+     * Returns a {@link TimeSeries}.  Also assumes a time-scale of {@link TimeScale#of()}.
      * 
      * @param <T> the event type
      * @param referenceTimes the reference times
@@ -107,7 +117,15 @@ public class TimeSeries<T>
     public static <T> TimeSeries<T> of( Map<ReferenceTimeType, Instant> referenceTimes,
                                         SortedSet<Event<T>> events )
     {
-        return new TimeSeries<>( referenceTimes, events );
+        Objects.requireNonNull( referenceTimes );
+
+        Objects.requireNonNull( events );
+
+        TimeSeriesBuilder<T> builder = new TimeSeriesBuilder<>();
+        events.forEach( builder::addEvent );
+        referenceTimes.forEach( ( type, time ) -> builder.addReferenceTime( time, type ) );
+
+        return builder.build();
     }
 
     /**
@@ -119,6 +137,17 @@ public class TimeSeries<T>
     public SortedSet<Event<T>> getEvents()
     {
         return this.events; // Rendered immutable on construction
+    }
+
+    /**
+     * Returns the {@link TimeScale} associated with the events.
+     * 
+     * @return the time-scale
+     */
+
+    public TimeScale getTimeScale()
+    {
+        return this.timeScale;
     }
 
     /**
@@ -143,7 +172,8 @@ public class TimeSeries<T>
         TimeSeries<?> input = (TimeSeries<?>) o;
 
         return Objects.equals( this.getReferenceTimes(), input.getReferenceTimes() )
-               && Objects.equals( this.getEvents(), input.getEvents() );
+               && Objects.equals( this.getEvents(), input.getEvents() )
+               && Objects.equals( this.getTimeScale(), input.getTimeScale() );
     }
 
     @Override
@@ -160,25 +190,23 @@ public class TimeSeries<T>
         joiner.add( "TimeSeries@" + this.hashCode() );
         joiner.add( "Reference times: " + this.getReferenceTimes().toString() );
         joiner.add( "Events: " + this.getEvents() );
+        joiner.add( "TimeScale: " + this.timeScale );
 
         return joiner.toString();
     }
 
     /**
-     * Build a time-series.
+     * Builds with a builder.
      * 
-     * @param referenceTimes the reference datetimes associated with the time-series
-     * @param events the events
-     * @throws NullPointerException if any input is null or any individual event is null
+     * @param builder the builder
      */
-
-    private TimeSeries( Map<ReferenceTimeType, Instant> referenceTimes, SortedSet<Event<T>> events )
+    private TimeSeries( TimeSeriesBuilder<T> builder )
     {
-        // Set then validate, as this class includes a mutable builder
-        // as a possible source of input
-        this.events = Collections.unmodifiableSortedSet( events );
 
-        Map<ReferenceTimeType, Instant> localMap = new TreeMap<>( referenceTimes );
+        // Set then validate
+        this.events = Collections.unmodifiableSortedSet( builder.events );
+
+        Map<ReferenceTimeType, Instant> localMap = new TreeMap<>( builder.referenceTimes );
 
         // Add a default reference time if needed
         if ( localMap.isEmpty() )
@@ -201,6 +229,19 @@ public class TimeSeries<T>
 
         this.referenceTimes = Collections.unmodifiableMap( localMap );
 
+        if ( Objects.isNull( builder.timeScale ) )
+        {
+            this.timeScale = TimeScale.of();
+
+            LOGGER.trace( "No time-scale information was provided for time-series {}: building a time-series with a "
+                          + "default time-scale.",
+                          this.hashCode() );
+        }
+        else
+        {
+            this.timeScale = builder.timeScale;
+        }
+
         // All reference datetimes and types must be non-null
         for ( Map.Entry<ReferenceTimeType, Instant> nextEntry : this.getReferenceTimes().entrySet() )
         {
@@ -209,21 +250,9 @@ public class TimeSeries<T>
             Objects.requireNonNull( nextEntry.getValue() );
         }
 
-        // No null collection of events
-        Objects.requireNonNull( this.getEvents() );
-
         // No null events
         this.getEvents().forEach( Objects::requireNonNull );
-    }
 
-    /**
-     * Builds with a builder.
-     * 
-     * @param builder the builder
-     */
-    private TimeSeries( TimeSeriesBuilder<T> builder )
-    {
-        this( builder.referenceTimes, builder.events );
     }
 
     /**
@@ -246,6 +275,12 @@ public class TimeSeries<T>
          */
 
         private final Map<ReferenceTimeType, Instant> referenceTimes = new TreeMap<>();
+
+        /**
+         * The time-scale associated with the events.
+         */
+
+        private TimeScale timeScale;
 
         /**
          * Sets the reference time.
@@ -282,6 +317,19 @@ public class TimeSeries<T>
             }
 
             this.events.add( event );
+
+            return this;
+        }
+
+        /**
+         * Adds the time-scale information.
+         * 
+         * @param timeScale the time scale
+         */
+
+        public TimeSeriesBuilder<T> addTimeScale( TimeScale timeScale )
+        {
+            this.timeScale = timeScale;
 
             return this;
         }
