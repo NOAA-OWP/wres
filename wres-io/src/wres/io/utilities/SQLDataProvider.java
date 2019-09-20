@@ -19,6 +19,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -32,6 +33,8 @@ import wres.util.TimeHelper;
  */
 public class SQLDataProvider implements DataProvider
 {
+    private static final String THE_DATA_IS_NOT_ACCESSIBLE = "The data is not accessible.";
+
     private static final Logger LOGGER = LoggerFactory.getLogger( SQLDataProvider.class );
 
     /**
@@ -216,7 +219,7 @@ public class SQLDataProvider implements DataProvider
         }
         catch ( SQLException e )
         {
-            throw new IllegalStateException( "The data is not accessible.", e );
+            throw new IllegalStateException( THE_DATA_IS_NOT_ACCESSIBLE, e );
         }
     }
 
@@ -248,7 +251,7 @@ public class SQLDataProvider implements DataProvider
         }
         catch ( SQLException e )
         {
-            throw new IllegalStateException( "The data is not accessible.", e );
+            throw new IllegalStateException( THE_DATA_IS_NOT_ACCESSIBLE, e );
         }
     }
 
@@ -308,7 +311,7 @@ public class SQLDataProvider implements DataProvider
         }
         catch ( SQLException e )
         {
-            throw new IllegalStateException( "The data is not accessible.", e );
+            throw new IllegalStateException( THE_DATA_IS_NOT_ACCESSIBLE, e );
         }
     }
 
@@ -326,7 +329,7 @@ public class SQLDataProvider implements DataProvider
         }
         catch ( SQLException e )
         {
-            throw new IllegalStateException( "The data is not accessible.", e );
+            throw new IllegalStateException( THE_DATA_IS_NOT_ACCESSIBLE, e );
         }
     }
 
@@ -344,7 +347,7 @@ public class SQLDataProvider implements DataProvider
         }
         catch ( SQLException e )
         {
-            throw new IllegalStateException( "The data is not accessible.", e );
+            throw new IllegalStateException( THE_DATA_IS_NOT_ACCESSIBLE, e );
         }
     }
 
@@ -362,7 +365,7 @@ public class SQLDataProvider implements DataProvider
         }
         catch ( SQLException e )
         {
-            throw new IllegalStateException( "The data is not accessible.", e );
+            throw new IllegalStateException( THE_DATA_IS_NOT_ACCESSIBLE, e );
         }
     }
 
@@ -391,7 +394,7 @@ public class SQLDataProvider implements DataProvider
         }
         catch ( SQLException e )
         {
-            throw new IllegalStateException( "The data is not accessible.", e );
+            throw new IllegalStateException( THE_DATA_IS_NOT_ACCESSIBLE, e );
         }
     }
 
@@ -410,7 +413,7 @@ public class SQLDataProvider implements DataProvider
         }
         catch ( SQLException e )
         {
-            throw new IllegalStateException( "The data is not accessible.", e );
+            throw new IllegalStateException( THE_DATA_IS_NOT_ACCESSIBLE, e );
         }
     }
 
@@ -428,7 +431,7 @@ public class SQLDataProvider implements DataProvider
         }
         catch ( SQLException e )
         {
-            throw new IllegalStateException( "The data is not accessible.", e );
+            throw new IllegalStateException( THE_DATA_IS_NOT_ACCESSIBLE, e );
         }
     }
 
@@ -446,7 +449,7 @@ public class SQLDataProvider implements DataProvider
         }
         catch ( SQLException e )
         {
-            throw new IllegalStateException( "The data is not accessible.", e );
+            throw new IllegalStateException( THE_DATA_IS_NOT_ACCESSIBLE, e );
         }
     }
 
@@ -464,7 +467,7 @@ public class SQLDataProvider implements DataProvider
         }
         catch ( SQLException e )
         {
-            throw new IllegalStateException( "The data is not accessible.", e );
+            throw new IllegalStateException( THE_DATA_IS_NOT_ACCESSIBLE, e );
         }
     }
 
@@ -482,7 +485,7 @@ public class SQLDataProvider implements DataProvider
         }
         catch ( SQLException e )
         {
-            throw new IllegalStateException( "The data is not accessible.", e );
+            throw new IllegalStateException( THE_DATA_IS_NOT_ACCESSIBLE, e );
         }
     }
 
@@ -500,7 +503,7 @@ public class SQLDataProvider implements DataProvider
         }
         catch ( SQLException e )
         {
-            throw new IllegalStateException( "The data is not accessible.", e );
+            throw new IllegalStateException( THE_DATA_IS_NOT_ACCESSIBLE, e );
         }
     }
 
@@ -509,11 +512,33 @@ public class SQLDataProvider implements DataProvider
     {
         try
         {
-            return (Double[])this.resultSet.getArray( columnName ).getArray();
+            // Probe the inner type of array before casting
+            // See #56214-139-140
+            Array outer = this.resultSet.getArray( columnName );
+            Object inner = this.resultSet.getArray( columnName ).getArray();
+
+            if ( inner instanceof Object[] )
+            {
+                Object[] toTransform = (Object[]) inner;
+
+                return Arrays.copyOf( toTransform, toTransform.length, Double[].class );
+            }
+            else if ( inner instanceof Double[] )
+            {
+                return (Double[]) inner;
+            }
+            else
+            {
+                throw new ClassCastException( "Could not cast the input type of '"
+                                              + inner.getClass()
+                                              + "' with SQL type '"
+                                              + outer.getBaseTypeName()
+                                              + "' to a Double[]." );
+            }
         }
         catch ( SQLException e )
         {
-            throw new IllegalStateException( "The data is not accessible.", e );
+            throw new IllegalStateException( THE_DATA_IS_NOT_ACCESSIBLE, e );
         }
     }
 
@@ -526,7 +551,7 @@ public class SQLDataProvider implements DataProvider
         }
         catch (SQLException e)
         {
-            throw new IllegalStateException( "The data is not accessible.", e );
+            throw new IllegalStateException( THE_DATA_IS_NOT_ACCESSIBLE, e );
         }
     }
 
@@ -544,7 +569,7 @@ public class SQLDataProvider implements DataProvider
         }
         catch ( SQLException e )
         {
-            throw new IllegalStateException( "The data is not accessible.", e );
+            throw new IllegalStateException( THE_DATA_IS_NOT_ACCESSIBLE, e );
         }
     }
 
@@ -573,7 +598,7 @@ public class SQLDataProvider implements DataProvider
         }
         catch ( SQLException e )
         {
-            throw new IllegalStateException( "The data is not accessible.", e );
+            throw new IllegalStateException( THE_DATA_IS_NOT_ACCESSIBLE, e );
         }
     }
 
@@ -591,7 +616,7 @@ public class SQLDataProvider implements DataProvider
         }
         catch ( SQLException e )
         {
-            throw new IllegalStateException( "The data is not accessible.", e );
+            throw new IllegalStateException( THE_DATA_IS_NOT_ACCESSIBLE, e );
         }
     }
 
@@ -667,7 +692,7 @@ public class SQLDataProvider implements DataProvider
         }
         catch (SQLException e)
         {
-            throw new IllegalStateException( "The data is not accessible.", e );
+            throw new IllegalStateException( THE_DATA_IS_NOT_ACCESSIBLE, e );
         }
 
         return result;
@@ -721,7 +746,7 @@ public class SQLDataProvider implements DataProvider
         {
             // We don't care about this error; it occurs if there
             // was an issue on the database side, not application side
-            throw new IllegalStateException( "The data is not accessible.", e );
+            throw new IllegalStateException( THE_DATA_IS_NOT_ACCESSIBLE, e );
         }
     }
 

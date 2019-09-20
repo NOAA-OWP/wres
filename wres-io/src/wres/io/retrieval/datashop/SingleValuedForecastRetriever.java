@@ -44,7 +44,8 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
      * Log message.
      */
 
-    private static final String LOG_SCRIPT = "Built the following script with hash {} for time-series retrieval:{}{}";
+    private static final String LOG_SCRIPT =
+            "Built {} for the retrieval of single-valued forecasts with the following script:{}{}";
 
     /**
      * Template script for the {@link #get(long)}.
@@ -120,7 +121,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         if ( LOGGER.isDebugEnabled() )
         {
             LOGGER.debug( LOG_SCRIPT,
-                          script.hashCode(),
+                          this,
                           System.lineSeparator(),
                           script );
         }
@@ -153,7 +154,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         if ( LOGGER.isDebugEnabled() )
         {
             LOGGER.debug( LOG_SCRIPT,
-                          script.hashCode(),
+                          this,
                           System.lineSeparator(),
                           script );
         }
@@ -213,7 +214,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         if ( LOGGER.isDebugEnabled() )
         {
             LOGGER.debug( LOG_SCRIPT,
-                          script.hashCode(),
+                          this,
                           System.lineSeparator(),
                           script );
         }
@@ -253,7 +254,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         if ( LOGGER.isDebugEnabled() )
         {
             LOGGER.debug( LOG_SCRIPT,
-                          script.hashCode(),
+                          this,
                           System.lineSeparator(),
                           script );
         }
