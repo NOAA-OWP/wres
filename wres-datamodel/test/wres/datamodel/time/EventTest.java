@@ -3,13 +3,12 @@ package wres.datamodel.time;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.time.Instant;
 
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 /**
  * Tests the {@link Event}.
@@ -25,9 +24,6 @@ public final class EventTest
     private static final String THIRD_TIME = "1984-12-31T00:00:00Z";
     private static final String SECOND_TIME = "1985-01-02T00:00:00Z";
     private static final String FIRST_TIME = "1985-01-01T00:00:00Z";
-
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
 
     /**
      * Constructs an {@link Event} and confirms that the {@link Event#getTime()} returns the expected result.
@@ -129,8 +125,6 @@ public final class EventTest
     @Test
     public void testCompareTo()
     {
-        Instant basisTime = Instant.parse( FIRST_TIME );
-
         Event<String> event = Event.of( Instant.parse( FIRST_TIME ), EVENT_VALUE );
         Event<String> isEqual = Event.of( Instant.parse( FIRST_TIME ), EVENT_VALUE );
         Event<String> isLess = Event.of( Instant.parse( SECOND_TIME ), EVENT_VALUE );
@@ -165,9 +159,7 @@ public final class EventTest
     @Test
     public void testExceptionOnNullEventTime()
     {
-        exception.expect( NullPointerException.class );
-
-        Event.of( null, EVENT_VALUE );
+        assertThrows( NullPointerException.class, () -> Event.of( null, EVENT_VALUE ) );
     }
 
     /**
@@ -177,9 +169,7 @@ public final class EventTest
     @Test
     public void testExceptionOnNullEvent()
     {
-        exception.expect( NullPointerException.class );
-
-        Event.of( Instant.parse( FOURTH_TIME ), null );
+        assertThrows( NullPointerException.class, () -> Event.of( Instant.parse( FOURTH_TIME ), null ) );
     }
 
     /**
@@ -189,9 +179,8 @@ public final class EventTest
     @Test
     public void testExceptionOnNullInputForComparison()
     {
-        exception.expect( NullPointerException.class );
-
-        Event.of( Instant.parse( FOURTH_TIME ), "someEvent" ).compareTo( null );
+        assertThrows( NullPointerException.class,
+                      () -> Event.of( Instant.parse( FOURTH_TIME ), "someEvent" ).compareTo( null ) );
     }
 
 }
