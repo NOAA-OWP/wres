@@ -32,9 +32,9 @@ public class RescalingException extends DataException
      * @param message the message.
      */
 
-    public RescalingException(final String message)
+    public RescalingException( final String message )
     {
-        super(message);
+        super( message );
     }
 
     /**
@@ -44,9 +44,9 @@ public class RescalingException extends DataException
      * @param cause the cause of the exception
      */
 
-    public RescalingException(final String message, final Throwable cause)
+    public RescalingException( final String message, final Throwable cause )
     {
-        super(message, cause);
+        super( message, cause );
     }
 
 }

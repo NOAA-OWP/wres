@@ -4,8 +4,11 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.Predicate;
@@ -40,7 +43,7 @@ public final class TimeSeriesSlicer
      */
 
     private static final String NULL_REFERENCE_TIME_TYPE = "Specify a non-null reference time type.";
-    
+
     /**
      * <p>Composes the input predicate as applying to the left side of any paired value within a time-series.
      * 
@@ -197,7 +200,7 @@ public final class TimeSeriesSlicer
     public static <T> SortedSet<Instant> getReferenceTimes( List<TimeSeries<T>> timeSeries, ReferenceTimeType type )
     {
         Objects.requireNonNull( timeSeries );
-        
+
         Objects.requireNonNull( type, NULL_REFERENCE_TIME_TYPE );
 
         SortedSet<Instant> referenceTimes = new TreeSet<>();
@@ -233,7 +236,7 @@ public final class TimeSeriesSlicer
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
         Objects.requireNonNull( duration, NULL_PREDICATE_EXCEPTION );
-        
+
         Objects.requireNonNull( type, NULL_REFERENCE_TIME_TYPE );
 
         List<Event<T>> returnMe = new ArrayList<>();
@@ -278,7 +281,7 @@ public final class TimeSeriesSlicer
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
         Objects.requireNonNull( referenceTime, NULL_PREDICATE_EXCEPTION );
-        
+
         Objects.requireNonNull( type, NULL_REFERENCE_TIME_TYPE );
 
         //Add the filtered data
@@ -287,6 +290,62 @@ public final class TimeSeriesSlicer
                                      && referenceTime.test( next.getReferenceTimes().get( type ) ) )
                     .collect( Collectors.collectingAndThen( Collectors.toList(),
                                                             Collections::unmodifiableList ) );
+    }
+
+    /**
+     * Groups the input events according to the event valid time. An event falls within a group if its valid time falls 
+     * within an interval that ends at a prescribed time and begins the specified duration before the end. The interval 
+     * is right-closed. In other words, <code>(endsAt-duration,endsAt]</code> for each instant in <code>endsAt</code>.
+     * 
+     * @param <T> the type of event value
+     * @param events the events to group
+     * @param endsAt the end of each group, inclusive
+     * @param period the period before each endsAt at which a group begins, exclusive
+     * @return the grouped events
+     * @throws NullPointerException if any input is null
+     */
+
+    public static <T> Map<Instant, SortedSet<Event<T>>> groupEventsByInterval( SortedSet<Event<T>> events,
+                                                                               Set<Instant> endsAt,
+                                                                               Duration period )
+    {
+        Objects.requireNonNull( events, NULL_INPUT_EXCEPTION );
+        
+        Objects.requireNonNull( endsAt, NULL_INPUT_EXCEPTION );
+        
+        Objects.requireNonNull( period, NULL_INPUT_EXCEPTION );
+        
+        Map<Instant, SortedSet<Event<T>>> grouped = new HashMap<>();
+        
+        // Iterate the end times and group events whose times fall in (nextEnd-period,nextEnd]
+        for( Instant nextEnd : endsAt )
+        {
+            // Lower bound exclusive
+            Instant nextStart = nextEnd.minus( period );
+
+            for( Event<T> nextEvent : events )
+            {
+                Instant eventTime = nextEvent.getTime();
+                
+                // Is event time within (start,nextEnd]?
+                if( eventTime.compareTo( nextEnd ) <= 0 && eventTime.compareTo( nextStart ) > 0 )
+                {
+                    SortedSet<Event<T>> nextGroup = grouped.get( nextEnd );
+                    
+                    // Create a new group
+                    if( Objects.isNull( nextGroup ) )
+                    {
+                        nextGroup = new TreeSet<>();
+                        grouped.put( nextEnd, nextGroup );
+                    }
+                    
+                    nextGroup.add( nextEvent );
+                }
+            }
+            
+        }
+
+        return Collections.unmodifiableMap( grouped );
     }
 
     /**

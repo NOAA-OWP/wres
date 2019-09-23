@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.TreeMap;
@@ -179,7 +180,7 @@ public class TimeSeries<T>
     @Override
     public int hashCode()
     {
-        return Objects.hash( this.getReferenceTimes(), this.getEvents() );
+        return Objects.hash( this.getReferenceTimes(), this.getEvents(), this.getTimeScale() );
     }
 
     @Override
@@ -204,7 +205,11 @@ public class TimeSeries<T>
     {
 
         // Set then validate
-        this.events = Collections.unmodifiableSortedSet( builder.events );
+        // Important to place in a new set here, because the builder uses a special 
+        // comparator, based on event time only
+        SortedSet<Event<T>>  localEvents = new TreeSet<>();
+        localEvents.addAll( builder.events );
+        this.events = Collections.unmodifiableSortedSet( localEvents );       
 
         Map<ReferenceTimeType, Instant> localMap = new TreeMap<>( builder.referenceTimes );
 
@@ -283,7 +288,7 @@ public class TimeSeries<T>
         private TimeScale timeScale;
 
         /**
-         * Sets the reference time.
+         * Adds a reference time.
          * 
          * @param referenceTime the reference time
          * @param referenceTimeType the reference time type
@@ -296,7 +301,39 @@ public class TimeSeries<T>
 
             return this;
         }
+        
+        /**
+         * Adds a map of reference times.
+         * 
+         * @param referenceTimes the reference times
+         * @return the builder
+         * @throws NullPointerException if the input is null
+         */
 
+        public TimeSeriesBuilder<T> addReferenceTimes( Map<ReferenceTimeType, Instant> referenceTimes )
+        {
+            Objects.requireNonNull( referenceTimes );
+            
+            this.referenceTimes.putAll( referenceTimes );
+
+            return this;
+        }        
+
+        /**
+         * Adds several events to the time-series.
+         * 
+         * @param events the events
+         * @return the builder
+         * @throws IllegalArgumentException if the time-series already contains an event at the prescribed time
+         */
+        
+        public TimeSeriesBuilder<T> addEvents( Set<Event<T>> events )
+        {
+            events.stream().forEach( this::addEvent );
+            
+            return this;
+        }
+        
         /**
          * Adds an event.
          * 
@@ -325,9 +362,10 @@ public class TimeSeries<T>
          * Adds the time-scale information.
          * 
          * @param timeScale the time scale
+         * @return the builder
          */
 
-        public TimeSeriesBuilder<T> addTimeScale( TimeScale timeScale )
+        public TimeSeriesBuilder<T> setTimeScale( TimeScale timeScale )
         {
             this.timeScale = timeScale;
 

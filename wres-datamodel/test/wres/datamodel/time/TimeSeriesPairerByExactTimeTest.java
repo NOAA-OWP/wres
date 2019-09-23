@@ -16,12 +16,12 @@ import wres.datamodel.sampledata.pairs.PairingException;
 import wres.datamodel.scale.TimeScale;
 
 /**
- * Tests the {@link TimeSeriesPairerByExactValidTime}
+ * Tests the {@link TimeSeriesPairerByExactTime}
  * 
  * @author james.brown@hydrosolved.com
  */
 
-public class TimeSeriesPairerByExactValidTimeTest
+public class TimeSeriesPairerByExactTimeTest
 {
 
     private static final String SIXTH_TIME = "2039-01-12T11:00:00Z";
@@ -59,7 +59,7 @@ public class TimeSeriesPairerByExactValidTimeTest
 
         TimeSeries<String> right = TimeSeries.of( rightEvents );
 
-        TimeSeriesPairer<String, String> pairer = TimeSeriesPairerByExactValidTime.of();
+        TimeSeriesPairer<String, String> pairer = TimeSeriesPairerByExactTime.of();
 
         // Create the actual pairs
         TimeSeries<Pair<String, String>> actualPairs = pairer.pair( left, right );
@@ -93,7 +93,7 @@ public class TimeSeriesPairerByExactValidTimeTest
 
         TimeSeries<String> right = TimeSeries.of( rightEvents );
 
-        TimeSeriesPairer<String, String> pairer = TimeSeriesPairerByExactValidTime.of();
+        TimeSeriesPairer<String, String> pairer = TimeSeriesPairerByExactTime.of();
 
         // Create the actual pairs
         TimeSeries<Pair<String, String>> actualPairs = pairer.pair( left, right );
@@ -135,7 +135,7 @@ public class TimeSeriesPairerByExactValidTimeTest
 
         TimeSeries<Double> right = TimeSeries.of( referenceTime, rightEvents );
 
-        TimeSeriesPairer<Double, Double> pairer = TimeSeriesPairerByExactValidTime.of();
+        TimeSeriesPairer<Double, Double> pairer = TimeSeriesPairerByExactTime.of();
 
         // Create the actual pairs
         TimeSeries<Pair<Double, Double>> actualPairs = pairer.pair( left, right );
@@ -156,7 +156,7 @@ public class TimeSeriesPairerByExactValidTimeTest
     @Test
     public void testPairThrowsExceptionWhenNullLeftIsNull()
     {
-        TimeSeriesPairer<Double, Double> pairer = TimeSeriesPairerByExactValidTime.of();
+        TimeSeriesPairer<Double, Double> pairer = TimeSeriesPairerByExactTime.of();
         TimeSeries<Double> series =
                 TimeSeries.of( new TreeSet<>( Collections.singleton( Event.of( Instant.now(), 1.0 ) ) ) );
 
@@ -169,7 +169,7 @@ public class TimeSeriesPairerByExactValidTimeTest
     @Test
     public void testPairThrowsExceptionWhenRightIsNull()
     {
-        TimeSeriesPairer<Double, Double> pairer = TimeSeriesPairerByExactValidTime.of();
+        TimeSeriesPairer<Double, Double> pairer = TimeSeriesPairerByExactTime.of();
         TimeSeries<Double> series =
                 TimeSeries.of( new TreeSet<>( Collections.singleton( Event.of( Instant.now(), 1.0 ) ) ) );
 
@@ -182,13 +182,13 @@ public class TimeSeriesPairerByExactValidTimeTest
     @Test
     public void testPairThrowsExceptionWhenLeftAndRightHaveDifferentTimeScales()
     {
-        TimeSeriesPairer<Object, Object> pairer = TimeSeriesPairerByExactValidTime.of();
+        TimeSeriesPairer<Object, Object> pairer = TimeSeriesPairerByExactTime.of();
 
         TimeSeries<Object> seriesOne =
                 new TimeSeries.TimeSeriesBuilder<>().build();
 
         TimeSeries<Object> seriesTwo =
-                new TimeSeries.TimeSeriesBuilder<>().addTimeScale( TimeScale.of( Duration.ofHours( 1 ) ) ).build();
+                new TimeSeries.TimeSeriesBuilder<>().setTimeScale( TimeScale.of( Duration.ofHours( 1 ) ) ).build();
 
 
         TimeSeries.of( new TreeSet<>( Collections.singleton( Event.of( Instant.now(), 1.0 ) ) ) );
