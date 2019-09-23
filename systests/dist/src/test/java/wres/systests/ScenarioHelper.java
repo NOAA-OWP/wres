@@ -126,6 +126,7 @@ public class ScenarioHelper
         LOGGER.info( "    wres.username = " + System.getProperty( "wres.username" ) );
         LOGGER.info( "    wres.logLevel =  " + System.getProperty( "wres.logLevel" ) );
         LOGGER.info( "    wres.password =  " + System.getProperty( "wres.password" ) );
+        LOGGER.info( "    wres.dataDirectory =  " + System.getProperty( "wres.dataDirectory" ) );
         LOGGER.info( "    user.dir (working directory) =  " + System.getProperty( "user.dir" ) );
     }
 
@@ -825,7 +826,7 @@ System.out.println("java.io.tmpdir ================ " + System.getProperty("java
             {
                 isAnAfterScript = true;
                 LOGGER.info( "Found " + files[i] );
-                searchAndReplace( System.getProperty( "user.dir" ) + "/" + files[i] );
+                searchAndReplace( System.getProperty( "wres.dataDirectory" ) + "/" + files[i] );
             }
         }
         return isAnAfterScript;
@@ -845,7 +846,7 @@ System.out.println("java.io.tmpdir ================ " + System.getProperty("java
             {
                 isABeforeScript = true;
                 LOGGER.info( "Found " + files[i] );
-                searchAndReplace( System.getProperty( "user.dir" ) + "/" + files[i] );
+                searchAndReplace( System.getProperty( "wres.dataDirectory" ) + "/" + files[i] );
             }
         }
         return isABeforeScript;
@@ -860,7 +861,7 @@ System.out.println("java.io.tmpdir ================ " + System.getProperty("java
     */
     static void searchAndReplace( String fileName, String searchFor, String replace, String line )
     {
-        File file = Paths.get( System.getProperty( "user.dir" ) + "/" + fileName ).toFile();
+        File file = Paths.get( System.getProperty( "wres.dataDirectory" ) + "/" + fileName ).toFile();
         
         if ( file.exists() )
         {
