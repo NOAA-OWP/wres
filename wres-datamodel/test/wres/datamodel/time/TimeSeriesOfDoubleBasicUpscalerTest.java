@@ -15,6 +15,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Test;
 
+import wres.datamodel.MetricConstants.MissingValues;
 import wres.datamodel.scale.RescalingException;
 import wres.datamodel.scale.ScaleValidationEvent;
 import wres.datamodel.scale.TimeScale;
@@ -94,11 +95,66 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
                                                                      .build();
 
         assertEquals( expected, actual );
-        
+
         // Upscale without end times (i.e., start at the beginning)
         TimeSeries<Double> actualUnconditional = this.upscaler.upscale( timeSeries, desiredTimeScale );
-        
+
         assertEquals( expected, actualUnconditional );
+    }
+
+    @Test
+    public void testUpscaleObservationsCreatesOneUpscaledObservation()
+    {
+        // Six event times, PT1H apart
+        Instant first = Instant.parse( "2079-12-03T00:00:00Z" );
+        Instant second = Instant.parse( "2079-12-03T01:00:00Z" );
+        Instant third = Instant.parse( "2079-12-03T02:00:00Z" );
+        Instant fourth = Instant.parse( "2079-12-03T04:00:00Z" );
+        Instant fifth = Instant.parse( "2079-12-03T05:00:00Z" );
+        Instant sixth = Instant.parse( "2079-12-03T06:00:00Z" );
+
+        // Six events
+        Event<Double> one = Event.of( first, 12.0 );
+        Event<Double> two = Event.of( second, 15.0 );
+        Event<Double> three = Event.of( third, 3.0 );
+        Event<Double> four = Event.of( fourth, 22.0 );
+        Event<Double> five = Event.of( fifth, MissingValues.MISSING_DOUBLE );
+        Event<Double> six = Event.of( sixth, 25.0 );
+
+        // Time scale of the event values: instantaneous
+        TimeScale existingScale = TimeScale.of( Duration.ofMinutes( 1 ), TimeScaleFunction.MEAN );
+
+        // Time-series to upscale
+        TimeSeries<Double> timeSeries = new TimeSeriesBuilder<Double>().addEvent( one )
+                                                                       .addEvent( two )
+                                                                       .addEvent( three )
+                                                                       .addEvent( four )
+                                                                       .addEvent( five )
+                                                                       .addEvent( six )
+                                                                       .setTimeScale( existingScale )
+                                                                       .build();
+
+        // Where the upscaled values should end (e.g., forecast valid times)
+        Set<Instant> endsAt = new HashSet<>();
+        endsAt.add( third );
+        endsAt.add( fourth );
+        endsAt.add( sixth );
+
+        // The desired scale: mean over PT2H
+        TimeScale desiredTimeScale = TimeScale.of( Duration.ofHours( 2 ), TimeScaleFunction.MEAN );
+
+        TimeSeries<Double> actual = this.upscaler.upscale( timeSeries, desiredTimeScale, endsAt );
+
+        // Create the expected series with the desired time scale
+        TimeSeries<Double> expected = new TimeSeriesBuilder<Double>().addEvent( Event.of( third, 9.0 ) )
+                                                                     .addEvent( Event.of( sixth,
+                                                                                          MissingValues.MISSING_DOUBLE ) )
+                                                                     .setTimeScale( desiredTimeScale )
+                                                                     .addReferenceTime( first,
+                                                                                        ReferenceTimeType.DEFAULT )
+                                                                     .build();
+
+        assertEquals( expected, actual );
     }
 
     /**
