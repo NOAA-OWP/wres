@@ -107,7 +107,7 @@ do
                 exit 3
 	    fi
 	    new_job_location=$( echo -n "$post_result" | grep Location | cut -d' ' -f2 )
-	    echo "The location of the resource created by server for job number $job_number was $original_job_location"
+	    echo "The location of the resource created by server for job number $job_number was $new_job_location"
 	    evaluation_locations+=($new_job_location)
 	    jobs_still_in_progress+=($new_job_location)
         fi
