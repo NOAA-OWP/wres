@@ -155,7 +155,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                 }
 
                 timeScale = latestScale;
-                builder.addTimeScale( latestScale );
+                builder.setTimeScale( latestScale );
             }
 
             LOGGER.debug( "Finished execute script with hash {}, which retrieved {} time-series.",

@@ -14,6 +14,7 @@ import java.util.TreeSet;
 import org.junit.Before;
 import org.junit.Test;
 
+import wres.datamodel.Ensemble;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 
@@ -177,6 +178,22 @@ public class TimeSeriesTest
         TimeSeries<Double> unequalOnMultiple = TimeSeries.of( otherEvents );
 
         assertNotEquals( unequalOnMultiple, this.testSeries );
+
+        TimeSeries<Ensemble> theseEventValues =
+                new TimeSeriesBuilder<Ensemble>().addReferenceTime( Instant.parse( "2023-04-01T00:00:00Z" ),
+                                                                    ReferenceTimeType.DEFAULT )
+                                                 .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ),
+                                                                      Ensemble.of( 30.0, 65.0, 100.0 ) ) )
+                                                 .build();
+
+        TimeSeries<Ensemble> doNotEqualThese =
+                new TimeSeriesBuilder<Ensemble>().addReferenceTime( Instant.parse( "2023-04-01T00:00:00Z" ),
+                                                                    ReferenceTimeType.DEFAULT )
+                                                 .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ),
+                                                                      Ensemble.of( 30.0, 65.0, 93.0 ) ) )
+                                                 .build();
+
+        assertNotEquals( theseEventValues, doNotEqualThese );      
     }
 
     /**

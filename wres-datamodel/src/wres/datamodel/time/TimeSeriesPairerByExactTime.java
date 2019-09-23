@@ -7,6 +7,8 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
+
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.sampledata.pairs.PairingException;
@@ -23,7 +25,7 @@ import wres.datamodel.sampledata.pairs.PairingException;
  * @author james.brown@hydrosolved.com
  */
 
-public class TimeSeriesPairerByExactValidTime<L, R> implements TimeSeriesPairer<L, R>
+public class TimeSeriesPairerByExactTime<L, R> implements TimeSeriesPairer<L, R>
 {
 
     /**
@@ -36,9 +38,9 @@ public class TimeSeriesPairerByExactValidTime<L, R> implements TimeSeriesPairer<
      * @return an instance of the pairer
      */
 
-    public static <L, R> TimeSeriesPairerByExactValidTime<L, R> of()
+    public static <L, R> TimeSeriesPairerByExactTime<L, R> of()
     {
-        return new TimeSeriesPairerByExactValidTime<>();
+        return new TimeSeriesPairerByExactTime<>();
     }
 
 
@@ -76,14 +78,17 @@ public class TimeSeriesPairerByExactValidTime<L, R> implements TimeSeriesPairer<
             }
         }
 
-        return TimeSeries.of( right.getReferenceTimes(), pairs );
+        return new TimeSeriesBuilder<Pair<L, R>>().addReferenceTimes( right.getReferenceTimes() )
+                                                  .addEvents( pairs )
+                                                  .setTimeScale( left.getTimeScale() )
+                                                  .build();
     }
 
     /**
      * Hidden constructor.
      */
 
-    private TimeSeriesPairerByExactValidTime()
+    private TimeSeriesPairerByExactTime()
     {
     }
 

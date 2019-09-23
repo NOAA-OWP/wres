@@ -7,8 +7,12 @@ import static org.junit.Assert.assertTrue;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -172,5 +176,67 @@ public final class TimeSeriesSlicerTest
                                                                     a -> a.equals( Instant.parse( "1985-01-04T00:00:00Z" ) ),
                                                                     null ) );
     }
+
+    /**
+     * Tests the {@link TimeSeriesSlicer#groupEventsByInterval(SortedSet, java.util.Set, Duration)}.
+     */
+
+    @Test
+    public void testGroupEventsByIntervalProducesThreeGroupsEachWithTwoEvents()
+    {
+        // Create the events
+        SortedSet<Event<Double>> events = new TreeSet<>();
+        
+        Event<Double> one = Event.of( Instant.parse( "2079-12-03T00:00:01Z" ), 1.0 );
+        Event<Double> two = Event.of( Instant.parse( "2079-12-03T02:00:00Z" ), 3.0 );
+        Event<Double> three = Event.of( Instant.parse( "2079-12-03T04:00:00Z" ), 4.0 );
+        Event<Double> four = Event.of( Instant.parse( "2079-12-03T05:00:00Z" ), 5.0 );
+        Event<Double> five = Event.of( Instant.parse( "2079-12-03T19:00:01Z" ), 14.0 );
+        Event<Double> six = Event.of( Instant.parse( "2079-12-03T21:00:00Z" ), 21.0 );
+        
+        events.add( one );
+        events.add( two );
+        events.add( three );
+        events.add( four );
+        events.add( five );
+        events.add( six );
+
+        // Create the period
+        Duration period = Duration.ofHours( 3 );
+
+        // Create the endsAt times
+        Set<Instant> endsAt = new HashSet<>();
+        Instant first = Instant.parse( "2079-12-03T03:00:00Z" );
+        Instant second = Instant.parse( "2079-12-03T05:00:00Z" );
+        Instant third = Instant.parse( "2079-12-03T21:00:00Z" );
+        
+        endsAt.add( first );
+        endsAt.add( second );
+        endsAt.add( third );
+
+        Map<Instant, SortedSet<Event<Double>>> actual =
+                TimeSeriesSlicer.groupEventsByInterval( events, endsAt, period );
+
+        Map<Instant, SortedSet<Event<Double>>> expected = new HashMap<>();
+        
+        SortedSet<Event<Double>> groupOne = new TreeSet<>();
+        groupOne.add( one );
+        groupOne.add( two );
+        expected.put( first, groupOne );
+        
+        SortedSet<Event<Double>> groupTwo = new TreeSet<>();
+        groupTwo.add( three );
+        groupTwo.add( four );
+        expected.put( second, groupTwo );
+        
+        SortedSet<Event<Double>> groupThree = new TreeSet<>();
+        groupThree.add( five );
+        groupThree.add( six );
+        expected.put( third, groupThree );
+        
+        assertEquals( expected, actual );
+        
+    }
+
 
 }
