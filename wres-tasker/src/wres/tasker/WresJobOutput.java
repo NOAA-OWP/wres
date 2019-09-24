@@ -85,8 +85,8 @@ public class WresJobOutput
 
         String header = "<!DOCTYPE html><html><head><title>Resources created by job id "
                         + id + "</title></head><body><h1>Resources created by job id "
-                        + id + "</h1><ul><li>";
-        String footer = "</li></ul></body></html>";
+                        + id + "</h1><ul>";
+        String footer = "</ul></body></html>";
 
         StreamingOutput streamingOutput = output -> {
             try ( OutputStreamWriter outputStreamWriter =  new OutputStreamWriter( output );
@@ -101,11 +101,11 @@ public class WresJobOutput
                             Paths.get( outputResource.getPath() );
                     String resourceName = path.getFileName()
                                               .toString();
-                    writer.write( "<a href=\"output/" );
+                    writer.write( "<li><a href=\"output/" );
                     writer.write( resourceName );
                     writer.write(  "\">" );
                     writer.write( resourceName );
-                    writer.write( "</a></li><li>" );
+                    writer.write( "</a></li>" );
                 }
 
                 writer.write( footer );
