@@ -13,6 +13,7 @@ import java.util.StringJoiner;
  */
 public class Ensemble implements Comparable<Ensemble>
 {
+    
     /**
      * The ensemble members.
      */
@@ -62,7 +63,31 @@ public class Ensemble implements Comparable<Ensemble>
     {
         return members.clone();
     }
+    
+    /**
+     * Returns a member that corresponds to a prescribed label.
+     * 
+     * @param label the label
+     * @return the ensemble member
+     * @throws IllegalArgumentException if the label is not present
+     * @throws NullPointerException if the input is null
+     */
 
+    public double getMember( String label )
+    {
+        Objects.requireNonNull( label );
+        
+        for( int i = 0; i < labels.length; i++ )
+        {
+            if( label.equals( labels[i] ) )
+            {
+                return members[i];
+            }
+        }
+        
+        throw new IllegalArgumentException( "Unrecognized label '"+label+"'." );
+    }
+    
     /**
      * Returns a copy of the optional labels.
      * 

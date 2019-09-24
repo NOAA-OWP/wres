@@ -119,13 +119,16 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
     }
 
     @Override
-    public TimeSeries<Double> upscale( TimeSeries<Double> timeSeries, TimeScale desiredTimeScale )
+    public TimeSeries<Double> upscale( TimeSeries<Double> timeSeries,
+                                       TimeScale desiredTimeScale )
     {
         return this.upscale( timeSeries, desiredTimeScale, Collections.emptySet() );
     }
 
     @Override
-    public TimeSeries<Double> upscale( TimeSeries<Double> timeSeries, TimeScale desiredTimeScale, Set<Instant> endsAt )
+    public TimeSeries<Double> upscale( TimeSeries<Double> timeSeries,
+                                       TimeScale desiredTimeScale,
+                                       Set<Instant> endsAt )
     {
         Objects.requireNonNull( timeSeries );
 
