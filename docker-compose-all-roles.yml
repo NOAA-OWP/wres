@@ -3,7 +3,7 @@ services:
     tasker:
         ports:
          - "443:8443"
-        image: "${DOCKER_REGISTRY}/wres/wres-tasker:20190913-f604926"
+        image: "${DOCKER_REGISTRY}/wres/wres-tasker:20190924-d55e46b"
         restart: always
         depends_on:
          - "broker"
