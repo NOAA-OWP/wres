@@ -3,11 +3,14 @@ package wres.systests;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 
 import org.junit.runner.Runner;
 import org.junit.runners.Suite;
 import org.junit.runners.model.InitializationError;
 import org.junit.runners.model.RunnerBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A runner for executing classes in a test suite in randome orer.  
@@ -17,6 +20,7 @@ import org.junit.runners.model.RunnerBuilder;
  */
 public class SystemTestsSuiteRunner extends Suite
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger( SystemTestsSuiteRunner.class );   
 
     /** Super class constructor wrapper. */
     public SystemTestsSuiteRunner(Class<?> klass, RunnerBuilder builder)
@@ -43,11 +47,26 @@ public class SystemTestsSuiteRunner extends Suite
     @Override
     protected List<Runner> getChildren() 
     {
+        //Determine the seed. 
+        long seed = System.nanoTime();
+        if (System.getProperty( "wres.systemTestSeed" ) != null)
+        {
+            LOGGER.info("Found property specifying system test order seed; wres.systemTestSeed = " + 
+                System.getProperty( "wres.systemTestSeed" ));
+            seed = Long.parseLong( System.getProperty( "wres.systemTestSeed" ) );
+        }
+        LOGGER.info("The system testing seed used for class ordering is " + seed);
+        Random rand = new Random(seed);
+        
+        //Get the current children, which are the classes in the suite.
         final List<Runner> children = super.getChildren();
+        
+        //Create a shuffled version in a new list, since the children list is not
+        //allowed to be modified.
         ArrayList<Runner> shuffledChildren = new ArrayList<>(); 
         shuffledChildren.addAll( children );
-        Collections.shuffle(shuffledChildren);
+        Collections.shuffle(shuffledChildren, rand);
+        
         return shuffledChildren;
     }
 }
-
