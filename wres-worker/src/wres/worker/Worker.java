@@ -114,5 +114,17 @@ public class Worker
                 }
             }
         }
+        catch ( IOException | TimeoutException | InterruptedException e )
+        {
+            String message = "Checked exception while talking to the broker";
+            LOGGER.error( message, e );
+            throw e;
+        }
+        catch ( RuntimeException re )
+        {
+            String message = "Unchecked exception while talking to the broker";
+            LOGGER.error( message, re );
+            throw re;
+        }
     }
 }
