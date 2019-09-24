@@ -75,7 +75,11 @@ do
     do
         evaluation_status=$( curl --cacert $wres_ca_file $job_location/status -s | tr -d '\r' )
 
-        if [ "$evaluation_status" != "COMPLETED_REPORTED_SUCCESS" ] \
+        if [ "$evaluation_status" == "NOT_FOUND" ]
+        then
+            echo "Evaluation $job_location not found! Not good!"
+            exit 4
+        elif [ "$evaluation_status" != "COMPLETED_REPORTED_SUCCESS" ] \
                && [ "$evaluation_status" != "COMPLETED_REPORTED_FAILURE" ]
         then
             echo "Evaluation still in progress: $job_location"
@@ -104,7 +108,7 @@ do
                 echo "The response code was successful for job number $job_number: $post_result_http_code"
 	    else
                 echo "The response code was NOT 201 nor 200, failed to create job number $job_number, exiting..."
-                exit 3
+                exit 5
 	    fi
 	    new_job_location=$( echo -n "$post_result" | grep Location | cut -d' ' -f2 )
 	    echo "The location of the resource created by server for job number $job_number was $new_job_location"
