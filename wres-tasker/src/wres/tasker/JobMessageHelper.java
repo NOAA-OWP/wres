@@ -1,5 +1,6 @@
 package wres.tasker;
 
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -16,7 +17,7 @@ class JobMessageHelper
     /** A magic value placeholder for job registered-but-not-done */
     static final Integer JOB_NOT_DONE_YET = Integer.MIN_VALUE + 1;
 
-    private static final int JOB_WAIT_MINUTES = 5;
+    private static final int JOB_WAIT_SECONDS = 10;
     private static final int MESSAGE_WAIT_SECONDS = 5;
 
     /**
@@ -64,7 +65,7 @@ class JobMessageHelper
             // Give up waiting if we don't get any output for some time
             // after the job has completed.
             GeneratedMessageV3 oneLastLine =
-                    messageQueue.poll( JOB_WAIT_MINUTES, TimeUnit.MINUTES );
+                    messageQueue.poll( JOB_WAIT_SECONDS, TimeUnit.SECONDS );
 
             if ( oneLastLine != null )
             {
@@ -75,7 +76,13 @@ class JobMessageHelper
                 // Has the job actually finished?
                 Integer jobStatus = JobResults.getJobResultRaw( jobId );
 
-                if ( jobStatus != null && !jobStatus.equals( JOB_NOT_DONE_YET ) )
+                if ( Objects.isNull( jobStatus ) )
+                {
+                    timedOut = true;
+                    LOGGER.warn( "Stopped waiting for not-found job {} {}",
+                                 jobId, messageType );
+                }
+                else if ( !jobStatus.equals( JOB_NOT_DONE_YET ) )
                 {
                     timedOut = true;
                     LOGGER.info( "Finished waiting for job {} {}",
