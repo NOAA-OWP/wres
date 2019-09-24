@@ -46,6 +46,17 @@ public final class EnsembleTest
     }
 
     @Test
+    public void testGetMember()
+    {
+        assertEquals( 1.0, this.testInstance.getMember( "A" ), 0.0001 );
+        assertEquals( 2.0, this.testInstance.getMember( "B" ), 0.0001 );
+        assertEquals( 3.0, this.testInstance.getMember( "C" ), 0.0001 );
+        assertEquals( 4.0, this.testInstance.getMember( "D" ), 0.0001 );
+
+        assertThrows( IllegalArgumentException.class, () -> this.testInstance.getMember( "E" ) );
+    }
+
+    @Test
     public void testGetSizeReturnsExpectedSize()
     {
         assertEquals( 4, this.testInstance.size() );
@@ -170,21 +181,21 @@ public final class EnsembleTest
     public void testToString()
     {
         String expected = "[{A,1.0},{B,2.0},{C,3.0},{D,4.0}]";
-        
+
         String actual = this.testInstance.toString();
-        
+
         assertEquals( expected, actual );
-        
+
         // Members only
         Ensemble noLabels = Ensemble.of( new double[] { 1, 2, 3, 4 } );
-        
+
         String expectedNoLabels = "[1.0,2.0,3.0,4.0]";
-        
+
         String actualNoLabels = noLabels.toString();
-        
+
         assertEquals( expectedNoLabels, actualNoLabels );
     }
-    
+
     @Test
     public void checkForExpectedExceptionOnConstructionWhenThereAreMoreLabelsThanMembers()
     {

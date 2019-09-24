@@ -8,14 +8,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import wres.datamodel.Ensemble;
 import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.pairs.Pair;
+import wres.datamodel.scale.TimeScale;
+import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 
 /**
  * A utility class for slicing/dicing and transforming time-series datasets. 
@@ -310,42 +315,240 @@ public final class TimeSeriesSlicer
                                                                                Duration period )
     {
         Objects.requireNonNull( events, NULL_INPUT_EXCEPTION );
-        
+
         Objects.requireNonNull( endsAt, NULL_INPUT_EXCEPTION );
-        
+
         Objects.requireNonNull( period, NULL_INPUT_EXCEPTION );
-        
+
         Map<Instant, SortedSet<Event<T>>> grouped = new HashMap<>();
-        
+
         // Iterate the end times and group events whose times fall in (nextEnd-period,nextEnd]
-        for( Instant nextEnd : endsAt )
+        for ( Instant nextEnd : endsAt )
         {
             // Lower bound exclusive
             Instant nextStart = nextEnd.minus( period );
 
-            for( Event<T> nextEvent : events )
+            for ( Event<T> nextEvent : events )
             {
                 Instant eventTime = nextEvent.getTime();
-                
+
                 // Is event time within (start,nextEnd]?
-                if( eventTime.compareTo( nextEnd ) <= 0 && eventTime.compareTo( nextStart ) > 0 )
+                if ( eventTime.compareTo( nextEnd ) <= 0 && eventTime.compareTo( nextStart ) > 0 )
                 {
                     SortedSet<Event<T>> nextGroup = grouped.get( nextEnd );
-                    
+
                     // Create a new group
-                    if( Objects.isNull( nextGroup ) )
+                    if ( Objects.isNull( nextGroup ) )
                     {
                         nextGroup = new TreeSet<>();
                         grouped.put( nextEnd, nextGroup );
                     }
-                    
+
                     nextGroup.add( nextEvent );
                 }
             }
-            
+
         }
 
         return Collections.unmodifiableMap( grouped );
+    }
+
+    /**
+     * <p>Returns a trace-view of an ensemble time-series. The input series is decomposed into one time-series for each
+     * ensemble trace. The order of the traces in the returned list is the natural order of the trace labels. This 
+     * order becomes important when decomposing ensemble time-series, operating on them, and then recomposing them with
+     * prescribed labels, because the labels are not preserved in the decomposed series. Also see 
+     * {@link #compose(List, SortedSet)}.
+     *
+     * @param timeSeries the time-series to decompose
+     * @return a trace view with as many time-series as ensemble traces in natural order of trace label
+     * @throws UnsupportedOperationException if the ensemble events contain a varying number of members and the 
+     *            ensemble labels have not been provided to distinguish between them
+     */
+
+    public static List<TimeSeries<Double>> decompose( TimeSeries<Ensemble> timeSeries )
+    {
+        Objects.requireNonNull( timeSeries );
+
+        if ( timeSeries.getEvents().isEmpty() )
+        {
+            return List.of( new TimeSeriesBuilder<Double>().addReferenceTimes( timeSeries.getReferenceTimes() )
+                                                           .setTimeScale( timeSeries.getTimeScale() )
+                                                           .build() );
+        }
+
+        Integer traceCount = null;
+
+        // A map of ensemble members per valid time organized by label or index
+        Map<Object, SortedSet<Event<Double>>> membersByTime = new TreeMap<>();
+
+        // Check that all events have the same number of members
+        for ( Event<Ensemble> next : timeSeries.getEvents() )
+        {
+            // No labels, so check for a constant number of ensemble members
+            if ( Objects.nonNull( traceCount ) && next.getValue().size() != traceCount )
+            {
+                throw new UnsupportedOperationException( "Cannot determine the ensemble traces from the input "
+                                                         + "time-series because the number of ensemble members "
+                                                         + "varies by valid time and the trace labels were not "
+                                                         + "available (hint for developers: add the ensemble labels "
+                                                         + "to the ensemble information.)" );
+            }
+
+            traceCount = next.getValue().size();
+
+            double[] members = next.getValue().getMembers();
+            Optional<String[]> nextLabels = next.getValue().getLabels();
+
+            for ( int i = 0; i < traceCount; i++ )
+            {
+                Object label = i;
+                if ( nextLabels.isPresent() )
+                {
+                    label = nextLabels.get()[i];
+                }
+
+                SortedSet<Event<Double>> nextTime = membersByTime.get( label );
+                if ( Objects.isNull( nextTime ) )
+                {
+                    nextTime = new TreeSet<>();
+                    membersByTime.put( label, nextTime );
+                }
+
+                nextTime.add( Event.of( next.getTime(), members[i] ) );
+            }
+        }
+
+        List<TimeSeries<Double>> returnMe = new ArrayList<>();
+
+        for ( SortedSet<Event<Double>> next : membersByTime.values() )
+        {
+            TimeSeriesBuilder<Double> builder = new TimeSeriesBuilder<>();
+            TimeSeries<Double> series = builder.addReferenceTimes( timeSeries.getReferenceTimes() )
+                                               .setTimeScale( timeSeries.getTimeScale() )
+                                               .addEvents( next )
+                                               .build();
+            returnMe.add( series );
+        }
+
+        return Collections.unmodifiableList( returnMe );
+    }
+
+    /**
+     * <p>Composes an ensemble time-series from a collection of single-valued series. The opposite of 
+     * {@link #decompose(TimeSeries)}. When supplied, the trace labels are ordered in their natural order and assigned
+     * in order of the series provided. Also see {@link #decompose(TimeSeries)}.
+     *
+     * @param timeSeries the collection of time-series to compose in the natural order of the labels, when supplied
+     * @param labels the ensemble labels, which contains zero labels or as many labels as timeSeries
+     * @return a trace view with as many time-series as ensemble traces
+     * @throws IllegalArgumentException if there is more than zero labels, but not the same number as time-series or
+     *            the input series contain different reference times or time scales
+     * @throws NullPointerException if any input is null
+     */
+
+    public static TimeSeries<Ensemble> compose( List<TimeSeries<Double>> timeSeries, SortedSet<String> labels )
+    {
+        Objects.requireNonNull( timeSeries );
+
+        Objects.requireNonNull( labels );
+
+        if ( !labels.isEmpty() && labels.size() != timeSeries.size() )
+        {
+            throw new IllegalArgumentException( "Expected zero labels or as many labels as time-series ("
+                                                + timeSeries.size()
+                                                + "), but found: "
+                                                + labels.size()
+                                                + "." );
+        }
+
+        // Valid times and ensemble values for composition   
+        Map<Instant, List<Double>> ensembles = new TreeMap<>();
+        Map<ReferenceTimeType, Instant> referenceTimes = null;
+        TimeScale timeScale = null;
+
+        for ( TimeSeries<Double> nextSeries : timeSeries )
+        {
+            for ( Event<Double> nextEvent : nextSeries.getEvents() )
+            {
+                List<Double> next = ensembles.get( nextEvent.getTime() );
+
+                if ( Objects.isNull( next ) )
+                {
+                    next = new ArrayList<>();
+                    ensembles.put( nextEvent.getTime(), next );
+                }
+
+                next.add( nextEvent.getValue() );
+            }
+
+
+            // Set the reference times and time scale
+            if ( Objects.isNull( referenceTimes ) )
+            {
+                referenceTimes = nextSeries.getReferenceTimes();
+                timeScale = nextSeries.getTimeScale();
+            }
+            else if ( !nextSeries.getReferenceTimes().equals( referenceTimes ) )
+            {
+                throw new IllegalArgumentException( "One or more of the input series have different reference "
+                                                    + "times, which is not allowed when composing them into an "
+                                                    + "ensemble." );
+            }
+            // Unequal time scales
+            else if ( !nextSeries.getTimeScale().equals( timeScale ) )
+            {
+                throw new IllegalArgumentException( "One or more of the input series have different time scales, "
+                                                    + "which is not allowed when composing them into an "
+                                                    + "ensemble." );
+            }
+
+        }
+
+        return TimeSeriesSlicer.compose( ensembles, referenceTimes, timeScale, labels );
+    }
+
+    /**
+     * <p>Composes an ensemble time-series from a map of values.
+     *
+     * @param ensembles the ensemble members per time
+     * @param referenceTimes the reference times
+     * @param timeScale the time scale
+     * @param labels the member labels
+     * @return an ensemble times-series
+     * @throws NullPointerException if any input is null
+     */
+
+    private static TimeSeries<Ensemble> compose( Map<Instant, List<Double>> ensembles,
+                                                 Map<ReferenceTimeType, Instant> referenceTimes,
+                                                 TimeScale timeScale,
+                                                 SortedSet<String> labels )
+    {
+        Objects.requireNonNull( ensembles );
+
+        Objects.requireNonNull( referenceTimes );
+
+        Objects.requireNonNull( timeScale );
+
+        Objects.requireNonNull( labels );
+
+        TimeSeriesBuilder<Ensemble> builder = new TimeSeriesBuilder<>();
+        builder.addReferenceTimes( referenceTimes ).setTimeScale( timeScale );
+        String[] labs = null;
+
+        if ( !labels.isEmpty() )
+        {
+            labs = labels.toArray( new String[labels.size()] );
+        }
+
+        for ( Map.Entry<Instant, List<Double>> next : ensembles.entrySet() )
+        {
+            Instant time = next.getKey();
+            Ensemble value = Ensemble.of( next.getValue().stream().mapToDouble( Double::valueOf ).toArray(), labs );
+            builder.addEvent( Event.of( time, value ) );
+        }
+
+        return builder.build();
     }
 
     /**

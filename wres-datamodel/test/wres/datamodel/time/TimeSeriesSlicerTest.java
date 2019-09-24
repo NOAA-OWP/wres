@@ -7,6 +7,7 @@ import static org.junit.Assert.assertTrue;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -15,11 +16,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import org.junit.Test;
 
+import wres.datamodel.Ensemble;
 import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
+import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 
 /**
  * Tests the {@link TimeSeriesSlicer}.
@@ -41,6 +45,7 @@ public final class TimeSeriesSlicerTest
     private static final String TENTH_TIME = "1985-01-03T01:00:00Z";
     private static final String ELEVENTH_TIME = "1985-01-03T02:00:00Z";
     private static final String TWELFTH_TIME = "1985-01-03T03:00:00Z";
+    private static final String THIRTEENTH_TIME = "2086-05-01T00:00:00Z";
 
     /**
      * Tests {@link TimeSeriesSlicer#getReferenceTimes()}.
@@ -186,14 +191,14 @@ public final class TimeSeriesSlicerTest
     {
         // Create the events
         SortedSet<Event<Double>> events = new TreeSet<>();
-        
+
         Event<Double> one = Event.of( Instant.parse( "2079-12-03T00:00:01Z" ), 1.0 );
         Event<Double> two = Event.of( Instant.parse( "2079-12-03T02:00:00Z" ), 3.0 );
         Event<Double> three = Event.of( Instant.parse( "2079-12-03T04:00:00Z" ), 4.0 );
         Event<Double> four = Event.of( Instant.parse( "2079-12-03T05:00:00Z" ), 5.0 );
         Event<Double> five = Event.of( Instant.parse( "2079-12-03T19:00:01Z" ), 14.0 );
         Event<Double> six = Event.of( Instant.parse( "2079-12-03T21:00:00Z" ), 21.0 );
-        
+
         events.add( one );
         events.add( two );
         events.add( three );
@@ -209,7 +214,7 @@ public final class TimeSeriesSlicerTest
         Instant first = Instant.parse( "2079-12-03T03:00:00Z" );
         Instant second = Instant.parse( "2079-12-03T05:00:00Z" );
         Instant third = Instant.parse( "2079-12-03T21:00:00Z" );
-        
+
         endsAt.add( first );
         endsAt.add( second );
         endsAt.add( third );
@@ -218,24 +223,240 @@ public final class TimeSeriesSlicerTest
                 TimeSeriesSlicer.groupEventsByInterval( events, endsAt, period );
 
         Map<Instant, SortedSet<Event<Double>>> expected = new HashMap<>();
-        
+
         SortedSet<Event<Double>> groupOne = new TreeSet<>();
         groupOne.add( one );
         groupOne.add( two );
         expected.put( first, groupOne );
-        
+
         SortedSet<Event<Double>> groupTwo = new TreeSet<>();
         groupTwo.add( three );
         groupTwo.add( four );
         expected.put( second, groupTwo );
-        
+
         SortedSet<Event<Double>> groupThree = new TreeSet<>();
         groupThree.add( five );
         groupThree.add( six );
         expected.put( third, groupThree );
-        
+
         assertEquals( expected, actual );
+
+    }
+
+    @Test
+    public void testDecomposeWithoutLabelsProducesFourTraces()
+    {
+        // Create an ensemble time-series with four members
+        Instant baseInstant = Instant.parse( THIRTEENTH_TIME );
+
+        TimeSeries<Ensemble> ensemble =
+                new TimeSeriesBuilder<Ensemble>()
+                                                 .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 1 ) ),
+                                                                      Ensemble.of( 1, 2, 3, 4 ) ) )
+                                                 .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 2 ) ),
+                                                                      Ensemble.of( 5, 6, 7, 8 ) ) )
+                                                 .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ),
+                                                                      Ensemble.of( 9, 10, 11, 12 ) ) )
+                                                 .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ),
+                                                                      Ensemble.of( 13, 14, 15, 16 ) ) )
+                                                 .addReferenceTime( baseInstant,
+                                                                    ReferenceTimeType.DEFAULT )
+                                                 .build();
+
+        List<TimeSeries<Double>> actual = TimeSeriesSlicer.decompose( ensemble );
+
+        List<TimeSeries<Double>> expected = new ArrayList<>();
+
+        TimeSeries<Double> one =
+                new TimeSeriesBuilder<Double>()
+                                               .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 1 ) ), 1.0 ) )
+                                               .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 2 ) ), 5.0 ) )
+                                               .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ), 9.0 ) )
+                                               .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ), 13.0 ) )
+                                               .addReferenceTime( baseInstant,
+                                                                  ReferenceTimeType.DEFAULT )
+                                               .build();
+
+        expected.add( one );
+
+        TimeSeries<Double> two =
+                new TimeSeriesBuilder<Double>()
+                                               .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 1 ) ), 2.0 ) )
+                                               .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 2 ) ), 6.0 ) )
+                                               .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ), 10.0 ) )
+                                               .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ), 14.0 ) )
+                                               .addReferenceTime( baseInstant,
+                                                                  ReferenceTimeType.DEFAULT )
+                                               .build();
+
+        expected.add( two );
+
+        TimeSeries<Double> three =
+                new TimeSeriesBuilder<Double>()
+                                               .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 1 ) ), 3.0 ) )
+                                               .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 2 ) ), 7.0 ) )
+                                               .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ), 11.0 ) )
+                                               .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ), 15.0 ) )
+                                               .addReferenceTime( baseInstant,
+                                                                  ReferenceTimeType.DEFAULT )
+                                               .build();
+
+        expected.add( three );
+
+        TimeSeries<Double> four =
+                new TimeSeriesBuilder<Double>()
+                                               .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 1 ) ), 4.0 ) )
+                                               .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 2 ) ), 8.0 ) )
+                                               .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ), 12.0 ) )
+                                               .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ), 16.0 ) )
+                                               .addReferenceTime( baseInstant,
+                                                                  ReferenceTimeType.DEFAULT )
+                                               .build();
+
+        expected.add( four );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    public void testDecomposeWithLabelsProducesFourTraces()
+    {
+        // Create an ensemble time-series with four members
+        Instant baseInstant = Instant.parse( THIRTEENTH_TIME );
+
+        String[] labels = new String[] { "a", "b", "c", "d" };
+
+        TimeSeries<Ensemble> ensemble =
+                new TimeSeriesBuilder<Ensemble>()
+                                                 .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 1 ) ),
+                                                                      Ensemble.of( new double[] { 1, 2, 3, 4 },
+                                                                                   labels ) ) )
+                                                 .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 2 ) ),
+                                                                      Ensemble.of( new double[] { 5, 6, 7, 8 },
+                                                                                   labels ) ) )
+                                                 .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ),
+                                                                      Ensemble.of( new double[] { 9, 10, 11, 12 },
+                                                                                   labels ) ) )
+                                                 .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ),
+                                                                      Ensemble.of( new double[] { 13, 14, 15, 16 },
+                                                                                   labels ) ) )
+                                                 .addReferenceTime( baseInstant,
+                                                                    ReferenceTimeType.DEFAULT )
+                                                 .build();
+
+        List<TimeSeries<Double>> actual = TimeSeriesSlicer.decompose( ensemble );
+
+        List<TimeSeries<Double>> expected = new ArrayList<>();
+
+        TimeSeries<Double> one =
+                new TimeSeriesBuilder<Double>()
+                                               .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 1 ) ), 1.0 ) )
+                                               .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 2 ) ), 5.0 ) )
+                                               .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ), 9.0 ) )
+                                               .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ), 13.0 ) )
+                                               .addReferenceTime( baseInstant,
+                                                                  ReferenceTimeType.DEFAULT )
+                                               .build();
+
+        expected.add( one );
+
+        TimeSeries<Double> two =
+                new TimeSeriesBuilder<Double>()
+                                               .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 1 ) ), 2.0 ) )
+                                               .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 2 ) ), 6.0 ) )
+                                               .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ), 10.0 ) )
+                                               .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ), 14.0 ) )
+                                               .addReferenceTime( baseInstant,
+                                                                  ReferenceTimeType.DEFAULT )
+                                               .build();
+
+        expected.add( two );
+
+        TimeSeries<Double> three =
+                new TimeSeriesBuilder<Double>()
+                                               .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 1 ) ), 3.0 ) )
+                                               .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 2 ) ), 7.0 ) )
+                                               .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ), 11.0 ) )
+                                               .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ), 15.0 ) )
+                                               .addReferenceTime( baseInstant,
+                                                                  ReferenceTimeType.DEFAULT )
+                                               .build();
+
+        expected.add( three );
+
+        TimeSeries<Double> four =
+                new TimeSeriesBuilder<Double>()
+                                               .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 1 ) ), 4.0 ) )
+                                               .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 2 ) ), 8.0 ) )
+                                               .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ), 12.0 ) )
+                                               .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ), 16.0 ) )
+                                               .addReferenceTime( baseInstant,
+                                                                  ReferenceTimeType.DEFAULT )
+                                               .build();
+
+        expected.add( four );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    public void testDecomposeAndThenComposeWithoutLabelsProducesTheSameSeries()
+    {
+        // Create an ensemble time-series with four members
+        Instant baseInstant = Instant.parse( THIRTEENTH_TIME );
+
+        TimeSeries<Ensemble> expected =
+                new TimeSeriesBuilder<Ensemble>()
+                                                 .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 1 ) ),
+                                                                      Ensemble.of( 1, 2, 3, 4 ) ) )
+                                                 .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 2 ) ),
+                                                                      Ensemble.of( 5, 6, 7, 8 ) ) )
+                                                 .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ),
+                                                                      Ensemble.of( 9, 10, 11, 12 ) ) )
+                                                 .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ),
+                                                                      Ensemble.of( 13, 14, 15, 16 ) ) )
+                                                 .addReferenceTime( baseInstant,
+                                                                    ReferenceTimeType.DEFAULT )
+                                                 .build();
+
+        TimeSeries<Ensemble> actual =
+                TimeSeriesSlicer.compose( TimeSeriesSlicer.decompose( expected ), new TreeSet<>() );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    public void testDecomposeAndThenComposeWithLabelsProducesTheSameSeries()
+    {
+        // Create an ensemble time-series with four members
+        Instant baseInstant = Instant.parse( THIRTEENTH_TIME );
+
+        String[] labels = new String[] { "a", "b", "c", "d" };
+
+        TimeSeries<Ensemble> expected =
+                new TimeSeriesBuilder<Ensemble>()
+                                                 .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 1 ) ),
+                                                                      Ensemble.of( new double[] { 1, 2, 3, 4 },
+                                                                                   labels ) ) )
+                                                 .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 2 ) ),
+                                                                      Ensemble.of( new double[] { 5, 6, 7, 8 },
+                                                                                   labels ) ) )
+                                                 .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ),
+                                                                      Ensemble.of( new double[] { 9, 10, 11, 12 },
+                                                                                   labels ) ) )
+                                                 .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ),
+                                                                      Ensemble.of( new double[] { 13, 14, 15, 16 },
+                                                                                   labels ) ) )
+                                                 .addReferenceTime( baseInstant,
+                                                                    ReferenceTimeType.DEFAULT )
+                                                 .build();
         
+        SortedSet<String> labelSet = Arrays.stream( labels ).collect( Collectors.toCollection( TreeSet::new ) );
+        
+        TimeSeries<Ensemble> actual =
+                TimeSeriesSlicer.compose( TimeSeriesSlicer.decompose( expected ), labelSet );
+
+        assertEquals( expected, actual );
     }
 
 
