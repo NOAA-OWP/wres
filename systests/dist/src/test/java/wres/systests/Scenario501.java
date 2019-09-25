@@ -33,7 +33,7 @@ public class Scenario501
         //LOGGER.info( "####>> Cleaning the database..." );
         //Operations.cleanDatabase();
         //ScenarioHelper.deleteOldOutputDirectories( scenarioInfo.getScenarioDirectory() );
-        ScenarioHelper.setAllPropertiesFromEnvVars( scenarioInfo );
+        ScenarioHelper.logUsedSystemProperties( scenarioInfo );
 		//System.out.println(scenarioInfo.getName() + " is " + scenarioInfo.getScenarioDirectory().toFile().toString());
 		ScenarioHelper.searchAndReplace(scenarioInfo.getScenarioDirectory().toFile().toString() + "/before.sh");
     }

@@ -3,14 +3,22 @@ package wres.systests;
 import java.nio.file.Path;
 
 /**
- * Scenario assocates data regarding a single scenario. Immutable value class.
+ * This stores information about a system test scenario. Immutable value class.
  */
 class Scenario
 {
+    /**
+     * The name of the scenario.  This corresponds to the name of the subdirectory
+     * within the {@link #baseDirectory}.
+     */
     private final String name;
+    
+    /**
+     * The base directory storing the system test scenarios.
+     */
     private final Path baseDirectory;
 
-    Scenario( String name,
+    protected Scenario( String name,
               Path baseDirectory )
     {
         this.name = name;

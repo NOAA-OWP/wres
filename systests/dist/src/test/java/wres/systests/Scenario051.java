@@ -32,7 +32,7 @@ public class Scenario051
         //LOGGER.info( "####>> Cleaning the database..." );
         //Operations.cleanDatabase();
         //ScenarioHelper.deleteOldOutputDirectories( scenarioInfo.getScenarioDirectory() );
-        ScenarioHelper.setAllPropertiesFromEnvVars( scenarioInfo );
+        ScenarioHelper.logUsedSystemProperties( scenarioInfo );
     }
 
     @Test
