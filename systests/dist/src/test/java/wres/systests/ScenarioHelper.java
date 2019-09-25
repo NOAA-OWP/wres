@@ -573,20 +573,12 @@ public class ScenarioHelper
     } // end method
 
     /**
-     * Return the directory where system test project configs and data live.
+     * @return The directory where system test scenario directories are found, which is
+     * currently the working directory.
      */
     static Path getBaseDirectory()
     {
-        String baseDirectoryFromEnvVar = System.getenv( "TESTS_DIR" );
-
-        if ( baseDirectoryFromEnvVar == null
-             || baseDirectoryFromEnvVar.isEmpty() )
-        {
-            throw new IllegalStateException(
-                                             "Expected an environment variable TESTS_DIR" );
-        }
-
-        return Paths.get( baseDirectoryFromEnvVar );
+        return new File(System.getProperty( "user.dir" )).toPath();
     }
 
 } // end this class
