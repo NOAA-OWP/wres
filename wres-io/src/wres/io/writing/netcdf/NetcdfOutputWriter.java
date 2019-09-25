@@ -64,17 +64,16 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
 
     private static final String DEFAULT_VECTOR_TEMPLATE = "legend_and_nhdplusv2_template.nc";
     private static final String DEFAULT_GRID_TEMPLATE = "lcc_grid_template.nc";
-
-    private static final Object WINDOW_LOCK = new Object();
-    // Guarded by WINDOW_LOCK
-    private static final Map<TimeWindow, TimeWindowWriter> WRITERS = new HashMap<>();
-
-    private static final Map<Object, Integer> VECTOR_COORDINATES = new ConcurrentHashMap<>();
     private static final int VALUE_SAVE_LIMIT = 500;
+
+    private final Object WINDOW_LOCK = new Object();
 
     private final DestinationConfig destinationConfig;
     private final Path outputDirectory;
     private NetcdfType netcdfConfiguration;
+    
+    // Guarded by WINDOW_LOCK
+    private final Map<TimeWindow, TimeWindowWriter> writersMap = new HashMap<>();
     
     /**
      * Default resolution for writing duration outputs. To change the resolution, change this default.
@@ -183,12 +182,12 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
         {
             List<DoubleScoreStatistic> scores = outputByTimeWindow.get( window );
 
-            synchronized ( NetcdfOutputWriter.WINDOW_LOCK )
+            synchronized ( this.WINDOW_LOCK )
             {
-                if ( !NetcdfOutputWriter.WRITERS.containsKey( window ) )
+                if ( !this.writersMap.containsKey( window ) )
                 {
                     Collection<MetricVariable> variables = MetricVariable.getAll( scores, this.getDurationUnits() );
-                    NetcdfOutputWriter.WRITERS.put( window,
+                    this.writersMap.put( window,
                                       new TimeWindowWriter( this,
                                                             this.getOutputDirectory(),
                                                             window,
@@ -205,7 +204,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
 
                         try
                         {
-                            NetcdfOutputWriter.TimeWindowWriter writer = WRITERS.get( this.window );
+                            NetcdfOutputWriter.TimeWindowWriter writer = writersMap.get( this.window );
                             writer.write( this.output );
                             Path pathWritten = Paths.get( writer.outputPath );
                             pathsWrittenTo.add( pathWritten );
@@ -244,7 +243,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
 
         LOGGER.debug( "About to wait for writing tasks to finish from {}", this );
 
-        synchronized ( NetcdfOutputWriter.WINDOW_LOCK )
+        synchronized ( this.WINDOW_LOCK )
         {
             try
             {
@@ -270,7 +269,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
 
             LOGGER.debug( "About to close writers from {}", this );
 
-            if ( NetcdfOutputWriter.WRITERS.isEmpty() )
+            if ( this.writersMap.isEmpty() )
             {
                 return;
             }
@@ -279,13 +278,13 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
 
             try
             {
-                closeExecutor = Executors.newFixedThreadPool( NetcdfOutputWriter.WRITERS.size() );
+                closeExecutor = Executors.newFixedThreadPool( this.writersMap.size() );
 
                 FutureQueue closeQueue = new FutureQueue( 3000, TimeUnit.MILLISECONDS );
 
                 try
                 {
-                    for ( TimeWindowWriter writer : NetcdfOutputWriter.WRITERS.values() )
+                    for ( TimeWindowWriter writer : this.writersMap.values() )
                     {
                         Callable<?> closeTask = new Callable()
                         {
@@ -375,11 +374,11 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
         /**
          * The time units for lead durations.
          */
-        
         private final ChronoUnit durationUnits;
 
         NetcdfOutputWriter outputWriter;
         Path outputDirectory;
+        private final Map<Object, Integer> vectorCoordinatesMap = new ConcurrentHashMap<>();
 
         TimeWindowWriter( NetcdfOutputWriter outputWriter,
                           Path outputDirectory,
@@ -638,9 +637,9 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
         private Integer getVectorCoordinate( Integer vectorIdentifier, String vectorVariableName )
                 throws IOException
         {
-            synchronized ( VECTOR_COORDINATES )
+            synchronized ( vectorCoordinatesMap )
             {
-                if ( VECTOR_COORDINATES.size() == 0 )
+                if ( vectorCoordinatesMap.size() == 0 )
                 {
                     try ( NetcdfFile outputFile = NetcdfFile.open( this.outputPath ) )
                     {
@@ -653,12 +652,12 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                         // don't really know what to expect
                         for ( int index = 0; index < values.getSize(); ++index )
                         {
-                            VECTOR_COORDINATES.put( values.getObject( index ), index );
+                            vectorCoordinatesMap.put( values.getObject( index ), index );
                         }
                     }
                 }
 
-                return VECTOR_COORDINATES.get( vectorIdentifier );
+                return vectorCoordinatesMap.get( vectorIdentifier );
             }
         }
 
