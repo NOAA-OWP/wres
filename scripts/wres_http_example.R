@@ -108,18 +108,6 @@ env_suffix <- "-dev"
 
 print( paste( "We are using the", env_suffix, "environment in this example." ) )
 
-# You must edit this user_name variable to be your first name or pass as arg.
-user_name <- "i_need_to_edit_this_user_name_to_be_my_first_name"
-
-# Use first command line argument as name, otherwise a 404 will occur.
-args <- commandArgs( trailingOnly = TRUE )
-
-if ( length( args ) >= 1 )
-{
-    print( paste( "Setting user_name to", args[1] ) )
-    user_name <- args[1]
-}
-
 # Set general http library option of verbose mode, will display HTTP headers.
 crul::set_opts( verbose = TRUE )
 
@@ -220,9 +208,13 @@ location_path_only <- paste( location_url_splitted[[1]][4],
 evaluation_status <- ""
 
 while ( ! evaluation_status %in% c( "COMPLETED_REPORTED_SUCCESS",
-                                    "COMPLETED_REPORTED_FAILURE" ) )
+                                    "COMPLETED_REPORTED_FAILURE",
+                                    "NOT_FOUND" ) )
 {
     # Pause for two seconds before asking the server for status.
+    # If your evaluations take around 2 minutes to 2 hours this is appropriate.
+    # If your evaluations take over 2 hours, increase to 20 seconds.
+    # If your evaluations take less than 2 minutes, drop to 0.2 seconds.
     Sys.sleep( 2 )
     status_response <- wres_client$get( path = paste( location_path_only,
                                                      "status",
@@ -277,6 +269,9 @@ if ( evaluation_status == "COMPLETED_REPORTED_SUCCESS" )
              wresDataTable$MEAN.ERROR.All.data,
              type = "b" )
     }
+} else if ( evaluation_status == "NOT_FOUND" )
+{
+    print( "Evaluation not found, WRES HTTP API is mildly amnesic."
 } else
 {
     print( "Evaluation failed, not attempting to GET output data." )
