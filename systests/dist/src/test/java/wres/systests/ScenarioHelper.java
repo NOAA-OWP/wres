@@ -65,8 +65,7 @@ public class ScenarioHelper
     static void logUsedSystemProperties( Scenario scenarioInfo )
     {
         LOGGER.info( "Properties used to run test:" );
-        LOGGER.info( "    wres.hostname = " + System.getProperty( "wres.hostname" ) );
-        LOGGER.info( "    wres.url = " + System.getProperty( "wres.url" ) );
+        LOGGER.info( "    wres.url = " + System.getProperty( "wres.url" ) + " (the database host name)");
         LOGGER.info( "    wres.databaseName = " + System.getProperty( "wres.databaseName" ) );
         LOGGER.info( "    wres.username = " + System.getProperty( "wres.username" ) );
         LOGGER.info( "    wres.logLevel =  " + System.getProperty( "wres.logLevel" ) );
@@ -84,7 +83,7 @@ public class ScenarioHelper
      */
     protected static Control assertExecuteScenario( Scenario scenarioInfo )
     {
-		LOGGER.info( "Beginning test execution through JUnit for scenario: " + scenarioInfo.getName());
+        LOGGER.info( "Beginning test execution through JUnit for scenario: " + scenarioInfo.getName());
         Path config = scenarioInfo.getScenarioDirectory().resolve( ScenarioHelper.USUAL_EVALUATION_FILE_NAME );
         String args[] = { config.toString() };
         Control wresEvaluation = new Control();
@@ -129,7 +128,8 @@ public class ScenarioHelper
     protected static void assertOutputsMatchBenchmarks( Scenario scenarioInfo,
                                               Control completedEvaluation )
     {
-		LOGGER.info( "Asserting that outputs match benchmarks..." + scenarioInfo.getName() );
+        LOGGER.info( "Asserting that outputs match benchmarks..." + scenarioInfo.getName() );
+        
         //Assert the output as being valid and then get the output from the provided Control if so.
         assertWRESOutputValid( completedEvaluation );
 
@@ -139,28 +139,28 @@ public class ScenarioHelper
         //Create the directory listing.
         //Path dirListingPath;
         try
-        {	
-			//Redmine #51654-387 decided not to compare the dirListing.txt
+        {    
+            //Redmine #51654-387 decided not to compare the dirListing.txt
             //dirListingPath = constructDirListingFile( initialOutputSet );
             // Below Sets.newHasSet() won't filter out the *.png and *.nc files
             //HashSet<Path> finalOutputSet = Sets.newHashSet( initialOutputSet );
             
-			HashSet<Path> finalOutputSet = new HashSet<Path>();
-			
+            HashSet<Path> finalOutputSet = new HashSet<Path>();
+            
             // Need to filter out the *.png and the *.nc files
             for ( Path nextPath : initialOutputSet )
             {
                 if ( nextPath.endsWith( ".png" ) || nextPath.endsWith( ".nc" ) )
                 {
-                    LOGGER.info( "Won't add this path for benchmark comparison: {}", nextPath );
+                    LOGGER.debug( "This file is binary and will not be compared with a benchmark: {}", nextPath );
                 }
                 else
                 {
-                    LOGGER.info( "Will add this path for benchmark comparison: {}", nextPath );
+                    LOGGER.debug( "Benchmark comparison will include this file: {}", nextPath );
                     finalOutputSet.add( nextPath );
                 }
             }
-			// do not check the dirListing for now, see Redmine 51654#387
+            // do not check the dirListing for now, see Redmine 51654#387
             //finalOutputSet.add( dirListingPath );
 
             int resultCode = compareOutputAgainstBenchmarks( scenarioInfo,
@@ -232,8 +232,8 @@ public class ScenarioHelper
         if ( benchmarksDir.exists() && benchmarksDir.isDirectory() )
         {
             benchmarkedFiles.addAll( Arrays.asList( benchmarksDir.list() ) );
-			if (benchmarkedFiles.contains("dirListing.txt"))
-				benchmarkedFiles.remove("dirListing.txt"); // for now we don't compare this file
+            if (benchmarkedFiles.contains("dirListing.txt"))
+                benchmarkedFiles.remove("dirListing.txt"); // for now we don't compare this file
         }
         else
         {
@@ -249,14 +249,11 @@ public class ScenarioHelper
         int miscResultCode = 0;
         for ( Path outputFilePath : generatedOutputs )
         {
-			
             String outputFileName = outputFilePath.toFile().getName();
-			LOGGER.info("output file name = " + outputFileName);
-			
-            //For the pairs, you need to sort them first.
             File benchmarkFile = identifyBenchmarkFile( outputFilePath, benchmarksPath );
             if ( benchmarkFile != null )
             {
+                LOGGER.debug("Benchmark file comparison performed equivalent to:  diff " + outputFilePath + " " + benchmarkFile.getAbsolutePath() );
                 try
                 {
                     //Pairs has its own method because it has to sort the lines.
@@ -276,27 +273,31 @@ public class ScenarioHelper
                     if ( outputFileName.endsWith( "pairs.csv" ) )
                     {
                         pairResultCode = 16;
-						LOGGER.warn("The pairs file differ (result code " + pairResultCode + ") for file with name " + outputFileName);
+                        LOGGER.warn("The pairs file differ from benchmark (result code " + pairResultCode + ") for file with name " + outputFileName);
                     }
                     //Otherwise just do the comparison without sorting.
                     else if ( outputFileName.endsWith( ".csv" ) )
                     {
                         metricCSVResultCode = 32;
-						LOGGER.warn("The metric CSV file differs (result code " + metricCSVResultCode + ") for file with name " + outputFileName);
+                        LOGGER.warn("The metric CSV file differs from benchmark (result code " + metricCSVResultCode + ") for file with name " + outputFileName);
                     }
                     else if ( outputFileName.endsWith( ".txt" ) )
                     {
                         txtResultCode = 4;
-						LOGGER.warn("The text file differs (result code " + txtResultCode + ") for file with name " + outputFileName);
+                        LOGGER.warn("The text file differs from benchmark (result code " + txtResultCode + ") for file with name " + outputFileName);
                     }
                     else
                     {
                         miscResultCode = 2;
-						LOGGER.warn("A miscellaneous result returned (result code" + miscResultCode + ") for file with name " + outputFileName);
+                        LOGGER.warn("A miscellaneous result returned (result code" + miscResultCode + ") for file with name " + outputFileName);
                     }
                 }
                 //Remove the benchmark as one to check.
                 benchmarkedFiles.remove( benchmarkFile.getName() );
+            }
+            else 
+            {
+                LOGGER.debug("For output file, " + outputFilePath + ", benchmark file does not exist or could not otherwise be identified.  Skipping.");
             }
         }
         if ( !benchmarkedFiles.isEmpty() )
@@ -370,17 +371,15 @@ public class ScenarioHelper
         {
             //TODO Added trimming below to handle white space at the ends, but should I?
             //Mainly worried about the Window's carriage return popping up some day.
-			LOGGER.trace("compare output file " + outputFile.getName() + " line " + i + " with benchmarks file " + benchmarkFile.getName());
-			LOGGER.trace("Are they equals ? " + actualRows.get( i ).equals(expectedRows.get( i )));
-			//int expectedRowsIndex = expectedRows.indexOf(actualRows.get( i ));
-			//LOGGER.info("Are they equals ? " + actualRows.get( i ).equals(expectedRows.get( expectedRowsIndex )));
+            LOGGER.trace("Compare output file " + outputFile.getName() + " line " + i + " with benchmarks file " + benchmarkFile.getName());
+            LOGGER.trace("Are they equal? " + actualRows.get( i ).equals(expectedRows.get( i )));
+            //int expectedRowsIndex = expectedRows.indexOf(actualRows.get( i ));
+            //LOGGER.info("Are they equals ? " + actualRows.get( i ).equals(expectedRows.get( expectedRowsIndex )));
             assertEquals( "For output file, " + outputFile.getName()
                           + ", row "
                           + i
                           + " differs from benchmark.",
                           actualRows.get( i ).trim(), expectedRows.get( i ).trim() );
-                          //actualRows.get( i ).trim(), expectedRows.get( expectedRowsIndex ).trim() );
-                          //actualRows.get( i ), expectedRows.get( expectedRowsIndex ) );
         }
     }
 
@@ -410,13 +409,13 @@ public class ScenarioHelper
         // Verify by row, rather than all at once
         for ( int i = 0; i < actualRows.size(); i++ )
         {
-			LOGGER.trace("compare output file " + pairsFile.getName() + " line " + i + " with benchmarks file " + benchmarkFile.getName());
-			LOGGER.trace("Are they equals ? " + actualRows.get( i ).equals(expectedRows.get( i )));
+            LOGGER.trace("Compare output file " + pairsFile.getName() + " line " + i + " with benchmarks file " + benchmarkFile.getName());
+            LOGGER.trace("Are they equal? " + actualRows.get( i ).equals(expectedRows.get( i )));
             assertEquals( "For pairs file file, " + pairsFile.getName()
                           + ", after sorting alphabetically, row "
-                          + i
+                          + i 
                           + " differs from benchmark.",
-                          actualRows.get( i ).trim(), //TODO Added trimming to handle white space at the ends, but should I?
+                          actualRows.get( i ).trim(), //TODO Should this and next be trimmed?
                           expectedRows.get( i ).trim() );
         }
     }
@@ -434,7 +433,7 @@ public class ScenarioHelper
             if ( files[i].endsWith( "after.sh" ) )
             {
                 isAnAfterScript = true;
-                LOGGER.info( "Found " + files[i] );
+                LOGGER.info( "Found an 'after' file; making replacements dictated in the file: " + files[i] );
                 searchAndReplace( System.getProperty( "wres.dataDirectory" ) + "/" + files[i] );
             }
         }
@@ -454,7 +453,7 @@ public class ScenarioHelper
             if ( files[i].endsWith( "before.sh" ) )
             {
                 isABeforeScript = true;
-                LOGGER.info( "Found " + files[i] );
+                LOGGER.info( "Found a 'before' file; making replacements dictated in the file: " + files[i] );
                 searchAndReplace( System.getProperty( "wres.dataDirectory" ) + "/" + files[i] );
             }
         }
@@ -514,14 +513,13 @@ public class ScenarioHelper
         {
             System.err.println( "File " + file.getPath() + " doesn't existed." );
         }
-
     }
 
     /**
     * Search for token File=, Search=, Replace=, and Line= from a file
     * @param fileName -- a before.sh or after.sh shell script
     */
-    static void searchAndReplace( String fileName )
+    protected static void searchAndReplace( String fileName )
     {
         File file = Paths.get( fileName ).toFile();
         if ( file.exists() )
