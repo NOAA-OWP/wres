@@ -33,11 +33,11 @@ import wres.Main;
 import wres.control.Control;
 
 /**
- * A class to be used to when setting up system test scenarios of the WRES.
+ * A class to be used when setting up system test scenarios of the WRES for 
+ * JUnit execution.
  *
  * The class makes optional use of environment variables to identify the system
- * tests directory (which will typically be the working directory for
- * executions), and WRES database information.
+ * tests directory and WRES database information.
  *
  * It then passes through environment variables to  already-unset Java system
  * properties before running the WRES.
@@ -50,7 +50,7 @@ public class ScenarioHelper
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( ScenarioHelper.class );
 
-    static final String USUAL_EVALUATION_FILE_NAME = "project_config.xml";
+    private static final String USUAL_EVALUATION_FILE_NAME = "project_config.xml";
 
     private ScenarioHelper()
     {
@@ -60,74 +60,20 @@ public class ScenarioHelper
     /**
      * Sets the properties which drive the system testing.  These use system environment variables in order
      * to set Java system properties.
+     * @param@ scenarioInfo The {@link Scenario} information.
      */
-    static void setAllPropertiesFromEnvVars( Scenario scenarioInfo )
+    static void logUsedSystemProperties( Scenario scenarioInfo )
     {
-		LOGGER.info( "####>> Setting properties for run based on user settings..." );
-        //The databae host.
-        String dbHostFromEnvVar = System.getenv( "WRES_DB_HOSTNAME" );
-        String dbHostFromSysProp = System.getProperty( "wres.url" );
-        if ( dbHostFromSysProp == null && dbHostFromEnvVar != null
-             && !dbHostFromEnvVar.isEmpty() )
-        {
-            System.setProperty( "wres.url", dbHostFromEnvVar );
-        }
-
-        //The database name.
-        String dbNameFromEnvVar = System.getenv( "WRES_DB_NAME" );
-        String dbNameFromSysProp = System.getProperty( "wres.databaseName" );
-        if ( dbNameFromSysProp == null && dbNameFromEnvVar != null
-             && !dbNameFromEnvVar.isEmpty() )
-        {
-            System.setProperty( "wres.databaseName", dbNameFromEnvVar );
-        }
-
-        //The database user.
-        String dbUserFromEnvVar = System.getenv( "WRES_DB_USERNAME" );
-        String dbUserFromSysProp = System.getProperty( "wres.username" );
-        if ( dbUserFromSysProp == null && dbUserFromEnvVar != null
-             && !dbUserFromEnvVar.isEmpty() )
-        {
-            System.setProperty( "wres.username", dbUserFromEnvVar );
-        }
-
-        // Passphrase should be acquired from postgres passphrase file. -Jesse
-        // Do not set the password through this mechansim. 
-
-        // I thinks it's too late to attempt to set log level here. -Jesse
-        //TODO Test the impact of setting the log level on the output from a test.  If it does
-        //not inpact the log output, then something is wrong.  See what happens if you set
-        //wres.logLevel here to the WRES_LOG_LEVEL env var and then passing that through via 
-        //the execute script below.  Remove this TODO once the log level can be set correctly.
-
-        //Set he temp directory.
-        /* System.setProperty( "java.io.tmpdir",
-                            scenarioInfo.getScenarioDirectory()
-                                        .toString() ); */
-		// By Redmine ticket 51654#387, item 2, set the tmpdir to ~/....../systests/outputs
-		String testOutputs = Paths.get(System.getProperty("user.dir")).toFile().getParentFile().getAbsolutePath() + "/outputs";
-		File testOutputsDir = Paths.get(testOutputs).toFile();
-		if (testOutputsDir.isFile()) {
-			testOutputsDir.delete();
-			testOutputsDir.mkdir();
-		} else if (! testOutputsDir.exists()) {
-			testOutputsDir.mkdir();
-		} else if (testOutputsDir.isDirectory()) {
-			// we don't delete old output directories
-			// Because we want to save the output directories after tests.
-			// Let the testing script clean the old output directories
-			; 
-		}	
-		System.setProperty("java.io.tmpdir", testOutputs);
         LOGGER.info( "Properties used to run test:" );
         LOGGER.info( "    wres.hostname = " + System.getProperty( "wres.hostname" ) );
         LOGGER.info( "    wres.url = " + System.getProperty( "wres.url" ) );
         LOGGER.info( "    wres.databaseName = " + System.getProperty( "wres.databaseName" ) );
         LOGGER.info( "    wres.username = " + System.getProperty( "wres.username" ) );
         LOGGER.info( "    wres.logLevel =  " + System.getProperty( "wres.logLevel" ) );
-        LOGGER.info( "    wres.password =  " + System.getProperty( "wres.password" ) );
+        LOGGER.info( "    wres.password =  " + System.getProperty( "wres.password" ) + " (its recommended to use the .pgpass file to identify the database password)");
         LOGGER.info( "    wres.dataDirectory =  " + System.getProperty( "wres.dataDirectory" ) );
         LOGGER.info( "    user.dir (working directory) =  " + System.getProperty( "user.dir" ) );
+        LOGGER.info( "    java.io.tmpdir =  " + System.getProperty( "java.io.tmpdir" ) );
     }
 
 
@@ -136,31 +82,12 @@ public class ScenarioHelper
      * It should be a direct pass through and the method called should confirm that execution was successful.
      * @param scenarioInfo The {@link Scenario} information.
      */
-    //static void assertExecuteScenario( Scenario scenarioInfo )
-    public static Control assertExecuteScenario( Scenario scenarioInfo )
+    protected static Control assertExecuteScenario( Scenario scenarioInfo )
     {
-		LOGGER.info( "####>> Beginning test execution... " + scenarioInfo.getName());
-        return assertExecuteScenarioThroughControl( scenarioInfo ); //If this is used, return its returned Control.
-        //assertExecuteScenarioThroughControl( scenarioInfo ); //If this is used, return its returned Control.
-//        assertExecuteScenarioThroughProcessBuilder( scenarioInfo );
-//        assertExecuteScenarioThroughMainWithShutdownHook(scenarioInfo);
-    }
-
-
-    /**
-     * Executes the system test through a call to {@link Control}.  Note that using this call requires that
-     * the Gradle build.gradle set forkEvery=1.  Otherwise, there is something left over after {@link Control}
-     * is used that causes a second test, 003, to fail when run after the first test, 001.
-     * @param scenarioInfo The {@link Scenario} information.
-     * @return The {@link Control} used to execute the test.  Calling {@link Control#get()} can return the output
-     * paths which may be useful.
-     */
-    private static Control assertExecuteScenarioThroughControl( Scenario scenarioInfo )
-    {
+		LOGGER.info( "Beginning test execution through JUnit for scenario: " + scenarioInfo.getName());
         Path config = scenarioInfo.getScenarioDirectory().resolve( ScenarioHelper.USUAL_EVALUATION_FILE_NAME );
         String args[] = { config.toString() };
         Control wresEvaluation = new Control();
-System.out.println("java.io.tmpdir ================ " + System.getProperty("java.io.tmpdir"));
         int exitCode = wresEvaluation.apply( args );
         assertEquals( "Execution of WRES failed with exit code " + exitCode
                       + "; see log for more information!",
@@ -168,169 +95,14 @@ System.out.println("java.io.tmpdir ================ " + System.getProperty("java
                       exitCode );
         return wresEvaluation;
     }
-
-    /**
-     * This only works when the compare against benchmarks is included in the shutdown hook.  That is because
-     * the {@link Main#main(String[])} has a System exit within it that kills the test.  We could break out the 
-     * innards of main to separate it from System.exit and call that instead.  However, that would result in 
-     * the same problem as seen in the {@link Control} version above unless every test is run in its own
-     * JVM; that is 003 fails after 001.
-     * @param scenarioInfo Scenario information.
-     */
-    private static void assertExecuteScenarioThroughMainWithShutdownHook( Scenario scenarioInfo )
-    {
-        Path config = scenarioInfo.getScenarioDirectory()
-                                  .resolve( ScenarioHelper.USUAL_EVALUATION_FILE_NAME );
-        Runtime.getRuntime().addShutdownHook( new Thread( () -> 
-        {
-            LOGGER.info( "####>> Asserting that output matches benchmarks." );
-            ScenarioHelper.assertOutputsMatchBenchmarks( scenarioInfo );
-        } ) );
-        String args[] = { "execute", config.toString() };
-        Main.main( args );
-    }
-
-    /**
-     * Executes the system test in a separate JVM through the use of {@link ProcessBuilder}.  This will fail the unit test
-     * if an exception occurs running the process or the exit value for WRES is something other than 0.  This currently
-     * does not work due to a {@link LinkageError} that occurs when initializing a static variable within {@link Main}.
-     * @param scenarioInfo The {@link Scenario} information.
-     */
-    private static void assertExecuteScenarioThroughProcessBuilder( Scenario scenarioInfo )
-    {
-        //For example: https://www.pixelstech.net/article/1461746551-Launch-Java-process-programmatically-in-Java
-        String javaHome = System.getProperty( "java.home" );
-        String javaBin = javaHome + File.separator
-                         + "bin"
-                         + File.separator
-                         + "java";
-        //Does lib/conf need to be on path???  If so Gradle may need to set that correctly.
-        String classpath = System.getProperty( "java.class.path" ); 
-        String className = "wres.Main";
-
-        //Get the path to the configuration.
-        Path config = scenarioInfo.getScenarioDirectory()
-                                  .resolve( ScenarioHelper.USUAL_EVALUATION_FILE_NAME );
-
-// XXX Note that I never got this to work as is.  It would always complain about a LinkageError involving initializing static vars.
-        ProcessBuilder builder = new ProcessBuilder(
-                                                     javaBin,
-                                                     "-Djava.util.logging.config.class=wres.system.logging.JavaUtilLoggingRedirector",
-                                                     "-Djava.io.tmpdir='" + scenarioInfo.getScenarioDirectory().toString() + "'",
-                                                     "-Dwres.url='" + System.getProperty( "wres.url" ) + "'",
-                                                     "-Dwres.hostname='" + System.getProperty( "wres.url" ) + "'",
-                                                     "-Dwres.databaseName='" + System.getProperty( "wres.databaseName" )+ "'",
-                                                     "-Dwres.username='" + System.getProperty( "wres.username" ) + "'",
-                                                     "-Duser.dir='" + System.getProperty( "user.dir" ) + "'",
-                                                     "-cp", 
-                                                     classpath,
-                                                     className,
-                                                     "execute",
-                                                     config.toString() );
-
-//XXX INFORMATION DISCOVERED DURING EXPERIMENTS.
-// If I were to use the wres script technique, I could pass in a system property via Gradle pointing to the unzipped release dir in order to find bin/wres.
-// Otherwise, it would have no clean way to find it (it would need to search the dist/build directory, which would be ugly)/
-//             ProcessBuilder builder = new ProcessBuilder("/home/hank.herr/wresTestScriptWorkingRelease/bin/wres", "execute", config.toString());
-//
-//These are the Java options used in the wres script.  After adding the logging stuff above, I don't see anything missing.
-//
-//        builder.environment().put( "DEFAULT_JVM_OPTS", "\"-Xms1628m\" \"-Xmx1628m\" \"-XX:+HeapDumpOnOutOfMemoryError\" \"-Djava.util.logging.config.class=wres.system.logging.JavaUtilLoggingRedirector\"" );
-//        builder.environment().put( "JAVA_OPTS", "-XX:+HeapDumpOnOutOfMemoryError -Xms128m -Xmx3072m -Dwres.logLevel=info -Dwres.url=***REMOVED***wresdb-dev01.***REMOVED***.***REMOVED*** -Dwres.hostname=***REMOVED***wresdb-dev01.***REMOVED***.***REMOVED*** -Dwres.databaseName=wres6 -Dwres.username=wres_user6" );
-//        builder.environment().put( "JAVA_OPTS",
-//                                   "-Dwres.url='" + System.getProperty( "wres.url" ) + "'" 
-//                                   + " -Dwres.databaseName='" + System.getProperty( "wres.databaseName" ) + "'" 
-//                                   + " -Dwres.username='" + System.getProperty( "wres.username" ) + "'" );
-//
-//James believed that the class path was the issue.  I never confirmed.
-
-        //Results in a version of the command executed that can be selected and executed.  
-        //This always works even when the ProcessBuilder call fails.  Why does this work when the above didn't?
-        String commandStr = "";
-        for ( String item : builder.command() )
-        {
-            commandStr += item + " ";
-        }
-        LOGGER.info( "####>> COMMAND EXECUTE = " + commandStr + "\n\n\n" );
-
-        //Redirect stderr to stdout and then send all screen output to a file within the scenario directory.
-        //TODO Create a better output file name, perhaps based on the wres_eval output directory name?
-        //Or the current date/time stamp?
-        builder.redirectErrorStream( true ); //Merges error with output stream
-        builder.redirectOutput( new File( scenarioInfo.getScenarioDirectory().toFile(),
-                                          "test." + scenarioInfo.getName() + ".screenout.txt" ) );
-
-        //Start the process.  Wait until it is done.
-        Process process;
-        try
-        {
-            LOGGER.debug( "Starting the system test process for scenario " + scenarioInfo.getName() );
-            process = builder.start();
-            process.waitFor();
-            LOGGER.debug( "Completed system test process for " + scenarioInfo.getName() );
-            int exitValue = process.exitValue();
-            assertEquals( "WRES execution resulted in non-zero exit code, " + exitValue, 0, exitValue );
-        }
-        catch ( IOException e )
-        {
-            e.printStackTrace();
-            fail( "Unexpected IOException occurred starting the ProcessBuilder: " + e.getMessage() );
-        }
-        catch ( InterruptedException e )
-        {
-            e.printStackTrace();
-            fail( "InterruptedException occurred waiting for the system test execution to complete: "
-                  + e.getMessage() );
-        }
-    }
-
-    /**
-    * Delete wres_evaluation_output_* from previous run.
-    * @param directoryToLookIn The directory in which to look for evaluation output subdirectories.
-    * @return True if anything is deleted, false otherwise.
-    * @throws IOException
-    */
-    public static void deleteOldOutputDirectories( Path directoryToLookIn )
-    {
-        File directoryWithFiles = directoryToLookIn.toFile();
-
-        if ( !directoryWithFiles.exists() || !directoryWithFiles.canRead()
-             || !directoryWithFiles.isDirectory() )
-        {
-            throw new IllegalArgumentException( "Could not read a directory at "
-                                                + directoryToLookIn );
-        }
-
-        String[] files = directoryToLookIn.toFile().list();
-
-        //Search the files for anything that appears to be wres evaluation output and remove the entire directory.
-        try
-        {
-            for ( int i = 0; i < files.length; i++ )
-            {
-                if ( files[i].startsWith( "wres_evaluation_output" ) ) //TODO Is there a constant somewhere that stores this???
-                {
-                    Path outputPath = directoryToLookIn.resolve( files[i] );
-                    System.out.println( "Deleting old system testing output directory, "
-                                        + outputPath.toFile().getAbsolutePath() );
-					LOGGER.info( "####>> Deleting old system testing output directory, "
-                                        + outputPath.toFile().getAbsolutePath() );
-                    FileUtils.deleteDirectory( outputPath.toFile() );
-                }
-            }
-        }
-        catch ( IOException e )
-        {
-            e.printStackTrace();
-            fail( "Problem encountered removed old output directories: " + e.getMessage() );
-        }
-    }
+    
 
     /**
      * Checks for output validity from WRES and fails if not.  This is used in conjunction
      * with {@link #assertOutputsMatchBenchmarks(Scenario, Control)}.
+     * @param@ completedEvaluation The {@link Control} that executed the evaluation.
      */
-    static void assertWRESOutputValid( Control completedEvaluation )
+    private static void assertWRESOutputValid( Control completedEvaluation )
     {
         //Obtain the complete list of outputs generated.
         Set<Path> initialOutputSet = completedEvaluation.get();
@@ -354,197 +126,37 @@ System.out.println("java.io.tmpdir ================ " + System.getProperty("java
         //Anything else to validate about the output?
     }
 
-    /**
-     * Asserts if the output path was found for the given scenario.  It fails if no acceptable output path is found or if 
-     * more than one is found.
-     * @param scenarioInfo Test scenario information.
-     * @return The path to the output folder.
-     */
-    private static Path assertOutputPathValidAndReturnIt( Scenario scenarioInfo )
-    {
-        //Find the output folder.
-        File folder = scenarioInfo.getScenarioDirectory().toFile();
-        File[] outputFolders = folder.listFiles( new FilenameFilter()
-        {
-            @Override
-            public boolean accept( File dir, String name )
-            {
-                return name.startsWith( "wres_evaluation_output_" );
-            }
-        } );
-
-        //There should be exactly one if this method is called.
-        if ( outputFolders.length == 0 )
-        {
-            fail( "No output folder found." );
-        }
-        if ( outputFolders.length > 1 )
-        {
-            fail( "Multiple output folders found." );
-        }
-        return outputFolders[0].toPath();
-    }
-
-    /**
-     * List the files contained within the output folder for the scenario.
-     * @param scenarioInfo Scenario information.
-     * @return Set specifying the output paths.
-     */
-    private static Set<Path> obtainOutputPathsForScenario( Scenario scenarioInfo )
-    {
-        Path outputFolderPath = assertOutputPathValidAndReturnIt( scenarioInfo );
-
-        //Log the output folder name.
-        LOGGER.info( "Found output folder, " + outputFolderPath );
-
-        //List the files.
-        File[] outputFiles = outputFolderPath.toFile().listFiles();
-
-		// I want to check each file
-		for (int i = 0; i < outputFiles.length; i++)
-		{
-			System.out.println("Output file " + i + outputFiles[i].getName());
-		}
-
-        //Covert to paths and return.  There may be a utility for this; ask.
-        //Set should ensure one instance of each path.
-        Set<Path> outputPaths = new HashSet<Path>();
-        for ( File file : outputFiles )
-        {
-			if (file.getName().endsWith(".csv")) // only need *.csv files
-			{
-				System.out.println("Add this file " + file.getName());
-            	outputPaths.add( file.toPath() );
-			}
-			else
-			{
-				System.out.println("This isn't s CSV file " + file.getName());
-			}
-        }
-        return outputPaths;
-    }
-
-    /**
-     * Assertion method for checking outputs against benchmarks that works from the directory, itself, instead 
-     * of {@link Control}.  This will work with any version of {@link #assertExecuteScenario(Scenario)}, which
-     * is why its what is used now. However, if we finalize the decision to use {@link Control}, then we may want
-     * to call {@link #assertOutputsMatchBenchmarks(Scenario, Control)} instead of this.<br>
-     * <br>
-     * This will fail out if the {@link #assertOutputPathValidAndReturnIt(Scenario)}, called via 
-     * {@link #obtainOutputPathsForScenario(Scenario)} fails (number of output dirs is not 1) or if
-     * {@link #compareOutputAgainstBenchmarks(Scenario, Set)} returns a non-zero code.
-     */
-    static void assertOutputsMatchBenchmarks( Scenario scenarioInfo )
-    {
-        //Get a set of the output paths.  There is an assertion method within the call confirming output
-        //was generated.
-        Set<Path> initialOutputSet = obtainOutputPathsForScenario( scenarioInfo );
-        LOGGER.info( "Found " + initialOutputSet.size() + " files.  Comparing against benchmarks." );
-
-        try
-        {
-            //Construct the directory listing file for the output set.  Add the dir listing
-            //to the final set of outputs.
-            //
-            //Redmine 51654#387 decided not to compare the dirListing.txt
-            //Path dirListingPath = constructDirListingFile( initialOutputSet );
-            //HashSet<Path> finalOutputSet = Sets.newHashSet( initialOutputSet );
-			HashSet<Path> finalOutputSet = new HashSet<Path>();
-            //finalOutputSet.add( dirListingPath );
-
-            // Need to filter out the *.png and the *.nc files
-			for ( Path nextPath : initialOutputSet )
-            {
-                if ( nextPath.endsWith( ".png" ) || nextPath.endsWith( ".nc" ) )
-                {
-                    LOGGER.info( "Won't add this path ===== {}", nextPath );
-                }
-                else
-                {
-                    LOGGER.info( "Will add this path ===== {}", nextPath );
-                    finalOutputSet.add( nextPath );
-                }
-            }
-            //Call the compare method to obtain a result code and check that it is zero.
-            int resultCode = compareOutputAgainstBenchmarks( scenarioInfo,
-                                                         finalOutputSet );
-            assertEquals( "Camparison with benchmarks failed with code " + resultCode + ".", 0, resultCode );
-        }
-        catch ( IllegalStateException e )
-        {
-            e.printStackTrace();
-            fail( "Problem encountered removed old output directories: " + e.getMessage() );
-        }
-        catch ( IOException e )
-        {
-            e.printStackTrace();
-            fail( "IOException encountered removed old output directories: " + e.getMessage() );
-        }
-    }
-
-
-    /**
-     * This builds the dirListing.txt file for that directory and then compares all of the
-     * outputs.  Anything in the output directory that has a corresponding benchmark will be diffed.  If anything
-     * in the benchmarks is not found in the outputs, then a difference is reported; this should be equivalent to   
-     * check dirListing.txt, in that something in the benchmarks but not in the output should result in a dirListing.txt   
-     * difference, but I wanted to be certain nothing fell through the cracks.  <br>   
-     * <br>    
-     * If exceptions are thrown when calling this method, it indicates something basic went wrong that is not    
-     * covered by the result code return.  Typically, that will be due to a system test setup poorly for    
-     * any one of various reasons, so it excepts out.    
-     * @return The comparison result code.    
-     * @throws IllegalStateException Indicates that the outputs were written to different directories.  Its expected that all    
-     * system test output is written to the same directory.    
-     * @throws IOException If the directory listing file cannot be generated or the files cannot be compared.   
-     */
-    static void assertOutputsMatchBenchmarks( Scenario scenarioInfo,
+    protected static void assertOutputsMatchBenchmarks( Scenario scenarioInfo,
                                               Control completedEvaluation )
     {
-		LOGGER.info( "####>> Assert outputs match benchmarks..." + scenarioInfo.getName() );
+		LOGGER.info( "Asserting that outputs match benchmarks..." + scenarioInfo.getName() );
         //Assert the output as being valid and then get the output from the provided Control if so.
         assertWRESOutputValid( completedEvaluation );
-		/*
-		// List files one-by-one
-		Set<Path> tmpset = completedEvaluation.get();
-		Path tmppath = tmpset.iterator().next();
-		File tmpdir = tmppath.getParent().toFile();
-		Set<Path> initialOutputSet = new HashSet<Path>();
-		if (tmpdir.isDirectory() && tmpdir.canRead() && tmpdir.canExecute())
-		{
-			File[] tmpFiles = tmpdir.listFiles();
-			//Set<Path> initialOutputSet = new HashSet<Path>();
-			for (int i = 0; i < tmpFiles.length; i++)
-			{
-				System.out.println("tmpFile = " + tmpFiles[i].toString());
-				initialOutputSet.add(tmpFiles[i].toPath());
-			}
-		}
-		else
-        	initialOutputSet = completedEvaluation.get(); // somehow this Control.get() couldn't complete get all files for scerio1000 and 1001
-		*/
 
+        //Get the output file paths from the evaluation run.
         Set<Path> initialOutputSet = completedEvaluation.get();
 
         //Create the directory listing.
         //Path dirListingPath;
         try
         {	
-			//Redmine 51654#387 decided not to compare the dirListing.txt
+			//Redmine #51654-387 decided not to compare the dirListing.txt
             //dirListingPath = constructDirListingFile( initialOutputSet );
             // Below Sets.newHasSet() won't filter out the *.png and *.nc files
             //HashSet<Path> finalOutputSet = Sets.newHashSet( initialOutputSet );
+            
 			HashSet<Path> finalOutputSet = new HashSet<Path>();
+			
             // Need to filter out the *.png and the *.nc files
             for ( Path nextPath : initialOutputSet )
             {
                 if ( nextPath.endsWith( ".png" ) || nextPath.endsWith( ".nc" ) )
                 {
-                    LOGGER.info( "Won't add this path ===== {}", nextPath );
+                    LOGGER.info( "Won't add this path for benchmark comparison: {}", nextPath );
                 }
                 else
                 {
-                    LOGGER.info( "Will add this path ===== {}", nextPath );
+                    LOGGER.info( "Will add this path for benchmark comparison: {}", nextPath );
                     finalOutputSet.add( nextPath );
                 }
             }
@@ -569,7 +181,9 @@ System.out.println("java.io.tmpdir ================ " + System.getProperty("java
 
 
     /**
-     * Constructs the dirListing.txt file for the outputs generated.
+     * Constructs the dirListing.txt file for the outputs generated.<br>
+     * <br>
+     * Currently, this is not used, but is left in place in case it proves useful down the road.
      * @param generatedOutputs It is assumed that all outputs are generated in the same directory.
      * @return The {@link Path} to the directory listing file created.
      * @throws IOException
@@ -662,23 +276,23 @@ System.out.println("java.io.tmpdir ================ " + System.getProperty("java
                     if ( outputFileName.endsWith( "pairs.csv" ) )
                     {
                         pairResultCode = 16;
-						LOGGER.warn("The pair result code " + pairResultCode + " with file name " + outputFileName);
+						LOGGER.warn("The pairs file differ (result code " + pairResultCode + ") for file with name " + outputFileName);
                     }
                     //Otherwise just do the comparison without sorting.
                     else if ( outputFileName.endsWith( ".csv" ) )
                     {
                         metricCSVResultCode = 32;
-						LOGGER.warn("The metric CSV result code " + metricCSVResultCode + " with file name " + outputFileName);
+						LOGGER.warn("The metric CSV file differs (result code " + metricCSVResultCode + ") for file with name " + outputFileName);
                     }
                     else if ( outputFileName.endsWith( ".txt" ) )
                     {
                         txtResultCode = 4;
-						LOGGER.warn("The text result code " + txtResultCode + " with file name " + outputFileName);
+						LOGGER.warn("The text file differs (result code " + txtResultCode + ") for file with name " + outputFileName);
                     }
                     else
                     {
                         miscResultCode = 2;
-						LOGGER.warn("The miscellaneous result code " + miscResultCode + " with file name " + outputFileName);
+						LOGGER.warn("A miscellaneous result returned (result code" + miscResultCode + ") for file with name " + outputFileName);
                     }
                 }
                 //Remove the benchmark as one to check.
@@ -756,8 +370,8 @@ System.out.println("java.io.tmpdir ================ " + System.getProperty("java
         {
             //TODO Added trimming below to handle white space at the ends, but should I?
             //Mainly worried about the Window's carriage return popping up some day.
-			LOGGER.info("compare output file " + outputFile.getName() + " line " + i + " with benchmarks file " + benchmarkFile.getName());
-			LOGGER.info("Are they equals ? " + actualRows.get( i ).equals(expectedRows.get( i )));
+			LOGGER.trace("compare output file " + outputFile.getName() + " line " + i + " with benchmarks file " + benchmarkFile.getName());
+			LOGGER.trace("Are they equals ? " + actualRows.get( i ).equals(expectedRows.get( i )));
 			//int expectedRowsIndex = expectedRows.indexOf(actualRows.get( i ));
 			//LOGGER.info("Are they equals ? " + actualRows.get( i ).equals(expectedRows.get( expectedRowsIndex )));
             assertEquals( "For output file, " + outputFile.getName()
@@ -796,8 +410,8 @@ System.out.println("java.io.tmpdir ================ " + System.getProperty("java
         // Verify by row, rather than all at once
         for ( int i = 0; i < actualRows.size(); i++ )
         {
-			LOGGER.info("compare output file " + pairsFile.getName() + " line " + i + " with benchmarks file " + benchmarkFile.getName());
-			LOGGER.info("Are they equals ? " + actualRows.get( i ).equals(expectedRows.get( i )));
+			LOGGER.trace("compare output file " + pairsFile.getName() + " line " + i + " with benchmarks file " + benchmarkFile.getName());
+			LOGGER.trace("Are they equals ? " + actualRows.get( i ).equals(expectedRows.get( i )));
             assertEquals( "For pairs file file, " + pairsFile.getName()
                           + ", after sorting alphabetically, row "
                           + i
@@ -806,11 +420,6 @@ System.out.println("java.io.tmpdir ================ " + System.getProperty("java
                           expectedRows.get( i ).trim() );
         }
     }
-
-    //===================================================================================================================
-    //TODO Everything below has not been changed, because I have not implemented 501 yet.  These are tools Raymond
-    //developed to assist with the before and after script execution.
-    //===================================================================================================================
 
     /**
     * if there is a after script, do it now
