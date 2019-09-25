@@ -15,9 +15,9 @@ services:
         environment:
          # Make sure to pass through WRES_ENV_SUFFIX to tasker at runtime
          - JAVA_OPTS=-Dwres.broker=broker -Dwres.environment=${WRES_ENV_SUFFIX} -XX:HeapDumpPath=/mnt/wres_share/ -XX:OnOutOfMemoryError='mv /mnt/wres_share/java_pid%p.hprof /mnt/wres_share/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/java_pid%p_`hostname`.hprof'
-        # Tasker JVM should have 2081m max heap specified at launch
+        # Tasker JVM should have 1305m max heap specified at launch
         # The total limit includes stack space which depends on Thread count
-        mem_limit: 2656m
+        mem_limit: 1880m
     broker:
         ports:
          - "5671:5671"
@@ -29,8 +29,8 @@ services:
          - /mnt/wres_secrets:/wres_secrets:ro
         environment:
          - RABBITMQ_CONFIG_FILE=rabbitmq${WRES_ENV_SUFFIX}.config
-        # rabbitmq.conf should have 720m specified as high watermark
-        mem_limit: 1440m
+        # rabbitmq.conf should have 360m specified as high watermark
+        mem_limit: 720m
     worker:
         image: "${DOCKER_REGISTRY}/wres/wres-worker:20190925-56b4740"
         restart: always
@@ -53,5 +53,5 @@ services:
          # administrator to run the migration(s) during or after deployment.
          # Write heap dumps to the root of the volume above.
          - INNER_JAVA_OPTS=-Dwres.url=${WRES_DB_FQDN} -Dwres.databaseName=wres8 -Dwres.username=wres_user8 -Dwres.attemptToMigrate=false -XX:HeapDumpPath=/mnt/wres_share/ -XX:OnOutOfMemoryError='mv /mnt/wres_share/java_pid%p.hprof /mnt/wres_share/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/java_pid%p_`hostname`.hprof'
-        # Shim JVM should have 32m max heap, core JVM should have 1628m max heap
-        mem_limit: 2048m
+        # Shim JVM should have 32m max heap, core JVM should have 2180m max heap
+        mem_limit: 2600m
