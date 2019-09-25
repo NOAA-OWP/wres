@@ -61,17 +61,6 @@ env_suffix = "-dev"
 
 print( "We are using the " + env_suffix + " environment in this example." )
 
-# You must edit this user_name variable to be your first name or pass as arg.
-user_name = "i_need_to_edit_this_user_name_to_be_my_first_name"
-
-parser = argparse.ArgumentParser()
-parser.add_argument( "name", help="Your first name to pass to WRES HTTP API" )
-args = parser.parse_args()
-
-if args.name:
-    print( "Setting user_name to " + args.name )
-    user_name = args.name
-
 # The WRES HTTP API uses secured HTTP, aka HTTPS, which is a form of TLS aka
 # Transport Layer Security, which relies on X.509 certificates for
 # authentication. In this case, the server is providing authentication to the
@@ -104,8 +93,7 @@ else:
 
 post_result = requests.post( url="https://***REMOVED***wres"+env_suffix+".***REMOVED***.***REMOVED***/job",
                              verify = wres_ca_file,
-                             data = { 'userName': user_name,
-                                      'projectConfig': evaluation } )
+                             data = { 'projectConfig': evaluation } )
 
 print( "The response from the server was:" )
 print( post_result )
@@ -143,8 +131,12 @@ print( "The location of the resource created by server was " + job_location )
 evaluation_status=""
 
 while ( evaluation_status != "COMPLETED_REPORTED_SUCCESS"
-        and evaluation_status != "COMPLETED_REPORTED_FAILURE" ):
+        and evaluation_status != "COMPLETED_REPORTED_FAILURE"
+        and evaluation_status != "NOT_FOUND" ):
     # Pause for two seconds before asking the server for status.
+    # If your evaluations take around 2 minutes to 2 hours this is appropriate.
+    # If your evaluations take over 2 hours, increase to 20 seconds.
+    # If your evaluations take less than 2 minutes, drop to 0.2 seconds.
     time.sleep( 2 )
     evaluation_status = requests.get( url = job_location + "/status",
                                       verify = wres_ca_file
@@ -184,6 +176,8 @@ if evaluation_status == "COMPLETED_REPORTED_SUCCESS":
              print( some_output.text )
         else:
              print( "Non-text output was returned for " + output )
+elif evaluation_status == "NOT_FOUND":
+    print( "Evaluation not found, WRES HTTP API is mildly amnesic." )
 else:
     print( "Evaluation failed, not attempting to GET output data." )
 

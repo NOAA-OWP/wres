@@ -57,14 +57,6 @@ env_suffix=-dev
 
 echo "We are using the $env_suffix environment in this example."
 
-# You must edit this user_name variable to be your first name or pass as arg.
-user_name=i_need_to_edit_this_user_name_to_be_my_first_name
-
-if [ ! -z "$1" ]
-then
-    echo "Setting user_name to $1"
-    user_name=$1
-fi
 
 # The WRES HTTP API uses secured HTTP, aka HTTPS, which is a form of TLS aka
 # Transport Layer Security, which relies on X.509 certificates for
@@ -100,7 +92,7 @@ fi
 # We furthermore want to save the server's response to the POST, because it
 # contains the name of the created resource in its response. We use post_result.
 # The tr -d is to remove carriage return characters from the response.
-post_result=$( curl -i --cacert $wres_ca_file --data "userName=${user_name}&projectConfig=${project_config}" https://***REMOVED***wres${env_suffix}.***REMOVED***.***REMOVED***/job | tr -d '\r' )
+post_result=$( curl -i --cacert $wres_ca_file --data "projectConfig=${project_config}" https://***REMOVED***wres${env_suffix}.***REMOVED***.***REMOVED***/job | tr -d '\r' )
 
 echo "The response from the server was:"
 echo "$post_result"
@@ -140,7 +132,8 @@ echo "The location of the resource created by server was $job_location"
 evaluation_status=""
 
 while [ "$evaluation_status" != "COMPLETED_REPORTED_SUCCESS" ] \
-      && [ "$evaluation_status" != "COMPLETED_REPORTED_FAILURE" ]
+        && [ "$evaluation_status" != "COMPLETED_REPORTED_FAILURE" ] \
+        && [ "$evaluation_status" != "NOT_FOUND" ]
 do
     # Pause for two seconds before asking the server for status.
     sleep 2
@@ -176,6 +169,9 @@ then
         echo "Here is output from $output:"
         echo -n "$some_output" | xxd
     done
+elif [ "$evaluation_status" == "NOT_FOUND" ]
+then
+    echo "Evaluation not found, WRES HTTP API is mildly amnesic."
 else
     echo "Evaluation failed, not attempting to GET output data."
 fi
