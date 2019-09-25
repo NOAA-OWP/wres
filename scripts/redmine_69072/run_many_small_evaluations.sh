@@ -134,14 +134,18 @@ do
     evaluation_status=""
 
     while [ "$evaluation_status" != "COMPLETED_REPORTED_SUCCESS" ] \
-           && [ "$evaluation_status" != "COMPLETED_REPORTED_FAILURE" ]
+           && [ "$evaluation_status" != "COMPLETED_REPORTED_FAILURE" ] \
+           && [ "$evaluation_status" != "NOT_FOUND" ]
     do
-        sleep 0.2
 	echo "Looking for job at $job_location"
 	evaluation_status=$( curl --cacert $wres_ca_file $job_location/status -s | tr -d '\r' )
     done
 
-    if [ "$evaluation_status" == "COMPLETED_REPORTED_SUCCESS" ]
+    if [ "$evaluation_status" == "NOT_FOUND" ]
+    then
+        echo "Evaluation $job_location not found! Not good!"
+        exit 6
+    elif [ "$evaluation_status" == "COMPLETED_REPORTED_SUCCESS" ]
     then
         echo "Evaluation succeeded for $job_location"
         jobs_completed_success+=($job_location)
