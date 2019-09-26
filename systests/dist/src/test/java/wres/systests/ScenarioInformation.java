@@ -5,7 +5,7 @@ import java.nio.file.Path;
 /**
  * This stores information about a system test scenario. Immutable value class.
  */
-class Scenario
+class ScenarioInformation
 {
     /**
      * The name of the scenario.  This corresponds to the name of the subdirectory
@@ -18,7 +18,7 @@ class Scenario
      */
     private final Path baseDirectory;
 
-    protected Scenario( String name,
+    protected ScenarioInformation( String name,
               Path baseDirectory )
     {
         this.name = name;

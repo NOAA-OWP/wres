@@ -60,9 +60,9 @@ public class ScenarioHelper
     /**
      * Sets the properties which drive the system testing.  These use system environment variables in order
      * to set Java system properties.
-     * @param@ scenarioInfo The {@link Scenario} information.
+     * @param@ scenarioInfo The {@link ScenarioInformation} information.
      */
-    static void logUsedSystemProperties( Scenario scenarioInfo )
+    static void logUsedSystemProperties( ScenarioInformation scenarioInfo )
     {
         LOGGER.info( "Properties used to run test:" );
         LOGGER.info( "    wres.url = " + System.getProperty( "wres.url" ) + " (the database host name)");
@@ -79,9 +79,9 @@ public class ScenarioHelper
     /**
      * Single entry point for executing the scenario.  Modify this to call the desired private method below.
      * It should be a direct pass through and the method called should confirm that execution was successful.
-     * @param scenarioInfo The {@link Scenario} information.
+     * @param scenarioInfo The {@link ScenarioInformation} information.
      */
-    protected static Control assertExecuteScenario( Scenario scenarioInfo )
+    protected static Control assertExecuteScenario( ScenarioInformation scenarioInfo )
     {
         LOGGER.info( "Beginning test execution through JUnit for scenario: " + scenarioInfo.getName());
         Path config = scenarioInfo.getScenarioDirectory().resolve( ScenarioHelper.USUAL_EVALUATION_FILE_NAME );
@@ -98,10 +98,10 @@ public class ScenarioHelper
 
     /**
      * Checks for output validity from WRES and fails if not.  This is used in conjunction
-     * with {@link #assertOutputsMatchBenchmarks(Scenario, Control)}.
+     * with {@link #assertOutputsMatchBenchmarks(ScenarioInformation, Control)}.
      * @param@ completedEvaluation The {@link Control} that executed the evaluation.
      */
-    private static void assertWRESOutputValid( Control completedEvaluation )
+    private static void assertWRESOutputValid( ScenarioInformation scenarioInfo, Control completedEvaluation )
     {
         //Obtain the complete list of outputs generated.
         Set<Path> initialOutputSet = completedEvaluation.get();
@@ -120,34 +120,33 @@ public class ScenarioHelper
                           + "That is not allowed in system testing." );
                 }
             }
+            
+            LOGGER.info("For scenario " + scenarioInfo.getName() + " all outputs were written to " + firstPath);
         }
 
         //Anything else to validate about the output?
     }
 
-    protected static void assertOutputsMatchBenchmarks( Scenario scenarioInfo,
+    protected static void assertOutputsMatchBenchmarks( ScenarioInformation scenarioInfo,
                                               Control completedEvaluation )
     {
         LOGGER.info( "Asserting that outputs match benchmarks..." + scenarioInfo.getName() );
         
         //Assert the output as being valid and then get the output from the provided Control if so.
-        assertWRESOutputValid( completedEvaluation );
+        assertWRESOutputValid( scenarioInfo, completedEvaluation );
 
         //Get the output file paths from the evaluation run.
         Set<Path> initialOutputSet = completedEvaluation.get();
 
-        //Create the directory listing.
+        //Create the directory listing... Temporarily removed for due to sorting issues.
         //Path dirListingPath;
         try
         {    
-            //Redmine #51654-387 decided not to compare the dirListing.txt
+            //Redmine #51654-387 decided not to compare the dirListing.txt due to sorting issues.
             //dirListingPath = constructDirListingFile( initialOutputSet );
-            // Below Sets.newHasSet() won't filter out the *.png and *.nc files
-            //HashSet<Path> finalOutputSet = Sets.newHashSet( initialOutputSet );
             
+            // Need to filter out the *.png and the *.nc files and add to the hash set.
             HashSet<Path> finalOutputSet = new HashSet<Path>();
-            
-            // Need to filter out the *.png and the *.nc files
             for ( Path nextPath : initialOutputSet )
             {
                 if ( nextPath.endsWith( ".png" ) || nextPath.endsWith( ".nc" ) )
@@ -160,9 +159,12 @@ public class ScenarioHelper
                     finalOutputSet.add( nextPath );
                 }
             }
-            // do not check the dirListing for now, see Redmine 51654#387
+            
+            //Do not check the dirListing for now, see Redmine #51654-387
             //finalOutputSet.add( dirListingPath );
 
+            //Make the comparison and check the result code to ensure its 0.  
+            //TODO Implement a better means of handling this.  Do we need a result code with JUnit system testing?
             int resultCode = compareOutputAgainstBenchmarks( scenarioInfo,
                                                          finalOutputSet );
             assertEquals( "Camparison with benchmarks failed with code " + resultCode + ".", 0, resultCode );
@@ -220,7 +222,7 @@ public class ScenarioHelper
      * @param evaluationPath -- evaluation directory path
      * @return 0 no errors; 2 output not found; 4 sort failed; 8 found diff in txt files; 16 found diff in sorted_pairs; 32 found diff in csv files
      */
-    private static int compareOutputAgainstBenchmarks( Scenario scenarioInfo,
+    private static int compareOutputAgainstBenchmarks( ScenarioInformation scenarioInfo,
                                                        Set<Path> generatedOutputs )
             throws IOException, IllegalStateException
     {
@@ -420,54 +422,14 @@ public class ScenarioHelper
         }
     }
 
+    
     /**
-    * if there is a after script, do it now
-    * @param files -- a list of files
-    * @return -- false if there is no after script; Otherwise, true
-    */
-    static boolean doAfter( String[] files )
-    {
-        boolean isAnAfterScript = false;
-        for ( int i = 0; i < files.length; i++ )
-        {
-            if ( files[i].endsWith( "after.sh" ) )
-            {
-                isAnAfterScript = true;
-                LOGGER.info( "Found an 'after' file; making replacements dictated in the file: " + files[i] );
-                searchAndReplace( System.getProperty( "wres.dataDirectory" ) + "/" + files[i] );
-            }
-        }
-        return isAnAfterScript;
-    }
-
-    /**
-    * if there is a before script, do it 1st
-    * @param files -- a list of files
-    * @return -- false if there is no before script; Otherwise, true
-    */
-    static boolean doBefore( String[] files )
-    {
-        boolean isABeforeScript = false;
-        for ( int i = 0; i < files.length; i++ )
-        {
-            if ( files[i].endsWith( "before.sh" ) )
-            {
-                isABeforeScript = true;
-                LOGGER.info( "Found a 'before' file; making replacements dictated in the file: " + files[i] );
-                searchAndReplace( System.getProperty( "wres.dataDirectory" ) + "/" + files[i] );
-            }
-        }
-        return isABeforeScript;
-    }
-
-    /**
-    * Search and replace a string in a file
-    * @param fileName -- file to read and write
-    * @param searchFor -- a string to search for
-    * @param replace -- a string to replace
-    * @param line -- a specify line number search/replace, or 'g' for global
-    */
-    static void searchAndReplace( String fileName, String searchFor, String replace, String line )
+     * Search for a string within a file and replace it.
+     * @param fileName The file to search.
+     * @param searchFor The string searched for.
+     * @param replace Its replacement.
+     */
+    static void searchAndReplace( String fileName, String searchFor, String replace)
     {
         File file = Paths.get( System.getProperty( "wres.dataDirectory" ) + "/" + fileName ).toFile();
         
@@ -514,69 +476,15 @@ public class ScenarioHelper
             System.err.println( "File " + file.getPath() + " doesn't existed." );
         }
     }
-
-    /**
-    * Search for token File=, Search=, Replace=, and Line= from a file
-    * @param fileName -- a before.sh or after.sh shell script
-    */
-    protected static void searchAndReplace( String fileName )
-    {
-        File file = Paths.get( fileName ).toFile();
-        if ( file.exists() )
-        {
-            try
-            {
-                BufferedReader bufferedReader = new BufferedReader( new FileReader( file ) );
-                String aLine;
-                String[] theFile = null;
-                String[] search = null;
-                String[] replace = null;
-                String[] line = null;
-                while ( ( aLine = bufferedReader.readLine() ) != null )
-                {
-                    int index = 0;
-                    if ( ( index = aLine.lastIndexOf( "File=" ) ) > 0 )
-                    {
-                        theFile = aLine.substring( index ).split( "=" );
-                    }
-                    else if ( ( index = aLine.lastIndexOf( "Search=" ) ) > 0 )
-                    {
-                        search = aLine.substring( index ).split( "=" );
-                    }
-                    else if ( ( index = aLine.lastIndexOf( "Replace=" ) ) > 0 )
-                    {
-                        replace = aLine.substring( index ).split( "=" );
-                    }
-                    else if ( ( index = aLine.lastIndexOf( "Line=" ) ) > 0 )
-                    {
-                        line = aLine.substring( index ).split( "=" );
-                    }
-                } // end while loop
-                bufferedReader.close();
-                searchAndReplace( theFile[1].trim(), search[1].trim(), replace[1].trim(), line[1].trim() );
-            }
-            catch ( FileNotFoundException fnfe )
-            {
-                System.err.println( fnfe.getMessage() );
-            }
-            catch ( IOException ioe )
-            {
-                System.err.print( ioe.getMessage() );
-            }
-        }
-        else
-        {
-            System.err.println( "File " + file.getPath() + " doesn't existed." );
-        }
-    } // end method
+    
 
     /**
      * @return The directory where system test scenario directories are found, which is
      * currently the working directory.
      */
-    static Path getBaseDirectory()
+    protected static Path getBaseDirectory()
     {
         return new File(System.getProperty( "user.dir" )).toPath();
     }
 
-} // end this class
+}

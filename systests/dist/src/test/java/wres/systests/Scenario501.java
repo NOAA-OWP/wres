@@ -4,20 +4,20 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.sql.SQLException;
 
-import org.junit.Before;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.io.Operations;
 import wres.control.Control;
+
 public class Scenario501
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( Scenario501.class );
     private static final String NEWLINE = System.lineSeparator();
 
-    private Scenario scenarioInfo;
+    private ScenarioInformation scenarioInfo;
 
     @Before
     public void beforeIndividualTest() throws IOException, SQLException
@@ -26,26 +26,18 @@ public class Scenario501
                      + this.getClass().getSimpleName().toLowerCase()
                      + NEWLINE );
         Path baseDirectory = ScenarioHelper.getBaseDirectory();
-        this.scenarioInfo = new Scenario( this.getClass()
+        this.scenarioInfo = new ScenarioInformation( this.getClass()
                                               .getSimpleName()
                                               .toLowerCase(),
                                           baseDirectory );
-        //LOGGER.info( "####>> Cleaning the database..." );
-        //Operations.cleanDatabase();
-        //ScenarioHelper.deleteOldOutputDirectories( scenarioInfo.getScenarioDirectory() );
         ScenarioHelper.logUsedSystemProperties( scenarioInfo );
-		//System.out.println(scenarioInfo.getName() + " is " + scenarioInfo.getScenarioDirectory().toFile().toString());
-		ScenarioHelper.searchAndReplace(scenarioInfo.getScenarioDirectory().toFile().toString() + "/before.sh");
+        ScenarioHelper.searchAndReplace( "smalldata/1985043014_DRRC2FAKE1_forecast.xml", "16.0", "9001.0");
     }
 
     @Test
     public void testScenario()
     {
         Control control = ScenarioHelper.assertExecuteScenario( scenarioInfo );
-        
-        //This method does it based on a file listing of the output directory.
-        //The other choice can work if you have a Control available, in which case
-        //you can get the output paths from the Control via its get method.
         ScenarioHelper.assertOutputsMatchBenchmarks( scenarioInfo, control );
         LOGGER.info( "########################################################## COMPLETED "
                 + this.getClass().getSimpleName().toLowerCase() + NEWLINE);
@@ -54,8 +46,7 @@ public class Scenario501
 	@After
     public void afterIndividualTest() throws IOException, SQLException
     {
-		ScenarioHelper.searchAndReplace(scenarioInfo.getScenarioDirectory().toFile().toString() + "/after.sh");
-		//System.out.println("Do after.sh " + ScenarioHelper.doAfter(scenarioInfo.getScenarioDirectory().toFile().list()));
+        ScenarioHelper.searchAndReplace( "smalldata/1985043014_DRRC2FAKE1_forecast.xml", "9001.0", "16.0");
 	}
 
 }
