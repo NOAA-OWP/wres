@@ -12,7 +12,9 @@ import wres.datamodel.scale.TimeScale;
 /**
  * Used to increase the {@link TimeScale} of a {@link TimeSeries}, where "increase" means to produce event values whose 
  * {@link TimeScale#getPeriod} is larger than the {@link TimeScale#getPeriod} of the input. This is also known as
- * temporal upscaling.
+ * temporal upscaling. Here, upscaling has the opposite meaning of upscaling in the context of video encoding. In that 
+ * context, upscaling means to increase the resolution or increase amount of data. Here, it means to reduce the amount 
+ * of data.
  * 
  * @param <T> the type of event value
  * @author james.brown@hydrosolved.com
