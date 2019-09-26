@@ -25,7 +25,6 @@ import wres.config.generated.TimeScaleConfig;
 import wres.datamodel.Ensemble;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfEnsemblePairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfEnsemblePairs.TimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
@@ -240,11 +239,11 @@ class SampleDataRetriever extends Retriever
     }
 
     private List<Pair<Instant, Event<Pair<Double,Double>>>>
-            getSingleValuedEvents( List<Pair<Instant, Event<EnsemblePair>>> pairs )
+            getSingleValuedEvents( List<Pair<Instant, Event<Pair<Double,Ensemble>>>> pairs )
     {
         List<Pair<Instant, Event<Pair<Double,Double>>>> events = new ArrayList<>();
 
-        for ( Pair<Instant, Event<EnsemblePair>> pair : pairs )
+        for ( Pair<Instant, Event<Pair<Double,Ensemble>>> pair : pairs )
         {
             events.addAll( Retriever.unwrapEnsembleEvent( pair ) );
         }
@@ -253,15 +252,15 @@ class SampleDataRetriever extends Retriever
     }
 
     private List<Pair<Instant, Event<Pair<Double, Ensemble>>>>
-            getEnsembleEvents( List<Pair<Instant, Event<EnsemblePair>>> pairs )
+            getEnsembleEvents( List<Pair<Instant, Event<Pair<Double,Ensemble>>>> pairs )
     {
         List<Pair<Instant, Event<Pair<Double, Ensemble>>>> events = new ArrayList<>();
 
-        for ( Pair<Instant, Event<EnsemblePair>> pair : pairs )
+        for ( Pair<Instant, Event<Pair<Double,Ensemble>>> pair : pairs )
         {
             Instant left = pair.getLeft();
-            Event<EnsemblePair> inRight = pair.getRight();
-            EnsemblePair inPair = inRight.getValue();
+            Event<Pair<Double,Ensemble>> inRight = pair.getRight();
+            Pair<Double,Ensemble> inPair = inRight.getValue();
             Pair<Double,Ensemble> outPair = Pair.of( inPair.getLeft(), inPair.getRight() );
             Event<Pair<Double,Ensemble>> right = Event.of( inRight.getTime(), outPair );           
             events.add( Pair.of( left, right ) );
@@ -275,7 +274,7 @@ class SampleDataRetriever extends Retriever
      * @return A list of basis times from a set of packaged pairs
      */
     private static List<Instant>
-    extractBasisTimes( List<Pair<Instant,Event<EnsemblePair>>> pairs )
+    extractBasisTimes( List<Pair<Instant,Event<Pair<Double,Ensemble>>>> pairs )
     {
         return pairs.stream().map( Pair::getLeft ).collect( Collectors.toUnmodifiableList() );
     }
@@ -641,7 +640,7 @@ class SampleDataRetriever extends Retriever
      * @param primaryPairs The set of primary pairs that have already been packaged
      * @throws RetrievalFailedException Thrown if pairs could not be formed
      */
-    private void createPersistencePairs( DataSourceConfig dataSourceConfig, List<Pair<Instant,Event<EnsemblePair>>> primaryPairs )
+    private void createPersistencePairs( DataSourceConfig dataSourceConfig, List<Pair<Instant,Event<Pair<Double,Ensemble>>>> primaryPairs )
             throws RetrievalFailedException
     {
         String loadScript;
@@ -785,9 +784,9 @@ class SampleDataRetriever extends Retriever
         boolean shouldAggregate = mostCommonFrequency > 1;
 
         // Third, for each primary pair, we want to find the latest set of aggregated observations
-        for ( Pair<Instant,Event<EnsemblePair>> primaryPair : primaryPairs )
+        for ( Pair<Instant,Event<Pair<Double,Ensemble>>> primaryPair : primaryPairs )
         {
-            Pair<Instant,Event<EnsemblePair>> persistencePair;
+            Pair<Instant,Event<Pair<Double,Ensemble>>> persistencePair;
             if ( shouldAggregate )
             {
                 persistencePair =
@@ -820,8 +819,8 @@ class SampleDataRetriever extends Retriever
      * @throws IllegalArgumentException when no persistence pair can be found
      */
 
-    private Pair<Instant, Event<EnsemblePair>>
-            getLatestPairFromRawPairs( Pair<Instant, Event<EnsemblePair>> primaryPair,
+    private Pair<Instant, Event<Pair<Double,Ensemble>>>
+            getLatestPairFromRawPairs( Pair<Instant, Event<Pair<Double,Ensemble>>> primaryPair,
                                        List<RawPersistenceRow> rawPersistenceValues )
     {
         Instant referenceTime = primaryPair.getLeft();
@@ -838,7 +837,9 @@ class SampleDataRetriever extends Retriever
 
                 double[] wrappedValue = { convertedValue };
 
-                EnsemblePair pair = EnsemblePair.of( primaryPair.getValue().getValue().getLeft(), wrappedValue );
+                Ensemble right = Ensemble.of( wrappedValue );
+                
+                Pair<Double,Ensemble> pair = Pair.of( primaryPair.getValue().getValue().getLeft(), right );
 
                 return Pair.of( referenceTime, Event.of( validTime, pair ) );
             }
@@ -858,8 +859,8 @@ class SampleDataRetriever extends Retriever
      * @return a persistence forecasted pair
      */
 
-    private Pair<Instant, Event<EnsemblePair>>
-            getAggregatedPairFromRawPairs( Pair<Instant, Event<EnsemblePair>> primaryPair,
+    private Pair<Instant, Event<Pair<Double,Ensemble>>>
+            getAggregatedPairFromRawPairs( Pair<Instant, Event<Pair<Double,Ensemble>>> primaryPair,
                                            List<RawPersistenceRow> rawPersistenceValues,
                                            int countOfValuesInAGoodWindow,
                                            TimeScaleConfig scaleConfig )
@@ -924,8 +925,10 @@ class SampleDataRetriever extends Retriever
                                                                         .value() );
 
         double[] aggregatedWrapped = { aggregated };
+        
+        Ensemble right = Ensemble.of( aggregatedWrapped );
 
-        EnsemblePair pair = EnsemblePair.of( primaryPair.getValue().getValue().getLeft(), aggregatedWrapped );
+        Pair<Double,Ensemble> pair = Pair.of( primaryPair.getValue().getValue().getLeft(), right );
 
         return Pair.of( referenceTime, Event.of( validTime, pair ) );
     }

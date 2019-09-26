@@ -8,6 +8,7 @@ import java.io.StringWriter;
 import java.net.URI;
 import java.util.Objects;
 import java.util.zip.GZIPInputStream;
+
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;

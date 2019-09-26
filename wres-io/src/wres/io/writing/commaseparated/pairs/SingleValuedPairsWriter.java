@@ -9,15 +9,15 @@ import java.util.function.Function;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
+import wres.datamodel.sampledata.pairs.PoolOfPairs;
 
 /**
- * Class for writing {@link TimeSeriesOfSingleValuedPairs}.
+ * Class for writing a {@link PoolOfPairs} that contains single-valued pairs.
  * 
  * @author james.brown@hydrosolved.com
  */
 
-public class SingleValuedPairsWriter extends PairsWriter<Double,Double,TimeSeriesOfSingleValuedPairs>
+public class SingleValuedPairsWriter extends PairsWriter<Double,Double,PoolOfPairs<Double,Double>>
 {
 
     /**
@@ -51,7 +51,7 @@ public class SingleValuedPairsWriter extends PairsWriter<Double,Double,TimeSerie
     }
 
     @Override
-    StringJoiner getHeaderFromPairs( TimeSeriesOfSingleValuedPairs pairs )
+    StringJoiner getHeaderFromPairs( PoolOfPairs<Double,Double> pairs )
     {
         StringJoiner joiner = super.getHeaderFromPairs( pairs );
 

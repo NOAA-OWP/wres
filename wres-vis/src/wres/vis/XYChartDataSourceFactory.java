@@ -30,7 +30,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.datamodel.Slicer;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
+import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DoubleScoreStatistic;
@@ -49,7 +49,7 @@ import wres.util.TimeHelper;
  */
 public abstract class XYChartDataSourceFactory
 {
-    
+
     /**
      * Number of milliseconds in an hour for conversion of {@link Duration} to decimal hours for plotting.
      */
@@ -101,12 +101,12 @@ public abstract class XYChartDataSourceFactory
         };
 
         int seriesCount = 0;
-        
-        if( !input.getData().isEmpty() )
+
+        if ( !input.getData().isEmpty() )
         {
             seriesCount = input.getData().get( 0 ).getData().size();
         }
-        
+
         XYChartDataSourceFactory.buildInitialParameters( source,
                                                          orderIndex,
                                                          seriesCount );
@@ -149,7 +149,7 @@ public abstract class XYChartDataSourceFactory
 
         return source;
     }
-    
+
 //    /**
 //     * Helper that returns the maximum number of whiskers associated with boxes in the input.
 //     * 
@@ -189,7 +189,8 @@ public abstract class XYChartDataSourceFactory
      * @param input The data to plot.
      * @return A data source to be used to draw the plot.
      */
-    public static DefaultXYChartDataSource ofSingleValuedPairs( int orderIndex, final SingleValuedPairs input )
+    public static DefaultXYChartDataSource ofSingleValuedPairs( int orderIndex,
+                                                                final SampleData<Pair<Double, Double>> input )
     {
         DefaultXYChartDataSource source = new DefaultXYChartDataSource()
         {
@@ -247,7 +248,7 @@ public abstract class XYChartDataSourceFactory
 
                 Set<OneOrTwoThresholds> thresholds =
                         Slicer.discover( input, next -> next.getMetadata().getSampleMetadata().getThresholds() );
-                
+
                 // Filter by by threshold
                 for ( OneOrTwoThresholds nextSeries : thresholds )
                 {
@@ -255,7 +256,8 @@ public abstract class XYChartDataSourceFactory
                             new TimeSeries( nextSeries.toStringWithoutUnits(), FixedMillisecond.class );
 
                     ListOfStatistics<PairedStatistic<Instant, Duration>> filtered =
-                            Slicer.filter( input, data -> data.getSampleMetadata().getThresholds().equals( nextSeries ) );
+                            Slicer.filter( input,
+                                           data -> data.getSampleMetadata().getThresholds().equals( nextSeries ) );
                     // Create the series
                     for ( PairedStatistic<Instant, Duration> nextSet : filtered )
                     {
@@ -271,7 +273,7 @@ public abstract class XYChartDataSourceFactory
                     }
                     returnMe.addSeries( next );
                 }
-                
+
                 return returnMe;
             }
         };
@@ -340,9 +342,9 @@ public abstract class XYChartDataSourceFactory
                     return buildDataSetSupplier.get();
                 }
                 return new DiagramStatisticXYDataset( input,
-                                                              xConstant,
-                                                              yConstant,
-                                                              durationUnits );
+                                                      xConstant,
+                                                      yConstant,
+                                                      durationUnits );
             }
         };
 
@@ -373,9 +375,9 @@ public abstract class XYChartDataSourceFactory
                                                 final ChronoUnit durationUnits )
     {
         Objects.requireNonNull( input, "Specify non-null input." );
-        
+
         Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
-        
+
         DefaultXYChartDataSource source = new DefaultXYChartDataSource()
         {
             @Override
@@ -546,9 +548,9 @@ public abstract class XYChartDataSourceFactory
                                                    final ChronoUnit durationUnits )
     {
         Objects.requireNonNull( input, "Specify non-null input." );
-        
+
         Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
-        
+
         DefaultXYChartDataSource source = new DefaultXYChartDataSource()
         {
 
@@ -673,9 +675,12 @@ public abstract class XYChartDataSourceFactory
         catch ( XYChartDataSourceException e )
         {
             String message = "Construction of CategoricalXYChartDataSource "
-                             + "with null generator, orderIndex '" + orderIndex
-                             + "', xCategories '" + xCategories
-                             + "', and yAxisValuesBySeries '" + yAxisValuesBySeries
+                             + "with null generator, orderIndex '"
+                             + orderIndex
+                             + "', xCategories '"
+                             + xCategories
+                             + "', and yAxisValuesBySeries '"
+                             + yAxisValuesBySeries
                              + "' failed when it shouldn't have.";
             throw new IllegalStateException( message, e );
         }

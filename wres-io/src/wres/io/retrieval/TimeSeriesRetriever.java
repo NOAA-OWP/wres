@@ -15,9 +15,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DataSourceConfig;
+import wres.datamodel.Ensemble;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
@@ -209,7 +209,7 @@ public class TimeSeriesRetriever extends Retriever
                                                Duration.of( lead, TimeHelper.LEAD_RESOLUTION ),
                                                mappedResult );
 
-                    EnsemblePair ensemblePair = this.getPair( pivottedValues );
+                    Pair<Double, Ensemble> ensemblePair = this.getPair( pivottedValues );
 
                     if (ensemblePair == null)
                     {

@@ -10,7 +10,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.StatisticMetadata;
@@ -20,7 +19,7 @@ import wres.engine.statistics.metric.Diagram;
 import wres.engine.statistics.metric.FunctionFactory;
 
 /**
- * A box plot of the errors associated with a pool of {@link SingleValuedPairs}.
+ * A box plot of the errors associated with a pool of single-valued pairs.
  * 
  * @author james.brown@hydrosolved.com
  */

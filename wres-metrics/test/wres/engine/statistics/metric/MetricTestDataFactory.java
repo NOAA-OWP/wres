@@ -28,8 +28,8 @@ import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs.TimeSeriesOfPairsBuilder;
+import wres.datamodel.sampledata.pairs.PoolOfPairs;
+import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
@@ -150,7 +150,7 @@ public final class MetricTestDataFactory
      * @return single-valued pairs
      */
 
-    public static TimeSeriesOfPairs<Double, Double> getSingleValuedPairsOne()
+    public static PoolOfPairs<Double, Double> getSingleValuedPairsOne()
     {
         //Construct some single-valued pairs
         SortedSet<Event<Pair<Double, Double>>> events = new TreeSet<>();
@@ -168,7 +168,7 @@ public final class MetricTestDataFactory
         events.add( Event.of( start.plus( Duration.ofHours( 9 ) ), Pair.of( 12.0, 12.0 ) ) );
         events.add( Event.of( start.plus( Duration.ofHours( 10 ) ), Pair.of( 93.0, 94.0 ) ) );
 
-        TimeSeriesOfPairsBuilder<Double, Double> builder = new TimeSeriesOfPairsBuilder<>();
+        PoolOfPairsBuilder<Double, Double> builder = new PoolOfPairsBuilder<>();
         builder.addTimeSeries( TimeSeries.of( events ) ).setMetadata( SampleMetadata.of() );
 
         return builder.build();
@@ -180,7 +180,7 @@ public final class MetricTestDataFactory
      * @return single-valued pairs
      */
 
-    public static TimeSeriesOfPairs<Double, Double> getSingleValuedPairsTwo()
+    public static PoolOfPairs<Double, Double> getSingleValuedPairsTwo()
     {
         //Construct some single-valued pairs
         SortedSet<Event<Pair<Double, Double>>> events = new TreeSet<>();
@@ -219,7 +219,7 @@ public final class MetricTestDataFactory
                                                                              "SQIN",
                                                                              "ESP" ) );
 
-        TimeSeriesOfPairsBuilder<Double, Double> builder = new TimeSeriesOfPairsBuilder<>();
+        PoolOfPairsBuilder<Double, Double> builder = new PoolOfPairsBuilder<>();
         return builder.addTimeSeries( TimeSeries.of( events ) )
                       .setMetadata( main )
                       .addTimeSeriesForBaseline( TimeSeries.of( baseline ) )
@@ -238,7 +238,7 @@ public final class MetricTestDataFactory
      * @return single-valued pairs
      */
 
-    public static TimeSeriesOfPairs<Double, Double> getSingleValuedPairsThree()
+    public static PoolOfPairs<Double, Double> getSingleValuedPairsThree()
     {
         //Construct some single-valued pairs
         SortedSet<Event<Pair<Double, Double>>> events = new TreeSet<>();
@@ -255,7 +255,7 @@ public final class MetricTestDataFactory
                                                                        "SQIN",
                                                                        "HEFS" ) );
 
-        TimeSeriesOfPairsBuilder<Double, Double> builder = new TimeSeriesOfPairsBuilder<>();
+        PoolOfPairsBuilder<Double, Double> builder = new PoolOfPairsBuilder<>();
         return builder.addTimeSeries( TimeSeries.of( events ) )
                       .setMetadata( meta )
                       .build();
@@ -269,7 +269,7 @@ public final class MetricTestDataFactory
      * @return single-valued pairs
      */
 
-    public static TimeSeriesOfPairs<Double, Double> getSingleValuedPairsFour()
+    public static PoolOfPairs<Double, Double> getSingleValuedPairsFour()
     {
         //Construct some single-valued pairs
         SortedSet<Event<Pair<Double, Double>>> events = new TreeSet<>();
@@ -297,7 +297,7 @@ public final class MetricTestDataFactory
                                                                .setTimeWindow( window )
                                                                .build();
 
-        TimeSeriesOfPairsBuilder<Double, Double> builder = new TimeSeriesOfPairsBuilder<>();
+        PoolOfPairsBuilder<Double, Double> builder = new PoolOfPairsBuilder<>();
         return builder.addTimeSeries( TimeSeries.of( events ) )
                       .setMetadata( meta )
                       .build();
@@ -358,7 +358,7 @@ public final class MetricTestDataFactory
      * @return single-valued pairs
      */
 
-    public static TimeSeriesOfPairs<Double, Double> getSingleValuedPairsSix()
+    public static PoolOfPairs<Double, Double> getSingleValuedPairsSix()
     {
         //Construct some single-valued pairs
         SortedSet<Event<Pair<Double, Double>>> events = new TreeSet<>();
@@ -374,7 +374,7 @@ public final class MetricTestDataFactory
                                                          .setTimeWindow( window )
                                                          .build();
 
-        TimeSeriesOfPairsBuilder<Double, Double> builder = new TimeSeriesOfPairsBuilder<>();
+        PoolOfPairsBuilder<Double, Double> builder = new PoolOfPairsBuilder<>();
         return builder.addTimeSeries( TimeSeries.of( events ) )
                       .setMetadata( meta )
                       .build();
@@ -386,7 +386,7 @@ public final class MetricTestDataFactory
      * @return single-valued pairs
      */
 
-    public static TimeSeriesOfPairs<Double, Double> getSingleValuedPairsSeven()
+    public static PoolOfPairs<Double, Double> getSingleValuedPairsSeven()
     {
         //Construct some single-valued pairs
         SampleMetadata main = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
@@ -398,7 +398,7 @@ public final class MetricTestDataFactory
                                                                        "SQIN",
                                                                        "ESP" ) );
 
-        TimeSeriesOfPairsBuilder<Double, Double> builder = new TimeSeriesOfPairsBuilder<>();
+        PoolOfPairsBuilder<Double, Double> builder = new PoolOfPairsBuilder<>();
         return builder.addTimeSeries( TimeSeries.of( Collections.emptySortedSet() ) )
                       .setMetadata( main )
                       .addTimeSeriesForBaseline( TimeSeries.of( Collections.emptySortedSet() ) )
@@ -412,7 +412,7 @@ public final class MetricTestDataFactory
      * @return single-valued pairs
      */
 
-    public static TimeSeriesOfPairs<Double, Double> getSingleValuedPairsEight()
+    public static PoolOfPairs<Double, Double> getSingleValuedPairsEight()
     {
         //Construct some single-valued pairs
         SortedSet<Event<Pair<Double, Double>>> events = new TreeSet<>();
@@ -433,23 +433,23 @@ public final class MetricTestDataFactory
         events.add( Event.of( start.plus( Duration.ofHours( 12 ) ), Pair.of( 93.0, Double.NaN ) ) );
         events.add( Event.of( start.plus( Duration.ofHours( 13 ) ), Pair.of( Double.NaN, Double.NaN ) ) );
 
-        TimeSeriesOfPairsBuilder<Double, Double> builder = new TimeSeriesOfPairsBuilder<>();
+        PoolOfPairsBuilder<Double, Double> builder = new PoolOfPairsBuilder<>();
         return builder.addTimeSeries( TimeSeries.of( events ) )
                       .setMetadata( SampleMetadata.of() )
                       .build();
     }
 
     /**
-     * Returns a list of {@link TimeSeriesOfPairs} with single-valued pairs which correspond to the pairs 
+     * Returns a list of {@link PoolOfPairs} with single-valued pairs which correspond to the pairs 
      * associated with system test scenario504 as of commit e91b36a8f6b798d1987e78a0f37b38f3ca4501ae.
      * The pairs are reproduced to 2 d.p. only.
      * 
      * @return a time series of single-valued pairs
      */
 
-    public static TimeSeriesOfPairs<Double, Double> getSingleValuedPairsNine()
+    public static PoolOfPairs<Double, Double> getSingleValuedPairsNine()
     {
-        TimeSeriesOfPairsBuilder<Double, Double> tsBuilder = new TimeSeriesOfPairsBuilder<>();
+        PoolOfPairsBuilder<Double, Double> tsBuilder = new PoolOfPairsBuilder<>();
 
         // Add the first time-series
         Instant basisTimeOne = Instant.parse( "2551-03-17T12:00:00Z" );
@@ -587,7 +587,7 @@ public final class MetricTestDataFactory
      * @throws IOException if the read fails
      */
 
-    public static TimeSeriesOfPairs<Double, Ensemble> getEnsemblePairsOne() throws IOException
+    public static PoolOfPairs<Double, Ensemble> getEnsemblePairsOne() throws IOException
     {
         //Construct some ensemble pairs
         final SortedSet<Event<Pair<Double, Ensemble>>> values = new TreeSet<>();
@@ -632,7 +632,7 @@ public final class MetricTestDataFactory
 
         VectorOfDoubles clim = VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) );
 
-        TimeSeriesOfPairsBuilder<Double, Ensemble> builder = new TimeSeriesOfPairsBuilder<>();
+        PoolOfPairsBuilder<Double, Ensemble> builder = new PoolOfPairsBuilder<>();
 
         return builder.addTimeSeries( TimeSeries.of( values ) )
                       .setMetadata( meta )
@@ -651,7 +651,7 @@ public final class MetricTestDataFactory
      * @throws IOException if the read fails
      */
 
-    public static TimeSeriesOfPairs<Double, Ensemble> getEnsemblePairsOneWithMissings() throws IOException
+    public static PoolOfPairs<Double, Ensemble> getEnsemblePairsOneWithMissings() throws IOException
     {
         //Construct some ensemble pairs
         final SortedSet<Event<Pair<Double, Ensemble>>> values = new TreeSet<>();
@@ -703,7 +703,7 @@ public final class MetricTestDataFactory
 
         VectorOfDoubles clim = VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) );
 
-        TimeSeriesOfPairsBuilder<Double, Ensemble> builder = new TimeSeriesOfPairsBuilder<>();
+        PoolOfPairsBuilder<Double, Ensemble> builder = new PoolOfPairsBuilder<>();
 
         return builder.addTimeSeries( TimeSeries.of( values ) )
                       .setMetadata( meta )
@@ -721,7 +721,7 @@ public final class MetricTestDataFactory
      * @throws IOException if the read fails
      */
 
-    public static TimeSeriesOfPairs<Double, Ensemble> getEnsemblePairsTwo() throws IOException
+    public static PoolOfPairs<Double, Ensemble> getEnsemblePairsTwo() throws IOException
     {
         //Construct some ensemble pairs
         final SortedSet<Event<Pair<Double, Ensemble>>> values = new TreeSet<>();
@@ -760,7 +760,7 @@ public final class MetricTestDataFactory
                                                                .build();
         VectorOfDoubles clim = VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) );
 
-        TimeSeriesOfPairsBuilder<Double, Ensemble> builder = new TimeSeriesOfPairsBuilder<>();
+        PoolOfPairsBuilder<Double, Ensemble> builder = new PoolOfPairsBuilder<>();
 
         return builder.addTimeSeries( TimeSeries.of( values ) )
                       .setMetadata( meta )
@@ -774,7 +774,7 @@ public final class MetricTestDataFactory
      * @return ensemble pairs
      */
 
-    public static TimeSeriesOfPairs<Double, Ensemble> getEnsemblePairsThree()
+    public static PoolOfPairs<Double, Ensemble> getEnsemblePairsThree()
     {
         //Construct some ensemble pairs
 
@@ -789,7 +789,7 @@ public final class MetricTestDataFactory
                                                                                                      "MAP" ) )
                                                                .setTimeWindow( window )
                                                                .build();
-        TimeSeriesOfPairsBuilder<Double, Ensemble> builder = new TimeSeriesOfPairsBuilder<>();
+        PoolOfPairsBuilder<Double, Ensemble> builder = new PoolOfPairsBuilder<>();
 
         return builder.addTimeSeries( TimeSeries.of( values ) )
                       .setMetadata( meta )
@@ -802,7 +802,7 @@ public final class MetricTestDataFactory
      * @return ensemble pairs
      */
 
-    public static TimeSeriesOfPairs<Double, Ensemble> getEnsemblePairsFour()
+    public static PoolOfPairs<Double, Ensemble> getEnsemblePairsFour()
     {
         //Construct some ensemble pairs
         final TimeWindow window = TimeWindow.of( Instant.parse( FIRST_TIME ),
@@ -814,7 +814,7 @@ public final class MetricTestDataFactory
                                                                .setTimeWindow( window )
                                                                .build();
 
-        TimeSeriesOfPairsBuilder<Double, Ensemble> builder = new TimeSeriesOfPairsBuilder<>();
+        PoolOfPairsBuilder<Double, Ensemble> builder = new PoolOfPairsBuilder<>();
 
         return builder.addTimeSeries( TimeSeries.of( Collections.emptySortedSet() ) )
                       .setMetadata( meta )
@@ -1389,16 +1389,16 @@ public final class MetricTestDataFactory
     }
 
     /**
-     * Returns a {@link TimeSeriesOfPairs} with single-valued pairs containing fake data.
+     * Returns a {@link PoolOfPairs} with single-valued pairs containing fake data.
      * 
      * @return a time-series of single-valued pairs
      */
 
-    public static TimeSeriesOfPairs<Double, Double> getTimeSeriesOfSingleValuedPairsOne()
+    public static PoolOfPairs<Double, Double> getTimeSeriesOfSingleValuedPairsOne()
     {
         // Build an immutable regular time-series of single-valued pairs
-        TimeSeriesOfPairsBuilder<Double, Double> builder =
-                new TimeSeriesOfPairsBuilder<>();
+        PoolOfPairsBuilder<Double, Double> builder =
+                new PoolOfPairsBuilder<>();
 
         // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
         Instant firstId = Instant.parse( FIRST_TIME );
@@ -1440,16 +1440,16 @@ public final class MetricTestDataFactory
     }
 
     /**
-     * Returns a {@link TimeSeriesOfPairs} with single-valued pairs containing fake data.
+     * Returns a {@link PoolOfPairs} with single-valued pairs containing fake data.
      * 
      * @return a time-series of single-valued pairs
      */
 
-    public static TimeSeriesOfPairs<Double, Double> getTimeSeriesOfSingleValuedPairsTwo()
+    public static PoolOfPairs<Double, Double> getTimeSeriesOfSingleValuedPairsTwo()
     {
         // Build an immutable regular time-series of single-valued pairs
-        TimeSeriesOfPairsBuilder<Double, Double> builder =
-                new TimeSeriesOfPairsBuilder<>();
+        PoolOfPairsBuilder<Double, Double> builder =
+                new PoolOfPairsBuilder<>();
         // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
         Instant firstId = Instant.parse( FIRST_TIME );
         SortedSet<Event<Pair<Double, Double>>> firstValues = new TreeSet<>();
@@ -1477,16 +1477,16 @@ public final class MetricTestDataFactory
     }
 
     /**
-     * Returns a {@link TimeSeriesOfPairs} with single-valued pairs containing fake data.
+     * Returns a {@link PoolOfPairs} with single-valued pairs containing fake data.
      * 
      * @return a time-series of single-valued pairs
      */
 
-    public static TimeSeriesOfPairs<Double, Double> getTimeSeriesOfSingleValuedPairsThree()
+    public static PoolOfPairs<Double, Double> getTimeSeriesOfSingleValuedPairsThree()
     {
         // Build an immutable regular time-series of single-valued pairs
-        TimeSeriesOfPairsBuilder<Double, Double> builder =
-                new TimeSeriesOfPairsBuilder<>();
+        PoolOfPairsBuilder<Double, Double> builder =
+                new PoolOfPairsBuilder<>();
         // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
 
         // Add a time-series
@@ -1518,16 +1518,16 @@ public final class MetricTestDataFactory
     }
 
     /**
-     * Returns a {@link TimeSeriesOfPairs} with single-valued pairs containing no data.
+     * Returns a {@link PoolOfPairs} with single-valued pairs containing no data.
      * 
      * @return a time-series of single-valued pairs
      */
 
-    public static TimeSeriesOfPairs<Double, Double> getTimeSeriesOfSingleValuedPairsFour()
+    public static PoolOfPairs<Double, Double> getTimeSeriesOfSingleValuedPairsFour()
     {
         // Build an immutable regular time-series of single-valued pairs
-        TimeSeriesOfPairsBuilder<Double, Double> builder =
-                new TimeSeriesOfPairsBuilder<>();
+        PoolOfPairsBuilder<Double, Double> builder =
+                new PoolOfPairsBuilder<>();
         // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
 
         // Create some default metadata for the time-series
@@ -1544,16 +1544,16 @@ public final class MetricTestDataFactory
 
 
     /**
-     * Returns a {@link TimeSeriesOfPairs} with single-valued pairs containing fake data with the same peak at multiple times.
+     * Returns a {@link PoolOfPairs} with single-valued pairs containing fake data with the same peak at multiple times.
      * 
      * @return a time-series of single-valued pairs
      */
 
-    public static TimeSeriesOfPairs<Double, Double> getTimeSeriesOfSingleValuedPairsFive()
+    public static PoolOfPairs<Double, Double> getTimeSeriesOfSingleValuedPairsFive()
     {
         // Build an immutable regular time-series of single-valued pairs
-        TimeSeriesOfPairsBuilder<Double, Double> builder =
-                new TimeSeriesOfPairsBuilder<>();
+        PoolOfPairsBuilder<Double, Double> builder =
+                new PoolOfPairsBuilder<>();
         // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
 
         // Add a time-series

@@ -24,7 +24,7 @@ import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs;
+import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.time.TimeWindow;
@@ -57,7 +57,7 @@ public final class MeanSquareErrorSkillScoreTest
     public void testApplyWithBaseline()
     {
         //Generate some data
-        TimeSeriesOfPairs<Double, Double> input = MetricTestDataFactory.getSingleValuedPairsTwo();
+        PoolOfPairs<Double, Double> input = MetricTestDataFactory.getSingleValuedPairsTwo();
 
         //Metadata for the output
         final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
@@ -114,7 +114,7 @@ public final class MeanSquareErrorSkillScoreTest
     public void testApplyWithoutBaselineTwo()
     {
         //Generate some data
-        TimeSeriesOfPairs<Double, Double> input = MetricTestDataFactory.getSingleValuedPairsOne();
+        PoolOfPairs<Double, Double> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
         StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),

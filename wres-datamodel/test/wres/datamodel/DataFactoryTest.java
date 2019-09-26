@@ -1,15 +1,12 @@
 package wres.datamodel;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Rule;
@@ -23,18 +20,6 @@ import wres.config.generated.ThresholdOperator;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
 import wres.config.generated.TimeSeriesMetricConfigName;
-import wres.datamodel.sampledata.DatasetIdentifier;
-import wres.datamodel.sampledata.Location;
-import wres.datamodel.sampledata.MeasurementUnit;
-import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.pairs.DichotomousPair;
-import wres.datamodel.sampledata.pairs.DichotomousPairs;
-import wres.datamodel.sampledata.pairs.DiscreteProbabilityPair;
-import wres.datamodel.sampledata.pairs.DiscreteProbabilityPairs;
-import wres.datamodel.sampledata.pairs.EnsemblePair;
-import wres.datamodel.sampledata.pairs.EnsemblePairs;
-import wres.datamodel.sampledata.pairs.SingleValuedPair;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
@@ -81,54 +66,6 @@ public final class DataFactoryTest
 
     public static final double THRESHOLD = 0.00001;
 
-    /**
-     * Tests for the successful construction of pairs via the {@link DataFactory}.
-     */
-
-    @Test
-    public void constructionOfPairsTest()
-    {
-
-        final Location l = Location.of( DRRC2 );
-        final SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of(),
-                                                     DatasetIdentifier.of( l, "SQIN", "HEFS" ) );
-        final List<DichotomousPair> input = new ArrayList<>();
-        input.add( DichotomousPair.of( true, false ) );
-        assertNotNull( DichotomousPairs.ofDichotomousPairs( input, m1 ) );
-
-        final List<DiscreteProbabilityPair> dInput = new ArrayList<>();
-        dInput.add( DiscreteProbabilityPair.of( 0.0, 1.0 ) );
-        final Location l2 = Location.of( DRRC2 );
-        final SampleMetadata m2 = SampleMetadata.of( MeasurementUnit.of(),
-                                                     DatasetIdentifier.of( l2, "SQIN", "HEFS" ) );
-        final Location l3 = Location.of( DRRC2 );
-        final SampleMetadata m3 = SampleMetadata.of( MeasurementUnit.of(),
-                                                     DatasetIdentifier.of( l3, "SQIN", "ESP" ) );
-        assertNotNull( DiscreteProbabilityPairs.of( dInput, m2 ) );
-        assertNotNull( DiscreteProbabilityPairs.of( dInput, dInput, m2, m3 ) );
-
-        final List<SingleValuedPair> dInputSingleValued = new ArrayList<>();
-        dInputSingleValued.add( SingleValuedPair.of( 0.0, 1.0 ) );
-
-        assertNotNull( SingleValuedPairs.of( dInputSingleValued, m3 ) );
-        assertNotNull( SingleValuedPairs.of( dInputSingleValued, dInputSingleValued, m2, m3 ) );
-
-        final List<EnsemblePair> eInput = new ArrayList<>();
-        eInput.add( EnsemblePair.of( 0.0, new double[] { 1.0, 2.0 } ) );
-        assertNotNull( EnsemblePairs.of( eInput, m3 ) );
-        assertNotNull( EnsemblePairs.of( eInput, eInput, m2, m3 ) );
-    }
-
-    @Test
-    public void pairOfTest()
-    {
-        //Reference the constant member for a concrete instance of the factory
-        final SingleValuedPair tuple = SingleValuedPair.of( 1.0, 2.0 );
-        assertNotNull( tuple );
-        assertEquals( 1.0, tuple.getLeft(), THRESHOLD );
-        assertEquals( 2.0, tuple.getRight(), THRESHOLD );
-    }
-
     @Test
     public void vectorOfDoublesTest()
     {
@@ -163,95 +100,6 @@ public final class DataFactoryTest
         assertEquals( 3.0, pair.getLeft().getDoubles()[2], THRESHOLD );
         assertEquals( 4.0, pair.getRight().getDoubles()[0], THRESHOLD );
         assertEquals( 5.0, pair.getRight().getDoubles()[1], THRESHOLD );
-    }
-
-    @Test
-    public void ensemblePairTest()
-    {
-        final double[] arrOne = { 2.0, 3.0 };
-        final EnsemblePair tuple = EnsemblePair.of( 1.0, arrOne );
-        assertNotNull( tuple );
-        assertEquals( 1.0, tuple.getLeft(), THRESHOLD );
-        assertEquals( 2.0, tuple.getRight().getMembers()[0], THRESHOLD );
-        assertEquals( 3.0, tuple.getRight().getMembers()[1], THRESHOLD );
-        // check that toString() does not throw exception and is not null
-        assertNotNull( tuple.toString() );
-    }
-
-    @Test
-    public void ensemblePairMutationTest()
-    {
-        final double[] arrOne = { 2.0, 3.0 };
-        final EnsemblePair tuple = EnsemblePair.of( 1.0, arrOne );
-        arrOne[0] = 4.0;
-        arrOne[1] = 5.0;
-        assertNotNull( tuple );
-        assertEquals( 1.0, tuple.getLeft(), THRESHOLD );
-        assertEquals( 2.0, tuple.getRight().getMembers()[0], THRESHOLD );
-        assertEquals( 3.0, tuple.getRight().getMembers()[1], THRESHOLD );
-    }
-
-    @Test
-    public void ensemblePairBoxedMutationTest()
-    {
-        final Double[] arrOne = { 2.0, 3.0 };
-        final EnsemblePair tuple = EnsemblePair.of( 1.0, arrOne );
-        assertNotNull( tuple );
-
-        // mutate the original array
-        arrOne[0] = 4.0;
-        arrOne[1] = 5.0;
-
-        assertEquals( 1.0, tuple.getLeft(), THRESHOLD );
-        assertEquals( 2.0, tuple.getRight().getMembers()[0], THRESHOLD );
-        assertEquals( 3.0, tuple.getRight().getMembers()[1], THRESHOLD );
-        // check that toString() does not throw exception and is not null
-        assertNotNull( tuple.toString() );
-    }
-
-    @Test
-    public void dichotomousPairTest()
-    {
-        final boolean one = true;
-        final boolean two = false;
-        final DichotomousPair bools = DichotomousPair.of( one, two );
-        assertEquals( true, bools.getLeft() );
-        assertEquals( false, bools.getRight() );
-    }
-
-    @Test
-    public void dichotomousPairMutationTest()
-    {
-        boolean one = true;
-        boolean two = false;
-
-        DichotomousPair bools = DichotomousPair.of( one, two );
-
-        one = false;
-        two = true;
-
-        DichotomousPair boolsTwo = DichotomousPair.of( one, two );
-
-        assertNotEquals( bools, boolsTwo );
-
-        assertTrue( bools.getLeft() );
-        assertFalse( bools.getRight() );
-    }
-
-    @Test
-    public void ensemblePairToStringTest()
-    {
-        double[] arr = { 123456.0, 78910.0, 111213.0 };
-        EnsemblePair p = EnsemblePair.of( 141516.0, arr );
-        String result = p.toString();
-        assertTrue( "12345 expected to show up in toString: " + result,
-                    result.contains( "12345" ) );
-        assertTrue( "7891 expected to show up in toString: " + result,
-                    result.contains( "7891" ) );
-        assertTrue( "11121 expected to show up in toString: " + result,
-                    result.contains( "11121" ) );
-        assertTrue( "14151 expected to show up in toString: " + result,
-                    result.contains( "14151" ) );
     }
 
     /**

@@ -30,10 +30,8 @@ import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.pairs.DichotomousPairs;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs.TimeSeriesOfPairsBuilder;
+import wres.datamodel.sampledata.pairs.PoolOfPairs;
+import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
@@ -55,14 +53,13 @@ import wres.engine.statistics.metric.timeseries.TimingErrorDurationStatistics;
 
 /**
  * Builds and processes all {@link MetricCollection} associated with a {@link ProjectConfig} for metrics that consume
- * {@link SingleValuedPairs} and configured transformations of {@link SingleValuedPairs}. For example, metrics that
- * consume {@link DichotomousPairs} may be processed after transforming the {@link SingleValuedPairs} with an
- * appropriate mapping function.
+ * single-valued pairs and configured transformations thereof. For example, metrics that consume dichotomous pairs may 
+ * be processed after transforming the single-valued pairs with an appropriate mapping function.
  * 
  * @author james.brown@hydrosolved.com
  */
 
-public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTime<TimeSeriesOfPairs<Double, Double>>
+public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTime<PoolOfPairs<Double, Double>>
 {
 
     /**
@@ -72,11 +69,11 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
     private static final Logger LOGGER = LoggerFactory.getLogger( MetricProcessorByTimeSingleValuedPairs.class );
 
     /**
-     * A {@link MetricCollection} of {@link Metric} that consume {@link TimeSeriesOfSingleValuedPairs} and produce
-     * {@link PairedStatistic}.
+     * A {@link MetricCollection} of {@link Metric} that consume a {@link PoolOfPairs} with single-valued pairs 
+     * and produce {@link PairedStatistic}.
      */
 
-    private final MetricCollection<TimeSeriesOfPairs<Double, Double>, PairedStatistic<Instant, Duration>, PairedStatistic<Instant, Duration>> timeSeries;
+    private final MetricCollection<PoolOfPairs<Double, Double>, PairedStatistic<Instant, Duration>, PairedStatistic<Instant, Duration>> timeSeries;
 
     /**
      * An instance of {@link TimingErrorDurationStatistics} for each timing error metric that requires 
@@ -86,7 +83,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
     private final Map<MetricConstants, TimingErrorDurationStatistics> timingErrorDurationStatistics;
 
     @Override
-    public StatisticsForProject apply( TimeSeriesOfPairs<Double, Double> input )
+    public StatisticsForProject apply( PoolOfPairs<Double, Double> input )
     {
         Objects.requireNonNull( input, "Expected non-null input to the metric processor." );
 
@@ -94,7 +91,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                 "Expected a non-null time window in the input metadata." );
 
         //Remove missing values, except for ordered input, such as time-series
-        TimeSeriesOfPairs<Double, Double> inputNoMissing = input;
+        PoolOfPairs<Double, Double> inputNoMissing = input;
 
         if ( !this.hasMetrics( SampleDataGroup.SINGLE_VALUED_TIME_SERIES ) )
         {
@@ -327,15 +324,15 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
     }
 
     /**
-     * Processes a set of metric futures that consume {@link DichotomousPairs}, which are mapped from the input
-     * pairs, {@link SingleValuedPairs}, using a configured mapping function.
+     * Processes a set of metric futures that consume dichotomous pairs, which are mapped from single-valued pairs 
+     * using a configured mapping function.
      * 
      * @param input the input pairs
      * @param futures the metric futures
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processDichotomousPairs( TimeSeriesOfPairs<Double, Double> input,
+    private void processDichotomousPairs( PoolOfPairs<Double, Double> input,
                                           MetricFuturesByTimeBuilder futures )
     {
         if ( hasMetrics( SampleDataGroup.DICHOTOMOUS, StatisticGroup.DOUBLE_SCORE ) )
@@ -349,8 +346,8 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
     }
 
     /**
-     * Processes a set of metric futures that consume {@link DichotomousPairs}, which are mapped from the input pairs,
-     * {@link SingleValuedPairs}, using a configured mapping function. 
+     * Processes a set of metric futures that consume dichotomous pairs, which are mapped from single-valued pairs 
+     * using a configured mapping function. 
      * 
      * @param input the input pairs
      * @param futures the metric futures
@@ -358,7 +355,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processDichotomousPairsByThreshold( TimeSeriesOfPairs<Double, Double> input,
+    private void processDichotomousPairsByThreshold( PoolOfPairs<Double, Double> input,
                                                      MetricFuturesByTimeBuilder futures,
                                                      StatisticGroup outGroup )
     {
@@ -386,7 +383,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                     pair -> Pair.of( useMe.test( pair.getLeft() ),
                                      useMe.test( pair.getRight() ) );
             //Transform the pairs
-            TimeSeriesOfPairs<Boolean, Boolean> transformed = Slicer.transform( input, mapper );
+            PoolOfPairs<Boolean, Boolean> transformed = Slicer.transform( input, mapper );
 
             // Add the threshold to the metadata, in order to fully qualify the pairs
             SampleMetadata baselineMeta = null;
@@ -395,7 +392,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                 baselineMeta = SampleMetadata.of( transformed.getBaselineData().getMetadata(), oneOrTwo );
             }
 
-            TimeSeriesOfPairsBuilder<Boolean, Boolean> builder = new TimeSeriesOfPairsBuilder<>();
+            PoolOfPairsBuilder<Boolean, Boolean> builder = new PoolOfPairsBuilder<>();
 
             transformed = builder.addTimeSeries( transformed )
                                  .setMetadata( SampleMetadata.of( input.getMetadata(), oneOrTwo ) )
@@ -411,7 +408,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
     }
 
     /**
-     * Processes a set of metric futures that consume {@link TimeSeriesOfSingleValuedPairs}. 
+     * Processes a set of metric futures that consume {@link PoolOfPairs} with single-valued pairs. 
      * 
      * @param input the input pairs
      * @param futures the metric futures
@@ -419,7 +416,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processTimeSeriesPairs( TimeSeriesOfPairs<Double, Double> input,
+    private void processTimeSeriesPairs( PoolOfPairs<Double, Double> input,
                                          MetricFuturesByTimeBuilder futures,
                                          StatisticGroup outGroup )
     {
@@ -442,7 +439,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             Threshold useMe = this.addQuantilesToThreshold( threshold, sorted );
             OneOrTwoThresholds oneOrTwo = OneOrTwoThresholds.of( useMe );
 
-            TimeSeriesOfPairs<Double, Double> pairs;
+            PoolOfPairs<Double, Double> pairs;
 
             // Filter the data if required
             if ( useMe.isFinite() )
@@ -464,14 +461,14 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                 baselineMeta = SampleMetadata.of( pairs.getBaselineData().getMetadata(), oneOrTwo );
             }
 
-            TimeSeriesOfPairsBuilder<Double, Double> builder = new TimeSeriesOfPairsBuilder<>();
+            PoolOfPairsBuilder<Double, Double> builder = new PoolOfPairsBuilder<>();
             pairs = builder.addTimeSeries( pairs )
                            .setMetadata( SampleMetadata.of( pairs.getMetadata(), oneOrTwo ) )
                            .setMetadataForBaseline( baselineMeta )
                            .build();
 
             // Build the future result
-            final TimeSeriesOfPairs<Double, Double> finalPairs = pairs;
+            final PoolOfPairs<Double, Double> finalPairs = pairs;
             Future<ListOfStatistics<PairedStatistic<Instant, Duration>>> output =
                     CompletableFuture.supplyAsync( () -> timeSeries.apply( finalPairs, ignoreTheseMetrics ),
                                                    thresholdExecutor );

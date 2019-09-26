@@ -24,8 +24,8 @@ import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs.TimeSeriesOfPairsBuilder;
+import wres.datamodel.sampledata.pairs.PoolOfPairs;
+import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
 import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.StatisticMetadata;
@@ -92,7 +92,7 @@ public final class BoxPlotErrorTest
     public void testApplyAgainstSingleValuedPairsNine()
     {
         //Generate some data
-        TimeSeriesOfPairs<Double,Double> input = MetricTestDataFactory.getSingleValuedPairsNine();
+        PoolOfPairs<Double,Double> input = MetricTestDataFactory.getSingleValuedPairsNine();
 
         //Metadata for the output
         StatisticMetadata meta = StatisticMetadata.of( input.getMetadata(),
@@ -111,7 +111,7 @@ public final class BoxPlotErrorTest
             List<Event<Pair<Double,Double>>> events = TimeSeriesSlicer.filterByDuration( input.get(),
                                                                                       a -> a.equals( duration ),
                                                                                       ReferenceTimeType.DEFAULT );
-            TimeSeriesOfPairsBuilder<Double,Double> builder = new TimeSeriesOfPairsBuilder<>();
+            PoolOfPairsBuilder<Double,Double> builder = new PoolOfPairsBuilder<>();
             builder.setMetadata( input.getMetadata() );
             for ( Event<Pair<Double,Double>> next : events )
             {

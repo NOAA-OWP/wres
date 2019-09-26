@@ -21,7 +21,6 @@ import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Diagram;
@@ -165,9 +164,9 @@ public class RankHistogram extends Diagram<SampleData<Pair<Double, Ensemble>>, D
     }
 
     /**
-     * Computes the zero-based rank position of the left-hand side of the {@link EnsemblePair} within
-     * the right-hand side. When the right-hand side contains ties, the rank position is assigned randomnly. Increments 
-     * the input array by one at the corresponding index.
+     * Computes the zero-based rank position of the left-hand side of an ensemble pair within the right-hand side. 
+     * When the right-hand side contains ties, the rank position is assigned randomnly. Increments the input array by 
+     * one at the corresponding index.
      * 
      * @param rng the random number generator for handling ties
      * @return a function that increments the second argument based on the rank position of the observation within the ensemble

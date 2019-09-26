@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs;
+import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
@@ -28,10 +28,10 @@ import wres.engine.statistics.metric.Metric;
 
 /**
  * <p>Constructs a {@link Metric} that returns the fractional difference in time between the maximum values recorded in 
- * the left and right side of each time-series in the {@link TimeSeriesOfSingleValuedPairs}. The denominator in the 
- * fraction is given by the period, in hours, between the basis time and the time at which the maximum value is 
- * recorded in the left side of the paired input. Thus, for forecast time-series, the output is properly interpreted 
- * as the number of hours of error per hour of forecast lead time until the observed peak occurred.</p>
+ * the left and right side of each time-series in the {@link PoolOfPairs}. The denominator in the fraction is 
+ * given by the period, in hours, between the basis time and the time at which the maximum value is recorded in the 
+ * left side of the paired input. Thus, for forecast time-series, the output is properly interpreted as the number of 
+ * hours of error per hour of forecast lead time until the observed peak occurred.</p>
  * 
  * <p>For multiple peaks with the same value, the peak with the latest {@link Instant} is chosen. The timing error is 
  * measured with a {@link Duration}. However, the fraction is measured in relative hours, i.e. the timing error 
@@ -72,7 +72,7 @@ public class TimeToPeakRelativeError extends TimingError
     }
 
     @Override
-    public PairedStatistic<Instant, Duration> apply( TimeSeriesOfPairs<Double,Double> s )
+    public PairedStatistic<Instant, Duration> apply( PoolOfPairs<Double,Double> s )
     {
         if ( Objects.isNull( s ) )
         {

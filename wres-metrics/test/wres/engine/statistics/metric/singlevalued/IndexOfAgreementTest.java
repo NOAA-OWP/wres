@@ -24,7 +24,6 @@ import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.time.TimeWindow;
@@ -127,11 +126,6 @@ public final class IndexOfAgreementTest
     {
         assertTrue( ioa.getScoreOutputGroup() == ScoreGroup.NONE );
     }
-
-    /**
-     * Tests for an expected exception on calling {@link IndexOfAgreement#apply(SingleValuedPairs)} with null
-     * input.
-     */
 
     @Test
     public void testApplyExceptionOnNullInput()

@@ -9,9 +9,7 @@ import wres.config.generated.DatasourceType;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants.StatisticGroup;
-import wres.datamodel.sampledata.pairs.EnsemblePairs;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs;
+import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.statistics.StatisticException;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.ThresholdsByMetric;
@@ -28,16 +26,16 @@ import wres.engine.statistics.metric.config.MetricConfigHelper;
 public class MetricProcessorForProject
 {
     /**
-     * Processor for {@link EnsemblePairs}.
+     * Processor for ensemble pairs.
      */
 
-    private final MetricProcessorByTime<TimeSeriesOfPairs<Double, Ensemble>> ensembleProcessor;
+    private final MetricProcessorByTime<PoolOfPairs<Double, Ensemble>> ensembleProcessor;
 
     /**
-     * Processor for {@link SingleValuedPairs}.
+     * Processor for single-valued pairs.
      */
 
-    private final MetricProcessorByTime<TimeSeriesOfPairs<Double, Double>> singleValuedProcessor;
+    private final MetricProcessorByTime<PoolOfPairs<Double, Double>> singleValuedProcessor;
 
     /**
      * Build the processor collection.
@@ -81,15 +79,15 @@ public class MetricProcessorForProject
     }
 
     /**
-     * Returns a {@link MetricProcessorByTime} for {@link SingleValuedPairs} or throws an exception if this 
-     * {@link MetricProcessorForProject} was not constructed to process {@link SingleValuedPairs}.
+     * Returns a {@link MetricProcessorByTime} for single-valued pairs or throws an exception if this 
+     * {@link MetricProcessorForProject} was not constructed to process single-valued pairs.
      * 
      * @return a single-valued metric processor
      * @throws MetricProcessorException if this {@link MetricProcessorForProject} was not constructed to process 
-     *            {@link SingleValuedPairs}
+     *            single-valued pairs
      */
 
-    public MetricProcessorByTime<TimeSeriesOfPairs<Double, Double>> getMetricProcessorForSingleValuedPairs()
+    public MetricProcessorByTime<PoolOfPairs<Double, Double>> getMetricProcessorForSingleValuedPairs()
     {
         if ( Objects.isNull( singleValuedProcessor ) )
         {
@@ -99,15 +97,15 @@ public class MetricProcessorForProject
     }
 
     /**
-     * Returns a {@link MetricProcessorByTime} for {@link EnsemblePairs} or throws an exception if this 
-     * {@link MetricProcessorForProject} was not constructed to process {@link EnsemblePairs}.
+     * Returns a {@link MetricProcessorByTime} for ensemble pairs or throws an exception if this 
+     * {@link MetricProcessorForProject} was not constructed to process ensemble pairs.
      * 
      * @return a single-valued metric processor
      * @throws MetricProcessorException if this {@link MetricProcessorForProject} was not constructed to process 
-     *            {@link EnsemblePairs}
+     *            ensemble pairs
      */
 
-    public MetricProcessorByTime<TimeSeriesOfPairs<Double, Ensemble>> getMetricProcessorForEnsemblePairs()
+    public MetricProcessorByTime<PoolOfPairs<Double, Ensemble>> getMetricProcessorForEnsemblePairs()
     {
         if ( Objects.isNull( ensembleProcessor ) )
         {

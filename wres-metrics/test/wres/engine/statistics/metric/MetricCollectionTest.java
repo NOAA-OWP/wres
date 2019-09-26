@@ -29,7 +29,6 @@ import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.Statistic;
@@ -347,7 +346,7 @@ public class MetricCollectionTest
     public void testBuildWithNoExecutorService() throws MetricParameterException
     {
         //No output factory            
-        final MetricCollectionBuilder<SingleValuedPairs, Statistic<?>, DoubleScoreStatistic> m =
+        final MetricCollectionBuilder<SampleData<Pair<Double,Double>>, Statistic<?>, DoubleScoreStatistic> m =
                 MetricCollectionBuilder.of();
 
         MetricParameterException expected =

@@ -7,21 +7,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import javax.swing.JFrame;
-import javax.swing.JPanel;
+import org.apache.commons.lang3.tuple.Pair;
 
 import junit.framework.TestCase;
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
-import ohd.hseb.charter.ChartPanelTools;
 import ohd.hseb.charter.ChartTools;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
 import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.pairs.SingleValuedPair;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 
 public class Chart2DTestInput extends TestCase
 {
@@ -30,15 +28,16 @@ public class Chart2DTestInput extends TestCase
     {
         final Random rand = new Random(0L);
 
-        final List<SingleValuedPair> values = new ArrayList<>();
+        final List<Pair<Double,Double>> values = new ArrayList<>();
         for (int i = 0; i < 100; i ++)
         {
-            values.add(SingleValuedPair.of(rand.nextGaussian(), rand.nextGaussian()));
+            values.add(Pair.of(rand.nextGaussian(), rand.nextGaussian()));
         }
 
         final SampleMetadata meta = SampleMetadata.of(MeasurementUnit.of("CMS"),
                                                  DatasetIdentifier.of(Location.of("DRRC2"), "SQIN", "HEFS"));
-        final SingleValuedPairs pairs = SingleValuedPairs.of(values, meta);
+        
+        final SampleData<Pair<Double,Double>> pairs = SampleDataBasic.of(values, meta);
 
         //Construct the source from the pairs assigning it a data source order index of 0.
         //The order index indicates the order in which the different sources are rendered.
@@ -66,39 +65,6 @@ public class Chart2DTestInput extends TestCase
 //                                                                      true,
 //                                                                      false);
 
-    }
-
-    public static void main( final String[] args ) throws ChartEngineException, IOException
-    {
-        //Construct some single-valued pairs
-        final List<SingleValuedPair> values = new ArrayList<>();
-        values.add(SingleValuedPair.of(22.9, 22.8));
-        values.add(SingleValuedPair.of(75.2, 80));
-        values.add(SingleValuedPair.of(63.2, 65));
-        values.add(SingleValuedPair.of(29, 30));
-        values.add(SingleValuedPair.of(5, 2));
-        values.add(SingleValuedPair.of(2.1, 3.1));
-        values.add(SingleValuedPair.of(35000, 37000));
-        values.add(SingleValuedPair.of(8, 7));
-        values.add(SingleValuedPair.of(12, 12));
-        values.add(SingleValuedPair.of(93, 94));
-
-        final SampleMetadata meta = SampleMetadata.of(MeasurementUnit.of("CMS"),
-                                                 DatasetIdentifier.of(Location.of("DRRC2"), "SQIN", "HEFS"));
-        final SingleValuedPairs pairs = SingleValuedPairs.of(values, meta);
-
-        ChartEngine engine = ChartEngineFactory.buildSingleValuedPairsChartEngine( pairs,
-                                                                                   null,
-                                                                                   null,
-                                                                                   ChronoUnit.HOURS );
-
-        //Put chart in a frame.
-        final JPanel panel = ChartPanelTools.buildPanelFromChartEngine(engine, false);
-        final JFrame frame = new JFrame();
-        frame.setContentPane(panel);
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(800, 500);
-        frame.setVisible(true);
     }
 
     /**

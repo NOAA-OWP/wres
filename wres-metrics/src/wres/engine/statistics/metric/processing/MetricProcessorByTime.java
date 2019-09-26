@@ -19,9 +19,8 @@ import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.pairs.DichotomousPairs;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs.TimeSeriesOfPairsBuilder;
+import wres.datamodel.sampledata.pairs.PoolOfPairs;
+import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.MatrixStatistic;
 import wres.datamodel.statistics.Statistic;
@@ -105,7 +104,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
     }
 
     /**
-     * Processes a set of metric futures for {@link SingleValuedPairs}.
+     * Processes a set of metric futures for single-valued pairs.
      * 
      * TODO: collapse this with a generic call to futures.addOutput and take an input collection of metrics
      * 
@@ -114,7 +113,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    void processSingleValuedPairs( TimeSeriesOfPairs<Double, Double> input,
+    void processSingleValuedPairs( PoolOfPairs<Double, Double> input,
                                    MetricFuturesByTime.MetricFuturesByTimeBuilder futures )
     {
         if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticGroup.DOUBLE_SCORE ) )
@@ -135,7 +134,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
     }
 
     /**
-     * Processes one threshold for metrics that consume {@link DichotomousPairs}. 
+     * Processes one threshold for metrics that consume dichotomous pairs. 
      * 
      * @param input the input pairs
      * @param futures the metric futures
@@ -165,7 +164,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
     }
 
     /**
-     * Helper that returns a predicate for filtering {@link SingleValuedPairs} based on the 
+     * Helper that returns a predicate for filtering single-valued pairs based on the 
      * {@link Threshold#getDataType()} of the input threshold.
      * 
      * @param threshold the threshold
@@ -247,7 +246,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
     }
 
     /**
-     * Processes all thresholds for metrics that consume {@link SingleValuedPairs} and produce a specified 
+     * Processes all thresholds for metrics that consume single-valued pairs and produce a specified 
      * {@link StatisticGroup}. 
      * 
      * @param input the input pairs
@@ -256,7 +255,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processSingleValuedPairsByThreshold( TimeSeriesOfPairs<Double, Double> input,
+    private void processSingleValuedPairsByThreshold( PoolOfPairs<Double, Double> input,
                                                       MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                                       StatisticGroup outGroup )
     {
@@ -286,9 +285,9 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
                 baselineMeta = SampleMetadata.of( input.getBaselineData().getMetadata(), oneOrTwo );
             }
 
-            TimeSeriesOfPairsBuilder<Double, Double> builder = new TimeSeriesOfPairsBuilder<>();
+            PoolOfPairsBuilder<Double, Double> builder = new PoolOfPairsBuilder<>();
 
-            TimeSeriesOfPairs<Double, Double> pairs = builder.addTimeSeries( input )
+            PoolOfPairs<Double, Double> pairs = builder.addTimeSeries( input )
                                                              .setMetadata( SampleMetadata.of( input.getMetadata(),
                                                                                               oneOrTwo ) )
                                                              .setMetadataForBaseline( baselineMeta )
@@ -311,7 +310,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
     }
 
     /**
-     * Processes one threshold for metrics that consume {@link SingleValuedPairs} and produce a specified 
+     * Processes one threshold for metrics that consume single-valued pairs and produce a specified 
      * {@link StatisticGroup}. 
      * 
      * @param input the input pairs
@@ -350,7 +349,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
     }
 
     /**
-     * Builds a metric future for a {@link MetricCollection} that consumes {@link SingleValuedPairs} at a specific 
+     * Builds a metric future for a {@link MetricCollection} that consumes single-valued pairs at a specific 
      * {@link TimeWindow} and {@link Threshold}.
      * 
      * @param <T> the type of {@link Statistic}
@@ -371,7 +370,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
 
 
     /**
-     * Builds a metric future for a {@link MetricCollection} that consumes {@link DichotomousPairs}.
+     * Builds a metric future for a {@link MetricCollection} that consumes dichotomous pairs.
      * 
      * @param <T> the type of {@link Statistic}
      * @param threshold the threshold

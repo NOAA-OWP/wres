@@ -21,9 +21,6 @@ import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleData;
-import wres.datamodel.sampledata.pairs.DichotomousPairs;
-import wres.datamodel.sampledata.pairs.EnsemblePairs;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.MatrixStatistic;
@@ -68,7 +65,7 @@ import wres.engine.statistics.metric.config.MetricConfigHelper;
  * consume a given {@link SampleData} and produce a given {@link Statistic}. If the type of {@link SampleData}
  * consumed by any given {@link MetricCollection} differs from the {@link SampleData} for which the
  * {@link MetricProcessor} is primed, a transformation must be applied. For example, {@link Metric} that consume
- * {@link SingleValuedPairs} may be computed for {@link EnsemblePairs} if an appropriate transformation is configured.
+ * single-valued pairs may be computed for ensemble pairs if an appropriate transformation is configured.
  * Subclasses must define and apply any transformation required. If inappropriate {@link SampleData} are provided to
  * {@link #apply(Object)} for the {@link MetricCollection} configured, an unchecked {@link MetricCalculationException}
  * will be thrown. If metrics are configured incorrectly, a checked {@link MetricConfigException} will be thrown.
@@ -116,36 +113,33 @@ public abstract class MetricProcessor<S extends SampleData<?>, T extends Statist
     final ThresholdsByMetric thresholdsByMetric;
 
     /**
-     * A {@link MetricCollection} of {@link Metric} that consume {@link SingleValuedPairs} and produce
-     * {@link ScoreStatistic}.
+     * A {@link MetricCollection} of {@link Metric} that consume single-valued pairs and produce {@link ScoreStatistic}.
      */
 
     final MetricCollection<SampleData<Pair<Double, Double>>, DoubleScoreStatistic, DoubleScoreStatistic> singleValuedScore;
 
     /**
-     * A {@link MetricCollection} of {@link Metric} that consume {@link SingleValuedPairs} and produce
+     * A {@link MetricCollection} of {@link Metric} that consume single-valued pairs and produce 
      * {@link DiagramStatistic}.
      */
 
     final MetricCollection<SampleData<Pair<Double, Double>>, DiagramStatistic, DiagramStatistic> singleValuedMultiVector;
 
     /**
-     * A {@link MetricCollection} of {@link Metric} that consume {@link SingleValuedPairs} and produce
+     * A {@link MetricCollection} of {@link Metric} that consume single-valued pairs and produce
      * {@link BoxPlotStatistics}.
      */
 
     final MetricCollection<SampleData<Pair<Double, Double>>, BoxPlotStatistics, BoxPlotStatistics> singleValuedBoxPlot;
 
     /**
-     * A {@link MetricCollection} of {@link Metric} that consume {@link DichotomousPairs} and produce
-     * {@link ScoreStatistic}.
+     * A {@link MetricCollection} of {@link Metric} that consume dichotomous pairs and produce {@link ScoreStatistic}.
      */
 
     final MetricCollection<SampleData<Pair<Boolean,Boolean>>, MatrixStatistic, DoubleScoreStatistic> dichotomousScalar;
 
     /**
-     * A {@link MetricCollection} of {@link Metric} that consume {@link DichotomousPairs} and produce
-     * {@link MatrixStatistic}.
+     * A {@link MetricCollection} of {@link Metric} that consume dichotomous pairs and produce {@link MatrixStatistic}.
      */
 
     final MetricCollection<SampleData<Pair<Boolean,Boolean>>, MatrixStatistic, MatrixStatistic> dichotomousMatrix;

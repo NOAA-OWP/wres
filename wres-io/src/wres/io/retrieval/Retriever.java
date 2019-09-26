@@ -25,10 +25,9 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DesiredTimeScaleConfig;
 import wres.config.generated.Feature;
+import wres.datamodel.Ensemble;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleData;
-import wres.datamodel.sampledata.pairs.EnsemblePair;
-import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.io.concurrency.WRESCallable;
@@ -85,12 +84,12 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
     /**
      * The listing of all pairs between left and right data, together with their reference times
      */
-    private final List<Pair<Instant,Event<EnsemblePair>>> primaryPairs = new ArrayList<>();
+    private final List<Pair<Instant,Event<Pair<Double,Ensemble>>>> primaryPairs = new ArrayList<>();
 
     /**
      * The Listing of all pairs between left and baseline data
      */
-    private final List<Pair<Instant,Event<EnsemblePair>>> baselinePairs = new ArrayList<>(  );
+    private final List<Pair<Instant,Event<Pair<Double,Ensemble>>>> baselinePairs = new ArrayList<>(  );
 
     /**
      * The total set of climatology data to group with the pairs
@@ -112,12 +111,12 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
         this.climatology = climatology;
     }
 
-    List<Pair<Instant,Event<EnsemblePair>>> getPrimaryPairs()
+    List<Pair<Instant,Event<Pair<Double,Ensemble>>>> getPrimaryPairs()
     {
         return this.primaryPairs;
     }
 
-    List<Pair<Instant,Event<EnsemblePair>>> getBaselinePairs()
+    List<Pair<Instant,Event<Pair<Double,Ensemble>>>> getBaselinePairs()
     {
         return this.baselinePairs;
     }
@@ -132,12 +131,12 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
         return this.sampleMetadata.getFeature();
     }
 
-    void addPrimaryPair(final Pair<Instant,Event<EnsemblePair>> pair)
+    void addPrimaryPair(final Pair<Instant,Event<Pair<Double,Ensemble>>> pair)
     {
         this.primaryPairs.add(pair);
     }
 
-    void addBaselinePair(final Pair<Instant,Event<EnsemblePair>> pair)
+    void addBaselinePair(final Pair<Instant,Event<Pair<Double,Ensemble>>> pair)
     {
         this.baselinePairs.add(pair);
     }
@@ -231,7 +230,7 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
     {
         if (!pivottedValues.isEmpty())
         {
-            EnsemblePair pair = this.getPair( pivottedValues );
+            Pair<Double,Ensemble> pair = this.getPair( pivottedValues );
 
             if ( Retriever.isValidPair( pair ) )
             {
@@ -246,7 +245,7 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
                 }
 
                 Instant referenceTime = pivottedValues.getValidTime().minus( pivottedValues.getLeadDuration() );
-                Pair<Instant, Event<EnsemblePair>> packagedPair =
+                Pair<Instant, Event<Pair<Double,Ensemble>>> packagedPair =
                         Pair.of( referenceTime,
                                  Event.of( pivottedValues.getValidTime(),
                                            pair ) );
@@ -272,7 +271,7 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
         }
     }
 
-    EnsemblePair getPair(PivottedValues pivottedValues )
+    Pair<Double,Ensemble> getPair(PivottedValues pivottedValues )
             throws RetrievalFailedException
     {
         if ( pivottedValues.isEmpty())
@@ -303,13 +302,17 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
             );
             return null;
         }
+        
+        Double[] rightRaw = pivottedValues.getAggregatedValues(
+                                                          this.shouldScale(),
+                                                          this.getCommonScale().getFunction()
+                                                  );
+        
+        Ensemble right = Ensemble.of( Arrays.stream( rightRaw ).mapToDouble( Double::valueOf ).toArray() );
 
-        return EnsemblePair.of(
+        return Pair.of(
                 leftAggregation,
-                pivottedValues.getAggregatedValues(
-                        this.shouldScale(),
-                        this.getCommonScale().getFunction()
-                )
+                right
         );
     }
 
@@ -448,13 +451,13 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
      * generic container.
      */
     
-    static List<Pair<Instant,Event<Pair<Double,Double>>>> unwrapEnsembleEvent( Pair<Instant,Event<EnsemblePair>> pair )
+    static List<Pair<Instant,Event<Pair<Double,Double>>>> unwrapEnsembleEvent( Pair<Instant,Event<Pair<Double,Ensemble>>> pair )
     {
         List<Pair<Instant,Event<Pair<Double,Double>>>> eventPairs = new ArrayList<>();
         
         Instant referenceTime = pair.getLeft();
         Instant validTime = pair.getRight().getTime();
-        EnsemblePair values = pair.getRight().getValue();
+        Pair<Double,Ensemble> values = pair.getRight().getValue();
         
         for ( double rightValue : values.getRight().getMembers() )
         {          
@@ -549,7 +552,7 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
      * @return true if the pair is valid, otherwise false
      */
     
-    private static boolean isValidPair( EnsemblePair pair )
+    private static boolean isValidPair( Pair<Double,Ensemble> pair )
     {
         // Pair is null
         if ( Objects.isNull( pair ) )

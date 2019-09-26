@@ -7,17 +7,20 @@ import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.time.TimeSeries;
 
 /**
- * A collection of {@link TimeSeries} of {@link EnsemblePairs}.
+ * A collection of {@link TimeSeries} of ensemble pairs.
  * 
  * @author james.brown@hydrosolved.com
+ * @deprecated This class is deprecated for removal on completion of #56214
  */
-public class TimeSeriesOfEnsemblePairs extends TimeSeriesOfPairs<Double,Ensemble>
+
+@Deprecated(since="1.17", forRemoval=true)
+public class TimeSeriesOfEnsemblePairs extends PoolOfPairs<Double,Ensemble>
 {
     
     @Override
     public TimeSeriesOfEnsemblePairs getBaselineData()
     {
-        TimeSeriesOfPairs<Double,Ensemble> baseline = super.getBaselineData();
+        PoolOfPairs<Double,Ensemble> baseline = super.getBaselineData();
 
         if( Objects.isNull( baseline ) )
         {
@@ -35,8 +38,8 @@ public class TimeSeriesOfEnsemblePairs extends TimeSeriesOfPairs<Double,Ensemble
      * Builder.
      * @author james.brown@hydrosolved.com
      */
-    
-    public static class TimeSeriesOfEnsemblePairsBuilder extends TimeSeriesOfPairsBuilder<Double,Ensemble>
+    @Deprecated(since="1.17", forRemoval=true)
+    public static class TimeSeriesOfEnsemblePairsBuilder extends PoolOfPairsBuilder<Double,Ensemble>
     {
         /**
          * Build.
@@ -55,7 +58,7 @@ public class TimeSeriesOfEnsemblePairs extends TimeSeriesOfPairs<Double,Ensemble
      * @throws SampleDataException if the pairs are invalid
      */
 
-    TimeSeriesOfEnsemblePairs( final TimeSeriesOfPairsBuilder<Double,Ensemble> b )
+    TimeSeriesOfEnsemblePairs( final PoolOfPairsBuilder<Double,Ensemble> b )
     {
         super( b );
     }

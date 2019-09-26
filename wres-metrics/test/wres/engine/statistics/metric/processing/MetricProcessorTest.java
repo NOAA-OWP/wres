@@ -19,12 +19,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import wres.config.MetricConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
-import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ThresholdOperator;
 import wres.config.generated.ThresholdType;
@@ -35,9 +33,7 @@ import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.sampledata.MeasurementUnit;
-import wres.datamodel.sampledata.pairs.EnsemblePairs;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs;
+import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -85,10 +81,10 @@ public final class MetricProcessorTest
     {
         String configPath = TEST_SOURCE;
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<TimeSeriesOfPairs<Double, Double>, StatisticsForProject> trueProcessor =
+        MetricProcessor<PoolOfPairs<Double, Double>, StatisticsForProject> trueProcessor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         StatisticGroup.set() );
-        MetricProcessor<TimeSeriesOfPairs<Double, Double>, StatisticsForProject> falseProcessor =
+        MetricProcessor<PoolOfPairs<Double, Double>, StatisticsForProject> falseProcessor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config, null );
         //Check for storage
         assertFalse( trueProcessor.getMetricOutputTypesToCache().isEmpty() );
@@ -103,7 +99,7 @@ public final class MetricProcessorTest
         // Check empty config
         ProjectConfig emptyConfig = new ProjectConfig( null, null, null, null, null, null );
 
-        MetricProcessor<TimeSeriesOfPairs<Double, Double>, StatisticsForProject> emptyProcessor =
+        MetricProcessor<PoolOfPairs<Double, Double>, StatisticsForProject> emptyProcessor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( emptyConfig, null );
 
         assertTrue( emptyProcessor.getCachedMetricOutputTypes().isEmpty() );
@@ -112,14 +108,14 @@ public final class MetricProcessorTest
         String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyWithoutThresholds.xml";
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<TimeSeriesOfPairs<Double, Double>, StatisticsForProject> processor =
+        MetricProcessor<PoolOfPairs<Double, Double>, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         null,
                                                                         thresholdExecutor,
                                                                         metricExecutor,
                                                                         Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
         // Compute the resuults and check the cache       
-        TimeSeriesOfPairs<Double, Double> pairs = MetricTestDataFactory.getSingleValuedPairsFour();
+        PoolOfPairs<Double, Double> pairs = MetricTestDataFactory.getSingleValuedPairsFour();
 
         processor.apply( pairs );
 
@@ -133,7 +129,7 @@ public final class MetricProcessorTest
     {
         String configPath = TEST_SOURCE;
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<TimeSeriesOfPairs<Double, Double>, StatisticsForProject> processor =
+        MetricProcessor<PoolOfPairs<Double, Double>, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         StatisticGroup.set() );
         //Check for existence of metrics
@@ -145,7 +141,7 @@ public final class MetricProcessorTest
     {
         String configPath = TEST_SOURCE;
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<TimeSeriesOfPairs<Double, Double>, StatisticsForProject> processor =
+        MetricProcessor<PoolOfPairs<Double, Double>, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         StatisticGroup.set() );
         //Check for existence of metrics
@@ -157,7 +153,7 @@ public final class MetricProcessorTest
     {
         String configPath = TEST_SOURCE;
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<TimeSeriesOfPairs<Double, Double>, StatisticsForProject> processor =
+        MetricProcessor<PoolOfPairs<Double, Double>, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         StatisticGroup.set() );
         //Check for existence of metrics
@@ -190,7 +186,7 @@ public final class MetricProcessorTest
                                    null );
 
 
-        MetricProcessor<TimeSeriesOfPairs<Double, Ensemble>, StatisticsForProject> processorWithDiscreteProbability =
+        MetricProcessor<PoolOfPairs<Double, Ensemble>, StatisticsForProject> processorWithDiscreteProbability =
                 MetricFactory.ofMetricProcessorByTimeEnsemblePairs( discreteProbability,
                                                                     StatisticGroup.set() );
 
@@ -209,7 +205,7 @@ public final class MetricProcessorTest
                                    null );
 
 
-        MetricProcessor<TimeSeriesOfPairs<Double, Double>, StatisticsForProject> processorWithDichotomous =
+        MetricProcessor<PoolOfPairs<Double, Double>, StatisticsForProject> processorWithDichotomous =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( dichotomous,
                                                                         StatisticGroup.set() );
 
@@ -228,7 +224,7 @@ public final class MetricProcessorTest
                                    null );
 
 
-        MetricProcessor<TimeSeriesOfPairs<Double, Double>, StatisticsForProject> processorWithSingleValued =
+        MetricProcessor<PoolOfPairs<Double, Double>, StatisticsForProject> processorWithSingleValued =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( singleValued,
                                                                         StatisticGroup.set() );
 
@@ -247,7 +243,7 @@ public final class MetricProcessorTest
                                    null );
 
 
-        MetricProcessor<TimeSeriesOfPairs<Double, Double>, StatisticsForProject> processorWithMultiCat =
+        MetricProcessor<PoolOfPairs<Double, Double>, StatisticsForProject> processorWithMultiCat =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( multicategory,
                                                                         StatisticGroup.set() );
 
@@ -262,7 +258,7 @@ public final class MetricProcessorTest
         //Single-valued case
         String configPathSingleValued = "testinput/metricProcessorTest/testSingleValued.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
-        MetricProcessor<TimeSeriesOfPairs<Double, Double>, StatisticsForProject> processor =
+        MetricProcessor<PoolOfPairs<Double, Double>, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         StatisticGroup.set() );
 
@@ -291,7 +287,7 @@ public final class MetricProcessorTest
         //Ensemble case
         String configPathEnsemble = "testinput/metricProcessorTest/testDisallowNonScores.xml";
         ProjectConfig configEnsemble = ProjectConfigPlus.from( Paths.get( configPathEnsemble ) ).getProjectConfig();
-        MetricProcessor<TimeSeriesOfPairs<Double, Ensemble>, StatisticsForProject> processorEnsemble =
+        MetricProcessor<PoolOfPairs<Double, Ensemble>, StatisticsForProject> processorEnsemble =
                 MetricFactory.ofMetricProcessorByTimeEnsemblePairs( configEnsemble,
                                                                     StatisticGroup.set() );
         //Check that score metrics are defined 
@@ -318,7 +314,7 @@ public final class MetricProcessorTest
         String configPathSingleValued =
                 "testinput/metricProcessorTest/testDoNotComputeTheseMetricsForThisThreshold.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
-        MetricProcessor<TimeSeriesOfPairs<Double, Double>, StatisticsForProject> processor =
+        MetricProcessor<PoolOfPairs<Double, Double>, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         StatisticGroup.set() );
 
@@ -379,7 +375,7 @@ public final class MetricProcessorTest
         //Single-valued case
         String configPathSingleValued = "testinput/metricProcessorTest/testEnsemble.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
-        MetricProcessor<TimeSeriesOfPairs<Double, Ensemble>, StatisticsForProject> processor =
+        MetricProcessor<PoolOfPairs<Double, Ensemble>, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeEnsemblePairs( config,
                                                                     StatisticGroup.set() );
         Threshold firstTest = Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
@@ -431,7 +427,7 @@ public final class MetricProcessorTest
             throws MetricParameterException
     {
         ProjectConfig config = new ProjectConfig( null, null, null, null, null, null );
-        MetricProcessor<TimeSeriesOfPairs<Double, Double>, StatisticsForProject> processor =
+        MetricProcessor<PoolOfPairs<Double, Double>, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         StatisticGroup.set() );
 

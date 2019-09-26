@@ -2,9 +2,10 @@ package wres.engine.statistics.metric;
 
 import static org.junit.Assert.assertTrue;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
+import wres.datamodel.sampledata.SampleData;
 
 /**
  * Tests the {@link OrdinaryScore}.
@@ -23,7 +24,7 @@ public final class OrdinaryScoreTest
     @Test
     public void testToString()
     {
-        SampleSize<SingleValuedPairs> ss = SampleSize.of();
+        SampleSize<SampleData<Pair<Double, Double>>> ss = SampleSize.of();
 
         assertTrue( "SAMPLE SIZE".equals( ss.toString() ) );
     }

@@ -18,11 +18,10 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
 import wres.datamodel.Ensemble;
-import wres.datamodel.sampledata.pairs.SingleValuedPair;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 
 /**
@@ -47,25 +46,21 @@ public final class TimeSeriesSlicerTest
     private static final String TWELFTH_TIME = "1985-01-03T03:00:00Z";
     private static final String THIRTEENTH_TIME = "2086-05-01T00:00:00Z";
 
-    /**
-     * Tests {@link TimeSeriesSlicer#getReferenceTimes()}.
-     */
-
     @Test
     public void testGetReferenceTimes()
     {
         //Build a time-series with two basis times
-        SortedSet<Event<SingleValuedPair>> values = new TreeSet<>();
+        SortedSet<Event<Pair<Double, Double>>> values = new TreeSet<>();
         Instant basisTime = Instant.parse( FIRST_TIME );
-        values.add( Event.of( Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
+        values.add( Event.of( Instant.parse( SECOND_TIME ), Pair.of( 1.0, 1.0 ) ) );
 
-        List<TimeSeries<SingleValuedPair>> timeSeries = new ArrayList<>();
+        List<TimeSeries<Pair<Double, Double>>> timeSeries = new ArrayList<>();
 
         timeSeries.add( TimeSeries.of( basisTime, values ) );
 
         Instant nextBasisTime = Instant.parse( SECOND_TIME );
-        SortedSet<Event<SingleValuedPair>> otherValues = new TreeSet<>();
-        otherValues.add( Event.of( Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
+        SortedSet<Event<Pair<Double, Double>>> otherValues = new TreeSet<>();
+        otherValues.add( Event.of( Instant.parse( SECOND_TIME ), Pair.of( 1.0, 1.0 ) ) );
 
         timeSeries.add( TimeSeries.of( nextBasisTime, otherValues ) );
 
@@ -80,21 +75,17 @@ public final class TimeSeriesSlicerTest
         assertTrue( it.next().equals( nextBasisTime ) );
     }
 
-    /**
-     * Tests {@link TimeSeriesSlicer#getDurations()}.
-     */
-
     @Test
     public void testGetDurations()
     {
         //Build a time-series with one basis time
-        List<TimeSeries<SingleValuedPair>> timeSeries = new ArrayList<>();
+        List<TimeSeries<Pair<Double, Double>>> timeSeries = new ArrayList<>();
 
-        SortedSet<Event<SingleValuedPair>> values = new TreeSet<>();
+        SortedSet<Event<Pair<Double, Double>>> values = new TreeSet<>();
         Instant basisTime = Instant.parse( FIRST_TIME );
-        values.add( Event.of( Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
-        values.add( Event.of( Instant.parse( THIRD_TIME ), SingleValuedPair.of( 2, 2 ) ) );
-        values.add( Event.of( Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 3, 3 ) ) );
+        values.add( Event.of( Instant.parse( SECOND_TIME ), Pair.of( 1.0, 1.0 ) ) );
+        values.add( Event.of( Instant.parse( THIRD_TIME ), Pair.of( 2.0, 2.0 ) ) );
+        values.add( Event.of( Instant.parse( FOURTH_TIME ), Pair.of( 3.0, 3.0 ) ) );
 
         timeSeries.add( TimeSeries.of( basisTime, values ) );
 
@@ -109,42 +100,37 @@ public final class TimeSeriesSlicerTest
 
     }
 
-    /**
-     * Tests the {@link TimeSeriesSlicer#filterByReferenceTime(TimeSeriesOfSingleValuedPairs, java.util.function.Predicate)} 
-     * method.
-     */
-
     @Test
     public void testFilterByReferenceTime()
     {
         //Build a time-series with three basis times 
-        SortedSet<Event<SingleValuedPair>> first = new TreeSet<>();
-        SortedSet<Event<SingleValuedPair>> second = new TreeSet<>();
-        SortedSet<Event<SingleValuedPair>> third = new TreeSet<>();
+        SortedSet<Event<Pair<Double, Double>>> first = new TreeSet<>();
+        SortedSet<Event<Pair<Double, Double>>> second = new TreeSet<>();
+        SortedSet<Event<Pair<Double, Double>>> third = new TreeSet<>();
 
         Instant firstBasisTime = Instant.parse( FIRST_TIME );
-        first.add( Event.of( Instant.parse( SECOND_TIME ), SingleValuedPair.of( 1, 1 ) ) );
-        first.add( Event.of( Instant.parse( THIRD_TIME ), SingleValuedPair.of( 2, 2 ) ) );
-        first.add( Event.of( Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 3, 3 ) ) );
+        first.add( Event.of( Instant.parse( SECOND_TIME ), Pair.of( 1.0, 1.0 ) ) );
+        first.add( Event.of( Instant.parse( THIRD_TIME ), Pair.of( 2.0, 2.0 ) ) );
+        first.add( Event.of( Instant.parse( FOURTH_TIME ), Pair.of( 3.0, 3.0 ) ) );
         Instant secondBasisTime = Instant.parse( FIFTH_TIME );
-        second.add( Event.of( Instant.parse( SIXTH_TIME ), SingleValuedPair.of( 4, 4 ) ) );
-        second.add( Event.of( Instant.parse( SEVENTH_TIME ), SingleValuedPair.of( 5, 5 ) ) );
-        second.add( Event.of( Instant.parse( EIGHTH_TIME ), SingleValuedPair.of( 6, 6 ) ) );
+        second.add( Event.of( Instant.parse( SIXTH_TIME ), Pair.of( 4.0, 4.0 ) ) );
+        second.add( Event.of( Instant.parse( SEVENTH_TIME ), Pair.of( 5.0, 5.0 ) ) );
+        second.add( Event.of( Instant.parse( EIGHTH_TIME ), Pair.of( 6.0, 6.0 ) ) );
         Instant thirdBasisTime = Instant.parse( NINTH_TIME );
-        third.add( Event.of( Instant.parse( TENTH_TIME ), SingleValuedPair.of( 7, 7 ) ) );
-        third.add( Event.of( Instant.parse( ELEVENTH_TIME ), SingleValuedPair.of( 8, 8 ) ) );
-        third.add( Event.of( Instant.parse( TWELFTH_TIME ), SingleValuedPair.of( 9, 9 ) ) );
+        third.add( Event.of( Instant.parse( TENTH_TIME ), Pair.of( 7.0, 7.0 ) ) );
+        third.add( Event.of( Instant.parse( ELEVENTH_TIME ), Pair.of( 8.0, 8.0 ) ) );
+        third.add( Event.of( Instant.parse( TWELFTH_TIME ), Pair.of( 9.0, 9.0 ) ) );
 
         //Add the time-series
-        List<TimeSeries<SingleValuedPair>> ts = List.of( TimeSeries.of( firstBasisTime,
-                                                                        first ),
-                                                         TimeSeries.of( secondBasisTime,
-                                                                        second ),
-                                                         TimeSeries.of( thirdBasisTime,
-                                                                        third ) );
+        List<TimeSeries<Pair<Double, Double>>> ts = List.of( TimeSeries.of( firstBasisTime,
+                                                                            first ),
+                                                             TimeSeries.of( secondBasisTime,
+                                                                            second ),
+                                                             TimeSeries.of( thirdBasisTime,
+                                                                            third ) );
 
         //Iterate and test
-        List<TimeSeries<SingleValuedPair>> filtered =
+        List<TimeSeries<Pair<Double, Double>>> filtered =
                 TimeSeriesSlicer.filterByReferenceTime( ts,
                                                         a -> a.equals( secondBasisTime ),
                                                         ReferenceTimeType.DEFAULT );
@@ -157,10 +143,10 @@ public final class TimeSeriesSlicerTest
                             .getEvents()
                             .first()
                             .getValue()
-                            .equals( SingleValuedPair.of( 4, 4 ) ) );
+                            .equals( Pair.of( 4.0, 4.0 ) ) );
 
         //Check for empty output on none filter
-        List<TimeSeries<SingleValuedPair>> pairs =
+        List<TimeSeries<Pair<Double, Double>>> pairs =
                 TimeSeriesSlicer.filterByReferenceTime( ts,
                                                         a -> a.equals( Instant.parse( "1985-01-04T00:00:00Z" ) ),
                                                         ReferenceTimeType.DEFAULT );
@@ -171,7 +157,7 @@ public final class TimeSeriesSlicerTest
 
         //Check exceptional cases
         assertThrows( NullPointerException.class,
-                      () -> TimeSeriesSlicer.filterByReferenceTime( (List<TimeSeries<SingleValuedPair>>) null,
+                      () -> TimeSeriesSlicer.filterByReferenceTime( (List<TimeSeries<Pair<Double, Double>>>) null,
                                                                     null,
                                                                     ReferenceTimeType.DEFAULT ) );
         assertThrows( NullPointerException.class,
@@ -181,10 +167,6 @@ public final class TimeSeriesSlicerTest
                                                                     a -> a.equals( Instant.parse( "1985-01-04T00:00:00Z" ) ),
                                                                     null ) );
     }
-
-    /**
-     * Tests the {@link TimeSeriesSlicer#groupEventsByInterval(SortedSet, java.util.Set, Duration)}.
-     */
 
     @Test
     public void testGroupEventsByIntervalProducesThreeGroupsEachWithTwoEvents()
@@ -450,9 +432,9 @@ public final class TimeSeriesSlicerTest
                                                  .addReferenceTime( baseInstant,
                                                                     ReferenceTimeType.DEFAULT )
                                                  .build();
-        
+
         SortedSet<String> labelSet = Arrays.stream( labels ).collect( Collectors.toCollection( TreeSet::new ) );
-        
+
         TimeSeries<Ensemble> actual =
                 TimeSeriesSlicer.compose( TimeSeriesSlicer.decompose( expected ), labelSet );
 
