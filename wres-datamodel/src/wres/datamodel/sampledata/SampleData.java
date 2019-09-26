@@ -1,7 +1,6 @@
 package wres.datamodel.sampledata;
 
 import java.util.List;
-import java.util.Objects;
 
 import wres.datamodel.VectorOfDoubles;
 
@@ -20,26 +19,21 @@ public interface SampleData<S>
 {
 
     /**
-     * Returns true if the sample has a baseline for skill calculations, false otherwise.
+     * Returns <code>true</code> if the sample has a baseline for skill calculations, <code>false</code> otherwise.
      * 
      * @return true if a baseline is defined, false otherwise
      */
 
-    default boolean hasBaseline()
-    {
-        return Objects.nonNull( this.getBaselineData() );
-    }
+    boolean hasBaseline();
 
     /**
-     * Returns true if the sample has a climatological dataset associated with it, false otherwise.
+     * Returns <code>true</code> if the sample has a climatological dataset associated with it, <code>false</code> 
+     * otherwise.
      * 
      * @return true if a climatological dataset is defined, false otherwise
      */
 
-    default boolean hasClimatology()
-    {
-        return Objects.nonNull( this.getClimatology() );
-    }    
+    boolean hasClimatology();
     
     /**
      * Returns the raw sample.

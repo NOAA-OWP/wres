@@ -42,7 +42,7 @@ public class SharedSampleDataWriters implements Consumer<SampleData<?>>, Supplie
      */
 
     private static final Logger LOGGER = LoggerFactory.getLogger( SharedSampleDataWriters.class );
-    
+
     /**
      * The shared writer for single-valued pairs.
      */
@@ -76,16 +76,16 @@ public class SharedSampleDataWriters implements Consumer<SampleData<?>>, Supplie
     {
         Path singleValuedPairPath = singleValuedWriter.get();
         Path ensemblePairPath = ensembleWriter.get();
-        
+
         Set<Path> returnMe = new HashSet<>();
-        
+
         // Only return paths that point to files that exist
-        if( Files.exists( singleValuedPairPath ) )
+        if ( Files.exists( singleValuedPairPath ) )
         {
             returnMe.add( singleValuedPairPath );
         }
-        
-        if( Files.exists( ensemblePairPath ) )
+
+        if ( Files.exists( ensemblePairPath ) )
         {
             returnMe.add( ensemblePairPath );
         }
@@ -104,7 +104,7 @@ public class SharedSampleDataWriters implements Consumer<SampleData<?>>, Supplie
     public void accept( SampleData<?> sampleData )
     {
         Objects.requireNonNull( sampleData, "Cannot accept a null sample container for writing." );
-        
+
         if ( sampleData instanceof TimeSeriesOfSingleValuedPairs )
         {
             this.getSingleValuedWriter().accept( (TimeSeriesOfSingleValuedPairs) sampleData );
@@ -115,9 +115,10 @@ public class SharedSampleDataWriters implements Consumer<SampleData<?>>, Supplie
         }
         else
         {
-            throw new IllegalArgumentException( "Unsupported type of pairs for writing." );
+            throw new IllegalArgumentException( "Unsupported type of pairs for writing: "
+                                                + sampleData.getClass().getSimpleName() );
         }
-        
+
         LOGGER.debug( "Completed writing pairs for feature '{}' and time window {} to {}.",
                       sampleData.getMetadata().getIdentifier().getGeospatialID(),
                       sampleData.getMetadata().getTimeWindow(),
@@ -130,29 +131,29 @@ public class SharedSampleDataWriters implements Consumer<SampleData<?>>, Supplie
         // Try to close the first writer
         try
         {
-            if( Objects.nonNull( this.singleValuedWriter ) )
+            if ( Objects.nonNull( this.singleValuedWriter ) )
             {
                 this.singleValuedWriter.close();
             }
         }
         // Failed, but try to close the second writer
-        catch( IOException e )
+        catch ( IOException e )
         {
-            if( Objects.nonNull( this.ensembleWriter ) )
+            if ( Objects.nonNull( this.ensembleWriter ) )
             {
                 this.ensembleWriter.close();
             }
-            
+
             throw new IOException( "On attempting to close writer instances:", e );
         }
-        
+
         // Close the second writer
-        if( Objects.nonNull( this.ensembleWriter ) )
+        if ( Objects.nonNull( this.ensembleWriter ) )
         {
             this.ensembleWriter.close();
         }
     }
-    
+
     /**
      * Returns the single-valued writer.
      * 

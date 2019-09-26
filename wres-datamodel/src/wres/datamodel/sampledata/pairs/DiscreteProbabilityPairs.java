@@ -129,7 +129,7 @@ public class DiscreteProbabilityPairs extends Pairs<DiscreteProbabilityPair>
 
     public DiscreteProbabilityPairs getBaselineData()
     {
-        if ( Objects.isNull( this.getRawDataForBaseline() ) )
+        if ( ! this.hasBaseline() )
         {
             return null;
         }
@@ -137,6 +137,18 @@ public class DiscreteProbabilityPairs extends Pairs<DiscreteProbabilityPair>
         return DiscreteProbabilityPairs.of( getRawDataForBaseline(), getMetadataForBaseline() );
     }
 
+    @Override
+    public boolean hasBaseline()
+    {
+        return Objects.nonNull( this.getRawDataForBaseline() );
+    }
+
+    @Override
+    public boolean hasClimatology()
+    {
+        return Objects.nonNull( this.getClimatology() );
+    }
+    
     /**
      * A builder to build the metric input.
      */

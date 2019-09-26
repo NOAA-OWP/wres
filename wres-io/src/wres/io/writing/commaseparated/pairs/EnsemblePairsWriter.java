@@ -8,7 +8,9 @@ import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.function.Function;
 
-import wres.datamodel.sampledata.pairs.EnsemblePair;
+import org.apache.commons.lang3.tuple.Pair;
+
+import wres.datamodel.Ensemble;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfEnsemblePairs;
 
 /**
@@ -17,7 +19,7 @@ import wres.datamodel.sampledata.pairs.TimeSeriesOfEnsemblePairs;
  * @author james.brown@hydrosolved.com
  */
 
-public class EnsemblePairsWriter extends PairsWriter<EnsemblePair, TimeSeriesOfEnsemblePairs>
+public class EnsemblePairsWriter extends PairsWriter<Double, Ensemble, TimeSeriesOfEnsemblePairs>
 {
 
     /**
@@ -93,7 +95,7 @@ public class EnsemblePairsWriter extends PairsWriter<EnsemblePair, TimeSeriesOfE
      * @return the string formatter
      */
 
-    private static Function<EnsemblePair, String> getPairFormatter( DecimalFormat decimalFormatter )
+    private static Function<Pair<Double,Ensemble>, String> getPairFormatter( DecimalFormat decimalFormatter )
     {
         return pair -> {
 

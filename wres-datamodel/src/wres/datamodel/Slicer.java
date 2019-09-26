@@ -15,7 +15,6 @@ import java.util.function.BiFunction;
 import java.util.function.DoublePredicate;
 import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
-import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 import java.util.function.ToDoubleFunction;
 import java.util.function.UnaryOperator;
@@ -36,12 +35,8 @@ import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.datamodel.sampledata.pairs.EnsemblePairs;
 import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfEnsemblePairs;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfEnsemblePairs.TimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs.TimeSeriesOfPairsBuilder;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.statistics.Statistic;
@@ -49,7 +44,6 @@ import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdType;
-import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindow;
 import wres.datamodel.time.TimeSeriesSlicer;
@@ -579,126 +573,7 @@ public final class Slicer
         }
         return EnsemblePairs.of( mainPairsSubset, input.getMetadata(), climatology );
     }
-
-    /**
-     * Returns a subset of pairs where the condition is met for each atomic time-series in the container. Applies to 
-     * both the main pairs and any baseline pairs. Does not modify the metadata associated with the input.
-     * 
-     * @param input the pairs to slice
-     * @param condition the condition on which to slice
-     * @param applyToClimatology an optional filter for the climatology, may be null
-     * @return the subset of pairs that meet the condition
-     * @throws NullPointerException if either the input or condition is null
-     */
-
-    public static TimeSeriesOfSingleValuedPairs filter( TimeSeriesOfSingleValuedPairs input,
-                                                        Predicate<TimeSeries<SingleValuedPair>> condition,
-                                                        DoublePredicate applyToClimatology )
-    {
-        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
-
-        Objects.requireNonNull( condition, NULL_PREDICATE_EXCEPTION );
-
-        TimeSeriesOfSingleValuedPairsBuilder builder = new TimeSeriesOfSingleValuedPairsBuilder();
-
-        // Set the metadata explicitly in case of an empty slice
-        builder.setMetadata( input.getMetadata() );
-
-        // Filter the main pairs and add them
-        for ( TimeSeries<SingleValuedPair> next : input.get() )
-        {
-            if ( condition.test( next ) )
-            {
-                builder.addTimeSeries( next );
-            }
-        }
-
-        //Filter climatology as required
-        if ( input.hasClimatology() && Objects.nonNull( applyToClimatology ) )
-        {
-            VectorOfDoubles climatology =
-                    Slicer.filter( input.getClimatology(), applyToClimatology );
-
-            builder.setClimatology( climatology );
-        }
-
-        //Filter baseline pairs as required
-        if ( input.hasBaseline() )
-        {
-            builder.setMetadataForBaseline( input.getBaselineData().getMetadata() );
-
-            for ( TimeSeries<SingleValuedPair> next : input.getBaselineData().get() )
-            {
-                if ( condition.test( next ) )
-                {
-                    builder.addTimeSeriesForBaseline( next );
-                }
-            }
-
-        }
-
-        return builder.build();
-    }
-
-    /**
-     * Returns a {@link TimeSeriesOfEnsemblePairs} whose elements are filtered according to the zero-based index of 
-     * the ensemble trace or null if no such time-series exist.
-     * 
-     * @param input the pairs to slice
-     * @param traceIndex the trace index filter
-     * @return a time-series associated with a specific trace index or null
-     * @throws NullPointerException if either input is null
-     */
-
-    public static TimeSeriesOfEnsemblePairs filterByTraceIndex( TimeSeriesOfEnsemblePairs input,
-                                                                IntPredicate traceIndex )
-    {
-        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
-
-        Objects.requireNonNull( traceIndex, NULL_PREDICATE_EXCEPTION );
-
-        //Build a single-valued time-series with the trace at index currentTrace
-        TimeSeriesOfEnsemblePairsBuilder builder =
-                new TimeSeriesOfEnsemblePairsBuilder();
-        builder.setMetadata( input.getMetadata() );
-
-        //Iterate through the basis times
-        for ( TimeSeries<EnsemblePair> nextSeries : input.get() )
-        {
-            SortedSet<Event<EnsemblePair>> rawInput = new TreeSet<>();
-
-            //Iterate through the pairs
-            for ( Event<EnsemblePair> next : nextSeries.getEvents() )
-            {
-                //Reform the pairs with a subset of ensemble members
-                double[] allTraces = next.getValue().getRight().getMembers();
-                List<Double> subTraces = new ArrayList<>();
-                for ( int i = 0; i < allTraces.length; i++ )
-                {
-                    if ( traceIndex.test( i ) )
-                    {
-                        subTraces.add( allTraces[i] );
-                    }
-                }
-                //All time-series have the same number of ensemble members, 
-                //so the first instance with no members means no traces
-                if ( subTraces.isEmpty() )
-                {
-                    return null;
-                }
-                rawInput.add( Event.of( next.getTime(),
-                                        EnsemblePair.of( next.getValue().getLeft(),
-                                                         subTraces.toArray( new Double[subTraces.size()] ) ) ) );
-            }
-
-            builder.addTimeSeries( TimeSeries.of( nextSeries.getReferenceTimes(),
-                                                  rawInput ) );
-        }
-
-        //Return the time-series
-        return builder.build();
-    }
-
+    
     /**
      * <p>Returns a subset of metric outputs whose {@link StatisticMetadata} matches the supplied predicate. For 
      * example, to filter by a particular {@link TimeWindow} and {@link OneOrTwoThresholds} associated with the 

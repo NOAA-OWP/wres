@@ -18,7 +18,6 @@ import wres.config.generated.DataSourceConfig;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
-import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
@@ -58,9 +57,9 @@ public class TimeSeriesRetriever extends Retriever
         // One single-valued pair per ensemble member
         // TODO: retrieve single-valued pairs separately from ensemble pairs
         // so this mapping isn't needed
-        List<Pair<Instant,Event<SingleValuedPair>>> events = new ArrayList<>();
+        List<Pair<Instant,Event<Pair<Double,Double>>>> events = new ArrayList<>();
         this.getPrimaryPairs().forEach( next -> events.addAll( Retriever.unwrapEnsembleEvent( next ) ) );       
-        List<TimeSeries<SingleValuedPair>> timeSeries = Retriever.getTimeSeriesFromListOfEvents( events );
+        List<TimeSeries<Pair<Double,Double>>> timeSeries = Retriever.getTimeSeriesFromListOfEvents( events );
         timeSeries.forEach( builder::addTimeSeries );
 
         return builder.build();

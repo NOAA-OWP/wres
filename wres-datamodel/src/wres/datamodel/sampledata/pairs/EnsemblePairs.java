@@ -128,7 +128,7 @@ public class EnsemblePairs extends Pairs<EnsemblePair>
     @Override
     public EnsemblePairs getBaselineData()
     {
-        if ( Objects.isNull( this.getRawDataForBaseline() ) )
+        if ( !this.hasBaseline() )
         {
             return null;
         }
@@ -136,6 +136,18 @@ public class EnsemblePairs extends Pairs<EnsemblePair>
         return EnsemblePairs.of( this.getRawDataForBaseline(), this.getMetadataForBaseline() );
     }
 
+    @Override
+    public boolean hasBaseline()
+    {
+        return Objects.nonNull( this.getRawDataForBaseline() );
+    }
+
+    @Override
+    public boolean hasClimatology()
+    {
+        return Objects.nonNull( this.getClimatology() );
+    }
+    
     /**
      * A builder to build the metric input.
      */

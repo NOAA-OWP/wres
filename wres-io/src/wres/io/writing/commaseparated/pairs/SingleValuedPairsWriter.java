@@ -7,7 +7,8 @@ import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.function.Function;
 
-import wres.datamodel.sampledata.pairs.SingleValuedPair;
+import org.apache.commons.lang3.tuple.Pair;
+
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
 
 /**
@@ -16,7 +17,7 @@ import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
  * @author james.brown@hydrosolved.com
  */
 
-public class SingleValuedPairsWriter extends PairsWriter<SingleValuedPair, TimeSeriesOfSingleValuedPairs>
+public class SingleValuedPairsWriter extends PairsWriter<Double,Double,TimeSeriesOfSingleValuedPairs>
 {
 
     /**
@@ -82,7 +83,7 @@ public class SingleValuedPairsWriter extends PairsWriter<SingleValuedPair, TimeS
      * @return the string formatter
      */
 
-    private static Function<SingleValuedPair, String> getPairFormatter( DecimalFormat decimalFormatter )
+    private static Function<Pair<Double,Double>, String> getPairFormatter( DecimalFormat decimalFormatter )
     {
         return pair -> {
 

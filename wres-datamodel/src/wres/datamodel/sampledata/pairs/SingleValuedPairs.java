@@ -119,6 +119,18 @@ public class SingleValuedPairs extends Pairs<SingleValuedPair>
 
         return b.build();
     }
+    
+    @Override
+    public boolean hasBaseline()
+    {
+        return Objects.nonNull( this.getRawDataForBaseline() );
+    }
+
+    @Override
+    public boolean hasClimatology()
+    {
+        return Objects.nonNull( this.getClimatology() );
+    }
 
     /**
      * Returns the baseline data as a {@link SampleData} or null if no baseline is defined. 
@@ -128,7 +140,7 @@ public class SingleValuedPairs extends Pairs<SingleValuedPair>
     @Override
     public SingleValuedPairs getBaselineData()
     {
-        if ( Objects.isNull( this.getRawDataForBaseline() ) )
+        if ( ! this.hasBaseline() )
         {
             return null;
         }
