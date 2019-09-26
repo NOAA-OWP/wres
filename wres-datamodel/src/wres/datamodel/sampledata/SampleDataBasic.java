@@ -49,6 +49,18 @@ public class SampleDataBasic<T> implements SampleData<T>
     private VectorOfDoubles climatology;
 
     @Override
+    public boolean hasBaseline()
+    {
+        return Objects.nonNull( this.baselineSampleData );
+    }
+
+    @Override
+    public boolean hasClimatology()
+    {
+        return Objects.nonNull( this.climatology );
+    }
+    
+    @Override
     public List<T> getRawData()
     {
         return sampleData;
@@ -74,7 +86,7 @@ public class SampleDataBasic<T> implements SampleData<T>
         // should be the formal check. Returning a null from an API method
         // is coding graffiti
 
-        if ( Objects.isNull( this.baselineSampleData ) )
+        if ( !this.hasBaseline() )
         {
             return null;
         }

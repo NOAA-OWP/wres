@@ -61,6 +61,18 @@ public class TimeSeriesOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier
      */
 
     private final SampleMetadata baselineMeta;
+    
+    @Override
+    public boolean hasBaseline()
+    {
+        return Objects.nonNull( this.baseline );
+    }
+
+    @Override
+    public boolean hasClimatology()
+    {
+        return Objects.nonNull( this.climatology );
+    }
 
     @Override
     public TimeSeriesOfPairs<L, R> getBaselineData()
@@ -70,13 +82,13 @@ public class TimeSeriesOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier
         // should be the formal check. Returning a null from an API method
         // is coding graffiti
         
-        if ( Objects.isNull( this.baseline ) )
+        if ( !this.hasBaseline() )
         {
             return null;
         }
 
         TimeSeriesOfPairsBuilder<L, R> builder = new TimeSeriesOfPairsBuilder<>();
-        builder.setMetadata( this.baselineMeta );
+        builder.setMetadata( this.baselineMeta ).setClimatology( this.climatology );
 
         for ( TimeSeries<Pair<L, R>> next : baseline )
         {
@@ -136,7 +148,7 @@ public class TimeSeriesOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier
     {
         return this.climatology;
     }
-
+    
     /**
      * A builder to build the time-series.
      */

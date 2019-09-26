@@ -20,6 +20,7 @@ import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -28,7 +29,6 @@ import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
-import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.scale.TimeScale;
@@ -71,18 +71,18 @@ public final class SingleValuedPairsWriterTest
         // Create the pairs
         TimeSeriesOfSingleValuedPairsBuilder tsBuilder = new TimeSeriesOfSingleValuedPairsBuilder();
 
-        SortedSet<Event<SingleValuedPair>> setOfPairs = new TreeSet<>();
+        SortedSet<Event<Pair<Double,Double>>> setOfPairs = new TreeSet<>();
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
         setOfPairs.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ),
-                                  SingleValuedPair.of( 1.001, 2 ) ) );
-        setOfPairs.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), SingleValuedPair.of( 3, 4 ) ) );
-        setOfPairs.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), SingleValuedPair.of( 5, 6 ) ) );
+                                  Pair.of( 1.001, 2.0 ) ) );
+        setOfPairs.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), Pair.of( 3.0, 4.0 ) ) );
+        setOfPairs.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), Pair.of( 5.0, 6.0 ) ) );
 
         SampleMetadata meta =
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
                                    DatasetIdentifier.of( Location.of( "PLUM" ), "RIFLE" ) );
 
-        TimeSeries<SingleValuedPair> timeSeriesOne =
+        TimeSeries<Pair<Double,Double>> timeSeriesOne =
                 TimeSeries.of( basisTime, ReferenceTimeType.DEFAULT, setOfPairs );
 
         pairs = (TimeSeriesOfSingleValuedPairs) tsBuilder.addTimeSeries( timeSeriesOne )
@@ -91,20 +91,20 @@ public final class SingleValuedPairsWriterTest
 
         // Create the second time-series of pairs
         TimeSeriesOfSingleValuedPairsBuilder tsBuilderTwo = new TimeSeriesOfSingleValuedPairsBuilder();
-        SortedSet<Event<SingleValuedPair>> setOfPairsTwo = new TreeSet<>();
+        SortedSet<Event<Pair<Double,Double>>> setOfPairsTwo = new TreeSet<>();
         Instant basisTimeTwo = Instant.parse( "1985-01-01T00:00:00Z" );
         setOfPairsTwo.add( Event.of( Instant.parse( "1985-01-01T04:00:00Z" ),
-                                     SingleValuedPair.of( 7, 8 ) ) );
+                                     Pair.of( 7.0, 8.0 ) ) );
         setOfPairsTwo.add( Event.of( Instant.parse( "1985-01-01T05:00:00Z" ),
-                                     SingleValuedPair.of( 9, 10 ) ) );
+                                     Pair.of( 9.0, 10.0 ) ) );
         setOfPairsTwo.add( Event.of( Instant.parse( "1985-01-01T06:00:00Z" ),
-                                     SingleValuedPair.of( 11, 12 ) ) );
+                                     Pair.of( 11.0, 12.0 ) ) );
 
         SampleMetadata metaTwo =
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
                                    DatasetIdentifier.of( Location.of( "ORANGE" ), "PISTOL" ) );
 
-        TimeSeries<SingleValuedPair> timeSeriesTwo =
+        TimeSeries<Pair<Double,Double>> timeSeriesTwo =
                 TimeSeries.of( basisTimeTwo, ReferenceTimeType.DEFAULT, setOfPairsTwo );
 
         pairsTwo = (TimeSeriesOfSingleValuedPairs) tsBuilderTwo.addTimeSeries( timeSeriesTwo )
@@ -114,20 +114,20 @@ public final class SingleValuedPairsWriterTest
 
         // Create the third time-series of pairs
         TimeSeriesOfSingleValuedPairsBuilder tsBuilderThree = new TimeSeriesOfSingleValuedPairsBuilder();
-        SortedSet<Event<SingleValuedPair>> setOfPairsThree = new TreeSet<>();
+        SortedSet<Event<Pair<Double,Double>>> setOfPairsThree = new TreeSet<>();
         Instant basisTimeThree = Instant.parse( "1985-01-01T00:00:00Z" );
         setOfPairsThree.add( Event.of( Instant.parse( "1985-01-01T07:00:00Z" ),
-                                       SingleValuedPair.of( 13, 14 ) ) );
+                                       Pair.of( 13.0, 14.0 ) ) );
         setOfPairsThree.add( Event.of( Instant.parse( "1985-01-01T08:00:00Z" ),
-                                       SingleValuedPair.of( 15, 16 ) ) );
+                                       Pair.of( 15.0, 16.0 ) ) );
         setOfPairsThree.add( Event.of( Instant.parse( "1985-01-01T09:00:00Z" ),
-                                       SingleValuedPair.of( 17, 18 ) ) );
+                                       Pair.of( 17.0, 18.0 ) ) );
 
         SampleMetadata metaThree =
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
                                    DatasetIdentifier.of( Location.of( "BANANA" ), "GRENADE" ) );
 
-        TimeSeries<SingleValuedPair> timeSeriesThree =
+        TimeSeries<Pair<Double,Double>> timeSeriesThree =
                 TimeSeries.of( basisTimeThree, ReferenceTimeType.DEFAULT, setOfPairsThree );
 
         pairsThree =

@@ -22,10 +22,10 @@ import wres.config.ProjectConfigs;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.TimeScaleConfig;
+import wres.datamodel.Ensemble;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
-import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfEnsemblePairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfEnsemblePairs.TimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
@@ -174,9 +174,9 @@ class SampleDataRetriever extends Retriever
 
         TimeSeriesOfSingleValuedPairsBuilder builder = new TimeSeriesOfSingleValuedPairsBuilder();
 
-        List<Pair<Instant, Event<SingleValuedPair>>> events = this.getSingleValuedEvents( this.getPrimaryPairs() );
+        List<Pair<Instant, Event<Pair<Double,Double>>>> events = this.getSingleValuedEvents( this.getPrimaryPairs() );
 
-        List<TimeSeries<SingleValuedPair>> timeSeries = Retriever.getTimeSeriesFromListOfEvents( events );
+        List<TimeSeries<Pair<Double,Double>>> timeSeries = Retriever.getTimeSeriesFromListOfEvents( events );
         timeSeries.forEach( builder::addTimeSeries );
         builder.setMetadata( this.getSampleMetadata().getMetadata() );
 
@@ -185,9 +185,9 @@ class SampleDataRetriever extends Retriever
 
         if ( project.hasBaseline() )
         {
-            List<Pair<Instant, Event<SingleValuedPair>>> baselineEvents =
+            List<Pair<Instant, Event<Pair<Double,Double>>>> baselineEvents =
                     this.getSingleValuedEvents( this.getBaselinePairs() );
-            List<TimeSeries<SingleValuedPair>> timeSeriesBase =
+            List<TimeSeries<Pair<Double,Double>>> timeSeriesBase =
                     Retriever.getTimeSeriesFromListOfEvents( baselineEvents );
             timeSeriesBase.forEach( builder::addTimeSeriesForBaseline );
             builder.setMetadataForBaseline( this.getSampleMetadata().getBaselineMetadata() );
@@ -215,19 +215,21 @@ class SampleDataRetriever extends Retriever
 
         TimeSeriesOfEnsemblePairsBuilder builder = new TimeSeriesOfEnsemblePairsBuilder();
 
-        List<Pair<Instant,Event<EnsemblePair>>> events = this.getPrimaryPairs();
+        List<Pair<Instant, Event<Pair<Double, Ensemble>>>> events = this.getEnsembleEvents( this.getPrimaryPairs() );
 
-        List<TimeSeries<EnsemblePair>> timeSeries = Retriever.getTimeSeriesFromListOfEvents( events );
+        List<TimeSeries<Pair<Double, Ensemble>>> timeSeries = Retriever.getTimeSeriesFromListOfEvents( events );
         timeSeries.forEach( builder::addTimeSeries );
         builder.setMetadata( this.getSampleMetadata().getMetadata() );
-         
+
         // #67532
         Project project = this.getProjectDetails();
 
         if ( project.hasBaseline() )
         {
-            List<Pair<Instant, Event<EnsemblePair>>> baselineEvents = this.getBaselinePairs();
-            List<TimeSeries<EnsemblePair>> timeSeriesBase = Retriever.getTimeSeriesFromListOfEvents( baselineEvents );
+            List<Pair<Instant, Event<Pair<Double, Ensemble>>>> baselineEvents =
+                    this.getEnsembleEvents( this.getBaselinePairs() );
+            List<TimeSeries<Pair<Double, Ensemble>>> timeSeriesBase =
+                    Retriever.getTimeSeriesFromListOfEvents( baselineEvents );
             timeSeriesBase.forEach( builder::addTimeSeriesForBaseline );
             builder.setMetadataForBaseline( this.getSampleMetadata().getBaselineMetadata() );
         }
@@ -237,14 +239,32 @@ class SampleDataRetriever extends Retriever
         return builder.build();
     }
 
-    private List<Pair<Instant, Event<SingleValuedPair>>>
+    private List<Pair<Instant, Event<Pair<Double,Double>>>>
             getSingleValuedEvents( List<Pair<Instant, Event<EnsemblePair>>> pairs )
     {
-        List<Pair<Instant, Event<SingleValuedPair>>> events = new ArrayList<>();
+        List<Pair<Instant, Event<Pair<Double,Double>>>> events = new ArrayList<>();
 
         for ( Pair<Instant, Event<EnsemblePair>> pair : pairs )
         {
             events.addAll( Retriever.unwrapEnsembleEvent( pair ) );
+        }
+
+        return events;
+    }
+
+    private List<Pair<Instant, Event<Pair<Double, Ensemble>>>>
+            getEnsembleEvents( List<Pair<Instant, Event<EnsemblePair>>> pairs )
+    {
+        List<Pair<Instant, Event<Pair<Double, Ensemble>>>> events = new ArrayList<>();
+
+        for ( Pair<Instant, Event<EnsemblePair>> pair : pairs )
+        {
+            Instant left = pair.getLeft();
+            Event<EnsemblePair> inRight = pair.getRight();
+            EnsemblePair inPair = inRight.getValue();
+            Pair<Double,Ensemble> outPair = Pair.of( inPair.getLeft(), inPair.getRight() );
+            Event<Pair<Double,Ensemble>> right = Event.of( inRight.getTime(), outPair );           
+            events.add( Pair.of( left, right ) );
         }
 
         return events;

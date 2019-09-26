@@ -10,7 +10,6 @@ import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.StringJoiner;
@@ -20,12 +19,12 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.datamodel.sampledata.Location;
-import wres.datamodel.sampledata.pairs.Pair;
-import wres.datamodel.sampledata.pairs.Pairs;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
@@ -43,12 +42,13 @@ import wres.util.TimeHelper;
  * <p>The {@link Path} is supplied on construction and no guarantee is made that anything is created at that 
  * {@link Path}. It is the responsibility of the caller to determine whether something was written, if that matters.
  * 
- * @param <S> the decomposed type of pairs to write
- * @param <T> the composed type of pairs to write
+ * @param <L> the type of left data
+ * @param <R> the type of right data
+ * @param <T> the composition in which the left and right data are found
  * @author james.brown@hydrosolved.com
  */
 
-public abstract class PairsWriter<S extends Pair<?,?>, T extends Pairs<S> & Supplier<List<TimeSeries<S>>>>
+public abstract class PairsWriter<L,R, T extends TimeSeriesOfPairs<L,R>>
         implements Consumer<T>, Supplier<Path>, Closeable
 {
 
@@ -95,10 +95,10 @@ public abstract class PairsWriter<S extends Pair<?,?>, T extends Pairs<S> & Supp
     private final ChronoUnit timeResolution;
 
     /**
-     * Formatter that maps from a paired value of type <S> to a value of type {@link String}.
+     * Formatter that maps from a paired value to a {@link String}.
      */
 
-    private final Function<S, String> pairFormatter;
+    private final Function<Pair<L,R>, String> pairFormatter;
 
     /**
      * Is <code>true</code> if the header needs to be written, <code>false</code> when it has already been written. 
@@ -257,7 +257,7 @@ public abstract class PairsWriter<S extends Pair<?,?>, T extends Pairs<S> & Supp
                 {
 
                     // Iterate in time-series order
-                    for ( TimeSeries<S> nextSeries : pairs.get() )
+                    for ( TimeSeries<Pair<L,R>> nextSeries : pairs.get() )
                     {
                         // There is always one reference datetime, and the pairs format can only support one
                         // and does not yet qualify the type
@@ -265,7 +265,7 @@ public abstract class PairsWriter<S extends Pair<?,?>, T extends Pairs<S> & Supp
                         
                         Instant basisTime = referenceTimes.values().iterator().next();
 
-                        for ( Event<S> nextPair : nextSeries.getEvents() )
+                        for ( Event<Pair<L,R>> nextPair : nextSeries.getEvents() )
                         {
 
                             // Move to next line
@@ -473,7 +473,7 @@ public abstract class PairsWriter<S extends Pair<?,?>, T extends Pairs<S> & Supp
      * @return the formatter
      */
 
-    private Function<S, String> getPairFormatter()
+    private Function<Pair<L,R>, String> getPairFormatter()
     {
         return this.pairFormatter;
     }
@@ -488,7 +488,7 @@ public abstract class PairsWriter<S extends Pair<?,?>, T extends Pairs<S> & Supp
      * @throws NullPointerException if any of the expected inputs is null
      */
 
-    PairsWriter( Path pathToPairs, ChronoUnit timeResolution, Function<S, String> formatter )
+    PairsWriter( Path pathToPairs, ChronoUnit timeResolution, Function<Pair<L,R>, String> formatter )
     {
         Objects.requireNonNull( pathToPairs, "Specify a non-null path to write." );
 

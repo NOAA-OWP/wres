@@ -448,9 +448,9 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
      * generic container.
      */
     
-    static List<Pair<Instant,Event<SingleValuedPair>>> unwrapEnsembleEvent( Pair<Instant,Event<EnsemblePair>> pair )
+    static List<Pair<Instant,Event<Pair<Double,Double>>>> unwrapEnsembleEvent( Pair<Instant,Event<EnsemblePair>> pair )
     {
-        List<Pair<Instant,Event<SingleValuedPair>>> eventPairs = new ArrayList<>();
+        List<Pair<Instant,Event<Pair<Double,Double>>>> eventPairs = new ArrayList<>();
         
         Instant referenceTime = pair.getLeft();
         Instant validTime = pair.getRight().getTime();
@@ -460,7 +460,7 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
         {          
             eventPairs.add( Pair.of( referenceTime,
                                       Event.of( validTime,
-                                      SingleValuedPair.of( values.getLeft(), rightValue ) ) ) );
+                                      Pair.of( values.getLeft(), rightValue ) ) ) );
         }
         
         return Collections.unmodifiableList( eventPairs );
@@ -479,7 +479,7 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
      * @throws NullPointerException if the input is null
      */
 
-    static <T extends wres.datamodel.sampledata.pairs.Pair<?, ?>> List<TimeSeries<T>>
+    static <T extends Pair<?, ?>> List<TimeSeries<T>>
             getTimeSeriesFromListOfEvents( List<Pair<Instant, Event<T>>> events )
     {
         Objects.requireNonNull( events );
