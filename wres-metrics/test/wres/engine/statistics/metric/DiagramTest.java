@@ -2,9 +2,7 @@ package wres.engine.statistics.metric;
 
 import static org.junit.Assert.assertTrue;
 
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import wres.engine.statistics.metric.singlevalued.QuantileQuantileDiagram;
 
@@ -16,9 +14,6 @@ import wres.engine.statistics.metric.singlevalued.QuantileQuantileDiagram;
 public final class DiagramTest
 {
 
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();   
-    
     /**
      * Constructs a {@link Diagram} and compares the actual result to the expected result.
      * 

@@ -8,6 +8,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -18,10 +19,11 @@ import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.time.TimeWindow;
@@ -50,16 +52,11 @@ public final class VolumetricEfficiencyTest
         this.ve = VolumetricEfficiency.of();
     }
 
-    /**
-     * Compares the output from {@link VolumetricEfficiency#apply(SingleValuedPairs)} against expected output.
-     * @throws IOException if the input data could not be read
-     */
-
     @Test
     public void testApply() throws IOException
     {
         //Generate some data
-        SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsFive();
+        SampleData<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsFive();
 
         //Metadata for the output
         final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
@@ -87,26 +84,17 @@ public final class VolumetricEfficiencyTest
                     actual.equals( expected ) );
     }
 
-    /**
-     * Validates the output from {@link VolumetricEfficiency#apply(SingleValuedPairs)} when supplied with no data.
-     */
-
     @Test
     public void testApplyWithNoData()
     {
         // Generate empty data
-        SingleValuedPairs input =
-                SingleValuedPairs.of( Arrays.asList(), SampleMetadata.of() );
+        SampleDataBasic<Pair<Double, Double>> input =
+                SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
         DoubleScoreStatistic actual = ve.apply( input );
 
         assertTrue( actual.getData().isNaN() );
     }
-
-    /**
-     * Checks that the {@link VolumetricEfficiency#getName()} returns 
-     * {@link MetricConstants#VOLUMETRIC_EFFICIENCY.toString()}
-     */
 
     @Test
     public void testGetName()
@@ -114,19 +102,11 @@ public final class VolumetricEfficiencyTest
         assertTrue( ve.getName().equals( MetricConstants.VOLUMETRIC_EFFICIENCY.toString() ) );
     }
 
-    /**
-     * Checks that the {@link VolumetricEfficiency#isDecomposable()} returns <code>false</code>.
-     */
-
     @Test
     public void testIsDecomposable()
     {
         assertFalse( ve.isDecomposable() );
     }
-
-    /**
-     * Checks that the {@link VolumetricEfficiency#isSkillScore()} returns <code>false</code>.
-     */
 
     @Test
     public void testIsSkillScore()
@@ -134,20 +114,11 @@ public final class VolumetricEfficiencyTest
         assertFalse( ve.isSkillScore() );
     }
 
-    /**
-     * Checks that the {@link VolumetricEfficiency#getScoreOutputGroup()} returns the result provided on construction.
-     */
-
     @Test
     public void testGetScoreOutputGroup()
     {
         assertTrue( ve.getScoreOutputGroup() == ScoreGroup.NONE );
     }
-
-    /**
-     * Tests for an expected exception on calling {@link VolumetricEfficiency#apply(SingleValuedPairs)} with null 
-     * input.
-     */
 
     @Test
     public void testApplyExceptionOnNullInput()

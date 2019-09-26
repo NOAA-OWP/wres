@@ -1,7 +1,9 @@
 package wres.engine.statistics.metric.singlevalued;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import wres.datamodel.MetricConstants;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
+import wres.datamodel.sampledata.SampleData;
 
 /**
  * The mean error applies to continuous variables and is the average signed difference between a single-valued
@@ -9,7 +11,7 @@ import wres.datamodel.sampledata.pairs.SingleValuedPairs;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class MeanError extends DoubleErrorScore<SingleValuedPairs>
+public class MeanError extends DoubleErrorScore<SampleData<Pair<Double,Double>>>
 {
     
     /**

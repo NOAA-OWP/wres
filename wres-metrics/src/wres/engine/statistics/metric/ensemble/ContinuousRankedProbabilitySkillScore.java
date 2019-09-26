@@ -2,11 +2,14 @@ package wres.engine.statistics.metric.ensemble;
 
 import java.util.Objects;
 
+import org.apache.commons.lang3.tuple.Pair;
+
+import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.sampledata.DatasetIdentifier;
+import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.sampledata.pairs.EnsemblePairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.FunctionFactory;
@@ -50,7 +53,7 @@ public class ContinuousRankedProbabilitySkillScore extends ContinuousRankedProba
     }
 
     @Override
-    public DoubleScoreStatistic apply( EnsemblePairs s )
+    public DoubleScoreStatistic apply( SampleData<Pair<Double, Ensemble>> s )
     {
         if ( Objects.isNull( s ) )
         {

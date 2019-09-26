@@ -8,21 +8,23 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
+import wres.datamodel.Probability;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.pairs.DiscreteProbabilityPair;
-import wres.datamodel.sampledata.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.MetricTestDataFactory;
@@ -51,7 +53,7 @@ public final class ReliabilityDiagramTest
     }
 
     /**
-     * Compares the output from {@link ReliabilityDiagram#apply(DiscreteProbabilityPairs)} against 
+     * Compares the output from {@link ReliabilityDiagram#apply(SampleData)} against 
      * expected output.
      */
 
@@ -59,7 +61,7 @@ public final class ReliabilityDiagramTest
     public void testApply()
     {
         //Generate some data
-        DiscreteProbabilityPairs input = MetricTestDataFactory.getDiscreteProbabilityPairsThree();
+        SampleData<Pair<Probability, Probability>>  input = MetricTestDataFactory.getDiscreteProbabilityPairsThree();
 
         //Metadata for the output
         final StatisticMetadata m1 =
@@ -108,7 +110,7 @@ public final class ReliabilityDiagramTest
     }
 
     /**
-     * Compares the output from {@link ReliabilityDiagram#apply(DiscreteProbabilityPairs)} against 
+     * Compares the output from {@link ReliabilityDiagram#apply(SampleData)} against 
      * expected output for a scenario involving some bins with zero samples. See ticket #51362.
      */
 
@@ -116,44 +118,43 @@ public final class ReliabilityDiagramTest
     public void testApplySomeBinsHaveZeroSamples()
     {
         //Generate some data
-        List<DiscreteProbabilityPair> data = new ArrayList<>();
-        data.add( DiscreteProbabilityPair.of( 1.0, 0.8775510204081632 ) );
-        data.add( DiscreteProbabilityPair.of( 1.0, 0.6326530612244898 ) );
-        data.add( DiscreteProbabilityPair.of( 1.0, 0.8163265306122449 ) );
-        data.add( DiscreteProbabilityPair.of( 1.0, 0.9591836734693877 ) );
-        data.add( DiscreteProbabilityPair.of( 1.0, 0.8979591836734694 ) );
-        data.add( DiscreteProbabilityPair.of( 1.0, 0.9795918367346939 ) );
-        data.add( DiscreteProbabilityPair.of( 1.0, 1.0 ) );
-        data.add( DiscreteProbabilityPair.of( 1.0, 1.0 ) );
-        data.add( DiscreteProbabilityPair.of( 1.0, 1.0 ) );
-        data.add( DiscreteProbabilityPair.of( 1.0, 1.0 ) );
-        data.add( DiscreteProbabilityPair.of( 1.0, 1.0 ) );
-        data.add( DiscreteProbabilityPair.of( 1.0, 1.0 ) );
-        data.add( DiscreteProbabilityPair.of( 1.0, 1.0 ) );
-        data.add( DiscreteProbabilityPair.of( 1.0, 1.0 ) );
-        data.add( DiscreteProbabilityPair.of( 1.0, 0.0 ) );
-        data.add( DiscreteProbabilityPair.of( 1.0, 1.0 ) );
-        data.add( DiscreteProbabilityPair.of( 1.0, 1.0 ) );
-        data.add( DiscreteProbabilityPair.of( 1.0, 0.9183673469387755 ) );
-        data.add( DiscreteProbabilityPair.of( 1.0, 0.8163265306122449 ) );
-        data.add( DiscreteProbabilityPair.of( 1.0, 0.7755102040816326 ) );
-        data.add( DiscreteProbabilityPair.of( 0.0, 0.3469387755102041 ) );
-        data.add( DiscreteProbabilityPair.of( 0.0, 0.24489795918367346 ) );
-        data.add( DiscreteProbabilityPair.of( 0.0, 0.20408163265306123 ) );
-        data.add( DiscreteProbabilityPair.of( 0.0, 0.10204081632653061 ) );
-        data.add( DiscreteProbabilityPair.of( 0.0, 0.08163265306122448 ) );
-        data.add( DiscreteProbabilityPair.of( 0.0, 0.12244897959183673 ) );
-        data.add( DiscreteProbabilityPair.of( 0.0, 0.0 ) );
-        data.add( DiscreteProbabilityPair.of( 0.0, 0.0 ) );
-        data.add( DiscreteProbabilityPair.of( 0.0, 0.0 ) );
-        data.add( DiscreteProbabilityPair.of( 0.0, 0.0 ) );
+        List<Pair<Probability,Probability>> data = new ArrayList<>();
+        data.add( Pair.of( Probability.ONE, Probability.of(  0.8775510204081632 ) ) );
+        data.add( Pair.of( Probability.ONE, Probability.of(  0.6326530612244898 ) ) );
+        data.add( Pair.of( Probability.ONE, Probability.of(  0.8163265306122449 ) ) );
+        data.add( Pair.of( Probability.ONE, Probability.of(  0.9591836734693877 ) ) );
+        data.add( Pair.of( Probability.ONE, Probability.of(  0.8979591836734694 ) ) );
+        data.add( Pair.of( Probability.ONE, Probability.of(  0.9795918367346939 ) ) );
+        data.add( Pair.of( Probability.ONE, Probability.of(  1.0 ) ) );
+        data.add( Pair.of( Probability.ONE, Probability.of(  1.0 ) ) );
+        data.add( Pair.of( Probability.ONE, Probability.of(  1.0 ) ) );
+        data.add( Pair.of( Probability.ONE, Probability.of(  1.0 ) ) );
+        data.add( Pair.of( Probability.ONE, Probability.of(  1.0 ) ) );
+        data.add( Pair.of( Probability.ONE, Probability.of(  1.0 ) ) );
+        data.add( Pair.of( Probability.ONE, Probability.of(  1.0 ) ) );
+        data.add( Pair.of( Probability.ONE, Probability.of(  1.0 ) ) );
+        data.add( Pair.of( Probability.ONE, Probability.of(  0.0 ) ) );
+        data.add( Pair.of( Probability.ONE, Probability.of(  1.0 ) ) );
+        data.add( Pair.of( Probability.ONE, Probability.of(  1.0 ) ) );
+        data.add( Pair.of( Probability.ONE, Probability.of(  0.9183673469387755 ) ) );
+        data.add( Pair.of( Probability.ONE, Probability.of(  0.8163265306122449 ) ) );
+        data.add( Pair.of( Probability.ONE, Probability.of(  0.7755102040816326 ) ) );
+        data.add( Pair.of( Probability.ZERO, Probability.of(  0.3469387755102041 ) ) );
+        data.add( Pair.of( Probability.ZERO, Probability.of(  0.24489795918367346 ) ) );
+        data.add( Pair.of( Probability.ZERO, Probability.of(  0.20408163265306123 ) ) );
+        data.add( Pair.of( Probability.ZERO, Probability.of(  0.10204081632653061 ) ) );
+        data.add( Pair.of( Probability.ZERO, Probability.of(  0.08163265306122448 ) ) );
+        data.add( Pair.of( Probability.ZERO, Probability.of(  0.12244897959183673 ) ) );
+        data.add( Pair.of( Probability.ZERO, Probability.of(  0.0 ) ) );
+        data.add( Pair.of( Probability.ZERO, Probability.of(  0.0 ) ) );
+        data.add( Pair.of( Probability.ZERO, Probability.of(  0.0 ) ) );
+        data.add( Pair.of( Probability.ZERO, Probability.of(  0.0 ) ) );
 
         DatasetIdentifier identifier =
                 DatasetIdentifier.of( Location.of( "FAKE" ), "MAP", "FK" );
 
-        DiscreteProbabilityPairs input =
-                DiscreteProbabilityPairs.of( data,
-                                             SampleMetadata.of( MeasurementUnit.of(),
+        SampleData<Pair<Probability, Probability>> input =
+                SampleDataBasic.of( data, SampleMetadata.of( MeasurementUnit.of(),
                                                                 identifier ) );
 
         //Metadata for the output
@@ -197,8 +198,8 @@ public final class ReliabilityDiagramTest
     public void testApplyWithNoData()
     {
         // Generate empty data
-        DiscreteProbabilityPairs input =
-                DiscreteProbabilityPairs.of( Arrays.asList(), SampleMetadata.of() );
+        SampleData<Pair<Probability, Probability>>  input =
+                SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
         DiagramStatistic actual = rel.apply( input );
 

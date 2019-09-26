@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.sampledata.pairs.SingleValuedPair;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
@@ -64,7 +64,7 @@ public class TimeToPeakError extends TimingError
     }
 
     @Override
-    public PairedStatistic<Instant, Duration> apply( TimeSeriesOfSingleValuedPairs s )
+    public PairedStatistic<Instant, Duration> apply( TimeSeriesOfPairs<Double,Double> s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -73,34 +73,40 @@ public class TimeToPeakError extends TimingError
 
         // Iterate through the time-series by basis time, and find the peaks in left and right
         List<Pair<Instant, Duration>> returnMe = new ArrayList<>();
-        for ( TimeSeries<SingleValuedPair> next : s.get() )
+        int sampleSize = 0;
+        for ( TimeSeries<Pair<Double,Double>> next : s.get() )
         {
-            Pair<Instant, Instant> peak = TimingErrorHelper.getTimeToPeak( next, this.getRNG() );
-
-            // Duration.between is negative if the predicted/right or "end" is before the observed/left or "start"
-            Duration error = Duration.between( peak.getLeft(), peak.getRight() );
-
-            // Add the time-to-peak error against the first available reference time
-            Map<ReferenceTimeType, Instant> referenceTimes = next.getReferenceTimes();
-            Map.Entry<ReferenceTimeType,Instant> firstEntry = referenceTimes.entrySet().iterator().next();
-            Instant referenceTime = firstEntry.getValue();
-            ReferenceTimeType referenceTimeType = firstEntry.getKey();
-            
-            if ( LOGGER.isTraceEnabled() )
+            // Some events?
+            if ( !next.getEvents().isEmpty() )
             {
-                LOGGER.trace( "Using reference time {} with type {} for instance of {} with input hash {}.",
-                              referenceTime,
-                              referenceTimeType,
-                              TimeToPeakError.class,
-                              s.hashCode() );
+                Pair<Instant, Instant> peak = TimingErrorHelper.getTimeToPeak( next, this.getRNG() );
+
+                // Duration.between is negative if the predicted/right or "end" is before the observed/left or "start"
+                Duration error = Duration.between( peak.getLeft(), peak.getRight() );
+
+                // Add the time-to-peak error against the first available reference time
+                Map<ReferenceTimeType, Instant> referenceTimes = next.getReferenceTimes();
+                Map.Entry<ReferenceTimeType, Instant> firstEntry = referenceTimes.entrySet().iterator().next();
+                Instant referenceTime = firstEntry.getValue();
+                ReferenceTimeType referenceTimeType = firstEntry.getKey();
+
+                if ( LOGGER.isTraceEnabled() )
+                {
+                    LOGGER.trace( "Using reference time {} with type {} for instance of {} with input hash {}.",
+                                  referenceTime,
+                                  referenceTimeType,
+                                  TimeToPeakError.class,
+                                  s.hashCode() );
+                }
+
+                returnMe.add( Pair.of( referenceTime, error ) );
+                sampleSize++;
             }
-            
-            returnMe.add( Pair.of( referenceTime, error ) );
         }
 
         // Create output metadata
         StatisticMetadata meta = StatisticMetadata.of( s.getMetadata(),
-                                                       s.get().size(),
+                                                       sampleSize,
                                                        MeasurementUnit.of( "DURATION" ),
                                                        this.getID(),
                                                        MetricConstants.MAIN );

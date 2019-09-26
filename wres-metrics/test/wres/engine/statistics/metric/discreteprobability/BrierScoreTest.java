@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -12,12 +13,14 @@ import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.Probability;
 import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.MetricTestDataFactory;
@@ -46,14 +49,14 @@ public final class BrierScoreTest
     }
 
     /**
-     * Compares the output from {@link BrierScore#apply(DiscreteProbabilityPairs)} against expected output.
+     * Compares the output from {@link BrierScore#apply(SampleData)} against expected output.
      */
 
     @Test
     public void testApply()
     {
         // Generate some data
-        DiscreteProbabilityPairs input = MetricTestDataFactory.getDiscreteProbabilityPairsOne();
+        SampleData<Pair<Probability,Probability>> input = MetricTestDataFactory.getDiscreteProbabilityPairsOne();
 
         // Metadata for the output
         StatisticMetadata m1 =
@@ -77,15 +80,15 @@ public final class BrierScoreTest
     }
 
     /**
-     * Validates the output from {@link BrierScore#apply(DiscreteProbabilityPairs)} when supplied with no data.
+     * Validates the output from {@link BrierScore#apply(SampleData)} when supplied with no data.
      */
 
     @Test
     public void testApplyWithNoData()
     {
         // Generate empty data
-        DiscreteProbabilityPairs input =
-                DiscreteProbabilityPairs.of( Arrays.asList(), SampleMetadata.of() );
+        SampleData<Pair<Probability,Probability>> input =
+                SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
         DoubleScoreStatistic actual = brierScore.apply( input );
 

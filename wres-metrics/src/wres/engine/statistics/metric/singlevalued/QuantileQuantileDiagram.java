@@ -6,12 +6,14 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.DoubleUnaryOperator;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Diagram;
@@ -24,7 +26,7 @@ import wres.engine.statistics.metric.Diagram;
  * @author james.brown@hydrosolved.com
  */
 
-public class QuantileQuantileDiagram extends Diagram<SingleValuedPairs, DiagramStatistic>
+public class QuantileQuantileDiagram extends Diagram<SampleData<Pair<Double, Double>>, DiagramStatistic>
 {
 
     /**
@@ -51,7 +53,7 @@ public class QuantileQuantileDiagram extends Diagram<SingleValuedPairs, DiagramS
     }
 
     @Override
-    public DiagramStatistic apply( SingleValuedPairs s )
+    public DiagramStatistic apply( SampleData<Pair<Double, Double>> s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -84,11 +86,11 @@ public class QuantileQuantileDiagram extends Diagram<SingleValuedPairs, DiagramS
         output.put( MetricDimension.PREDICTED_QUANTILES, VectorOfDoubles.of( predictedQ ) );
         final StatisticMetadata metOut =
                 StatisticMetadata.of( s.getMetadata(),
-                                    this.getID(),
-                                    MetricConstants.MAIN,
-                                    this.hasRealUnits(),
-                                    s.getRawData().size(),
-                                    null );
+                                      this.getID(),
+                                      MetricConstants.MAIN,
+                                      this.hasRealUnits(),
+                                      s.getRawData().size(),
+                                      null );
         return DiagramStatistic.of( output, metOut );
     }
 

@@ -7,9 +7,11 @@ import java.util.concurrent.ExecutorService;
 import wres.config.MetricConfigException;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.datamodel.sampledata.pairs.EnsemblePairs;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs;
 import wres.datamodel.statistics.StatisticException;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.ThresholdsByMetric;
@@ -29,13 +31,13 @@ public class MetricProcessorForProject
      * Processor for {@link EnsemblePairs}.
      */
 
-    private final MetricProcessorByTime<EnsemblePairs> ensembleProcessor;
+    private final MetricProcessorByTime<TimeSeriesOfPairs<Double, Ensemble>> ensembleProcessor;
 
     /**
      * Processor for {@link SingleValuedPairs}.
      */
 
-    private final MetricProcessorByTime<SingleValuedPairs> singleValuedProcessor;
+    private final MetricProcessorByTime<TimeSeriesOfPairs<Double, Double>> singleValuedProcessor;
 
     /**
      * Build the processor collection.
@@ -87,7 +89,7 @@ public class MetricProcessorForProject
      *            {@link SingleValuedPairs}
      */
 
-    public MetricProcessorByTime<SingleValuedPairs> getMetricProcessorForSingleValuedPairs()
+    public MetricProcessorByTime<TimeSeriesOfPairs<Double, Double>> getMetricProcessorForSingleValuedPairs()
     {
         if ( Objects.isNull( singleValuedProcessor ) )
         {
@@ -105,7 +107,7 @@ public class MetricProcessorForProject
      *            {@link EnsemblePairs}
      */
 
-    public MetricProcessorByTime<EnsemblePairs> getMetricProcessorForEnsemblePairs()
+    public MetricProcessorByTime<TimeSeriesOfPairs<Double, Ensemble>> getMetricProcessorForEnsemblePairs()
     {
         if ( Objects.isNull( ensembleProcessor ) )
         {

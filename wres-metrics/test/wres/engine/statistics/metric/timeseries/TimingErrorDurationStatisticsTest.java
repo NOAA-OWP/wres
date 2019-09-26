@@ -20,7 +20,7 @@ import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs;
 import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.time.TimeWindow;
@@ -50,17 +50,11 @@ public final class TimingErrorDurationStatisticsTest
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
-    /**
-     * Tests the {@link TimingErrorDurationStatistics#apply(TimeSeriesOfSingleValuedPairs)} and compares the actual result 
-     * to the expected result when adding one summary statistic to each instance. 
-     * @throws MetricParameterException if the metric could not be constructed 
-     */
-
     @Test
     public void testApplyOneStatisticPerInstance() throws MetricParameterException
     {
         // Generate some data
-        TimeSeriesOfSingleValuedPairs input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
+        TimeSeriesOfPairs<Double,Double> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
 
         // Metadata for the output
         TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
@@ -115,17 +109,11 @@ public final class TimingErrorDurationStatisticsTest
         assertEquals( Duration.ofHours( 9 ), meanAbs.getComponent( MetricConstants.MEAN_ABSOLUTE ).getData() );
     }
 
-    /**
-     * Tests the {@link TimingErrorDurationStatistics#apply(TimeSeriesOfSingleValuedPairs)} and compares the actual result 
-     * to the expected result when adding multiple summary statistics to one instance. 
-     * @throws MetricParameterException if the metric could not be constructed 
-     */
-
     @Test
     public void testApplyMultipleStatisticInOneInstance() throws MetricParameterException
     {
         // Generate some data
-        TimeSeriesOfSingleValuedPairs input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
+        TimeSeriesOfPairs<Double,Double> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
 
         // Metadata for the output
         TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
@@ -174,17 +162,11 @@ public final class TimingErrorDurationStatisticsTest
         assertEquals(expected, actual );
     }
 
-    /**
-     * Tests the {@link TimingErrorDurationStatistics#apply(TimeSeriesOfSingleValuedPairs)} and compares the actual
-     * result to the expected result when the input contains no data.
-     * @throws MetricParameterException if the metric could not be constructed
-     */
-
     @Test
     public void testApplyWithNoData() throws MetricParameterException
     {
         // Generate some data
-        TimeSeriesOfSingleValuedPairs input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsFour();
+        TimeSeriesOfPairs<Double,Double> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsFour();
 
         // Metadata for the output
         TimeWindow window = TimeWindow.of( Instant.MIN,
@@ -222,11 +204,6 @@ public final class TimingErrorDurationStatisticsTest
         assertEquals( expected, actual );
     }
 
-    /**
-     * Constructs a {@link TimingErrorDurationStatistics} and checks for a missing statistic.
-     * @throws MetricParameterException if the metric could not be constructed
-     */
-
     @Test
     public void testExceptionOnNullStatistics() throws MetricParameterException
     {
@@ -238,11 +215,6 @@ public final class TimingErrorDurationStatisticsTest
         TimingErrorDurationStatistics.of( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC, null );
     }
 
-    /**
-     * Constructs a {@link TimingErrorDurationStatistics} and checks for an empty statistic.
-     * @throws MetricParameterException if the metric could not be constructed
-     */
-
     @Test
     public void testExceptionOnEmptyStatistics() throws MetricParameterException
     {
@@ -252,11 +224,6 @@ public final class TimingErrorDurationStatisticsTest
 
         TimingErrorDurationStatistics.of( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC, Collections.emptySet() );
     }
-
-    /**
-     * Constructs a {@link TimingErrorDurationStatistics} and checks for a null statistic.
-     * @throws MetricParameterException if the metric could not be constructed
-     */
 
     @Test
     public void testExceptionOnNullStatistic() throws MetricParameterException
@@ -268,11 +235,6 @@ public final class TimingErrorDurationStatisticsTest
         TimingErrorDurationStatistics.of( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC, Collections.singleton( null ) );
     }
 
-    /**
-     * Constructs a {@link TimingErrorDurationStatistics} and checks for an unrecognized statistic.
-     * @throws MetricParameterException if the metric could not be constructed
-     */
-
     @Test
     public void testExceptionOnUnrecognizedStatistic() throws MetricParameterException
     {
@@ -283,11 +245,6 @@ public final class TimingErrorDurationStatisticsTest
                                           Collections.singleton( MetricConstants.NONE ) );
     }
 
-    /**
-     * Constructs a {@link TimingErrorDurationStatistics} and checks for an unrecognized identifier.
-     * @throws MetricParameterException if the metric could not be constructed
-     */
-
     @Test
     public void testExceptionOnNullIdentifier() throws MetricParameterException
     {
@@ -297,12 +254,6 @@ public final class TimingErrorDurationStatisticsTest
         TimingErrorDurationStatistics.of( null,
                                           Collections.singleton( MetricConstants.MEAN ) );
     }
-
-    /**
-     * Constructs a {@link TimingErrorDurationStatistics} and checks for null input when calling 
-     * {@link TimingErrorDurationStatistics#apply(wres.datamodel.statistics.PairedOutput)}.
-     * @throws MetricParameterException if the metric could not be constructed
-     */
 
     @Test
     public void testApplyThrowsExceptionOnNullInput() throws MetricParameterException

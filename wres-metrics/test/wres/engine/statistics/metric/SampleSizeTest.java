@@ -1,17 +1,18 @@
 package wres.engine.statistics.metric;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
-import org.junit.Rule;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 
@@ -22,9 +23,6 @@ import wres.datamodel.statistics.StatisticMetadata;
  */
 public final class SampleSizeTest
 {
-
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
 
     /**
      * Constructs a {@link SampleSize} and compares the actual result to the expected result. Also, checks the 
@@ -37,7 +35,7 @@ public final class SampleSizeTest
         //Obtain the factories
 
         //Generate some data
-        final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
+        final SampleData<Pair<Double,Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
         final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of(),
@@ -47,7 +45,7 @@ public final class SampleSizeTest
                                                            MetricConstants.MAIN );
         
         //Build the metric
-        SampleSize<SingleValuedPairs> ss = SampleSize.of();
+        SampleSize<SampleData<Pair<Double,Double>>> ss = SampleSize.of();
 
         //Check the results
         DoubleScoreStatistic actual = ss.apply( input );
@@ -75,12 +73,11 @@ public final class SampleSizeTest
     public void testExceptions()
     {
         //Build the metric
-        SampleSize<SingleValuedPairs> ss = SampleSize.of();
+        SampleSize<SampleData<Pair<Double,Double>>> ss = SampleSize.of();
 
-        exception.expect( SampleDataException.class );
-        exception.expectMessage( "Specify non-null input to the 'SAMPLE SIZE'." );
-        ss.apply( null );
-
+        SampleDataException expected = assertThrows( SampleDataException.class, () -> ss.apply( null ) ); 
+        
+        assertEquals( "Specify non-null input to the 'SAMPLE SIZE'.", expected.getMessage() );
     }
 
 

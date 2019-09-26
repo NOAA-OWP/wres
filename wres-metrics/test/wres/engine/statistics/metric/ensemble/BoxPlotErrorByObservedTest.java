@@ -10,22 +10,24 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
-import wres.datamodel.sampledata.pairs.EnsemblePair;
-import wres.datamodel.sampledata.pairs.EnsemblePairs;
 import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.StatisticMetadata;
@@ -61,15 +63,15 @@ public final class BoxPlotErrorByObservedTest
     }
 
     /**
-     * Compares the output from {@link BoxPlotErrorByObserved#apply(EnsemblePairs)} against 
+     * Compares the output from {@link BoxPlotErrorByObserved#apply(SampleData)} against 
      * expected output.
      */
 
     @Test
     public void testApply()
     {
-        List<EnsemblePair> values = new ArrayList<>();
-        values.add( EnsemblePair.of( 50.0, new double[] { 0.0, 25.0, 50.0, 75.0, 100.0 } ) );
+        List<Pair<Double,Ensemble>> values = new ArrayList<>();
+        values.add( Pair.of( 50.0, Ensemble.of( 0.0, 25.0, 50.0, 75.0, 100.0 ) ) );
 
         TimeWindow window = TimeWindow.of( Instant.MIN,
                                            Instant.MAX,
@@ -81,7 +83,7 @@ public final class BoxPlotErrorByObservedTest
                                                          .setTimeWindow( timeWindow1 )
                                                          .build();
 
-        EnsemblePairs input = EnsemblePairs.of( values, meta );
+        SampleData<Pair<Double,Ensemble>> input = SampleDataBasic.of( values, meta );
         final TimeWindow timeWindow = window;
 
         final StatisticMetadata m1 =
@@ -116,15 +118,15 @@ public final class BoxPlotErrorByObservedTest
     }
 
     /**
-     * Validates the output from {@link BoxPlotErrorByObserved#apply(EnsemblePairs)} when supplied with no data.
+     * Validates the output from {@link BoxPlotErrorByObserved#apply(SampleData)} when supplied with no data.
      */
 
     @Test
     public void testApplyWithNoData()
     {
         // Generate empty data
-        EnsemblePairs input =
-                EnsemblePairs.of( Arrays.asList(), SampleMetadata.of() );
+        SampleData<Pair<Double,Ensemble>> input =
+                SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
         BoxPlotStatistics actual = bpe.apply( input );
 
@@ -165,7 +167,7 @@ public final class BoxPlotErrorByObservedTest
 
     /**
      * Tests for an expected exception on calling 
-     * {@link BoxPlotErrorByObserved#apply(EnsemblePairs)} with null input.
+     * {@link BoxPlotErrorByObserved#apply(SampleData)} with null input.
      */
 
     @Test

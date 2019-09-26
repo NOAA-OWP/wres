@@ -2,9 +2,7 @@ package wres.engine.statistics.metric;
 
 import static org.junit.Assert.assertTrue;
 
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 
@@ -15,9 +13,6 @@ import wres.datamodel.sampledata.pairs.SingleValuedPairs;
  */
 public final class OrdinaryScoreTest
 {
-
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
 
     /**
      * Constructs a {@link OrdinaryScore} and compares the actual result to the expected result.

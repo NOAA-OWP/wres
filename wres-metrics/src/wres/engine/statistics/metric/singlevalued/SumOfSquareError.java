@@ -2,11 +2,13 @@ package wres.engine.statistics.metric.singlevalued;
 
 import java.util.Objects;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MissingValues;
 import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Collectable;
@@ -19,8 +21,8 @@ import wres.engine.statistics.metric.MetricParameterException;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class SumOfSquareError extends DecomposableScore<SingleValuedPairs>
-        implements Collectable<SingleValuedPairs, DoubleScoreStatistic, DoubleScoreStatistic>
+public class SumOfSquareError extends DecomposableScore<SampleData<Pair<Double,Double>>>
+        implements Collectable<SampleData<Pair<Double,Double>>, DoubleScoreStatistic, DoubleScoreStatistic>
 {
 
     /**
@@ -35,7 +37,7 @@ public class SumOfSquareError extends DecomposableScore<SingleValuedPairs>
     }
 
     @Override
-    public DoubleScoreStatistic apply( SingleValuedPairs s )
+    public DoubleScoreStatistic apply( SampleData<Pair<Double,Double>> s )
     {
         return this.aggregate( this.getInputForAggregation( s ) );
     }
@@ -59,7 +61,7 @@ public class SumOfSquareError extends DecomposableScore<SingleValuedPairs>
     }
 
     @Override
-    public DoubleScoreStatistic getInputForAggregation( SingleValuedPairs input )
+    public DoubleScoreStatistic getInputForAggregation( SampleData<Pair<Double,Double>> input )
     {
         if ( Objects.isNull( input ) )
         {

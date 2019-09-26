@@ -2,11 +2,13 @@ package wres.engine.statistics.metric.categorical;
 
 import java.util.Objects;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import wres.datamodel.MatrixOfDoubles;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.sampledata.pairs.MulticategoryPairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.MatrixStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
@@ -20,15 +22,15 @@ import wres.engine.statistics.metric.OrdinaryScore;
  * @author james.brown@hydrosolved.com
  */
 
-abstract class ContingencyTableScore<S extends MulticategoryPairs> extends OrdinaryScore<S, DoubleScoreStatistic>
-        implements Collectable<S, MatrixStatistic, DoubleScoreStatistic>
+abstract class ContingencyTableScore extends OrdinaryScore<SampleData<Pair<Boolean,Boolean>>, DoubleScoreStatistic>
+        implements Collectable<SampleData<Pair<Boolean,Boolean>>, MatrixStatistic, DoubleScoreStatistic>
 {
 
     /**
      * A {@link ContingencyTable} to compute.
      */
 
-    private final ContingencyTable<S> table;
+    private final ContingencyTable table;
 
     /**
      * Null string warning, used in several places.
@@ -43,7 +45,7 @@ abstract class ContingencyTableScore<S extends MulticategoryPairs> extends Ordin
     }
 
     @Override
-    public MatrixStatistic getInputForAggregation( final S s )
+    public MatrixStatistic getInputForAggregation( final SampleData<Pair<Boolean,Boolean>> s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -159,7 +161,7 @@ abstract class ContingencyTableScore<S extends MulticategoryPairs> extends Ordin
     ContingencyTableScore()
     {
         super();
-        table = new ContingencyTable<>();
+        table = new ContingencyTable();
     }
 
 }

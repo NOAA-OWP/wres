@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -16,9 +17,9 @@ import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.pairs.DichotomousPairs;
 import wres.datamodel.statistics.MatrixStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.MetricTestDataFactory;
@@ -122,7 +123,7 @@ public final class ContingencyTableScoreTest
     @Test
     public void testGetCollectionInput()
     {
-        final DichotomousPairs input = MetricTestDataFactory.getDichotomousPairsOne();
+        final SampleData<Pair<Boolean,Boolean>> input = MetricTestDataFactory.getDichotomousPairsOne();
 
         //Metadata for the output
         final StatisticMetadata m1 =
@@ -175,7 +176,7 @@ public final class ContingencyTableScoreTest
     @Test
     public void testGetMetadataReturnsExpectedOutput()
     {
-        final DichotomousPairs input = MetricTestDataFactory.getDichotomousPairsOne();
+        final SampleData<Pair<Boolean,Boolean>> input = MetricTestDataFactory.getDichotomousPairsOne();
 
         final StatisticMetadata expected =
                 StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
@@ -200,7 +201,7 @@ public final class ContingencyTableScoreTest
         exception.expect( SampleDataException.class );
         exception.expectMessage( SPECIFY_NON_NULL_INPUT_TO_THE_THREAT_SCORE );
 
-        cs.apply( (DichotomousPairs) null );
+        cs.apply( (SampleData<Pair<Boolean,Boolean>>) null );
     }
 
     /**

@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -15,10 +16,10 @@ import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.pairs.DichotomousPairs;
-import wres.datamodel.sampledata.pairs.MulticategoryPairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.MatrixStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
@@ -43,7 +44,7 @@ public final class PeirceSkillScoreTest
      * Score used for testing. 
      */
 
-    private PeirceSkillScore<DichotomousPairs> pss;
+    private PeirceSkillScore pss;
 
     /**
      * Metadata used for testing.
@@ -66,15 +67,14 @@ public final class PeirceSkillScoreTest
     }
 
     /**
-     * Compares the actual output from {@link PeirceSkillScore#apply(MulticategoryPairs)} with {@link DichotomousPairs}
-     * to the expected output.
+     * Compares the actual output from {@link PeirceSkillScore#apply(SampleData)} to the expected output.
      */
 
     @Test
     public void testApplyWithDichotomousInput()
     {
         //Generate some data
-        final DichotomousPairs input = MetricTestDataFactory.getDichotomousPairsOne();
+        final SampleData<Pair<Boolean,Boolean>> input = MetricTestDataFactory.getDichotomousPairsOne();
 
         //Check the results
         final DoubleScoreStatistic actual = pss.apply( input );
@@ -87,39 +87,15 @@ public final class PeirceSkillScoreTest
     }
 
     /**
-     * Compares the actual output from {@link PeirceSkillScore#apply(MulticategoryPairs)} with 
-     * {@link MulticategoryPairs} to the expected output.
-     */
-
-    @Test
-    public void testApplyWithMulticategoryInput()
-    {
-        //Generate some data
-        final MulticategoryPairs input = MetricTestDataFactory.getMulticategoryPairsOne();
-
-        PeirceSkillScore<MulticategoryPairs> ps = PeirceSkillScore.of();
-
-        //Check the results
-        final DoubleScoreStatistic actual = ps.apply( input );
-        final DoubleScoreStatistic expected =
-                DoubleScoreStatistic.of( 0.05057466520850963, StatisticMetadata.of( meta, input.getRawData().size() ) );
-        assertTrue( "Actual: " + actual.getData().doubleValue()
-                    + ". Expected: "
-                    + expected.getData().doubleValue()
-                    + ".",
-                    actual.equals( expected ) );
-    }
-
-    /**
-     * Validates the output from {@link Metric#apply(DichotomousPairs)} when supplied with no data.
+     * Validates the output from {@link Metric#apply(SampleData)} when supplied with no data.
      */
 
     @Test
     public void testApplyWithNoData()
     {
         // Generate empty data
-        DichotomousPairs input =
-                DichotomousPairs.ofDichotomousPairs( Arrays.asList(), SampleMetadata.of() );
+        SampleData<Pair<Boolean,Boolean>> input =
+                SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
         DoubleScoreStatistic actual = pss.apply( input );
 

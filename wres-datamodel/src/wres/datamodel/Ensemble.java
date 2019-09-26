@@ -134,11 +134,14 @@ public class Ensemble implements Comparable<Ensemble>
             return returnMe;
         }
 
-        if( this.getLabels().isPresent() )
+        Optional<String[]> labs = this.getLabels();
+        Optional<String[]> otherLabs = other.getLabels();
+        
+        if( labs.isPresent() && otherLabs.isPresent() )
         {
-            Comparator<String[]> compare = Comparator.nullsFirst( ( a, b ) -> Arrays.compare( a, b ) );
+            Comparator<String[]> compare = Comparator.nullsFirst( Arrays::compare );
 
-            return Objects.compare( this.getLabels().get(), other.getLabels().get(), compare );
+            return Objects.compare( labs.get(), otherLabs.get(), compare );
         }
         
         return 0;
@@ -161,10 +164,18 @@ public class Ensemble implements Comparable<Ensemble>
         }
 
         // Labels
-        if ( this.getLabels().isPresent() )
+        Optional<String[]> labs = this.getLabels();
+        Optional<String[]> otherLabs = otherVec.getLabels();
+        
+        if ( labs.isPresent() != otherLabs.isPresent() )
+        {
+            return false;
+        }
+        
+        if ( labs.isPresent() && otherLabs.isPresent() )
         {
             return Arrays.equals( this.getMembers(), otherVec.getMembers() )
-                   && Arrays.equals( this.getLabels().get(), otherVec.getLabels().get() );
+                   && Arrays.equals( labs.get(), otherLabs.get() );
         }
 
         // No labels
@@ -175,9 +186,10 @@ public class Ensemble implements Comparable<Ensemble>
     public int hashCode()
     {
         // Labels?
-        if ( this.getLabels().isPresent() )
+        Optional<String[]> labs = this.getLabels();
+        if ( labs.isPresent() )
         {
-            return Objects.hash( Arrays.hashCode( this.getMembers() ), Arrays.hashCode( this.getLabels().get() ) );
+            return Objects.hash( Arrays.hashCode( this.getMembers() ), Arrays.hashCode( labs.get() ) );
         }
 
         return Arrays.hashCode( this.getMembers() );

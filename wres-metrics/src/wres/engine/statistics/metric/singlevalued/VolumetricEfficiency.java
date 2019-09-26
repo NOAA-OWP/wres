@@ -2,10 +2,11 @@ package wres.engine.statistics.metric.singlevalued;
 
 import java.util.Objects;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import wres.datamodel.MetricConstants;
+import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.sampledata.pairs.SingleValuedPair;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 
@@ -19,7 +20,7 @@ import wres.datamodel.statistics.StatisticMetadata;
  *
  * @author james.brown@hydrosolved.com
  */
-public class VolumetricEfficiency extends DoubleErrorScore<SingleValuedPairs>
+public class VolumetricEfficiency extends DoubleErrorScore<SampleData<Pair<Double, Double>>>
 {
 
     /**
@@ -34,7 +35,7 @@ public class VolumetricEfficiency extends DoubleErrorScore<SingleValuedPairs>
     }
 
     @Override
-    public DoubleScoreStatistic apply( final SingleValuedPairs s )
+    public DoubleScoreStatistic apply( final SampleData<Pair<Double, Double>> s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -42,7 +43,7 @@ public class VolumetricEfficiency extends DoubleErrorScore<SingleValuedPairs>
         }
         Double vO = 0.0;
         double vP = 0.0;
-        for ( SingleValuedPair nextPair : s.getRawData() )
+        for ( Pair<Double, Double> nextPair : s.getRawData() )
         {
             vO += Math.abs( nextPair.getLeft() );
             vP += Math.abs( nextPair.getLeft() - nextPair.getRight() );
@@ -51,11 +52,11 @@ public class VolumetricEfficiency extends DoubleErrorScore<SingleValuedPairs>
         //Metadata
         final StatisticMetadata metOut =
                 StatisticMetadata.of( s.getMetadata(),
-                                    this.getID(),
-                                    MetricConstants.MAIN,
-                                    this.hasRealUnits(),
-                                    s.getRawData().size(),
-                                    null );
+                                      this.getID(),
+                                      MetricConstants.MAIN,
+                                      this.hasRealUnits(),
+                                      s.getRawData().size(),
+                                      null );
         //Compute the atomic errors in a stream
         if ( vO.equals( 0.0 ) )
         {

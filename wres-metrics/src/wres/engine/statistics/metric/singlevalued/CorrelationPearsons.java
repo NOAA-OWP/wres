@@ -2,14 +2,15 @@ package wres.engine.statistics.metric.singlevalued;
 
 import java.util.Objects;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.Slicer;
+import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Collectable;
@@ -24,8 +25,8 @@ import wres.engine.statistics.metric.OrdinaryScore;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class CorrelationPearsons extends OrdinaryScore<SingleValuedPairs, DoubleScoreStatistic>
-        implements Collectable<SingleValuedPairs, DoubleScoreStatistic, DoubleScoreStatistic>
+public class CorrelationPearsons extends OrdinaryScore<SampleData<Pair<Double, Double>>, DoubleScoreStatistic>
+        implements Collectable<SampleData<Pair<Double, Double>>, DoubleScoreStatistic, DoubleScoreStatistic>
 {
 
     /**
@@ -46,21 +47,21 @@ public class CorrelationPearsons extends OrdinaryScore<SingleValuedPairs, Double
     }
 
     @Override
-    public DoubleScoreStatistic apply( SingleValuedPairs s )
+    public DoubleScoreStatistic apply( SampleData<Pair<Double, Double>> s )
     {
         if ( Objects.isNull( s ) )
         {
             throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
-        
+
         // Get the metadata
         SampleMetadata metIn = s.getMetadata();
         StatisticMetadata meta = StatisticMetadata.of( metIn,
-                                                             MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
-                                                             MetricConstants.MAIN,
-                                                             this.hasRealUnits(),
-                                                             s.getRawData().size(),
-                                                             null );
+                                                       MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
+                                                       MetricConstants.MAIN,
+                                                       this.hasRealUnits(),
+                                                       s.getRawData().size(),
+                                                       null );
 
         double returnMe = Double.NaN;
 
@@ -115,7 +116,7 @@ public class CorrelationPearsons extends OrdinaryScore<SingleValuedPairs, Double
     }
 
     @Override
-    public DoubleScoreStatistic getInputForAggregation( SingleValuedPairs input )
+    public DoubleScoreStatistic getInputForAggregation( SampleData<Pair<Double, Double>> input )
     {
         return apply( input );
     }

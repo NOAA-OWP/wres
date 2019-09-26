@@ -8,6 +8,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -18,6 +19,8 @@ import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
@@ -50,15 +53,10 @@ public final class IndexOfAgreementTest
         this.ioa = IndexOfAgreement.of();
     }
 
-    /**
-     * Compares the output from {@link IndexOfAgreement#apply(SingleValuedPairs)} against expected output.
-     * @throws IOException if the input data could not be read
-     */
-
     @Test
     public void testApply() throws IOException
     {
-        SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsFive();
+        SampleData<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsFive();
 
         //Metadata for the output
         final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
@@ -88,26 +86,17 @@ public final class IndexOfAgreementTest
                     actual.equals( expected ) );
     }
 
-    /**
-     * Validates the output from {@link IndexOfAgreement#apply(SingleValuedPairs)} when supplied with no data.
-     */
-
     @Test
     public void testApplyWithNoData()
     {
         // Generate empty data
-        SingleValuedPairs input =
-                SingleValuedPairs.of( Arrays.asList(), SampleMetadata.of() );
+        SampleDataBasic<Pair<Double, Double>> input =
+                SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
         DoubleScoreStatistic actual = ioa.apply( input );
 
         assertTrue( actual.getData().isNaN() );
     }
-
-    /**
-     * Checks that the {@link IndexOfAgreement#getName()} returns
-     * {@link MetricConstants#INDEX_OF_AGREEMENT.toString()}
-     */
 
     @Test
     public void testGetName()
@@ -115,39 +104,23 @@ public final class IndexOfAgreementTest
         assertTrue( ioa.getName().equals( MetricConstants.INDEX_OF_AGREEMENT.toString() ) );
     }
 
-    /**
-     * Checks that the {@link IndexOfAgreement#isDecomposable()} returns <code>false</code>.
-     */
-
     @Test
     public void testIsDecomposable()
     {
         assertFalse( ioa.isDecomposable() );
     }
 
-    /**
-     * Checks that the {@link IndexOfAgreement#isSkillScore()} returns <code>false</code>.
-     */
-
     @Test
     public void testIsSkillScore()
     {
         assertFalse( ioa.isSkillScore() );
     }
-
-    /**
-     * Checks that the {@link IndexOfAgreement#hasRealUnits()} returns <code>false</code>.
-     */
-
+    
     @Test
     public void testhasRealUnits()
     {
         assertFalse( ioa.hasRealUnits() );
     }
-
-    /**
-     * Checks that the {@link IndexOfAgreement#getScoreOutputGroup()} returns the result provided on construction.
-     */
 
     @Test
     public void testGetScoreOutputGroup()

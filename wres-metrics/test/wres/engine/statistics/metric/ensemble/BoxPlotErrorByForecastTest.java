@@ -9,22 +9,24 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
-import wres.datamodel.sampledata.pairs.EnsemblePair;
-import wres.datamodel.sampledata.pairs.EnsemblePairs;
 import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.StatisticMetadata;
@@ -68,8 +70,8 @@ public final class BoxPlotErrorByForecastTest
     @Test
     public void testApplyWithEnsembleMean()
     {
-        List<EnsemblePair> values = new ArrayList<>();
-        values.add( EnsemblePair.of( 0.0, new double[] { 0.0, 20.0, 30.0, 50.0, 100.0 } ) );
+        List<Pair<Double,Ensemble>> values = new ArrayList<>();
+        values.add( Pair.of( 0.0, Ensemble.of( 0.0, 20.0, 30.0, 50.0, 100.0 ) ) );
 
         TimeWindow window = TimeWindow.of( Instant.MIN,
                                            Instant.MAX,
@@ -80,7 +82,7 @@ public final class BoxPlotErrorByForecastTest
                                                                                                      "MAP" ) )
                                                                .setTimeWindow( timeWindow1 )
                                                                .build();
-        EnsemblePairs input = EnsemblePairs.of( values, meta );
+        SampleData<Pair<Double,Ensemble>> input = SampleDataBasic.of( values, meta );
         final TimeWindow timeWindow = window;
 
         final StatisticMetadata m1 =
@@ -122,8 +124,8 @@ public final class BoxPlotErrorByForecastTest
     @Test
     public void testApplyWithEnsembleMedian() throws MetricParameterException
     {
-        List<EnsemblePair> values = new ArrayList<>();
-        values.add( EnsemblePair.of( 0.0, new double[] { 0.0, 20.0, 30.0, 50.0, 100.0 } ) );
+        List<Pair<Double,Ensemble>> values = new ArrayList<>();
+        values.add( Pair.of( 0.0, Ensemble.of( 0.0, 20.0, 30.0, 50.0, 100.0 ) ) );
 
         TimeWindow window = TimeWindow.of( Instant.MIN,
                                            Instant.MAX,
@@ -134,7 +136,7 @@ public final class BoxPlotErrorByForecastTest
                                                                                                      "MAP" ) )
                                                                .setTimeWindow( timeWindow1 )
                                                                .build();
-        EnsemblePairs input = EnsemblePairs.of( values, meta );
+        SampleData<Pair<Double,Ensemble>> input = SampleDataBasic.of( values, meta );
         final TimeWindow timeWindow = window;
 
         final StatisticMetadata m1 =
@@ -179,8 +181,8 @@ public final class BoxPlotErrorByForecastTest
     public void testApplyWithNoData()
     {
         // Generate empty data
-        EnsemblePairs input =
-                EnsemblePairs.of( Arrays.asList(), SampleMetadata.of() );
+        SampleData<Pair<Double,Ensemble>> input =
+                SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
         BoxPlotStatistics actual = bpe.apply( input );
 

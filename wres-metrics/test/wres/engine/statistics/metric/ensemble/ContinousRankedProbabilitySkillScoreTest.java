@@ -8,18 +8,20 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.pairs.EnsemblePair;
-import wres.datamodel.sampledata.pairs.EnsemblePairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -49,7 +51,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
     }
 
     /**
-     * Compares the output from {@link ContinuousRankedProbabilitySkillScore#apply(EnsemblePairs)} against expected 
+     * Compares the output from {@link ContinuousRankedProbabilitySkillScore#apply(SampleData)} against expected 
      * output for a dataset with a supplied baseline.
      */
 
@@ -57,24 +59,26 @@ public final class ContinousRankedProbabilitySkillScoreTest
     public void testApply()
     {
         //Generate some data
-        List<EnsemblePair> pairs = new ArrayList<>();
-        pairs.add( EnsemblePair.of( 25.7, new double[] { 23, 43, 45, 23, 54 } ) );
-        pairs.add( EnsemblePair.of( 21.4, new double[] { 19, 16, 57, 23, 9 } ) );
-        pairs.add( EnsemblePair.of( 32.1, new double[] { 23, 54, 23, 12, 32 } ) );
-        pairs.add( EnsemblePair.of( 47, new double[] { 12, 54, 23, 54, 78 } ) );
-        pairs.add( EnsemblePair.of( 12, new double[] { 9, 8, 5, 6, 12 } ) );
-        pairs.add( EnsemblePair.of( 43, new double[] { 23, 12, 12, 34, 10 } ) );
-        List<EnsemblePair> basePairs = new ArrayList<>();
-        basePairs.add( EnsemblePair.of( 25.7, new double[] { 20, 43, 45, 23, 94 } ) );
-        basePairs.add( EnsemblePair.of( 21.4, new double[] { 19, 76, 57, 23, 9 } ) );
-        basePairs.add( EnsemblePair.of( 32.1, new double[] { 23, 53, 23, 12, 32 } ) );
-        basePairs.add( EnsemblePair.of( 47, new double[] { 2, 54, 23, 54, 78 } ) );
-        basePairs.add( EnsemblePair.of( 12.1, new double[] { 9, 18, 5, 6, 12 } ) );
-        basePairs.add( EnsemblePair.of( 43, new double[] { 23, 12, 12, 39, 10 } ) );
-        EnsemblePairs input = EnsemblePairs.of( pairs,
-                                                basePairs,
-                                                SampleMetadata.of(),
-                                                SampleMetadata.of() );
+        List<Pair<Double, Ensemble>> pairs = new ArrayList<>();
+        pairs.add( Pair.of( 25.7, Ensemble.of( 23, 43, 45, 23, 54 ) ) );
+        pairs.add( Pair.of( 21.4, Ensemble.of( 19, 16, 57, 23, 9 ) ) );
+        pairs.add( Pair.of( 32.1, Ensemble.of( 23, 54, 23, 12, 32 ) ) );
+        pairs.add( Pair.of( 47.0, Ensemble.of( 12, 54, 23, 54, 78 ) ) );
+        pairs.add( Pair.of( 12.0, Ensemble.of( 9, 8, 5, 6, 12 ) ) );
+        pairs.add( Pair.of( 43.0, Ensemble.of( 23, 12, 12, 34, 10 ) ) );
+        List<Pair<Double, Ensemble>> basePairs = new ArrayList<>();
+        basePairs.add( Pair.of( 25.7, Ensemble.of( 20, 43, 45, 23, 94 ) ) );
+        basePairs.add( Pair.of( 21.4, Ensemble.of( 19, 76, 57, 23, 9 ) ) );
+        basePairs.add( Pair.of( 32.1, Ensemble.of( 23, 53, 23, 12, 32 ) ) );
+        basePairs.add( Pair.of( 47.0, Ensemble.of( 2, 54, 23, 54, 78 ) ) );
+        basePairs.add( Pair.of( 12.1, Ensemble.of( 9, 18, 5, 6, 12 ) ) );
+        basePairs.add( Pair.of( 43.0, Ensemble.of( 23, 12, 12, 39, 10 ) ) );
+
+        SampleData<Pair<Double, Ensemble>> input = SampleDataBasic.of( pairs,
+                                                                       SampleMetadata.of(),
+                                                                       basePairs,
+                                                                       SampleMetadata.of(),
+                                                                       null );
 
         //Metadata for the output
         final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
@@ -94,7 +98,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
     }
 
     /**
-     * Validates the output from {@link ContinuousRankedProbabilitySkillScore#apply(EnsemblePairs)} when supplied 
+     * Validates the output from {@link ContinuousRankedProbabilitySkillScore#apply(SampleData)} when supplied 
      * with no data.
      */
 
@@ -102,11 +106,12 @@ public final class ContinousRankedProbabilitySkillScoreTest
     public void testApplyWithNoData()
     {
         // Generate empty data
-        EnsemblePairs input =
-                EnsemblePairs.of( Arrays.asList(),
-                                  Arrays.asList(),
-                                  SampleMetadata.of(),
-                                  SampleMetadata.of() );
+        SampleData<Pair<Double, Ensemble>> input =
+                SampleDataBasic.of( Arrays.asList(),
+                                    SampleMetadata.of(),
+                                    Arrays.asList(),
+                                    SampleMetadata.of(),
+                                    null );
 
         DoubleScoreStatistic actual = crpss.apply( input );
 
@@ -183,7 +188,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
     @Test
     public void testMetadataContainsBaselineIdentifier() throws IOException
     {
-        EnsemblePairs pairs = MetricTestDataFactory.getEnsemblePairsOne();
+        SampleData<Pair<Double, Ensemble>> pairs = MetricTestDataFactory.getEnsemblePairsOne();
 
         assertTrue( crpss.apply( pairs )
                          .getMetadata()
@@ -194,7 +199,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
     }
 
     /**
-     * Tests for an expected exception on calling {@link ContinuousRankedProbabilitySkillScore#apply(EnsemblePairs)} 
+     * Tests for an expected exception on calling {@link ContinuousRankedProbabilitySkillScore#apply(SampleData)} 
      * with null input.
      */
 
@@ -231,9 +236,9 @@ public final class ContinousRankedProbabilitySkillScoreTest
     {
         exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify a non-null baseline for the 'CONTINUOUS RANKED PROBABILITY SKILL SCORE'." );
-        List<EnsemblePair> pairs = new ArrayList<>();
-        pairs.add( EnsemblePair.of( 25.7, new double[] { 23, 43, 45, 23, 54 } ) );
-        EnsemblePairs input = EnsemblePairs.of( pairs, SampleMetadata.of() );
+        List<Pair<Double,Ensemble>> pairs = new ArrayList<>();
+        pairs.add( Pair.of( 25.7, Ensemble.of( 23, 43, 45, 23, 54 ) ) );
+        SampleData<Pair<Double, Ensemble>> input = SampleDataBasic.of( pairs, SampleMetadata.of() );
         crpss.apply( input );
     }
 

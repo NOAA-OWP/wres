@@ -9,6 +9,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.DoublePredicate;
 import java.util.function.Function;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -119,35 +120,35 @@ public abstract class MetricProcessor<S extends SampleData<?>, T extends Statist
      * {@link ScoreStatistic}.
      */
 
-    final MetricCollection<SingleValuedPairs, DoubleScoreStatistic, DoubleScoreStatistic> singleValuedScore;
+    final MetricCollection<SampleData<Pair<Double, Double>>, DoubleScoreStatistic, DoubleScoreStatistic> singleValuedScore;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link SingleValuedPairs} and produce
      * {@link DiagramStatistic}.
      */
 
-    final MetricCollection<SingleValuedPairs, DiagramStatistic, DiagramStatistic> singleValuedMultiVector;
+    final MetricCollection<SampleData<Pair<Double, Double>>, DiagramStatistic, DiagramStatistic> singleValuedMultiVector;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link SingleValuedPairs} and produce
      * {@link BoxPlotStatistics}.
      */
 
-    final MetricCollection<SingleValuedPairs, BoxPlotStatistics, BoxPlotStatistics> singleValuedBoxPlot;
+    final MetricCollection<SampleData<Pair<Double, Double>>, BoxPlotStatistics, BoxPlotStatistics> singleValuedBoxPlot;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link DichotomousPairs} and produce
      * {@link ScoreStatistic}.
      */
 
-    final MetricCollection<DichotomousPairs, MatrixStatistic, DoubleScoreStatistic> dichotomousScalar;
+    final MetricCollection<SampleData<Pair<Boolean,Boolean>>, MatrixStatistic, DoubleScoreStatistic> dichotomousScalar;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link DichotomousPairs} and produce
      * {@link MatrixStatistic}.
      */
 
-    final MetricCollection<DichotomousPairs, MatrixStatistic, MatrixStatistic> dichotomousMatrix;
+    final MetricCollection<SampleData<Pair<Boolean,Boolean>>, MatrixStatistic, MatrixStatistic> dichotomousMatrix;
 
     /**
      * The set of metrics associated with the verification project.

@@ -8,6 +8,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -18,10 +19,12 @@ import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.time.TimeWindow;
@@ -50,16 +53,11 @@ public final class MeanSquareErrorSkillScoreTest
         this.msess = MeanSquareErrorSkillScore.of();
     }
 
-    /**
-     * Compares the output from {@link MeanSquareErrorSkillScore#apply(SingleValuedPairs)} against expected output
-     * for pairs with an explicit baseline.
-     */
-
     @Test
     public void testApplyWithBaseline()
     {
         //Generate some data
-        SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsTwo();
+        TimeSeriesOfPairs<Double, Double> input = MetricTestDataFactory.getSingleValuedPairsTwo();
 
         //Metadata for the output
         final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
@@ -78,17 +76,11 @@ public final class MeanSquareErrorSkillScoreTest
         assertEquals( expected, actual );
     }
 
-    /**
-     * Compares the output from {@link MeanSquareErrorSkillScore#apply(SingleValuedPairs)} against expected output
-     * for pairs without an explicit baseline.
-     * @throws IOException if the input data could not be read
-     */
-
     @Test
     public void testApplyWithoutBaseline() throws IOException
     {
         //Generate some data
-        SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsFive();
+        SampleData<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsFive();
 
         //Metadata for the output
         TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
@@ -118,16 +110,11 @@ public final class MeanSquareErrorSkillScoreTest
                     actual.equals( expected ) );
     }
 
-    /**
-     * Compares the output from {@link MeanSquareErrorSkillScore#apply(SingleValuedPairs)} against expected output
-     * for pairs without an explicit baseline.
-     */
-
     @Test
     public void testApplyWithoutBaselineTwo()
     {
         //Generate some data
-        SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
+        TimeSeriesOfPairs<Double, Double> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
         StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
@@ -146,26 +133,17 @@ public final class MeanSquareErrorSkillScoreTest
                     actual.equals( expected ) );
     }
 
-    /**
-     * Validates the output from {@link MeanSquareErrorSkillScore#apply(SingleValuedPairs)} when supplied with no data.
-     */
-
     @Test
     public void testApplyWithNoData()
     {
         // Generate empty data
-        SingleValuedPairs input =
-                SingleValuedPairs.of( Arrays.asList(), SampleMetadata.of() );
+        SampleDataBasic<Pair<Double, Double>> input =
+                SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
         DoubleScoreStatistic actual = msess.apply( input );
 
         assertTrue( actual.getData().isNaN() );
     }
-
-    /**
-     * Checks that the {@link MeanSquareErrorSkillScore#getName()} returns
-     * {@link MetricConstants#MEAN_SQUARE_ERROR_SKILL_SCORE.toString()}
-     */
 
     @Test
     public void testGetName()
@@ -173,40 +151,23 @@ public final class MeanSquareErrorSkillScoreTest
         assertTrue( msess.getName().equals( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE.toString() ) );
     }
 
-    /**
-     * Checks that the {@link MeanSquareErrorSkillScore#isDecomposable()} returns <code>true</code>.
-     */
-
     @Test
     public void testIsDecomposable()
     {
         assertTrue( msess.isDecomposable() );
     }
 
-    /**
-     * Checks that the {@link MeanSquareErrorSkillScore#isSkillScore()} returns <code>true</code>.
-     */
-
     @Test
     public void testIsSkillScore()
     {
         assertTrue( msess.isSkillScore() );
     }
-
-    /**
-     * Checks that the {@link MeanSquareErrorSkillScore#getScoreOutputGroup()} returns the result provided on construction.
-     */
-
+    
     @Test
     public void testGetScoreOutputGroup()
     {
         assertTrue( msess.getScoreOutputGroup() == ScoreGroup.NONE );
     }
-
-    /**
-     * Tests for an expected exception on calling {@link MeanSquareErrorSkillScore#apply(SingleValuedPairs)} with null
-     * input.
-     */
 
     @Test
     public void testApplyExceptionOnNullInput()

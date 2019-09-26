@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.BiPredicate;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -31,14 +32,14 @@ import wres.config.generated.ProjectConfig.Inputs;
 import wres.config.generated.ThresholdOperator;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
+import wres.datamodel.Ensemble;
 import wres.datamodel.MatrixOfDoubles;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
-import wres.datamodel.sampledata.pairs.EnsemblePair;
-import wres.datamodel.sampledata.pairs.EnsemblePairs;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.MatrixStatistic;
@@ -72,10 +73,6 @@ public final class MetricProcessorByTimeEnsemblePairsTest
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
-    /**
-     * Tests the {@link MetricProcessorByTimeEnsemblePairs#getFilterForEnsemblePairs(wres.datamodel.thresholds.Threshold)}.
-     */
-
     @Test
     public void testGetFilterForEnsemblePairs()
     {
@@ -103,7 +100,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                                                    condition,
                                                                                                    ThresholdDataType.RIGHT_MEAN ) ) );
         // Check that average works        
-        EnsemblePair pair = EnsemblePair.of( 1.0, new double[] { 1.5, 2.0 } );
+        Pair<Double, Ensemble> pair = Pair.of( 1.0, Ensemble.of( 1.5, 2.0 ) );
 
         assertTrue( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( Threshold.of( doubles,
                                                                                                 condition,
@@ -111,25 +108,14 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                       .test( pair ) );
     }
 
-    /**
-     * Tests the construction of a {@link MetricProcessorByTimeEnsemblePairs} and application of
-     * {@link MetricProcessorByTimeEnsemblePairs#apply(EnsemblePairs)} to configuration obtained from
-     * testinput/metricProcessorEnsemblePairsByTimeTest/testApplyWithoutThresholds.xml and pairs obtained from
-     * {@link MetricTestDataFactory#getEnsemblePairsOne()}.
-     * 
-     * @throws IOException if the input data could not be read
-     * @throws InterruptedException if the execution was interrupted
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     * @throws StatisticException if the results could not be generated 
-     */
-
     @Test
     public void testApplyWithoutThresholds() throws IOException, MetricParameterException, InterruptedException
     {
         String configPath = "testinput/metricProcessorEnsemblePairsByTimeTest/testApplyWithoutThresholds.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessorByTime<EnsemblePairs> processor = MetricFactory.ofMetricProcessorByTimeEnsemblePairs( config,
-                                                                                                             null );
+        MetricProcessorByTime<TimeSeriesOfPairs<Double, Ensemble>> processor =
+                MetricFactory.ofMetricProcessorByTimeEnsemblePairs( config,
+                                                                    null );
         StatisticsForProject results =
                 processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
         DoubleScoreStatistic bias =
@@ -167,18 +153,6 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         assertTrue( Double.compare( crps.getData(), 9.076475676968208 ) == 0 );
     }
 
-    /**
-     * Tests the construction of a {@link MetricProcessorByTimeEnsemblePairs} and application of
-     * {@link MetricProcessorByTimeEnsemblePairs#apply(EnsemblePairs)} to configuration obtained from
-     * testinput/metricProcessorEnsemblePairsByTimeTest/testApplyWithValueThresholds.xml and pairs obtained from
-     * {@link MetricTestDataFactory#getEnsemblePairsOne()}.
-     * 
-     * @throws IOException if the input data could not be read
-     * @throws InterruptedException if the execution was interrupted
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     * @throws StatisticException if the results could not be generated 
-     */
-
     @Test
     public void testApplyWithValueThresholds()
             throws IOException, MetricParameterException, InterruptedException
@@ -186,7 +160,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         String configPath = TEST_SOURCE;
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<EnsemblePairs, StatisticsForProject> processor =
+        MetricProcessor<TimeSeriesOfPairs<Double, Ensemble>, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeEnsemblePairs( config,
                                                                     StatisticGroup.set() );
         processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
@@ -260,14 +234,6 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         assertTrue( rmse.get( 5 ).getData().equals( 61.12163959516186 ) );
     }
 
-    /**
-     * Tests that the {@link MetricProcessorByTimeEnsemblePairs#apply(EnsemblePairs)} with configuration that contains
-     * value thresholds and categorical measures.
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     * @throws IOException if the pairs could not be read
-     * @throws InterruptedException if the execution was interrupted
-     */
-
     @Test
     public void testApplyWithValueThresholdsAndCategoricalMeasures()
             throws MetricParameterException, IOException, InterruptedException
@@ -296,7 +262,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null,
                                    null );
 
-        MetricProcessorByTime<EnsemblePairs> processor =
+        MetricProcessorByTime<TimeSeriesOfPairs<Double, Ensemble>> processor =
                 MetricFactory.ofMetricProcessorByTimeEnsemblePairs( mockedConfig,
                                                                     Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
 
@@ -318,18 +284,6 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                     -0.0012886597938144284 ) );
     }
 
-    /**
-     * Tests the construction of a {@link MetricProcessorByTimeEnsemblePairs} and application of
-     * {@link MetricProcessorByTimeEnsemblePairs#apply(EnsemblePairs)} to configuration obtained from
-     * testinput/metricProcessorEnsemblePairsByTimeTest/testApplyWithProbabilityThresholds.xml and pairs obtained from
-     * {@link MetricTestDataFactory#getEnsemblePairsOne()}.
-     * 
-     * @throws IOException if the input data could not be read
-     * @throws InterruptedException if the execution was interrupted
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     * @throws StatisticException if the results could not be generated 
-     */
-
     @Test
     public void testApplyWithProbabilityThresholds()
             throws IOException, MetricParameterException, InterruptedException
@@ -337,7 +291,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         String configPath = "testinput/metricProcessorEnsemblePairsByTimeTest/testApplyWithProbabilityThresholds.xml";
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<EnsemblePairs, StatisticsForProject> processor =
+        MetricProcessor<TimeSeriesOfPairs<Double, Ensemble>, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeEnsemblePairs( config,
                                                                     Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
         processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
@@ -400,18 +354,12 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         assertTrue( rmse.get( 5 ).getData().equals( 61.12163959516186 ) );
     }
 
-    /**
-     * Tests that the {@link MetricProcessorByTimeEnsemblePairs#apply(EnsemblePairs)} throws an expected
-     * exception on receiving null input.
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     */
-
     @Test
     public void testApplyThrowsExceptionOnNullInput() throws MetricParameterException
     {
         exception.expect( NullPointerException.class );
         exception.expectMessage( "Expected non-null input to the metric processor." );
-        MetricProcessor<EnsemblePairs, StatisticsForProject> processor =
+        MetricProcessor<TimeSeriesOfPairs<Double, Ensemble>, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeEnsemblePairs( new ProjectConfig( null,
                                                                                        null,
                                                                                        null,
@@ -421,12 +369,6 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                     Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
         processor.apply( null );
     }
-
-    /**
-     * Tests that the {@link MetricProcessorByTimeEnsemblePairs#apply(EnsemblePairs)} throws an expected
-     * exception when attempting to compute metrics that require thresholds and no thresholds are configured.
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     */
 
     @Test
     public void testApplyThrowsExceptionWhenThresholdMetricIsConfiguredWithoutThresholds()
@@ -440,7 +382,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                 new MetricsConfig( null,
                                    Arrays.asList( new MetricConfig( null, null, MetricConfigName.BRIER_SCORE ) ),
                                    null );
-        MetricProcessor<EnsemblePairs, StatisticsForProject> processor =
+        MetricProcessor<TimeSeriesOfPairs<Double, Ensemble>, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeEnsemblePairs( new ProjectConfig( null,
                                                                                        null,
                                                                                        Arrays.asList( metrics ),
@@ -450,13 +392,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                     Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
         processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
     }
-
-    /**
-     * Tests that the {@link MetricProcessorByTimeEnsemblePairs#apply(EnsemblePairs)} throws an expected
-     * exception when climatological observations are required but missing.
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     */
-
+    
     @Test
     public void testApplyThrowsExceptionWhenClimatologicalObservationsAreMissing()
             throws MetricParameterException
@@ -486,17 +422,11 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null );
 
 
-        MetricProcessor<EnsemblePairs, StatisticsForProject> processor =
+        MetricProcessor<TimeSeriesOfPairs<Double, Ensemble>, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeEnsemblePairs( mockedConfig,
                                                                     Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
         processor.apply( MetricTestDataFactory.getEnsemblePairsThree() );
     }
-
-    /**
-     * Tests that the {@link MetricProcessorByTimeEnsemblePairs#apply(EnsemblePairs)} throws an expected
-     * exception when baseline pairs are required but missing.
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     */
 
     @Test
     public void testApplyThrowsExceptionWhenBaselineIsMissing()
@@ -518,17 +448,11 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null,
                                    null );
 
-        MetricProcessor<EnsemblePairs, StatisticsForProject> processor =
+        MetricProcessor<TimeSeriesOfPairs<Double, Ensemble>, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeEnsemblePairs( mockedConfig,
                                                                     Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
         processor.apply( MetricTestDataFactory.getEnsemblePairsThree() );
     }
-
-    /**
-     * Tests that the {@link MetricProcessorByTimeEnsemblePairs#apply(EnsemblePairs)} throws an expected
-     * exception when a dichotomous measure is configured, but classifier thresholds are missing.
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     */
 
     @Test
     public void testApplyThrowsExceptionForDichotomousMetricWhenClassifierThresholdsAreMissing()
@@ -562,12 +486,6 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                             Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
     }
 
-    /**
-     * Tests that the {@link MetricProcessorByTimeEnsemblePairs#apply(EnsemblePairs)} throws an expected
-     * exception when a multicategory measure is configured, but classifier thresholds are missing.
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     */
-
     @Test
     public void testApplyThrowsExceptionForMulticategoryMetricWhenClassifierThresholdsAreMissing()
             throws MetricParameterException
@@ -600,21 +518,13 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                             Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
     }
 
-    /**
-     * Tests the construction of a {@link MetricProcessorByTimeEnsemblePairs} for all valid metrics associated
-     * with ensemble inputs.
-     * 
-     * @throws IOException if the input data could not be read
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     */
-
     @Test
     public void testApplyWithAllValidMetrics() throws IOException, MetricParameterException
     {
         String configPath = "testinput/metricProcessorEnsemblePairsByTimeTest/testAllValid.xml";
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<EnsemblePairs, StatisticsForProject> processor =
+        MetricProcessor<TimeSeriesOfPairs<Double, Ensemble>, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeEnsemblePairs( config,
                                                                     StatisticGroup.set() );
         //Check for the expected number of metrics
@@ -625,18 +535,6 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                 - 1 );
     }
 
-    /**
-     * Tests the construction of a {@link MetricProcessorByTimeEnsemblePairs} and application of
-     * {@link MetricProcessorByTimeEnsemblePairs#apply(EnsemblePairs)} to configuration 
-     * obtained from testinput/metricProcessorEnsemblePairsByTimeTest/testApplyWithValueThresholds.xml and pairs 
-     * obtained from {@link MetricTestDataFactory#getEnsemblePairsOneWithMissings()}.
-     * 
-     * @throws IOException if the input data could not be read
-     * @throws InterruptedException if the outputs were interrupted
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     * @throws StatisticException if the results could not be generated 
-     */
-
     @Test
     public void testApplyWithValueThresholdsAndMissings()
             throws IOException, MetricParameterException, InterruptedException
@@ -644,9 +542,10 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         String configPath = TEST_SOURCE;
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<EnsemblePairs, StatisticsForProject> processor =
+        MetricProcessor<TimeSeriesOfPairs<Double, Ensemble>, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeEnsemblePairs( config,
                                                                     StatisticGroup.set() );
+        
         processor.apply( MetricTestDataFactory.getEnsemblePairsOneWithMissings() );
 
         //Obtain the results
@@ -705,18 +604,6 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         assertTrue( rmse.get( 5 ).getData().equals( 61.12163959516186 ) );
     }
 
-    /**
-     * Tests the construction of a {@link MetricProcessorByTimeEnsemblePairs} and application of
-     * {@link MetricProcessorByTimeEnsemblePairs#apply(EnsemblePairs)} to configuration obtained from
-     * testinput/metricProcessorEnsemblePairsByTimeTest/testContingencyTable.xml and pairs obtained from
-     * {@link MetricTestDataFactory#getEnsemblePairsTwo()}.
-     * 
-     * @throws IOException if the input data could not be read
-     * @throws InterruptedException if the outputs were interrupted
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     * @throws StatisticException if the results could not be generated 
-     */
-
     @Test
     public void testContingencyTable()
             throws IOException, MetricParameterException, InterruptedException
@@ -724,7 +611,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         String configPath = "testinput/metricProcessorEnsemblePairsByTimeTest/testContingencyTable.xml";
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<EnsemblePairs, StatisticsForProject> processor =
+        MetricProcessor<TimeSeriesOfPairs<Double, Ensemble>, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeEnsemblePairs( config, StatisticGroup.set() );
         processor.apply( MetricTestDataFactory.getEnsemblePairsTwo() );
 
@@ -832,18 +719,6 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
     }
 
-    /**
-     * Tests the construction of a {@link MetricProcessorByTimeEnsemblePairs} and application of
-     * {@link MetricProcessorByTimeEnsemblePairs#apply(EnsemblePairs)} to configuration obtained from
-     * testinput/metricProcessorEnsemblePairsByTimeTest/testApplyWithValueThresholds.xml and pairs obtained from
-     * {@link MetricTestDataFactory#getEnsemblePairsFour()}.
-     * 
-     * @throws IOException if the input data could not be read
-     * @throws InterruptedException if the outputs were interrupted
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     * @throws StatisticException if the results could not be generated 
-     */
-
     @Test
     public void testApplyWithValueThresholdsAndNoData()
             throws IOException, MetricParameterException, InterruptedException
@@ -851,7 +726,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         String configPath = TEST_SOURCE;
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<EnsemblePairs, StatisticsForProject> processor =
+        MetricProcessor<TimeSeriesOfPairs<Double, Ensemble>, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeEnsemblePairs( config, StatisticGroup.set() );
         processor.apply( MetricTestDataFactory.getEnsemblePairsFour() );
 
@@ -867,14 +742,6 @@ public final class MetricProcessorByTimeEnsemblePairsTest
             }
         }
     }
-
-    /**
-     * <p>Tests that an ensemble processor produces an ensemble instance of the {@link MetricConstants.SAMPLE_SIZE} metric. 
-     * 
-     * <p>See #65085.
-     * 
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     */
 
     @Test
     public void testThatSampleSizeIsConstructedForEnsembleInput() throws MetricParameterException
@@ -902,7 +769,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null,
                                    null );
 
-        MetricProcessor<EnsemblePairs, StatisticsForProject> processor =
+        MetricProcessor<TimeSeriesOfPairs<Double, Ensemble>, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeEnsemblePairs( mock, StatisticGroup.set() );
 
         Set<MetricConstants> actualSingleValuedScores =
@@ -917,23 +784,15 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         Set<MetricConstants> expectedEnsembleScores =
                 Set.of( MetricConstants.SAMPLE_SIZE,
-                                        MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE );
+                        MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE );
 
         assertEquals( expectedEnsembleScores, actualEnsembleScores );
-        
+
     }
 
-    /**
-     * <p>Tests that an ensemble processor produces an ensemble instance of the {@link MetricConstants.SAMPLE_SIZE} 
-     * metric when a probability score exists. 
-     * 
-     * <p>See #65085.
-     * 
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     */
-
     @Test
-    public void testThatSampleSizeIsConstructedForEnsembleInputWhenProbailityScoreExists() throws MetricParameterException
+    public void testThatSampleSizeIsConstructedForEnsembleInputWhenProbailityScoreExists()
+            throws MetricParameterException
     {
         List<MetricConfig> metrics = new ArrayList<>();
         metrics.add( new MetricConfig( null, null, MetricConfigName.BRIER_SCORE ) );
@@ -946,7 +805,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                               wres.config.generated.ThresholdDataType.LEFT,
                                               "0.1,0.2,0.3",
                                               wres.config.generated.ThresholdOperator.GREATER_THAN ) );
-        
+
         ProjectConfig mock =
                 new ProjectConfig( new Inputs( null,
                                                new DataSourceConfig( DatasourceType.ENSEMBLE_FORECASTS,
@@ -965,7 +824,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null,
                                    null );
 
-        MetricProcessor<EnsemblePairs, StatisticsForProject> processor =
+        MetricProcessor<TimeSeriesOfPairs<Double, Ensemble>, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeEnsemblePairs( mock, StatisticGroup.set() );
 
         Set<MetricConstants> actualSingleValuedScores =
@@ -981,15 +840,15 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         Set<MetricConstants> expectedEnsembleScores = Set.of( MetricConstants.SAMPLE_SIZE );
 
         assertEquals( expectedEnsembleScores, actualEnsembleScores );
-        
-        
+
+
         Set<MetricConstants> actualProbabilityScores =
                 Set.of( processor.getMetrics( SampleDataGroup.DISCRETE_PROBABILITY, StatisticGroup.DOUBLE_SCORE ) );
 
         Set<MetricConstants> expectedProbabilityScores = Set.of( MetricConstants.BRIER_SCORE );
 
         assertEquals( expectedProbabilityScores, actualProbabilityScores );
-        
-    }    
+
+    }
 
 }

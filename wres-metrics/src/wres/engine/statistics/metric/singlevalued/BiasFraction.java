@@ -3,10 +3,12 @@ package wres.engine.statistics.metric.singlevalued;
 import java.util.Objects;
 import java.util.concurrent.atomic.DoubleAdder;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.DoubleErrorFunction;
@@ -17,7 +19,7 @@ import wres.engine.statistics.metric.FunctionFactory;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class BiasFraction extends DoubleErrorScore<SingleValuedPairs>
+public class BiasFraction extends DoubleErrorScore<SampleData<Pair<Double, Double>>>
 {
 
     /**
@@ -32,7 +34,7 @@ public class BiasFraction extends DoubleErrorScore<SingleValuedPairs>
     }
 
     @Override
-    public DoubleScoreStatistic apply( SingleValuedPairs s )
+    public DoubleScoreStatistic apply( SampleData<Pair<Double, Double>> s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -40,11 +42,11 @@ public class BiasFraction extends DoubleErrorScore<SingleValuedPairs>
         }
         final StatisticMetadata metOut =
                 StatisticMetadata.of( s.getMetadata(),
-                                    this.getID(),
-                                    MetricConstants.MAIN,
-                                    this.hasRealUnits(),
-                                    s.getRawData().size(),
-                                    null );
+                                      this.getID(),
+                                      MetricConstants.MAIN,
+                                      this.hasRealUnits(),
+                                      s.getRawData().size(),
+                                      null );
         DoubleAdder left = new DoubleAdder();
         DoubleAdder right = new DoubleAdder();
         DoubleErrorFunction error = FunctionFactory.error();

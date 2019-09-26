@@ -8,6 +8,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -18,10 +19,12 @@ import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.time.TimeWindow;
@@ -50,15 +53,10 @@ public final class KlingGuptaEfficiencyTest
         this.kge = KlingGuptaEfficiency.of();
     }
 
-    /**
-     * Compares the output from {@link KlingGuptaEfficiency#apply(SingleValuedPairs)} against expected output.
-     * @throws IOException if the input data could not be read
-     */
-
     @Test
     public void testApply() throws IOException
     {
-        SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsFive();
+        SampleData<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsFive();
 
         //Metadata for the output
         TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
@@ -89,14 +87,10 @@ public final class KlingGuptaEfficiencyTest
                     actual.equals( expected ) );
     }
 
-    /**
-     * Compares the output from {@link KlingGuptaEfficiency#apply(SingleValuedPairs)} against expected output.
-     */
-
     @Test
     public void testApplyTwo()
     {
-        SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
+        TimeSeriesOfPairs<Double, Double> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
                                                            input.getRawData().size(),
@@ -115,26 +109,17 @@ public final class KlingGuptaEfficiencyTest
                     actual.equals( expected ) );
     }
 
-    /**
-     * Validates the output from {@link KlingGuptaEfficiency#apply(SingleValuedPairs)} when supplied with no data.
-     */
-
     @Test
     public void testApplyWithNoData()
     {
         // Generate empty data
-        SingleValuedPairs input =
-                SingleValuedPairs.of( Arrays.asList(), SampleMetadata.of() );
+        SampleDataBasic<Pair<Double, Double>> input =
+                SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
         DoubleScoreStatistic actual = kge.apply( input );
 
         assertTrue( actual.getData().isNaN() );
     }
-
-    /**
-     * Checks that the {@link KlingGuptaEfficiency#getName()} returns
-     * {@link MetricConstants#KLING_GUPTA_EFFICIENCY.toString()}
-     */
 
     @Test
     public void testGetName()
@@ -142,19 +127,11 @@ public final class KlingGuptaEfficiencyTest
         assertTrue( kge.getName().equals( MetricConstants.KLING_GUPTA_EFFICIENCY.toString() ) );
     }
 
-    /**
-     * Checks that the {@link KlingGuptaEfficiency#isDecomposable()} returns <code>true</code>.
-     */
-
     @Test
     public void testIsDecomposable()
     {
         assertTrue( kge.isDecomposable() );
     }
-
-    /**
-     * Checks that the {@link KlingGuptaEfficiency#isSkillScore()} returns <code>true</code>.
-     */
 
     @Test
     public void testIsSkillScore()
@@ -162,30 +139,17 @@ public final class KlingGuptaEfficiencyTest
         assertTrue( kge.isSkillScore() );
     }
 
-    /**
-     * Checks that the {@link KlingGuptaEfficiency#hasRealUnits()} returns <code>false</code>.
-     */
-
     @Test
     public void testhasRealUnits()
     {
         assertFalse( kge.hasRealUnits() );
     }
 
-    /**
-     * Checks that the {@link KlingGuptaEfficiency#getScoreOutputGroup()} returns the result provided on construction.
-     */
-
     @Test
     public void testGetScoreOutputGroup()
     {
         assertTrue( kge.getScoreOutputGroup() == ScoreGroup.NONE );
     }
-
-    /**
-     * Tests for an expected exception on calling {@link KlingGuptaEfficiency#apply(SingleValuedPairs)} with null
-     * input.
-     */
 
     @Test
     public void testApplyExceptionOnNullInput()

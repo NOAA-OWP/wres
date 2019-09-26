@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -13,9 +14,11 @@ import org.junit.rules.ExpectedException;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.MetricTestDataFactory;
@@ -43,14 +46,10 @@ public final class CoefficientOfDeterminationTest
         this.cod = CoefficientOfDetermination.of();
     }
 
-    /**
-     * Compares the output from {@link CoefficientOfDetermination#apply(SingleValuedPairs)} against expected output.
-     */
-
     @Test
     public void testApply()
     {
-        SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
+        TimeSeriesOfPairs<Double, Double> input = MetricTestDataFactory.getSingleValuedPairsOne();
         StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
                                                      input.getRawData().size(),
                                                      MeasurementUnit.of(),
@@ -67,26 +66,17 @@ public final class CoefficientOfDeterminationTest
                     actual.equals( expected ) );
     }
 
-    /**
-     * Validates the output from {@link CoefficientOfDetermination#apply(SingleValuedPairs)} when supplied with no data.
-     */
-
     @Test
     public void testApplyWithNoData()
     {
         // Generate empty data
-        SingleValuedPairs input =
-                SingleValuedPairs.of( Arrays.asList(), SampleMetadata.of() );
+        SampleDataBasic<Pair<Double, Double>> input =
+                SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
  
         DoubleScoreStatistic actual = cod.apply( input );
 
         assertTrue( actual.getData().isNaN() );
     }
-
-    /**
-     * Checks that the {@link CoefficientOfDetermination#getName()} returns 
-     * {@link MetricConstants#BIAS_FRACTION.toString()}
-     */
 
     @Test
     public void testGetName()
@@ -94,19 +84,11 @@ public final class CoefficientOfDeterminationTest
         assertTrue( cod.getName().equals( MetricConstants.COEFFICIENT_OF_DETERMINATION.toString() ) );
     }
 
-    /**
-     * Checks that the {@link CoefficientOfDetermination#isDecomposable()} returns <code>false</code>.
-     */
-
     @Test
     public void testIsDecomposable()
     {
         assertFalse( cod.isDecomposable() );
     }
-
-    /**
-     * Checks that the {@link CoefficientOfDetermination#isSkillScore()} returns <code>false</code>.
-     */
 
     @Test
     public void testIsSkillScore()
@@ -114,31 +96,17 @@ public final class CoefficientOfDeterminationTest
         assertFalse( cod.isSkillScore() );
     }
 
-    /**
-     * Checks that the {@link CoefficientOfDetermination#getScoreOutputGroup()} returns the result provided on construction.
-     */
-
     @Test
     public void testGetScoreOutputGroup()
     {
         assertTrue( cod.getScoreOutputGroup() == ScoreGroup.NONE );
     }
 
-    /**
-     * Checks that the {@link CoefficientOfDetermination#getCollectionOf()} returns 
-     * {@link MetricConstants#PEARSON_CORRELATION_COEFFICIENT}.
-     */
-
     @Test
     public void testGetCollectionOf()
     {
         assertTrue( cod.getCollectionOf().equals( MetricConstants.PEARSON_CORRELATION_COEFFICIENT ) );
     }    
-    
-    /**
-     * Tests for an expected exception on calling {@link CoefficientOfDetermination#apply(SingleValuedPairs)} with null 
-     * input.
-     */
 
     @Test
     public void testApplyExceptionOnNullInput()
@@ -148,11 +116,6 @@ public final class CoefficientOfDeterminationTest
         
         cod.apply( null );
     }    
-    
-    /**
-     * Tests for an expected exception on calling {@link CoefficientOfDetermination#aggregate(DoubleScoreStatistic)} with 
-     * null input.
-     */
 
     @Test
     public void testAggregateExceptionOnNullInput()

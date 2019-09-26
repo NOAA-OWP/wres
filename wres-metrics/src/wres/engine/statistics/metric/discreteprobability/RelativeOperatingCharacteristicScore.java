@@ -6,13 +6,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.Probability;
 import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.sampledata.DatasetIdentifier;
+import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.sampledata.pairs.DiscreteProbabilityPairs;
-import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.FunctionFactory;
@@ -41,8 +43,9 @@ import wres.engine.statistics.metric.ProbabilityScore;
  * @author james.brown@hydrosolved.com
  */
 
-public class RelativeOperatingCharacteristicScore extends OrdinaryScore<DiscreteProbabilityPairs, DoubleScoreStatistic>
-        implements ProbabilityScore<DiscreteProbabilityPairs, DoubleScoreStatistic>
+public class RelativeOperatingCharacteristicScore
+        extends OrdinaryScore<SampleData<Pair<Probability, Probability>>, DoubleScoreStatistic>
+        implements ProbabilityScore<SampleData<Pair<Probability, Probability>>, DoubleScoreStatistic>
 {
 
     /**
@@ -57,7 +60,7 @@ public class RelativeOperatingCharacteristicScore extends OrdinaryScore<Discrete
     }
 
     @Override
-    public DoubleScoreStatistic apply( final DiscreteProbabilityPairs s )
+    public DoubleScoreStatistic apply( final SampleData<Pair<Probability, Probability>> s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -79,11 +82,11 @@ public class RelativeOperatingCharacteristicScore extends OrdinaryScore<Discrete
         }
         final StatisticMetadata metOut =
                 StatisticMetadata.of( s.getMetadata(),
-                                    this.getID(),
-                                    MetricConstants.MAIN,
-                                    this.hasRealUnits(),
-                                    s.getRawData().size(),
-                                    baselineIdentifier );
+                                      this.getID(),
+                                      MetricConstants.MAIN,
+                                      this.hasRealUnits(),
+                                      s.getRawData().size(),
+                                      baselineIdentifier );
         return DoubleScoreStatistic.of( rocScore, metOut );
     }
 
@@ -137,25 +140,30 @@ public class RelativeOperatingCharacteristicScore extends OrdinaryScore<Discrete
      * @return the AUC
      */
 
-    private double getAUCMasonGraham( DiscreteProbabilityPairs pairs )
+    private double getAUCMasonGraham( SampleData<Pair<Probability, Probability>> pairs )
     {
         //Obtain the predicted probabilities when the event occurred and did not occur
         //Begin by collecting against occurrence/non-occurrence
-        Map<Boolean, List<SingleValuedPair>> mapped = pairs.getRawData()
-                                                           .stream()
-                                                           .collect( Collectors.groupingBy( a -> DataFactory.doubleEquals( a.getLeft(),
-                                                                                                                           1.0,
-                                                                                                                           7 ) ) );
+        Map<Boolean, List<Pair<Probability, Probability>>> mapped =
+                pairs.getRawData()
+                     .stream()
+                     .collect( Collectors.groupingBy( a -> DataFactory.doubleEquals( a.getLeft()
+                                                                                      .getProbability(),
+                                                                                     1.0,
+                                                                                     7 ) ) );
         if ( mapped.size() != 2 )
         {
             return Double.NaN; //Undefined
         }
         //Get the right side by each outcome
         List<Double> byOccurrence =
-                mapped.get( true ).stream().map( SingleValuedPair::getRight ).collect( Collectors.toList() );
+                mapped.get( true )
+                      .stream()
+                      .map( right -> right.getRight().getProbability() )
+                      .collect( Collectors.toList() );
         List<Double> byNonOccurrence = mapped.get( false )
                                              .stream()
-                                             .map( SingleValuedPair::getRight )
+                                             .map( right -> right.getRight().getProbability() )
                                              .collect( Collectors.toList() );
         //Sort descending
         Collections.sort( byOccurrence, Collections.reverseOrder() );

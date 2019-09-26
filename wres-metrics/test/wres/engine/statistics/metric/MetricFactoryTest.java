@@ -1,5 +1,7 @@
 package wres.engine.statistics.metric;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
@@ -10,9 +12,7 @@ import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
@@ -74,7 +74,7 @@ public final class MetricFactoryTest
      * Expected error message.
      */
 
-    private static final String UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN = 
+    private static final String UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN =
             "Unrecognized metric for identifier. 'MAIN'.";
 
     /**
@@ -88,10 +88,6 @@ public final class MetricFactoryTest
      */
 
     private ProjectConfig mockEnsemble;
-
-
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
 
     @Before
     public void setupBeforeEachTest()
@@ -119,9 +115,9 @@ public final class MetricFactoryTest
         assertTrue( MetricFactory.ofSingleValuedScore( MetricConstants.SUM_OF_SQUARE_ERROR ) instanceof SumOfSquareError );
 
         // Unrecognized metric
-        exception.expect( IllegalArgumentException.class );
-        exception.expectMessage( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN );
-        MetricFactory.ofSingleValuedScore( MetricConstants.MAIN );
+        IllegalArgumentException expected = assertThrows( IllegalArgumentException.class,
+                                                          () -> MetricFactory.ofSingleValuedScore( MetricConstants.MAIN ) );
+        assertEquals( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN, expected.getMessage() );
     }
 
     /**
@@ -136,25 +132,25 @@ public final class MetricFactoryTest
         assertTrue( MetricFactory.ofSingleValuedScoreCollectable( MetricConstants.MEAN_SQUARE_ERROR ) instanceof MeanSquareError );
 
         // Unrecognized metric
-        exception.expect( IllegalArgumentException.class );
-        exception.expectMessage( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN );
-        MetricFactory.ofSingleValuedScoreCollectable( MetricConstants.MAIN );
+        IllegalArgumentException expected = assertThrows( IllegalArgumentException.class,
+                                                          () -> MetricFactory.ofSingleValuedScoreCollectable( MetricConstants.MAIN ) );
+        assertEquals( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN, expected.getMessage() );
     }
 
     /**
      * Tests {@link MetricFactory#ofDiscreteProbabilityScore(MetricConstants)} 
      */
     @Test
-    public void testOfDiscreteProbabilityScore() 
+    public void testOfDiscreteProbabilityScore()
     {
         assertTrue( MetricFactory.ofDiscreteProbabilityScore( MetricConstants.BRIER_SCORE ) instanceof BrierScore );
         assertTrue( MetricFactory.ofDiscreteProbabilityScore( MetricConstants.BRIER_SKILL_SCORE ) instanceof BrierSkillScore );
         assertTrue( MetricFactory.ofDiscreteProbabilityScore( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE ) instanceof RelativeOperatingCharacteristicScore );
 
         // Unrecognized metric
-        exception.expect( IllegalArgumentException.class );
-        exception.expectMessage( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN );
-        MetricFactory.ofDiscreteProbabilityScore( MetricConstants.MAIN );
+        IllegalArgumentException expected = assertThrows( IllegalArgumentException.class,
+                                                          () -> MetricFactory.ofDiscreteProbabilityScore( MetricConstants.MAIN ) );
+        assertEquals( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN, expected.getMessage() );
     }
 
     /**
@@ -170,23 +166,9 @@ public final class MetricFactoryTest
         assertTrue( MetricFactory.ofDichotomousScore( MetricConstants.PROBABILITY_OF_FALSE_DETECTION ) instanceof ProbabilityOfFalseDetection );
 
         // Unrecognized metric
-        exception.expect( IllegalArgumentException.class );
-        exception.expectMessage( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN );
-        MetricFactory.ofDichotomousScore( MetricConstants.MAIN );
-    }
-
-    /**
-     * Tests {@link MetricFactory#ofMulticategoryScore(MetricConstants)}. 
-     */
-    @Test
-    public void testOfMulticategoryScore()
-    {
-        assertTrue( MetricFactory.ofMulticategoryScore( MetricConstants.PEIRCE_SKILL_SCORE ) instanceof PeirceSkillScore );
-
-        // Unrecognized metric
-        exception.expect( IllegalArgumentException.class );
-        exception.expectMessage( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN );
-        MetricFactory.ofMulticategoryScore( MetricConstants.MAIN );
+        IllegalArgumentException expected = assertThrows( IllegalArgumentException.class,
+                                                          () -> MetricFactory.ofDichotomousScore( MetricConstants.MAIN ) );
+        assertEquals( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN, expected.getMessage() );
     }
 
     /**
@@ -200,9 +182,9 @@ public final class MetricFactoryTest
         assertTrue( MetricFactory.ofEnsembleScore( MetricConstants.SAMPLE_SIZE ) instanceof SampleSize );
 
         // Unrecognized metric
-        exception.expect( IllegalArgumentException.class );
-        exception.expectMessage( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN );
-        MetricFactory.ofEnsembleScore( MetricConstants.MAIN );
+        IllegalArgumentException expected = assertThrows( IllegalArgumentException.class,
+                                                          () -> MetricFactory.ofEnsembleScore( MetricConstants.MAIN ) );
+        assertEquals( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN, expected.getMessage() );
     }
 
     /**
@@ -214,9 +196,9 @@ public final class MetricFactoryTest
         assertTrue( MetricFactory.ofDichotomousMatrix( MetricConstants.CONTINGENCY_TABLE ) instanceof ContingencyTable );
 
         // Unrecognized metric
-        exception.expect( IllegalArgumentException.class );
-        exception.expectMessage( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN );
-        MetricFactory.ofDichotomousMatrix( MetricConstants.MAIN );
+        IllegalArgumentException expected = assertThrows( IllegalArgumentException.class,
+                                                          () -> MetricFactory.ofDichotomousMatrix( MetricConstants.MAIN ) );
+        assertEquals( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN, expected.getMessage() );
     }
 
     /**
@@ -228,9 +210,9 @@ public final class MetricFactoryTest
         assertTrue( MetricFactory.ofSingleValuedMultiVector( MetricConstants.QUANTILE_QUANTILE_DIAGRAM ) instanceof QuantileQuantileDiagram );
 
         // Unrecognized metric
-        exception.expect( IllegalArgumentException.class );
-        exception.expectMessage( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN );
-        MetricFactory.ofSingleValuedMultiVector( MetricConstants.MAIN );
+        IllegalArgumentException expected = assertThrows( IllegalArgumentException.class,
+                                                          () -> MetricFactory.ofSingleValuedMultiVector( MetricConstants.MAIN ) );
+        assertEquals( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN, expected.getMessage() );
     }
 
     /**
@@ -244,9 +226,9 @@ public final class MetricFactoryTest
         assertTrue( MetricFactory.ofDiscreteProbabilityMultiVector( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM ) instanceof RelativeOperatingCharacteristicDiagram );
 
         // Unrecognized metric
-        exception.expect( IllegalArgumentException.class );
-        exception.expectMessage( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN );
-        MetricFactory.ofDiscreteProbabilityMultiVector( MetricConstants.MAIN );
+        IllegalArgumentException expected = assertThrows( IllegalArgumentException.class,
+                                                          () -> MetricFactory.ofDiscreteProbabilityMultiVector( MetricConstants.MAIN ) );
+        assertEquals( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN, expected.getMessage() );
     }
 
     /**
@@ -258,9 +240,9 @@ public final class MetricFactoryTest
         assertTrue( MetricFactory.ofEnsembleMultiVector( MetricConstants.RANK_HISTOGRAM ) instanceof RankHistogram );
 
         // Unrecognized metric
-        exception.expect( IllegalArgumentException.class );
-        exception.expectMessage( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN );
-        MetricFactory.ofEnsembleMultiVector( MetricConstants.MAIN );
+        IllegalArgumentException expected = assertThrows( IllegalArgumentException.class,
+                                                          () -> MetricFactory.ofEnsembleMultiVector( MetricConstants.MAIN ) );
+        assertEquals( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN, expected.getMessage() );
     }
 
     /**
@@ -273,9 +255,9 @@ public final class MetricFactoryTest
         assertTrue( MetricFactory.ofEnsembleBoxPlot( MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE ) instanceof BoxPlotErrorByForecast );
 
         // Unrecognized metric
-        exception.expect( IllegalArgumentException.class );
-        exception.expectMessage( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN );
-        MetricFactory.ofEnsembleBoxPlot( MetricConstants.MAIN );
+        IllegalArgumentException expected = assertThrows( IllegalArgumentException.class,
+                                                          () -> MetricFactory.ofEnsembleBoxPlot( MetricConstants.MAIN ) );
+        assertEquals( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN, expected.getMessage() );
     }
 
     /**
@@ -288,9 +270,9 @@ public final class MetricFactoryTest
         assertTrue( MetricFactory.ofSingleValuedTimeSeries( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR ) instanceof TimeToPeakRelativeError );
 
         // Unrecognized metric
-        exception.expect( IllegalArgumentException.class );
-        exception.expectMessage( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN );
-        MetricFactory.ofSingleValuedTimeSeries( MetricConstants.MAIN );
+        IllegalArgumentException expected = assertThrows( IllegalArgumentException.class,
+                                                          () -> MetricFactory.ofSingleValuedTimeSeries( MetricConstants.MAIN ) );
+        assertEquals( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN, expected.getMessage() );
     }
 
     /**

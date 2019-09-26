@@ -16,24 +16,20 @@ import java.util.Objects;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import org.apache.commons.lang3.tuple.Pair;
+
+import wres.datamodel.Ensemble;
+import wres.datamodel.Probability;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
-import wres.datamodel.sampledata.pairs.DichotomousPair;
-import wres.datamodel.sampledata.pairs.DichotomousPairs;
-import wres.datamodel.sampledata.pairs.DiscreteProbabilityPair;
-import wres.datamodel.sampledata.pairs.DiscreteProbabilityPairs;
-import wres.datamodel.sampledata.pairs.EnsemblePair;
-import wres.datamodel.sampledata.pairs.EnsemblePairs;
-import wres.datamodel.sampledata.pairs.MulticategoryPair;
-import wres.datamodel.sampledata.pairs.MulticategoryPairs;
-import wres.datamodel.sampledata.pairs.SingleValuedPair;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs.TimeSeriesOfPairsBuilder;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
@@ -154,22 +150,28 @@ public final class MetricTestDataFactory
      * @return single-valued pairs
      */
 
-    public static SingleValuedPairs getSingleValuedPairsOne()
+    public static TimeSeriesOfPairs<Double, Double> getSingleValuedPairsOne()
     {
         //Construct some single-valued pairs
-        final List<SingleValuedPair> values = new ArrayList<>();
-        values.add( SingleValuedPair.of( 22.9, 22.8 ) );
-        values.add( SingleValuedPair.of( 75.2, 80 ) );
-        values.add( SingleValuedPair.of( 63.2, 65 ) );
-        values.add( SingleValuedPair.of( 29, 30 ) );
-        values.add( SingleValuedPair.of( 5, 2 ) );
-        values.add( SingleValuedPair.of( 2.1, 3.1 ) );
-        values.add( SingleValuedPair.of( 35000, 37000 ) );
-        values.add( SingleValuedPair.of( 8, 7 ) );
-        values.add( SingleValuedPair.of( 12, 12 ) );
-        values.add( SingleValuedPair.of( 93, 94 ) );
+        SortedSet<Event<Pair<Double, Double>>> events = new TreeSet<>();
 
-        return SingleValuedPairs.of( values, SampleMetadata.of() );
+        Instant start = Instant.parse( "1985-01-01T00:00:00Z" );
+
+        events.add( Event.of( start.plus( Duration.ofHours( 1 ) ), Pair.of( 22.9, 22.8 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 2 ) ), Pair.of( 75.2, 80.0 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 3 ) ), Pair.of( 63.2, 65.0 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 4 ) ), Pair.of( 29.0, 30.0 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 5 ) ), Pair.of( 5.0, 2.0 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 6 ) ), Pair.of( 2.1, 3.1 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 7 ) ), Pair.of( 35000.0, 37000.0 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 8 ) ), Pair.of( 8.0, 7.0 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 9 ) ), Pair.of( 12.0, 12.0 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 10 ) ), Pair.of( 93.0, 94.0 ) ) );
+
+        TimeSeriesOfPairsBuilder<Double, Double> builder = new TimeSeriesOfPairsBuilder<>();
+        builder.addTimeSeries( TimeSeries.of( events ) ).setMetadata( SampleMetadata.of() );
+
+        return builder.build();
     }
 
     /**
@@ -178,31 +180,35 @@ public final class MetricTestDataFactory
      * @return single-valued pairs
      */
 
-    public static SingleValuedPairs getSingleValuedPairsTwo()
+    public static TimeSeriesOfPairs<Double, Double> getSingleValuedPairsTwo()
     {
         //Construct some single-valued pairs
-        final List<SingleValuedPair> values = new ArrayList<>();
-        values.add( SingleValuedPair.of( 22.9, 22.8 ) );
-        values.add( SingleValuedPair.of( 75.2, 80 ) );
-        values.add( SingleValuedPair.of( 63.2, 65 ) );
-        values.add( SingleValuedPair.of( 29, 30 ) );
-        values.add( SingleValuedPair.of( 5, 2 ) );
-        values.add( SingleValuedPair.of( 2.1, 3.1 ) );
-        values.add( SingleValuedPair.of( 35000, 37000 ) );
-        values.add( SingleValuedPair.of( 8, 7 ) );
-        values.add( SingleValuedPair.of( 12, 12 ) );
-        values.add( SingleValuedPair.of( 93, 94 ) );
-        final List<SingleValuedPair> baseline = new ArrayList<>();
-        baseline.add( SingleValuedPair.of( 20.9, 23.8 ) );
-        baseline.add( SingleValuedPair.of( 71.2, 83.2 ) );
-        baseline.add( SingleValuedPair.of( 69.2, 66 ) );
-        baseline.add( SingleValuedPair.of( 20, 30.5 ) );
-        baseline.add( SingleValuedPair.of( 5.8, 2.1 ) );
-        baseline.add( SingleValuedPair.of( 1.1, 3.4 ) );
-        baseline.add( SingleValuedPair.of( 33020, 37500 ) );
-        baseline.add( SingleValuedPair.of( 8.8, 7.1 ) );
-        baseline.add( SingleValuedPair.of( 12.1, 13 ) );
-        baseline.add( SingleValuedPair.of( 93.2, 94.8 ) );
+        SortedSet<Event<Pair<Double, Double>>> events = new TreeSet<>();
+
+        Instant start = Instant.parse( "1985-01-01T00:00:00Z" );
+
+        events.add( Event.of( start.plus( Duration.ofHours( 1 ) ), Pair.of( 22.9, 22.8 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 2 ) ), Pair.of( 75.2, 80.0 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 3 ) ), Pair.of( 63.2, 65.0 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 4 ) ), Pair.of( 29.0, 30.0 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 5 ) ), Pair.of( 5.0, 2.0 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 6 ) ), Pair.of( 2.1, 3.1 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 7 ) ), Pair.of( 35000.0, 37000.0 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 8 ) ), Pair.of( 8.0, 7.0 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 9 ) ), Pair.of( 12.0, 12.0 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 10 ) ), Pair.of( 93.0, 94.0 ) ) );
+
+        SortedSet<Event<Pair<Double, Double>>> baseline = new TreeSet<>();
+        baseline.add( Event.of( start.plus( Duration.ofHours( 1 ) ), Pair.of( 20.9, 23.8 ) ) );
+        baseline.add( Event.of( start.plus( Duration.ofHours( 2 ) ), Pair.of( 71.2, 83.2 ) ) );
+        baseline.add( Event.of( start.plus( Duration.ofHours( 3 ) ), Pair.of( 69.2, 66.0 ) ) );
+        baseline.add( Event.of( start.plus( Duration.ofHours( 4 ) ), Pair.of( 20.0, 30.5 ) ) );
+        baseline.add( Event.of( start.plus( Duration.ofHours( 5 ) ), Pair.of( 5.8, 2.1 ) ) );
+        baseline.add( Event.of( start.plus( Duration.ofHours( 6 ) ), Pair.of( 1.1, 3.4 ) ) );
+        baseline.add( Event.of( start.plus( Duration.ofHours( 7 ) ), Pair.of( 33020.0, 37500.0 ) ) );
+        baseline.add( Event.of( start.plus( Duration.ofHours( 8 ) ), Pair.of( 8.8, 7.1 ) ) );
+        baseline.add( Event.of( start.plus( Duration.ofHours( 9 ) ), Pair.of( 12.1, 13.0 ) ) );
+        baseline.add( Event.of( start.plus( Duration.ofHours( 10 ) ), Pair.of( 93.2, 94.8 ) ) );
 
         final SampleMetadata main = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                        DatasetIdentifier.of( getLocation( DRRC2 ),
@@ -212,7 +218,13 @@ public final class MetricTestDataFactory
                                                        DatasetIdentifier.of( getLocation( DRRC2 ),
                                                                              "SQIN",
                                                                              "ESP" ) );
-        return SingleValuedPairs.of( values, baseline, main, base );
+
+        TimeSeriesOfPairsBuilder<Double, Double> builder = new TimeSeriesOfPairsBuilder<>();
+        return builder.addTimeSeries( TimeSeries.of( events ) )
+                      .setMetadata( main )
+                      .addTimeSeriesForBaseline( TimeSeries.of( baseline ) )
+                      .setMetadataForBaseline( base )
+                      .build();
     }
 
     public static Location getLocation( final String locationId )
@@ -226,21 +238,27 @@ public final class MetricTestDataFactory
      * @return single-valued pairs
      */
 
-    public static SingleValuedPairs getSingleValuedPairsThree()
+    public static TimeSeriesOfPairs<Double, Double> getSingleValuedPairsThree()
     {
         //Construct some single-valued pairs
-        final List<SingleValuedPair> values = new ArrayList<>();
+        SortedSet<Event<Pair<Double, Double>>> events = new TreeSet<>();
+
+        Instant start = Instant.parse( "1985-01-01T00:00:00Z" );
 
         for ( int i = 0; i < 10000; i++ )
         {
-            values.add( SingleValuedPair.of( 5, 10 ) );
+            events.add( Event.of( start.plus( Duration.ofHours( i ) ), Pair.of( 5.0, 10.0 ) ) );
         }
 
-        final SampleMetadata meta = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                       DatasetIdentifier.of( getLocation( DRRC2 ),
-                                                                             "SQIN",
-                                                                             "HEFS" ) );
-        return SingleValuedPairs.of( values, meta );
+        SampleMetadata meta = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                 DatasetIdentifier.of( getLocation( DRRC2 ),
+                                                                       "SQIN",
+                                                                       "HEFS" ) );
+
+        TimeSeriesOfPairsBuilder<Double, Double> builder = new TimeSeriesOfPairsBuilder<>();
+        return builder.addTimeSeries( TimeSeries.of( events ) )
+                      .setMetadata( meta )
+                      .build();
     }
 
     /**
@@ -251,16 +269,21 @@ public final class MetricTestDataFactory
      * @return single-valued pairs
      */
 
-    public static SingleValuedPairs getSingleValuedPairsFour()
+    public static TimeSeriesOfPairs<Double, Double> getSingleValuedPairsFour()
     {
         //Construct some single-valued pairs
-        final List<SingleValuedPair> values = new ArrayList<>();
+        SortedSet<Event<Pair<Double, Double>>> events = new TreeSet<>();
 
+        Instant start = Instant.parse( "1985-01-01T00:00:00Z" );
+
+        int time = 0;
         for ( int i = 0; i < 5; i++ )
         {
             for ( int j = 0; j < 100; j++ )
             {
-                values.add( SingleValuedPair.of( i + 1.0, i + 6.0 ) );
+                events.add( Event.of( start.plus( Duration.ofHours( time ) ), Pair.of( i + 1.0, i + 6.0 ) ) );
+
+                time++;
             }
         }
 
@@ -273,7 +296,11 @@ public final class MetricTestDataFactory
                                                                                                      "HEFS" ) )
                                                                .setTimeWindow( window )
                                                                .build();
-        return SingleValuedPairs.of( values, meta );
+
+        TimeSeriesOfPairsBuilder<Double, Double> builder = new TimeSeriesOfPairsBuilder<>();
+        return builder.addTimeSeries( TimeSeries.of( events ) )
+                      .setMetadata( meta )
+                      .build();
     }
 
     /**
@@ -294,10 +321,10 @@ public final class MetricTestDataFactory
      * @throws IOException if the read fails
      */
 
-    public static SingleValuedPairs getSingleValuedPairsFive() throws IOException
+    public static SampleData<Pair<Double, Double>> getSingleValuedPairsFive() throws IOException
     {
         //Construct some pairs
-        final List<SingleValuedPair> values = new ArrayList<>();
+        final List<Pair<Double, Double>> values = new ArrayList<>();
 
         File file = new File( "testinput/metricTestDataFactory/getSingleValuedPairsFive.asc" );
         try ( BufferedReader in =
@@ -308,7 +335,7 @@ public final class MetricTestDataFactory
             {
                 double[] doubleValues =
                         Arrays.stream( line.split( "\\s+" ) ).mapToDouble( Double::parseDouble ).toArray();
-                values.add( SingleValuedPair.of( doubleValues[0], doubleValues[1] ) );
+                values.add( Pair.of( doubleValues[0], doubleValues[1] ) );
             }
         }
 
@@ -321,7 +348,7 @@ public final class MetricTestDataFactory
                                                                                                      "NVE" ) )
                                                                .setTimeWindow( window )
                                                                .build();
-        return SingleValuedPairs.of( values, meta );
+        return SampleDataBasic.of( values, meta );
     }
 
     /**
@@ -331,21 +358,26 @@ public final class MetricTestDataFactory
      * @return single-valued pairs
      */
 
-    public static SingleValuedPairs getSingleValuedPairsSix()
+    public static TimeSeriesOfPairs<Double, Double> getSingleValuedPairsSix()
     {
         //Construct some single-valued pairs
+        SortedSet<Event<Pair<Double, Double>>> events = new TreeSet<>();
 
-        final List<SingleValuedPair> values = new ArrayList<>();
-        values.add( SingleValuedPair.of( 22.9, 22.8 ) );
-        final TimeWindow window = TimeWindow.of( Instant.parse( FIRST_TIME ),
-                                                 Instant.parse( SECOND_TIME ),
-                                                 Duration.ofHours( 24 ) );
-        final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
-                                                               .setIdentifier( DatasetIdentifier.of( getLocation( "A" ),
-                                                                                                     "MAP" ) )
-                                                               .setTimeWindow( window )
-                                                               .build();
-        return SingleValuedPairs.of( values, meta );
+        List<Event<Pair<Double, Double>>> values = new ArrayList<>();
+        values.add( Event.of( Instant.parse( "1985-01-01T00:00:00Z" ), Pair.of( 22.9, 22.8 ) ) );
+        TimeWindow window = TimeWindow.of( Instant.parse( FIRST_TIME ),
+                                           Instant.parse( SECOND_TIME ),
+                                           Duration.ofHours( 24 ) );
+        SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
+                                                         .setIdentifier( DatasetIdentifier.of( getLocation( "A" ),
+                                                                                               "MAP" ) )
+                                                         .setTimeWindow( window )
+                                                         .build();
+
+        TimeSeriesOfPairsBuilder<Double, Double> builder = new TimeSeriesOfPairsBuilder<>();
+        return builder.addTimeSeries( TimeSeries.of( events ) )
+                      .setMetadata( meta )
+                      .build();
     }
 
     /**
@@ -354,18 +386,24 @@ public final class MetricTestDataFactory
      * @return single-valued pairs
      */
 
-    public static SingleValuedPairs getSingleValuedPairsSeven()
+    public static TimeSeriesOfPairs<Double, Double> getSingleValuedPairsSeven()
     {
         //Construct some single-valued pairs
-        final SampleMetadata main = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                       DatasetIdentifier.of( getLocation( DRRC2 ),
-                                                                             "SQIN",
-                                                                             "HEFS" ) );
-        final SampleMetadata base = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                       DatasetIdentifier.of( getLocation( DRRC2 ),
-                                                                             "SQIN",
-                                                                             "ESP" ) );
-        return SingleValuedPairs.of( Collections.emptyList(), Collections.emptyList(), main, base );
+        SampleMetadata main = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                 DatasetIdentifier.of( getLocation( DRRC2 ),
+                                                                       "SQIN",
+                                                                       "HEFS" ) );
+        SampleMetadata base = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                 DatasetIdentifier.of( getLocation( DRRC2 ),
+                                                                       "SQIN",
+                                                                       "ESP" ) );
+
+        TimeSeriesOfPairsBuilder<Double, Double> builder = new TimeSeriesOfPairsBuilder<>();
+        return builder.addTimeSeries( TimeSeries.of( Collections.emptySortedSet() ) )
+                      .setMetadata( main )
+                      .addTimeSeriesForBaseline( TimeSeries.of( Collections.emptySortedSet() ) )
+                      .setMetadataForBaseline( base )
+                      .build();
     }
 
     /**
@@ -374,146 +412,152 @@ public final class MetricTestDataFactory
      * @return single-valued pairs
      */
 
-    public static SingleValuedPairs getSingleValuedPairsEight()
+    public static TimeSeriesOfPairs<Double, Double> getSingleValuedPairsEight()
     {
         //Construct some single-valued pairs
-        final List<SingleValuedPair> values = new ArrayList<>();
-        values.add( SingleValuedPair.of( 22.9, 22.8 ) );
-        values.add( SingleValuedPair.of( 75.2, 80 ) );
-        values.add( SingleValuedPair.of( 63.2, 65 ) );
-        values.add( SingleValuedPair.of( 29, 30 ) );
-        values.add( SingleValuedPair.of( 5, 2 ) );
-        values.add( SingleValuedPair.of( 2.1, 3.1 ) );
-        values.add( SingleValuedPair.of( 35000, 37000 ) );
-        values.add( SingleValuedPair.of( 8, 7 ) );
-        values.add( SingleValuedPair.of( 12, 12 ) );
-        values.add( SingleValuedPair.of( 93, 94 ) );
-        values.add( SingleValuedPair.of( Double.NaN, 94 ) );
-        values.add( SingleValuedPair.of( 93, Double.NaN ) );
-        values.add( SingleValuedPair.of( Double.NaN, Double.NaN ) );
+        SortedSet<Event<Pair<Double, Double>>> events = new TreeSet<>();
 
-        return SingleValuedPairs.of( values, SampleMetadata.of() );
+        Instant start = Instant.parse( "1985-01-01T00:00:00Z" );
+
+        events.add( Event.of( start.plus( Duration.ofHours( 1 ) ), Pair.of( 22.9, 22.8 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 2 ) ), Pair.of( 75.2, 80.0 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 3 ) ), Pair.of( 63.2, 65.0 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 4 ) ), Pair.of( 29.0, 30.0 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 5 ) ), Pair.of( 5.0, 2.0 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 6 ) ), Pair.of( 2.1, 3.1 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 7 ) ), Pair.of( 35000.0, 37000.0 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 8 ) ), Pair.of( 8.0, 7.0 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 9 ) ), Pair.of( 12.0, 12.0 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 10 ) ), Pair.of( 93.0, 94.0 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 11 ) ), Pair.of( Double.NaN, 94.0 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 12 ) ), Pair.of( 93.0, Double.NaN ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 13 ) ), Pair.of( Double.NaN, Double.NaN ) ) );
+
+        TimeSeriesOfPairsBuilder<Double, Double> builder = new TimeSeriesOfPairsBuilder<>();
+        return builder.addTimeSeries( TimeSeries.of( events ) )
+                      .setMetadata( SampleMetadata.of() )
+                      .build();
     }
 
     /**
-     * Returns a list of {@link TimeSeriesOfSingleValuedPairs} which corresponds to the pairs 
+     * Returns a list of {@link TimeSeriesOfPairs} with single-valued pairs which correspond to the pairs 
      * associated with system test scenario504 as of commit e91b36a8f6b798d1987e78a0f37b38f3ca4501ae.
      * The pairs are reproduced to 2 d.p. only.
      * 
      * @return a time series of single-valued pairs
      */
 
-    public static TimeSeriesOfSingleValuedPairs getSingleValuedPairsNine()
+    public static TimeSeriesOfPairs<Double, Double> getSingleValuedPairsNine()
     {
-        TimeSeriesOfSingleValuedPairsBuilder tsBuilder = new TimeSeriesOfSingleValuedPairsBuilder();
+        TimeSeriesOfPairsBuilder<Double, Double> tsBuilder = new TimeSeriesOfPairsBuilder<>();
 
         // Add the first time-series
         Instant basisTimeOne = Instant.parse( "2551-03-17T12:00:00Z" );
-        SortedSet<Event<SingleValuedPair>> first = new TreeSet<>();
+        SortedSet<Event<Pair<Double, Double>>> first = new TreeSet<>();
 
         first.add( Event.of( Instant.parse( "2551-03-17T15:00:00Z" ),
-                             SingleValuedPair.of( 409.67, 73.00 ) ) );
+                             Pair.of( 409.67, 73.00 ) ) );
         first.add( Event.of( Instant.parse( "2551-03-17T18:00:00Z" ),
-                             SingleValuedPair.of( 428.33, 79.00 ) ) );
+                             Pair.of( 428.33, 79.00 ) ) );
         first.add( Event.of( Instant.parse( "2551-03-17T21:00:00Z" ),
-                             SingleValuedPair.of( 443.67, 83.00 ) ) );
+                             Pair.of( 443.67, 83.00 ) ) );
         first.add( Event.of( Instant.parse( "2551-03-18T00:00:00Z" ),
-                             SingleValuedPair.of( 460.33, 89.00 ) ) );
+                             Pair.of( 460.33, 89.00 ) ) );
         first.add( Event.of( Instant.parse( "2551-03-18T03:00:00Z" ),
-                             SingleValuedPair.of( 477.67, 97.00 ) ) );
+                             Pair.of( 477.67, 97.00 ) ) );
         first.add( Event.of( Instant.parse( "2551-03-18T06:00:00Z" ),
-                             SingleValuedPair.of( 497.67, 101.00 ) ) );
+                             Pair.of( 497.67, 101.00 ) ) );
         first.add( Event.of( Instant.parse( "2551-03-18T09:00:00Z" ),
-                             SingleValuedPair.of( 517.67, 103.00 ) ) );
+                             Pair.of( 517.67, 103.00 ) ) );
         first.add( Event.of( Instant.parse( SEVENTH_TIME ),
-                             SingleValuedPair.of( 548.33, 107.00 ) ) );
+                             Pair.of( 548.33, 107.00 ) ) );
         first.add( Event.of( Instant.parse( EIGHTH_TIME ),
-                             SingleValuedPair.of( 567.67, 109.00 ) ) );
+                             Pair.of( 567.67, 109.00 ) ) );
         first.add( Event.of( Instant.parse( NINTH_TIME ),
-                             SingleValuedPair.of( 585.67, 113.00 ) ) );
+                             Pair.of( 585.67, 113.00 ) ) );
         first.add( Event.of( Instant.parse( TENTH_TIME ),
-                             SingleValuedPair.of( 602.33, 127.00 ) ) );
+                             Pair.of( 602.33, 127.00 ) ) );
 
         // Add second time-series
         Instant basisTimeTwo = Instant.parse( "2551-03-18T00:00:00Z" );
-        SortedSet<Event<SingleValuedPair>> second = new TreeSet<>();
+        SortedSet<Event<Pair<Double, Double>>> second = new TreeSet<>();
 
         second.add( Event.of( Instant.parse( "2551-03-18T03:00:00Z" ),
-                              SingleValuedPair.of( 477.67, 131.00 ) ) );
+                              Pair.of( 477.67, 131.00 ) ) );
         second.add( Event.of( Instant.parse( "2551-03-18T06:00:00Z" ),
-                              SingleValuedPair.of( 497.67, 137.00 ) ) );
+                              Pair.of( 497.67, 137.00 ) ) );
         second.add( Event.of( Instant.parse( "2551-03-18T09:00:00Z" ),
-                              SingleValuedPair.of( 517.67, 139.00 ) ) );
+                              Pair.of( 517.67, 139.00 ) ) );
         second.add( Event.of( Instant.parse( SEVENTH_TIME ),
-                              SingleValuedPair.of( 548.33, 149.00 ) ) );
+                              Pair.of( 548.33, 149.00 ) ) );
         second.add( Event.of( Instant.parse( EIGHTH_TIME ),
-                              SingleValuedPair.of( 567.67, 151.00 ) ) );
+                              Pair.of( 567.67, 151.00 ) ) );
         second.add( Event.of( Instant.parse( NINTH_TIME ),
-                              SingleValuedPair.of( 585.67, 157.00 ) ) );
+                              Pair.of( 585.67, 157.00 ) ) );
         second.add( Event.of( Instant.parse( TENTH_TIME ),
-                              SingleValuedPair.of( 602.33, 163.00 ) ) );
+                              Pair.of( 602.33, 163.00 ) ) );
         second.add( Event.of( Instant.parse( ELEVENTH_TIME ),
-                              SingleValuedPair.of( 616.33, 167.00 ) ) );
+                              Pair.of( 616.33, 167.00 ) ) );
         second.add( Event.of( Instant.parse( TWELFTH_TIME ),
-                              SingleValuedPair.of( 638.33, 173.00 ) ) );
+                              Pair.of( 638.33, 173.00 ) ) );
         second.add( Event.of( Instant.parse( THIRTEENTH_TIME ),
-                              SingleValuedPair.of( 653.00, 179.00 ) ) );
+                              Pair.of( 653.00, 179.00 ) ) );
         second.add( Event.of( Instant.parse( FOURTEENTH_TIME ),
-                              SingleValuedPair.of( 670.33, 181.00 ) ) );
+                              Pair.of( 670.33, 181.00 ) ) );
 
         // Add third time-series
         Instant basisTimeThree = Instant.parse( SEVENTH_TIME );
-        SortedSet<Event<SingleValuedPair>> third = new TreeSet<>();
+        SortedSet<Event<Pair<Double, Double>>> third = new TreeSet<>();
 
         third.add( Event.of( Instant.parse( EIGHTH_TIME ),
-                             SingleValuedPair.of( 567.67, 191.00 ) ) );
+                             Pair.of( 567.67, 191.00 ) ) );
         third.add( Event.of( Instant.parse( NINTH_TIME ),
-                             SingleValuedPair.of( 585.67, 193.00 ) ) );
+                             Pair.of( 585.67, 193.00 ) ) );
         third.add( Event.of( Instant.parse( TENTH_TIME ),
-                             SingleValuedPair.of( 602.33, 197.00 ) ) );
+                             Pair.of( 602.33, 197.00 ) ) );
         third.add( Event.of( Instant.parse( ELEVENTH_TIME ),
-                             SingleValuedPair.of( 616.33, 199.00 ) ) );
+                             Pair.of( 616.33, 199.00 ) ) );
         third.add( Event.of( Instant.parse( TWELFTH_TIME ),
-                             SingleValuedPair.of( 638.33, 211.00 ) ) );
+                             Pair.of( 638.33, 211.00 ) ) );
         third.add( Event.of( Instant.parse( THIRTEENTH_TIME ),
-                             SingleValuedPair.of( 653.00, 223.00 ) ) );
+                             Pair.of( 653.00, 223.00 ) ) );
         third.add( Event.of( Instant.parse( FOURTEENTH_TIME ),
-                             SingleValuedPair.of( 670.33, 227.00 ) ) );
+                             Pair.of( 670.33, 227.00 ) ) );
         third.add( Event.of( Instant.parse( "2551-03-19T12:00:00Z" ),
-                             SingleValuedPair.of( 691.67, 229.00 ) ) );
+                             Pair.of( 691.67, 229.00 ) ) );
         third.add( Event.of( Instant.parse( "2551-03-19T15:00:00Z" ),
-                             SingleValuedPair.of( 718.33, 233.00 ) ) );
+                             Pair.of( 718.33, 233.00 ) ) );
         third.add( Event.of( Instant.parse( "2551-03-19T18:00:00Z" ),
-                             SingleValuedPair.of( 738.33, 239.00 ) ) );
+                             Pair.of( 738.33, 239.00 ) ) );
         third.add( Event.of( Instant.parse( "2551-03-19T21:00:00Z" ),
-                             SingleValuedPair.of( 756.33, 241.00 ) ) );
+                             Pair.of( 756.33, 241.00 ) ) );
 
         // Add third time-series
         Instant basisTimeFour = Instant.parse( ELEVENTH_TIME );
-        SortedSet<Event<SingleValuedPair>> fourth = new TreeSet<>();
+        SortedSet<Event<Pair<Double, Double>>> fourth = new TreeSet<>();
 
         fourth.add( Event.of( Instant.parse( TWELFTH_TIME ),
-                              SingleValuedPair.of( 638.33, 251.00 ) ) );
+                              Pair.of( 638.33, 251.00 ) ) );
         fourth.add( Event.of( Instant.parse( THIRTEENTH_TIME ),
-                              SingleValuedPair.of( 653.00, 257.00 ) ) );
+                              Pair.of( 653.00, 257.00 ) ) );
         fourth.add( Event.of( Instant.parse( FOURTEENTH_TIME ),
-                              SingleValuedPair.of( 670.33, 263.00 ) ) );
+                              Pair.of( 670.33, 263.00 ) ) );
         fourth.add( Event.of( Instant.parse( "2551-03-19T12:00:00Z" ),
-                              SingleValuedPair.of( 691.67, 269.00 ) ) );
+                              Pair.of( 691.67, 269.00 ) ) );
         fourth.add( Event.of( Instant.parse( "2551-03-19T15:00:00Z" ),
-                              SingleValuedPair.of( 718.33, 271.00 ) ) );
+                              Pair.of( 718.33, 271.00 ) ) );
         fourth.add( Event.of( Instant.parse( "2551-03-19T18:00:00Z" ),
-                              SingleValuedPair.of( 738.33, 277.00 ) ) );
+                              Pair.of( 738.33, 277.00 ) ) );
         fourth.add( Event.of( Instant.parse( "2551-03-19T21:00:00Z" ),
-                              SingleValuedPair.of( 756.33, 281.00 ) ) );
+                              Pair.of( 756.33, 281.00 ) ) );
         fourth.add( Event.of( Instant.parse( "2551-03-20T00:00:00Z" ),
-                              SingleValuedPair.of( 776.33, 283.00 ) ) );
+                              Pair.of( 776.33, 283.00 ) ) );
         fourth.add( Event.of( Instant.parse( "2551-03-20T03:00:00Z" ),
-                              SingleValuedPair.of( 805.67, 293.00 ) ) );
+                              Pair.of( 805.67, 293.00 ) ) );
         fourth.add( Event.of( Instant.parse( "2551-03-20T06:00:00Z" ),
-                              SingleValuedPair.of( 823.67, 307.00 ) ) );
+                              Pair.of( 823.67, 307.00 ) ) );
         fourth.add( Event.of( Instant.parse( "2551-03-20T09:00:00Z" ),
-                              SingleValuedPair.of( 840.33, 311.00 ) ) );
+                              Pair.of( 840.33, 311.00 ) ) );
 
         final TimeWindow window = TimeWindow.of( Instant.parse( "2551-03-17T00:00:00Z" ),
                                                  Instant.parse( "2551-03-20T00:00:00Z" ),
@@ -543,24 +587,30 @@ public final class MetricTestDataFactory
      * @throws IOException if the read fails
      */
 
-    public static EnsemblePairs getEnsemblePairsOne() throws IOException
+    public static TimeSeriesOfPairs<Double, Ensemble> getEnsemblePairsOne() throws IOException
     {
         //Construct some ensemble pairs
-        final List<EnsemblePair> values = new ArrayList<>();
+        final SortedSet<Event<Pair<Double, Ensemble>>> values = new TreeSet<>();
 
         File file = new File( "testinput/metricTestDataFactory/getEnsemblePairsOne.asc" );
         List<Double> climatology = new ArrayList<>();
         try ( BufferedReader in =
                 new BufferedReader( new InputStreamReader( new FileInputStream( file ), StandardCharsets.UTF_8 ) ) )
         {
+
+            Instant time = Instant.parse( "1981-12-01T00:00:00Z" );
             String line = null;
             while ( Objects.nonNull( line = in.readLine() ) && !line.isEmpty() )
             {
                 double[] doubleValues =
                         Arrays.stream( line.split( "\\s+" ) ).mapToDouble( Double::parseDouble ).toArray();
-                values.add( EnsemblePair.of( doubleValues[0],
-                                             Arrays.copyOfRange( doubleValues, 1, doubleValues.length ) ) );
+                values.add( Event.of( time,
+                                      Pair.of( doubleValues[0],
+                                               Ensemble.of( Arrays.copyOfRange( doubleValues,
+                                                                                1,
+                                                                                doubleValues.length ) ) ) ) );
                 climatology.add( doubleValues[0] );
+                time = time.plus( Duration.ofHours( 1 ) );
             }
         }
 
@@ -579,11 +629,17 @@ public final class MetricTestDataFactory
                                                                                                          "ESP" ) )
                                                                    .setTimeWindow( window )
                                                                    .build();
-        return EnsemblePairs.of( values,
-                                 values,
-                                 meta,
-                                 baseMeta,
-                                 VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) ) );
+
+        VectorOfDoubles clim = VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) );
+
+        TimeSeriesOfPairsBuilder<Double, Ensemble> builder = new TimeSeriesOfPairsBuilder<>();
+
+        return builder.addTimeSeries( TimeSeries.of( values ) )
+                      .setMetadata( meta )
+                      .addTimeSeriesForBaseline( TimeSeries.of( values ) )
+                      .setMetadataForBaseline( baseMeta )
+                      .setClimatology( clim )
+                      .build();
     }
 
     /**
@@ -595,13 +651,16 @@ public final class MetricTestDataFactory
      * @throws IOException if the read fails
      */
 
-    public static EnsemblePairs getEnsemblePairsOneWithMissings() throws IOException
+    public static TimeSeriesOfPairs<Double, Ensemble> getEnsemblePairsOneWithMissings() throws IOException
     {
         //Construct some ensemble pairs
-        final List<EnsemblePair> values = new ArrayList<>();
+        final SortedSet<Event<Pair<Double, Ensemble>>> values = new TreeSet<>();
 
         File file = new File( "testinput/metricTestDataFactory/getEnsemblePairsOne.asc" );
         List<Double> climatology = new ArrayList<>();
+
+        Instant time = Instant.parse( "1981-12-01T00:00:00Z" );
+
         try ( BufferedReader in =
                 new BufferedReader( new InputStreamReader( new FileInputStream( file ), StandardCharsets.UTF_8 ) ) )
         {
@@ -610,15 +669,20 @@ public final class MetricTestDataFactory
             {
                 double[] doubleValues =
                         Arrays.stream( line.split( "\\s+" ) ).mapToDouble( Double::parseDouble ).toArray();
-                values.add( EnsemblePair.of( doubleValues[0],
-                                             Arrays.copyOfRange( doubleValues, 1, doubleValues.length ) ) );
+                values.add( Event.of( time,
+                                      Pair.of( doubleValues[0],
+                                               Ensemble.of( Arrays.copyOfRange( doubleValues,
+                                                                                1,
+                                                                                doubleValues.length ) ) ) ) );
                 climatology.add( doubleValues[0] );
+                time = time.plus( Duration.ofHours( 1 ) );
             }
         }
         //Add some missing values
         climatology.add( Double.NaN );
-        values.add( EnsemblePair.of( Double.NaN,
-                                     new double[] { Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN } ) );
+        values.add( Event.of( time.plus( Duration.ofHours( 1 ) ),
+                              Pair.of( Double.NaN,
+                                       Ensemble.of( Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN ) ) ) );
 
         final TimeWindow window = TimeWindow.of( Instant.parse( FIRST_TIME ),
                                                  Instant.parse( SECOND_TIME ),
@@ -637,11 +701,16 @@ public final class MetricTestDataFactory
                                                                    .setTimeWindow( window )
                                                                    .build();
 
-        return EnsemblePairs.of( values,
-                                 values,
-                                 meta,
-                                 baseMeta,
-                                 VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) ) );
+        VectorOfDoubles clim = VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) );
+
+        TimeSeriesOfPairsBuilder<Double, Ensemble> builder = new TimeSeriesOfPairsBuilder<>();
+
+        return builder.addTimeSeries( TimeSeries.of( values ) )
+                      .setMetadata( meta )
+                      .addTimeSeriesForBaseline( TimeSeries.of( values ) )
+                      .setMetadataForBaseline( baseMeta )
+                      .setClimatology( clim )
+                      .build();
     }
 
     /**
@@ -652,13 +721,16 @@ public final class MetricTestDataFactory
      * @throws IOException if the read fails
      */
 
-    public static EnsemblePairs getEnsemblePairsTwo() throws IOException
+    public static TimeSeriesOfPairs<Double, Ensemble> getEnsemblePairsTwo() throws IOException
     {
         //Construct some ensemble pairs
-        final List<EnsemblePair> values = new ArrayList<>();
+        final SortedSet<Event<Pair<Double, Ensemble>>> values = new TreeSet<>();
 
         File file = new File( "testinput/metricTestDataFactory/getEnsemblePairsTwo.asc" );
         List<Double> climatology = new ArrayList<>();
+
+        Instant time = Instant.parse( "1981-12-01T00:00:00Z" );
+
         try ( BufferedReader in =
                 new BufferedReader( new InputStreamReader( new FileInputStream( file ), StandardCharsets.UTF_8 ) ) )
         {
@@ -667,9 +739,13 @@ public final class MetricTestDataFactory
             {
                 double[] doubleValues =
                         Arrays.stream( line.split( "\\s+" ) ).mapToDouble( Double::parseDouble ).toArray();
-                values.add( EnsemblePair.of( doubleValues[0],
-                                             Arrays.copyOfRange( doubleValues, 1, doubleValues.length ) ) );
+                values.add( Event.of( time,
+                                      Pair.of( doubleValues[0],
+                                               Ensemble.of( Arrays.copyOfRange( doubleValues,
+                                                                                1,
+                                                                                doubleValues.length ) ) ) ) );
                 climatology.add( doubleValues[0] );
+                time = time.plus( Duration.ofHours( 1 ) );
             }
         }
 
@@ -682,9 +758,14 @@ public final class MetricTestDataFactory
                                                                                                      "HEFS" ) )
                                                                .setTimeWindow( window )
                                                                .build();
-        return EnsemblePairs.of( values,
-                                 meta,
-                                 VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) ) );
+        VectorOfDoubles clim = VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) );
+
+        TimeSeriesOfPairsBuilder<Double, Ensemble> builder = new TimeSeriesOfPairsBuilder<>();
+
+        return builder.addTimeSeries( TimeSeries.of( values ) )
+                      .setMetadata( meta )
+                      .setClimatology( clim )
+                      .build();
     }
 
     /**
@@ -693,12 +774,12 @@ public final class MetricTestDataFactory
      * @return ensemble pairs
      */
 
-    public static EnsemblePairs getEnsemblePairsThree()
+    public static TimeSeriesOfPairs<Double, Ensemble> getEnsemblePairsThree()
     {
         //Construct some ensemble pairs
 
-        final List<EnsemblePair> values = new ArrayList<>();
-        values.add( EnsemblePair.of( 22.9, new double[] { 22.8, 23.9 } ) );
+        final SortedSet<Event<Pair<Double, Ensemble>>> values = new TreeSet<>();
+        values.add( Event.of( Instant.parse( "1985-03-12T00:00:00Z" ), Pair.of( 22.9, Ensemble.of( 22.8, 23.9 ) ) ) );
 
         final TimeWindow window = TimeWindow.of( Instant.parse( FIRST_TIME ),
                                                  Instant.parse( SECOND_TIME ),
@@ -708,7 +789,11 @@ public final class MetricTestDataFactory
                                                                                                      "MAP" ) )
                                                                .setTimeWindow( window )
                                                                .build();
-        return EnsemblePairs.of( values, meta );
+        TimeSeriesOfPairsBuilder<Double, Ensemble> builder = new TimeSeriesOfPairsBuilder<>();
+
+        return builder.addTimeSeries( TimeSeries.of( values ) )
+                      .setMetadata( meta )
+                      .build();
     }
 
     /**
@@ -717,7 +802,7 @@ public final class MetricTestDataFactory
      * @return ensemble pairs
      */
 
-    public static EnsemblePairs getEnsemblePairsFour()
+    public static TimeSeriesOfPairs<Double, Ensemble> getEnsemblePairsFour()
     {
         //Construct some ensemble pairs
         final TimeWindow window = TimeWindow.of( Instant.parse( FIRST_TIME ),
@@ -728,7 +813,14 @@ public final class MetricTestDataFactory
                                                                                                      "MAP" ) )
                                                                .setTimeWindow( window )
                                                                .build();
-        return EnsemblePairs.of( Collections.emptyList(), Collections.emptyList(), meta, meta );
+
+        TimeSeriesOfPairsBuilder<Double, Ensemble> builder = new TimeSeriesOfPairsBuilder<>();
+
+        return builder.addTimeSeries( TimeSeries.of( Collections.emptySortedSet() ) )
+                      .setMetadata( meta )
+                      .addTimeSeriesForBaseline( TimeSeries.of( Collections.emptySortedSet() ) )
+                      .setMetadataForBaseline( meta )
+                      .build();
     }
 
     /**
@@ -738,36 +830,36 @@ public final class MetricTestDataFactory
      * @return a set of dichotomous pairs
      */
 
-    public static DichotomousPairs getDichotomousPairsOne()
+    public static SampleData<Pair<Boolean, Boolean>> getDichotomousPairsOne()
     {
         //Construct the dichotomous pairs using the example from http://www.cawcr.gov.au/projects/verification/#Contingency_table
         //83 hits, 38 false alarms, 23 misses and 222 correct negatives, i.e. N=365
-        final List<DichotomousPair> values = new ArrayList<>();
+        final List<Pair<Boolean, Boolean>> values = new ArrayList<>();
         //Hits
         for ( int i = 0; i < 82; i++ )
         {
-            values.add( DichotomousPair.of( true, true ) );
+            values.add( Pair.of( true, true ) );
         }
         //False alarms
         for ( int i = 82; i < 120; i++ )
         {
-            values.add( DichotomousPair.of( false, true ) );
+            values.add( Pair.of( false, true ) );
         }
         //Misses
         for ( int i = 120; i < 143; i++ )
         {
-            values.add( DichotomousPair.of( true, false ) );
+            values.add( Pair.of( true, false ) );
         }
         for ( int i = 144; i < 366; i++ )
         {
-            values.add( DichotomousPair.of( false, false ) );
+            values.add( Pair.of( false, false ) );
         }
 
         final SampleMetadata meta = SampleMetadata.of( MeasurementUnit.of(),
                                                        DatasetIdentifier.of( getLocation( DRRC2 ),
                                                                              "SQIN",
                                                                              "HEFS" ) );
-        return DichotomousPairs.ofDichotomousPairs( values, meta ); //Construct the pairs
+        return SampleDataBasic.of( values, meta ); //Construct the pairs
     }
 
     /**
@@ -777,70 +869,70 @@ public final class MetricTestDataFactory
      * @return a set of dichotomous pairs
      */
 
-    public static MulticategoryPairs getMulticategoryPairsOne()
+    public static SampleData<Pair<boolean[], boolean[]>> getMulticategoryPairsOne()
     {
         //Construct the multicategory pairs
-        final List<MulticategoryPair> values = new ArrayList<>();
+        final List<Pair<boolean[], boolean[]>> values = new ArrayList<>();
         //(1,1)
         for ( int i = 0; i < 24; i++ )
         {
-            values.add( MulticategoryPair.of( new boolean[] { true, false, false },
-                                              new boolean[] { true, false, false } ) );
+            values.add( Pair.of( new boolean[] { true, false, false },
+                                 new boolean[] { true, false, false } ) );
         }
         //(1,2)
         for ( int i = 24; i < 87; i++ )
         {
-            values.add( MulticategoryPair.of( new boolean[] { false, true, false },
-                                              new boolean[] { true, false, false } ) );
+            values.add( Pair.of( new boolean[] { false, true, false },
+                                 new boolean[] { true, false, false } ) );
         }
         //(1,3)
         for ( int i = 87; i < 118; i++ )
         {
-            values.add( MulticategoryPair.of( new boolean[] { false, false, true },
-                                              new boolean[] { true, false, false } ) );
+            values.add( Pair.of( new boolean[] { false, false, true },
+                                 new boolean[] { true, false, false } ) );
         }
         //(2,1)
         for ( int i = 118; i < 181; i++ )
         {
-            values.add( MulticategoryPair.of( new boolean[] { true, false, false },
-                                              new boolean[] { false, true, false } ) );
+            values.add( Pair.of( new boolean[] { true, false, false },
+                                 new boolean[] { false, true, false } ) );
         }
         //(2,2)
         for ( int i = 181; i < 284; i++ )
         {
-            values.add( MulticategoryPair.of( new boolean[] { false, true, false },
-                                              new boolean[] { false, true, false } ) );
+            values.add( Pair.of( new boolean[] { false, true, false },
+                                 new boolean[] { false, true, false } ) );
         }
         //(2,3)
         for ( int i = 284; i < 426; i++ )
         {
-            values.add( MulticategoryPair.of( new boolean[] { false, false, true },
-                                              new boolean[] { false, true, false } ) );
+            values.add( Pair.of( new boolean[] { false, false, true },
+                                 new boolean[] { false, true, false } ) );
         }
         //(3,1)
         for ( int i = 426; i < 481; i++ )
         {
-            values.add( MulticategoryPair.of( new boolean[] { true, false, false },
-                                              new boolean[] { false, false, true } ) );
+            values.add( Pair.of( new boolean[] { true, false, false },
+                                 new boolean[] { false, false, true } ) );
         }
         //(3,2)
         for ( int i = 481; i < 591; i++ )
         {
-            values.add( MulticategoryPair.of( new boolean[] { false, true, false },
-                                              new boolean[] { false, false, true } ) );
+            values.add( Pair.of( new boolean[] { false, true, false },
+                                 new boolean[] { false, false, true } ) );
         }
         //(3,3)
         for ( int i = 591; i < 788; i++ )
         {
-            values.add( MulticategoryPair.of( new boolean[] { false, false, true },
-                                              new boolean[] { false, false, true } ) );
+            values.add( Pair.of( new boolean[] { false, false, true },
+                                 new boolean[] { false, false, true } ) );
         }
 
         final SampleMetadata meta = SampleMetadata.of( MeasurementUnit.of(),
                                                        DatasetIdentifier.of( getLocation( DRRC2 ),
                                                                              "SQIN",
                                                                              "HEFS" ) );
-        return MulticategoryPairs.ofMulticategoryPairs( values, meta ); //Construct the pairs
+        return SampleDataBasic.of( values, meta ); //Construct the pairs
     }
 
     /**
@@ -849,22 +941,22 @@ public final class MetricTestDataFactory
      * @return discrete probability pairs
      */
 
-    public static DiscreteProbabilityPairs getDiscreteProbabilityPairsOne()
+    public static SampleData<Pair<Probability, Probability>> getDiscreteProbabilityPairsOne()
     {
         //Construct some probabilistic pairs, and use the same pairs as a reference for skill (i.e. skill = 0.0)
-        final List<DiscreteProbabilityPair> values = new ArrayList<>();
-        values.add( DiscreteProbabilityPair.of( 0, 3.0 / 5.0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 1.0 / 5.0 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 2.0 / 5.0 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 3.0 / 5.0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.0 / 5.0 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 1.0 / 5.0 ) );
+        final List<Pair<Probability, Probability>> values = new ArrayList<>();
+        values.add( Pair.of( Probability.ZERO, Probability.of( 3.0 / 5.0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 1.0 / 5.0 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 2.0 / 5.0 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 3.0 / 5.0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.0 / 5.0 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 1.0 / 5.0 ) ) );
 
         final SampleMetadata meta = SampleMetadata.of( MeasurementUnit.of(),
                                                        DatasetIdentifier.of( getLocation( DRRC2 ),
                                                                              "SQIN",
                                                                              "HEFS" ) );
-        return DiscreteProbabilityPairs.of( values, meta );
+        return SampleDataBasic.of( values, meta );
     }
 
     /**
@@ -873,23 +965,23 @@ public final class MetricTestDataFactory
      * @return discrete probability pairs
      */
 
-    public static DiscreteProbabilityPairs getDiscreteProbabilityPairsTwo()
+    public static SampleData<Pair<Probability, Probability>> getDiscreteProbabilityPairsTwo()
     {
         //Construct some probabilistic pairs, and use some different pairs as a reference
-        final List<DiscreteProbabilityPair> values = new ArrayList<>();
-        values.add( DiscreteProbabilityPair.of( 0, 3.0 / 5.0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 1.0 / 5.0 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 2.0 / 5.0 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 3.0 / 5.0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.0 / 5.0 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 1.0 / 5.0 ) );
-        final List<DiscreteProbabilityPair> baseline = new ArrayList<>();
-        baseline.add( DiscreteProbabilityPair.of( 0, 2.0 / 5.0 ) );
-        baseline.add( DiscreteProbabilityPair.of( 0, 2.0 / 5.0 ) );
-        baseline.add( DiscreteProbabilityPair.of( 1, 1.0 ) );
-        baseline.add( DiscreteProbabilityPair.of( 1, 3.0 / 5.0 ) );
-        baseline.add( DiscreteProbabilityPair.of( 0, 4.0 / 5.0 ) );
-        baseline.add( DiscreteProbabilityPair.of( 1, 1.0 / 5.0 ) );
+        final List<Pair<Probability, Probability>> values = new ArrayList<>();
+        values.add( Pair.of( Probability.ZERO, Probability.of( 3.0 / 5.0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 1.0 / 5.0 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 2.0 / 5.0 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 3.0 / 5.0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.0 / 5.0 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 1.0 / 5.0 ) ) );
+        final List<Pair<Probability, Probability>> baseline = new ArrayList<>();
+        baseline.add( Pair.of( Probability.ZERO, Probability.of( 2.0 / 5.0 ) ) );
+        baseline.add( Pair.of( Probability.ZERO, Probability.of( 2.0 / 5.0 ) ) );
+        baseline.add( Pair.of( Probability.ONE, Probability.of( 1.0 ) ) );
+        baseline.add( Pair.of( Probability.ONE, Probability.of( 3.0 / 5.0 ) ) );
+        baseline.add( Pair.of( Probability.ZERO, Probability.of( 4.0 / 5.0 ) ) );
+        baseline.add( Pair.of( Probability.ONE, Probability.of( 1.0 / 5.0 ) ) );
         final SampleMetadata main = SampleMetadata.of( MeasurementUnit.of(),
                                                        DatasetIdentifier.of( getLocation( DRRC2 ),
                                                                              "SQIN",
@@ -898,7 +990,7 @@ public final class MetricTestDataFactory
                                                        DatasetIdentifier.of( getLocation( DRRC2 ),
                                                                              "SQIN",
                                                                              "ESP" ) );
-        return DiscreteProbabilityPairs.of( values, baseline, main, base );
+        return SampleDataBasic.of( values, main, baseline, base, null );
     }
 
     /**
@@ -913,363 +1005,364 @@ public final class MetricTestDataFactory
      * @return a set of discrete probability pairs
      */
 
-    public static DiscreteProbabilityPairs getDiscreteProbabilityPairsThree()
+    public static SampleData<Pair<Probability, Probability>> getDiscreteProbabilityPairsThree()
     {
         //Construct some probabilistic pairs, and use some different pairs as a reference
-        final List<DiscreteProbabilityPair> values = new ArrayList<>();
-        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.4 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.7 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.7 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 1 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.7 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.7 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.6 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.4 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.7 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.9 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.8 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.8 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.5 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.8 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.5 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.7 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.8 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.5 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.5 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.9 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.6 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.8 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.5 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.7 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.6 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.7 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.9 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.6 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.8 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 1 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.8 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.5 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.6 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.5 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.7 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.8 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.6 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.3 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.3 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.7 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.6 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.9 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.7 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.7 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.5 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.7 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.6 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.4 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.8 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.7 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.4 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.3 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.7 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.7 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.8 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.4 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.4 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.7 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.5 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.5 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.7 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.5 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.5 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.4 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.4 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.4 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.6 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.8 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.8 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.9 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.6 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.5 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.4 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.4 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.6 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.7 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.8 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.5 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.3 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.7 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.7 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.6 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.4 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.7 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.7 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.5 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.9 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.7 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.4 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.6 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.7 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 1 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.8 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.6 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.5 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.5 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.4 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.6 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.9 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.7 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.9 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.5 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.8 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.6 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.6 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.7 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.8 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 1 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.7 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.4 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.8 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.8 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.5 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.4 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.7 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.8 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.7 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.7 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.5 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 1 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.7 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.5 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.6 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.4 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.4 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.8 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 1 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.8 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.5 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.9 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.6 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.7 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 1 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.6 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.8 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.8 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.6 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.4 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.6 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.3 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.9 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.7 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.8 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 1 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.9 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        final List<Pair<Probability, Probability>> values = new ArrayList<>();
+
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.3 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.4 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.7 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.7 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 1 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.7 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.7 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.6 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.4 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.3 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.7 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.9 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.8 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.8 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.5 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.3 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.8 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.5 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.7 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.8 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.3 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.5 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.5 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.3 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.3 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.3 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.3 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.9 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.6 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.3 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.3 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.8 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.5 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.7 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.6 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.3 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.3 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.3 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.7 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.9 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.6 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.8 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 1 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.8 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.5 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.6 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.5 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.7 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.8 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.6 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.3 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.3 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.7 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.6 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.9 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.7 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.7 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.5 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.7 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.6 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.4 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.8 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.7 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.4 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.3 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.3 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.3 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.7 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.7 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.8 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.4 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.4 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.7 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.3 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.5 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.5 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.7 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.3 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.3 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.3 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.5 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.5 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.3 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.4 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.4 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.4 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.6 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.8 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.8 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.9 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.6 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.5 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.4 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.4 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.6 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.7 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.8 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.3 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.5 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.3 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.7 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.3 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.7 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.6 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.4 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.7 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.7 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.5 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.9 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.7 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.4 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.6 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.7 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 1 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.8 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.3 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.6 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.5 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.5 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.3 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.4 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.3 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.3 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.6 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.3 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.9 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.7 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.9 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.5 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.8 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.3 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.6 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.6 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.7 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.8 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.3 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 1 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.7 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.4 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.3 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.3 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.8 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.8 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.3 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.5 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.4 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.7 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.3 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.8 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.7 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.7 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.5 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 1 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.7 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.5 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.6 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.4 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.3 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.4 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.3 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.8 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 1 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.8 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.5 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.9 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.6 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.7 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 1 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.6 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.8 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.8 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.6 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.4 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.6 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.3 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.9 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.7 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.3 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.8 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 1 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.9 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
 
         final SampleMetadata main = SampleMetadata.of( MeasurementUnit.of(),
                                                        DatasetIdentifier.of( getLocation( "Tampere" ),
                                                                              "MAP",
                                                                              "FMI" ) );
-        return DiscreteProbabilityPairs.of( values, main );
+        return SampleDataBasic.of( values, main );
     }
 
     /**
@@ -1278,52 +1371,52 @@ public final class MetricTestDataFactory
      * @return discrete probability pairs with observed non-occurrences
      */
 
-    public static DiscreteProbabilityPairs getDiscreteProbabilityPairsFour()
+    public static SampleData<Pair<Probability, Probability>> getDiscreteProbabilityPairsFour()
     {
-        final List<DiscreteProbabilityPair> values = new ArrayList<>();
-        values.add( DiscreteProbabilityPair.of( 0, 3.0 / 5.0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 1.0 / 5.0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 2.0 / 5.0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 3.0 / 5.0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.0 / 5.0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 1.0 / 5.0 ) );
+        final List<Pair<Probability, Probability>> values = new ArrayList<>();
+        values.add( Pair.of( Probability.ZERO, Probability.of( 3.0 / 5.0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 1.0 / 5.0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 2.0 / 5.0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 3.0 / 5.0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.0 / 5.0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 1.0 / 5.0 ) ) );
 
         final SampleMetadata meta = SampleMetadata.of( MeasurementUnit.of(),
                                                        DatasetIdentifier.of( getLocation( DRRC2 ),
                                                                              "SQIN",
                                                                              "HEFS" ) );
-        return DiscreteProbabilityPairs.of( values, meta );
+        return SampleDataBasic.of( values, meta );
     }
 
     /**
-     * Returns a {@link TimeSeriesOfSingleValuedPairs} containing fake data.
+     * Returns a {@link TimeSeriesOfPairs} with single-valued pairs containing fake data.
      * 
      * @return a time-series of single-valued pairs
      */
 
-    public static TimeSeriesOfSingleValuedPairs getTimeSeriesOfSingleValuedPairsOne()
+    public static TimeSeriesOfPairs<Double, Double> getTimeSeriesOfSingleValuedPairsOne()
     {
         // Build an immutable regular time-series of single-valued pairs
-        TimeSeriesOfSingleValuedPairsBuilder builder =
-                new TimeSeriesOfSingleValuedPairsBuilder();
+        TimeSeriesOfPairsBuilder<Double, Double> builder =
+                new TimeSeriesOfPairsBuilder<>();
 
         // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
         Instant firstId = Instant.parse( FIRST_TIME );
-        SortedSet<Event<SingleValuedPair>> firstValues = new TreeSet<>();
+        SortedSet<Event<Pair<Double, Double>>> firstValues = new TreeSet<>();
 
         // Add some values
-        firstValues.add( Event.of( Instant.parse( "1985-01-01T06:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
-        firstValues.add( Event.of( Instant.parse( "1985-01-01T12:00:00Z" ), SingleValuedPair.of( 1, 5 ) ) );
-        firstValues.add( Event.of( Instant.parse( "1985-01-01T18:00:00Z" ), SingleValuedPair.of( 5, 1 ) ) );
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T06:00:00Z" ), Pair.of( 1.0, 1.0 ) ) );
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T12:00:00Z" ), Pair.of( 1.0, 5.0 ) ) );
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T18:00:00Z" ), Pair.of( 5.0, 1.0 ) ) );
 
         // Add another time-series
         Instant secondId = Instant.parse( THIRD_TIME );
-        SortedSet<Event<SingleValuedPair>> secondValues = new TreeSet<>();
+        SortedSet<Event<Pair<Double, Double>>> secondValues = new TreeSet<>();
 
         // Add some values
-        secondValues.add( Event.of( Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 10, 1 ) ) );
-        secondValues.add( Event.of( Instant.parse( FIFTH_TIME ), SingleValuedPair.of( 1, 1 ) ) );
-        secondValues.add( Event.of( Instant.parse( SIXTH_TIME ), SingleValuedPair.of( 1, 10 ) ) );
+        secondValues.add( Event.of( Instant.parse( FOURTH_TIME ), Pair.of( 10.0, 1.0 ) ) );
+        secondValues.add( Event.of( Instant.parse( FIFTH_TIME ), Pair.of( 1.0, 1.0 ) ) );
+        secondValues.add( Event.of( Instant.parse( SIXTH_TIME ), Pair.of( 1.0, 10.0 ) ) );
 
         // Create some default metadata for the time-series
         final TimeWindow window = TimeWindow.of( Instant.parse( FIRST_TIME ),
@@ -1336,34 +1429,34 @@ public final class MetricTestDataFactory
                                                                    .setTimeWindow( window )
                                                                    .build();
         // Build the time-series
-        return (TimeSeriesOfSingleValuedPairs) builder.addTimeSeries( TimeSeries.of( firstId,
-                                                                                     ReferenceTimeType.DEFAULT,
-                                                                                     firstValues ) )
-                                                      .addTimeSeries( TimeSeries.of( secondId,
-                                                                                     ReferenceTimeType.DEFAULT,
-                                                                                     secondValues ) )
-                                                      .setMetadata( metaData )
-                                                      .build();
+        return builder.addTimeSeries( TimeSeries.of( firstId,
+                                                     ReferenceTimeType.DEFAULT,
+                                                     firstValues ) )
+                      .addTimeSeries( TimeSeries.of( secondId,
+                                                     ReferenceTimeType.DEFAULT,
+                                                     secondValues ) )
+                      .setMetadata( metaData )
+                      .build();
     }
 
     /**
-     * Returns a {@link TimeSeriesOfSingleValuedPairs} containing fake data.
+     * Returns a {@link TimeSeriesOfPairs} with single-valued pairs containing fake data.
      * 
      * @return a time-series of single-valued pairs
      */
 
-    public static TimeSeriesOfSingleValuedPairs getTimeSeriesOfSingleValuedPairsTwo()
+    public static TimeSeriesOfPairs<Double, Double> getTimeSeriesOfSingleValuedPairsTwo()
     {
         // Build an immutable regular time-series of single-valued pairs
-        TimeSeriesOfSingleValuedPairsBuilder builder =
-                new TimeSeriesOfSingleValuedPairsBuilder();
+        TimeSeriesOfPairsBuilder<Double, Double> builder =
+                new TimeSeriesOfPairsBuilder<>();
         // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
         Instant firstId = Instant.parse( FIRST_TIME );
-        SortedSet<Event<SingleValuedPair>> firstValues = new TreeSet<>();
+        SortedSet<Event<Pair<Double, Double>>> firstValues = new TreeSet<>();
         // Add some values
-        firstValues.add( Event.of( Instant.parse( "1985-01-01T06:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
-        firstValues.add( Event.of( Instant.parse( "1985-01-01T12:00:00Z" ), SingleValuedPair.of( 1, 5 ) ) );
-        firstValues.add( Event.of( Instant.parse( "1985-01-01T18:00:00Z" ), SingleValuedPair.of( 5, 1 ) ) );
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T06:00:00Z" ), Pair.of( 1.0, 1.0 ) ) );
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T12:00:00Z" ), Pair.of( 1.0, 5.0 ) ) );
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T18:00:00Z" ), Pair.of( 5.0, 1.0 ) ) );
 
         // Create some default metadata for the time-series
         final TimeWindow window = TimeWindow.of( Instant.parse( FIRST_TIME ),
@@ -1376,34 +1469,34 @@ public final class MetricTestDataFactory
                                                                    .setTimeWindow( window )
                                                                    .build();
         // Build the time-series
-        return (TimeSeriesOfSingleValuedPairs) builder.addTimeSeries( TimeSeries.of( firstId,
-                                                                                     ReferenceTimeType.DEFAULT,
-                                                                                     firstValues ) )
-                                                      .setMetadata( metaData )
-                                                      .build();
+        return builder.addTimeSeries( TimeSeries.of( firstId,
+                                                     ReferenceTimeType.DEFAULT,
+                                                     firstValues ) )
+                      .setMetadata( metaData )
+                      .build();
     }
 
     /**
-     * Returns a {@link TimeSeriesOfSingleValuedPairs} containing fake data.
+     * Returns a {@link TimeSeriesOfPairs} with single-valued pairs containing fake data.
      * 
      * @return a time-series of single-valued pairs
      */
 
-    public static TimeSeriesOfSingleValuedPairs getTimeSeriesOfSingleValuedPairsThree()
+    public static TimeSeriesOfPairs<Double, Double> getTimeSeriesOfSingleValuedPairsThree()
     {
         // Build an immutable regular time-series of single-valued pairs
-        TimeSeriesOfSingleValuedPairsBuilder builder =
-                new TimeSeriesOfSingleValuedPairsBuilder();
+        TimeSeriesOfPairsBuilder<Double, Double> builder =
+                new TimeSeriesOfPairsBuilder<>();
         // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
 
         // Add a time-series
         Instant secondId = Instant.parse( THIRD_TIME );
-        SortedSet<Event<SingleValuedPair>> secondValues = new TreeSet<>();
+        SortedSet<Event<Pair<Double, Double>>> secondValues = new TreeSet<>();
 
         // Add some values
-        secondValues.add( Event.of( Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 10, 1 ) ) );
-        secondValues.add( Event.of( Instant.parse( FIFTH_TIME ), SingleValuedPair.of( 1, 1 ) ) );
-        secondValues.add( Event.of( Instant.parse( SIXTH_TIME ), SingleValuedPair.of( 1, 10 ) ) );
+        secondValues.add( Event.of( Instant.parse( FOURTH_TIME ), Pair.of( 10.0, 1.0 ) ) );
+        secondValues.add( Event.of( Instant.parse( FIFTH_TIME ), Pair.of( 1.0, 1.0 ) ) );
+        secondValues.add( Event.of( Instant.parse( SIXTH_TIME ), Pair.of( 1.0, 10.0 ) ) );
 
         // Create some default metadata for the time-series
         final TimeWindow window = TimeWindow.of( Instant.parse( THIRD_TIME ),
@@ -1417,24 +1510,24 @@ public final class MetricTestDataFactory
                                                                    .setTimeWindow( window )
                                                                    .build();
         // Build the time-series
-        return (TimeSeriesOfSingleValuedPairs) builder.addTimeSeries( TimeSeries.of( secondId,
-                                                                                     ReferenceTimeType.DEFAULT,
-                                                                                     secondValues ) )
-                                                      .setMetadata( metaData )
-                                                      .build();
+        return builder.addTimeSeries( TimeSeries.of( secondId,
+                                                     ReferenceTimeType.DEFAULT,
+                                                     secondValues ) )
+                      .setMetadata( metaData )
+                      .build();
     }
 
     /**
-     * Returns a {@link TimeSeriesOfSingleValuedPairs} containing no data.
+     * Returns a {@link TimeSeriesOfPairs} with single-valued pairs containing no data.
      * 
      * @return a time-series of single-valued pairs
      */
 
-    public static TimeSeriesOfSingleValuedPairs getTimeSeriesOfSingleValuedPairsFour()
+    public static TimeSeriesOfPairs<Double, Double> getTimeSeriesOfSingleValuedPairsFour()
     {
         // Build an immutable regular time-series of single-valued pairs
-        TimeSeriesOfSingleValuedPairsBuilder builder =
-                new TimeSeriesOfSingleValuedPairsBuilder();
+        TimeSeriesOfPairsBuilder<Double, Double> builder =
+                new TimeSeriesOfPairsBuilder<>();
         // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
 
         // Create some default metadata for the time-series
@@ -1446,35 +1539,33 @@ public final class MetricTestDataFactory
                                                                    .setTimeWindow( window )
                                                                    .build();
         // Build the time-series
-        return (TimeSeriesOfSingleValuedPairs) builder.setMetadata( metaData )
-                                                      .build();
+        return builder.setMetadata( metaData ).build();
     }
 
 
     /**
-     * Returns a {@link TimeSeriesOfSingleValuedPairs} containing fake data with the same peak at multiple times.
+     * Returns a {@link TimeSeriesOfPairs} with single-valued pairs containing fake data with the same peak at multiple times.
      * 
      * @return a time-series of single-valued pairs
      */
 
-    public static TimeSeriesOfSingleValuedPairs getTimeSeriesOfSingleValuedPairsFive()
+    public static TimeSeriesOfPairs<Double, Double> getTimeSeriesOfSingleValuedPairsFive()
     {
         // Build an immutable regular time-series of single-valued pairs
-        TimeSeriesOfSingleValuedPairsBuilder builder =
-                new TimeSeriesOfSingleValuedPairsBuilder();
+        TimeSeriesOfPairsBuilder<Double, Double> builder =
+                new TimeSeriesOfPairsBuilder<>();
         // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
 
         // Add a time-series
         Instant secondId = Instant.parse( THIRD_TIME );
-        SortedSet<Event<SingleValuedPair>> secondValues = new TreeSet<>();
+        SortedSet<Event<Pair<Double, Double>>> secondValues = new TreeSet<>();
 
         // Add some values
-        secondValues.add( Event.of( Instant.parse( FOURTH_TIME ), SingleValuedPair.of( 10, 1 ) ) );
-        secondValues.add( Event.of( Instant.parse( FIFTH_TIME ), SingleValuedPair.of( 1, 1 ) ) );
-        secondValues.add( Event.of( Instant.parse( SIXTH_TIME ),
-                                    SingleValuedPair.of( 10, 10 ) ) );
-        secondValues.add( Event.of( Instant.parse( "1985-01-03T00:00:00Z" ), SingleValuedPair.of( 2, 10 ) ) );
-        secondValues.add( Event.of( Instant.parse( "1985-01-03T06:00:00Z" ), SingleValuedPair.of( 4, 7 ) ) );
+        secondValues.add( Event.of( Instant.parse( FOURTH_TIME ), Pair.of( 10.0, 1.0 ) ) );
+        secondValues.add( Event.of( Instant.parse( FIFTH_TIME ), Pair.of( 1.0, 1.0 ) ) );
+        secondValues.add( Event.of( Instant.parse( SIXTH_TIME ), Pair.of( 10.0, 10.0 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-03T00:00:00Z" ), Pair.of( 2.0, 10.0 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-03T06:00:00Z" ), Pair.of( 4.0, 7.0 ) ) );
 
         // Create some default metadata for the time-series
         final TimeWindow window = TimeWindow.of( Instant.parse( THIRD_TIME ),
@@ -1487,11 +1578,11 @@ public final class MetricTestDataFactory
                                                                    .setTimeWindow( window )
                                                                    .build();
         // Build the time-series
-        return (TimeSeriesOfSingleValuedPairs) builder.addTimeSeries( TimeSeries.of( secondId,
-                                                                                     ReferenceTimeType.DEFAULT,
-                                                                                     secondValues ) )
-                                                      .setMetadata( metaData )
-                                                      .build();
+        return builder.addTimeSeries( TimeSeries.of( secondId,
+                                                     ReferenceTimeType.DEFAULT,
+                                                     secondValues ) )
+                      .setMetadata( metaData )
+                      .build();
     }
 
     /**

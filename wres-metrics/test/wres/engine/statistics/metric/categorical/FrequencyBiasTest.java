@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -15,9 +16,10 @@ import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.pairs.DichotomousPairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.MatrixStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
@@ -61,8 +63,8 @@ public final class FrequencyBiasTest
                                      MeasurementUnit.of(),
                                      MetricConstants.FREQUENCY_BIAS,
                                      MetricConstants.MAIN );
-    }    
-    
+    }
+
     /**
      * Compares the output from {@link Metric#apply(wres.datamodel.sampledata.MetricInput)} against expected output.
      */
@@ -71,7 +73,7 @@ public final class FrequencyBiasTest
     public void testApply()
     {
         //Generate some data
-        final DichotomousPairs input = MetricTestDataFactory.getDichotomousPairsOne();
+        final SampleData<Pair<Boolean, Boolean>> input = MetricTestDataFactory.getDichotomousPairsOne();
 
         //Check the results
         final DoubleScoreStatistic actual = fb.apply( input );
@@ -82,23 +84,23 @@ public final class FrequencyBiasTest
                     + ".",
                     actual.equals( expected ) );
     }
-    
+
     /**
-     * Validates the output from {@link Metric#apply(DichotomousPairs)} when supplied with no data.
+     * Validates the output from {@link Metric#apply(SampleData)} when supplied with no data.
      */
 
     @Test
     public void testApplyWithNoData()
     {
         // Generate empty data
-        DichotomousPairs input =
-                DichotomousPairs.ofDichotomousPairs( Arrays.asList(), SampleMetadata.of() );
- 
+        SampleData<Pair<Boolean, Boolean>> input =
+                SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
+
         DoubleScoreStatistic actual = fb.apply( input );
 
         assertTrue( actual.getData().isNaN() );
-    }     
-    
+    }
+
     /**
      * Verifies that {@link Metric#getName()} returns the expected result.
      */
@@ -107,8 +109,8 @@ public final class FrequencyBiasTest
     public void testMetricIsNamedCorrectly()
     {
         assertTrue( fb.getName().equals( MetricConstants.FREQUENCY_BIAS.toString() ) );
-    }    
-    
+    }
+
     /**
      * Verifies that {@link Score#isDecomposable()} returns <code>false</code>.
      */
@@ -117,8 +119,8 @@ public final class FrequencyBiasTest
     public void testMetricIsNotDecoposable()
     {
         assertFalse( fb.isDecomposable() );
-    }    
-    
+    }
+
     /**
      * Verifies that {@link Score#isSkillScore()} returns <code>false</code>.
      */
@@ -127,8 +129,8 @@ public final class FrequencyBiasTest
     public void testMetricIsASkillScore()
     {
         assertFalse( fb.isSkillScore() );
-    }       
-    
+    }
+
     /**
      * Verifies that {@link Score#getScoreOutputGroup()} returns {@link OutputScoreGroup#NONE}.
      */
@@ -137,8 +139,8 @@ public final class FrequencyBiasTest
     public void testGetScoreOutputGroup()
     {
         assertTrue( fb.getScoreOutputGroup() == ScoreGroup.NONE );
-    }      
-    
+    }
+
     /**
      * Verifies that {@link Collectable#getCollectionOf()} returns {@link MetricConstants#CONTINGENCY_TABLE}.
      */
@@ -147,7 +149,7 @@ public final class FrequencyBiasTest
     public void testGetCollectionOf()
     {
         assertTrue( fb.getCollectionOf() == MetricConstants.CONTINGENCY_TABLE );
-    }      
+    }
 
     /**
      * Checks for an exception when calling {@link Collectable#aggregate(wres.datamodel.statistics.MetricOutput)} with 
@@ -158,8 +160,8 @@ public final class FrequencyBiasTest
     public void testExceptionOnNullInput()
     {
         exception.expect( SampleDataException.class );
-        exception.expectMessage( "Specify non-null input to the '"+fb.getName()+"'." );
+        exception.expectMessage( "Specify non-null input to the '" + fb.getName() + "'." );
         fb.aggregate( (MatrixStatistic) null );
-    }    
+    }
 
 }

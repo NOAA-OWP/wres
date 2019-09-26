@@ -2,6 +2,9 @@ package wres.engine.statistics.metric.ensemble;
 
 import java.util.Arrays;
 
+import org.apache.commons.lang3.tuple.Pair;
+
+import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
@@ -62,7 +65,7 @@ public class BoxPlotErrorByObserved extends EnsembleBoxPlot
      */
 
     @Override
-    BoxPlotStatistic getBox( EnsemblePair pair, StatisticMetadata metadata )
+    BoxPlotStatistic getBox( Pair<Double,Ensemble> pair, StatisticMetadata metadata )
     {
         //Get the sorted errors
         double[] probs = probabilities.getDoubles();
