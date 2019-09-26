@@ -25,18 +25,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.datamodel.sampledata.SampleData;
-import wres.datamodel.sampledata.SampleDataBuilder;
 import wres.datamodel.sampledata.SampleDataBasic.SampleDataBasicBuilder;
-import wres.datamodel.sampledata.pairs.DichotomousPair;
-import wres.datamodel.sampledata.pairs.DichotomousPairs;
-import wres.datamodel.sampledata.pairs.DiscreteProbabilityPair;
-import wres.datamodel.sampledata.pairs.DiscreteProbabilityPairs;
-import wres.datamodel.sampledata.pairs.EnsemblePair;
-import wres.datamodel.sampledata.pairs.EnsemblePairs;
-import wres.datamodel.sampledata.pairs.SingleValuedPair;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs.TimeSeriesOfPairsBuilder;
+import wres.datamodel.sampledata.pairs.PoolOfPairs;
+import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.statistics.Statistic;
@@ -52,7 +43,7 @@ import wres.datamodel.time.TimeSeriesSlicer;
  * A utility class for slicing/dicing and transforming datasets associated with verification metrics.
  * 
  * @author james.brown@hydrosolved.com
- * @see     TimeSeriesSlicer
+ * @see    TimeSeriesSlicer
  */
 
 public final class Slicer
@@ -343,7 +334,7 @@ public final class Slicer
      * @throws NullPointerException if either the input or condition is null
      */
 
-    public static <L, R> TimeSeriesOfPairs<L, R> filter( TimeSeriesOfPairs<L, R> input,
+    public static <L, R> PoolOfPairs<L, R> filter( PoolOfPairs<L, R> input,
                                                          Predicate<Pair<L, R>> condition,
                                                          DoublePredicate applyToClimatology )
     {
@@ -351,7 +342,7 @@ public final class Slicer
 
         Objects.requireNonNull( condition, NULL_PREDICATE_EXCEPTION );
 
-        TimeSeriesOfPairsBuilder<L, R> builder = new TimeSeriesOfPairsBuilder<>();
+        PoolOfPairsBuilder<L, R> builder = new PoolOfPairsBuilder<>();
 
         builder.setMetadata( input.getMetadata() );
 
@@ -377,7 +368,7 @@ public final class Slicer
         //Filter baseline as required
         if ( input.hasBaseline() )
         {
-            TimeSeriesOfPairs<L, R> baseline = input.getBaselineData();
+            PoolOfPairs<L, R> baseline = input.getBaselineData();
 
             for ( TimeSeries<Pair<L, R>> nextBase : baseline.get() )
             {
@@ -403,7 +394,7 @@ public final class Slicer
      * @throws NullPointerException if either the input or condition is null
      */
 
-    public static <L, R> TimeSeriesOfPairs<L, R> filterPerSeries( TimeSeriesOfPairs<L, R> input,
+    public static <L, R> PoolOfPairs<L, R> filterPerSeries( PoolOfPairs<L, R> input,
                                                                   Predicate<TimeSeries<Pair<L, R>>> condition,
                                                                   DoublePredicate applyToClimatology )
     {
@@ -411,7 +402,7 @@ public final class Slicer
 
         Objects.requireNonNull( condition, NULL_PREDICATE_EXCEPTION );
 
-        TimeSeriesOfPairsBuilder<L, R> builder = new TimeSeriesOfPairsBuilder<>();
+        PoolOfPairsBuilder<L, R> builder = new PoolOfPairsBuilder<>();
 
         builder.setMetadata( input.getMetadata() );
 
@@ -440,7 +431,7 @@ public final class Slicer
         //Filter baseline as required
         if ( input.hasBaseline() )
         {
-            TimeSeriesOfPairs<L, R> baseline = input.getBaselineData();
+            PoolOfPairs<L, R> baseline = input.getBaselineData();
 
             for ( TimeSeries<Pair<L, R>> nextBase : baseline.get() )
             {
@@ -476,7 +467,7 @@ public final class Slicer
 
         Objects.requireNonNull( condition, NULL_PREDICATE_EXCEPTION );
 
-        SampleDataBuilder<T> builder = new SampleDataBasicBuilder<>();
+        SampleDataBasicBuilder<T> builder = new SampleDataBasicBuilder<>();
 
         List<T> mainPairs = input.getRawData();
         List<T> mainPairsSubset =
@@ -511,69 +502,6 @@ public final class Slicer
         return builder.build();
     }
 
-    /**
-     * Filters {@link EnsemblePairs} by applying a mapper function to the input. This allows for fine-grain filtering
-     * of specific elements of the right side of a pair. For example, filter all elements of the right side that 
-     * correspond to {@link Double#isNaN()}. Does not modify the metadata associated with the input.
-     * 
-     * @param input the {@link EnsemblePairs}
-     * @param mapper the function that maps from {@link EnsemblePairs} to a new {@link EnsemblePairs}
-     * @param applyToClimatology an optional filter for the climatology, may be null
-     * @return the filtered {@link EnsemblePairs}
-     * @throws NullPointerException if either the input or condition is null
-     */
-
-    public static EnsemblePairs filter( EnsemblePairs input,
-                                        UnaryOperator<EnsemblePair> mapper,
-                                        DoublePredicate applyToClimatology )
-    {
-        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
-
-        Objects.requireNonNull( mapper, NULL_MAPPER_EXCEPTION );
-
-        List<EnsemblePair> mainPairs = input.getRawData();
-        List<EnsemblePair> mainPairsSubset = new ArrayList<>();
-
-        for ( EnsemblePair next : mainPairs )
-        {
-            EnsemblePair transformed = mapper.apply( next );
-            if ( Objects.nonNull( transformed ) )
-            {
-                mainPairsSubset.add( transformed );
-            }
-        }
-
-        //Filter climatology as required
-        VectorOfDoubles climatology = input.getClimatology();
-        if ( input.hasClimatology() && Objects.nonNull( applyToClimatology ) )
-        {
-            climatology =
-                    Slicer.filter( input.getClimatology(), applyToClimatology );
-        }
-
-        if ( input.hasBaseline() )
-        {
-            List<EnsemblePair> basePairs = input.getBaselineData().getRawData();
-            List<EnsemblePair> basePairsSubset = new ArrayList<>();
-
-            for ( EnsemblePair next : basePairs )
-            {
-                EnsemblePair transformed = mapper.apply( next );
-                if ( Objects.nonNull( transformed ) )
-                {
-                    basePairsSubset.add( transformed );
-                }
-            }
-
-            return EnsemblePairs.of( mainPairsSubset,
-                                     basePairsSubset,
-                                     input.getMetadata(),
-                                     input.getBaselineData().getMetadata(),
-                                     climatology );
-        }
-        return EnsemblePairs.of( mainPairsSubset, input.getMetadata(), climatology );
-    }
-    
     /**
      * <p>Returns a subset of metric outputs whose {@link StatisticMetadata} matches the supplied predicate. For 
      * example, to filter by a particular {@link TimeWindow} and {@link OneOrTwoThresholds} associated with the 
@@ -677,13 +605,13 @@ public final class Slicer
     }
 
     /**
-     * Returns as many lists of {@link EnsemblePair} as groups of atomic pairs in the input with an
-     * equal number of elements. i.e. each list of {@link EnsemblePair} in the returned result has an
-     * equal number of elements, internally, and a different number of elements than all other subsets of pairs. The
-     * subsets are returned in a map, indexed by the number of elements on the right side.
+     * Returns as many lists of ensemble pairs as groups of atomic pairs in the input with an equal number of elements, 
+     * i.e. each list of ensemble pairs in the returned result has an equal number of elements, internally, and a 
+     * different number of elements than all other subsets of pairs. The subsets are returned in a map, indexed by the 
+     * number of elements on the right side.
      * 
-     * @param input a list of {@link EnsemblePair} to slice
-     * @return as many subsets of {@link EnsemblePair} as groups of pairs in the input of equal size
+     * @param input a list of ensemble pairs to slice
+     * @return as many subsets of ensemble pairs as groups of pairs in the input of equal size
      * @throws NullPointerException if the input is null
      */
 
@@ -735,28 +663,6 @@ public final class Slicer
     }
 
     /**
-     * Produces a {@link List} of {@link SingleValuedPair} from a {@link List} of {@link EnsemblePair}
-     * using a prescribed mapper function.
-     * 
-     * @param input the {@link EnsemblePairs}
-     * @param mapper the function that maps from {@link EnsemblePairs} to {@link SingleValuedPairs}
-     * @return the {@link SingleValuedPairs}
-     * @throws NullPointerException if either input is null
-     */
-
-    public static List<SingleValuedPair> toSingleValuedPairs( List<EnsemblePair> input,
-                                                              Function<EnsemblePair, SingleValuedPair> mapper )
-    {
-        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
-
-        Objects.requireNonNull( mapper, NULL_MAPPER_EXCEPTION );
-
-        List<SingleValuedPair> transformed = new ArrayList<>();
-        input.stream().map( mapper ).forEach( transformed::add );
-        return transformed;
-    }
-
-    /**
      * Transforms the input type to another type.
      * 
      * @param <L> the left type
@@ -769,14 +675,14 @@ public final class Slicer
      * @throws NullPointerException if either input is null
      */
 
-    public static <L, R, P, Q> TimeSeriesOfPairs<P, Q> transform( TimeSeriesOfPairs<L, R> input,
+    public static <L, R, P, Q> PoolOfPairs<P, Q> transform( PoolOfPairs<L, R> input,
                                                                   Function<Pair<L, R>, Pair<P, Q>> transformer )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
         Objects.requireNonNull( transformer, NULL_MAPPER_EXCEPTION );
 
-        TimeSeriesOfPairsBuilder<P, Q> builder = new TimeSeriesOfPairsBuilder<>();
+        PoolOfPairsBuilder<P, Q> builder = new PoolOfPairsBuilder<>();
 
         builder.setClimatology( input.getClimatology() )
                .setMetadata( input.getMetadata() );
@@ -790,7 +696,7 @@ public final class Slicer
         // Add the baseline series if available
         if ( input.hasBaseline() )
         {
-            TimeSeriesOfPairs<L, R> baseline = input.getBaselineData();
+            PoolOfPairs<L, R> baseline = input.getBaselineData();
 
             for ( TimeSeries<Pair<L, R>> nextBase : baseline.get() )
             {
@@ -820,7 +726,7 @@ public final class Slicer
 
         Objects.requireNonNull( transformer, NULL_MAPPER_EXCEPTION );
 
-        SampleDataBuilder<T> builder = new SampleDataBasicBuilder<>();
+        SampleDataBasicBuilder<T> builder = new SampleDataBasicBuilder<>();
 
         builder.setClimatology( input.getClimatology() )
                .setMetadata( input.getMetadata() );
@@ -856,113 +762,8 @@ public final class Slicer
     }
 
     /**
-     * Produces {@link DichotomousPairs} from a {@link DiscreteProbabilityPairs} by applying a mapper function to the 
-     * input.
-     * 
-     * @param input the {@link SingleValuedPairs} pairs
-     * @param mapper the function that maps from {@link SingleValuedPairs} to {@link DichotomousPairs}
-     * @return the {@link DichotomousPairs}
-     * @throws NullPointerException if either input is null
-     */
-
-    public static DichotomousPairs toDichotomousPairs( DiscreteProbabilityPairs input,
-                                                       Function<DiscreteProbabilityPair, DichotomousPair> mapper )
-    {
-        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
-
-        Objects.requireNonNull( mapper, NULL_MAPPER_EXCEPTION );
-
-        List<DiscreteProbabilityPair> mainPairs = input.getRawData();
-        List<DichotomousPair> mainPairsTransformed = new ArrayList<>();
-        mainPairs.stream().map( mapper ).forEach( mainPairsTransformed::add );
-        if ( input.hasBaseline() )
-        {
-            List<DiscreteProbabilityPair> basePairs = input.getBaselineData().getRawData();
-            List<DichotomousPair> basePairsTransformed = new ArrayList<>();
-            basePairs.stream().map( mapper ).forEach( basePairsTransformed::add );
-            return DichotomousPairs.ofDichotomousPairs( mainPairsTransformed,
-                                                        basePairsTransformed,
-                                                        input.getMetadata(),
-                                                        input.getBaselineData().getMetadata(),
-                                                        input.getClimatology() );
-        }
-        return DichotomousPairs.ofDichotomousPairs( mainPairsTransformed,
-                                                    input.getMetadata(),
-                                                    input.getClimatology() );
-    }
-
-    /**
-     * Produces {@link SingleValuedPairs} from a {@link EnsemblePairs} by applying a mapper function to the input.
-     * 
-     * @param input the {@link EnsemblePairs}
-     * @param mapper the function that maps from {@link EnsemblePairs} to {@link SingleValuedPairs} pairs
-     * @return the {@link SingleValuedPairs}
-     * @throws NullPointerException if either input is null
-     */
-
-    public static SingleValuedPairs toSingleValuedPairs( EnsemblePairs input,
-                                                         Function<EnsemblePair, SingleValuedPair> mapper )
-    {
-        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
-
-        Objects.requireNonNull( mapper, NULL_MAPPER_EXCEPTION );
-
-        List<SingleValuedPair> mainPairsTransformed = toSingleValuedPairs( input.getRawData(), mapper );
-        if ( input.hasBaseline() )
-        {
-            List<SingleValuedPair> basePairsTransformed =
-                    toSingleValuedPairs( input.getBaselineData().getRawData(), mapper );
-            return SingleValuedPairs.of( mainPairsTransformed,
-                                         basePairsTransformed,
-                                         input.getMetadata(),
-                                         input.getBaselineData().getMetadata(),
-                                         input.getClimatology() );
-        }
-        return SingleValuedPairs.of( mainPairsTransformed, input.getMetadata(), input.getClimatology() );
-    }
-
-    /**
-     * Produces {@link DiscreteProbabilityPairs} from a {@link EnsemblePairs} by applying a mapper function to the input
-     * using a prescribed {@link Threshold}.
-     * 
-     * @param input the {@link EnsemblePairs}
-     * @param threshold the {@link Threshold} used to transform the pairs
-     * @param mapper the function that maps from {@link EnsemblePairs} to {@link DiscreteProbabilityPairs}
-     * @return the {@link DiscreteProbabilityPairs}
-     * @throws NullPointerException if any input is null
-     */
-
-    public static DiscreteProbabilityPairs toDiscreteProbabilityPairs( EnsemblePairs input,
-                                                                       Threshold threshold,
-                                                                       BiFunction<EnsemblePair, Threshold, DiscreteProbabilityPair> mapper )
-    {
-        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
-
-        Objects.requireNonNull( mapper, NULL_MAPPER_EXCEPTION );
-
-        List<EnsemblePair> mainPairs = input.getRawData();
-        List<DiscreteProbabilityPair> mainPairsTransformed = new ArrayList<>();
-        mainPairs.forEach( pair -> mainPairsTransformed.add( mapper.apply( pair, threshold ) ) );
-        if ( input.hasBaseline() )
-        {
-            List<EnsemblePair> basePairs = input.getBaselineData().getRawData();
-            List<DiscreteProbabilityPair> basePairsTransformed = new ArrayList<>();
-            basePairs.forEach( pair -> basePairsTransformed.add( mapper.apply( pair, threshold ) ) );
-            return DiscreteProbabilityPairs.of( mainPairsTransformed,
-                                                basePairsTransformed,
-                                                input.getMetadata(),
-                                                input.getBaselineData().getMetadata(),
-                                                input.getClimatology() );
-        }
-        return DiscreteProbabilityPairs.of( mainPairsTransformed,
-                                            input.getMetadata(),
-                                            input.getClimatology() );
-    }
-
-    /**
-     * Converts a {@link EnsemblePair} to a {@link DiscreteProbabilityPair} that contains the probabilities that
-     * a discrete event occurs according to the left side and the right side, respectively. The event is represented by
-     * a {@link Threshold}.
+     * Converts an ensemble pair to a pair that contains the probabilities that a discrete event occurs according to 
+     * the left side and the right side, respectively. The event is represented by a {@link Threshold}.
      * 
      * @param pair the pair to transform
      * @param threshold the threshold
@@ -983,23 +784,6 @@ public final class Slicer
                            .getAsDouble();
 
         return Pair.of( threshold.test( pair.getLeft() ) ? Probability.ONE : Probability.ZERO, Probability.of( rhs ) );
-    }
-
-    /**
-     * Returns a function that converts a {@link EnsemblePair} to a {@link SingleValuedPair} by 
-     * applying the specified transformer to the {@link EnsemblePair#getRight()}.
-     * 
-     * @param transformer the transformer
-     * @return a composed function
-     * @throws NullPointerException if the input is null
-     */
-
-    public static Function<EnsemblePair, SingleValuedPair>
-            ofSingleValuedPairMapper( ToDoubleFunction<double[]> transformer )
-    {
-        Objects.requireNonNull( transformer, NULL_INPUT_EXCEPTION );
-
-        return pair -> SingleValuedPair.of( pair.getLeft(), transformer.applyAsDouble( pair.getRight().getMembers() ) );
     }
 
     /**

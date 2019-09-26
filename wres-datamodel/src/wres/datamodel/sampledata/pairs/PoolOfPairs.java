@@ -19,11 +19,11 @@ import wres.datamodel.time.TimeSeries;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
- * <p>A collection of {@link TimeSeries} of paired values.
+ * <p>A pool of pairs the additionally offers a time-series view of the pairs.
  * 
  * @author james.brown@hydrosolved.com
  */
-public class TimeSeriesOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier<List<TimeSeries<Pair<L, R>>>>
+public class PoolOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier<List<TimeSeries<Pair<L, R>>>>
 {
 
     /**
@@ -61,7 +61,7 @@ public class TimeSeriesOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier
      */
 
     private final SampleMetadata baselineMeta;
-    
+
     @Override
     public boolean hasBaseline()
     {
@@ -75,19 +75,15 @@ public class TimeSeriesOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier
     }
 
     @Override
-    public TimeSeriesOfPairs<L, R> getBaselineData()
+    public PoolOfPairs<L, R> getBaselineData()
     {
-        // TODO: override hasBaseline to check the actual data
-        // and then return an empty baseline in all cases. The check
-        // should be the formal check. Returning a null from an API method
-        // is coding graffiti
-        
+        // TODO: return an empty baseline in all cases.
         if ( !this.hasBaseline() )
         {
             return null;
         }
 
-        TimeSeriesOfPairsBuilder<L, R> builder = new TimeSeriesOfPairsBuilder<>();
+        PoolOfPairsBuilder<L, R> builder = new PoolOfPairsBuilder<>();
         builder.setMetadata( this.baselineMeta ).setClimatology( this.climatology );
 
         for ( TimeSeries<Pair<L, R>> next : baseline )
@@ -148,12 +144,12 @@ public class TimeSeriesOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier
     {
         return this.climatology;
     }
-    
+
     /**
      * A builder to build the time-series.
      */
 
-    public static class TimeSeriesOfPairsBuilder<L, R>
+    public static class PoolOfPairsBuilder<L, R>
     {
 
         /**
@@ -194,7 +190,7 @@ public class TimeSeriesOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier
          * @throws NullPointerException if the input is null
          */
 
-        public TimeSeriesOfPairsBuilder<L, R> addTimeSeries( TimeSeries<Pair<L, R>> timeSeries )
+        public PoolOfPairsBuilder<L, R> addTimeSeries( TimeSeries<Pair<L, R>> timeSeries )
         {
             Objects.requireNonNull( timeSeries, NULL_INPUT );
 
@@ -211,7 +207,7 @@ public class TimeSeriesOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier
          * @throws NullPointerException if the input is null
          */
 
-        public TimeSeriesOfPairsBuilder<L, R> addTimeSeriesForBaseline( TimeSeries<Pair<L, R>> timeSeries )
+        public PoolOfPairsBuilder<L, R> addTimeSeriesForBaseline( TimeSeries<Pair<L, R>> timeSeries )
         {
             Objects.requireNonNull( timeSeries, NULL_INPUT );
 
@@ -219,7 +215,7 @@ public class TimeSeriesOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier
 
             return this;
         }
-        
+
         /**
          * Adds a time-series to the builder.
          * 
@@ -228,23 +224,23 @@ public class TimeSeriesOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier
          * @throws NullPointerException if the input is null
          */
 
-        public TimeSeriesOfPairsBuilder<L, R> addTimeSeries( TimeSeriesOfPairs<L, R> timeSeries )
+        public PoolOfPairsBuilder<L, R> addTimeSeries( PoolOfPairs<L, R> timeSeries )
         {
             Objects.requireNonNull( timeSeries, NULL_INPUT );
 
             this.main.addAll( timeSeries.get() );
             this.mainMeta = timeSeries.mainMeta;
             this.climatology = timeSeries.climatology;
-            
-            if( timeSeries.hasBaseline() )
+
+            if ( timeSeries.hasBaseline() )
             {
-                TimeSeriesOfPairs<L, R> base = timeSeries.getBaselineData();
+                PoolOfPairs<L, R> base = timeSeries.getBaselineData();
                 this.baseline.addAll( base.get() );
                 this.baselineMeta = timeSeries.baselineMeta;
             }
-            
+
             return this;
-        }        
+        }
 
         /**
          * Sets the metadata associated with the input.
@@ -253,7 +249,7 @@ public class TimeSeriesOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier
          * @return the builder
          */
 
-        public TimeSeriesOfPairsBuilder<L, R> setMetadata( SampleMetadata mainMeta )
+        public PoolOfPairsBuilder<L, R> setMetadata( SampleMetadata mainMeta )
         {
             this.mainMeta = mainMeta;
 
@@ -267,7 +263,7 @@ public class TimeSeriesOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier
          * @return the builder
          */
 
-        public TimeSeriesOfPairsBuilder<L, R> setMetadataForBaseline( SampleMetadata baselineMeta )
+        public PoolOfPairsBuilder<L, R> setMetadataForBaseline( SampleMetadata baselineMeta )
         {
             this.baselineMeta = baselineMeta;
 
@@ -281,7 +277,7 @@ public class TimeSeriesOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier
          * @return the builder
          */
 
-        public TimeSeriesOfPairsBuilder<L, R> setClimatology( VectorOfDoubles climatology )
+        public PoolOfPairsBuilder<L, R> setClimatology( VectorOfDoubles climatology )
         {
             this.climatology = climatology;
 
@@ -294,9 +290,9 @@ public class TimeSeriesOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier
          * @return a time-series
          */
 
-        public TimeSeriesOfPairs<L, R> build()
+        public PoolOfPairs<L, R> build()
         {
-            return new TimeSeriesOfPairs<>( this );
+            return new PoolOfPairs<>( this );
         }
 
     }
@@ -308,7 +304,7 @@ public class TimeSeriesOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier
      * @throws SampleDataException if the pairs are invalid
      */
 
-    TimeSeriesOfPairs( final TimeSeriesOfPairsBuilder<L, R> b )
+    PoolOfPairs( final PoolOfPairsBuilder<L, R> b )
     {
         //Ensure safe types
         this.main = Collections.unmodifiableList( b.main );

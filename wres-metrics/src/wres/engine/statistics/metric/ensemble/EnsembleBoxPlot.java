@@ -13,7 +13,6 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.StatisticMetadata;
@@ -48,7 +47,7 @@ abstract class EnsembleBoxPlot extends Diagram<SampleData<Pair<Double, Ensemble>
     final VectorOfDoubles probabilities;
 
     /**
-     * Creates a box from a {@link EnsemblePair}.
+     * Creates a box from an ensemble pair.
      * 
      * @param pair the pair
      * @param metadata the box metadata

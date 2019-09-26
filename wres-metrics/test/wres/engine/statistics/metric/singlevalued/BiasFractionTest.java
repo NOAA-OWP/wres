@@ -18,7 +18,6 @@ import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.MetricTestDataFactory;

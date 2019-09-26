@@ -59,7 +59,7 @@ public class SampleDataBasic<T> implements SampleData<T>
     {
         return Objects.nonNull( this.climatology );
     }
-    
+
     @Override
     public List<T> getRawData()
     {
@@ -81,17 +81,13 @@ public class SampleDataBasic<T> implements SampleData<T>
     @Override
     public SampleData<T> getBaselineData()
     {
-        // TODO: override hasBaseline to check the actual data
-        // and then return an empty baseline in all cases. The check
-        // should be the formal check. Returning a null from an API method
-        // is coding graffiti
-
+        // TODO: return an empty baseline in all cases.
         if ( !this.hasBaseline() )
         {
             return null;
         }
 
-        SampleDataBuilder<T> builder = new SampleDataBasicBuilder<>();
+        SampleDataBasicBuilder<T> builder = new SampleDataBasicBuilder<>();
 
         return builder.addData( this.baselineSampleData )
                       .setClimatology( this.climatology )
@@ -214,7 +210,7 @@ public class SampleDataBasic<T> implements SampleData<T>
      * A builder to build the metric input.
      */
 
-    public static class SampleDataBasicBuilder<T> implements SampleDataBuilder<T>
+    public static class SampleDataBasicBuilder<T>
     {
 
         /**
@@ -286,23 +282,44 @@ public class SampleDataBasic<T> implements SampleData<T>
             return this;
         }
 
-        @Override
-        public SampleDataBasicBuilder<T> addData( T mainInput )
+        /**
+         * Adds sample data, appending to any existing sample data, as necessary.
+         * 
+         * @param sample the sample data
+         * @return the builder
+         * @throws NullPointerException if the input is null
+         */
+
+        public SampleDataBasicBuilder<T> addData( T sample )
         {
-            this.sampleData.add( mainInput );
+            this.sampleData.add( sample );
 
             return this;
         }
 
-        @Override
-        public SampleDataBasicBuilder<T> addDataForBaseline( T baselineInput )
+        /**
+         * Adds sample data for a baseline, which is used to calculate skill, appending to any existing baseline sample, as
+         * necessary.
+         * 
+         * @param baselineSample the sample data for the baseline
+         * @return the builder
+         * @throws NullPointerException if the input is null
+         */
+
+        public SampleDataBasicBuilder<T> addDataForBaseline( T baselineSample )
         {
-            this.baselineSampleData.add( baselineInput );
+            this.baselineSampleData.add( baselineSample );
 
             return this;
         }
 
-        @Override
+        /**
+         * Adds sample data, appending to any existing sample data, as necessary.
+         * 
+         * @param sampleData the sample data
+         * @return the builder
+         */
+
         public SampleDataBasicBuilder<T> addData( List<T> sampleData )
         {
             Objects.requireNonNull( sampleData );
@@ -312,7 +329,14 @@ public class SampleDataBasic<T> implements SampleData<T>
             return this;
         }
 
-        @Override
+        /** 
+        * Adds sample data for a baseline, which is used to calculate skill, appending to any existing baseline sample, 
+        * as necessary.
+        * 
+        * @param baselineSampleData the sample data for the baseline
+        * @return the builder
+        */
+
         public SampleDataBasicBuilder<T> addDataForBaseline( List<T> baselineSampleData )
         {
             Objects.requireNonNull( baselineSampleData );
@@ -322,7 +346,12 @@ public class SampleDataBasic<T> implements SampleData<T>
             return this;
         }
 
-        @Override
+        /**
+         * Builds the metric input.
+         * 
+         * @return the metric input
+         */
+
         public SampleDataBasic<T> build()
         {
             return new SampleDataBasic<>( this );

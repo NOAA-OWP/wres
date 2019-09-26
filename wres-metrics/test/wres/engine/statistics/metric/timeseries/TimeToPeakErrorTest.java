@@ -20,7 +20,7 @@ import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs;
+import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.time.TimeWindow;
@@ -54,7 +54,7 @@ public final class TimeToPeakErrorTest
     public void testTimeToPeakError()
     {
         // Generate some data
-        TimeSeriesOfPairs<Double,Double> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
+        PoolOfPairs<Double,Double> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
 
         // Metadata for the output
         TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),

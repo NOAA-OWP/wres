@@ -5,17 +5,19 @@ import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.time.TimeSeries;
 
 /**
- * <p>A collection of {@link TimeSeries} of {@link SingleValuedPairs}.</p>
+ * <p>A collection of {@link TimeSeries} of single-valued pairs.
  * 
  * @author james.brown@hydrosolved.com
+ * @deprecated This class is deprecated for removal on completion of #56214
  */
-public class TimeSeriesOfSingleValuedPairs extends TimeSeriesOfPairs<Double,Double>
+@Deprecated(since="1.17", forRemoval=true)
+public class TimeSeriesOfSingleValuedPairs extends PoolOfPairs<Double,Double>
 {
     
     @Override
     public TimeSeriesOfSingleValuedPairs getBaselineData()
     {
-        TimeSeriesOfPairs<Double,Double> baseline = super.getBaselineData();
+        PoolOfPairs<Double,Double> baseline = super.getBaselineData();
 
         if( Objects.isNull( baseline ) )
         {
@@ -34,8 +36,8 @@ public class TimeSeriesOfSingleValuedPairs extends TimeSeriesOfPairs<Double,Doub
      * Builder.
      * @author james.brown@hydrosolved.com
      */
-    
-    public static class TimeSeriesOfSingleValuedPairsBuilder extends TimeSeriesOfPairsBuilder<Double,Double>
+    @Deprecated(since="1.17", forRemoval=true)
+    public static class TimeSeriesOfSingleValuedPairsBuilder extends PoolOfPairsBuilder<Double,Double>
     {
         /**
          * Build.
@@ -54,7 +56,7 @@ public class TimeSeriesOfSingleValuedPairs extends TimeSeriesOfPairs<Double,Doub
      * @throws SampleDataException if the pairs are invalid
      */
 
-    TimeSeriesOfSingleValuedPairs( final TimeSeriesOfPairsBuilder<Double,Double> b )
+    TimeSeriesOfSingleValuedPairs( final PoolOfPairsBuilder<Double,Double> b )
     {
         super( b );
     }

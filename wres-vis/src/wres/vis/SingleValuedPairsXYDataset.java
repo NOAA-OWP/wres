@@ -1,11 +1,12 @@
 package wres.vis;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.jfree.data.xy.AbstractXYDataset;
 
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
+import wres.datamodel.sampledata.SampleData;
 
 /**
- * An {@link AbstractXYDataset} that wraps a {@link SingleValuedPairs}
+ * An {@link AbstractXYDataset} for single-valued pairs.
  * 
  * @author Hank.Herr
  */
@@ -13,15 +14,16 @@ import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 //Specifically, we need to think about what the legend entry should look like (see below for a first attempt)
 //as well as how to handle multiple sereis being plotted (i.e., how to store the data.).
 @SuppressWarnings( "serial" )
-public class SingleValuedPairsXYDataset extends WRESAbstractXYDataset<SingleValuedPairs, SingleValuedPairs> //implements DomainInfo, XisSymbolic, RangeInfo
+public class SingleValuedPairsXYDataset
+        extends WRESAbstractXYDataset<SampleData<Pair<Double, Double>>, SampleData<Pair<Double, Double>>> //implements DomainInfo, XisSymbolic, RangeInfo
 {
-    public SingleValuedPairsXYDataset(final SingleValuedPairs input)
+    public SingleValuedPairsXYDataset(final SampleData<Pair<Double,Double>> input)
     {
         super(input);
     }
 
     @Override
-    protected void preparePlotData(final SingleValuedPairs rawData)
+    protected void preparePlotData(final SampleData<Pair<Double,Double>> rawData)
     {
         setPlotData(rawData);
     }

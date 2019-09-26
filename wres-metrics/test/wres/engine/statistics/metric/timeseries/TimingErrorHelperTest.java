@@ -13,7 +13,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs;
+import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.time.TimeSeries;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
@@ -33,7 +33,7 @@ public final class TimingErrorHelperTest
     {
 
         // Generate some data
-        TimeSeriesOfPairs<Double,Double> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
+        PoolOfPairs<Double,Double> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
 
         Iterator<TimeSeries<Pair<Double,Double>>> iterator = input.get().iterator();
         TimeSeries<Pair<Double,Double>> first = iterator.next();
@@ -61,7 +61,7 @@ public final class TimingErrorHelperTest
     public void testGetTimeToPeakWithTies()
     {
         // Generate some data
-        TimeSeriesOfPairs<Double,Double> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsFive();
+        PoolOfPairs<Double,Double> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsFive();
         Iterator<TimeSeries<Pair<Double,Double>>> iterator = input.get().iterator();
         TimeSeries<Pair<Double,Double>> first = iterator.next();
 

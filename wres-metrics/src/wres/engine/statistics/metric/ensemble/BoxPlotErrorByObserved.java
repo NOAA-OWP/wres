@@ -7,7 +7,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.Slicer;
@@ -57,7 +56,7 @@ public class BoxPlotErrorByObserved extends EnsembleBoxPlot
     }
 
     /**
-     * Creates a box from a {@link EnsemblePair}.
+     * Creates a box from an ensemble pair.
      * 
      * @param metadata the box metadata
      * @return a box

@@ -74,7 +74,8 @@ class ProduceStatisticsFromSampleData implements Function<SampleData<?>, Statist
         }
         else
         {
-            throw new WresProcessingException( "While processing pairs: encountered an unexpected type of pairs." );
+            throw new WresProcessingException( "While processing pairs, encountered an unexpected type of pairs: "
+                                               + pool.getClass().getSimpleName() );
         }
 
         LOGGER.debug( "Completed composing statistics for feature '{}' and time window {}.",

@@ -11,15 +11,15 @@ import java.util.function.Function;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.Ensemble;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfEnsemblePairs;
+import wres.datamodel.sampledata.pairs.PoolOfPairs;
 
 /**
- * Class for writing {@link TimeSeriesOfEnsemblePairs}.
+ * Class for writing a {@link PoolOfPairs} that contains ensemble forecasts.
  * 
  * @author james.brown@hydrosolved.com
  */
 
-public class EnsemblePairsWriter extends PairsWriter<Double, Ensemble, TimeSeriesOfEnsemblePairs>
+public class EnsemblePairsWriter extends PairsWriter<Double, Ensemble, PoolOfPairs<Double,Ensemble>>
 {
 
     /**
@@ -52,7 +52,7 @@ public class EnsemblePairsWriter extends PairsWriter<Double, Ensemble, TimeSerie
     }
 
     @Override
-    StringJoiner getHeaderFromPairs( TimeSeriesOfEnsemblePairs pairs )
+    StringJoiner getHeaderFromPairs( PoolOfPairs<Double,Ensemble> pairs )
     {
         StringJoiner joiner = super.getHeaderFromPairs( pairs );
 

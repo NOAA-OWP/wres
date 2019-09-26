@@ -18,11 +18,7 @@ import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.datamodel.Probability;
 import wres.datamodel.sampledata.SampleData;
-import wres.datamodel.sampledata.pairs.DichotomousPairs;
-import wres.datamodel.sampledata.pairs.DiscreteProbabilityPairs;
-import wres.datamodel.sampledata.pairs.EnsemblePairs;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs;
+import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DoubleScoreStatistic;
@@ -112,7 +108,7 @@ public final class MetricFactory
     }
 
     /**
-     * <p>Returns an instance of a {@link MetricProcessor} for processing {@link SingleValuedPairs}. Optionally, retain 
+     * <p>Returns an instance of a {@link MetricProcessor} for processing single-valued pairs. Optionally, retain 
      * and merge the results associated with specific {@link StatisticGroup} across successive calls to
      * {@link MetricProcessor#apply(Object)}. If results are retained and merged across calls, the
      * {@link MetricProcessor#apply(Object)} will return the merged results from all prior calls.</p>
@@ -126,7 +122,7 @@ public final class MetricFactory
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
-    public static MetricProcessorByTime<TimeSeriesOfPairs<Double, Double>>
+    public static MetricProcessorByTime<PoolOfPairs<Double, Double>>
             ofMetricProcessorByTimeSingleValuedPairs( final ProjectConfig config,
                                                       final Set<StatisticGroup> mergeSet )
                     throws MetricParameterException
@@ -139,7 +135,7 @@ public final class MetricFactory
     }
 
     /**
-     * <p>Returns an instance of a {@link MetricProcessor} for processing {@link EnsemblePairs}. Optionally, retain 
+     * <p>Returns an instance of a {@link MetricProcessor} for processing ensemble pairs. Optionally, retain 
      * and merge the results associated with specific {@link StatisticGroup} across successive calls to
      * {@link MetricProcessor#apply(Object)}. If results are retained and merged across calls, the
      * {@link MetricProcessor#apply(Object)} will return the merged results from all prior calls.</p>
@@ -153,7 +149,7 @@ public final class MetricFactory
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
-    public static MetricProcessorByTime<TimeSeriesOfPairs<Double, Ensemble>>
+    public static MetricProcessorByTime<PoolOfPairs<Double, Ensemble>>
             ofMetricProcessorByTimeEnsemblePairs( final ProjectConfig config,
                                                   final Set<StatisticGroup> mergeSet )
                     throws MetricParameterException
@@ -166,7 +162,7 @@ public final class MetricFactory
     }
 
     /**
-     * <p>Returns an instance of a {@link MetricProcessor} for processing {@link SingleValuedPairs}. Optionally, retain 
+     * <p>Returns an instance of a {@link MetricProcessor} for processing single-valued pairs. Optionally, retain 
      * and merge the results associated with specific {@link StatisticGroup} across successive calls to
      * {@link MetricProcessor#apply(Object)}. If results are retained and merged across calls, the
      * {@link MetricProcessor#apply(Object)} will return the merged results from all prior calls.</p>
@@ -181,7 +177,7 @@ public final class MetricFactory
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
-    public static MetricProcessorByTime<TimeSeriesOfPairs<Double, Double>>
+    public static MetricProcessorByTime<PoolOfPairs<Double, Double>>
             ofMetricProcessorByTimeSingleValuedPairs( final ProjectConfig config,
                                                       final ThresholdsByMetric externalThresholds,
                                                       final Set<StatisticGroup> mergeSet )
@@ -195,7 +191,7 @@ public final class MetricFactory
     }
 
     /**
-     * <p>Returns an instance of a {@link MetricProcessor} for processing {@link EnsemblePairs}. Optionally, retain 
+     * <p>Returns an instance of a {@link MetricProcessor} for processing ensemble pairs. Optionally, retain 
      * and merge the results associated with specific {@link StatisticGroup} across successive calls to
      * {@link MetricProcessor#apply(Object)}. If results are retained and merged across calls, the
      * {@link MetricProcessor#apply(Object)} will return the merged results from all prior calls.</p>
@@ -210,7 +206,7 @@ public final class MetricFactory
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
-    public static MetricProcessorByTime<TimeSeriesOfPairs<Double, Ensemble>>
+    public static MetricProcessorByTime<PoolOfPairs<Double, Ensemble>>
             ofMetricProcessorByTimeEnsemblePairs( final ProjectConfig config,
                                                   final ThresholdsByMetric externalThresholds,
                                                   final Set<StatisticGroup> mergeSet )
@@ -224,7 +220,7 @@ public final class MetricFactory
     }
 
     /**
-     * Returns an instance of a {@link MetricProcessor} for processing {@link SingleValuedPairs}. Optionally, retain 
+     * Returns an instance of a {@link MetricProcessor} for processing single-valued pairs. Optionally, retain 
      * and merge the results associated with specific {@link StatisticGroup} across successive calls to
      * {@link MetricProcessor#apply(Object)}. If results are retained and merged across calls, the
      * {@link MetricProcessor#apply(Object)} will return the merged results from all prior calls.
@@ -241,7 +237,7 @@ public final class MetricFactory
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
-    public static MetricProcessorByTime<TimeSeriesOfPairs<Double, Double>>
+    public static MetricProcessorByTime<PoolOfPairs<Double, Double>>
             ofMetricProcessorByTimeSingleValuedPairs( final ProjectConfig config,
                                                       final ThresholdsByMetric externalThresholds,
                                                       final ExecutorService thresholdExecutor,
@@ -257,7 +253,7 @@ public final class MetricFactory
     }
 
     /**
-     * Returns an instance of a {@link MetricProcessor} for processing {@link EnsemblePairs}. Optionally, retain 
+     * Returns an instance of a {@link MetricProcessor} for processing ensemble pairs. Optionally, retain 
      * and merge the results associated with specific {@link StatisticGroup} across successive calls to
      * {@link MetricProcessor#apply(Object)}. If results are retained and merged across calls, the
      * {@link MetricProcessor#apply(Object)} will return the merged results from all prior calls.
@@ -274,7 +270,7 @@ public final class MetricFactory
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
-    public static MetricProcessorByTime<TimeSeriesOfPairs<Double, Ensemble>>
+    public static MetricProcessorByTime<PoolOfPairs<Double, Ensemble>>
             ofMetricProcessorByTimeEnsemblePairs( final ProjectConfig config,
                                                   final ThresholdsByMetric externalThresholds,
                                                   final ExecutorService thresholdExecutor,
@@ -290,7 +286,7 @@ public final class MetricFactory
     }
 
     /**
-     * <p>Returns a {@link MetricCollection} of metrics that consume {@link SingleValuedPairs} and produce
+     * <p>Returns a {@link MetricCollection} of metrics that consume single-valued pairs and produce
      * {@link DoubleScoreStatistic}.</p>
      * 
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
@@ -309,7 +305,7 @@ public final class MetricFactory
     }
 
     /**
-     * Returns a {@link MetricCollection} of metrics that consume {@link SingleValuedPairs} and produce
+     * Returns a {@link MetricCollection} of metrics that consume single-valued pairs and produce
      * {@link DiagramStatistic}.
      * 
      * @param metric the metric identifiers
@@ -325,7 +321,7 @@ public final class MetricFactory
     }
 
     /**
-     * <p>Returns a {@link MetricCollection} of metrics that consume {@link DiscreteProbabilityPairs} and produce
+     * <p>Returns a {@link MetricCollection} of metrics that consume discrete probability pairs and produce
      * {@link DoubleScoreStatistic}.</p>
      * 
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
@@ -344,7 +340,7 @@ public final class MetricFactory
     }
 
     /**
-     * <p>Returns a {@link MetricCollection} of metrics that consume {@link DichotomousPairs} and produce
+     * <p>Returns a {@link MetricCollection} of metrics that consume dichotomous pairs and produce
      * {@link DoubleScoreStatistic}.</p>
      * 
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
@@ -363,7 +359,7 @@ public final class MetricFactory
     }
 
     /**
-     * <p>Returns a {@link MetricCollection} of metrics that consume {@link DiscreteProbabilityPairs} and produce
+     * <p>Returns a {@link MetricCollection} of metrics that consume discrete probability pairs and produce
      * {@link DiagramStatistic}.</p>
      * 
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
@@ -381,7 +377,7 @@ public final class MetricFactory
     }
 
     /**
-     * <p>Returns a {@link MetricCollection} of metrics that consume {@link DichotomousPairs} and produce
+     * <p>Returns a {@link MetricCollection} of metrics that consume dichotomous pairs and produce
      * {@link MatrixStatistic}.</p>
      * 
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
@@ -399,7 +395,7 @@ public final class MetricFactory
     }
 
     /**
-     * <p>Returns a {@link MetricCollection} of metrics that consume {@link EnsemblePairs} and produce
+     * <p>Returns a {@link MetricCollection} of metrics that consume ensemble pairs and produce
      * {@link DoubleScoreStatistic}.</p>
      * 
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
@@ -418,7 +414,7 @@ public final class MetricFactory
     }
 
     /**
-     * <p>Returns a {@link MetricCollection} of metrics that consume {@link EnsemblePairs} and produce
+     * <p>Returns a {@link MetricCollection} of metrics that consume ensemble pairs and produce 
      * {@link DiagramStatistic}.</p>
      * 
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
@@ -436,7 +432,7 @@ public final class MetricFactory
     }
 
     /**
-     * <p>Returns a {@link MetricCollection} of metrics that consume {@link EnsemblePairs} and produce
+     * <p>Returns a {@link MetricCollection} of metrics that consume ensemble pairs and produce
      * {@link BoxPlotStatistics}.</p>
      * 
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
@@ -454,8 +450,8 @@ public final class MetricFactory
     }
 
     /**
-     * <p>Returns a {@link MetricCollection} of metrics that consume {@link TimeSeriesOfSingleValuedPairs} and produce
-     * {@link PairedStatistic}.</p>
+     * <p>Returns a {@link MetricCollection} of metrics that consume a {@link PoolOfPairs} with single-valued 
+     * pairs and produce {@link PairedStatistic}.</p>
      * 
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
      * 
@@ -466,7 +462,7 @@ public final class MetricFactory
      */
 
     public static
-            MetricCollection<TimeSeriesOfPairs<Double, Double>, PairedStatistic<Instant, Duration>, PairedStatistic<Instant, Duration>>
+            MetricCollection<PoolOfPairs<Double, Double>, PairedStatistic<Instant, Duration>, PairedStatistic<Instant, Duration>>
             ofSingleValuedTimeSeriesCollection( MetricConstants... metric )
                     throws MetricParameterException
     {
@@ -474,7 +470,7 @@ public final class MetricFactory
     }
 
     /**
-     * Returns a {@link MetricCollection} of metrics that consume {@link SingleValuedPairs} and produce
+     * Returns a {@link MetricCollection} of metrics that consume single-valued pairs and produce
      * {@link DoubleScoreStatistic}.
      * 
      * @param executor an optional {@link ExecutorService} for executing the metrics
@@ -510,7 +506,7 @@ public final class MetricFactory
     }
 
     /**
-     * Returns a {@link MetricCollection} of metrics that consume {@link SingleValuedPairs} and produce
+     * Returns a {@link MetricCollection} of metrics that consume single-valued pairs and produce
      * {@link DiagramStatistic}.
      * 
      * @param executor an optional {@link ExecutorService} for executing the metrics
@@ -536,7 +532,7 @@ public final class MetricFactory
     }
 
     /**
-     * Returns a {@link MetricCollection} of metrics that consume {@link SingleValuedPairs} and produce
+     * Returns a {@link MetricCollection} of metrics that consume single-valued pairs and produce 
      * {@link BoxPlotStatistics}.
      * 
      * @param executor an optional {@link ExecutorService} for executing the metrics
@@ -562,7 +558,7 @@ public final class MetricFactory
     }
 
     /**
-     * Returns a {@link MetricCollection} of metrics that consume {@link DiscreteProbabilityPairs} and produce
+     * Returns a {@link MetricCollection} of metrics that consume discrete probability pairs and produce
      * {@link DoubleScoreStatistic}.
      * 
      * @param executor an optional {@link ExecutorService} for executing the metrics
@@ -589,7 +585,7 @@ public final class MetricFactory
     }
 
     /**
-     * Returns a {@link MetricCollection} of metrics that consume {@link DichotomousPairs} and produce
+     * Returns a {@link MetricCollection} of metrics that consume dichotomous pairs and produce
      * {@link DoubleScoreStatistic}.
      * 
      * @param executor an optional {@link ExecutorService} for executing the metrics
@@ -616,7 +612,7 @@ public final class MetricFactory
     }
 
     /**
-     * Returns a {@link MetricCollection} of metrics that consume {@link DiscreteProbabilityPairs} and produce
+     * Returns a {@link MetricCollection} of metrics that consume discrete probability pairs and produce
      * {@link DiagramStatistic}.
      * 
      * @param executor an optional {@link ExecutorService} for executing the metrics
@@ -642,7 +638,7 @@ public final class MetricFactory
     }
 
     /**
-     * Returns a {@link MetricCollection} of metrics that consume {@link DichotomousPairs} and produce
+     * Returns a {@link MetricCollection} of metrics that consume dichotomous pairs and produce
      * {@link MatrixStatistic}.
      * 
      * @param executor an optional {@link ExecutorService} for executing the metrics
@@ -668,7 +664,7 @@ public final class MetricFactory
     }
 
     /**
-     * Returns a {@link MetricCollection} of metrics that consume {@link EnsemblePairs} and produce
+     * Returns a {@link MetricCollection} of metrics that consume ensemble pairs and produce 
      * {@link DoubleScoreStatistic}.
      * 
      * @param executor an optional {@link ExecutorService} for executing the metrics
@@ -694,8 +690,7 @@ public final class MetricFactory
     }
 
     /**
-     * Returns a {@link MetricCollection} of metrics that consume {@link EnsemblePairs} and produce
-     * {@link DiagramStatistic}.
+     * Returns a {@link MetricCollection} of metrics that consume ensemble pairs and produce {@link DiagramStatistic}.
      * 
      * @param executor an optional {@link ExecutorService} for executing the metrics
      * @param metric the metric identifiers
@@ -720,7 +715,7 @@ public final class MetricFactory
     }
 
     /**
-     * Returns a {@link MetricCollection} of metrics that consume {@link EnsemblePairs} and produce
+     * Returns a {@link MetricCollection} of metrics that consume ensemble pairs and produce
      * {@link BoxPlotStatistics}.
      * 
      * @param executor an optional {@link ExecutorService} for executing the metrics
@@ -746,8 +741,8 @@ public final class MetricFactory
     }
 
     /**
-     * Returns a {@link MetricCollection} of metrics that consume {@link TimeSeriesOfSingleValuedPairs} and produce
-     * {@link PairedStatistic}.
+     * Returns a {@link MetricCollection} of metrics that consume {@link PoolOfPairs} with single-valued pairs 
+     * and produce {@link PairedStatistic}.
      * 
      * @param executor an optional {@link ExecutorService} for executing the metrics
      * @param metric the metric identifiers
@@ -757,12 +752,12 @@ public final class MetricFactory
      */
 
     public static
-            MetricCollection<TimeSeriesOfPairs<Double, Double>, PairedStatistic<Instant, Duration>, PairedStatistic<Instant, Duration>>
+            MetricCollection<PoolOfPairs<Double, Double>, PairedStatistic<Instant, Duration>, PairedStatistic<Instant, Duration>>
             ofSingleValuedTimeSeriesCollection( ExecutorService executor,
                                                 MetricConstants... metric )
                     throws MetricParameterException
     {
-        final MetricCollectionBuilder<TimeSeriesOfPairs<Double, Double>, PairedStatistic<Instant, Duration>, PairedStatistic<Instant, Duration>> builder =
+        final MetricCollectionBuilder<PoolOfPairs<Double, Double>, PairedStatistic<Instant, Duration>, PairedStatistic<Instant, Duration>> builder =
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
@@ -773,7 +768,7 @@ public final class MetricFactory
     }
 
     /**
-     * Returns a {@link Metric} that consumes {@link SingleValuedPairs} and produces {@link DoubleScoreStatistic}.
+     * Returns a {@link Metric} that consumes single-valued pairs and produces {@link DoubleScoreStatistic}.
      * 
      * @param metric the metric identifier
      * @return the metric
@@ -819,7 +814,7 @@ public final class MetricFactory
     }
 
     /**
-     * Returns a {@link Collectable} that consumes {@link SingleValuedPairs} and produces {@link DoubleScoreStatistic}.
+     * Returns a {@link Collectable} that consumes single-valued pairs and produces {@link DoubleScoreStatistic}.
      * 
      * @param metric the metric identifier
      * @return the metric
@@ -847,7 +842,7 @@ public final class MetricFactory
     }
 
     /**
-     * Returns a {@link Metric} that consumes {@link SingleValuedPairs} and produces {@link DiagramStatistic}.
+     * Returns a {@link Metric} that consumes single-valued pairs and produces {@link DiagramStatistic}.
      * 
      * @param metric the metric identifier
      * @return a metric
@@ -868,7 +863,7 @@ public final class MetricFactory
     }
 
     /**
-     * Returns a {@link Metric} that consumes {@link SingleValuedPairs} and produces {@link BoxPlotStatistics}.
+     * Returns a {@link Metric} that consumes single-valued pairs and produces {@link BoxPlotStatistics}.
      * 
      * @param metric the metric identifier
      * @return a metric
@@ -890,7 +885,7 @@ public final class MetricFactory
     }
 
     /**
-     * Returns a {@link Metric} that consumes {@link DiscreteProbabilityPairs} and produces {@link DoubleScoreStatistic}.
+     * Returns a {@link Metric} that consumes discrete probability pairs and produces {@link DoubleScoreStatistic}.
      * 
      * @param metric the metric identifier
      * @return a metric
@@ -914,7 +909,7 @@ public final class MetricFactory
     }
 
     /**
-     * Returns a {@link Metric} that consumes {@link DichotomousPairs} and produces {@link DoubleScoreStatistic}.
+     * Returns a {@link Metric} that consumes dichotomous pairs and produces {@link DoubleScoreStatistic}.
      * 
      * @param metric the metric identifier
      * @return a metric
@@ -944,7 +939,7 @@ public final class MetricFactory
     }
 
     /**
-     * Returns a {@link Metric} that consumes {@link DiscreteProbabilityPairs} and produces {@link DiagramStatistic}.
+     * Returns a {@link Metric} that consumes discrete probability pairs and produces {@link DiagramStatistic}.
      * 
      * @param metric the metric identifier
      * @return a metric
@@ -967,7 +962,7 @@ public final class MetricFactory
     }
 
     /**
-     * Returns a {@link Metric} that consumes {@link DichotomousPairs} and produces {@link MatrixStatistic}.
+     * Returns a {@link Metric} that consumes dichotomous pairs and produces {@link MatrixStatistic}.
      * 
      * @param metric the metric identifier
      * @return a metric
@@ -988,7 +983,7 @@ public final class MetricFactory
     }
 
     /**
-     * Returns a {@link Metric} that consumes {@link EnsemblePairs} and produces {@link DoubleScoreStatistic}.
+     * Returns a {@link Metric} that consumes ensemble pairs and produces {@link DoubleScoreStatistic}.
      * 
      * @param metric the metric identifier
      * @return a metric
@@ -1012,7 +1007,7 @@ public final class MetricFactory
     }
 
     /**
-     * Returns a {@link Metric} that consumes {@link EnsemblePairs} and produces {@link BoxPlotStatistics}.
+     * Returns a {@link Metric} that consumes ensemble pairs and produces {@link BoxPlotStatistics}.
      * 
      * @param metric the metric identifier
      * @return a metric
@@ -1034,7 +1029,7 @@ public final class MetricFactory
     }
 
     /**
-     * Returns a {@link Metric} that consumes {@link EnsemblePairs} and produces {@link DiagramStatistic}.
+     * Returns a {@link Metric} that consumes ensemble pairs and produces {@link DiagramStatistic}.
      * 
      * @param metric the metric identifier
      * @return a metric
@@ -1055,14 +1050,15 @@ public final class MetricFactory
     }
 
     /**
-     * Returns a {@link Metric} that consumes {@link TimeSeriesOfSingleValuedPairs} and produces {@link PairedStatistic}.
+     * Returns a {@link Metric} that consumes a {@link PoolOfPairs} with single-valued pairs and produces 
+     * {@link PairedStatistic}.
      * 
      * @param metric the metric identifier
      * @return a metric
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public static Metric<TimeSeriesOfPairs<Double, Double>, PairedStatistic<Instant, Duration>>
+    public static Metric<PoolOfPairs<Double, Double>, PairedStatistic<Instant, Duration>>
             ofSingleValuedTimeSeries( MetricConstants metric )
     {
         switch ( metric )

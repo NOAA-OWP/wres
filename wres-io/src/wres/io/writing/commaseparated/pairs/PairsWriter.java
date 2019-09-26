@@ -24,7 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.datamodel.sampledata.Location;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs;
+import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
@@ -48,7 +48,7 @@ import wres.util.TimeHelper;
  * @author james.brown@hydrosolved.com
  */
 
-public abstract class PairsWriter<L,R, T extends TimeSeriesOfPairs<L,R>>
+public abstract class PairsWriter<L,R, T extends PoolOfPairs<L,R>>
         implements Consumer<T>, Supplier<Path>, Closeable
 {
 

@@ -29,6 +29,8 @@ import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
+import wres.datamodel.sampledata.pairs.PoolOfPairs;
+import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.scale.TimeScale;
@@ -50,28 +52,28 @@ public final class SingleValuedPairsWriterTest
      * First set of pairs to use for writing.
      */
 
-    private static TimeSeriesOfSingleValuedPairs pairs = null;
+    private static PoolOfPairs<Double, Double> pairs = null;
 
     /**
      * Second set of pairs to use for writing.
      */
 
-    private static TimeSeriesOfSingleValuedPairs pairsTwo = null;
+    private static PoolOfPairs<Double, Double> pairsTwo = null;
 
     /**
      * Third set of pairs to use for writing.
      */
 
-    private static TimeSeriesOfSingleValuedPairs pairsThree = null;
+    private static PoolOfPairs<Double, Double> pairsThree = null;
 
     @BeforeClass
     public static void setUpBeforeAllTests()
     {
 
         // Create the pairs
-        TimeSeriesOfSingleValuedPairsBuilder tsBuilder = new TimeSeriesOfSingleValuedPairsBuilder();
+        PoolOfPairsBuilder<Double, Double> tsBuilder = new PoolOfPairsBuilder<>();
 
-        SortedSet<Event<Pair<Double,Double>>> setOfPairs = new TreeSet<>();
+        SortedSet<Event<Pair<Double, Double>>> setOfPairs = new TreeSet<>();
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
         setOfPairs.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ),
                                   Pair.of( 1.001, 2.0 ) ) );
@@ -82,16 +84,14 @@ public final class SingleValuedPairsWriterTest
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
                                    DatasetIdentifier.of( Location.of( "PLUM" ), "RIFLE" ) );
 
-        TimeSeries<Pair<Double,Double>> timeSeriesOne =
+        TimeSeries<Pair<Double, Double>> timeSeriesOne =
                 TimeSeries.of( basisTime, ReferenceTimeType.DEFAULT, setOfPairs );
 
-        pairs = (TimeSeriesOfSingleValuedPairs) tsBuilder.addTimeSeries( timeSeriesOne )
-                                                         .setMetadata( meta )
-                                                         .build();
+        pairs = tsBuilder.addTimeSeries( timeSeriesOne ).setMetadata( meta ).build();
 
         // Create the second time-series of pairs
         TimeSeriesOfSingleValuedPairsBuilder tsBuilderTwo = new TimeSeriesOfSingleValuedPairsBuilder();
-        SortedSet<Event<Pair<Double,Double>>> setOfPairsTwo = new TreeSet<>();
+        SortedSet<Event<Pair<Double, Double>>> setOfPairsTwo = new TreeSet<>();
         Instant basisTimeTwo = Instant.parse( "1985-01-01T00:00:00Z" );
         setOfPairsTwo.add( Event.of( Instant.parse( "1985-01-01T04:00:00Z" ),
                                      Pair.of( 7.0, 8.0 ) ) );
@@ -104,17 +104,15 @@ public final class SingleValuedPairsWriterTest
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
                                    DatasetIdentifier.of( Location.of( "ORANGE" ), "PISTOL" ) );
 
-        TimeSeries<Pair<Double,Double>> timeSeriesTwo =
+        TimeSeries<Pair<Double, Double>> timeSeriesTwo =
                 TimeSeries.of( basisTimeTwo, ReferenceTimeType.DEFAULT, setOfPairsTwo );
 
-        pairsTwo = (TimeSeriesOfSingleValuedPairs) tsBuilderTwo.addTimeSeries( timeSeriesTwo )
-                                                               .setMetadata( metaTwo )
-                                                               .build();
+        pairsTwo = tsBuilderTwo.addTimeSeries( timeSeriesTwo ).setMetadata( metaTwo ).build();
 
 
         // Create the third time-series of pairs
         TimeSeriesOfSingleValuedPairsBuilder tsBuilderThree = new TimeSeriesOfSingleValuedPairsBuilder();
-        SortedSet<Event<Pair<Double,Double>>> setOfPairsThree = new TreeSet<>();
+        SortedSet<Event<Pair<Double, Double>>> setOfPairsThree = new TreeSet<>();
         Instant basisTimeThree = Instant.parse( "1985-01-01T00:00:00Z" );
         setOfPairsThree.add( Event.of( Instant.parse( "1985-01-01T07:00:00Z" ),
                                        Pair.of( 13.0, 14.0 ) ) );
@@ -127,15 +125,10 @@ public final class SingleValuedPairsWriterTest
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
                                    DatasetIdentifier.of( Location.of( "BANANA" ), "GRENADE" ) );
 
-        TimeSeries<Pair<Double,Double>> timeSeriesThree =
+        TimeSeries<Pair<Double, Double>> timeSeriesThree =
                 TimeSeries.of( basisTimeThree, ReferenceTimeType.DEFAULT, setOfPairsThree );
 
-        pairsThree =
-                (TimeSeriesOfSingleValuedPairs) tsBuilderThree.addTimeSeries( timeSeriesThree )
-                                                              .setMetadata( metaThree )
-                                                              .build();
-
-
+        pairsThree = tsBuilderThree.addTimeSeries( timeSeriesThree ).setMetadata( metaThree ).build();
     }
 
     /**
@@ -154,7 +147,7 @@ public final class SingleValuedPairsWriterTest
         try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS ) )
         {
 
-            TimeSeriesOfSingleValuedPairsBuilder tsBuilder = new TimeSeriesOfSingleValuedPairsBuilder();
+            PoolOfPairsBuilder<Double, Double> tsBuilder = new PoolOfPairsBuilder<>();
 
             // Set the measurement units and time scale
             SampleMetadata meta =
@@ -165,10 +158,10 @@ public final class SingleValuedPairsWriterTest
                                                                             TimeScaleFunction.MEAN ) )
                                                .build();
 
-            TimeSeriesOfSingleValuedPairs emptyPairs =
-                    (TimeSeriesOfSingleValuedPairs) tsBuilder.addTimeSeries( TimeSeries.of( Collections.emptySortedSet() ) )
-                                                             .setMetadata( meta )
-                                                             .build();
+            PoolOfPairs<Double, Double> emptyPairs =
+                    tsBuilder.addTimeSeries( TimeSeries.of( Collections.emptySortedSet() ) )
+                             .setMetadata( meta )
+                             .build();
 
             // Write the pairs
             writer.accept( emptyPairs );

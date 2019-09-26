@@ -1,7 +1,6 @@
 /**
- * A package for {@link wres.engine.statistics.metric.Metric} that consume 
- * {@link wres.datamodel.sampledata.pairs.DichotomousPairs} or {@link wres.datamodel.sampledata.pairs.MulticategoryPairs} 
- * and produce {@link wres.datamodel.statistics.Statistic}.
+ * A package for {@link wres.engine.statistics.metric.Metric} that consume categorical pairs and produce 
+ * {@link wres.datamodel.statistics.Statistic}.
  * 
  * @author james.brown@hydrosolved.com
  */

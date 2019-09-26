@@ -45,7 +45,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.datamodel.Slicer;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
+import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
@@ -1066,7 +1066,7 @@ public abstract class ChartEngineFactory
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
      * @throws WRESVisXMLReadingException when reading or parsing the template fails.
      */
-    public static ChartEngine buildSingleValuedPairsChartEngine( final SingleValuedPairs input,
+    public static ChartEngine buildSingleValuedPairsChartEngine( final SampleData<Pair<Double,Double>> input,
                                                                  final String userSpecifiedTemplateResourceName,
                                                                  final String overrideParametersStr,
                                                                  final ChronoUnit durationUnits )

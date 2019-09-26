@@ -16,7 +16,7 @@ import java.util.stream.StreamSupport;
 import org.junit.Test;
 
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs.TimeSeriesOfPairsBuilder;
+import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
@@ -25,7 +25,7 @@ import wres.datamodel.time.TimeSeriesSlicer;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
- * Tests the {@link TimeSeriesOfPairs}.
+ * Tests the {@link PoolOfPairs}.
  * 
  * @author james.brown@hydrosolved.com
  */
@@ -53,7 +53,7 @@ public final class TimeSeriesOfPairsTest
         SortedSet<Event<Pair<Double, Double>>> first = new TreeSet<>();
         SortedSet<Event<Pair<Double, Double>>> second = new TreeSet<>();
         SortedSet<Event<Pair<Double, Double>>> third = new TreeSet<>();
-        TimeSeriesOfPairsBuilder<Double, Double> b = new TimeSeriesOfPairsBuilder<>();
+        PoolOfPairsBuilder<Double, Double> b = new PoolOfPairsBuilder<>();
 
         Instant firstBasisTime = Instant.parse( FIRST_TIME );
         first.add( Event.of( Instant.parse( SECOND_TIME ), Pair.of( 1.0, 1.0 ) ) );
@@ -70,7 +70,7 @@ public final class TimeSeriesOfPairsTest
 
         final SampleMetadata meta = SampleMetadata.of();
 
-        TimeSeriesOfPairs<Double, Double> ts = b.addTimeSeries( TimeSeries.of( firstBasisTime, first ) )
+        PoolOfPairs<Double, Double> ts = b.addTimeSeries( TimeSeries.of( firstBasisTime, first ) )
                                                 .addTimeSeries( TimeSeries.of( secondBasisTime, second ) )
                                                 .addTimeSeries( TimeSeries.of( thirdBasisTime, third ) )
                                                 .setMetadata( meta )
@@ -99,7 +99,7 @@ public final class TimeSeriesOfPairsTest
         SortedSet<Event<Pair<Double, Double>>> first = new TreeSet<>();
         SortedSet<Event<Pair<Double, Double>>> second = new TreeSet<>();
         SortedSet<Event<Pair<Double, Double>>> third = new TreeSet<>();
-        TimeSeriesOfPairsBuilder<Double, Double> b = new TimeSeriesOfPairsBuilder<>();
+        PoolOfPairsBuilder<Double, Double> b = new PoolOfPairsBuilder<>();
 
         Instant firstBasisTime = Instant.parse( FIRST_TIME );
         first.add( Event.of( Instant.parse( SECOND_TIME ), Pair.of( 1.0, 1.0 ) ) );
@@ -115,7 +115,7 @@ public final class TimeSeriesOfPairsTest
         third.add( Event.of( Instant.parse( TWELFTH_TIME ), Pair.of( 3.0, 3.0 ) ) );
         SampleMetadata meta = SampleMetadata.of();
         //Add the time-series, with only one for baseline
-        TimeSeriesOfPairs<Double, Double> ts = b.addTimeSeries( TimeSeries.of( firstBasisTime, first ) )
+        PoolOfPairs<Double, Double> ts = b.addTimeSeries( TimeSeries.of( firstBasisTime, first ) )
                                                 .addTimeSeries( TimeSeries.of( secondBasisTime, second ) )
                                                 .addTimeSeries( TimeSeries.of( thirdBasisTime, third ) )
                                                 .addTimeSeriesForBaseline( TimeSeries.of( firstBasisTime, first ) )
@@ -146,9 +146,9 @@ public final class TimeSeriesOfPairsTest
         SortedSet<Event<Pair<Double, Double>>> fourth = new TreeSet<>();
         fourth.add( Event.of( Instant.parse( TWELFTH_TIME ), Pair.of( 3.0, 3.0 ) ) );
 
-        TimeSeriesOfPairsBuilder<Double, Double> bu = new TimeSeriesOfPairsBuilder<>();
+        PoolOfPairsBuilder<Double, Double> bu = new PoolOfPairsBuilder<>();
 
-        TimeSeriesOfPairs<Double, Double> durationCheck =
+        PoolOfPairs<Double, Double> durationCheck =
                 bu.addTimeSeries( TimeSeries.of( firstBasisTime,
                                                  fourth ) )
                   .setMetadata( meta )
@@ -165,7 +165,7 @@ public final class TimeSeriesOfPairsTest
     {
         //Build a time-series with two basis times
         SortedSet<Event<Pair<Double, Double>>> values = new TreeSet<>();
-        TimeSeriesOfPairsBuilder<Double, Double> b = new TimeSeriesOfPairsBuilder<>();
+        PoolOfPairsBuilder<Double, Double> b = new PoolOfPairsBuilder<>();
 
         Instant basisTime = Instant.parse( FIRST_TIME );
         values.add( Event.of( Instant.parse( SECOND_TIME ), Pair.of( 1.0, 1.0 ) ) );
@@ -182,7 +182,7 @@ public final class TimeSeriesOfPairsTest
 
         b.addTimeSeriesForBaseline( timeSeries ).setMetadataForBaseline( meta );
 
-        TimeSeriesOfPairs<Double, Double> baseline = b.build().getBaselineData();
+        PoolOfPairs<Double, Double> baseline = b.build().getBaselineData();
 
         //Check dataset dimensions
         SortedSet<Duration> durations = TimeSeriesSlicer.getDurations( baseline.get(), ReferenceTimeType.DEFAULT );
@@ -230,7 +230,7 @@ public final class TimeSeriesOfPairsTest
                                                                       first );
 
         //Add the first time-series and then append a second and third
-        TimeSeriesOfPairsBuilder<Double, Double> c = new TimeSeriesOfPairsBuilder<>();
+        PoolOfPairsBuilder<Double, Double> c = new PoolOfPairsBuilder<>();
         c.addTimeSeries( firstSeries );
 
         second.add( Event.of( Instant.parse( SECOND_TIME ), Pair.of( 4.0, 4.0 ) ) );
@@ -256,7 +256,7 @@ public final class TimeSeriesOfPairsTest
          .setMetadata( meta )
          .setMetadataForBaseline( meta );
 
-        TimeSeriesOfPairs<Double, Double> tsAppend = c.build();
+        PoolOfPairs<Double, Double> tsAppend = c.build();
 
         //Check dataset dimensions
         SortedSet<Duration> durations = TimeSeriesSlicer.getDurations( tsAppend.get(), ReferenceTimeType.DEFAULT );
@@ -290,10 +290,10 @@ public final class TimeSeriesOfPairsTest
         first.add( Event.of( Instant.parse( FOURTH_TIME ), Pair.of( 3.0, 3.0 ) ) );
         final SampleMetadata meta = SampleMetadata.of();
 
-        TimeSeriesOfPairsBuilder<Double, Double> d = new TimeSeriesOfPairsBuilder<>();
+        PoolOfPairsBuilder<Double, Double> d = new PoolOfPairsBuilder<>();
         TimeSeries<Pair<Double, Double>> firstSeries = TimeSeries.of( firstBasisTime,
                                                                       first );
-        TimeSeriesOfPairs<Double, Double> ts =
+        PoolOfPairs<Double, Double> ts =
                 d.addTimeSeries( firstSeries )
                  .setMetadata( meta )
                  .build();
@@ -309,7 +309,7 @@ public final class TimeSeriesOfPairsTest
     public void testToString()
     {
         SortedSet<Event<Pair<Double, Double>>> first = new TreeSet<>();
-        TimeSeriesOfPairsBuilder<Double, Double> b = new TimeSeriesOfPairsBuilder<>();
+        PoolOfPairsBuilder<Double, Double> b = new PoolOfPairsBuilder<>();
 
         Instant basisTime = Instant.parse( FIRST_TIME );
         SampleMetadata meta = SampleMetadata.of();
@@ -387,7 +387,7 @@ public final class TimeSeriesOfPairsTest
         SortedSet<Event<Pair<Double, Double>>> third = new TreeSet<>();
         SortedSet<Event<Pair<Double, Double>>> fourth = new TreeSet<>();
 
-        TimeSeriesOfPairsBuilder<Double, Double> b = new TimeSeriesOfPairsBuilder<>();
+        PoolOfPairsBuilder<Double, Double> b = new PoolOfPairsBuilder<>();
 
         Instant firstBasisTime = Instant.parse( FIRST_TIME );
         first.add( Event.of( Instant.parse( SECOND_TIME ), Pair.of( 1.0, 1.0 ) ) );
@@ -410,7 +410,7 @@ public final class TimeSeriesOfPairsTest
                               Pair.of( 12.0, 12.0 ) ) );
         SampleMetadata meta = SampleMetadata.of();
         //Add the time-series, with only one for baseline
-        TimeSeriesOfPairs<Double, Double> ts =
+        PoolOfPairs<Double, Double> ts =
                 b.addTimeSeries( TimeSeries.of( firstBasisTime,
                                                 first ) )
                  .addTimeSeries( TimeSeries.of( secondBasisTime,
@@ -450,7 +450,7 @@ public final class TimeSeriesOfPairsTest
     public void testIterateNonForecasts()
     {
         SortedSet<Event<Pair<Double, Double>>> data = new TreeSet<>();
-        TimeSeriesOfPairsBuilder<Double, Double> b = new TimeSeriesOfPairsBuilder<>();
+        PoolOfPairsBuilder<Double, Double> b = new PoolOfPairsBuilder<>();
 
         data.add( Event.of( Instant.parse( SECOND_TIME ), Pair.of( 1.0, 1.0 ) ) );
         data.add( Event.of( Instant.parse( THIRD_TIME ), Pair.of( 2.0, 2.0 ) ) );
@@ -465,7 +465,7 @@ public final class TimeSeriesOfPairsTest
         SampleMetadata meta = SampleMetadata.of();
 
         //Add the time-series, with only one for baseline
-        TimeSeriesOfPairs<Double, Double> ts =
+        PoolOfPairs<Double, Double> ts =
                 b.addTimeSeries( TimeSeries.of( data ) )
                  .setMetadata( meta )
                  .build();

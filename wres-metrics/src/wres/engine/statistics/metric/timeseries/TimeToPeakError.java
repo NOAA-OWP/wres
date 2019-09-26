@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs;
+import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
@@ -25,9 +25,9 @@ import wres.engine.statistics.metric.Metric;
 
 /**
  * <p>Constructs a {@link Metric} that returns the difference in time between the maximum values recorded in the left
- * and right side of each time-series in the {@link TimeSeriesOfSingleValuedPairs}. For multiple peaks with the same
- * value, the peak with the latest {@link Instant} is chosen. The timing error is measured with a {@link Duration}. A
- * negative {@link Duration} indicates that the predicted peak is after the observed peak.</p>
+ * and right side of each time-series in the {@link PoolOfPairs}. For multiple peaks with the same value, the 
+ * peak with the latest {@link Instant} is chosen. The timing error is measured with a {@link Duration}. A negative 
+ * {@link Duration} indicates that the predicted peak is after the observed peak.</p>
  * 
  * @author james.brown@hydrosolved.com
  */
@@ -64,7 +64,7 @@ public class TimeToPeakError extends TimingError
     }
 
     @Override
-    public PairedStatistic<Instant, Duration> apply( TimeSeriesOfPairs<Double,Double> s )
+    public PairedStatistic<Instant, Duration> apply( PoolOfPairs<Double,Double> s )
     {
         if ( Objects.isNull( s ) )
         {
