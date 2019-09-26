@@ -1,7 +1,6 @@
 package wres.systests;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.sql.SQLException;
 
 import org.junit.After;
@@ -25,11 +24,10 @@ public class Scenario501
         LOGGER.info( "########################################################## EXECUTING "
                      + this.getClass().getSimpleName().toLowerCase()
                      + NEWLINE );
-        Path baseDirectory = ScenarioHelper.getBaseDirectory();
         this.scenarioInfo = new ScenarioInformation( this.getClass()
                                               .getSimpleName()
                                               .toLowerCase(),
-                                          baseDirectory );
+                                              ScenarioHelper.getBaseDirectory() );
         ScenarioHelper.logUsedSystemProperties( scenarioInfo );
         ScenarioHelper.searchAndReplace( "smalldata/1985043014_DRRC2FAKE1_forecast.xml", "16.0", "9001.0");
     }
