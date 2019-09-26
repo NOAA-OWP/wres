@@ -1,7 +1,9 @@
 package wres.engine.statistics.metric.categorical;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import wres.datamodel.MetricConstants;
-import wres.datamodel.sampledata.pairs.DichotomousPairs;
+import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.MatrixStatistic;
 import wres.engine.statistics.metric.FunctionFactory;
@@ -11,7 +13,7 @@ import wres.engine.statistics.metric.FunctionFactory;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class ProbabilityOfFalseDetection extends ContingencyTableScore<DichotomousPairs>
+public class ProbabilityOfFalseDetection extends ContingencyTableScore
 {
 
     /**
@@ -26,7 +28,7 @@ public class ProbabilityOfFalseDetection extends ContingencyTableScore<Dichotomo
     }
     
     @Override
-    public DoubleScoreStatistic apply( final DichotomousPairs s )
+    public DoubleScoreStatistic apply( final SampleData<Pair<Boolean,Boolean>> s )
     {
         return aggregate( this.getInputForAggregation( s ) );
     }

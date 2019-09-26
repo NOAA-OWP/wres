@@ -1,7 +1,9 @@
 package wres.engine.statistics.metric.singlevalued;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import wres.datamodel.MetricConstants;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
+import wres.datamodel.sampledata.SampleData;
 import wres.engine.statistics.metric.FunctionFactory;
 
 /**
@@ -10,7 +12,7 @@ import wres.engine.statistics.metric.FunctionFactory;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class MeanAbsoluteError extends DoubleErrorScore<SingleValuedPairs>
+public class MeanAbsoluteError extends DoubleErrorScore<SampleData<Pair<Double,Double>>>
 {
 
     /**

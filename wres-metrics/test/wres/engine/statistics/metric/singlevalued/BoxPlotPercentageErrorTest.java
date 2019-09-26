@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -20,12 +21,12 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.pairs.SingleValuedPair;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
+import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs.TimeSeriesOfPairsBuilder;
 import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.StatisticMetadata;
@@ -58,16 +59,11 @@ public final class BoxPlotPercentageErrorTest
         this.boxPlotPercentageError = BoxPlotPercentageError.of();
     }
 
-    /**
-     * Compares the output from {@link BoxPlotPercentageError#apply(SingleValuedPairs)} against 
-     * expected output for the fake data from {@link MetricTestDataFactory#getSingleValuedPairsOne()}.
-     */
-
     @Test
     public void testApplyAgainstSingleValuedPairsOne()
     {
         //Generate some data
-        SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
+        TimeSeriesOfPairs<Double, Double> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
         StatisticMetadata meta = StatisticMetadata.of( input.getMetadata(),
@@ -95,16 +91,11 @@ public final class BoxPlotPercentageErrorTest
         assertEquals( expected, actual );
     }
 
-    /**
-     * Compares the output from {@link BoxPlotPercentageError#apply(SingleValuedPairs)} against 
-     * expected output for the fake data from {@link MetricTestDataFactory#getSingleValuedPairsNine()}.
-     */
-
     @Test
     public void testApplyAgainstSingleValuedPairsNine()
     {
         //Generate some data
-        TimeSeriesOfSingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsNine();
+        TimeSeriesOfPairs<Double, Double> input = MetricTestDataFactory.getSingleValuedPairsNine();
 
         //Metadata for the output
         StatisticMetadata meta = StatisticMetadata.of( input.getMetadata(),
@@ -120,12 +111,12 @@ public final class BoxPlotPercentageErrorTest
 
         for ( Duration duration : durations )
         {
-            List<Event<SingleValuedPair>> events = TimeSeriesSlicer.filterByDuration( input.get(),
-                                                                                      a -> a.equals( duration ),
-                                                                                      ReferenceTimeType.DEFAULT );
-            TimeSeriesOfSingleValuedPairsBuilder builder = new TimeSeriesOfSingleValuedPairsBuilder();
+            List<Event<Pair<Double, Double>>> events = TimeSeriesSlicer.filterByDuration( input.get(),
+                                                                                          a -> a.equals( duration ),
+                                                                                          ReferenceTimeType.DEFAULT );
+            TimeSeriesOfPairsBuilder<Double, Double> builder = new TimeSeriesOfPairsBuilder<>();
             builder.setMetadata( input.getMetadata() );
-            for ( Event<SingleValuedPair> next : events )
+            for ( Event<Pair<Double, Double>> next : events )
             {
                 builder.addTimeSeries( TimeSeries.of( new TreeSet<>( Collections.singleton( next ) ) ) );
             }
@@ -234,17 +225,12 @@ public final class BoxPlotPercentageErrorTest
         assertEquals( expected, actual );
     }
 
-    /**
-     * Validates the output from {@link BoxPlotPercentageError#apply(SingleValuedPairs)} when supplied 
-     * with no data.
-     */
-
     @Test
     public void testApplyWithNoData()
     {
         // Generate empty data
-        SingleValuedPairs input =
-                SingleValuedPairs.of( Arrays.asList(), SampleMetadata.of() );
+        SampleDataBasic<Pair<Double, Double>> input =
+                SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
         BoxPlotStatistics actual = this.boxPlotPercentageError.apply( input );
 
@@ -283,8 +269,7 @@ public final class BoxPlotPercentageErrorTest
     }
 
     /**
-     * Tests for an expected exception on calling {@link BoxPlotPercentageError#apply(SingleValuedPairs)} 
-     * with null input.
+     * Tests for an expected exception on calling {@link BoxPlotPercentageError#apply(SampleData)} with null input.
      */
 
     @Test

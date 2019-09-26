@@ -9,6 +9,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.function.Predicate;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import wres.config.MetricConfigException;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
@@ -18,8 +20,8 @@ import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.DichotomousPairs;
-import wres.datamodel.sampledata.pairs.SingleValuedPair;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs.TimeSeriesOfPairsBuilder;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.MatrixStatistic;
 import wres.datamodel.statistics.Statistic;
@@ -112,7 +114,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    void processSingleValuedPairs( SingleValuedPairs input,
+    void processSingleValuedPairs( TimeSeriesOfPairs<Double, Double> input,
                                    MetricFuturesByTime.MetricFuturesByTimeBuilder futures )
     {
         if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticGroup.DOUBLE_SCORE ) )
@@ -141,7 +143,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
      * @param ignoreTheseMetrics a set of metrics within the prescribed group that should be ignored
      */
 
-    void processDichotomousPairs( DichotomousPairs input,
+    void processDichotomousPairs( SampleData<Pair<Boolean, Boolean>> input,
                                   MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                   StatisticGroup outGroup,
                                   Set<MetricConstants> ignoreTheseMetrics )
@@ -172,7 +174,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
      * @throws IllegalStateException if the {@link Threshold#getDataType()} is not recognized
      */
 
-    static Predicate<SingleValuedPair> getFilterForSingleValuedPairs( Threshold input )
+    static Predicate<Pair<Double, Double>> getFilterForSingleValuedPairs( Threshold input )
     {
         switch ( input.getDataType() )
         {
@@ -201,7 +203,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
      * @throws IllegalStateException if the {@link Threshold#getDataType()} is not recognized
      */
 
-    static Predicate<TimeSeries<SingleValuedPair>> getFilterForTimeSeriesOfSingleValuedPairs( Threshold input )
+    static Predicate<TimeSeries<Pair<Double,Double>>> getFilterForTimeSeriesOfSingleValuedPairs( Threshold input )
     {
         switch ( input.getDataType() )
         {
@@ -218,8 +220,8 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
             default:
                 throw new IllegalStateException( "Unrecognized threshold type '" + input.getDataType() + "'." );
         }
-    }
-
+    }    
+    
     /**
      * Constructor.
      * 
@@ -254,7 +256,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processSingleValuedPairsByThreshold( SingleValuedPairs input,
+    private void processSingleValuedPairsByThreshold( TimeSeriesOfPairs<Double, Double> input,
                                                       MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                                       StatisticGroup outGroup )
     {
@@ -284,14 +286,18 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
                 baselineMeta = SampleMetadata.of( input.getBaselineData().getMetadata(), oneOrTwo );
             }
 
-            SingleValuedPairs pairs = SingleValuedPairs.of( input,
-                                                            SampleMetadata.of( input.getMetadata(), oneOrTwo ),
-                                                            baselineMeta );
+            TimeSeriesOfPairsBuilder<Double, Double> builder = new TimeSeriesOfPairsBuilder<>();
+
+            TimeSeriesOfPairs<Double, Double> pairs = builder.addTimeSeries( input )
+                                                             .setMetadata( SampleMetadata.of( input.getMetadata(),
+                                                                                              oneOrTwo ) )
+                                                             .setMetadataForBaseline( baselineMeta )
+                                                             .build();
 
             // Filter the data if required
             if ( useMe.isFinite() )
             {
-                Predicate<SingleValuedPair> filter = MetricProcessorByTime.getFilterForSingleValuedPairs( useMe );
+                Predicate<Pair<Double, Double>> filter = MetricProcessorByTime.getFilterForSingleValuedPairs( useMe );
 
                 pairs = Slicer.filter( pairs, filter, null );
 
@@ -314,7 +320,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
      * @param ignoreTheseMetrics a set of metrics within the prescribed group that should be ignored
      */
 
-    private void processSingleValuedPairs( SingleValuedPairs input,
+    private void processSingleValuedPairs( SampleData<Pair<Double, Double>> input,
                                            MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                            StatisticGroup outGroup,
                                            Set<MetricConstants> ignoreTheseMetrics )
@@ -355,8 +361,8 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
      */
 
     private <T extends Statistic<?>> Future<ListOfStatistics<T>>
-            processSingleValuedPairs( SingleValuedPairs pairs,
-                                      MetricCollection<SingleValuedPairs, T, T> collection,
+            processSingleValuedPairs( SampleData<Pair<Double, Double>> pairs,
+                                      MetricCollection<SampleData<Pair<Double, Double>>, T, T> collection,
                                       Set<MetricConstants> ignoreTheseMetrics )
     {
         return CompletableFuture.supplyAsync( () -> collection.apply( pairs, ignoreTheseMetrics ),
@@ -376,8 +382,8 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
      */
 
     private <T extends Statistic<?>> Future<ListOfStatistics<T>>
-            processDichotomousPairs( DichotomousPairs pairs,
-                                     MetricCollection<DichotomousPairs, MatrixStatistic, T> collection,
+            processDichotomousPairs( SampleData<Pair<Boolean, Boolean>> pairs,
+                                     MetricCollection<SampleData<Pair<Boolean, Boolean>>, MatrixStatistic, T> collection,
                                      Set<MetricConstants> ignoreTheseMetrics )
     {
         return CompletableFuture.supplyAsync( () -> collection.apply( pairs, ignoreTheseMetrics ),

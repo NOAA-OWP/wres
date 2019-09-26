@@ -65,6 +65,11 @@ public class TimeSeriesOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier
     @Override
     public TimeSeriesOfPairs<L, R> getBaselineData()
     {
+        // TODO: override hasBaseline to check the actual data
+        // and then return an empty baseline in all cases. The check
+        // should be the formal check. Returning a null from an API method
+        // is coding graffiti
+        
         if ( Objects.isNull( this.baseline ) )
         {
             return null;
@@ -202,6 +207,32 @@ public class TimeSeriesOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier
 
             return this;
         }
+        
+        /**
+         * Adds a time-series to the builder.
+         * 
+         * @param timeSeries the time-series
+         * @return the builder
+         * @throws NullPointerException if the input is null
+         */
+
+        public TimeSeriesOfPairsBuilder<L, R> addTimeSeries( TimeSeriesOfPairs<L, R> timeSeries )
+        {
+            Objects.requireNonNull( timeSeries, NULL_INPUT );
+
+            this.main.addAll( timeSeries.get() );
+            this.mainMeta = timeSeries.mainMeta;
+            this.climatology = timeSeries.climatology;
+            
+            if( timeSeries.hasBaseline() )
+            {
+                TimeSeriesOfPairs<L, R> base = timeSeries.getBaselineData();
+                this.baseline.addAll( base.get() );
+                this.baselineMeta = timeSeries.baselineMeta;
+            }
+            
+            return this;
+        }        
 
         /**
          * Sets the metadata associated with the input.

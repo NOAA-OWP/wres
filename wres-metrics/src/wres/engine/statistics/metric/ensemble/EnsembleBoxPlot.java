@@ -6,11 +6,14 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+import org.apache.commons.lang3.tuple.Pair;
+
+import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
-import wres.datamodel.sampledata.pairs.EnsemblePairs;
 import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.StatisticMetadata;
@@ -28,7 +31,7 @@ import wres.engine.statistics.metric.MetricParameterException;
  * @author james.brown@hydrosolved.com
  */
 
-abstract class EnsembleBoxPlot extends Diagram<EnsemblePairs, BoxPlotStatistics>
+abstract class EnsembleBoxPlot extends Diagram<SampleData<Pair<Double, Ensemble>>, BoxPlotStatistics>
 {
 
     /**
@@ -53,27 +56,27 @@ abstract class EnsembleBoxPlot extends Diagram<EnsemblePairs, BoxPlotStatistics>
      * @throws MetricCalculationException if the box cannot be constructed
      */
 
-    abstract BoxPlotStatistic getBox( EnsemblePair pair, StatisticMetadata metadata );
+    abstract BoxPlotStatistic getBox( Pair<Double,Ensemble> pair, StatisticMetadata metadata );
 
     @Override
-    public BoxPlotStatistics apply( final EnsemblePairs s )
+    public BoxPlotStatistics apply( final SampleData<Pair<Double, Ensemble>> s )
     {
         if ( Objects.isNull( s ) )
         {
             throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
-        
+
         List<BoxPlotStatistic> boxes = new ArrayList<>();
-        
+
         StatisticMetadata metOut = StatisticMetadata.of( s.getMetadata(),
                                                          this.getID(),
                                                          MetricConstants.MAIN,
                                                          this.hasRealUnits(),
                                                          s.getRawData().size(),
                                                          null );
-        
+
         //Create each box
-        for ( EnsemblePair next : s.getRawData() )
+        for ( Pair<Double,Ensemble> next : s.getRawData() )
         {
             boxes.add( this.getBox( next, metOut ) );
         }

@@ -8,29 +8,30 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.ToDoubleFunction;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.MetricConfigException;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.MetricConstants.StatisticGroup;
+import wres.datamodel.Probability;
 import wres.datamodel.Slicer;
+import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.pairs.DichotomousPair;
 import wres.datamodel.sampledata.pairs.DichotomousPairs;
-import wres.datamodel.sampledata.pairs.DiscreteProbabilityPair;
 import wres.datamodel.sampledata.pairs.DiscreteProbabilityPairs;
-import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.datamodel.sampledata.pairs.EnsemblePairs;
-import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs.TimeSeriesOfPairsBuilder;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
@@ -59,7 +60,7 @@ import wres.engine.statistics.metric.processing.MetricFuturesByTime.MetricFuture
  * @author james.brown@hydrosolved.com
  */
 
-public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<EnsemblePairs>
+public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<TimeSeriesOfPairs<Double, Ensemble>>
 {
     /**
      * Logger instance.
@@ -78,49 +79,43 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * {@link DoubleScoreStatistic}.
      */
 
-    private final MetricCollection<DiscreteProbabilityPairs, DoubleScoreStatistic, DoubleScoreStatistic> discreteProbabilityScore;
+    private final MetricCollection<SampleData<Pair<Probability, Probability>>, DoubleScoreStatistic, DoubleScoreStatistic> discreteProbabilityScore;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link DichotomousPairs} and produce
      * {@link ScoreStatistic}.
      */
 
-    private final MetricCollection<DiscreteProbabilityPairs, DiagramStatistic, DiagramStatistic> discreteProbabilityMultiVector;
+    private final MetricCollection<SampleData<Pair<Probability, Probability>>, DiagramStatistic, DiagramStatistic> discreteProbabilityMultiVector;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link EnsemblePairs} and produce {@link DoubleScoreStatistic}.
      */
 
-    private final MetricCollection<EnsemblePairs, DoubleScoreStatistic, DoubleScoreStatistic> ensembleScore;
+    private final MetricCollection<SampleData<Pair<Double, Ensemble>>, DoubleScoreStatistic, DoubleScoreStatistic> ensembleScore;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link EnsemblePairs} and produce
      * {@link DiagramStatistic}.
      */
 
-    private final MetricCollection<EnsemblePairs, DiagramStatistic, DiagramStatistic> ensembleMultiVector;
+    private final MetricCollection<SampleData<Pair<Double, Ensemble>>, DiagramStatistic, DiagramStatistic> ensembleMultiVector;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link EnsemblePairs} and produce
      * {@link BoxPlotStatistics}.
      */
 
-    final MetricCollection<EnsemblePairs, BoxPlotStatistics, BoxPlotStatistics> ensembleBoxPlot;
+    final MetricCollection<SampleData<Pair<Double, Ensemble>>, BoxPlotStatistics, BoxPlotStatistics> ensembleBoxPlot;
 
     /**
      * Default function that maps between ensemble pairs and single-valued pairs.
      */
 
-    private final Function<EnsemblePair, SingleValuedPair> toSingleValues;
-
-    /**
-     * Function to map between ensemble pairs and discrete probabilities.
-     */
-
-    private final BiFunction<EnsemblePair, Threshold, DiscreteProbabilityPair> toDiscreteProbabilities;
+    private final Function<Pair<Double, Ensemble>, Pair<Double, Double>> toSingleValues;
 
     @Override
-    public StatisticsForProject apply( EnsemblePairs input )
+    public StatisticsForProject apply( TimeSeriesOfPairs<Double, Ensemble> input )
     {
         Objects.requireNonNull( input, "Expected non-null input to the metric processor." );
 
@@ -132,10 +127,8 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
 
         //Remove missing values. 
         //TODO: when time-series metrics are supported, leave missings in place for time-series
-        EnsemblePairs inputNoMissing =
-                Slicer.filter( input,
-                               Slicer.leftAndEachOfRight( MetricProcessor.ADMISSABLE_DATA ),
-                               MetricProcessor.ADMISSABLE_DATA );
+        TimeSeriesOfPairs<Double, Ensemble> inputNoMissing =
+                Slicer.transform( input, Slicer.leftAndEachOfRight( MetricProcessor.ADMISSABLE_DATA ) );
 
         //Process the metrics that consume ensemble pairs
         if ( this.hasMetrics( SampleDataGroup.ENSEMBLE ) )
@@ -147,7 +140,9 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED ) )
         {
             //Derive the single-valued pairs from the ensemble pairs using the configured mapper
-            SingleValuedPairs singleValued = Slicer.toSingleValuedPairs( inputNoMissing, toSingleValues );
+            TimeSeriesOfPairs<Double, Double> singleValued =
+                    Slicer.transform( inputNoMissing, toSingleValues );
+
             this.processSingleValuedPairs( singleValued, futures );
         }
 
@@ -272,13 +267,10 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         }
 
         //Construct the default mapper from ensembles to single-values: this is not currently configurable
-        this.toSingleValues = in -> SingleValuedPair.of( in.getLeft(),
-                                                         Arrays.stream( in.getRight().getMembers() )
-                                                               .average()
-                                                               .getAsDouble() );
-
-        //Construct the default mapper from ensembles to probabilities: this is not currently configurable
-        this.toDiscreteProbabilities = Slicer::toDiscreteProbabilityPair;
+        this.toSingleValues = in -> Pair.of( in.getLeft(),
+                                             Arrays.stream( in.getRight().getMembers() )
+                                                   .average()
+                                                   .getAsDouble() );
 
         // Finalize validation now all required parameters are available
         // This is also called by the constructor of the superclass, but local parameters must be validated too
@@ -323,7 +315,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * @throws IllegalStateException if the {@link Threshold#getDataType()} is not recognized
      */
 
-    static Predicate<EnsemblePair> getFilterForEnsemblePairs( Threshold input )
+    static Predicate<Pair<Double, Ensemble>> getFilterForEnsemblePairs( Threshold input )
     {
         switch ( input.getDataType() )
         {
@@ -414,7 +406,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processEnsemblePairs( EnsemblePairs input, MetricFuturesByTimeBuilder futures )
+    private void processEnsemblePairs( TimeSeriesOfPairs<Double, Ensemble> input, MetricFuturesByTimeBuilder futures )
     {
         if ( hasMetrics( SampleDataGroup.ENSEMBLE, StatisticGroup.DOUBLE_SCORE ) )
         {
@@ -440,7 +432,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processEnsemblePairsByThreshold( EnsemblePairs input,
+    private void processEnsemblePairsByThreshold( TimeSeriesOfPairs<Double, Ensemble> input,
                                                   MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                                   StatisticGroup outGroup )
     {
@@ -470,18 +462,25 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                 baselineMeta = SampleMetadata.of( input.getBaselineData().getMetadata(), oneOrTwo );
             }
 
-            EnsemblePairs pairs = EnsemblePairs.of( input,
-                                                    SampleMetadata.of( input.getMetadata(), oneOrTwo ),
-                                                    baselineMeta );
-
             //Filter the pairs if required
+            TimeSeriesOfPairs<Double, Ensemble> pairs = input;
+
             if ( threshold.isFinite() )
             {
-                Predicate<EnsemblePair> filter =
+                Predicate<Pair<Double, Ensemble>> filter =
                         MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( useMe );
 
                 pairs = Slicer.filter( pairs, filter, null );
             }
+
+
+            TimeSeriesOfPairsBuilder<Double, Ensemble> builder = new TimeSeriesOfPairsBuilder<>();
+            pairs = builder.addTimeSeries( pairs )
+                           .setMetadata( SampleMetadata.of( pairs.getMetadata(),
+                                                            oneOrTwo ) )
+                           .setMetadataForBaseline( baselineMeta )
+                           .build();
+
 
             this.processEnsemblePairs( pairs,
                                        futures,
@@ -501,7 +500,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * @param ignoreTheseMetrics a set of metrics within the prescribed group that should be ignored
      */
 
-    private void processEnsemblePairs( EnsemblePairs input,
+    private void processEnsemblePairs( TimeSeriesOfPairs<Double, Ensemble> input,
                                        MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                        StatisticGroup outGroup,
                                        Set<MetricConstants> ignoreTheseMetrics )
@@ -535,7 +534,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processDiscreteProbabilityPairs( EnsemblePairs input,
+    private void processDiscreteProbabilityPairs( TimeSeriesOfPairs<Double, Ensemble> input,
                                                   MetricFuturesByTimeBuilder futures )
     {
         if ( this.hasMetrics( SampleDataGroup.DISCRETE_PROBABILITY, StatisticGroup.DOUBLE_SCORE ) )
@@ -557,7 +556,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processDichotomousPairs( EnsemblePairs input,
+    private void processDichotomousPairs( TimeSeriesOfPairs<Double, Ensemble> input,
                                           MetricFuturesByTimeBuilder futures )
     {
         if ( this.hasMetrics( SampleDataGroup.DICHOTOMOUS, StatisticGroup.DOUBLE_SCORE ) )
@@ -581,7 +580,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processDiscreteProbabilityPairsByThreshold( EnsemblePairs input,
+    private void processDiscreteProbabilityPairsByThreshold( TimeSeriesOfPairs<Double, Ensemble> input,
                                                              MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                                              StatisticGroup outGroup )
     {
@@ -605,9 +604,9 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
             OneOrTwoThresholds oneOrTwo = OneOrTwoThresholds.of( useMe );
 
             // Transform the pairs
-            DiscreteProbabilityPairs transformed = Slicer.toDiscreteProbabilityPairs( input,
-                                                                                      useMe,
-                                                                                      toDiscreteProbabilities );
+            TimeSeriesOfPairs<Probability, Probability> transformed = Slicer.transform( input,
+                                                                                        pair -> Slicer.toDiscreteProbabilityPair( pair,
+                                                                                                                                  useMe ) );
 
             // Add the threshold to the metadata, in order to fully qualify the pairs
             SampleMetadata baselineMeta = null;
@@ -616,9 +615,11 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                 baselineMeta = SampleMetadata.of( transformed.getBaselineData().getMetadata(), oneOrTwo );
             }
 
-            transformed = DiscreteProbabilityPairs.of( transformed,
-                                                       SampleMetadata.of( transformed.getMetadata(), oneOrTwo ),
-                                                       baselineMeta );
+            TimeSeriesOfPairsBuilder<Probability, Probability> builder = new TimeSeriesOfPairsBuilder<>();
+            transformed = builder.addTimeSeries( transformed )
+                                 .setMetadata( SampleMetadata.of( transformed.getMetadata(), oneOrTwo ) )
+                                 .setMetadataForBaseline( baselineMeta )
+                                 .build();
 
             this.processDiscreteProbabilityPairs( transformed,
                                                   futures,
@@ -639,7 +640,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * @param ignoreTheseMetrics a set of metrics within the prescribed group that should be ignored
      */
 
-    private void processDiscreteProbabilityPairs( DiscreteProbabilityPairs input,
+    private void processDiscreteProbabilityPairs( SampleData<Pair<Probability, Probability>> input,
                                                   MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                                   StatisticGroup outGroup,
                                                   Set<MetricConstants> ignoreTheseMetrics )
@@ -669,8 +670,8 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      */
 
     private <T extends Statistic<?>> Future<ListOfStatistics<T>>
-            processDiscreteProbabilityPairs( DiscreteProbabilityPairs pairs,
-                                             MetricCollection<DiscreteProbabilityPairs, T, T> collection,
+            processDiscreteProbabilityPairs( SampleData<Pair<Probability, Probability>> pairs,
+                                             MetricCollection<SampleData<Pair<Probability, Probability>>, T, T> collection,
                                              Set<MetricConstants> ignoreTheseMetrics )
     {
         return CompletableFuture.supplyAsync( () -> collection.apply( pairs, ignoreTheseMetrics ),
@@ -690,8 +691,8 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      */
 
     private <T extends Statistic<?>> Future<ListOfStatistics<T>>
-            processEnsemblePairs( EnsemblePairs pairs,
-                                  MetricCollection<EnsemblePairs, T, T> collection,
+            processEnsemblePairs( SampleData<Pair<Double, Ensemble>> pairs,
+                                  MetricCollection<SampleData<Pair<Double, Ensemble>>, T, T> collection,
                                   Set<MetricConstants> ignoreTheseMetrics )
     {
         return CompletableFuture.supplyAsync( () -> collection.apply( pairs, ignoreTheseMetrics ),
@@ -709,7 +710,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processDichotomousPairsByThreshold( EnsemblePairs input,
+    private void processDichotomousPairsByThreshold( TimeSeriesOfPairs<Double, Ensemble> input,
                                                      MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                                      StatisticGroup outGroup )
     {
@@ -738,9 +739,9 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
             Threshold outerThreshold = addQuantilesToThreshold( threshold, sorted );
 
             // Transform the pairs to probabilities first
-            DiscreteProbabilityPairs transformed = Slicer.toDiscreteProbabilityPairs( input,
-                                                                                      outerThreshold,
-                                                                                      toDiscreteProbabilities );
+            TimeSeriesOfPairs<Probability, Probability> transformed = Slicer.transform( input,
+                                                                                        pair -> Slicer.toDiscreteProbabilityPair( pair,
+                                                                                                                                  outerThreshold ) );
 
             // Find the union of classifiers across all metrics   
             Set<Threshold> classifiers = filteredByInner.union();
@@ -760,11 +761,11 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                 OneOrTwoThresholds compound = OneOrTwoThresholds.of( outerThreshold, innerThreshold );
 
                 //Define a mapper to convert the discrete probability pairs to dichotomous pairs
-                Function<DiscreteProbabilityPair, DichotomousPair> mapper =
-                        pair -> DichotomousPair.of( innerThreshold.test( pair.getLeft() ),
-                                                    innerThreshold.test( pair.getRight() ) );
+                Function<Pair<Probability, Probability>, Pair<Boolean, Boolean>> mapper =
+                        pair -> Pair.of( innerThreshold.test( pair.getLeft().getProbability() ),
+                                         innerThreshold.test( pair.getRight().getProbability() ) );
                 //Transform the pairs
-                DichotomousPairs dichotomous = Slicer.toDichotomousPairs( transformed, mapper );
+                TimeSeriesOfPairs<Boolean, Boolean> dichotomous = Slicer.transform( transformed, mapper );
 
                 // Add the threshold to the metadata, in order to fully qualify the pairs
                 SampleMetadata baselineMeta = null;
@@ -773,10 +774,11 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                     baselineMeta = SampleMetadata.of( dichotomous.getBaselineData().getMetadata(), compound );
                 }
 
-                dichotomous = DichotomousPairs.ofDichotomousPairs( dichotomous,
-                                                                   SampleMetadata.of( dichotomous.getMetadata(),
-                                                                                      compound ),
-                                                                   baselineMeta );
+                TimeSeriesOfPairsBuilder<Boolean, Boolean> builder = new TimeSeriesOfPairsBuilder<>();
+                dichotomous = builder.addTimeSeries( dichotomous )
+                                     .setMetadata( SampleMetadata.of( dichotomous.getMetadata(), compound ) )
+                                     .setMetadataForBaseline( baselineMeta )
+                                     .build();
 
                 this.processDichotomousPairs( dichotomous, futures, outGroup, unionToIgnore );
             }

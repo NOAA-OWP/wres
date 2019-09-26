@@ -8,18 +8,20 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.pairs.EnsemblePair;
-import wres.datamodel.sampledata.pairs.EnsemblePairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -48,7 +50,7 @@ public final class ContinousRankedProbabilityScoreTest
     }
 
     /**
-     * Compares the output from {@link ContinuousRankedProbabilityScore#apply(EnsemblePairs)} against expected output
+     * Compares the output from {@link ContinuousRankedProbabilityScore#apply(SampleData)} against expected output
      * where the input contains no missing data.
      */
 
@@ -56,14 +58,14 @@ public final class ContinousRankedProbabilityScoreTest
     public void testApplyWithNoMissings()
     {
         //Generate some data
-        List<EnsemblePair> pairs = new ArrayList<>();
-        pairs.add( EnsemblePair.of( 25.7, new double[] { 23, 43, 45, 23, 54 } ) );
-        pairs.add( EnsemblePair.of( 21.4, new double[] { 19, 16, 57, 23, 9 } ) );
-        pairs.add( EnsemblePair.of( 32.1, new double[] { 23, 54, 23, 12, 32 } ) );
-        pairs.add( EnsemblePair.of( 47, new double[] { 12, 54, 23, 54, 78 } ) );
-        pairs.add( EnsemblePair.of( 12.1, new double[] { 9, 8, 5, 6, 12 } ) );
-        pairs.add( EnsemblePair.of( 43, new double[] { 23, 12, 12, 34, 10 } ) );
-        EnsemblePairs input = EnsemblePairs.of( pairs, SampleMetadata.of() );
+        List<Pair<Double, Ensemble>> pairs = new ArrayList<>();
+        pairs.add( Pair.of( 25.7, Ensemble.of( 23, 43, 45, 23, 54 ) ) );
+        pairs.add( Pair.of( 21.4, Ensemble.of( 19, 16, 57, 23, 9 ) ) );
+        pairs.add( Pair.of( 32.1, Ensemble.of( 23, 54, 23, 12, 32 ) ) );
+        pairs.add( Pair.of( 47.0, Ensemble.of( 12, 54, 23, 54, 78 ) ) );
+        pairs.add( Pair.of( 12.1, Ensemble.of( 9, 8, 5, 6, 12 ) ) );
+        pairs.add( Pair.of( 43.0, Ensemble.of( 23, 12, 12, 34, 10 ) ) );
+        SampleData<Pair<Double, Ensemble>> input = SampleDataBasic.of( pairs, SampleMetadata.of() );
 
         //Metadata for the output
         final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
@@ -78,7 +80,7 @@ public final class ContinousRankedProbabilityScoreTest
     }
 
     /**
-     * Compares the output from {@link ContinuousRankedProbabilityScore#apply(EnsemblePairs)} against expected output
+     * Compares the output from {@link ContinuousRankedProbabilityScore#apply(SampleData)} against expected output
      * where the input contains missing data.
      */
 
@@ -87,14 +89,14 @@ public final class ContinousRankedProbabilityScoreTest
     {
 
         //Generate some data
-        List<EnsemblePair> pairs = new ArrayList<>();
-        pairs.add( EnsemblePair.of( 25.7, new double[] { 23, 43, 45, 34.2, 23, 54 } ) );
-        pairs.add( EnsemblePair.of( 21.4, new double[] { 19, 16, 57, 23, 9 } ) );
-        pairs.add( EnsemblePair.of( 32.1, new double[] { 23, 54, 23, 12, 32, 45.3, 67.1 } ) );
-        pairs.add( EnsemblePair.of( 47, new double[] { 12, 54, 23, 54 } ) );
-        pairs.add( EnsemblePair.of( 12, new double[] { 9, 8, 5 } ) );
-        pairs.add( EnsemblePair.of( 43, new double[] { 23, 12, 12 } ) );
-        EnsemblePairs input = EnsemblePairs.of( pairs, SampleMetadata.of() );
+        List<Pair<Double, Ensemble>> pairs = new ArrayList<>();
+        pairs.add( Pair.of( 25.7, Ensemble.of( 23, 43, 45, 34.2, 23, 54 ) ) );
+        pairs.add( Pair.of( 21.4, Ensemble.of( 19, 16, 57, 23, 9 ) ) );
+        pairs.add( Pair.of( 32.1, Ensemble.of( 23, 54, 23, 12, 32, 45.3, 67.1 ) ) );
+        pairs.add( Pair.of( 47.0, Ensemble.of( 12, 54, 23, 54 ) ) );
+        pairs.add( Pair.of( 12.0, Ensemble.of( 9, 8, 5 ) ) );
+        pairs.add( Pair.of( 43.0, Ensemble.of( 23, 12, 12 ) ) );
+        SampleData<Pair<Double, Ensemble>> input = SampleDataBasic.of( pairs, SampleMetadata.of() );
 
         //Metadata for the output
         final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
@@ -110,7 +112,7 @@ public final class ContinousRankedProbabilityScoreTest
     }
 
     /**
-     * Compares the output from {@link ContinuousRankedProbabilityScore#apply(EnsemblePairs)} against expected output
+     * Compares the output from {@link ContinuousRankedProbabilityScore#apply(SampleData)} against expected output
      * where the observation falls below the lowest member.
      */
 
@@ -118,9 +120,9 @@ public final class ContinousRankedProbabilityScoreTest
     public void testApplyObsMissesLow()
     {
         //Generate some data
-        List<EnsemblePair> pairs = new ArrayList<>();
-        pairs.add( EnsemblePair.of( 8, new double[] { 23, 54, 23, 12, 32 } ) );
-        EnsemblePairs input = EnsemblePairs.of( pairs, SampleMetadata.of() );
+        List<Pair<Double, Ensemble>> pairs = new ArrayList<>();
+        pairs.add( Pair.of( 8.0, Ensemble.of( 23, 54, 23, 12, 32 ) ) );
+        SampleData<Pair<Double, Ensemble>> input = SampleDataBasic.of( pairs, SampleMetadata.of() );
 
         //Metadata for the output
         final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
@@ -135,7 +137,7 @@ public final class ContinousRankedProbabilityScoreTest
     }
 
     /**
-     * Compares the output from {@link ContinuousRankedProbabilityScore#apply(EnsemblePairs)} against expected output
+     * Compares the output from {@link ContinuousRankedProbabilityScore#apply(SampleData)} against expected output
      * for a scenario where the observed value overlaps one ensemble member. This exposes a mistake in the Hersbach 
      * (2000) paper where rows 1 and 3 of table/eqn. 26 should be inclusive bounds.
      */
@@ -145,9 +147,9 @@ public final class ContinousRankedProbabilityScoreTest
     {
 
         //Generate some data
-        List<EnsemblePair> pairs = new ArrayList<>();
-        pairs.add( EnsemblePair.of( 32, new double[] { 23, 54, 23, 12, 32 } ) );
-        EnsemblePairs input = EnsemblePairs.of( pairs, SampleMetadata.of() );
+        List<Pair<Double, Ensemble>> pairs = new ArrayList<>();
+        pairs.add( Pair.of( 32.0, Ensemble.of( 23, 54, 23, 12, 32 ) ) );
+        SampleData<Pair<Double, Ensemble>> input = SampleDataBasic.of( pairs, SampleMetadata.of() );
 
         //Metadata for the output
         final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
@@ -163,7 +165,7 @@ public final class ContinousRankedProbabilityScoreTest
 
 
     /**
-     * Validates the output from {@link ContinuousRankedProbabilityScore#apply(EnsemblePairs)} when supplied with no 
+     * Validates the output from {@link ContinuousRankedProbabilityScore#apply(SampleData)} when supplied with no 
      * data.
      */
 
@@ -171,8 +173,8 @@ public final class ContinousRankedProbabilityScoreTest
     public void testApplyWithNoData()
     {
         // Generate empty data
-        EnsemblePairs input =
-                EnsemblePairs.of( Arrays.asList(), SampleMetadata.of() );
+        SampleData<Pair<Double, Ensemble>> input =
+                SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
         DoubleScoreStatistic actual = crps.apply( input );
 
@@ -242,7 +244,7 @@ public final class ContinousRankedProbabilityScoreTest
     }
 
     /**
-     * Tests for an expected exception on calling {@link ContinuousRankedProbabilityScore#apply(EnsemblePairs)} with 
+     * Tests for an expected exception on calling {@link ContinuousRankedProbabilityScore#apply(SampleData)} with 
      * null input.
      */
 

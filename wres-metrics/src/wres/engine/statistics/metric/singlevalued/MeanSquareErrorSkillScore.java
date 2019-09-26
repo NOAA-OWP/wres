@@ -2,14 +2,15 @@ package wres.engine.statistics.metric.singlevalued;
 
 import java.util.Objects;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.DatasetIdentifier;
+import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.sampledata.pairs.SingleValuedPair;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.DecomposableScore;
@@ -22,7 +23,7 @@ import wres.engine.statistics.metric.MetricCalculationException;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class MeanSquareErrorSkillScore extends DecomposableScore<SingleValuedPairs>
+public class MeanSquareErrorSkillScore extends DecomposableScore<SampleData<Pair<Double, Double>>>
 {
 
     /**
@@ -43,7 +44,7 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<SingleValuedPai
     private final SumOfSquareError sse;
 
     @Override
-    public DoubleScoreStatistic apply( final SingleValuedPairs s )
+    public DoubleScoreStatistic apply( final SampleData<Pair<Double, Double>> s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -74,7 +75,7 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<SingleValuedPai
             {
                 double meanLeft =
                         FunctionFactory.mean().applyAsDouble( VectorOfDoubles.of( Slicer.getLeftSide( s ) ) );
-                for ( SingleValuedPair next : s.getRawData() )
+                for ( Pair<Double, Double> next : s.getRawData() )
                 {
                     denominator += Math.pow( next.getLeft() - meanLeft, 2 );
                 }
@@ -89,11 +90,11 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<SingleValuedPai
             baselineIdentifier = s.getBaselineData().getMetadata().getIdentifier();
         }
         final StatisticMetadata metOut = StatisticMetadata.of( s.getMetadata(),
-                                                                     this.getID(),
-                                                                     MetricConstants.MAIN,
-                                                                     this.hasRealUnits(),
-                                                                     s.getRawData().size(),
-                                                                     baselineIdentifier );
+                                                               this.getID(),
+                                                               MetricConstants.MAIN,
+                                                               this.hasRealUnits(),
+                                                               s.getRawData().size(),
+                                                               baselineIdentifier );
         return DoubleScoreStatistic.of( result, metOut );
     }
 

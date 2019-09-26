@@ -4,18 +4,19 @@ import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
 
 import wres.datamodel.MetricConstants;
+import wres.datamodel.Probability;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.MissingValues;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.sampledata.pairs.DichotomousPair;
-import wres.datamodel.sampledata.pairs.DichotomousPairs;
-import wres.datamodel.sampledata.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.MatrixStatistic;
@@ -35,7 +36,8 @@ import wres.engine.statistics.metric.MetricParameterException;
  * @author james.brown@hydrosolved.com
  */
 
-public class RelativeOperatingCharacteristicDiagram extends Diagram<DiscreteProbabilityPairs, DiagramStatistic>
+public class RelativeOperatingCharacteristicDiagram
+        extends Diagram<SampleData<Pair<Probability, Probability>>, DiagramStatistic>
 {
 
     /**
@@ -48,7 +50,7 @@ public class RelativeOperatingCharacteristicDiagram extends Diagram<DiscreteProb
      * Components of the ROC.
      */
 
-    private final MetricCollection<DichotomousPairs, MatrixStatistic, DoubleScoreStatistic> roc;
+    private final MetricCollection<SampleData<Pair<Boolean, Boolean>>, MatrixStatistic, DoubleScoreStatistic> roc;
 
     /**
      * Number of points in the empirical ROC diagram.
@@ -69,7 +71,7 @@ public class RelativeOperatingCharacteristicDiagram extends Diagram<DiscreteProb
     }
 
     @Override
-    public DiagramStatistic apply( final DiscreteProbabilityPairs s )
+    public DiagramStatistic apply( final SampleData<Pair<Probability, Probability>> s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -94,11 +96,17 @@ public class RelativeOperatingCharacteristicDiagram extends Diagram<DiscreteProb
                 double prob = Precision.round( 1.0 - ( i * constant ), 5 );
                 //Compute the PoD/PoFD using the probability threshold to determine whether the event occurred
                 //according to the probability on the RHS
+                
+                // Tranformer from probabilities to yes/no
+                Function<Pair<Probability, Probability>, Pair<Boolean, Boolean>> transformer =
+                        in -> Pair.of( Double.compare( in.getLeft().getProbability(),
+                                                       1.0 ) == 0,
+                                       in.getRight().getProbability() > prob );
+                        
+                // Transformed pairs
+                SampleData<Pair<Boolean, Boolean>> transformed = Slicer.transform( s, transformer );
                 ListOfStatistics<DoubleScoreStatistic> out =
-                        roc.apply( Slicer.toDichotomousPairs( s,
-                                                              in -> DichotomousPair.of( Double.compare( in.getLeft(),
-                                                                                                        1.0 ) == 0,
-                                                                                        in.getRight() > prob ) ) );
+                        roc.apply( transformed );
                 //Store
                 pOD[i] = Slicer.filter( out, MetricConstants.PROBABILITY_OF_DETECTION ).getData().get( 0 ).getData();
                 pOFD[i] = Slicer.filter( out, MetricConstants.PROBABILITY_OF_FALSE_DETECTION )
@@ -120,11 +128,11 @@ public class RelativeOperatingCharacteristicDiagram extends Diagram<DiscreteProb
         output.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, VectorOfDoubles.of( pOFD ) );
         final StatisticMetadata metOut =
                 StatisticMetadata.of( s.getMetadata(),
-                                         this.getID(),
-                                         MetricConstants.MAIN,
-                                         this.hasRealUnits(),
-                                         s.getRawData().size(),
-                                         null );
+                                      this.getID(),
+                                      MetricConstants.MAIN,
+                                      this.hasRealUnits(),
+                                      s.getRawData().size(),
+                                      null );
         return DiagramStatistic.of( output, metOut );
     }
 

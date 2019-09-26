@@ -4,6 +4,9 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.ToDoubleFunction;
 
+import org.apache.commons.lang3.tuple.Pair;
+
+import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
@@ -94,7 +97,7 @@ public class BoxPlotErrorByForecast extends EnsembleBoxPlot
      */
 
     @Override
-    BoxPlotStatistic getBox( EnsemblePair pair, StatisticMetadata metadata )
+    BoxPlotStatistic getBox( Pair<Double,Ensemble> pair, StatisticMetadata metadata )
     {
         //Get the sorted errors
         double[] probs = this.probabilities.getDoubles();

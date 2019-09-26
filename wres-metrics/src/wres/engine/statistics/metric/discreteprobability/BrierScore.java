@@ -2,10 +2,13 @@ package wres.engine.statistics.metric.discreteprobability;
 
 import java.util.Objects;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import wres.datamodel.MetricConstants;
+import wres.datamodel.Probability;
 import wres.datamodel.Slicer;
+import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.sampledata.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.DecomposableScore;
@@ -26,8 +29,8 @@ import wres.engine.statistics.metric.singlevalued.MeanSquareError;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class BrierScore extends DecomposableScore<DiscreteProbabilityPairs>
-        implements ProbabilityScore<DiscreteProbabilityPairs, DoubleScoreStatistic>
+public class BrierScore extends DecomposableScore<SampleData<Pair<Probability, Probability>>>
+        implements ProbabilityScore<SampleData<Pair<Probability, Probability>>, DoubleScoreStatistic>
 {
 
     /**
@@ -48,7 +51,7 @@ public class BrierScore extends DecomposableScore<DiscreteProbabilityPairs>
     private final MeanSquareError mse;
 
     @Override
-    public DoubleScoreStatistic apply( DiscreteProbabilityPairs s )
+    public DoubleScoreStatistic apply( SampleData<Pair<Probability, Probability>> s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -56,13 +59,19 @@ public class BrierScore extends DecomposableScore<DiscreteProbabilityPairs>
         }
 
         StatisticMetadata metOut = StatisticMetadata.of( s.getMetadata(),
-                                                               this.getID(),
-                                                               MetricConstants.MAIN,
-                                                               this.hasRealUnits(),
-                                                               s.getRawData().size(),
-                                                               null );
+                                                         this.getID(),
+                                                         MetricConstants.MAIN,
+                                                         this.hasRealUnits(),
+                                                         s.getRawData().size(),
+                                                         null );
 
-        return DoubleScoreStatistic.of( mse.apply( Slicer.toSingleValuedPairs( s ) ).getData(), metOut );
+        // Transform probabilities to double values
+        SampleData<Pair<Double, Double>> transformed =
+                Slicer.transform( s,
+                                  pair -> Pair.of( pair.getLeft().getProbability(),
+                                                   pair.getRight().getProbability() ) );
+
+        return DoubleScoreStatistic.of( mse.apply( transformed ).getData(), metOut );
     }
 
     @Override

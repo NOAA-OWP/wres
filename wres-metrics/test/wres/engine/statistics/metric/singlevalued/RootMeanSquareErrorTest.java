@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -13,9 +14,10 @@ import org.junit.rules.ExpectedException;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.MetricTestDataFactory;
@@ -43,15 +45,11 @@ public final class RootMeanSquareErrorTest
         this.rmse = RootMeanSquareError.of();
     }
 
-    /**
-     * Compares the output from {@link RootMeanSquareError#apply(SingleValuedPairs)} against expected output.
-     */
-
     @Test
     public void testApply()
     {
         //Generate some data
-        SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
+        TimeSeriesOfPairs<Double, Double> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
         StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
@@ -69,26 +67,17 @@ public final class RootMeanSquareErrorTest
                     actual.equals( expected ) );
     }
 
-    /**
-     * Validates the output from {@link RootMeanSquareError#apply(SingleValuedPairs)} when supplied with no data.
-     */
-
     @Test
     public void testApplyWithNoData()
     {
         // Generate empty data
-        SingleValuedPairs input =
-                SingleValuedPairs.of( Arrays.asList(), SampleMetadata.of() );
+        SampleDataBasic<Pair<Double, Double>> input =
+                SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
  
         DoubleScoreStatistic actual = rmse.apply( input );
 
         assertTrue( actual.getData().isNaN() );
     }
-
-    /**
-     * Checks that the {@link RootMeanSquareError#getName()} returns 
-     * {@link MetricConstants#ROOT_MEAN_SQUARE_ERROR.toString()}
-     */
 
     @Test
     public void testGetName()
@@ -96,19 +85,11 @@ public final class RootMeanSquareErrorTest
         assertTrue( rmse.getName().equals( MetricConstants.ROOT_MEAN_SQUARE_ERROR.toString() ) );
     }
 
-    /**
-     * Checks that the {@link RootMeanSquareError#isDecomposable()} returns <code>false</code>.
-     */
-
     @Test
     public void testIsDecomposable()
     {
         assertFalse( rmse.isDecomposable() );
     }
-
-    /**
-     * Checks that the {@link RootMeanSquareError#isSkillScore()} returns <code>false</code>.
-     */
 
     @Test
     public void testIsSkillScore()
@@ -116,20 +97,11 @@ public final class RootMeanSquareErrorTest
         assertFalse( rmse.isSkillScore() );
     }
 
-    /**
-     * Checks that the {@link RootMeanSquareError#getScoreOutputGroup()} returns the result provided on construction.
-     */
-
     @Test
     public void testGetScoreOutputGroup()
     {
         assertTrue( rmse.getScoreOutputGroup() == ScoreGroup.NONE );
     }
-    
-    /**
-     * Checks that the {@link RootMeanSquareError#getCollectionOf()} returns 
-     * {@link MetricConstants#SUM_OF_SQUARE_ERROR}.
-     */
 
     @Test
     public void testGetCollectionOf()
@@ -137,20 +109,11 @@ public final class RootMeanSquareErrorTest
         assertTrue( rmse.getCollectionOf().equals( MetricConstants.SUM_OF_SQUARE_ERROR ) );
     }   
     
-    /**
-     * Checks that the {@link RootMeanSquareError#hasRealUnits()} returns <code>true</code>.
-     */
-
     @Test
-    public void testhasRealUnits()
+    public void testHasRealUnits()
     {
         assertTrue( rmse.hasRealUnits() );
     }
-
-    /**
-     * Tests for an expected exception on calling {@link RootMeanSquareError#apply(SingleValuedPairs)} with null 
-     * input.
-     */
 
     @Test
     public void testApplyExceptionOnNullInput()

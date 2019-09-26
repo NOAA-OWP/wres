@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Map;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -14,12 +15,14 @@ import org.junit.rules.ExpectedException;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.Probability;
 import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -49,7 +52,7 @@ public final class RelativeOperatingCharacteristicDiagramTest
     }
 
     /**
-     * Compares the output from {@link RelativeOperatingCharacteristicDiagram#apply(DiscreteProbabilityPairs)} against 
+     * Compares the output from {@link RelativeOperatingCharacteristicDiagram#apply(SampleData)} against 
      * expected output.
      */
 
@@ -57,7 +60,7 @@ public final class RelativeOperatingCharacteristicDiagramTest
     public void testApply()
     {
         //Generate some data
-        DiscreteProbabilityPairs input = MetricTestDataFactory.getDiscreteProbabilityPairsThree();
+        SampleData<Pair<Probability,Probability>> input = MetricTestDataFactory.getDiscreteProbabilityPairsThree();
 
         //Metadata for the output
         final StatisticMetadata m1 =
@@ -102,7 +105,7 @@ public final class RelativeOperatingCharacteristicDiagramTest
     }
 
     /**
-     * Validates the output from {@link RelativeOperatingCharacteristicDiagram#apply(DiscreteProbabilityPairs)} when 
+     * Validates the output from {@link RelativeOperatingCharacteristicDiagram#apply(SampleData)} when 
      * supplied with no data.
      */
 
@@ -110,8 +113,8 @@ public final class RelativeOperatingCharacteristicDiagramTest
     public void testApplyWithNoData()
     {
         // Generate empty data
-        DiscreteProbabilityPairs input =
-                DiscreteProbabilityPairs.of( Arrays.asList(), SampleMetadata.of() );
+        SampleData<Pair<Probability,Probability>> input =
+                SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
         DiagramStatistic actual = roc.apply( input );
 

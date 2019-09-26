@@ -13,8 +13,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.datamodel.sampledata.pairs.SingleValuedPair;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs;
 import wres.datamodel.time.TimeSeries;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
@@ -29,21 +28,16 @@ public final class TimingErrorHelperTest
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
-    /**
-     * Tests the {@link TimingErrorHelper#getTimeToPeak(wres.datamodel.time.TimeSeriesCollection, java.util.Random) with data
-     * that does not contain ties.
-     */
-
     @Test
     public void testGetTimeToPeakWithoutTies()
     {
 
         // Generate some data
-        TimeSeriesOfSingleValuedPairs input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
+        TimeSeriesOfPairs<Double,Double> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
 
-        Iterator<TimeSeries<SingleValuedPair>> iterator = input.get().iterator();
-        TimeSeries<SingleValuedPair> first = iterator.next();
-        TimeSeries<SingleValuedPair> second = iterator.next();
+        Iterator<TimeSeries<Pair<Double,Double>>> iterator = input.get().iterator();
+        TimeSeries<Pair<Double,Double>> first = iterator.next();
+        TimeSeries<Pair<Double,Double>> second = iterator.next();
 
         //Generate some data using an RNG for a uniform U[0,1] distribution with a fixed seed
         Random r = new Random( 12345678 );
@@ -63,18 +57,13 @@ public final class TimingErrorHelperTest
         assertTrue( actualPeaksSecond.equals( expectedPeaksSecond ) );
     }
 
-    /**
-     * Tests the {@link TimingErrorHelper#getTimeToPeak(wres.datamodel.time.TimeSeriesCollection, java.util.Random) with data
-     * that contains ties.
-     */
-
     @Test
     public void testGetTimeToPeakWithTies()
     {
         // Generate some data
-        TimeSeriesOfSingleValuedPairs input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsFive();
-        Iterator<TimeSeries<SingleValuedPair>> iterator = input.get().iterator();
-        TimeSeries<SingleValuedPair> first = iterator.next();
+        TimeSeriesOfPairs<Double,Double> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsFive();
+        Iterator<TimeSeries<Pair<Double,Double>>> iterator = input.get().iterator();
+        TimeSeries<Pair<Double,Double>> first = iterator.next();
 
         //Generate some data using an RNG for a uniform U[0,1] distribution with a fixed seed
         Random r = new Random( 12345678 );
@@ -86,17 +75,6 @@ public final class TimingErrorHelperTest
 
         assertTrue( actualPeaks.equals( expectedPeaks ) );
     }
-
-    /**
-     * Tests instantiation by reflection. TODO: remove when Jacoco can cover private constructors.
-     * 
-     * @throws SecurityException 
-     * @throws NoSuchMethodException 
-     * @throws InvocationTargetException 
-     * @throws IllegalArgumentException 
-     * @throws IllegalAccessException 
-     * @throws InstantiationException 
-     */
 
     @Test
     public void testInstantiation() throws NoSuchMethodException, InstantiationException,

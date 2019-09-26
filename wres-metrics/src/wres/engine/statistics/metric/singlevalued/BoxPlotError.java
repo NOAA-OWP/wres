@@ -5,7 +5,10 @@ import java.util.Collections;
 import java.util.Objects;
 import java.util.function.DoubleUnaryOperator;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import wres.datamodel.MetricConstants;
+import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.statistics.BoxPlotStatistic;
@@ -22,7 +25,7 @@ import wres.engine.statistics.metric.FunctionFactory;
  * @author james.brown@hydrosolved.com
  */
 
-public class BoxPlotError extends Diagram<SingleValuedPairs, BoxPlotStatistics>
+public class BoxPlotError extends Diagram<SampleData<Pair<Double,Double>>, BoxPlotStatistics>
 {
 
     /**
@@ -68,7 +71,7 @@ public class BoxPlotError extends Diagram<SingleValuedPairs, BoxPlotStatistics>
     }
 
     @Override
-    public BoxPlotStatistics apply( final SingleValuedPairs s )
+    public BoxPlotStatistics apply( final SampleData<Pair<Double, Double>> s )
     {
         if ( Objects.isNull( s ) )
         {

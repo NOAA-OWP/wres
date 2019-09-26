@@ -1,38 +1,42 @@
 package wres.engine.statistics.metric.categorical;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import wres.datamodel.MatrixOfDoubles;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.sampledata.pairs.MulticategoryPairs;
+import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.MatrixStatistic;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCalculationException;
 
 /**
- * The Peirce Skill Score is a categorical measure of the average accuracy of a predictand for a multi-category event,
+ * <P>The Peirce Skill Score is a categorical measure of the average accuracy of a predictand for a multi-category event,
  * where the climatological probability of identifying the correct category is factored out. For a dichotomous
  * predictand, the Peirce Skill Score corresponds to the difference between the {@link ProbabilityOfDetection} and the
- * {@link ProbabilityOfFalseDetection}.
+ * {@link ProbabilityOfFalseDetection}. 
+ * 
+ * <p>TODO: The {@link #aggregate(MatrixStatistic)} is implemented for the multicategory case. Abstract this to 
+ * somewhere appropriately visible for extensibility. 
  * 
  * @author james.brown@hydrosolved.com
  */
-public class PeirceSkillScore<S extends MulticategoryPairs> extends ContingencyTableScore<S>
+public class PeirceSkillScore extends ContingencyTableScore
 {
     
     /**
      * Returns an instance.
      * 
-     * @param<S> the paired input type
      * @return an instance
      */
     
-    public static <S extends MulticategoryPairs> PeirceSkillScore<S> of()
+    public static PeirceSkillScore of()
     {
-        return new PeirceSkillScore<>();
+        return new PeirceSkillScore();
     } 
 
     @Override
-    public DoubleScoreStatistic apply( final S s )
+    public DoubleScoreStatistic apply( final SampleData<Pair<Boolean,Boolean>> s )
     {
         return aggregate( this.getInputForAggregation( s ) );
     }

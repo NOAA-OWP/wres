@@ -127,9 +127,9 @@ public class MetricCollection<S extends SampleData<?>, T extends Statistic<?>, U
     @Override
     public String toString() 
     {
-        Set<MetricConstants> metrics = this.getMetrics();
+        Set<MetricConstants> m = this.getMetrics();
         
-        return "The following metrics are in collection object '" + this.hashCode() + "': " + metrics;
+        return "The following metrics are in collection object '" + this.hashCode() + "': " + m;
     }
 
     /**

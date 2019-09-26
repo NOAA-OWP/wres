@@ -43,17 +43,17 @@ import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs.TimeSeriesOfPairsBuilder;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.MatrixStatistic;
 import wres.datamodel.statistics.PairedStatistic;
-import wres.datamodel.statistics.StatisticException;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -124,31 +124,19 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
-    /**
-     * Tests the construction of a {@link MetricProcessorByTimeSingleValuedPairs} and application of
-     * {@link MetricProcessorByTimeSingleValuedPairs#apply(SingleValuedPairs)} to 
-     * configuration obtained from testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyWithoutThresholds.xml 
-     * and pairs obtained from {@link MetricTestDataFactory#getSingleValuedPairsFour()}.
-     * 
-     * @throws IOException if the input data could not be read
-     * @throws InterruptedException if the outputs were interrupted
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     * @throws StatisticException if the results could not be generated 
-     */
-
     @Test
     public void testApplyWithoutThresholds() throws IOException, MetricParameterException, InterruptedException
     {
         String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyWithoutThresholds.xml";
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<SingleValuedPairs, StatisticsForProject> processor =
+        MetricProcessor<TimeSeriesOfPairs<Double, Double>, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         null,
                                                                         Executors.newSingleThreadExecutor(),
                                                                         Executors.newSingleThreadExecutor(),
                                                                         null );
-        SingleValuedPairs pairs = MetricTestDataFactory.getSingleValuedPairsFour();
+        TimeSeriesOfPairs<Double, Double> pairs = MetricTestDataFactory.getSingleValuedPairsFour();
         StatisticsForProject results = processor.apply( pairs );
         ListOfStatistics<DoubleScoreStatistic> bias =
                 Slicer.filter( results.getDoubleScoreStatistics(), MetricConstants.BIAS_FRACTION );
@@ -178,28 +166,15 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         assertEquals( VectorOfDoubles.of( 5, 5, 5, 5, 5 ), bpe.getData().get( 0 ).getData().get( 0 ).getData() );
     }
 
-    /**
-     * Tests the construction of a {@link MetricProcessorByTimeSingleValuedPairs} and application of
-     * {@link MetricProcessorByTimeSingleValuedPairs#apply(SingleValuedPairs)} to 
-     * configuration obtained from testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyWithThresholds.xml and 
-     * pairs obtained from {@link MetricTestDataFactory#getSingleValuedPairsFour()}. Tests the output for multiple 
-     * calls with separate forecast lead times.
-     * 
-     * @throws IOException if the input data could not be read
-     * @throws InterruptedException if the outputs were interrupted
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     * @throws StatisticException if the results could not be generated 
-     */
-
     @Test
     public void testApplyWithThresholds() throws IOException, MetricParameterException, InterruptedException
     {
         String configPath = TEST_SOURCE;
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<SingleValuedPairs, StatisticsForProject> processor =
+        MetricProcessor<TimeSeriesOfPairs<Double, Double>, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config, StatisticGroup.set() );
-        SingleValuedPairs pairs = MetricTestDataFactory.getSingleValuedPairsFour();
+        TimeSeriesOfPairs<Double, Double> pairs = MetricTestDataFactory.getSingleValuedPairsFour();
 
         // Generate results for 10 nominal lead times
         for ( int i = 1; i < 11; i++ )
@@ -213,7 +188,11 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                                                          "HEFS" ) )
                                                                    .setTimeWindow( window )
                                                                    .build();
-            processor.apply( SingleValuedPairs.of( pairs.getRawData(), meta ) );
+
+            TimeSeriesOfPairs<Double, Double> next =
+                    new TimeSeriesOfPairsBuilder<Double, Double>().addTimeSeries( pairs ).setMetadata( meta ).build();
+
+            processor.apply( next );
         }
 
         // Validate a subset of the data 
@@ -270,20 +249,12 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         assertEquals( expected, actual );
     }
 
-    /**
-     * Tests the construction of a {@link MetricProcessorByTimeSingleValuedPairs} for all valid metrics associated
-     * with single-valued inputs.
-     * 
-     * @throws IOException if the input data could not be read
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     */
-
     @Test
     public void testForExpectedMetricsWhenAllValidConfigured() throws IOException, MetricParameterException
     {
         String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/testAllValid.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<SingleValuedPairs, StatisticsForProject> processor =
+        MetricProcessor<TimeSeriesOfPairs<Double, Double>, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         StatisticGroup.set() );
 
@@ -295,17 +266,6 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         assertEquals( expected, actual );
     }
-
-    /**
-     * Tests the construction of a {@link MetricProcessorByTimeSingleValuedPairs} and application of
-     * {@link MetricProcessorByTimeSingleValuedPairs#apply(SingleValuedPairs)} to a time-series metric using 
-     * pairs obtained from {@link MetricTestDataFactory#getTimeSeriesOfSingleValuedPairsOne()}. Tests the output for 
-     * multiple calls with subsets of data, caching the results across calls.
-     * 
-     * @throws InterruptedException if the outputs were interrupted
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     * @throws StatisticException if the results could not be generated 
-     */
 
     @Test
     public void testApplyTimeSeriesMetrics() throws MetricParameterException, InterruptedException
@@ -323,13 +283,13 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                    null,
                                    null );
 
-        MetricProcessor<SingleValuedPairs, StatisticsForProject> processor =
+        MetricProcessor<TimeSeriesOfPairs<Double, Double>, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( mockedConfig,
                                                                         StatisticGroup.set() );
 
         //Break into two time-series to test sequential calls
-        TimeSeriesOfSingleValuedPairs first = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsTwo();
-        TimeSeriesOfSingleValuedPairs second = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsThree();
+        TimeSeriesOfPairs<Double, Double> first = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsTwo();
+        TimeSeriesOfPairs<Double, Double> second = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsThree();
 
         //Compute the metrics
         processor.apply( first );
@@ -388,17 +348,6 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         assertEquals( expected, actual );
     }
 
-    /**
-     * Tests the construction of a {@link MetricProcessorByTimeSingleValuedPairs} and application of
-     * {@link MetricProcessorByTimeSingleValuedPairs#apply(SingleValuedPairs)} to a time-series metric using 
-     * pairs obtained from {@link MetricTestDataFactory#getTimeSeriesOfSingleValuedPairsOne()}. The test includes a
-     * thershold constraint on the paired data.
-     * 
-     * @throws InterruptedException if the outputs were interrupted
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     * @throws StatisticException if the results could not be generated 
-     */
-
     @Test
     public void testApplyTimeSeriesMetricsWithThresholds() throws MetricParameterException, InterruptedException
     {
@@ -422,13 +371,13 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                    null,
                                    null );
 
-        MetricProcessor<SingleValuedPairs, StatisticsForProject> processor =
+        MetricProcessor<TimeSeriesOfPairs<Double, Double>, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( mockedConfig,
                                                                         StatisticGroup.set() );
 
         //Break into two time-series to test sequential calls
-        TimeSeriesOfSingleValuedPairs first = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsTwo();
-        TimeSeriesOfSingleValuedPairs second = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsThree();
+        TimeSeriesOfPairs<Double, Double> first = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsTwo();
+        TimeSeriesOfPairs<Double, Double> second = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsThree();
 
         //Compute the metrics
         processor.apply( first );
@@ -510,20 +459,6 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         assertEquals( expected, actual );
     }
 
-    /**
-     * Tests the construction of a {@link MetricProcessorByTimeSingleValuedPairs} and application of
-     * {@link MetricProcessorByTimeSingleValuedPairs#apply(SingleValuedPairs)} to 
-     * configuration obtained from 
-     * testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyTimeSeriesSummaryStats.xml and pairs obtained 
-     * from {@link MetricTestDataFactory#getTimeSeriesOfSingleValuedPairsOne()}. Tests the summary statistics generated 
-     * at the end of multiple calls with subsets of time-series data.
-     * 
-     * @throws IOException if the input data could not be read
-     * @throws InterruptedException if the outputs were interrupted
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     * @throws StatisticException if the results could not be generated 
-     */
-
     @Test
     public void testApplyTimeSeriesSummaryStats()
             throws IOException, MetricParameterException, InterruptedException
@@ -531,14 +466,14 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyTimeSeriesSummaryStats.xml";
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<SingleValuedPairs, StatisticsForProject> processor =
+        MetricProcessor<TimeSeriesOfPairs<Double, Double>, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         StatisticGroup.set() );
 
         //Break into two time-series to test sequential calls
-        TimeSeriesOfSingleValuedPairs first = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsTwo();
+        TimeSeriesOfPairs<Double, Double> first = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsTwo();
 
-        TimeSeriesOfSingleValuedPairs second = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsThree();
+        TimeSeriesOfPairs<Double, Double> second = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsThree();
 
         //Compute the metrics
         processor.apply( first );
@@ -588,19 +523,6 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         assertEquals( expectedScores, actualScores );
     }
 
-    /**
-     * Tests the construction of a {@link MetricProcessorByTimeSingleValuedPairs} with a canonical source of thresholds
-     * and the application of {@link MetricProcessorByTimeSingleValuedPairs#apply(SingleValuedPairs)} to configuration 
-     * obtained from testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyWithThresholds.xml and pairs obtained 
-     * from {@link MetricTestDataFactory#getSingleValuedPairsFour()}. Tests the output for multiple calls with separate 
-     * forecast lead times.
-     * 
-     * @throws IOException if the input data could not be read
-     * @throws InterruptedException if the outputs were interrupted
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     * @throws StatisticException if the results could not be generated 
-     */
-
     @Test
     public void testApplyWithThresholdsFromSource()
             throws IOException, MetricParameterException, InterruptedException
@@ -633,12 +555,12 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         ThresholdsByMetric thresholdsByMetric = builder.build();
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<SingleValuedPairs, StatisticsForProject> processor =
+        MetricProcessor<TimeSeriesOfPairs<Double, Double>, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         thresholdsByMetric,
                                                                         StatisticGroup.set() );
 
-        SingleValuedPairs pairs = MetricTestDataFactory.getSingleValuedPairsFour();
+        TimeSeriesOfPairs<Double, Double> pairs = MetricTestDataFactory.getSingleValuedPairsFour();
 
         // Generate results for 20 nominal lead times
         for ( int i = 1; i < 11; i++ )
@@ -652,7 +574,10 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                                                          "HEFS" ) )
                                                                    .setTimeWindow( window )
                                                                    .build();
-            processor.apply( SingleValuedPairs.of( pairs.getRawData(), meta ) );
+            TimeSeriesOfPairs<Double, Double> next =
+                    new TimeSeriesOfPairsBuilder<Double, Double>().addTimeSeries( pairs ).setMetadata( meta ).build();
+
+            processor.apply( next );
         }
 
         // Validate a subset of the data       
@@ -707,28 +632,15 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         assertEquals( expected, actual );
     }
 
-    /**
-     * Tests the construction of a {@link MetricProcessorByTimeSingleValuedPairs} and application of
-     * {@link MetricProcessorByTimeSingleValuedPairs#apply(SingleValuedPairs)} to 
-     * configuration obtained from testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyWithThresholds.xml and 
-     * pairs obtained from {@link MetricTestDataFactory#getSingleValuedPairsSeven()}. Tests the output for multiple 
-     * calls with separate forecast lead times.
-     * 
-     * @throws IOException if the input data could not be read
-     * @throws InterruptedException if the outputs were interrupted
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     * @throws StatisticException if the results could not be generated 
-     */
-
     @Test
     public void testApplyWithThresholdsAndNoData() throws IOException, MetricParameterException, InterruptedException
     {
         String configPath = TEST_SOURCE;
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<SingleValuedPairs, StatisticsForProject> processor =
+        MetricProcessor<TimeSeriesOfPairs<Double, Double>, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config, StatisticGroup.set() );
-        SingleValuedPairs pairs = MetricTestDataFactory.getSingleValuedPairsSeven();
+        TimeSeriesOfPairs<Double, Double> pairs = MetricTestDataFactory.getSingleValuedPairsSeven();
 
         // Generate results for 10 nominal lead times
         for ( int i = 1; i < 11; i++ )
@@ -742,7 +654,11 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                                                          "HEFS" ) )
                                                                    .setTimeWindow( window )
                                                                    .build();
-            processor.apply( SingleValuedPairs.of( pairs.getRawData(), meta ) );
+
+            TimeSeriesOfPairs<Double, Double> next =
+                    new TimeSeriesOfPairsBuilder<Double, Double>().addTimeSeries( pairs ).setMetadata( meta ).build();
+
+            processor.apply( next );
         }
 
         // Validate a subset of the data       
@@ -798,21 +714,6 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         assertEquals( expected, actual );
     }
 
-    /**
-     * Tests the construction of a {@link MetricProcessorByTimeSingleValuedPairs} and application of
-     * {@link MetricProcessorByTimeSingleValuedPairs#apply(SingleValuedPairs)} to 
-     * configuration obtained from 
-     * testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyTimeSeriesSummaryStats.xml and pairs obtained 
-     * from {@link MetricTestDataFactory#getTimeSeriesOfSingleValuedPairsFour()}. Tests the summary statistics when 
-     * supplied with empty pairs.
-     * 
-     * @throws IOException if the input data could not be read
-     * @throws InterruptedException if the outputs were interrupted
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     * @throws MetricConfigException if the metric configuration is incorrect
-     * @throws StatisticException if the results could not be generated 
-     */
-
     @Test
     public void testApplyTimeSeriesSummaryStatsWithNoData()
             throws IOException, MetricParameterException, InterruptedException
@@ -821,11 +722,12 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
 
-        MetricProcessor<SingleValuedPairs, StatisticsForProject> processor =
+        MetricProcessor<TimeSeriesOfPairs<Double, Double>, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         StatisticGroup.set() );
 
-        TimeSeriesOfSingleValuedPairs pairs = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsFour();
+        TimeSeriesOfPairs<Double, Double> pairs =
+                MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsFour();
 
         //Compute the metrics
         processor.apply( pairs );
@@ -871,27 +773,15 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         assertEquals( expectedScores, actualScores );
     }
 
-    /**
-     * Tests the construction of a {@link MetricProcessorByTimeSingleValuedPairs} and application of
-     * {@link MetricProcessorByTimeSingleValuedPairs#apply(SingleValuedPairs)} to 
-     * configuration obtained from testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyWithThresholds.xml and 
-     * pairs that contain missing values, which should be removed.
-     * 
-     * @throws IOException if the input data could not be read
-     * @throws InterruptedException if the outputs were interrupted
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     * @throws StatisticException if the results could not be generated 
-     */
-
     @Test
     public void testApplyWithMissingPairsForRemoval() throws IOException, MetricParameterException, InterruptedException
     {
         String configPath = TEST_SOURCE;
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<SingleValuedPairs, StatisticsForProject> processor =
+        MetricProcessor<TimeSeriesOfPairs<Double, Double>, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config, StatisticGroup.set() );
-        SingleValuedPairs pairs = MetricTestDataFactory.getSingleValuedPairsEight();
+        TimeSeriesOfPairs<Double, Double> pairs = MetricTestDataFactory.getSingleValuedPairsEight();
 
         // Generate results
         final TimeWindow window = TimeWindow.of( Instant.MIN,
@@ -903,7 +793,10 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                                                      "AHPS" ) )
                                                                .setTimeWindow( window )
                                                                .build();
-        processor.apply( SingleValuedPairs.of( pairs.getRawData(), meta ) );
+        TimeSeriesOfPairs<Double, Double> next =
+                new TimeSeriesOfPairsBuilder<Double, Double>().addTimeSeries( pairs ).setMetadata( meta ).build();
+
+        processor.apply( next );
 
         // Check the sample size
         Double size = Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
@@ -919,18 +812,12 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         assertTrue( FunctionFactory.doubleEquals().test( 10.0, size ) );
     }
 
-    /**
-     * Tests that the {@link MetricProcessorByTimeSingleValuedPairs#apply(SingleValuedPairs)} throws an expected
-     * exception on receiving null input.
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     */
-
     @Test
     public void testApplyThrowsExceptionOnNullInput() throws MetricParameterException
     {
         exception.expect( NullPointerException.class );
         exception.expectMessage( "Expected non-null input to the metric processor." );
-        MetricProcessor<SingleValuedPairs, StatisticsForProject> processor =
+        MetricProcessor<TimeSeriesOfPairs<Double, Double>, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( new ProjectConfig( null,
                                                                                            null,
                                                                                            null,
@@ -940,12 +827,6 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                         Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
         processor.apply( null );
     }
-
-    /**
-     * Tests that the {@link MetricProcessorByTimeSingleValuedPairs#apply(SingleValuedPairs)} throws an expected
-     * exception when attempting to compute metrics that require thresholds and no thresholds are configured.
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     */
 
     @Test
     public void testApplyThrowsExceptionWhenThresholdMetricIsConfiguredWithoutThresholds()
@@ -959,7 +840,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                 new MetricsConfig( null,
                                    Arrays.asList( new MetricConfig( null, null, MetricConfigName.FREQUENCY_BIAS ) ),
                                    null );
-        MetricProcessor<SingleValuedPairs, StatisticsForProject> processor =
+        MetricProcessor<TimeSeriesOfPairs<Double, Double>, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( new ProjectConfig( null,
                                                                                            null,
                                                                                            Arrays.asList( metrics ),
@@ -970,12 +851,6 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         processor.apply( MetricTestDataFactory.getSingleValuedPairsSix() );
 
     }
-
-    /**
-     * Tests that the {@link MetricProcessorByTimeSingleValuedPairs#apply(SingleValuedPairs)} throws an expected
-     * exception when climatological observations are required but missing.
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     */
 
     @Test
     public void testApplyThrowsExceptionWhenClimatologicalObservationsAreMissing()
@@ -1006,51 +881,11 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                    null );
 
 
-        MetricProcessor<SingleValuedPairs, StatisticsForProject> processor =
+        MetricProcessor<TimeSeriesOfPairs<Double, Double>, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( mockedConfig,
                                                                         Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
         processor.apply( MetricTestDataFactory.getSingleValuedPairsSix() );
     }
-
-    /**
-     * Tests that the {@link MetricProcessorByTimeSingleValuedPairs#apply(SingleValuedPairs)} throws an expected
-     * exception when time-series metrics are configured and the input pairs are not 
-     * {@link TimeSeriesOfSingleValuedPairs}.
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     */
-
-    @Test
-    public void testApplyThrowsExceptionWhenOrdinaryPairsSuppliedForTimeSeriesMetrics()
-            throws MetricParameterException
-    {
-        exception.expect( MetricCalculationException.class );
-        exception.expectMessage( "The project configuration includes time-series metrics. "
-                                 + "Expected a time-series of single-valued pairs as input." );
-
-        // Mock some metrics
-        List<TimeSeriesMetricConfig> metrics = new ArrayList<>();
-        metrics.add( new TimeSeriesMetricConfig( null, null, TimeSeriesMetricConfigName.TIME_TO_PEAK_ERROR, null ) );
-
-        // Check discrete probability metric
-        ProjectConfig mockedConfig =
-                new ProjectConfig( null,
-                                   null,
-                                   Arrays.asList( new MetricsConfig( null, null, metrics ) ),
-                                   null,
-                                   null,
-                                   null );
-
-        MetricProcessor<SingleValuedPairs, StatisticsForProject> processor =
-                MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( mockedConfig,
-                                                                        Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
-        processor.apply( MetricTestDataFactory.getSingleValuedPairsFour() );
-    }
-
-    /**
-     * Tests that the construction of a {@link MetricProcessorByTime} fails when the configuration
-     * contains an ensemble metric. 
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     */
 
     @Test
     public void testExceptionOnConstructionWithEnsembleMetric()
@@ -1083,12 +918,6 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( mockedConfig,
                                                                 null );
     }
-
-    /**
-     * Tests that the construction of a {@link MetricProcessorByTime} fails when time-series metrics
-     * are configured alongside non-time-series metrics.
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     */
 
     @Test
     public void testExceptionOnConstructionWhenMixingTimeSeriesMetricsWithOtherMetrics()

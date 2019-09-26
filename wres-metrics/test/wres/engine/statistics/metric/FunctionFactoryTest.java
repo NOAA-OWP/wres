@@ -1,18 +1,18 @@
 package wres.engine.statistics.metric;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Objects;
 import java.util.function.BiPredicate;
 
-import org.junit.Rule;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MissingValues;
-import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.VectorOfDoubles;
 
 /**
@@ -22,9 +22,6 @@ import wres.datamodel.VectorOfDoubles;
  */
 public final class FunctionFactoryTest
 {
-
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
 
     /**
      * Tests for double equality.
@@ -39,20 +36,20 @@ public final class FunctionFactoryTest
     @Test
     public void testError()
     {
-        assertTrue( doubleTester.test( FunctionFactory.error().applyAsDouble( SingleValuedPair.of( -1, 1 ) ), 2.0 ) );
+        assertTrue( doubleTester.test( FunctionFactory.error().applyAsDouble( Pair.of( -1.0, 1.0 ) ), 2.0 ) );
     }
 
     @Test
     public void testAbsError()
     {
-        assertTrue( doubleTester.test( FunctionFactory.absError().applyAsDouble( SingleValuedPair.of( -1, 1 ) ),
+        assertTrue( doubleTester.test( FunctionFactory.absError().applyAsDouble( Pair.of( -1.0, 1.0 ) ),
                                        2.0 ) );
     }
 
     @Test
     public void testSquareError()
     {
-        assertTrue( doubleTester.test( FunctionFactory.squareError().applyAsDouble( SingleValuedPair.of( -5, 5 ) ),
+        assertTrue( doubleTester.test( FunctionFactory.squareError().applyAsDouble( Pair.of( -5.0, 5.0 ) ),
                                        100.0 ) );
     }
 
@@ -186,10 +183,10 @@ public final class FunctionFactoryTest
     @Test
     public void testOfStatisticWithWrongInput()
     {
-        exception.expect( IllegalArgumentException.class );
-        exception.expectMessage( "The statistic 'MAIN' is not a recognized statistic in this context." );
+        IllegalArgumentException exception = assertThrows( IllegalArgumentException.class,
+                                                           () -> FunctionFactory.ofStatistic( MetricConstants.MAIN ) );
 
-        FunctionFactory.ofStatistic( MetricConstants.MAIN );
+        assertEquals( "The statistic 'MAIN' is not a recognized statistic in this context.", exception.getMessage() );
     }
 
     @Test

@@ -7,6 +7,7 @@ import static org.junit.Assert.assertTrue;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -15,10 +16,11 @@ import org.junit.rules.ExpectedException;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.pairs.SingleValuedPair;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.MetricTestDataFactory;
@@ -30,10 +32,10 @@ import wres.engine.statistics.metric.MetricTestDataFactory;
  */
 public final class MedianErrorTest
 {
-    
+
     @Rule
     public final ExpectedException exception = ExpectedException.none();
-    
+
     /**
      * Default instance of a {@link MedianError}.
      */
@@ -46,16 +48,11 @@ public final class MedianErrorTest
         this.medianError = MedianError.of();
     }
 
-    /**
-     * Compares the output from {@link MedianError#apply(SingleValuedPairs)} against 
-     * expected output.
-     */
-
     @Test
     public void testApply()
     {
         //Generate some data
-        SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
+        TimeSeriesOfPairs<Double, Double> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
         StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
@@ -66,22 +63,17 @@ public final class MedianErrorTest
         //Check the results
         DoubleScoreStatistic actual = this.medianError.apply( input );
         DoubleScoreStatistic expected = DoubleScoreStatistic.of( 1.0, m1 );
-        
+
         assertEquals( expected, actual );
     }
-    
-    /**
-     * Compares the output from {@link MedianError#apply(SingleValuedPairs)} against 
-     * expected output for input that contains an even number of pairs.
-     */
 
     @Test
     public void testApplyWithEvenNumberOfPairs()
     {
         //Generate some data
-        List<SingleValuedPair> pairs = Arrays.asList( SingleValuedPair.of( 1, 3 ),
-                                                      SingleValuedPair.of( 5, 9 ) );
-        SingleValuedPairs input = SingleValuedPairs.of( pairs, SampleMetadata.of() );
+        List<Pair<Double, Double>> pairs = Arrays.asList( Pair.of( 1.0, 3.0 ),
+                                                          Pair.of( 5.0, 9.0 ) );
+        SampleData<Pair<Double, Double>> input = SampleDataBasic.of( pairs, SampleMetadata.of() );
 
         //Metadata for the output
         StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
@@ -92,23 +84,19 @@ public final class MedianErrorTest
         //Check the results
         DoubleScoreStatistic actual = this.medianError.apply( input );
         DoubleScoreStatistic expected = DoubleScoreStatistic.of( 3, m1 );
-        
+
         assertEquals( expected, actual );
     }
-    
-    /**
-     * Compares the output from {@link MedianError#apply(SingleValuedPairs)} against 
-     * expected output for input that contains an odd number of pairs.
-     */
 
     @Test
     public void testApplyWithOddNumberOfPairs()
     {
         //Generate some data
-        List<SingleValuedPair> pairs = Arrays.asList( SingleValuedPair.of( 0, 99999 ),
-                                                      SingleValuedPair.of( 12345.6789, 0 ),
-                                                      SingleValuedPair.of( 99999, 0 ) );
-        SingleValuedPairs input = SingleValuedPairs.of( pairs, SampleMetadata.of() );
+        List<Pair<Double, Double>> pairs = Arrays.asList( Pair.of( 0.0, 99999.0 ),
+                                                          Pair.of( 12345.6789, 0.0 ),
+                                                          Pair.of( 99999.0, 0.0 ) );
+        
+        SampleData<Pair<Double, Double>> input = SampleDataBasic.of( pairs, SampleMetadata.of() );
 
         //Metadata for the output
         StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
@@ -119,30 +107,21 @@ public final class MedianErrorTest
         //Check the results
         DoubleScoreStatistic actual = this.medianError.apply( input );
         DoubleScoreStatistic expected = DoubleScoreStatistic.of( -12345.6789, m1 );
-        
-        assertEquals( expected, actual );
-    }     
 
-    /**
-     * Validates the output from {@link MeanError#apply(SingleValuedPairs)} when supplied with no data.
-     */
+        assertEquals( expected, actual );
+    }
 
     @Test
     public void testApplyWithNoData()
     {
         // Generate empty data
-        SingleValuedPairs input =
-                SingleValuedPairs.of( Arrays.asList(), SampleMetadata.of() );
- 
+        SampleDataBasic<Pair<Double, Double>> input =
+                SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
+
         DoubleScoreStatistic actual = this.medianError.apply( input );
 
         assertTrue( actual.getData().isNaN() );
     }
-
-    /**
-     * Checks that the {@link MedianError#getName()} returns 
-     * {@link MetricConstants#MEDIAN_ERROR.toString()}
-     */
 
     @Test
     public void testGetName()
@@ -150,19 +129,11 @@ public final class MedianErrorTest
         assertTrue( this.medianError.getName().equals( MetricConstants.MEDIAN_ERROR.toString() ) );
     }
 
-    /**
-     * Checks that the {@link MedianError#isDecomposable()} returns <code>false</code>.
-     */
-
     @Test
     public void testIsDecomposable()
     {
         assertFalse( this.medianError.isDecomposable() );
     }
-
-    /**
-     * Checks that the {@link MedianError#isSkillScore()} returns <code>false</code>.
-     */
 
     @Test
     public void testIsSkillScore()
@@ -170,29 +141,19 @@ public final class MedianErrorTest
         assertFalse( this.medianError.isSkillScore() );
     }
 
-    /**
-     * Checks that the {@link MedianError#getScoreOutputGroup()} returns the result 
-     * provided on construction.
-     */
-
     @Test
     public void testGetScoreOutputGroup()
     {
         assertTrue( this.medianError.getScoreOutputGroup() == ScoreGroup.NONE );
     }
 
-    /**
-     * Tests for an expected exception on calling {@link MedianError#apply(SingleValuedPairs)} 
-     * with null input.
-     */
-
     @Test
     public void testApplyExceptionOnNullInput()
     {
         this.exception.expect( SampleDataException.class );
         this.exception.expectMessage( "Specify non-null input to the 'MEDIAN ERROR'." );
-        
+
         this.medianError.apply( null );
-    }    
-  
+    }
+
 }

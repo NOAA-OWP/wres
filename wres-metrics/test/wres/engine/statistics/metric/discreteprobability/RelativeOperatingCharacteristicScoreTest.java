@@ -8,24 +8,25 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.OneOrTwoDoubles;
+import wres.datamodel.Probability;
 import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.pairs.DiscreteProbabilityPair;
-import wres.datamodel.sampledata.pairs.DiscreteProbabilityPairs;
-import wres.datamodel.sampledata.pairs.EnsemblePair;
-import wres.datamodel.sampledata.pairs.EnsemblePairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.Threshold;
@@ -57,7 +58,7 @@ public final class RelativeOperatingCharacteristicScoreTest
     }
 
     /**
-     * Compares the output from {@link RelativeOperatingCharacteristicScore#apply(DiscreteProbabilityPairs)} against 
+     * Compares the output from {@link RelativeOperatingCharacteristicScore#apply(SampleData)} against 
      * expected output for a dataset with ties from Mason and Graham (2002).
      */
 
@@ -65,25 +66,25 @@ public final class RelativeOperatingCharacteristicScoreTest
     public void testApplyWithTies()
     {
         //Generate some data
-        final List<DiscreteProbabilityPair> values = new ArrayList<>();
-        values.add( DiscreteProbabilityPair.of( 0, 0.8 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.8 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.0 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 1.0 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 1.0 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.6 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.4 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.8 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.0 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 1.0 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 1.0 ) );
+        final List<Pair<Probability, Probability>> values = new ArrayList<>();
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.8 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.8 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.0 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 1.0 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 1.0 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.6 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.4 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.8 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.2 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.0 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 1.0 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 1.0 ) ) );
 
-        final DiscreteProbabilityPairs input =
-                DiscreteProbabilityPairs.of( values, SampleMetadata.of() );
+        final SampleData<Pair<Probability, Probability>> input =
+                SampleDataBasic.of( values, SampleMetadata.of() );
 
         //Metadata for the output
         final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
@@ -107,24 +108,24 @@ public final class RelativeOperatingCharacteristicScoreTest
     public void testApplyWithoutTies()
     {
         //Generate some data
-        final List<DiscreteProbabilityPair> values = new ArrayList<>();
-        values.add( DiscreteProbabilityPair.of( 0, 0.928 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.576 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.008 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.944 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.832 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.816 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.136 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.584 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.032 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.016 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.28 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.024 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.0 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.984 ) );
-        values.add( DiscreteProbabilityPair.of( 1, 0.952 ) );
+        final List<Pair<Probability, Probability>> values = new ArrayList<>();
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.928 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.576 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.008 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.944 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.832 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.816 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.136 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.584 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.032 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.016 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.28 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.024 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.0 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.984 ) ) );
+        values.add( Pair.of( Probability.ONE, Probability.of( 0.952 ) ) );
         SampleMetadata meta = SampleMetadata.of();
-        DiscreteProbabilityPairs input = DiscreteProbabilityPairs.of( values, meta );
+        SampleData<Pair<Probability, Probability>> input = SampleDataBasic.of( values, meta );
 
         //Metadata for the output
         final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
@@ -136,14 +137,14 @@ public final class RelativeOperatingCharacteristicScoreTest
         //Check the results       
         DoubleScoreStatistic actual = rocScore.apply( input );
         DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.75, m1 );
-        
+
         assertEquals( expected, actual );
 
         //Check against a baseline
-        DiscreteProbabilityPairs inputBase = DiscreteProbabilityPairs.of( values, values, meta, meta );
+        SampleData<Pair<Probability, Probability>> inputBase = SampleDataBasic.of( values, meta, values, meta, null );
         DoubleScoreStatistic actualBase = rocScore.apply( inputBase );
         DoubleScoreStatistic expectedBase = DoubleScoreStatistic.of( 0.0, m1 );
-        
+
         assertEquals( expectedBase, actualBase );
     }
 
@@ -156,25 +157,25 @@ public final class RelativeOperatingCharacteristicScoreTest
     public void testApplyWithNoOccurrences()
     {
         //Generate some data
-        final List<DiscreteProbabilityPair> values = new ArrayList<>();
-        values.add( DiscreteProbabilityPair.of( 0, 0.928 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.576 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.008 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.944 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.832 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.816 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.136 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.584 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.032 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.016 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.28 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.024 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.0 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.984 ) );
-        values.add( DiscreteProbabilityPair.of( 0, 0.952 ) );
+        final List<Pair<Probability, Probability>> values = new ArrayList<>();
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.928 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.576 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.008 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.944 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.832 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.816 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.136 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.584 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.032 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.016 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.28 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.024 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.0 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.984 ) ) );
+        values.add( Pair.of( Probability.ZERO, Probability.of( 0.952 ) ) );
         SampleMetadata meta = SampleMetadata.of();
 
-        DiscreteProbabilityPairs input = DiscreteProbabilityPairs.of( values, meta );
+        SampleData<Pair<Probability, Probability>> input = SampleDataBasic.of( values, meta );
 
         //Metadata for the output
         final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
@@ -186,7 +187,7 @@ public final class RelativeOperatingCharacteristicScoreTest
         //Check the results       
         DoubleScoreStatistic actual = rocScore.apply( input );
         DoubleScoreStatistic expected = DoubleScoreStatistic.of( Double.NaN, m1 );
-        
+
         assertEquals( expected, actual );
     }
 
@@ -199,8 +200,8 @@ public final class RelativeOperatingCharacteristicScoreTest
     public void testApplyWithNoData()
     {
         // Generate empty data
-        DiscreteProbabilityPairs input =
-                DiscreteProbabilityPairs.of( Arrays.asList(), SampleMetadata.of() );
+        SampleData<Pair<Probability, Probability>> input =
+                SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
         DoubleScoreStatistic actual = rocScore.apply( input );
 
@@ -277,17 +278,16 @@ public final class RelativeOperatingCharacteristicScoreTest
     @Test
     public void testMetadataContainsBaselineIdentifier() throws IOException
     {
-        EnsemblePairs pairs = MetricTestDataFactory.getEnsemblePairsOne();
+        SampleData<Pair<Double, Ensemble>> pairs = MetricTestDataFactory.getEnsemblePairsOne();
 
         Threshold threshold = Threshold.of( OneOrTwoDoubles.of( 3.0 ),
-                                                       Operator.GREATER,
-                                                       ThresholdDataType.LEFT );
+                                            Operator.GREATER,
+                                            ThresholdDataType.LEFT );
 
-        BiFunction<EnsemblePair, Threshold, DiscreteProbabilityPair> mapper =
-                Slicer::toDiscreteProbabilityPair;
+        Function<Pair<Double, Ensemble>, Pair<Probability, Probability>> mapper =
+                pair -> Slicer.toDiscreteProbabilityPair( pair, threshold );
 
-        DiscreteProbabilityPairs transPairs =
-                Slicer.toDiscreteProbabilityPairs( pairs, threshold, mapper );
+        SampleData<Pair<Probability, Probability>> transPairs = Slicer.transform( pairs, mapper );
 
         assertTrue( rocScore.apply( transPairs )
                             .getMetadata()

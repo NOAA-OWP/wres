@@ -3,13 +3,15 @@ package wres.engine.statistics.metric.singlevalued;
 import java.util.Objects;
 import java.util.function.ToDoubleFunction;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MissingValues;
 import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.DatasetIdentifier;
+import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.DoubleErrorFunction;
@@ -23,7 +25,8 @@ import wres.engine.statistics.metric.OrdinaryScore;
  * 
  * @author james.brown@hydrosolved.com
  */
-public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends OrdinaryScore<S, DoubleScoreStatistic>
+public abstract class DoubleErrorScore<S extends SampleData<Pair<Double, Double>>>
+        extends OrdinaryScore<S, DoubleScoreStatistic>
 {
     /**
      * The error function.

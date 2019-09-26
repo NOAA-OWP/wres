@@ -3,6 +3,7 @@ package wres.engine.statistics.metric.singlevalued;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -10,8 +11,9 @@ import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricTestDataFactory;
@@ -31,7 +33,7 @@ public final class DoubleErrorScoreTest
      * Default instance of a {@link MeanError}.
      */
 
-    private DoubleErrorScore<SingleValuedPairs> score;
+    private DoubleErrorScore<SampleData<Pair<Double,Double>>> score;
 
     @Before
     public void setupBeforeEachTest()
@@ -39,16 +41,12 @@ public final class DoubleErrorScoreTest
         this.score = MeanError.of();
     }
 
-    /**
-     * Checks that the baseline is set correctly.
-     */
-
     @Test
     public void testBaseline()
     {
 
         //Generate some data with a baseline
-        final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsTwo();
+        final TimeSeriesOfPairs<Double, Double> input = MetricTestDataFactory.getSingleValuedPairsTwo();
 
         //Check the results
         final DoubleScoreStatistic actual = score.apply( input );
@@ -62,19 +60,11 @@ public final class DoubleErrorScoreTest
                           .equals( "ESP" ) );
     }
 
-    /**
-     * Checks that the {@link DoubleErrorScore#isDecomposable()} returns <code>false</code>.
-     */
-
     @Test
     public void testIsDecomposable()
     {
         assertFalse( score.isDecomposable() );
     }
-
-    /**
-     * Checks that the {@link DoubleErrorScore#getScoreOutputGroup()} returns {@link ScoreGroup#NONE}.
-     */
 
     @Test
     public void testGetScoreOutputGroup()
@@ -82,15 +72,10 @@ public final class DoubleErrorScoreTest
         assertTrue( score.getScoreOutputGroup() == ScoreGroup.NONE );
     }
 
-    /**
-     * Tests for an expected exception on building a {@link DoubleErrorScore} with a null 
-     * error function.
-     */
-
     @Test
     public void testExceptionOnNullErrorFunction()
     {
-        class ExceptionCheck extends DoubleErrorScore<SingleValuedPairs>
+        class ExceptionCheck extends DoubleErrorScore<SampleData<Pair<Double,Double>>>
         {
             private ExceptionCheck()
             {
@@ -122,15 +107,10 @@ public final class DoubleErrorScoreTest
         new ExceptionCheck().apply( MetricTestDataFactory.getSingleValuedPairsOne() );
     }
 
-    /**
-     * Tests for an expected exception on building a {@link DoubleErrorScore} with a null 
-     * accumulation function.
-     */
-
     @Test
     public void testExceptionOnNullAccumulationFunction()
     {
-        class ExceptionCheck extends DoubleErrorScore<SingleValuedPairs>
+        class ExceptionCheck extends DoubleErrorScore<SampleData<Pair<Double,Double>>>
         {
             private ExceptionCheck()
             {
@@ -163,15 +143,10 @@ public final class DoubleErrorScoreTest
         new ExceptionCheck().apply( MetricTestDataFactory.getSingleValuedPairsOne() );
     }
     
-    /**
-     * Tests for an expected exception on building a {@link DoubleErrorScore} with a null 
-     * error function and a non-null accumulator function.
-     */
-
     @Test
     public void testExceptionOnNullErrorFunctionAndNonNullAccumulatorFunction()
     {
-        class ExceptionCheck extends DoubleErrorScore<SingleValuedPairs>
+        class ExceptionCheck extends DoubleErrorScore<SampleData<Pair<Double,Double>>>
         {
             private ExceptionCheck()
             {
@@ -202,11 +177,6 @@ public final class DoubleErrorScoreTest
 
         new ExceptionCheck().apply( MetricTestDataFactory.getSingleValuedPairsOne() );
     }    
-
-    /**
-     * Tests for an expected exception on calling {@link DoubleErrorScore#apply(SingleValuedPairs)} with null 
-     * input.
-     */
 
     @Test
     public void testApplyExceptionOnNullInput()

@@ -4,6 +4,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -14,10 +15,9 @@ import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.pairs.DichotomousPairs;
-import wres.datamodel.sampledata.pairs.MulticategoryPairs;
 import wres.datamodel.statistics.MatrixStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Metric;
@@ -38,7 +38,7 @@ public final class ContingencyTableTest
      * The metric to test.
      */
 
-    private ContingencyTable<MulticategoryPairs> table;
+    private ContingencyTable table;
 
     @Before
     public void setupBeforeEachTest()
@@ -54,7 +54,7 @@ public final class ContingencyTableTest
     public void testApply()
     {
         //Generate some data
-        final DichotomousPairs input = MetricTestDataFactory.getDichotomousPairsOne();
+        final SampleData<Pair<Boolean,Boolean>> input = MetricTestDataFactory.getDichotomousPairsOne();
 
         //Metadata for the output
         final StatisticMetadata meta =
@@ -100,7 +100,7 @@ public final class ContingencyTableTest
     {
         exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'CONTINGENCY TABLE'." );
-        table.apply( (DichotomousPairs) null );
+        table.apply( (SampleData<Pair<Boolean,Boolean>>) null );
     }
 
 }

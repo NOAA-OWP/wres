@@ -2,6 +2,8 @@ package wres.engine.statistics.metric;
 
 import java.util.function.ToDoubleFunction;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import wres.datamodel.sampledata.pairs.SingleValuedPair;
 
 /**
@@ -9,6 +11,6 @@ import wres.datamodel.sampledata.pairs.SingleValuedPair;
  * 
  * @author james.brown@hydrosolved.com
  */
-public interface DoubleErrorFunction extends ToDoubleFunction<SingleValuedPair>
+public interface DoubleErrorFunction extends ToDoubleFunction<Pair<Double,Double>>
 {
 }

@@ -11,14 +11,17 @@ import java.util.Random;
 import java.util.function.BiConsumer;
 import java.util.stream.IntStream;
 
+import org.apache.commons.lang3.tuple.Pair;
+
+import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.MissingValues;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
-import wres.datamodel.sampledata.pairs.EnsemblePairs;
 import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Diagram;
@@ -36,7 +39,7 @@ import wres.engine.statistics.metric.Diagram;
  * @author james.brown@hydrosolved.com
  */
 
-public class RankHistogram extends Diagram<EnsemblePairs, DiagramStatistic>
+public class RankHistogram extends Diagram<SampleData<Pair<Double, Ensemble>>, DiagramStatistic>
 {
 
     /**
@@ -69,7 +72,7 @@ public class RankHistogram extends Diagram<EnsemblePairs, DiagramStatistic>
     }
 
     @Override
-    public DiagramStatistic apply( EnsemblePairs s )
+    public DiagramStatistic apply( SampleData<Pair<Double, Ensemble>> s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -84,10 +87,10 @@ public class RankHistogram extends Diagram<EnsemblePairs, DiagramStatistic>
         {
 
             //Acquire subsets in case of missing data
-            Map<Integer, List<EnsemblePair>> sliced =
+            Map<Integer, List<Pair<Double,Ensemble>>> sliced =
                     Slicer.filterByRightSize( s.getRawData() );
             //Find the subset with the most elements
-            Optional<List<EnsemblePair>> useMe =
+            Optional<List<Pair<Double,Ensemble>>> useMe =
                     sliced.values().stream().max( Comparator.comparingInt( List::size ) );
 
             if ( useMe.isPresent() )
@@ -97,7 +100,7 @@ public class RankHistogram extends Diagram<EnsemblePairs, DiagramStatistic>
                 double[] sumRanks = new double[ranks.length]; //Total falling in each ranked position
 
                 //Compute the sum of ranks
-                BiConsumer<EnsemblePair, double[]> ranker = rankWithTies( rng );
+                BiConsumer<Pair<Double,Ensemble>, double[]> ranker = RankHistogram.rankWithTies( rng );
                 useMe.get().forEach( nextPair -> ranker.accept( nextPair, sumRanks ) );
 
                 //Compute relative frequencies
@@ -170,7 +173,7 @@ public class RankHistogram extends Diagram<EnsemblePairs, DiagramStatistic>
      * @return a function that increments the second argument based on the rank position of the observation within the ensemble
      */
 
-    private static BiConsumer<EnsemblePair, double[]> rankWithTies( Random rng )
+    private static BiConsumer<Pair<Double,Ensemble>, double[]> rankWithTies( Random rng )
     {
         final TriConsumer<double[], Double, double[]> containedRanker = getContainedRanker( rng );
         return ( pair, sumRanks ) -> {

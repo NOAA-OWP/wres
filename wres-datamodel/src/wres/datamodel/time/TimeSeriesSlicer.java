@@ -13,14 +13,16 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import wres.datamodel.Ensemble;
 import wres.datamodel.Slicer;
-import wres.datamodel.sampledata.pairs.Pair;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
+
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * A utility class for slicing/dicing and transforming time-series datasets. 
@@ -52,21 +54,21 @@ public final class TimeSeriesSlicer
     /**
      * <p>Composes the input predicate as applying to the left side of any paired value within a time-series.
      * 
-     * @param <S> the type of left paired value
-     * @param <T> the type of pair
+     * @param <L> the type of left paired value
+     * @param <R> the type of right paired value
      * @param predicate the input predicate
      * @return a composed predicate
      * @throws NullPointerException if the input is null
      */
 
-    public static <S, T extends Pair<S, ?>> Predicate<TimeSeries<T>> anyOfLeftInTimeSeries( Predicate<S> predicate )
+    public static <L, R> Predicate<TimeSeries<Pair<L,R>>> anyOfLeftInTimeSeries( Predicate<L> predicate )
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing a time-series by any of left." );
 
         return times -> {
 
             // Iterate the times
-            for ( Event<T> next : times.getEvents() )
+            for ( Event<Pair<L,R>> next : times.getEvents() )
             {
                 // Condition is met for one time
                 if ( predicate.test( next.getValue().getLeft() ) )
@@ -83,21 +85,21 @@ public final class TimeSeriesSlicer
     /**
      * <p>Composes the input predicate as applying to the right side of any paired value within a time-series.
      *  
-     * @param <S> the type of right paired value
-     * @param <T> the type of pair
+     * @param <L> the type of left paired value
+     * @param <R> the type of right paired value
      * @param predicate the input predicate
      * @return a composed predicate
      * @throws NullPointerException if the input is null
      */
 
-    public static <S, T extends Pair<?, S>> Predicate<TimeSeries<T>> anyOfRightInTimeSeries( Predicate<S> predicate )
+    public static <L, R> Predicate<TimeSeries<Pair<L,R>>> anyOfRightInTimeSeries( Predicate<R> predicate )
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing a time-series by any of right." );
 
         return times -> {
 
             // Iterate the times
-            for ( Event<T> next : times.getEvents() )
+            for ( Event<Pair<L,R>> next : times.getEvents() )
             {
                 // Condition is met for one time
                 if ( predicate.test( next.getValue().getRight() ) )
@@ -116,13 +118,12 @@ public final class TimeSeriesSlicer
      * separately, to the right side of any paired value within that time-series.
      * 
      * @param <S> the type of left and right paired values
-     * @param <T> the type of pair
      * @param predicate the input predicate
      * @return a composed predicate
      * @throws NullPointerException if the input is null
      */
 
-    public static <S, T extends Pair<S, S>> Predicate<TimeSeries<T>>
+    public static <S> Predicate<TimeSeries<Pair<S,S>>>
             anyOfLeftAndAnyOfRightInTimeSeries( Predicate<S> predicate )
     {
         Objects.requireNonNull( predicate,
@@ -135,7 +136,7 @@ public final class TimeSeriesSlicer
             boolean left = false;
             boolean right = false;
 
-            for ( Event<T> next : times.getEvents() )
+            for ( Event<Pair<S,S>> next : times.getEvents() )
             {
                 // Condition is met on either side at any point within the series
                 if ( predicate.test( next.getValue().getLeft() ) )
@@ -156,8 +157,8 @@ public final class TimeSeriesSlicer
 
             return false;
         };
-    }
-
+    }    
+    
     /**
      * Returns the unique {@link Duration} associated with the input time-series, where a {@link Duration} is the
      * difference between the {@link Event#getTime()} and the {@link TimeSeries#getReferenceTimes()} that corresponds
@@ -506,6 +507,73 @@ public final class TimeSeriesSlicer
         }
 
         return TimeSeriesSlicer.compose( ensembles, referenceTimes, timeScale, labels );
+    }
+
+    /**
+     * Returns a filtered view of a time-series based on the input predicate.
+     * 
+     * @param <T> the type of time-series value
+     * @param timeSeries the time-series
+     * @param filter the filter
+     * @return a filtered view of the input series
+     * @throws NullPointerException if any input is null
+     */
+
+    public static <T> TimeSeries<T> filter( TimeSeries<T> timeSeries, Predicate<T> filter )
+    {
+        Objects.requireNonNull( timeSeries );
+
+        Objects.requireNonNull( filter );
+
+        TimeSeriesBuilder<T> builder = new TimeSeriesBuilder<>();
+
+        builder.setTimeScale( timeSeries.getTimeScale() )
+               .addReferenceTimes( timeSeries.getReferenceTimes() );
+
+        for ( Event<T> event : timeSeries.getEvents() )
+        {
+            if ( filter.test( event.getValue() ) )
+            {
+                builder.addEvent( event );
+            }
+        }
+
+        return builder.build();
+    }
+
+    /**
+     * Transforms a time-series from one type to another.
+     * 
+     * @param <S> the existing type of time-series value
+     * @param <T> the required type of time-series value
+     * @param timeSeries the time-series
+     * @param mapper the mapper
+     * @return a filtered view of the input series
+     * @throws NullPointerException if any input is null
+     */
+
+    public static <S, T> TimeSeries<T> transform( TimeSeries<S> timeSeries, Function<S, T> mapper )
+    {
+        Objects.requireNonNull( timeSeries );
+
+        Objects.requireNonNull( mapper );
+
+        TimeSeriesBuilder<T> builder = new TimeSeriesBuilder<>();
+
+        builder.setTimeScale( timeSeries.getTimeScale() )
+               .addReferenceTimes( timeSeries.getReferenceTimes() );
+
+        for ( Event<S> event : timeSeries.getEvents() )
+        {
+            T transformed = mapper.apply( event.getValue() );
+
+            if ( Objects.nonNull( transformed ) )
+            {
+                builder.addEvent( Event.of( event.getTime(), transformed ) );
+            }
+        }
+
+        return builder.build();
     }
 
     /**

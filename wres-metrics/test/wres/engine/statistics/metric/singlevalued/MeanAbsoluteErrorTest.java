@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -13,9 +14,10 @@ import org.junit.rules.ExpectedException;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.MetricTestDataFactory;
@@ -42,16 +44,12 @@ public final class MeanAbsoluteErrorTest
     {
         this.mae = MeanAbsoluteError.of();
     }
-
-    /**
-     * Compares the output from {@link MeanAbsoluteError#apply(SingleValuedPairs)} against expected output.
-     */
-
+    
     @Test
     public void testApply()
     {
         //Generate some data
-        SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
+        TimeSeriesOfPairs<Double, Double> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
         StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
@@ -69,26 +67,17 @@ public final class MeanAbsoluteErrorTest
                     actual.equals( expected ) );
     }
 
-    /**
-     * Validates the output from {@link MeanAbsoluteError#apply(SingleValuedPairs)} when supplied with no data.
-     */
-
     @Test
     public void testApplyWithNoData()
     {
         // Generate empty data
-        SingleValuedPairs input =
-                SingleValuedPairs.of( Arrays.asList(), SampleMetadata.of() );
+        SampleDataBasic<Pair<Double, Double>> input =
+                SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
  
         DoubleScoreStatistic actual = mae.apply( input );
 
         assertTrue( actual.getData().isNaN() );
     }
-
-    /**
-     * Checks that the {@link MeanAbsoluteError#getName()} returns 
-     * {@link MetricConstants#MEAN_ABSOLUTE_ERROR.toString()}
-     */
 
     @Test
     public void testGetName()
@@ -96,40 +85,23 @@ public final class MeanAbsoluteErrorTest
         assertTrue( mae.getName().equals( MetricConstants.MEAN_ABSOLUTE_ERROR.toString() ) );
     }
 
-    /**
-     * Checks that the {@link MeanAbsoluteError#isDecomposable()} returns <code>false</code>.
-     */
-
     @Test
     public void testIsDecomposable()
     {
         assertFalse( mae.isDecomposable() );
     }
-
-    /**
-     * Checks that the {@link MeanAbsoluteError#isSkillScore()} returns <code>false</code>.
-     */
-
+    
     @Test
     public void testIsSkillScore()
     {
         assertFalse( mae.isSkillScore() );
     }
 
-    /**
-     * Checks that the {@link MeanAbsoluteError#getScoreOutputGroup()} returns the result provided on construction.
-     */
-
     @Test
     public void testGetScoreOutputGroup()
     {
         assertTrue( mae.getScoreOutputGroup() == ScoreGroup.NONE );
     }
-
-    /**
-     * Tests for an expected exception on calling {@link MeanAbsoluteError#apply(SingleValuedPairs)} with null 
-     * input.
-     */
 
     @Test
     public void testApplyExceptionOnNullInput()

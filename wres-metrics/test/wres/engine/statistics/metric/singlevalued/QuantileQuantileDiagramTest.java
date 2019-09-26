@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
 import org.junit.Before;
 import org.junit.Rule;
@@ -14,10 +15,9 @@ import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.pairs.SingleValuedPair;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.statistics.DiagramStatistic;
 
 /**
@@ -43,23 +43,19 @@ public final class QuantileQuantileDiagramTest
         this.qqd = QuantileQuantileDiagram.of();
     }
 
-    /**
-     * Compares the output from {@link QuantileQuantileDiagram#apply(SingleValuedPairs)} against expected output.
-     */
-
     @Test
     public void testApply()
     {
         //Generate some data
-        final List<SingleValuedPair> values = new ArrayList<>();
+        final List<Pair<Double,Double>> values = new ArrayList<>();
         for ( int i = 1; i < 1001; i++ )
         {
             double left = i;
             double right = left;
-            values.add( SingleValuedPair.of( left, right ) );
+            values.add( Pair.of( left, right ) );
         }
 
-        final SingleValuedPairs input = SingleValuedPairs.of( values, SampleMetadata.of() );
+        SampleDataBasic<Pair<Double, Double>> input = SampleDataBasic.of( values, SampleMetadata.of() );
 
         //Check the results       
         final DiagramStatistic actual = qqd.apply( input );
@@ -98,16 +94,12 @@ public final class QuantileQuantileDiagramTest
         }
     }
 
-    /**
-     * Validates the output from {@link QuantileQuantileDiagram#apply(SingleValuedPairs)} when supplied with no data.
-     */
-
     @Test
     public void testApplyWithNoData()
     {
         // Generate empty data
-        SingleValuedPairs input =
-                SingleValuedPairs.of( Arrays.asList(), SampleMetadata.of() );
+        SampleDataBasic<Pair<Double, Double>> input =
+                SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
         DiagramStatistic actual = qqd.apply( input );
 
@@ -120,21 +112,11 @@ public final class QuantileQuantileDiagramTest
         assertTrue( Arrays.equals( actual.getData().get( MetricDimension.OBSERVED_QUANTILES ).getDoubles(), source ) );
     }
 
-    /**
-     * Checks that the {@link QuantileQuantileDiagram#getName()} returns 
-     * {@link MetricConstants#QUANTILE_QUANTILE_DIAGRAM.toString()}
-     */
-
     @Test
     public void testGetName()
     {
         assertTrue( qqd.getName().equals( MetricConstants.QUANTILE_QUANTILE_DIAGRAM.toString() ) );
     }
-
-    /**
-     * Tests for an expected exception on calling {@link QuantileQuantileDiagram#apply(SingleValuedPairs)} with null 
-     * input.
-     */
 
     @Test
     public void testApplyExceptionOnNullInput()

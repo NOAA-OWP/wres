@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.sampledata.pairs.SingleValuedPair;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
@@ -72,7 +72,7 @@ public class TimeToPeakRelativeError extends TimingError
     }
 
     @Override
-    public PairedStatistic<Instant, Duration> apply( TimeSeriesOfSingleValuedPairs s )
+    public PairedStatistic<Instant, Duration> apply( TimeSeriesOfPairs<Double,Double> s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -81,64 +81,70 @@ public class TimeToPeakRelativeError extends TimingError
 
         // Iterate through the time-series by basis time, and find the peaks in left and right
         List<Pair<Instant, Duration>> returnMe = new ArrayList<>();
-        for ( TimeSeries<SingleValuedPair> next : s.get() )
+        int sampleSize = 0;
+        for ( TimeSeries<Pair<Double,Double>> next : s.get() )
         {
-
-            // Get the first reference time
-            Map<ReferenceTimeType, Instant> referenceTimes = next.getReferenceTimes();
-            Map.Entry<ReferenceTimeType,Instant> firstEntry = referenceTimes.entrySet().iterator().next();
-            Instant referenceTime = firstEntry.getValue();
-            ReferenceTimeType referenceTimeType = firstEntry.getKey();
-            
-            if ( LOGGER.isTraceEnabled() )
+            // Some events?
+            if ( !next.getEvents().isEmpty() )
             {
-                LOGGER.trace( "Using reference time {} with type {} for instance of {} with input hash {}.",
-                              referenceTime,
-                              referenceTimeType,
-                              TimeToPeakRelativeError.class,
-                              s.hashCode() );
-            }
-            
-            Pair<Instant, Instant> peak = TimingErrorHelper.getTimeToPeak( next, this.getRNG() );
+                // Get the first reference time
+                Map<ReferenceTimeType, Instant> referenceTimes = next.getReferenceTimes();
+                Map.Entry<ReferenceTimeType, Instant> firstEntry = referenceTimes.entrySet().iterator().next();
+                Instant referenceTime = firstEntry.getValue();
+                ReferenceTimeType referenceTimeType = firstEntry.getKey();
 
-            // Duration.between is negative if the predicted/right or "end" is before the observed/left or "start"
-            Duration error = Duration.between( peak.getLeft(), peak.getRight() );
+                if ( LOGGER.isTraceEnabled() )
+                {
+                    LOGGER.trace( "Using reference time {} with type {} for instance of {} with input hash {}.",
+                                  referenceTime,
+                                  referenceTimeType,
+                                  TimeToPeakRelativeError.class,
+                                  s.hashCode() );
+                }
 
-            // Compute the denominator
-            Duration denominator = Duration.between( referenceTime, peak.getLeft() );
+                Pair<Instant, Instant> peak = TimingErrorHelper.getTimeToPeak( next, this.getRNG() );
 
-            // Add the relative time-to-peak error against the basis time
-            // If the horizon is zero, the relative error is undefined
-            // TODO: consider how to represent a NaN outcome within the framework of Duration, rather
-            // than swallowing the outcome here
+                // Duration.between is negative if the predicted/right or "end" is before the observed/left or "start"
+                Duration error = Duration.between( peak.getLeft(), peak.getRight() );
 
-            if ( !denominator.isZero() )
-            {
-                // Numerator seconds as a big decimal w/ nanos
-                BigDecimal errorSeconds = BigDecimal.valueOf( error.toSeconds() )
-                                                    .add( BigDecimal.valueOf( error.get( ChronoUnit.NANOS ), 9 ) );
-                // Denominator seconds as a big decimal w/ nanos
-                BigDecimal denominatorSeconds =
-                        BigDecimal.valueOf( denominator.toSeconds() )
-                                  .add( BigDecimal.valueOf( denominator.get( ChronoUnit.NANOS ), 9 ) );
+                // Compute the denominator
+                Duration denominator = Duration.between( referenceTime, peak.getLeft() );
 
-                // Fraction
-                BigDecimal fraction = errorSeconds.divide( denominatorSeconds, RoundingMode.HALF_UP );
+                // Add the relative time-to-peak error against the basis time
+                // If the horizon is zero, the relative error is undefined
+                // TODO: consider how to represent a NaN outcome within the framework of Duration, rather
+                // than swallowing the outcome here
 
-                // Fractional seconds
-                BigDecimal seconds = fraction.multiply( BigDecimal.valueOf( 60.0 * 60.0 ) );
+                if ( !denominator.isZero() )
+                {
+                    // Numerator seconds as a big decimal w/ nanos
+                    BigDecimal errorSeconds = BigDecimal.valueOf( error.toSeconds() )
+                                                        .add( BigDecimal.valueOf( error.get( ChronoUnit.NANOS ), 9 ) );
+                    // Denominator seconds as a big decimal w/ nanos
+                    BigDecimal denominatorSeconds =
+                            BigDecimal.valueOf( denominator.toSeconds() )
+                                      .add( BigDecimal.valueOf( denominator.get( ChronoUnit.NANOS ), 9 ) );
 
-                // Nearest whole second
-                seconds = seconds.setScale( 0, RoundingMode.HALF_UP );
+                    // Fraction
+                    BigDecimal fraction = errorSeconds.divide( denominatorSeconds, RoundingMode.HALF_UP );
+
+                    // Fractional seconds
+                    BigDecimal seconds = fraction.multiply( BigDecimal.valueOf( 60.0 * 60.0 ) );
+
+                    // Nearest whole second
+                    seconds = seconds.setScale( 0, RoundingMode.HALF_UP );
+
+                    returnMe.add( Pair.of( referenceTime,
+                                           Duration.ofSeconds( seconds.longValue() ) ) );
+                }
                 
-                returnMe.add( Pair.of( referenceTime,
-                                       Duration.ofSeconds( seconds.longValue() ) ) );
+                sampleSize++;
             }
         }
 
         // Create output metadata with the identifier of the statistic as the component identifier
         StatisticMetadata meta = StatisticMetadata.of( s.getMetadata(),
-                                                       s.get().size(),
+                                                       sampleSize,
                                                        MeasurementUnit.of( "DURATION IN RELATIVE HOURS" ),
                                                        this.getID(),
                                                        MetricConstants.MAIN );

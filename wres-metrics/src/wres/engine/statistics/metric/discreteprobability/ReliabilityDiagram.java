@@ -8,15 +8,16 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
 
 import wres.datamodel.MetricConstants;
+import wres.datamodel.Probability;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.MissingValues;
+import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.sampledata.pairs.DiscreteProbabilityPairs;
-import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Diagram;
@@ -37,7 +38,7 @@ import wres.engine.statistics.metric.Diagram;
  * @author james.brown@hydrosolved.com
  */
 
-public class ReliabilityDiagram extends Diagram<DiscreteProbabilityPairs, DiagramStatistic>
+public class ReliabilityDiagram extends Diagram<SampleData<Pair<Probability, Probability>>, DiagramStatistic>
 {
 
     /**
@@ -64,7 +65,7 @@ public class ReliabilityDiagram extends Diagram<DiscreteProbabilityPairs, Diagra
     }
 
     @Override
-    public DiagramStatistic apply( final DiscreteProbabilityPairs s )
+    public DiagramStatistic apply( final SampleData<Pair<Probability, Probability>> s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -122,11 +123,11 @@ public class ReliabilityDiagram extends Diagram<DiscreteProbabilityPairs, Diagra
 
         StatisticMetadata metOut =
                 StatisticMetadata.of( s.getMetadata(),
-                                    this.getID(),
-                                    MetricConstants.MAIN,
-                                    this.hasRealUnits(),
-                                    s.getRawData().size(),
-                                    null );
+                                      this.getID(),
+                                      MetricConstants.MAIN,
+                                      this.hasRealUnits(),
+                                      s.getRawData().size(),
+                                      null );
 
         return DiagramStatistic.of( output, metOut );
     }
@@ -164,7 +165,7 @@ public class ReliabilityDiagram extends Diagram<DiscreteProbabilityPairs, Diagra
      * @param constant the fraction occupied by each bin
      */
 
-    private Consumer<SingleValuedPair>
+    private Consumer<Pair<Probability, Probability>>
             getIncrementor( final double[] fProb, final double[] oProb, final double[] samples, final double constant )
     {
         //Consumer that increments the probabilities and sample size
@@ -181,10 +182,10 @@ public class ReliabilityDiagram extends Diagram<DiscreteProbabilityPairs, Diagra
                     lower = -1.0; //Catch forecast probabilities of zero in the first bin
                 }
                 //Establish whether the forecast probability falls inside it
-                if ( pair.getRight() > lower && pair.getRight() <= upper )
+                if ( pair.getRight().getProbability() > lower && pair.getRight().getProbability() <= upper )
                 {
-                    fProb[i] += pair.getRight();
-                    oProb[i] += pair.getLeft();
+                    fProb[i] += pair.getRight().getProbability();
+                    oProb[i] += pair.getLeft().getProbability();
                     samples[i] += 1;
                     break;
                 }

@@ -6,15 +6,16 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.Slicer;
+import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.sampledata.pairs.EnsemblePair;
-import wres.datamodel.sampledata.pairs.EnsemblePairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.DecomposableScore;
@@ -38,8 +39,8 @@ import wres.engine.statistics.metric.ProbabilityScore;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class ContinuousRankedProbabilityScore extends DecomposableScore<EnsemblePairs>
-        implements ProbabilityScore<EnsemblePairs, DoubleScoreStatistic>
+public class ContinuousRankedProbabilityScore extends DecomposableScore<SampleData<Pair<Double, Ensemble>>>
+        implements ProbabilityScore<SampleData<Pair<Double, Ensemble>>, DoubleScoreStatistic>
 {
 
     /**
@@ -47,7 +48,7 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Ensemble
      */
 
     private static final Logger LOGGER = LoggerFactory.getLogger( ContinuousRankedProbabilityScore.class );
-    
+
     /**
      * Returns an instance.
      * 
@@ -74,22 +75,22 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Ensemble
     }
 
     @Override
-    public DoubleScoreStatistic apply( EnsemblePairs s )
+    public DoubleScoreStatistic apply( SampleData<Pair<Double, Ensemble>> s )
     {
         if ( Objects.isNull( s ) )
         {
             throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
-        
+
         LOGGER.trace( "Found {} pairs in the input to the {} for '{}'.",
                       s.getRawData().size(),
                       this.getName(),
                       s.getMetadata() );
 
         //Slice the data into groups with an equal number of ensemble members
-        Map<Integer, List<EnsemblePair>> sliced =
+        Map<Integer, List<Pair<Double, Ensemble>>> sliced =
                 Slicer.filterByRightSize( s.getRawData() );
-        
+
         //CRPS, currently without decomposition
         //TODO: implement the decomposition
         double[] crps = new double[1];
@@ -97,7 +98,7 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Ensemble
             double increment = this.getSumCRPS( pairs )[0];
             crps[0] += increment;
         } );
-        
+
         if ( !Double.isFinite( crps[0] ) )
         {
             LOGGER.trace( "Found a non-finite value of {} for the {} at '{}'.",
@@ -108,15 +109,15 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Ensemble
 
         //Compute the average (implicitly weighted by the number of pairs in each group)
         crps[0] = FunctionFactory.finiteOrMissing().applyAsDouble( crps[0] / s.getRawData().size() );
-        
+
         //Metadata
         final StatisticMetadata metOut =
                 StatisticMetadata.of( s.getMetadata(),
-                                    this.getID(),
-                                    MetricConstants.MAIN,
-                                    this.hasRealUnits(),
-                                    s.getRawData().size(),
-                                    null );
+                                      this.getID(),
+                                      MetricConstants.MAIN,
+                                      this.hasRealUnits(),
+                                      s.getRawData().size(),
+                                      null );
         return DoubleScoreStatistic.of( crps[0], metOut );
     }
 
@@ -193,7 +194,7 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Ensemble
      * @return the mean CRPS, with decomposition if required
      */
 
-    private double[] getSumCRPS( final List<EnsemblePair> pairs )
+    private double[] getSumCRPS( final List<Pair<Double, Ensemble>> pairs )
     {
         //Number of ensemble members
         int members = pairs.get( 0 ).getRight().size();
@@ -205,7 +206,7 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Ensemble
         for ( int i = 0; i < members + 1; i++ )
         {
             Incrementer incrementer = new Incrementer( i, members );
-            for ( EnsemblePair nextPair : pairs )
+            for ( Pair<Double, Ensemble> nextPair : pairs )
             {
                 //Combine and sort forecast
                 double[] sorted = new double[members + 1];

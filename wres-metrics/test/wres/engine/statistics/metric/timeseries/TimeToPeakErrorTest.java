@@ -20,7 +20,7 @@ import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.time.TimeWindow;
@@ -50,16 +50,11 @@ public final class TimeToPeakErrorTest
         ttp = TimeToPeakError.of( new Random( 123456789 ) );
     }
 
-    /**
-     * Constructs a {@link TimeToPeakError} and compares the actual result to the expected result. Also, checks 
-     * the parameters.
-     */
-
     @Test
     public void testTimeToPeakError()
     {
         // Generate some data
-        TimeSeriesOfSingleValuedPairs input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
+        TimeSeriesOfPairs<Double,Double> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
 
         // Metadata for the output
         TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
@@ -96,20 +91,11 @@ public final class TimeToPeakErrorTest
                     actual.equals( expected ) );
     }
 
-    /**
-     * Checks that the {@link TimeToPeakError#hasRealUnits()} returns <code>true</code>.
-     */
-
     @Test
     public void testHasRealUnitsReturnsTrue()
     {
         assertTrue( ttp.hasRealUnits() );
     }
-
-    /**
-     * Checks that {@link TimeToPeakError#apply(TimeSeriesOfSingleValuedPairs)} throws an exception when 
-     * provided with null input.
-     */
 
     @Test
     public void testApplyThrowsExceptionOnNullInput()

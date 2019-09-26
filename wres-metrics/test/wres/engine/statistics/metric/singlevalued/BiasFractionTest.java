@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -13,6 +14,8 @@ import org.junit.rules.ExpectedException;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
@@ -43,15 +46,11 @@ public final class BiasFractionTest
         this.biasFraction = BiasFraction.of();
     }
 
-    /**
-     * Compares the output from {@link BiasFraction#apply(SingleValuedPairs)} against expected output.
-     */
-
     @Test
     public void testApply()
     {
         //Generate some data
-        SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
+        SampleData<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
         StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
@@ -70,25 +69,17 @@ public final class BiasFractionTest
                     actual.equals( expected ) );
     }
 
-    /**
-     * Validates the output from {@link BiasFraction#apply(SingleValuedPairs)} when supplied with no data.
-     */
-
     @Test
     public void testApplyWithNoData()
     {
         // Generate empty data
-        SingleValuedPairs input =
-                SingleValuedPairs.of( Arrays.asList(), SampleMetadata.of() );
+        SampleData<Pair<Double, Double>> input =
+                SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
         DoubleScoreStatistic actual = biasFraction.apply( input );
 
         assertTrue( actual.getData().isNaN() );
     }
-
-    /**
-     * Checks that the {@link BiasFraction#getName()} returns {@link MetricConstants#BIAS_FRACTION.toString()}
-     */
 
     @Test
     public void testGetName()
@@ -96,19 +87,11 @@ public final class BiasFractionTest
         assertTrue( biasFraction.getName().equals( MetricConstants.BIAS_FRACTION.toString() ) );
     }
 
-    /**
-     * Checks that the {@link BiasFraction#isDecomposable()} returns <code>false</code>.
-     */
-
     @Test
     public void testIsDecomposable()
     {
         assertFalse( biasFraction.isDecomposable() );
     }
-
-    /**
-     * Checks that the {@link BiasFraction#isSkillScore()} returns <code>false</code>.
-     */
 
     @Test
     public void testIsSkillScore()
@@ -116,20 +99,11 @@ public final class BiasFractionTest
         assertFalse( biasFraction.isSkillScore() );
     }
 
-    /**
-     * Checks that the {@link BiasFraction#getScoreOutputGroup()} returns the result provided on construction.
-     */
-
     @Test
     public void testGetScoreOutputGroup()
     {
         assertTrue( biasFraction.getScoreOutputGroup() == ScoreGroup.NONE );
     }
-
-    /**
-     * Tests for an expected exception on calling {@link BiasFraction#apply(SingleValuedPairs)} with null 
-     * input.
-     */
 
     @Test
     public void testApplyExceptionOnNullInput()

@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -19,12 +20,12 @@ import org.junit.rules.ExpectedException;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.pairs.SingleValuedPair;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs.TimeSeriesOfPairsBuilder;
 import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.StatisticMetadata;
@@ -57,16 +58,11 @@ public final class BoxPlotErrorTest
         this.boxPlotError = BoxPlotError.of();
     }
 
-    /**
-     * Compares the output from {@link BoxPlotError#apply(SingleValuedPairs)} against 
-     * expected output for the fake data from {@link MetricTestDataFactory#getSingleValuedPairsOne()}.
-     */
-
     @Test
     public void testApplyAgainstSingleValuedPairsOne()
     {
         //Generate some data
-        SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
+        SampleData<Pair<Double,Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
         StatisticMetadata meta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
@@ -92,16 +88,11 @@ public final class BoxPlotErrorTest
         assertEquals( expected, actual );
     }
 
-    /**
-     * Compares the output from {@link BoxPlotError#apply(SingleValuedPairs)} against 
-     * expected output for the fake data from {@link MetricTestDataFactory#getSingleValuedPairsNine()}.
-     */
-
     @Test
     public void testApplyAgainstSingleValuedPairsNine()
     {
         //Generate some data
-        TimeSeriesOfSingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsNine();
+        TimeSeriesOfPairs<Double,Double> input = MetricTestDataFactory.getSingleValuedPairsNine();
 
         //Metadata for the output
         StatisticMetadata meta = StatisticMetadata.of( input.getMetadata(),
@@ -117,12 +108,12 @@ public final class BoxPlotErrorTest
 
         for ( Duration duration : durations )
         {
-            List<Event<SingleValuedPair>> events = TimeSeriesSlicer.filterByDuration( input.get(),
+            List<Event<Pair<Double,Double>>> events = TimeSeriesSlicer.filterByDuration( input.get(),
                                                                                       a -> a.equals( duration ),
                                                                                       ReferenceTimeType.DEFAULT );
-            TimeSeriesOfSingleValuedPairsBuilder builder = new TimeSeriesOfSingleValuedPairsBuilder();
+            TimeSeriesOfPairsBuilder<Double,Double> builder = new TimeSeriesOfPairsBuilder<>();
             builder.setMetadata( input.getMetadata() );
-            for ( Event<SingleValuedPair> next : events )
+            for ( Event<Pair<Double,Double>> next : events )
             {
                 builder.addTimeSeries( TimeSeries.of( new TreeSet<>( Collections.singleton( next ) ) ) );
             }
@@ -175,16 +166,12 @@ public final class BoxPlotErrorTest
         assertEquals( expected, actual );
     }
 
-    /**
-     * Validates the output from {@link BoxPlotError#apply(SingleValuedPairs)} when supplied with no data.
-     */
-
     @Test
     public void testApplyWithNoData()
     {
         // Generate empty data
-        SingleValuedPairs input =
-                SingleValuedPairs.of( Arrays.asList(), SampleMetadata.of() );
+        SampleData<Pair<Double,Double>> input =
+                SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
         BoxPlotStatistics actual = this.boxPlotError.apply( input );
 
@@ -210,21 +197,11 @@ public final class BoxPlotErrorTest
         assertEquals( expected, actual );
     }
 
-    /**
-     * Checks that the {@link BoxPlotError#getName()} returns 
-     * {@link MetricConstants#BOX_PLOT_OF_ERRORS.toString()}
-     */
-
     @Test
     public void testGetName()
     {
         assertTrue( this.boxPlotError.getName().equals( MetricConstants.BOX_PLOT_OF_ERRORS.toString() ) );
     }
-
-    /**
-     * Tests for an expected exception on calling {@link BoxPlotError#apply(SingleValuedPairs)} with null 
-     * input.
-     */
 
     @Test
     public void testApplyExceptionOnNullInput()

@@ -2,11 +2,12 @@ package wres.engine.statistics.metric.singlevalued;
 
 import java.util.Objects;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MissingValues;
+import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.sampledata.pairs.SingleValuedPair;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.FunctionFactory;
@@ -20,7 +21,7 @@ import wres.engine.statistics.metric.FunctionFactory;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class IndexOfAgreement extends DoubleErrorScore<SingleValuedPairs>
+public class IndexOfAgreement extends DoubleErrorScore<SampleData<Pair<Double,Double>>>
 {
 
     /**
@@ -47,7 +48,7 @@ public class IndexOfAgreement extends DoubleErrorScore<SingleValuedPairs>
     final double exponent;
 
     @Override
-    public DoubleScoreStatistic apply( final SingleValuedPairs s )
+    public DoubleScoreStatistic apply( final SampleData<Pair<Double,Double>> s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -60,11 +61,11 @@ public class IndexOfAgreement extends DoubleErrorScore<SingleValuedPairs>
         if ( !s.getRawData().isEmpty() )
         {
             //Compute the average observation
-            double oBar = s.getRawData().stream().mapToDouble( SingleValuedPair::getLeft ).average().getAsDouble();
+            double oBar = s.getRawData().stream().mapToDouble( Pair::getLeft ).average().getAsDouble();
             //Compute the score
             double numerator = 0.0;
             double denominator = 0.0;
-            for ( SingleValuedPair nextPair : s.getRawData() )
+            for ( Pair<Double,Double> nextPair : s.getRawData() )
             {
                 numerator += Math.pow( Math.abs( nextPair.getLeft() - nextPair.getRight() ), exponent );
                 denominator += ( Math.abs( nextPair.getRight() - oBar )

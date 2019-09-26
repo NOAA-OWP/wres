@@ -2,9 +2,11 @@ package wres.engine.statistics.metric.singlevalued;
 
 import java.util.Objects;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import wres.datamodel.MetricConstants;
+import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Collectable;
@@ -17,8 +19,8 @@ import wres.engine.statistics.metric.FunctionFactory;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class RootMeanSquareError extends DoubleErrorScore<SingleValuedPairs>
-        implements Collectable<SingleValuedPairs, DoubleScoreStatistic, DoubleScoreStatistic>
+public class RootMeanSquareError extends DoubleErrorScore<SampleData<Pair<Double, Double>>>
+        implements Collectable<SampleData<Pair<Double, Double>>, DoubleScoreStatistic, DoubleScoreStatistic>
 {
 
     /**
@@ -39,7 +41,7 @@ public class RootMeanSquareError extends DoubleErrorScore<SingleValuedPairs>
     private final SumOfSquareError sse;
 
     @Override
-    public DoubleScoreStatistic apply( final SingleValuedPairs t )
+    public DoubleScoreStatistic apply( final SampleData<Pair<Double, Double>> t )
     {
         return this.aggregate( this.getInputForAggregation( t ) );
     }
@@ -77,7 +79,7 @@ public class RootMeanSquareError extends DoubleErrorScore<SingleValuedPairs>
     }
 
     @Override
-    public DoubleScoreStatistic getInputForAggregation( SingleValuedPairs input )
+    public DoubleScoreStatistic getInputForAggregation( SampleData<Pair<Double, Double>> input )
     {
         if ( Objects.isNull( input ) )
         {

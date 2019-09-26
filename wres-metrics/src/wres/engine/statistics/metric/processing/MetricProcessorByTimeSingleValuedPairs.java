@@ -17,6 +17,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,12 +30,11 @@ import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.pairs.DichotomousPair;
 import wres.datamodel.sampledata.pairs.DichotomousPairs;
-import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfPairs.TimeSeriesOfPairsBuilder;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.PairedStatistic;
@@ -44,7 +44,6 @@ import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.time.TimeSeries;
-import wres.datamodel.time.TimeWindow;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricCollection;
@@ -63,13 +62,13 @@ import wres.engine.statistics.metric.timeseries.TimingErrorDurationStatistics;
  * @author james.brown@hydrosolved.com
  */
 
-public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTime<SingleValuedPairs>
+public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTime<TimeSeriesOfPairs<Double, Double>>
 {
-    
+
     /**
      * Logger instance.
      */
-    
+
     private static final Logger LOGGER = LoggerFactory.getLogger( MetricProcessorByTimeSingleValuedPairs.class );
 
     /**
@@ -77,7 +76,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
      * {@link PairedStatistic}.
      */
 
-    private final MetricCollection<TimeSeriesOfSingleValuedPairs, PairedStatistic<Instant, Duration>, PairedStatistic<Instant, Duration>> timeSeries;
+    private final MetricCollection<TimeSeriesOfPairs<Double, Double>, PairedStatistic<Instant, Duration>, PairedStatistic<Instant, Duration>> timeSeries;
 
     /**
      * An instance of {@link TimingErrorDurationStatistics} for each timing error metric that requires 
@@ -87,7 +86,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
     private final Map<MetricConstants, TimingErrorDurationStatistics> timingErrorDurationStatistics;
 
     @Override
-    public StatisticsForProject apply( SingleValuedPairs input )
+    public StatisticsForProject apply( TimeSeriesOfPairs<Double, Double> input )
     {
         Objects.requireNonNull( input, "Expected non-null input to the metric processor." );
 
@@ -95,7 +94,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                 "Expected a non-null time window in the input metadata." );
 
         //Remove missing values, except for ordered input, such as time-series
-        SingleValuedPairs inputNoMissing = input;
+        TimeSeriesOfPairs<Double, Double> inputNoMissing = input;
 
         if ( !this.hasMetrics( SampleDataGroup.SINGLE_VALUED_TIME_SERIES ) )
         {
@@ -123,21 +122,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         }
         if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED_TIME_SERIES ) )
         {
-            if ( ! ( inputNoMissing instanceof TimeSeriesOfSingleValuedPairs ) )
-            {
-                throw new MetricCalculationException( " The project configuration includes time-series metrics. "
-                                                      + "Expected a time-series of single-valued pairs as input." );
-            }
-
-            TimeSeriesOfSingleValuedPairs data = (TimeSeriesOfSingleValuedPairs) inputNoMissing;
-            TimeWindow timeWindow = input.getMetadata().getTimeWindow();
-            TimeSeriesOfSingleValuedPairsBuilder builder = new TimeSeriesOfSingleValuedPairsBuilder();
-            data = (TimeSeriesOfSingleValuedPairs) builder.addTimeSeries( data )
-                                                          .setMetadata( SampleMetadata.of( data.getMetadata(),
-                                                                                           timeWindow ) )
-                                                          .build();
-
-            this.processTimeSeriesPairs( data,
+            this.processTimeSeriesPairs( inputNoMissing,
                                          futures,
                                          StatisticGroup.PAIRED );
         }
@@ -188,9 +173,9 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                                                     StatisticGroup.PAIRED );
             this.timeSeries = MetricFactory.ofSingleValuedTimeSeriesCollection( metricExecutor,
                                                                                 timingErrorMetrics );
-            
+
             LOGGER.debug( "Created the timing-error metrics for processing. {}", this.timeSeries );
-            
+
             //Summary statistics
             Map<MetricConstants, TimingErrorDurationStatistics> localStatistics =
                     new EnumMap<>( MetricConstants.class );
@@ -350,7 +335,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processDichotomousPairs( SingleValuedPairs input,
+    private void processDichotomousPairs( TimeSeriesOfPairs<Double, Double> input,
                                           MetricFuturesByTimeBuilder futures )
     {
         if ( hasMetrics( SampleDataGroup.DICHOTOMOUS, StatisticGroup.DOUBLE_SCORE ) )
@@ -373,7 +358,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processDichotomousPairsByThreshold( SingleValuedPairs input,
+    private void processDichotomousPairsByThreshold( TimeSeriesOfPairs<Double, Double> input,
                                                      MetricFuturesByTimeBuilder futures,
                                                      StatisticGroup outGroup )
     {
@@ -397,11 +382,11 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             Set<MetricConstants> ignoreTheseMetrics = filtered.doesNotHaveTheseMetricsForThisThreshold( threshold );
 
             //Define a mapper to convert the single-valued pairs to dichotomous pairs
-            Function<SingleValuedPair, DichotomousPair> mapper =
-                    pair -> DichotomousPair.of( useMe.test( pair.getLeft() ),
-                                                useMe.test( pair.getRight() ) );
+            Function<Pair<Double, Double>, Pair<Boolean, Boolean>> mapper =
+                    pair -> Pair.of( useMe.test( pair.getLeft() ),
+                                     useMe.test( pair.getRight() ) );
             //Transform the pairs
-            DichotomousPairs transformed = Slicer.toDichotomousPairs( input, mapper );
+            TimeSeriesOfPairs<Boolean, Boolean> transformed = Slicer.transform( input, mapper );
 
             // Add the threshold to the metadata, in order to fully qualify the pairs
             SampleMetadata baselineMeta = null;
@@ -410,9 +395,12 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                 baselineMeta = SampleMetadata.of( transformed.getBaselineData().getMetadata(), oneOrTwo );
             }
 
-            transformed = DichotomousPairs.ofDichotomousPairs( transformed,
-                                                               SampleMetadata.of( transformed.getMetadata(), oneOrTwo ),
-                                                               baselineMeta );
+            TimeSeriesOfPairsBuilder<Boolean, Boolean> builder = new TimeSeriesOfPairsBuilder<>();
+
+            transformed = builder.addTimeSeries( transformed )
+                                 .setMetadata( SampleMetadata.of( input.getMetadata(), oneOrTwo ) )
+                                 .setMetadataForBaseline( baselineMeta )
+                                 .build();
 
             this.processDichotomousPairs( transformed,
                                           futures,
@@ -431,7 +419,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processTimeSeriesPairs( TimeSeriesOfSingleValuedPairs input,
+    private void processTimeSeriesPairs( TimeSeriesOfPairs<Double, Double> input,
                                          MetricFuturesByTimeBuilder futures,
                                          StatisticGroup outGroup )
     {
@@ -454,15 +442,15 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             Threshold useMe = this.addQuantilesToThreshold( threshold, sorted );
             OneOrTwoThresholds oneOrTwo = OneOrTwoThresholds.of( useMe );
 
-            TimeSeriesOfSingleValuedPairs pairs;
+            TimeSeriesOfPairs<Double, Double> pairs;
 
             // Filter the data if required
             if ( useMe.isFinite() )
             {
-                Predicate<TimeSeries<SingleValuedPair>> filter =
+                Predicate<TimeSeries<Pair<Double,Double>>> filter =
                         MetricProcessorByTime.getFilterForTimeSeriesOfSingleValuedPairs( useMe );
 
-                pairs = Slicer.filter( input, filter, null );
+                pairs = Slicer.filterPerSeries( input, filter, null );
             }
             else
             {
@@ -476,15 +464,14 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                 baselineMeta = SampleMetadata.of( pairs.getBaselineData().getMetadata(), oneOrTwo );
             }
 
-            TimeSeriesOfSingleValuedPairsBuilder builder = new TimeSeriesOfSingleValuedPairsBuilder();
-            pairs = (TimeSeriesOfSingleValuedPairs) builder.addTimeSeries( pairs )
-                                                           .setMetadata( SampleMetadata.of( pairs.getMetadata(),
-                                                                                            oneOrTwo ) )
-                                                           .setMetadataForBaseline( baselineMeta )
-                                                           .build();
+            TimeSeriesOfPairsBuilder<Double, Double> builder = new TimeSeriesOfPairsBuilder<>();
+            pairs = builder.addTimeSeries( pairs )
+                           .setMetadata( SampleMetadata.of( pairs.getMetadata(), oneOrTwo ) )
+                           .setMetadataForBaseline( baselineMeta )
+                           .build();
 
             // Build the future result
-            final TimeSeriesOfSingleValuedPairs finalPairs = pairs;
+            final TimeSeriesOfPairs<Double, Double> finalPairs = pairs;
             Future<ListOfStatistics<PairedStatistic<Instant, Duration>>> output =
                     CompletableFuture.supplyAsync( () -> timeSeries.apply( finalPairs, ignoreTheseMetrics ),
                                                    thresholdExecutor );

@@ -4,13 +4,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
-import java.util.stream.IntStream;
+
+import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.sampledata.pairs.MulticategoryPair;
-import wres.datamodel.sampledata.pairs.MulticategoryPairs;
 import wres.datamodel.statistics.MatrixStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Metric;
@@ -25,61 +25,66 @@ import wres.engine.statistics.metric.Metric;
  * @author james.brown@hydrosolved.com
  */
 
-public class ContingencyTable<S extends MulticategoryPairs> implements Metric<S, MatrixStatistic>
+public class ContingencyTable implements Metric<SampleData<Pair<Boolean,Boolean>>, MatrixStatistic>
 {
 
     /**
      * Returns an instance.
      * 
-     * @param <S> the input type
      * @return an instance
      */
 
-    public static <S extends MulticategoryPairs> ContingencyTable<S> of()
+    public static ContingencyTable of()
     {
-        return new ContingencyTable<>();
+        return new ContingencyTable();
     }
 
     @Override
-    public MatrixStatistic apply( final MulticategoryPairs s )
+    public MatrixStatistic apply( final SampleData<Pair<Boolean,Boolean>> s )
     {
         if ( Objects.isNull( s ) )
         {
             throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
-        final int outcomes = s.getCategoryCount();
+        final int outcomes = 2;
         final double[][] returnMe = new double[outcomes][outcomes];
+        
         // Function that returns the index within the contingency table to increment
-        final Consumer<MulticategoryPair> f = a -> {
-            boolean[] left = a.getLeft();
-            boolean[] right = a.getRight();
-            boolean[] compound;
-
-            // Dichotomous event represented as a single outcome: expand
-            if ( left.length == 1 )
+        final Consumer<Pair<Boolean,Boolean>> f = a -> {
+            boolean left = a.getLeft();
+            boolean right = a.getRight();
+            
+            // True positives aka hits
+            if( left && right )
             {
-                compound = new boolean[] { left[0], !left[0], right[0], !right[0] };
+                returnMe[0][0]+=1;
             }
+            // True negatives 
+            else if( !left && !right )
+            {
+                returnMe[1][1]+=1;
+            }
+            // False positives aka false alarms
+            else if( !left && right )
+            {
+                returnMe[0][1]+=1;
+            }
+            // False negatives aka misses
             else
             {
-                compound = new boolean[left.length + right.length];
-                System.arraycopy( left, 0, compound, 0, left.length );
-                System.arraycopy( right, 0, compound, left.length, right.length );
+                returnMe[1][0]+=1;
             }
-            final int[] index = IntStream.range( 0, compound.length ).filter( i -> compound[i] ).toArray();
-            returnMe[index[1] - outcomes][index[0]] += 1;
         };
+        
         // Increment the count in a serial stream as the lambda is stateful
         s.getRawData().stream().forEach( f );
+        
         // Name the outcomes for a 2x2 contingency table
-        List<MetricDimension> componentNames = null;
-        if ( outcomes == 2 )
-        {
-            componentNames = Arrays.asList( MetricDimension.TRUE_POSITIVES,
+        List<MetricDimension> componentNames = Arrays.asList( MetricDimension.TRUE_POSITIVES,
                                             MetricDimension.FALSE_POSITIVES,
                                             MetricDimension.FALSE_NEGATIVES,
                                             MetricDimension.TRUE_NEGATIVES );
-        }
+
         final StatisticMetadata metOut =
                 StatisticMetadata.of( s.getMetadata(),
                                     this.getID(),
@@ -87,6 +92,7 @@ public class ContingencyTable<S extends MulticategoryPairs> implements Metric<S,
                                     this.hasRealUnits(),
                                     s.getRawData().size(),
                                     null );
+        
         return MatrixStatistic.of( returnMe, componentNames, metOut );
     }
 

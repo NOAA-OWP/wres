@@ -8,17 +8,19 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.pairs.EnsemblePair;
-import wres.datamodel.sampledata.pairs.EnsemblePairs;
 import wres.datamodel.statistics.DiagramStatistic;
 import wres.engine.statistics.metric.MetricParameterException;
 
@@ -53,14 +55,14 @@ public final class RankHistogramTest
     }
 
     /**
-     * Compares the output from {@link RankHistogram#apply(EnsemblePairs)} against expected output for pairs without
+     * Compares the output from {@link RankHistogram#apply(SampleData)} against expected output for pairs without
      * ties.
      */
 
     @Test
     public void testApplyWithoutTies()
     {
-        final List<EnsemblePair> values = new ArrayList<>();
+        List<Pair<Double,Ensemble>> values = new ArrayList<>();
         for ( int i = 0; i < 10000; i++ )
         {
             double left = rng.nextDouble();
@@ -69,13 +71,13 @@ public final class RankHistogramTest
             {
                 right[j] = rng.nextDouble();
             }
-            values.add( EnsemblePair.of( left, right ) );
+            values.add( Pair.of( left, Ensemble.of( right ) ) );
         }
 
-        final EnsemblePairs input = EnsemblePairs.of( values, SampleMetadata.of() );
+        SampleData<Pair<Double, Ensemble>> input = SampleDataBasic.of( values, SampleMetadata.of() );
 
         //Check the results       
-        final DiagramStatistic actual = rh.apply( input );
+        DiagramStatistic actual = rh.apply( input );
         double[] actualRanks = actual.get( MetricDimension.RANK_ORDER ).getDoubles();
         double[] actualRFreqs = actual.get( MetricDimension.OBSERVED_RELATIVE_FREQUENCY ).getDoubles();
         double[] expectedRanks = new double[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
@@ -90,7 +92,7 @@ public final class RankHistogramTest
     }
 
     /**
-     * Compares the output from {@link RankHistogram#apply(EnsemblePairs)} against expected output for pairs with
+     * Compares the output from {@link RankHistogram#apply(SampleData)} against expected output for pairs with
      * ties.
      */
 
@@ -98,12 +100,12 @@ public final class RankHistogramTest
     public void testApplyWithTies()
     {
         //Generate some data using an RNG for a uniform U[0,1] distribution with a fixed seed
-        final List<EnsemblePair> values = new ArrayList<>();
-        values.add( EnsemblePair.of( 2, new double[] { 1, 2, 2, 2, 4, 5, 6, 7, 8 } ) );
-        final EnsemblePairs input = EnsemblePairs.of( values, SampleMetadata.of() );
+        List<Pair<Double,Ensemble>> values = new ArrayList<>();
+        values.add( Pair.of( 2.0, Ensemble.of( 1, 2, 2, 2, 4, 5, 6, 7, 8 ) ) );
+        SampleData<Pair<Double, Ensemble>> input = SampleDataBasic.of( values, SampleMetadata.of() );
 
         //Check the results       
-        final DiagramStatistic actual = rh.apply( input );
+        DiagramStatistic actual = rh.apply( input );
 
         double[] actualRanks = actual.get( MetricDimension.RANK_ORDER ).getDoubles();
         double[] actualRFreqs = actual.get( MetricDimension.OBSERVED_RELATIVE_FREQUENCY ).getDoubles();
@@ -120,7 +122,7 @@ public final class RankHistogramTest
 
 
     /**
-     * Validates the output from {@link RankHistogram#apply(EnsemblePairs)} when 
+     * Validates the output from {@link RankHistogram#apply(SampleData)} when 
      * supplied with no data.
      */
 
@@ -128,8 +130,8 @@ public final class RankHistogramTest
     public void testApplyWithNoData()
     {
         // Generate empty data
-        EnsemblePairs input =
-                EnsemblePairs.of( Arrays.asList(), SampleMetadata.of() );
+        SampleData<Pair<Double, Ensemble>> input =
+                SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
         DiagramStatistic actual = rh.apply( input );
 
@@ -161,7 +163,7 @@ public final class RankHistogramTest
 
     /**
      * Tests for an expected exception on calling 
-     * {@link RankHistogram#apply(EnsemblePairs)} with null input.
+     * {@link RankHistogram#apply(SampleData)} with null input.
      */
 
     @Test
