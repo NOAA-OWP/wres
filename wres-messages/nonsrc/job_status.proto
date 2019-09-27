@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package wres.messages.generated;
+
+import "google/protobuf/timestamp.proto";
+
+message job_status
+{
+    int32 index = 1;
+    google.protobuf.Timestamp datetime = 2;
+
+    enum Report
+    {
+        RECEIVED = 0;
+        ALIVE = 1;
+        DEAD = 2;
+    }
+
+    Report report = 3;
+}

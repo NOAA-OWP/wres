@@ -120,7 +120,7 @@ class WresProcess implements Callable<Integer>
         Process process;
 
         // Use one Thread per messenger:
-        ExecutorService executorService = Executors.newFixedThreadPool( 3 );
+        ExecutorService executorService = Executors.newFixedThreadPool( 4 );
 
 
         JobOutputMessenger outputMessenger =
@@ -149,8 +149,16 @@ class WresProcess implements Callable<Integer>
                                                     this.getJobId(),
                                                     JobStandardStreamMessenger.WhichStream.STDERR,
                                                     process.getErrorStream() );
+            // Send process aliveness messages, like a heartbeat.
+            JobStatusMessenger statusMessenger =
+                    new JobStatusMessenger( this.getConnection(),
+                                            this.getExchangeName(),
+                                            this.getJobId(),
+                                            process );
+
             executorService.submit( stdoutMessenger );
             executorService.submit( stderrMessenger );
+            executorService.submit( statusMessenger );
         }
         catch ( IOException ioe )
         {
