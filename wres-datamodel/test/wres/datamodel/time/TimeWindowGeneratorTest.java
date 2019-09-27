@@ -18,12 +18,12 @@ import wres.config.generated.PairConfig;
 import wres.config.generated.PoolingWindowConfig;
 
 /**
- * <p>Tests the {@link TimeWindowHelper}.
+ * <p>Tests the {@link TimeWindowGenerator}.
  *
  * @author james.brown@hydrosolved.com
  */
 
-public final class TimeWindowHelperTest
+public final class TimeWindowGeneratorTest
 {
 
     private static final String INSTANT_ONE = "2017-08-08T00:00:00Z";
@@ -56,7 +56,7 @@ public final class TimeWindowHelperTest
     private static final String INSTANT_TWENTY_EIGHT = "2551-03-24T00:00:00Z";
 
     /**
-     * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)}
+     * <p>Tests the {@link TimeWindowGenerator#getTimeWindowsFromPairConfig(PairConfig)}
      * where the project declaration includes a <code>leadHours</code> and a 
      * <code>leadTimesPoolingWindow</code>. Expects twenty-four time windows with
      * prescribed characteristics.
@@ -114,7 +114,7 @@ public final class TimeWindowHelperTest
         expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 23 ), Duration.ofHours( 24 ) ) );
 
         // Generate the actual windows
-        Set<TimeWindow> actualTimeWindows = TimeWindowHelper.getTimeWindowsFromPairConfig( pairsConfig );
+        Set<TimeWindow> actualTimeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfig );
 
         // Assert the expected cardinality
         assertEquals( 24, actualTimeWindows.size() );
@@ -124,7 +124,7 @@ public final class TimeWindowHelperTest
     }
 
     /**
-     * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)}
+     * <p>Tests the {@link TimeWindowGenerator#getTimeWindowsFromPairConfig(PairConfig)}
      * where the project declaration includes a <code>leadHours</code> and a 
      * <code>leadTimesPoolingWindow</code>. Expects two time windows with
      * prescribed characteristics.
@@ -161,7 +161,7 @@ public final class TimeWindowHelperTest
         expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 24 ), Duration.ofHours( 48 ) ) );
 
         // Generate the actual windows
-        Set<TimeWindow> actualTimeWindows = TimeWindowHelper.getTimeWindowsFromPairConfig( pairsConfig );
+        Set<TimeWindow> actualTimeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfig );
 
         // Assert the expected cardinality
         assertEquals( 2, actualTimeWindows.size() );
@@ -171,7 +171,7 @@ public final class TimeWindowHelperTest
     }
 
     /**
-     * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)}
+     * <p>Tests the {@link TimeWindowGenerator#getTimeWindowsFromPairConfig(PairConfig)}
      * where the project declaration includes a <code>leadHours</code>, a 
      * <code>leadTimesPoolingWindow</code>, an <code>issuedDates</code>, and 
      * an <code>issuedDatesPoolingWindow</code>. Expects eighteen time 
@@ -283,7 +283,7 @@ public final class TimeWindowHelperTest
                                                 Duration.ofHours( 40 ) ) );
 
         // Generate the actual windows
-        Set<TimeWindow> actualTimeWindows = TimeWindowHelper.getTimeWindowsFromPairConfig( pairsConfig );
+        Set<TimeWindow> actualTimeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfig );
 
         // Assert the expected cardinality
         assertEquals( 18, actualTimeWindows.size() );
@@ -293,7 +293,7 @@ public final class TimeWindowHelperTest
     }
 
     /**
-     * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)}
+     * <p>Tests the {@link TimeWindowGenerator#getTimeWindowsFromPairConfig(PairConfig)}
      * where the project declaration includes a <code>leadHours</code>, a 
      * <code>leadTimesPoolingWindow</code>, a <code>dates</code> and an 
      * <code>issuedDates</code>. Expects one time window with prescribed characteristics.
@@ -334,7 +334,7 @@ public final class TimeWindowHelperTest
                                                 Duration.ofHours( 25 ) ) );
 
         // Generate the actual windows
-        Set<TimeWindow> actualTimeWindows = TimeWindowHelper.getTimeWindowsFromPairConfig( pairsConfig );
+        Set<TimeWindow> actualTimeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfig );
 
         // Assert the expected cardinality
         assertEquals( 1, actualTimeWindows.size() );
@@ -344,7 +344,7 @@ public final class TimeWindowHelperTest
     }
 
     /**
-     * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)} where the project declaration 
+     * <p>Tests the {@link TimeWindowGenerator#getTimeWindowsFromPairConfig(PairConfig)} where the project declaration 
      * does not include any constraints on time, aka "one big pool".
      * 
      * <p>This is analogous to system test scenario508, as of commit b9a7214ec22999482784119a8527149348c80119.
@@ -378,7 +378,7 @@ public final class TimeWindowHelperTest
                                                 TimeWindow.DURATION_MAX ) );
 
         // Generate the actual windows
-        Set<TimeWindow> actualTimeWindows = TimeWindowHelper.getTimeWindowsFromPairConfig( pairsConfig );
+        Set<TimeWindow> actualTimeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfig );
 
         // Assert the expected cardinality
         assertEquals( 1, actualTimeWindows.size() );
@@ -388,7 +388,7 @@ public final class TimeWindowHelperTest
     }
 
     /**
-     * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)}
+     * <p>Tests the {@link TimeWindowGenerator#getTimeWindowsFromPairConfig(PairConfig)}
      * where the project declaration includes a <code>issuedDatesPoolingWindow</code> and a 
      * <code>leadTimesPoolingWindow</code>. Expects twenty-three time windows. Tests both
      * an explicit and implicit declaration of the <code>frequency</code>.
@@ -581,7 +581,7 @@ public final class TimeWindowHelperTest
                                                 Duration.ofHours( 18 ) ) );
 
         // Generate the actual time windows for the explicit test
-        Set<TimeWindow> actualTimeWindows = TimeWindowHelper.getTimeWindowsFromPairConfig( pairsConfig );
+        Set<TimeWindow> actualTimeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfig );
 
         // Assert the expected cardinality
         assertEquals( 23, actualTimeWindows.size() );
@@ -608,14 +608,14 @@ public final class TimeWindowHelperTest
                                                        null );
 
         // Generate the actual time windows for the implicit test
-        Set<TimeWindow> actualTimeWindowsNoFreq = TimeWindowHelper.getTimeWindowsFromPairConfig( pairsConfigNoFreq );
+        Set<TimeWindow> actualTimeWindowsNoFreq = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfigNoFreq );
 
         // Assert that the expected and actual time windows are equal
         assertEquals( expectedTimeWindows, actualTimeWindowsNoFreq );
     }
 
     /**
-     * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)} where the project declaration 
+     * <p>Tests the {@link TimeWindowGenerator#getTimeWindowsFromPairConfig(PairConfig)} where the project declaration 
      * does not include any explicit time windows, but is constrained by <code>leadHours</code>, 
      * <code>issuedDates</code> and <code>dates</code>, aka "one big pool" with constraints.
      */
@@ -659,7 +659,7 @@ public final class TimeWindowHelperTest
                                                 Duration.ofHours( 18 ) ) );
 
         // Generate the actual windows
-        Set<TimeWindow> actualTimeWindows = TimeWindowHelper.getTimeWindowsFromPairConfig( pairsConfig );
+        Set<TimeWindow> actualTimeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfig );
 
         // Assert the expected cardinality
         assertEquals( 1, actualTimeWindows.size() );
@@ -669,7 +669,7 @@ public final class TimeWindowHelperTest
     }
 
     /**
-     * <p>Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)}
+     * <p>Tests the {@link TimeWindowGenerator#getTimeWindowsFromPairConfig(PairConfig)}
      * where the project declaration includes a <code>leadHours</code>, a 
      * an <code>issuedDates</code>, and an <code>issuedDatesPoolingWindow</code>. 
      * Expects nine time windows with prescribed characteristics.
@@ -747,7 +747,7 @@ public final class TimeWindowHelperTest
                                                 last ) );
 
         // Generate the actual windows
-        Set<TimeWindow> actualTimeWindows = TimeWindowHelper.getTimeWindowsFromPairConfig( pairsConfig );
+        Set<TimeWindow> actualTimeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfig );
 
         // Assert the expected cardinality
         assertEquals( 9, actualTimeWindows.size() );
@@ -757,7 +757,7 @@ public final class TimeWindowHelperTest
     }
 
     /**
-     * Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)} for an expected exception when 
+     * Tests the {@link TimeWindowGenerator#getTimeWindowsFromPairConfig(PairConfig)} for an expected exception when 
      * <code>leadHours</code> are required but missing.
      */
 
@@ -782,14 +782,14 @@ public final class TimeWindowHelperTest
                                                  null );
 
         ProjectConfigException thrown = assertThrows( ProjectConfigException.class,
-                                                      () -> TimeWindowHelper.getTimeWindowsFromPairConfig( pairsConfig ) );
+                                                      () -> TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfig ) );
 
         assertEquals( "Cannot determine lead duration time windows without a leadHours.",
                       thrown.getMessage() );
     }
 
     /**
-     * Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)} for an expected exception when the 
+     * Tests the {@link TimeWindowGenerator#getTimeWindowsFromPairConfig(PairConfig)} for an expected exception when the 
      * <code>minimum</code> <code>leadHours</code> is required but missing.
      */
 
@@ -816,14 +816,14 @@ public final class TimeWindowHelperTest
                                                  null );
 
         ProjectConfigException thrown = assertThrows( ProjectConfigException.class,
-                                                      () -> TimeWindowHelper.getTimeWindowsFromPairConfig( pairsConfig ) );
+                                                      () -> TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfig ) );
 
         assertEquals( "Cannot determine lead duration time windows without a minimum leadHours.",
                       thrown.getMessage() );
     }
 
     /**
-     * Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)} for an expected exception when the 
+     * Tests the {@link TimeWindowGenerator#getTimeWindowsFromPairConfig(PairConfig)} for an expected exception when the 
      * <code>maximum</code> <code>leadHours</code> is required but missing.
      */
 
@@ -850,14 +850,14 @@ public final class TimeWindowHelperTest
                                                  null );
 
         ProjectConfigException thrown = assertThrows( ProjectConfigException.class,
-                                                      () -> TimeWindowHelper.getTimeWindowsFromPairConfig( pairsConfig ) );
+                                                      () -> TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfig ) );
 
         assertEquals( "Cannot determine lead duration time windows without a maximum leadHours.",
                       thrown.getMessage() );
     }
 
     /**
-     * Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)} for an expected exception when 
+     * Tests the {@link TimeWindowGenerator#getTimeWindowsFromPairConfig(PairConfig)} for an expected exception when 
      * <code>issuedDates</code> is required but missing.
      */
 
@@ -882,14 +882,14 @@ public final class TimeWindowHelperTest
                                                  null );
 
         ProjectConfigException thrown = assertThrows( ProjectConfigException.class,
-                                                      () -> TimeWindowHelper.getTimeWindowsFromPairConfig( pairsConfig ) );
+                                                      () -> TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfig ) );
 
         assertEquals( "Cannot determine issued dates time windows without an issuedDates.",
                       thrown.getMessage() );
     }
 
     /**
-     * Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)} for an expected exception when the 
+     * Tests the {@link TimeWindowGenerator#getTimeWindowsFromPairConfig(PairConfig)} for an expected exception when the 
      * <code>earliest</code> <code>issuedDates</code> is required but missing.
      */
 
@@ -916,14 +916,14 @@ public final class TimeWindowHelperTest
                                                  null );
 
         ProjectConfigException thrown = assertThrows( ProjectConfigException.class,
-                                                      () -> TimeWindowHelper.getTimeWindowsFromPairConfig( pairsConfig ) );
+                                                      () -> TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfig ) );
 
         assertEquals( "Cannot determine issued dates time windows without an earliest issuedDates.",
                       thrown.getMessage() );
     }
 
     /**
-     * Tests the {@link TimeWindowHelper#getTimeWindowsFromPairConfig(PairConfig)} for an expected exception when 
+     * Tests the {@link TimeWindowGenerator#getTimeWindowsFromPairConfig(PairConfig)} for an expected exception when 
      * the <code>latest</code> <code>issuedDates</code> is required but missing.
      */
 
@@ -950,7 +950,7 @@ public final class TimeWindowHelperTest
                                                  null );
 
         ProjectConfigException thrown = assertThrows( ProjectConfigException.class,
-                                                      () -> TimeWindowHelper.getTimeWindowsFromPairConfig( pairsConfig ) );
+                                                      () -> TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfig ) );
 
         assertEquals( "Cannot determine issued dates time windows without a latest issuedDates.",
                       thrown.getMessage() );
