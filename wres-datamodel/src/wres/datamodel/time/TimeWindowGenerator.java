@@ -24,14 +24,14 @@ import wres.config.generated.ProjectConfig;
  * @author james.brown@hydrosolved.com
  */
 
-public final class TimeWindowHelper
+public final class TimeWindowGenerator
 {
 
     /**
      * Logger.
      */
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( TimeWindowHelper.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( TimeWindowGenerator.class );
 
     /**
      * Consumes a {@link ProjectConfig} and returns a {@link Set} of {@link TimeWindow}
@@ -58,21 +58,21 @@ public final class TimeWindowHelper
             {
                 LOGGER.debug( "Building time windows for lead durations." );
 
-                return TimeWindowHelper.getLeadDurationTimeWindows( pairConfig );
+                return TimeWindowGenerator.getLeadDurationTimeWindows( pairConfig );
             }
             // Issued date pools only
             else if ( Objects.isNull( leadDurationPools ) )
             {
                 LOGGER.debug( "Building time windows for issued dates." );
 
-                return TimeWindowHelper.getIssuedDatesTimeWindows( pairConfig );
+                return TimeWindowGenerator.getIssuedDatesTimeWindows( pairConfig );
             }
             // Both lead duration and issued date pools
             else
             {
                 LOGGER.debug( "Building time windows for issued dates and lead durations." );
 
-                return TimeWindowHelper.getIssuedDatesAndLeadDurationTimeWindows( pairConfig );
+                return TimeWindowGenerator.getIssuedDatesAndLeadDurationTimeWindows( pairConfig );
             }
         }
         // One big pool
@@ -80,7 +80,7 @@ public final class TimeWindowHelper
         {
             LOGGER.debug( "Building one big time window." );
 
-            return Collections.singleton( TimeWindowHelper.getOneBigTimeWindow( pairConfig ) );
+            return Collections.singleton( TimeWindowGenerator.getOneBigTimeWindow( pairConfig ) );
         }
     }
 
@@ -125,7 +125,7 @@ public final class TimeWindowHelper
         PoolingWindowConfig leadTimesPoolingWindow = pairConfig.getLeadTimesPoolingWindow();
 
         // Obtain the base window
-        TimeWindow baseWindow = TimeWindowHelper.getOneBigTimeWindow( pairConfig );
+        TimeWindow baseWindow = TimeWindowGenerator.getOneBigTimeWindow( pairConfig );
 
         // Create the elements necessary to increment the windows
         ChronoUnit periodUnits = ChronoUnit.valueOf( leadTimesPoolingWindow.getUnit()
@@ -218,7 +218,7 @@ public final class TimeWindowHelper
         PoolingWindowConfig issuedDatesPoolingWindow = pairConfig.getIssuedDatesPoolingWindow();
 
         // Obtain the base window
-        TimeWindow baseWindow = TimeWindowHelper.getOneBigTimeWindow( pairConfig );
+        TimeWindow baseWindow = TimeWindowGenerator.getOneBigTimeWindow( pairConfig );
 
         // Create the elements necessary to increment the windows
         ChronoUnit timeUnits = ChronoUnit.valueOf( issuedDatesPoolingWindow.getUnit()
@@ -291,9 +291,9 @@ public final class TimeWindowHelper
     {
         Objects.requireNonNull( pairConfig, "Cannot determine time windows from null pair configuration." );
 
-        Set<TimeWindow> leadDurationWindows = TimeWindowHelper.getLeadDurationTimeWindows( pairConfig );
+        Set<TimeWindow> leadDurationWindows = TimeWindowGenerator.getLeadDurationTimeWindows( pairConfig );
 
-        Set<TimeWindow> issuedDatesWindows = TimeWindowHelper.getIssuedDatesTimeWindows( pairConfig );
+        Set<TimeWindow> issuedDatesWindows = TimeWindowGenerator.getIssuedDatesTimeWindows( pairConfig );
 
         // Create a new window for each combination of issued dates and lead duration
         Set<TimeWindow> timeWindows = new HashSet<>( leadDurationWindows.size() * issuedDatesWindows.size() );
@@ -398,7 +398,7 @@ public final class TimeWindowHelper
      * Do not construct.
      */
 
-    private TimeWindowHelper()
+    private TimeWindowGenerator()
     {
         // Do not construct
     }

@@ -219,14 +219,14 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             if ( !filter.getEarliestLeadDuration().equals( TimeWindow.DURATION_MIN ) )
             {
                 long lowerLead = filter.getEarliestLeadDuration().toMinutes();
-                this.addWhereOrAndClause( script, tabsIn, "TSV.lead >= '", lowerLead, "'" );
+                this.addWhereOrAndClause( script, tabsIn, "TSV.lead > '", lowerLead, "'" );
             }
 
             // Upper bound
             if ( !filter.getLatestLeadDuration().equals( TimeWindow.DURATION_MAX ) )
             {
                 long upperLead = filter.getLatestLeadDuration().toMinutes();
-                this.addWhereOrAndClause( script, tabsIn, "TSV.lead < '", upperLead, "'" );
+                this.addWhereOrAndClause( script, tabsIn, "TSV.lead <= '", upperLead, "'" );
             }
         }
     }
@@ -251,12 +251,12 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             {
                 String lowerValidTime = filter.getEarliestValidTime().toString();
 
-                String clause = "TS.initialization_date + INTERVAL '1' MINUTE * TSV.lead >= '";
+                String clause = "TS.initialization_date + INTERVAL '1' MINUTE * TSV.lead > '";
 
                 // Observation?
                 if ( !this.isForecastRetriever() )
                 {
-                    clause = "O.observation_time >= '";
+                    clause = "O.observation_time > '";
                 }
 
                 this.addWhereOrAndClause( script,
@@ -271,12 +271,12 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             {
                 String upperValidTime = filter.getLatestValidTime().toString();
 
-                String clause = "TS.initialization_date + INTERVAL '1' MINUTE * TSV.lead < '";
+                String clause = "TS.initialization_date + INTERVAL '1' MINUTE * TSV.lead <= '";
 
                 // Observation?
                 if ( !this.isForecastRetriever() )
                 {
-                    clause = "O.observation_time < '";
+                    clause = "O.observation_time <= '";
                 }
 
                 this.addWhereOrAndClause( script,
@@ -307,14 +307,14 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             if ( !filter.getEarliestValidTime().equals( Instant.MIN ) )
             {
                 String lowerValidTime = filter.getEarliestValidTime().toString();
-                this.addWhereOrAndClause( script, tabsIn, "O.observation_time >= '", lowerValidTime, "'" );
+                this.addWhereOrAndClause( script, tabsIn, "O.observation_time > '", lowerValidTime, "'" );
             }
 
             // Upper bound
             if ( !filter.getLatestValidTime().equals( Instant.MAX ) )
             {
                 String upperValidTime = filter.getLatestValidTime().toString();
-                this.addWhereOrAndClause( script, tabsIn, "O.observation_time < '", upperValidTime, "'" );
+                this.addWhereOrAndClause( script, tabsIn, "O.observation_time <= '", upperValidTime, "'" );
             }
         }
     }
@@ -338,14 +338,14 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             if ( !filter.getEarliestReferenceTime().equals( Instant.MIN ) )
             {
                 String lowerReferenceTime = filter.getEarliestReferenceTime().toString();
-                this.addWhereOrAndClause( script, tabsIn, "TS.initialization_date >= '", lowerReferenceTime, "'" );
+                this.addWhereOrAndClause( script, tabsIn, "TS.initialization_date > '", lowerReferenceTime, "'" );
             }
 
             // Upper bound
             if ( !filter.getLatestReferenceTime().equals( Instant.MAX ) )
             {
                 String upperReferenceTime = filter.getLatestReferenceTime().toString();
-                this.addWhereOrAndClause( script, tabsIn, "TS.initialization_date < '", upperReferenceTime, "'" );
+                this.addWhereOrAndClause( script, tabsIn, "TS.initialization_date <= '", upperReferenceTime, "'" );
             }
         }
     }

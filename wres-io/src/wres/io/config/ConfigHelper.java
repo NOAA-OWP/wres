@@ -72,7 +72,7 @@ import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.thresholds.ThresholdsByMetric.ThresholdsByMetricBuilder;
 import wres.datamodel.time.TimeWindow;
-import wres.datamodel.time.TimeWindowHelper;
+import wres.datamodel.time.TimeWindowGenerator;
 import wres.grid.client.Fetcher;
 import wres.grid.client.Request;
 import wres.io.data.caching.Features;
@@ -858,7 +858,7 @@ public class ConfigHelper
      * opportunity, which may be well before this point.</p>
      * 
      * TODO: replace this with upfront calculation of the time windows. 
-     * See {@link TimeWindowHelper}
+     * See {@link TimeWindowGenerator}
      * 
      * @param project the project configuration
      * @param firstLead the earliest lead time

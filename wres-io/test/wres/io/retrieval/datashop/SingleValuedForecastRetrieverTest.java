@@ -179,8 +179,8 @@ public class SingleValuedForecastRetrieverTest
         UnitMapper mapper = UnitMapper.of( UNITS );
 
         // Set the time window filter, aka pool boundaries
-        Instant referenceStart = Instant.parse( "2023-04-01T00:00:00Z" );
-        Instant referenceEnd = Instant.parse( "2023-04-01T18:00:00Z" );
+        Instant referenceStart = Instant.parse( "2023-03-31T23:00:00Z" );
+        Instant referenceEnd = Instant.parse( "2023-04-01T19:00:00Z" );
         Instant validStart = Instant.parse( "2023-04-01T03:00:00Z" );
         Instant validEnd = Instant.parse( "2023-04-01T19:00:00Z" );
         Duration leadStart = Duration.ofHours( 1 );
@@ -212,7 +212,7 @@ public class SingleValuedForecastRetrieverTest
         TimeSeriesBuilder<Double> builderOne = new TimeSeriesBuilder<>();
         TimeSeries<Double> expectedSeriesOne =
                 builderOne.addReferenceTime( Instant.parse( "2023-04-01T00:00:00Z" ), ReferenceTimeType.DEFAULT )
-                          .addEvent( Event.of( Instant.parse( "2023-04-01T03:00:00Z" ), 44.0 ) )
+                          .addEvent( Event.of( Instant.parse( "2023-04-01T04:00:00Z" ), 51.0 ) )
                           .build();
 
         // Actual series equals expected series
@@ -222,7 +222,7 @@ public class SingleValuedForecastRetrieverTest
         TimeSeriesBuilder<Double> builderTwo = new TimeSeriesBuilder<>();
         TimeSeries<Double> expectedSeriesTwo =
                 builderTwo.addReferenceTime( Instant.parse( "2023-04-01T17:00:00Z" ), ReferenceTimeType.DEFAULT )
-                          .addEvent( Event.of( Instant.parse( "2023-04-01T18:00:00Z" ), 65.0 ) )
+                          .addEvent( Event.of( Instant.parse( "2023-04-01T19:00:00Z" ), 72.0 ) )
                           .build();
 
         // Actual series equals expected series
