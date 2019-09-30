@@ -4,18 +4,13 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.Event;
@@ -36,12 +31,6 @@ import wres.io.utilities.ScriptBuilder;
 
 abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 {
-
-    /**
-     * Logger.
-     */
-
-    private static final Logger LOGGER = LoggerFactory.getLogger( TimeSeriesRetriever.class );
 
     /**
      * Time window filter.
@@ -96,13 +85,9 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         // Acquire the raw time-series data from the db for the input time-series identifier
         DataScripter scripter = new DataScripter( script );
 
-        LOGGER.debug( "Preparing to execute script with hash {}...", script.hashCode() );
-
         try ( DataProvider provider = scripter.buffer() )
         {
             Map<Integer, TimeSeriesBuilder<S>> builders = new TreeMap<>();
-
-            Set<TimeSeries<S>> returnMe = new HashSet<>();
 
             TimeScale timeScale = null;
 
@@ -157,10 +142,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                 timeScale = latestScale;
                 builder.setTimeScale( latestScale );
             }
-
-            LOGGER.debug( "Finished execute script with hash {}, which retrieved {} time-series.",
-                          script.hashCode(),
-                          returnMe.size() );
 
             return builders.values().stream().map( TimeSeriesBuilder::build );
         }
@@ -539,7 +520,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * @param <S> the type of time-series to build
      */
 
-    abstract static class TimeSeriesDataShopBuilder<S>
+    abstract static class TimeSeriesRetrieverBuilder<S>
     {
         /**
          * Time window filter.
@@ -578,7 +559,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
          * @return the builder
          */
 
-        TimeSeriesDataShopBuilder<S> setProjectId( int projectId )
+        TimeSeriesRetrieverBuilder<S> setProjectId( int projectId )
         {
             this.projectId = projectId;
             return this;
@@ -591,7 +572,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
          * @return the builder
          */
 
-        TimeSeriesDataShopBuilder<S> setVariableFeatureId( int variableFeatureId )
+        TimeSeriesRetrieverBuilder<S> setVariableFeatureId( int variableFeatureId )
         {
             this.variableFeatureId = variableFeatureId;
             return this;
@@ -604,7 +585,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
          * @return the builder
          */
 
-        TimeSeriesDataShopBuilder<S> setLeftOrRightOrBaseline( LeftOrRightOrBaseline lrb )
+        TimeSeriesRetrieverBuilder<S> setLeftOrRightOrBaseline( LeftOrRightOrBaseline lrb )
         {
             this.lrb = lrb;
             return this;
@@ -617,7 +598,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
          * @return the builder
          */
 
-        TimeSeriesDataShopBuilder<S> setTimeWindow( TimeWindow timeWindow )
+        TimeSeriesRetrieverBuilder<S> setTimeWindow( TimeWindow timeWindow )
         {
             this.timeWindow = timeWindow;
             return this;
@@ -630,7 +611,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
          * @return the builder
          */
 
-        TimeSeriesDataShopBuilder<S> setUnitMapper( UnitMapper unitMapper )
+        TimeSeriesRetrieverBuilder<S> setUnitMapper( UnitMapper unitMapper )
         {
             this.unitMapper = unitMapper;
             return this;
@@ -643,7 +624,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * Construct.
      */
 
-    TimeSeriesRetriever( TimeSeriesDataShopBuilder<T> builder )
+    TimeSeriesRetriever( TimeSeriesRetrieverBuilder<T> builder )
     {
         Objects.requireNonNull( builder );
 
