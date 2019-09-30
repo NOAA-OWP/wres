@@ -43,21 +43,14 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
      */
 
     private static final String LOG_SCRIPT =
-            "Built {} for the retrieval of ensemble forecasts with the following script:{}{}";
+            "Built retriever {} for the retrieval of ensemble forecasts:{}{}";
 
     /**
      * Start of script for {@link #getAll()}.
      */
 
-    private static final String GET_ALL_TIME_SERIES_SCRIPT_START =
+    private static final String GET_ALL_TIME_SERIES_SCRIPT =
             EnsembleForecastRetriever.getStartOfScriptForGetAllTimeSeries();
-
-    /**
-     * End of script for {@link #getAll()}.
-     */
-
-    private static final String GET_ALL_TIME_SERIES_SCRIPT_END =
-            EnsembleForecastRetriever.getEndOfScriptForGetAllTimeSeries();
 
     /**
      * Logger.
@@ -69,7 +62,7 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
      * Builder.
      */
 
-    public static class Builder extends TimeSeriesDataShopBuilder<Ensemble>
+    static class Builder extends TimeSeriesRetrieverBuilder<Ensemble>
     {
 
         @Override
@@ -141,22 +134,23 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
     {
         this.validateForMultiSeriesRetrieval();
 
-        ScriptBuilder scripter = new ScriptBuilder( GET_ALL_TIME_SERIES_SCRIPT_START );
+        ScriptBuilder scripter = new ScriptBuilder( GET_ALL_TIME_SERIES_SCRIPT );
 
         // Add basic constraints
-        this.addProjectVariableAndMemberConstraints( scripter, 1 );
-
-        // Add ORDER BY clause
-        scripter.addTab().addLine( "ORDER BY TS.timeseries_id -- Can lead to faster joins on TSV" );
-
-        scripter.add( GET_ALL_TIME_SERIES_SCRIPT_END );
+        this.addProjectVariableAndMemberConstraints( scripter, 0 );
 
         // Add time window constraint
         this.addTimeWindowClause( scripter, 0 );
 
         // Add GROUP BY clause
-        scripter.addLine( "GROUP BY TS.initialization_date, TSV.lead" );
-        scripter.addLine( "ORDER BY TS.initialization_date, TSV.lead;" );
+        scripter.addLine( "GROUP BY TS.initialization_date, "
+                          + "TSV.lead, "
+                          + "TS.scale_period, "
+                          + "TS.scale_function, "
+                          + "TS.measurementunit_id" );
+        
+        // Add ORDER BY clause
+        scripter.addLine( "ORDER BY TS.initialization_date, series_id, TSV.lead;" );
 
         String script = scripter.toString();
 
@@ -228,38 +222,14 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
         scripter.addTab().addLine( "TS.scale_period," );
         scripter.addTab().addLine( "TS.scale_function," );
         scripter.addTab().addLine( "TS.measurementunit_id" );
-        scripter.addLine( "FROM (" );
-        scripter.addTab().addLine( "SELECT " );
-        scripter.addTab( 2 ).addLine( "TS.timeseries_id," );
-        scripter.addTab( 2 ).addLine( "TS.ensemble_id," );
-        scripter.addTab( 2 ).addLine( "TS.initialization_date," );
-        scripter.addTab( 2 ).addLine( "TS.scale_period," );
-        scripter.addTab( 2 ).addLine( "TS.scale_function," );
-        scripter.addTab( 2 ).addLine( "TS.measurementunit_id," );
-        scripter.addTab( 2 ).addLine( "TSS.lead" );
-        scripter.addTab().addLine( FROM_WRES_TIME_SERIES_TS );
+        scripter.addLine( FROM_WRES_TIME_SERIES_TS );
+        scripter.addTab().addLine( "INNER JOIN wres.TimeSeriesValue TSV" );
+        scripter.addTab( 2 ).addLine( "ON TSV.timeseries_id = TS.timeseries_id" );
         scripter.addTab().addLine( "INNER JOIN wres.TimeSeriesSource TSS" );
         scripter.addTab( 2 ).addLine( "ON TSS.timeseries_id = TS.timeseries_id" );
+        scripter.addTab( 3 ).addLine( "AND (TSS.lead IS NULL OR TSS.lead = TSV.lead)" );
         scripter.addTab().addLine( "INNER JOIN wres.ProjectSource PS" );
         scripter.addTab( 2 ).addLine( "ON PS.source_id = TSS.source_id" );
-
-        return scripter.toString();
-    }
-
-    /**
-     * Returns the end of a script to acquire a time-series from the WRES database for all time-series.
-     * 
-     * @return the end of a script for the time-series
-     */
-
-    private static String getEndOfScriptForGetAllTimeSeries()
-    {
-        ScriptBuilder scripter = new ScriptBuilder();
-
-        scripter.addLine( ") AS TS" );
-        scripter.addLine( "INNER JOIN wres.TimeSeriesValue TSV" );
-        scripter.addTab().addLine( "ON TSV.timeseries_id = TS.timeseries_id" );
-        scripter.addTab( 2 ).addLine( "AND (TS.lead IS NULL OR TS.lead = TSV.lead)" );
 
         return scripter.toString();
     }

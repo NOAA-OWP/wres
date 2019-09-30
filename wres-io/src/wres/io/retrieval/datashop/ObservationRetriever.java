@@ -35,7 +35,7 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
      * Log message.
      */
 
-    private static final String LOG_SCRIPT = "Built {} for the retrieval of observations with the following script:{}{}";
+    private static final String LOG_SCRIPT = "Built retriever {} for the retrieval of observations:{}{}";
 
     /**
      * Template script for the {@link #getAll()}.
@@ -54,7 +54,7 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
      * Builder.
      */
 
-    public static class Builder extends TimeSeriesDataShopBuilder<Double>
+    static class Builder extends TimeSeriesRetrieverBuilder<Double>
     {
 
         @Override
