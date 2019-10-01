@@ -20,12 +20,6 @@
       "tags": "administrator"
     },
     {
-      "name": "guest",
-      "password_hash": "2Vf0jyB5q187JLlLWQhcKodcMqQ0w1WafD55ulYLGv1idO9t",
-      "hashing_algorithm": "rabbit_password_hashing_sha256",
-      "tags": "administrator"
-    },
-    {
       "name": "wres-tasker",
       "password_hash": "9PL6Vn6qnP8fDEFJcL89Ea3dKnjAMY9kbtMBrBr/3rwigRco",
       "hashing_algorithm": "rabbit_password_hashing_sha256",
@@ -49,13 +43,6 @@
       "read": ".*"
     },
     {
-      "user": "guest",
-      "vhost": "/",
-      "configure": ".*",
-      "write": ".*",
-      "read": ".*"
-    },
-    {
       "user": "wres-admin",
       "vhost": "wres",
       "configure": ".*",
@@ -64,13 +51,6 @@
     },
     {
       "user": "wres-tasker",
-      "vhost": "wres",
-      "configure": ".*",
-      "write": ".*",
-      "read": ".*"
-    },
-    {
-      "user": "guest",
       "vhost": "wres",
       "configure": ".*",
       "write": ".*",
@@ -107,9 +87,8 @@
       "vhost": "wres",
       "durable": false,
       "auto_delete": false,
-      "arguments": {},
-      "max-length": 750,
-      "overflow": "reject-publish"
+      "arguments": { "max-length": 750,
+                     "overflow": "reject-publish" },
     }
   ],
   "exchanges": [],
