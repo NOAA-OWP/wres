@@ -58,6 +58,8 @@ public class WresJob
 
     private static final Random RANDOM = new Random( System.currentTimeMillis() );
 
+    private static final short MAXIMUM_EVALUATION_COUNT = 750;
+
     static
     {
         // Determine the actual broker name, whether from -D or default
@@ -140,6 +142,11 @@ public class WresJob
         {
             LOGGER.error( "Attempt to send message failed.", e );
             return WresJob.internalServerError();
+        }
+        catch ( TooManyEvaluationsInQueueException tmeiqe )
+        {
+            LOGGER.warn( "Did not send job, returning 503.", tmeiqe );
+            return WresJob.serviceUnavailable( "Too many evaluations are in the queue, try again in a moment." );
         }
 
         String urlCreated= "/job/" + jobId;
@@ -231,6 +238,7 @@ public class WresJob
      *
      * @param message
      * @throws IOException when connectivity, queue declaration, or publication fails
+     * @throws TooManyEvaluationsInQueueException when queue has lots of jobs
      * @throws TimeoutException
      */
     private String sendMessage( byte[] message )
@@ -248,7 +256,23 @@ public class WresJob
 
             String jobId = String.valueOf( someRandomNumber );
 
-            channel.queueDeclare( SEND_QUEUE_NAME, false, false, false, null );
+            AMQP.Queue.DeclareOk declareOk =
+                    channel.queueDeclare( SEND_QUEUE_NAME,
+                                          false,
+                                          false,
+                                          false,
+                                          null );
+
+            int queueLength = declareOk.getMessageCount();
+
+            if ( queueLength > MAXIMUM_EVALUATION_COUNT )
+            {
+                throw new TooManyEvaluationsInQueueException( "Too many evaluations in the queue. "
+                                                              + queueLength
+                                                              + " found, will continue to reject evaluations until "
+                                                              + MAXIMUM_EVALUATION_COUNT
+                                                              + " or fewer are in the queue." );
+            }
 
             // Tell the worker where to send results.
             String jobStatusExchange = JobResults.getJobStatusExchangeName();
@@ -288,6 +312,15 @@ public class WresJob
     {
         return Response.serverError()
                        .entity("<!DOCTYPE html><html><head><title>Our mistake</title></head><body><h1>Internal Server Error</h1><p>"
+                               + message
+                               + "</p></body></html>")
+                       .build();
+    }
+
+    private static Response serviceUnavailable( String message )
+    {
+        return Response.status( Response.Status.SERVICE_UNAVAILABLE )
+                       .entity("<!DOCTYPE html><html><head><title>Service temporarily unavailable</title></head><body><h1>Service Unavailable</h1><p>"
                                + message
                                + "</p></body></html>")
                        .build();

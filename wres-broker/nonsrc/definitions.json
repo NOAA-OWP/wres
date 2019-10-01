@@ -87,8 +87,7 @@
       "vhost": "wres",
       "durable": false,
       "auto_delete": false,
-      "arguments": { "x-max-length": 750,
-                     "x-overflow": "reject-publish" },
+      "arguments": {}
     }
   ],
   "exchanges": [],
