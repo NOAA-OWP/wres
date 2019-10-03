@@ -55,9 +55,11 @@ public class PoolSupplierTest
     public void testGetEighteenPoolsReturnsExpectedPairsInEachPool()
     {
         // Begin by creating the time-series to retrieve from the mocked retrievers
-        // This test is not concerned with retrieval, and slicing by time is part of retrieval. Thus, retrieval of the 
-        // pool-shaped time-series is mocked. Here, the observations are not sliced on retrieval and are instead 
-        // re-used across pools. However, if the observations were to be sliced, that would happen on retrieval too.
+        // This test is not concerned with retrieval. Requests for data are ordinarily "pool-shaped" for efficiency,
+        // unless those datasets are being re-used across many pools. Ultimately, the pairs are filtered against the
+        // pool boundaries, but the responsibility for retrieval is with the retrievers and they can decide to retrieve
+        // data in a pool shape. Here, retrieval of the forecast time-series is pool-shaped and mocked as such. 
+        // However, the observations are not retrieved in a pool shape and are instead re-used across pools.
 
         // Observations: 25510317T00_FAKE2_observations.xml
         // One-hourly observations with a time-scale of PT1H and TimeScaleFunction.MEAN
@@ -208,7 +210,6 @@ public class PoolSupplierTest
                                                                   ReferenceTimeType.DEFAULT )
                                                .setTimeScale( existingTimeScale )
                                                .build();
-
 
         // Forecast: 25510318T12_FAKE2_forecast.xml from (PT0S,PT23H]
         // Three-hourly forecasts with a time-scale of PT3H and a TimeScaleFunction.MEAN
