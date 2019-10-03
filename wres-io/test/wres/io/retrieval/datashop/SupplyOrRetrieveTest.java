@@ -16,13 +16,13 @@ import org.mockito.Mockito;
 
 public class SupplyOrRetrieveTest
 {
-    
+
     @Test
     public void testGetPerformsRetrievalOnFirstCallAndSuppliesCacheOnSecondCallWhenCacheIsEnabled()
     {
         @SuppressWarnings( "unchecked" )
         Retriever<String> retriever = Mockito.mock( Retriever.class );
-        
+
         // Mock two successive calls with different returns
         Mockito.when( retriever.getAll() )
                .thenReturn( Stream.of( "1" ) )
@@ -33,7 +33,7 @@ public class SupplyOrRetrieveTest
 
         // First call returns a stream of "1"
         assertEquals( List.of( "1" ), supplier.get() );
-        
+
         // Second call returns the cached stream of "1" from the first call
         assertEquals( List.of( "1" ), supplier.get() );
     }
@@ -43,7 +43,7 @@ public class SupplyOrRetrieveTest
     {
         @SuppressWarnings( "unchecked" )
         Retriever<String> retriever = Mockito.mock( Retriever.class );
-        
+
         // Mock two successive calls with different returns
         Mockito.when( retriever.getAll() )
                .thenReturn( Stream.of( "1" ) )
@@ -54,7 +54,7 @@ public class SupplyOrRetrieveTest
 
         // First call returns a stream of "1"
         assertEquals( List.of( "1" ), supplier.get() );
-        
+
         // Second call returns the cached stream of "2"
         assertEquals( List.of( "2" ), supplier.get() );
     }

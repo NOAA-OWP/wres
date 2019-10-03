@@ -6,6 +6,7 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.time.Instant;
+
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.SortedSet;
@@ -97,7 +98,7 @@ public class TimeSeriesTest
     {
         assertEquals( TimeScale.of(), this.testSeries.getTimeScale() );
     }
-    
+
     /**
      * Tests the {@link TimeSeries#hashCode()}.
      */
@@ -116,7 +117,6 @@ public class TimeSeriesTest
         {
             assertEquals( this.testSeries.hashCode(), test.hashCode() );
         }
-
     }
 
     /**
@@ -193,7 +193,7 @@ public class TimeSeriesTest
                                                                       Ensemble.of( 30.0, 65.0, 93.0 ) ) )
                                                  .build();
 
-        assertNotEquals( theseEventValues, doNotEqualThese );      
+        assertNotEquals( theseEventValues, doNotEqualThese );
     }
 
     /**

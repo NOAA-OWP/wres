@@ -2,12 +2,12 @@ package wres.datamodel.time;
 
 import java.time.Instant;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringJoiner;
-import java.util.TreeMap;
 import java.util.TreeSet;
 
 import org.slf4j.Logger;
@@ -54,6 +54,18 @@ public class TimeSeries<T>
 
     private final TimeScale timeScale;
 
+    /**
+     * Returns an empty {@link TimeSeries}.
+     *
+     * @param <T> the event type
+     * @return an empty time-series
+     */
+
+    public static <T> TimeSeries<T> of()
+    {
+        return TimeSeries.of( Collections.emptyMap(), Collections.emptySortedSet() );
+    }
+    
     /**
      * Returns a {@link TimeSeries} with a reference time equal to the {@link Event#getTime()} of the first event or 
      * {@link Instant#MIN} when the input is empty. Assumes a type of {@link ReferenceTimeType#DEFAULT}. Also assumes
@@ -211,7 +223,8 @@ public class TimeSeries<T>
         localEvents.addAll( builder.events );
         this.events = Collections.unmodifiableSortedSet( localEvents );       
 
-        Map<ReferenceTimeType, Instant> localMap = new TreeMap<>( builder.referenceTimes );
+        Map<ReferenceTimeType, Instant> localMap = new EnumMap<>( ReferenceTimeType.class );
+        localMap.putAll( builder.referenceTimes );
 
         // Add a default reference time if needed
         if ( localMap.isEmpty() )
@@ -279,7 +292,7 @@ public class TimeSeries<T>
          * The reference datetime associated with the time-series.
          */
 
-        private final Map<ReferenceTimeType, Instant> referenceTimes = new TreeMap<>();
+        private final Map<ReferenceTimeType, Instant> referenceTimes = new EnumMap<>( ReferenceTimeType.class );
 
         /**
          * The time-scale associated with the events.

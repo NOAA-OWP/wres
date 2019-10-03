@@ -51,16 +51,16 @@ public class PoolOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier<List<
     private final SampleMetadata mainMeta;
 
     /**
-     * Climatological data.
-     */
-
-    private final VectorOfDoubles climatology;
-
-    /**
      * Metadata associated with the baseline verification pairs (may be null).
      */
 
     private final SampleMetadata baselineMeta;
+
+    /**
+     * Climatological data.
+     */
+
+    private final VectorOfDoubles climatology;
 
     @Override
     public boolean hasBaseline()
@@ -143,6 +143,52 @@ public class PoolOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier<List<
     public VectorOfDoubles getClimatology()
     {
         return this.climatology;
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( ! ( o instanceof PoolOfPairs ) )
+        {
+            return false;
+        }
+
+        if ( this == o )
+        {
+            return true;
+        }
+
+        PoolOfPairs<?, ?> in = (PoolOfPairs<?, ?>) o;
+
+        // Required elements
+        boolean returnMe = this.getRawData().equals( in.getRawData() )
+                           && this.getMetadata().equals( in.getMetadata() )
+                           && this.hasClimatology() == in.hasClimatology()
+                           && this.hasBaseline() == in.hasBaseline();
+
+        if ( !returnMe )
+        {
+            return false;
+        }
+
+        if ( this.hasBaseline() && !this.baseline.equals( in.baseline ) )
+        {
+            return false;
+        }
+
+        return !this.hasClimatology() || this.getClimatology().equals( in.getClimatology() );
+
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( this.getMetadata(),
+                             this.baselineMeta,
+                             this.getRawData(),
+                             this.baseline,
+                             this.getClimatology() );
+
     }
 
     /**

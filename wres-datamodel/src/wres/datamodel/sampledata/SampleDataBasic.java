@@ -345,6 +345,32 @@ public class SampleDataBasic<T> implements SampleData<T>
 
             return this;
         }
+        
+        /**
+         * Adds a dataset to the builder.
+         * 
+         * @param data the data to add
+         * @return the builder
+         * @throws NullPointerException if the input is null
+         */
+
+        public SampleDataBasicBuilder<T> addData( SampleData<T> data )
+        {
+            Objects.requireNonNull( data );
+
+            this.sampleData.addAll( data.getRawData() );
+            this.mainMeta = data.getMetadata();
+            this.climatology = data.getClimatology();
+
+            if ( data.hasBaseline() )
+            {
+                SampleData<T> base = data.getBaselineData();
+                this.baselineSampleData.addAll( base.getRawData() );
+                this.baselineMeta = base.getMetadata();
+            }
+
+            return this;
+        }        
 
         /**
          * Builds the metric input.

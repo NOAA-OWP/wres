@@ -33,6 +33,7 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesSlicer;
+import wres.datamodel.time.TimeWindow;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
 /**
@@ -104,13 +105,24 @@ public final class BoxPlotErrorTest
         List<BoxPlotStatistic> actualRaw = new ArrayList<>();
 
         // Compute the metric for each duration separately
-        SortedSet<Duration> durations = TimeSeriesSlicer.getDurations( input.get(), ReferenceTimeType.DEFAULT );
+        SortedSet<Duration> durations = new TreeSet<>();
+        for( int i = 3; i < 34; i+= 3 )
+        {
+            durations.add( Duration.ofHours( i ) );
+        }
 
         for ( Duration duration : durations )
         {
-            List<Event<Pair<Double,Double>>> events = TimeSeriesSlicer.filterByDuration( input.get(),
-                                                                                      a -> a.equals( duration ),
-                                                                                      ReferenceTimeType.DEFAULT );
+            List<Event<Pair<Double,Double>>> events = new ArrayList<>();
+            
+            TimeWindow window = TimeWindow.of( duration, duration );
+
+            for ( TimeSeries<Pair<Double, Double>> next : input.get() )
+            {
+                TimeSeries<Pair<Double, Double>> filtered = TimeSeriesSlicer.filter( next, window );
+                events.addAll( filtered.getEvents() );
+            }
+            
             PoolOfPairsBuilder<Double,Double> builder = new PoolOfPairsBuilder<>();
             builder.setMetadata( input.getMetadata() );
             for ( Event<Pair<Double,Double>> next : events )

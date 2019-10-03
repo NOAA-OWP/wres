@@ -13,12 +13,15 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.DoublePredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import wres.datamodel.Ensemble;
 import wres.datamodel.Slicer;
+import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.sampledata.pairs.PoolOfPairs;
+import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 
@@ -40,18 +43,6 @@ public final class TimeSeriesSlicer
     private static final String NULL_INPUT_EXCEPTION = "Specify a non-null input.";
 
     /**
-     * Failure to supply a non-null predicate.
-     */
-
-    private static final String NULL_PREDICATE_EXCEPTION = "Specify a non-null predicate.";
-
-    /**
-     * Failure to supply a non-null reference time type.
-     */
-
-    private static final String NULL_REFERENCE_TIME_TYPE = "Specify a non-null reference time type.";
-
-    /**
      * <p>Composes the input predicate as applying to the left side of any paired value within a time-series.
      * 
      * @param <L> the type of left paired value
@@ -61,14 +52,14 @@ public final class TimeSeriesSlicer
      * @throws NullPointerException if the input is null
      */
 
-    public static <L, R> Predicate<TimeSeries<Pair<L,R>>> anyOfLeftInTimeSeries( Predicate<L> predicate )
+    public static <L, R> Predicate<TimeSeries<Pair<L, R>>> anyOfLeftInTimeSeries( Predicate<L> predicate )
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing a time-series by any of left." );
 
         return times -> {
 
             // Iterate the times
-            for ( Event<Pair<L,R>> next : times.getEvents() )
+            for ( Event<Pair<L, R>> next : times.getEvents() )
             {
                 // Condition is met for one time
                 if ( predicate.test( next.getValue().getLeft() ) )
@@ -92,14 +83,14 @@ public final class TimeSeriesSlicer
      * @throws NullPointerException if the input is null
      */
 
-    public static <L, R> Predicate<TimeSeries<Pair<L,R>>> anyOfRightInTimeSeries( Predicate<R> predicate )
+    public static <L, R> Predicate<TimeSeries<Pair<L, R>>> anyOfRightInTimeSeries( Predicate<R> predicate )
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing a time-series by any of right." );
 
         return times -> {
 
             // Iterate the times
-            for ( Event<Pair<L,R>> next : times.getEvents() )
+            for ( Event<Pair<L, R>> next : times.getEvents() )
             {
                 // Condition is met for one time
                 if ( predicate.test( next.getValue().getRight() ) )
@@ -123,7 +114,7 @@ public final class TimeSeriesSlicer
      * @throws NullPointerException if the input is null
      */
 
-    public static <S> Predicate<TimeSeries<Pair<S,S>>>
+    public static <S> Predicate<TimeSeries<Pair<S, S>>>
             anyOfLeftAndAnyOfRightInTimeSeries( Predicate<S> predicate )
     {
         Objects.requireNonNull( predicate,
@@ -136,7 +127,7 @@ public final class TimeSeriesSlicer
             boolean left = false;
             boolean right = false;
 
-            for ( Event<Pair<S,S>> next : times.getEvents() )
+            for ( Event<Pair<S, S>> next : times.getEvents() )
             {
                 // Condition is met on either side at any point within the series
                 if ( predicate.test( next.getValue().getLeft() ) )
@@ -157,145 +148,97 @@ public final class TimeSeriesSlicer
 
             return false;
         };
-    }    
-    
-    /**
-     * Returns the unique {@link Duration} associated with the input time-series, where a {@link Duration} is the
-     * difference between the {@link Event#getTime()} and the {@link TimeSeries#getReferenceTimes()} that corresponds
-     * to the specified type.
-     * 
-     * @param <T> the type of event
-     * @param timeSeries the time-series to search
-     * @param type the reference time type
-     * @return the durations
-     * @throws NullPointerException if the input is null
-     */
-
-    public static <T> SortedSet<Duration> getDurations( List<TimeSeries<T>> timeSeries, ReferenceTimeType type )
-    {
-        Objects.requireNonNull( timeSeries );
-
-        SortedSet<Duration> durations = new TreeSet<>();
-
-        for ( TimeSeries<T> nextSeries : timeSeries )
-        {
-            if ( nextSeries.getReferenceTimes().containsKey( type ) )
-            {
-                Instant referenceTime = nextSeries.getReferenceTimes().get( type );
-
-                for ( Event<T> next : nextSeries.getEvents() )
-                {
-                    durations.add( Duration.between( referenceTime, next.getTime() ) );
-                }
-            }
-        }
-
-        return Collections.unmodifiableSortedSet( durations );
     }
 
+
     /**
-     * Returns the unique reference datetime {@link Instant} associated with the input time-series for a given type
+     * Returns a filtered view of a time-series based on the input predicate.
      * 
-     * @param <T> the type of event
-     * @param timeSeries the time-series to search
-     * @param type the reference time type
-     * @return the reference datetimes
+     * @param <T> the type of time-series value
+     * @param timeSeries the time-series
+     * @param filter the filter
+     * @return a filtered view of the input series
      * @throws NullPointerException if any input is null
      */
 
-    public static <T> SortedSet<Instant> getReferenceTimes( List<TimeSeries<T>> timeSeries, ReferenceTimeType type )
+    public static <T> TimeSeries<T> filter( TimeSeries<T> timeSeries, Predicate<T> filter )
     {
         Objects.requireNonNull( timeSeries );
 
-        Objects.requireNonNull( type, NULL_REFERENCE_TIME_TYPE );
+        Objects.requireNonNull( filter );
 
-        SortedSet<Instant> referenceTimes = new TreeSet<>();
+        TimeSeriesBuilder<T> builder = new TimeSeriesBuilder<>();
 
-        for ( TimeSeries<T> nextSeries : timeSeries )
+        builder.setTimeScale( timeSeries.getTimeScale() )
+               .addReferenceTimes( timeSeries.getReferenceTimes() );
+
+        for ( Event<T> event : timeSeries.getEvents() )
         {
-            Instant next = nextSeries.getReferenceTimes().get( type );
-
-            if ( Objects.nonNull( next ) )
+            if ( filter.test( event.getValue() ) )
             {
-                referenceTimes.add( next );
+                builder.addEvent( event );
             }
         }
 
-        return Collections.unmodifiableSortedSet( referenceTimes );
+        return builder.build();
     }
 
     /**
-     * Filters the input time-series by the {@link Duration} associated with each value. Does not modify the metadata 
-     * associated with the input.
+     * Returns a filtered {@link TimeSeries} whose events are within the right-closed time intervals (with respect to 
+     * {@link Instant} or periods (with respect to {@link Duration}) contained in the prescribed {@link TimeWindow}.
      * 
      * @param <T> the type of time-series data
      * @param input the input to slice
-     * @param duration the duration condition on which to slice
-     * @param type the reference time type
+     * @param timeWindow the time window on which to slice
      * @return the subset of the input that meets the condition
      * @throws NullPointerException if any input is null
      */
 
-    public static <T> List<Event<T>>
-            filterByDuration( List<TimeSeries<T>> input, Predicate<Duration> duration, ReferenceTimeType type )
+    public static <T> TimeSeries<T> filter( TimeSeries<T> input, TimeWindow timeWindow )
     {
-        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
+        Objects.requireNonNull( input );
 
-        Objects.requireNonNull( duration, NULL_PREDICATE_EXCEPTION );
+        Objects.requireNonNull( timeWindow );
 
-        Objects.requireNonNull( type, NULL_REFERENCE_TIME_TYPE );
+        // Filter reference times
+        Map<ReferenceTimeType, Instant> referenceTimes =
+                TimeSeriesSlicer.filterReferenceTimes( input.getReferenceTimes(), timeWindow );
 
-        List<Event<T>> returnMe = new ArrayList<>();
-
-        for ( TimeSeries<T> nextSeries : input )
+        // No need to proceed: return an empty series
+        if ( referenceTimes.isEmpty() )
         {
-            if ( nextSeries.getReferenceTimes().containsKey( type ) )
+            return TimeSeries.of();
+        }
+
+        // Iterate through the events and include events within the window
+        SortedSet<Event<T>> events = new TreeSet<>();
+
+        for ( Event<T> nextEvent : input.getEvents() )
+        {
+            Instant nextValidTime = nextEvent.getTime();
+
+            if ( TimeSeriesSlicer.isContained( nextValidTime,
+                                               timeWindow.getEarliestValidTime(),
+                                               timeWindow.getLatestValidTime() ) )
             {
-                Instant referenceTime = nextSeries.getReferenceTimes().get( type );
-
-                for ( Event<T> nextEvent : nextSeries.getEvents() )
+                // Add an event if the lead duration with respect to any reference time 
+                // falls within the time window
+                for ( Instant nextReference : referenceTimes.values() )
                 {
-                    Duration candidateDuration = Duration.between( referenceTime, nextEvent.getTime() );
+                    Duration leadDuration = Duration.between( nextReference, nextValidTime );
 
-                    if ( duration.test( candidateDuration ) )
+                    // Inside the right-closed period?
+                    if ( leadDuration.equals( timeWindow.getLatestLeadDuration() )
+                         || ( leadDuration.compareTo( timeWindow.getEarliestLeadDuration() ) > 0
+                              && leadDuration.compareTo( timeWindow.getLatestLeadDuration() ) < 0 ) )
                     {
-                        returnMe.add( nextEvent );
+                        events.add( nextEvent );
                     }
                 }
             }
         }
 
-        return Collections.unmodifiableList( returnMe );
-    }
-
-    /**
-     * Filters the input time-series by basis time. Applies to both the main pairs and any baseline pairs. Does not 
-     * modify the metadata associated with the input.
-     * 
-     * @param <T> the type of time-series value
-     * @param input the pairs to slice
-     * @param referenceTime the reference time condition on which to slice
-     * @param type the reference time type
-     * @return the subset of pairs that meet the condition
-     * @throws NullPointerException if any input is null
-     */
-
-    public static <T> List<TimeSeries<T>> filterByReferenceTime( List<TimeSeries<T>> input,
-                                                                 Predicate<Instant> referenceTime,
-                                                                 ReferenceTimeType type )
-    {
-        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
-
-        Objects.requireNonNull( referenceTime, NULL_PREDICATE_EXCEPTION );
-
-        Objects.requireNonNull( type, NULL_REFERENCE_TIME_TYPE );
-
-        //Add the filtered data
-        return input.stream()
-                    .filter( next -> next.getReferenceTimes().containsKey( type )
-                                     && referenceTime.test( next.getReferenceTimes().get( type ) ) )
-                    .collect( Collectors.collectingAndThen( Collectors.toList(),
-                                                            Collections::unmodifiableList ) );
+        return TimeSeries.of( referenceTimes, events );
     }
 
     /**
@@ -510,38 +453,6 @@ public final class TimeSeriesSlicer
     }
 
     /**
-     * Returns a filtered view of a time-series based on the input predicate.
-     * 
-     * @param <T> the type of time-series value
-     * @param timeSeries the time-series
-     * @param filter the filter
-     * @return a filtered view of the input series
-     * @throws NullPointerException if any input is null
-     */
-
-    public static <T> TimeSeries<T> filter( TimeSeries<T> timeSeries, Predicate<T> filter )
-    {
-        Objects.requireNonNull( timeSeries );
-
-        Objects.requireNonNull( filter );
-
-        TimeSeriesBuilder<T> builder = new TimeSeriesBuilder<>();
-
-        builder.setTimeScale( timeSeries.getTimeScale() )
-               .addReferenceTimes( timeSeries.getReferenceTimes() );
-
-        for ( Event<T> event : timeSeries.getEvents() )
-        {
-            if ( filter.test( event.getValue() ) )
-            {
-                builder.addEvent( event );
-            }
-        }
-
-        return builder.build();
-    }
-
-    /**
      * Transforms a time-series from one type to another.
      * 
      * @param <S> the existing type of time-series value
@@ -575,7 +486,181 @@ public final class TimeSeriesSlicer
 
         return builder.build();
     }
+    
+    /**
+     * Transforms the input type to another type.
+     * 
+     * @param <L> the left type
+     * @param <R> the right type
+     * @param <P> the transformed left type
+     * @param <Q> the transformed right type
+     * @param input the input
+     * @param transformer the transformer
+     * @return the transformed type
+     * @throws NullPointerException if either input is null
+     */
+    
+    public static <L, R, P, Q> PoolOfPairs<P, Q> transform( PoolOfPairs<L, R> input,
+                                                            Function<Pair<L, R>, Pair<P, Q>> transformer )
+    {
+        Objects.requireNonNull( input );
+    
+        Objects.requireNonNull( transformer );
+    
+        PoolOfPairsBuilder<P, Q> builder = new PoolOfPairsBuilder<>();
+    
+        builder.setClimatology( input.getClimatology() )
+               .setMetadata( input.getMetadata() );
+    
+        // Add the main series
+        for ( TimeSeries<Pair<L, R>> next : input.get() )
+        {
+            builder.addTimeSeries( transform( next, transformer ) );
+        }
+    
+        // Add the baseline series if available
+        if ( input.hasBaseline() )
+        {
+            PoolOfPairs<L, R> baseline = input.getBaselineData();
+    
+            for ( TimeSeries<Pair<L, R>> nextBase : baseline.get() )
+            {
+                builder.addTimeSeriesForBaseline( transform( nextBase, transformer ) );
+            }
+    
+            builder.setMetadataForBaseline( baseline.getMetadata() );
+        }
+    
+        return builder.build();
+    }    
 
+    /**
+     * Returns the subset of pairs where the condition is met. Applies to both the main pairs and any baseline pairs.
+     * Does not modify the metadata associated with the input.
+     * 
+     * @param <L> the type of left value
+     * @param <R> the type of right value
+     * @param input the pairs to slice
+     * @param condition the condition on which to slice
+     * @param applyToClimatology an optional filter for the climatology, may be null
+     * @return the subset of pairs that meet the condition
+     * @throws NullPointerException if either the input or condition is null
+     */
+    
+    public static <L, R> PoolOfPairs<L, R> filter( PoolOfPairs<L, R> input,
+                                                   Predicate<Pair<L, R>> condition,
+                                                   DoublePredicate applyToClimatology )
+    {
+        Objects.requireNonNull( input );
+    
+        Objects.requireNonNull( condition );
+    
+        PoolOfPairsBuilder<L, R> builder = new PoolOfPairsBuilder<>();
+    
+        builder.setMetadata( input.getMetadata() );
+    
+        //Filter climatology as required
+        if ( input.hasClimatology() )
+        {
+            VectorOfDoubles climatology = input.getClimatology();
+    
+            if ( Objects.nonNull( applyToClimatology ) )
+            {
+                climatology = Slicer.filter( input.getClimatology(), applyToClimatology );
+            }
+    
+            builder.setClimatology( climatology );
+        }
+    
+        // Filter the main data
+        for ( TimeSeries<Pair<L, R>> next : input.get() )
+        {
+            builder.addTimeSeries( filter( next, condition ) );
+        }
+    
+        //Filter baseline as required
+        if ( input.hasBaseline() )
+        {
+            PoolOfPairs<L, R> baseline = input.getBaselineData();
+    
+            for ( TimeSeries<Pair<L, R>> nextBase : baseline.get() )
+            {
+                builder.addTimeSeriesForBaseline( filter( nextBase, condition ) );
+            }
+    
+            builder.setMetadataForBaseline( baseline.getMetadata() );
+        }
+    
+        return builder.build();
+    }
+
+
+    /**
+     * Returns the subset of time-series where the condition is met. Applies to both the main pairs and any baseline 
+     * pairs. Does not modify the metadata associated with the input.
+     * 
+     * @param <L> the type of left value
+     * @param <R> the type of right value
+     * @param input the pairs to slice
+     * @param condition the condition on which to slice
+     * @param applyToClimatology an optional filter for the climatology, may be null
+     * @return the subset of pairs that meet the condition
+     * @throws NullPointerException if either the input or condition is null
+     */
+    
+    public static <L, R> PoolOfPairs<L, R> filterPerSeries( PoolOfPairs<L, R> input,
+                                                            Predicate<TimeSeries<Pair<L, R>>> condition,
+                                                            DoublePredicate applyToClimatology )
+    {
+        Objects.requireNonNull( input );
+    
+        Objects.requireNonNull( condition );
+    
+        PoolOfPairsBuilder<L, R> builder = new PoolOfPairsBuilder<>();
+    
+        builder.setMetadata( input.getMetadata() );
+    
+        //Filter climatology as required
+        if ( input.hasClimatology() )
+        {
+            VectorOfDoubles climatology = input.getClimatology();
+    
+            if ( Objects.nonNull( applyToClimatology ) )
+            {
+                climatology = Slicer.filter( input.getClimatology(), applyToClimatology );
+            }
+    
+            builder.setClimatology( climatology );
+        }
+    
+        // Filter the main data
+        for ( TimeSeries<Pair<L, R>> next : input.get() )
+        {
+            if ( condition.test( next ) )
+            {
+                builder.addTimeSeries( next );
+            }
+        }
+    
+        //Filter baseline as required
+        if ( input.hasBaseline() )
+        {
+            PoolOfPairs<L, R> baseline = input.getBaselineData();
+    
+            for ( TimeSeries<Pair<L, R>> nextBase : baseline.get() )
+            {
+                if ( condition.test( nextBase ) )
+                {
+                    builder.addTimeSeriesForBaseline( nextBase );
+                }
+            }
+    
+            builder.setMetadataForBaseline( baseline.getMetadata() );
+        }
+    
+        return builder.build();
+    }    
+    
     /**
      * <p>Composes an ensemble time-series from a map of values.
      *
@@ -620,12 +705,75 @@ public final class TimeSeriesSlicer
     }
 
     /**
+     * Returns the reference times that fall within the right-closed time window.
+     * 
+     * @param referenceTimes the reference times
+     * @param timeWindow the time window
+     * @return the reference times that fall within the window
+     */
+
+    private static Map<ReferenceTimeType, Instant> filterReferenceTimes( Map<ReferenceTimeType, Instant> referenceTimes,
+                                                                         TimeWindow timeWindow )
+    {
+
+        Map<ReferenceTimeType, Instant> returnMe = new TreeMap<>();
+
+        // Unbounded, so everything qualifies
+        if ( timeWindow.getEarliestReferenceTime().equals( Instant.MIN )
+             && timeWindow.getLatestReferenceTime().equals( Instant.MAX ) )
+        {
+            returnMe = referenceTimes;
+        }
+        else
+        {
+            for ( Map.Entry<ReferenceTimeType, Instant> nextReference : referenceTimes.entrySet() )
+            {
+                Instant reference = nextReference.getValue();
+
+                // Lower bound exclusive, upper inclusive
+                if ( TimeSeriesSlicer.isContained( reference,
+                                                   timeWindow.getEarliestReferenceTime(),
+                                                   timeWindow.getLatestReferenceTime() ) )
+                {
+                    returnMe.put( nextReference.getKey(), nextReference.getValue() );
+                }
+            }
+        }
+
+        return Collections.unmodifiableMap( returnMe );
+    }
+
+    /**
+     * Returns true if the input time is contained within the right-closed bounds provided.
+     * 
+     * @param time the time to test
+     * @param lowerExclusive the lower exclusive limit
+     * @param upperInclusive the upper inclusive limit
+     * @returns true if the time is within (lowerExclusive, upperInclusive], otherwise false
+     */
+
+    private static boolean isContained( Instant time, Instant lowerExclusive, Instant upperInclusive )
+    {
+        Objects.requireNonNull( time );
+
+        Objects.requireNonNull( lowerExclusive );
+
+        Objects.requireNonNull( upperInclusive );
+
+        if ( lowerExclusive.equals( Instant.MIN ) && upperInclusive.equals( Instant.MAX ) )
+        {
+            return true;
+        }
+
+        return time.equals( upperInclusive ) || ( time.isAfter( lowerExclusive ) && time.isBefore( upperInclusive ) );
+    }
+
+    /**
      * Hidden constructor.
      */
 
     private TimeSeriesSlicer()
     {
     }
-
 
 }

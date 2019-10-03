@@ -12,7 +12,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.DoublePredicate;
 import java.util.function.DoubleUnaryOperator;
@@ -26,8 +25,6 @@ import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.pairs.PoolOfPairs;
-import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
 import wres.datamodel.statistics.DataModelTestDataFactory;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
@@ -37,8 +34,6 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
-import wres.datamodel.time.Event;
-import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindow;
 
 /**
@@ -48,19 +43,6 @@ import wres.datamodel.time.TimeWindow;
  */
 public final class SlicerTest
 {
-
-    private static final String TWELFTH_TIME = "1985-01-03T03:00:00Z";
-    private static final String ELEVENTH_TIME = "1985-01-03T02:00:00Z";
-    private static final String TENTH_TIME = "1985-01-03T01:00:00Z";
-    private static final String NINTH_TIME = "1985-01-03T00:00:00Z";
-    private static final String EIGHTH_TIME = "1985-01-02T03:00:00Z";
-    private static final String SEVENTH_TIME = "1985-01-02T02:00:00Z";
-    private static final String SIXTH_TIME = "1985-01-02T01:00:00Z";
-    private static final String FIFTH_TIME = "1985-01-02T00:00:00Z";
-    private static final String FOURTH_TIME = "1985-01-01T03:00:00Z";
-    private static final String THIRD_TIME = "1985-01-01T02:00:00Z";
-    private static final String SECOND_TIME = "1985-01-01T01:00:00Z";
-    private static final String FIRST_TIME = "1985-01-01T00:00:00Z";
 
     @Test
     public void testGetLeftSideSingleValued()
@@ -437,122 +419,6 @@ public final class SlicerTest
                 Slicer.transform( pairsNoBase, Slicer.leftAndEachOfRight( Double::isFinite ) );
 
         assertTrue( slicedNoBase.getRawData().equals( expectedValues ) );
-    }
-
-    @Test
-    public void testFilterTimeSeriesOfSingleValuedPairs()
-    {
-        //Build a time-series with three basis times 
-        SortedSet<Event<Pair<Double, Double>>> first = new TreeSet<>();
-        SortedSet<Event<Pair<Double, Double>>> second = new TreeSet<>();
-        SortedSet<Event<Pair<Double, Double>>> third = new TreeSet<>();
-        PoolOfPairsBuilder<Double, Double> b = new PoolOfPairsBuilder<>();
-
-        Instant firstBasisTime = Instant.parse( FIRST_TIME );
-        first.add( Event.of( Instant.parse( SECOND_TIME ), Pair.of( 1.0, 10.0 ) ) );
-        first.add( Event.of( Instant.parse( THIRD_TIME ), Pair.of( 2.0, 11.0 ) ) );
-        first.add( Event.of( Instant.parse( FOURTH_TIME ), Pair.of( 3.0, 12.0 ) ) );
-
-        Instant secondBasisTime = Instant.parse( FIFTH_TIME );
-        second.add( Event.of( Instant.parse( SIXTH_TIME ),
-                              Pair.of( 4.0, 13.0 ) ) );
-        second.add( Event.of( Instant.parse( SEVENTH_TIME ),
-                              Pair.of( 5.0, 14.0 ) ) );
-        second.add( Event.of( Instant.parse( EIGHTH_TIME ),
-                              Pair.of( 6.0, 15.0 ) ) );
-
-        Instant thirdBasisTime = Instant.parse( NINTH_TIME );
-        third.add( Event.of( Instant.parse( TENTH_TIME ), Pair.of( 7.0, 16.0 ) ) );
-        third.add( Event.of( Instant.parse( ELEVENTH_TIME ), Pair.of( 8.0, 17.0 ) ) );
-        third.add( Event.of( Instant.parse( TWELFTH_TIME ), Pair.of( 9.0, 18.0 ) ) );
-        SampleMetadata meta = SampleMetadata.of();
-
-        //Add the time-series
-        PoolOfPairs<Double, Double> firstSeries = b.addTimeSeries( TimeSeries.of( firstBasisTime,
-                                                                                        first ) )
-                                                         .addTimeSeries( TimeSeries.of( secondBasisTime,
-                                                                                        second ) )
-                                                         .addTimeSeries( TimeSeries.of( thirdBasisTime,
-                                                                                        third ) )
-                                                         .setMetadata( meta )
-                                                         .build();
-
-        // Filter all values where the left side is greater than 0
-        PoolOfPairs<Double, Double> firstResult =
-                Slicer.filter( firstSeries,
-                               Slicer.left( value -> value > 0 ),
-                               null );
-
-        assertTrue( firstResult.getRawData().equals( firstSeries.getRawData() ) );
-
-        // Filter all values where the left side is greater than 3
-        PoolOfPairs<Double, Double> secondResult =
-                Slicer.filter( firstSeries,
-                               Slicer.left( value -> value > 3 ),
-                               clim -> clim > 0 );
-
-        List<Event<Pair<Double, Double>>> secondData = new ArrayList<>();
-        secondResult.get().forEach( nextSeries -> nextSeries.getEvents().forEach( secondData::add ) );
-        List<Event<Pair<Double, Double>>> secondBenchmark = new ArrayList<>();
-        secondBenchmark.addAll( second );
-        secondBenchmark.addAll( third );
-
-        assertTrue( secondData.equals( secondBenchmark ) );
-
-        // Add climatology for later
-        VectorOfDoubles climatology = VectorOfDoubles.of( 1, 2, 3, 4, 5, Double.NaN );
-        VectorOfDoubles climatologyExpected = VectorOfDoubles.of( 1, 2, 3, 4, 5 );
-
-        b.setClimatology( climatology );
-
-        // Filter all values where the left and right sides are both greater than or equal to 7
-        PoolOfPairs<Double, Double> thirdResult =
-                Slicer.filter( firstSeries,
-                               Slicer.leftAndRight( value -> value >= 7 ),
-                               null );
-
-        List<Event<Pair<Double, Double>>> thirdData = new ArrayList<>();
-        thirdResult.get().forEach( nextSeries -> nextSeries.getEvents().forEach( thirdData::add ) );
-        List<Event<Pair<Double, Double>>> thirdBenchmark = new ArrayList<>();
-        thirdBenchmark.addAll( third );
-
-        assertTrue( thirdData.equals( thirdBenchmark ) );
-
-        // Filter on climatology simultaneously
-        PoolOfPairs<Double, Double> fourthResult =
-                Slicer.filter( b.build(),
-                               Slicer.leftAndRight( value -> value > 7 ),
-                               Double::isFinite );
-        
-        assertTrue( fourthResult.getClimatology().equals( climatologyExpected ) );
-
-        // Also filter baseline data
-        b.addTimeSeriesForBaseline( TimeSeries.of( firstBasisTime, first ) )
-         .addTimeSeriesForBaseline( TimeSeries.of( secondBasisTime, second ) )
-         .setMetadataForBaseline( meta );
-
-        // Filter all values where both sides are greater than or equal to 4
-        PoolOfPairs<Double, Double> fifthResult =
-                Slicer.filter( b.build(),
-                               Slicer.left( value -> value >= 4 ),
-                               clim -> clim > 0 );
-
-        List<Event<Pair<Double, Double>>> fifthData = new ArrayList<>();
-        fifthResult.get().forEach( nextSeries -> nextSeries.getEvents().forEach( fifthData::add ) );
-
-        // Same as second benchmark for main data
-        assertTrue( fifthData.equals( secondBenchmark ) );
-
-        // Baseline data
-        List<Event<Pair<Double, Double>>> fifthDataBase = new ArrayList<>();
-        fifthResult.getBaselineData()
-                   .get()
-                   .forEach( nextSeries -> nextSeries.getEvents().forEach( fifthDataBase::add ) );
-        List<Event<Pair<Double, Double>>> fifthBenchmarkBase = new ArrayList<>();
-        fifthBenchmarkBase.addAll( second );
-
-        assertTrue( fifthDataBase.equals( fifthBenchmarkBase ) );
-
     }
 
     @Test

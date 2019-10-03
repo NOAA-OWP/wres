@@ -26,8 +26,6 @@ import org.slf4j.LoggerFactory;
 
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic.SampleDataBasicBuilder;
-import wres.datamodel.sampledata.pairs.PoolOfPairs;
-import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.statistics.Statistic;
@@ -35,7 +33,6 @@ import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdType;
-import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindow;
 import wres.datamodel.time.TimeSeriesSlicer;
 
@@ -57,13 +54,13 @@ public final class Slicer
     /**
      * Null input error message.
      */
-    private static final String NULL_INPUT_EXCEPTION = "Specify a non-null input.";
+    public static final String NULL_INPUT_EXCEPTION = "Specify a non-null input.";
 
     /**
      * Null mapper function error message.
      */
 
-    private static final String NULL_MAPPER_EXCEPTION = "Specify a non-null function to map the input to an output.";
+    public static final String NULL_MAPPER_EXCEPTION = "Specify a non-null function to map the input to an output.";
 
     /**
      * Failure to supply a non-null predicate.
@@ -325,132 +322,6 @@ public final class Slicer
      * Returns the subset of pairs where the condition is met. Applies to both the main pairs and any baseline pairs.
      * Does not modify the metadata associated with the input.
      * 
-     * @param <L> the type of left value
-     * @param <R> the type of right value
-     * @param input the pairs to slice
-     * @param condition the condition on which to slice
-     * @param applyToClimatology an optional filter for the climatology, may be null
-     * @return the subset of pairs that meet the condition
-     * @throws NullPointerException if either the input or condition is null
-     */
-
-    public static <L, R> PoolOfPairs<L, R> filter( PoolOfPairs<L, R> input,
-                                                         Predicate<Pair<L, R>> condition,
-                                                         DoublePredicate applyToClimatology )
-    {
-        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
-
-        Objects.requireNonNull( condition, NULL_PREDICATE_EXCEPTION );
-
-        PoolOfPairsBuilder<L, R> builder = new PoolOfPairsBuilder<>();
-
-        builder.setMetadata( input.getMetadata() );
-
-        //Filter climatology as required
-        if ( input.hasClimatology() )
-        {
-            VectorOfDoubles climatology = input.getClimatology();
-
-            if ( Objects.nonNull( applyToClimatology ) )
-            {
-                climatology = Slicer.filter( input.getClimatology(), applyToClimatology );
-            }
-
-            builder.setClimatology( climatology );
-        }
-
-        // Filter the main data
-        for ( TimeSeries<Pair<L, R>> next : input.get() )
-        {
-            builder.addTimeSeries( TimeSeriesSlicer.filter( next, condition ) );
-        }
-
-        //Filter baseline as required
-        if ( input.hasBaseline() )
-        {
-            PoolOfPairs<L, R> baseline = input.getBaselineData();
-
-            for ( TimeSeries<Pair<L, R>> nextBase : baseline.get() )
-            {
-                builder.addTimeSeriesForBaseline( TimeSeriesSlicer.filter( nextBase, condition ) );
-            }
-
-            builder.setMetadataForBaseline( baseline.getMetadata() );
-        }
-
-        return builder.build();
-    }
-
-    /**
-     * Returns the subset of time-series where the condition is met. Applies to both the main pairs and any baseline 
-     * pairs. Does not modify the metadata associated with the input.
-     * 
-     * @param <L> the type of left value
-     * @param <R> the type of right value
-     * @param input the pairs to slice
-     * @param condition the condition on which to slice
-     * @param applyToClimatology an optional filter for the climatology, may be null
-     * @return the subset of pairs that meet the condition
-     * @throws NullPointerException if either the input or condition is null
-     */
-
-    public static <L, R> PoolOfPairs<L, R> filterPerSeries( PoolOfPairs<L, R> input,
-                                                                  Predicate<TimeSeries<Pair<L, R>>> condition,
-                                                                  DoublePredicate applyToClimatology )
-    {
-        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
-
-        Objects.requireNonNull( condition, NULL_PREDICATE_EXCEPTION );
-
-        PoolOfPairsBuilder<L, R> builder = new PoolOfPairsBuilder<>();
-
-        builder.setMetadata( input.getMetadata() );
-
-        //Filter climatology as required
-        if ( input.hasClimatology() )
-        {
-            VectorOfDoubles climatology = input.getClimatology();
-
-            if ( Objects.nonNull( applyToClimatology ) )
-            {
-                climatology = Slicer.filter( input.getClimatology(), applyToClimatology );
-            }
-
-            builder.setClimatology( climatology );
-        }
-
-        // Filter the main data
-        for ( TimeSeries<Pair<L, R>> next : input.get() )
-        {
-            if ( condition.test( next ) )
-            {
-                builder.addTimeSeries( next );
-            }
-        }
-
-        //Filter baseline as required
-        if ( input.hasBaseline() )
-        {
-            PoolOfPairs<L, R> baseline = input.getBaselineData();
-
-            for ( TimeSeries<Pair<L, R>> nextBase : baseline.get() )
-            {
-                if ( condition.test( nextBase ) )
-                {
-                    builder.addTimeSeriesForBaseline( nextBase );
-                }
-            }
-
-            builder.setMetadataForBaseline( baseline.getMetadata() );
-        }
-
-        return builder.build();
-    }
-
-    /**
-     * Returns the subset of pairs where the condition is met. Applies to both the main pairs and any baseline pairs.
-     * Does not modify the metadata associated with the input.
-     * 
      * @param <T> the type of data
      * @param input the data to slice
      * @param condition the condition on which to slice
@@ -660,53 +531,6 @@ public final class Slicer
         }
 
         return Collections.unmodifiableMap( returnMe );
-    }
-
-    /**
-     * Transforms the input type to another type.
-     * 
-     * @param <L> the left type
-     * @param <R> the right type
-     * @param <P> the transformed left type
-     * @param <Q> the transformed right type
-     * @param input the input
-     * @param transformer the transformer
-     * @return the transformed type
-     * @throws NullPointerException if either input is null
-     */
-
-    public static <L, R, P, Q> PoolOfPairs<P, Q> transform( PoolOfPairs<L, R> input,
-                                                                  Function<Pair<L, R>, Pair<P, Q>> transformer )
-    {
-        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
-
-        Objects.requireNonNull( transformer, NULL_MAPPER_EXCEPTION );
-
-        PoolOfPairsBuilder<P, Q> builder = new PoolOfPairsBuilder<>();
-
-        builder.setClimatology( input.getClimatology() )
-               .setMetadata( input.getMetadata() );
-
-        // Add the main series
-        for ( TimeSeries<Pair<L, R>> next : input.get() )
-        {
-            builder.addTimeSeries( TimeSeriesSlicer.transform( next, transformer ) );
-        }
-
-        // Add the baseline series if available
-        if ( input.hasBaseline() )
-        {
-            PoolOfPairs<L, R> baseline = input.getBaselineData();
-
-            for ( TimeSeries<Pair<L, R>> nextBase : baseline.get() )
-            {
-                builder.addTimeSeriesForBaseline( TimeSeriesSlicer.transform( nextBase, transformer ) );
-            }
-
-            builder.setMetadataForBaseline( baseline.getMetadata() );
-        }
-
-        return builder.build();
     }
 
     /**
