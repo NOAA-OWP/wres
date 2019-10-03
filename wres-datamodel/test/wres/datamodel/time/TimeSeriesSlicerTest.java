@@ -10,7 +10,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -22,6 +21,11 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
 import wres.datamodel.Ensemble;
+import wres.datamodel.Slicer;
+import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.sampledata.SampleMetadata;
+import wres.datamodel.sampledata.pairs.PoolOfPairs;
+import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 
 /**
@@ -45,61 +49,7 @@ public final class TimeSeriesSlicerTest
     private static final String ELEVENTH_TIME = "1985-01-03T02:00:00Z";
     private static final String TWELFTH_TIME = "1985-01-03T03:00:00Z";
     private static final String THIRTEENTH_TIME = "2086-05-01T00:00:00Z";
-
-    @Test
-    public void testGetReferenceTimes()
-    {
-        //Build a time-series with two basis times
-        SortedSet<Event<Pair<Double, Double>>> values = new TreeSet<>();
-        Instant basisTime = Instant.parse( FIRST_TIME );
-        values.add( Event.of( Instant.parse( SECOND_TIME ), Pair.of( 1.0, 1.0 ) ) );
-
-        List<TimeSeries<Pair<Double, Double>>> timeSeries = new ArrayList<>();
-
-        timeSeries.add( TimeSeries.of( basisTime, values ) );
-
-        Instant nextBasisTime = Instant.parse( SECOND_TIME );
-        SortedSet<Event<Pair<Double, Double>>> otherValues = new TreeSet<>();
-        otherValues.add( Event.of( Instant.parse( SECOND_TIME ), Pair.of( 1.0, 1.0 ) ) );
-
-        timeSeries.add( TimeSeries.of( nextBasisTime, otherValues ) );
-
-        //Check dataset count
-        SortedSet<Instant> times = TimeSeriesSlicer.getReferenceTimes( timeSeries, ReferenceTimeType.DEFAULT );
-        assertEquals( 2, times.size() );
-
-        //Check the basis times
-        assertEquals( basisTime, times.first() );
-        Iterator<Instant> it = times.iterator();
-        it.next();
-        assertTrue( it.next().equals( nextBasisTime ) );
-    }
-
-    @Test
-    public void testGetDurations()
-    {
-        //Build a time-series with one basis time
-        List<TimeSeries<Pair<Double, Double>>> timeSeries = new ArrayList<>();
-
-        SortedSet<Event<Pair<Double, Double>>> values = new TreeSet<>();
-        Instant basisTime = Instant.parse( FIRST_TIME );
-        values.add( Event.of( Instant.parse( SECOND_TIME ), Pair.of( 1.0, 1.0 ) ) );
-        values.add( Event.of( Instant.parse( THIRD_TIME ), Pair.of( 2.0, 2.0 ) ) );
-        values.add( Event.of( Instant.parse( FOURTH_TIME ), Pair.of( 3.0, 3.0 ) ) );
-
-        timeSeries.add( TimeSeries.of( basisTime, values ) );
-
-        //Check dataset count
-        SortedSet<Duration> actual = TimeSeriesSlicer.getDurations( timeSeries, ReferenceTimeType.DEFAULT );
-        SortedSet<Duration> expected = new TreeSet<>();
-        expected.add( Duration.ofHours( 1 ) );
-        expected.add( Duration.ofHours( 2 ) );
-        expected.add( Duration.ofHours( 3 ) );
-
-        assertEquals( expected, actual );
-
-    }
-
+    
     @Test
     public void testFilterByReferenceTime()
     {
@@ -122,50 +72,148 @@ public final class TimeSeriesSlicerTest
         third.add( Event.of( Instant.parse( TWELFTH_TIME ), Pair.of( 9.0, 9.0 ) ) );
 
         //Add the time-series
-        List<TimeSeries<Pair<Double, Double>>> ts = List.of( TimeSeries.of( firstBasisTime,
-                                                                            first ),
-                                                             TimeSeries.of( secondBasisTime,
-                                                                            second ),
-                                                             TimeSeries.of( thirdBasisTime,
-                                                                            third ) );
+        TimeSeries<Pair<Double, Double>> one = TimeSeries.of( firstBasisTime, first );
+        TimeSeries<Pair<Double, Double>> two = TimeSeries.of( secondBasisTime, second );
+        TimeSeries<Pair<Double, Double>> three = TimeSeries.of( thirdBasisTime, third );
 
         //Iterate and test
-        List<TimeSeries<Pair<Double, Double>>> filtered =
-                TimeSeriesSlicer.filterByReferenceTime( ts,
-                                                        a -> a.equals( secondBasisTime ),
-                                                        ReferenceTimeType.DEFAULT );
+        TimeSeries<Pair<Double, Double>> filteredOne =
+                TimeSeriesSlicer.filter( one,
+                                         TimeWindow.of( secondBasisTime,
+                                                        secondBasisTime,
+                                                        TimeWindow.DURATION_MIN,
+                                                        TimeWindow.DURATION_MAX ) );
 
-        SortedSet<Instant> referenceTimes = TimeSeriesSlicer.getReferenceTimes( filtered, ReferenceTimeType.DEFAULT );
+        assertEquals( TimeSeries.of(), filteredOne );
 
-        assertTrue( referenceTimes.size() == 1 );
-        assertTrue( referenceTimes.first().equals( secondBasisTime ) );
-        assertTrue( filtered.get( 0 )
-                            .getEvents()
-                            .first()
-                            .getValue()
-                            .equals( Pair.of( 4.0, 4.0 ) ) );
+        TimeSeries<Pair<Double, Double>> filteredTwo =
+                TimeSeriesSlicer.filter( two,
+                                         TimeWindow.of( secondBasisTime,
+                                                        secondBasisTime,
+                                                        TimeWindow.DURATION_MIN,
+                                                        TimeWindow.DURATION_MAX ) );
 
-        //Check for empty output on none filter
-        List<TimeSeries<Pair<Double, Double>>> pairs =
-                TimeSeriesSlicer.filterByReferenceTime( ts,
-                                                        a -> a.equals( Instant.parse( "1985-01-04T00:00:00Z" ) ),
-                                                        ReferenceTimeType.DEFAULT );
+        assertEquals( two, filteredTwo );
 
-        SortedSet<Instant> sliced = TimeSeriesSlicer.getReferenceTimes( pairs, ReferenceTimeType.DEFAULT );
+        TimeSeries<Pair<Double, Double>> filteredThree =
+                TimeSeriesSlicer.filter( three,
+                                         TimeWindow.of( secondBasisTime,
+                                                        secondBasisTime,
+                                                        TimeWindow.DURATION_MIN,
+                                                        TimeWindow.DURATION_MAX ) );
 
-        assertTrue( sliced.isEmpty() );
+        assertEquals( TimeSeries.of(), filteredThree );
 
         //Check exceptional cases
         assertThrows( NullPointerException.class,
-                      () -> TimeSeriesSlicer.filterByReferenceTime( (List<TimeSeries<Pair<Double, Double>>>) null,
-                                                                    null,
-                                                                    ReferenceTimeType.DEFAULT ) );
+                      () -> TimeSeriesSlicer.filter( (TimeSeries<Object>) null, (TimeWindow) null ) );
         assertThrows( NullPointerException.class,
-                      () -> TimeSeriesSlicer.filterByReferenceTime( ts, null, ReferenceTimeType.DEFAULT ) );
-        assertThrows( NullPointerException.class,
-                      () -> TimeSeriesSlicer.filterByReferenceTime( ts,
-                                                                    a -> a.equals( Instant.parse( "1985-01-04T00:00:00Z" ) ),
-                                                                    null ) );
+                      () -> TimeSeriesSlicer.filter( one, (TimeWindow) null ) );
+    }
+
+    @Test
+    public void testFilterByValidTime()
+    {
+
+        // Create the series to filter
+        SortedSet<Event<Pair<Double, Double>>> first = new TreeSet<>();
+        Instant firstBasisTime = Instant.parse( FIRST_TIME );
+        
+        first.add( Event.of( Instant.parse( SECOND_TIME ), Pair.of( 1.0, 1.0 ) ) );
+        first.add( Event.of( Instant.parse( THIRD_TIME ), Pair.of( 2.0, 2.0 ) ) );
+        first.add( Event.of( Instant.parse( FOURTH_TIME ), Pair.of( 3.0, 3.0 ) ) );
+
+        TimeSeries<Pair<Double, Double>> one = TimeSeries.of( firstBasisTime, first );
+
+        // Filter the series
+        TimeSeries<Pair<Double, Double>> actual =
+                TimeSeriesSlicer.filter( one,
+                                         TimeWindow.of( Instant.parse( SECOND_TIME ),
+                                                        Instant.parse( THIRD_TIME ) ) );
+
+        // Create the expected series
+        SortedSet<Event<Pair<Double,Double>>> expectedEvents = new TreeSet<>();
+        expectedEvents.add( Event.of( Instant.parse( THIRD_TIME ), Pair.of( 2.0, 2.0 ) ) );
+        
+        TimeSeries<Pair<Double,Double>> expected = TimeSeries.of( firstBasisTime, expectedEvents );
+        
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    public void testFilterByDuration()
+    {
+        //Build a time-series with three basis times 
+        SortedSet<Event<Pair<Double, Double>>> first = new TreeSet<>();
+        SortedSet<Event<Pair<Double, Double>>> second = new TreeSet<>();
+        SortedSet<Event<Pair<Double, Double>>> third = new TreeSet<>();
+        PoolOfPairsBuilder<Double, Double> b = new PoolOfPairsBuilder<>();
+
+        Instant firstBasisTime = Instant.parse( FIRST_TIME );
+        first.add( Event.of( Instant.parse( SECOND_TIME ), Pair.of( 1.0, 1.0 ) ) );
+        first.add( Event.of( Instant.parse( THIRD_TIME ), Pair.of( 2.0, 2.0 ) ) );
+        first.add( Event.of( Instant.parse( FOURTH_TIME ), Pair.of( 3.0, 3.0 ) ) );
+        Instant secondBasisTime = Instant.parse( FIFTH_TIME );
+        second.add( Event.of( Instant.parse( SIXTH_TIME ), Pair.of( 1.0, 1.0 ) ) );
+        second.add( Event.of( Instant.parse( SEVENTH_TIME ), Pair.of( 2.0, 2.0 ) ) );
+        second.add( Event.of( Instant.parse( EIGHTH_TIME ), Pair.of( 3.0, 3.0 ) ) );
+        Instant thirdBasisTime = Instant.parse( NINTH_TIME );
+        third.add( Event.of( Instant.parse( TENTH_TIME ), Pair.of( 1.0, 1.0 ) ) );
+        third.add( Event.of( Instant.parse( ELEVENTH_TIME ), Pair.of( 2.0, 2.0 ) ) );
+        third.add( Event.of( Instant.parse( TWELFTH_TIME ), Pair.of( 3.0, 3.0 ) ) );
+        SampleMetadata meta = SampleMetadata.of();
+        //Add the time-series, with only one for baseline
+        PoolOfPairs<Double, Double> ts = b.addTimeSeries( TimeSeries.of( firstBasisTime, first ) )
+                                          .addTimeSeries( TimeSeries.of( secondBasisTime, second ) )
+                                          .addTimeSeries( TimeSeries.of( thirdBasisTime, third ) )
+                                          .addTimeSeriesForBaseline( TimeSeries.of( firstBasisTime, first ) )
+                                          .setMetadata( meta )
+                                          .setMetadataForBaseline( meta )
+                                          .build();
+
+        //Iterate and test
+        double nextValue = 1.0;
+
+        SortedSet<Duration> durations = new TreeSet<>();
+        durations.add( Duration.ofHours( 1 ) );
+        durations.add( Duration.ofHours( 2 ) );
+        durations.add( Duration.ofHours( 3 ) );
+
+        //Three time-series
+        assertEquals( 3, ts.get().size() );
+
+        for ( Duration duration : durations )
+        {
+            TimeWindow window = TimeWindow.of( duration, duration );
+            TimeSeries<Pair<Double, Double>> events =
+                    TimeSeriesSlicer.filter( ts.get().get( 0 ), window );
+            for ( Event<Pair<Double, Double>> nextPair : events.getEvents() )
+            {
+                assertTrue( nextPair.getValue().equals( Pair.of( nextValue, nextValue ) ) );
+            }
+
+            nextValue++;
+        }
+
+        //Check the regular duration of a time-series with one duration
+        SortedSet<Event<Pair<Double, Double>>> fourth = new TreeSet<>();
+        fourth.add( Event.of( Instant.parse( TWELFTH_TIME ), Pair.of( 3.0, 3.0 ) ) );
+
+        PoolOfPairsBuilder<Double, Double> bu = new PoolOfPairsBuilder<>();
+
+        PoolOfPairs<Double, Double> durationCheck =
+                bu.addTimeSeries( TimeSeries.of( firstBasisTime,
+                                                 fourth ) )
+                  .setMetadata( meta )
+                  .build();
+
+        TimeSeries<Pair<Double, Double>> next = durationCheck.get().get( 0 );
+        next = TimeSeriesSlicer.filter( next, TimeWindow.of( Duration.ofHours( 51 ), Duration.ofHours( 51 ) ) );
+
+        Duration actualDuration = Duration.between( next.getReferenceTimes().values().iterator().next(),
+                                                    next.getEvents().first().getTime() );
+
+        assertEquals( Duration.ofHours( 51 ), actualDuration );
     }
 
     @Test
@@ -441,5 +489,120 @@ public final class TimeSeriesSlicerTest
         assertEquals( expected, actual );
     }
 
+    @Test
+    public void testFilterTimeSeriesOfSingleValuedPairs()
+    {
+        //Build a time-series with three basis times 
+        SortedSet<Event<Pair<Double, Double>>> first = new TreeSet<>();
+        SortedSet<Event<Pair<Double, Double>>> second = new TreeSet<>();
+        SortedSet<Event<Pair<Double, Double>>> third = new TreeSet<>();
+        PoolOfPairsBuilder<Double, Double> b = new PoolOfPairsBuilder<>();
 
+        Instant firstBasisTime = Instant.parse( FIRST_TIME );
+        first.add( Event.of( Instant.parse( SECOND_TIME ), Pair.of( 1.0, 10.0 ) ) );
+        first.add( Event.of( Instant.parse( THIRD_TIME ), Pair.of( 2.0, 11.0 ) ) );
+        first.add( Event.of( Instant.parse( FOURTH_TIME ), Pair.of( 3.0, 12.0 ) ) );
+
+        Instant secondBasisTime = Instant.parse( FIFTH_TIME );
+        second.add( Event.of( Instant.parse( SIXTH_TIME ),
+                              Pair.of( 4.0, 13.0 ) ) );
+        second.add( Event.of( Instant.parse( SEVENTH_TIME ),
+                              Pair.of( 5.0, 14.0 ) ) );
+        second.add( Event.of( Instant.parse( EIGHTH_TIME ),
+                              Pair.of( 6.0, 15.0 ) ) );
+
+        Instant thirdBasisTime = Instant.parse( NINTH_TIME );
+        third.add( Event.of( Instant.parse( TENTH_TIME ), Pair.of( 7.0, 16.0 ) ) );
+        third.add( Event.of( Instant.parse( ELEVENTH_TIME ), Pair.of( 8.0, 17.0 ) ) );
+        third.add( Event.of( Instant.parse( TWELFTH_TIME ), Pair.of( 9.0, 18.0 ) ) );
+        SampleMetadata meta = SampleMetadata.of();
+
+        //Add the time-series
+        PoolOfPairs<Double, Double> firstSeries = b.addTimeSeries( TimeSeries.of( firstBasisTime,
+                                                                                        first ) )
+                                                         .addTimeSeries( TimeSeries.of( secondBasisTime,
+                                                                                        second ) )
+                                                         .addTimeSeries( TimeSeries.of( thirdBasisTime,
+                                                                                        third ) )
+                                                         .setMetadata( meta )
+                                                         .build();
+
+        // Filter all values where the left side is greater than 0
+        PoolOfPairs<Double, Double> firstResult =
+                TimeSeriesSlicer.filter( firstSeries,
+                               Slicer.left( value -> value > 0 ),
+                               null );
+
+        assertTrue( firstResult.getRawData().equals( firstSeries.getRawData() ) );
+
+        // Filter all values where the left side is greater than 3
+        PoolOfPairs<Double, Double> secondResult =
+                TimeSeriesSlicer.filter( firstSeries,
+                               Slicer.left( value -> value > 3 ),
+                               clim -> clim > 0 );
+
+        List<Event<Pair<Double, Double>>> secondData = new ArrayList<>();
+        secondResult.get().forEach( nextSeries -> nextSeries.getEvents().forEach( secondData::add ) );
+        List<Event<Pair<Double, Double>>> secondBenchmark = new ArrayList<>();
+        secondBenchmark.addAll( second );
+        secondBenchmark.addAll( third );
+
+        assertTrue( secondData.equals( secondBenchmark ) );
+
+        // Add climatology for later
+        VectorOfDoubles climatology = VectorOfDoubles.of( 1, 2, 3, 4, 5, Double.NaN );
+        VectorOfDoubles climatologyExpected = VectorOfDoubles.of( 1, 2, 3, 4, 5 );
+
+        b.setClimatology( climatology );
+
+        // Filter all values where the left and right sides are both greater than or equal to 7
+        PoolOfPairs<Double, Double> thirdResult =
+                TimeSeriesSlicer.filter( firstSeries,
+                               Slicer.leftAndRight( value -> value >= 7 ),
+                               null );
+
+        List<Event<Pair<Double, Double>>> thirdData = new ArrayList<>();
+        thirdResult.get().forEach( nextSeries -> nextSeries.getEvents().forEach( thirdData::add ) );
+        List<Event<Pair<Double, Double>>> thirdBenchmark = new ArrayList<>();
+        thirdBenchmark.addAll( third );
+
+        assertTrue( thirdData.equals( thirdBenchmark ) );
+
+        // Filter on climatology simultaneously
+        PoolOfPairs<Double, Double> fourthResult =
+                TimeSeriesSlicer.filter( b.build(),
+                               Slicer.leftAndRight( value -> value > 7 ),
+                               Double::isFinite );
+        
+        assertTrue( fourthResult.getClimatology().equals( climatologyExpected ) );
+
+        // Also filter baseline data
+        b.addTimeSeriesForBaseline( TimeSeries.of( firstBasisTime, first ) )
+         .addTimeSeriesForBaseline( TimeSeries.of( secondBasisTime, second ) )
+         .setMetadataForBaseline( meta );
+
+        // Filter all values where both sides are greater than or equal to 4
+        PoolOfPairs<Double, Double> fifthResult =
+                TimeSeriesSlicer.filter( b.build(),
+                               Slicer.left( value -> value >= 4 ),
+                               clim -> clim > 0 );
+
+        List<Event<Pair<Double, Double>>> fifthData = new ArrayList<>();
+        fifthResult.get().forEach( nextSeries -> nextSeries.getEvents().forEach( fifthData::add ) );
+
+        // Same as second benchmark for main data
+        assertTrue( fifthData.equals( secondBenchmark ) );
+
+        // Baseline data
+        List<Event<Pair<Double, Double>>> fifthDataBase = new ArrayList<>();
+        fifthResult.getBaselineData()
+                   .get()
+                   .forEach( nextSeries -> nextSeries.getEvents().forEach( fifthDataBase::add ) );
+        List<Event<Pair<Double, Double>>> fifthBenchmarkBase = new ArrayList<>();
+        fifthBenchmarkBase.addAll( second );
+
+        assertTrue( fifthDataBase.equals( fifthBenchmarkBase ) );
+
+    }
+    
 }

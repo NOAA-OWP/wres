@@ -1,7 +1,6 @@
 package wres.io.retrieval.datashop;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -21,13 +20,13 @@ public class SupplyOrRetrieve<T> implements Supplier<List<T>>
      * Status of the cache. If <code>true</code>, the cache is available, <code>false</code> otherwise.
      */
 
-    private final AtomicBoolean hasCache;
+    private boolean hasCache;
 
     /**
      * If <code>true</code>, cache.
      */
 
-    private final AtomicBoolean shouldCache;
+    private final boolean shouldCache;
 
     /**
      * Lock object.
@@ -48,7 +47,20 @@ public class SupplyOrRetrieve<T> implements Supplier<List<T>>
     private List<T> cache;
 
     /**
-     * Hidden constructor.
+     * Provides an instance that retrieves results each time, without caching them.
+     * 
+     * @param <T> the type of data to retrieve
+     * @param retriever the retriever
+     * @return the supplier
+     */
+
+    public static <T> SupplyOrRetrieve<T> of( Retriever<T> retriever )
+    {
+        return SupplyOrRetrieve.of( retriever, false );
+    }
+
+    /**
+     * Provides an instance.
      * 
      * @param <T> the type of data to retrieve
      * @param retriever the retriever
@@ -65,20 +77,26 @@ public class SupplyOrRetrieve<T> implements Supplier<List<T>>
     public List<T> get()
     {
         // Should cache?
-        if ( this.shouldCache.get() )
+        // This is set on construction
+        if ( this.shouldCache )
         {
             // Has cache?
-            if ( !this.hasCache.get() )
+            if ( !this.hasCache )
             {
                 // Lock, in order to prepare cache
                 synchronized ( this.lock )
                 {
-                    this.cache = this.getRetriever()
-                                     .getAll()
-                                     .collect( Collectors.toUnmodifiableList() );
-                    
-                    // Cache available
-                    this.hasCache.set( true );
+                    // Check again, in case multiple threads 
+                    // found false on first check before sync
+                    if ( !this.hasCache )
+                    {
+                        this.cache = this.getRetriever()
+                                         .getAll()
+                                         .collect( Collectors.toUnmodifiableList() );
+
+                        // Cache now available
+                        this.hasCache = true;
+                    }
                 }
             }
 
@@ -114,8 +132,8 @@ public class SupplyOrRetrieve<T> implements Supplier<List<T>>
 
     private SupplyOrRetrieve( Retriever<T> retriever, boolean cache )
     {
-        this.hasCache = new AtomicBoolean();
-        this.shouldCache = new AtomicBoolean( cache );
+        this.hasCache = false;
+        this.shouldCache = cache;
         this.lock = new Object();
         this.retriever = retriever;
     }

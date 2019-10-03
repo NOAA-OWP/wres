@@ -18,9 +18,8 @@ import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.sampledata.SampleDataBasic.SampleDataBasicBuilder;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.pairs.PoolOfPairs;
-import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.MatrixStatistic;
 import wres.datamodel.statistics.Statistic;
@@ -108,27 +107,27 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
      * 
      * TODO: collapse this with a generic call to futures.addOutput and take an input collection of metrics
      * 
-     * @param input the input pairs
+     * @param singleValued the input pairs
      * @param futures the metric futures
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    void processSingleValuedPairs( PoolOfPairs<Double, Double> input,
+    void processSingleValuedPairs( SampleData<Pair<Double, Double>> singleValued,
                                    MetricFuturesByTime.MetricFuturesByTimeBuilder futures )
     {
         if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticGroup.DOUBLE_SCORE ) )
         {
-            this.processSingleValuedPairsByThreshold( input, futures, StatisticGroup.DOUBLE_SCORE );
+            this.processSingleValuedPairsByThreshold( singleValued, futures, StatisticGroup.DOUBLE_SCORE );
         }
 
         if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticGroup.MULTIVECTOR ) )
         {
-            this.processSingleValuedPairsByThreshold( input, futures, StatisticGroup.MULTIVECTOR );
+            this.processSingleValuedPairsByThreshold( singleValued, futures, StatisticGroup.MULTIVECTOR );
         }
 
         if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticGroup.BOXPLOT_PER_POOL ) )
         {
-            this.processSingleValuedPairsByThreshold( input, futures, StatisticGroup.BOXPLOT_PER_POOL );
+            this.processSingleValuedPairsByThreshold( singleValued, futures, StatisticGroup.BOXPLOT_PER_POOL );
         }
 
     }
@@ -202,7 +201,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
      * @throws IllegalStateException if the {@link Threshold#getDataType()} is not recognized
      */
 
-    static Predicate<TimeSeries<Pair<Double,Double>>> getFilterForTimeSeriesOfSingleValuedPairs( Threshold input )
+    static Predicate<TimeSeries<Pair<Double, Double>>> getFilterForTimeSeriesOfSingleValuedPairs( Threshold input )
     {
         switch ( input.getDataType() )
         {
@@ -219,8 +218,8 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
             default:
                 throw new IllegalStateException( "Unrecognized threshold type '" + input.getDataType() + "'." );
         }
-    }    
-    
+    }
+
     /**
      * Constructor.
      * 
@@ -255,7 +254,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processSingleValuedPairsByThreshold( PoolOfPairs<Double, Double> input,
+    private void processSingleValuedPairsByThreshold( SampleData<Pair<Double, Double>> input,
                                                       MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                                       StatisticGroup outGroup )
     {
@@ -285,13 +284,13 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
                 baselineMeta = SampleMetadata.of( input.getBaselineData().getMetadata(), oneOrTwo );
             }
 
-            PoolOfPairsBuilder<Double, Double> builder = new PoolOfPairsBuilder<>();
+            SampleDataBasicBuilder<Pair<Double, Double>> builder = new SampleDataBasicBuilder<>();
 
-            PoolOfPairs<Double, Double> pairs = builder.addTimeSeries( input )
-                                                             .setMetadata( SampleMetadata.of( input.getMetadata(),
-                                                                                              oneOrTwo ) )
-                                                             .setMetadataForBaseline( baselineMeta )
-                                                             .build();
+            SampleData<Pair<Double, Double>> pairs = builder.addData( input )
+                                                            .setMetadata( SampleMetadata.of( input.getMetadata(),
+                                                                                             oneOrTwo ) )
+                                                            .setMetadataForBaseline( baselineMeta )
+                                                            .build();
 
             // Filter the data if required
             if ( useMe.isFinite() )

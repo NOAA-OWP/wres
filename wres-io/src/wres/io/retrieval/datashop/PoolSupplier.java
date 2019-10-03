@@ -8,6 +8,7 @@ import wres.datamodel.sampledata.pairs.PairingException;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.scale.RescalingException;
 import wres.datamodel.scale.TimeScale;
+import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesPairer;
 import wres.datamodel.time.TimeSeriesUpscaler;
 
@@ -26,25 +27,25 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
      * Climatological data source.
      */
 
-    private final SupplyOrRetrieve<L> climatology;
+    private final SupplyOrRetrieve<TimeSeries<L>> climatology;
 
     /**
      * Left data source. Optional, unless the climatological source is undefined.
      */
 
-    private final SupplyOrRetrieve<L> left;
+    private final SupplyOrRetrieve<TimeSeries<L>> left;
 
     /**
      * Right data source.
      */
 
-    private final SupplyOrRetrieve<R> right;
+    private final SupplyOrRetrieve<TimeSeries<R>> right;
 
     /**
      * Baseline data source. Optional.
      */
 
-    private final SupplyOrRetrieve<R> baseline;
+    private final SupplyOrRetrieve<TimeSeries<R>> baseline;
 
     /**
      * Pairer.
@@ -103,7 +104,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         // Create the climatology
 
         // Build the pool
-        
+
         // TODO Auto-generated method stub
         return null;
     }
@@ -123,25 +124,25 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * Climatological data source. Optional.
          */
 
-        private SupplyOrRetrieve<L> climatology;
+        private SupplyOrRetrieve<TimeSeries<L>> climatology;
 
         /**
          * Left data source. Optional, unless the climatological source is undefined.
          */
 
-        private SupplyOrRetrieve<L> left;
+        private SupplyOrRetrieve<TimeSeries<L>> left;
 
         /**
          * Right data source.
          */
 
-        private SupplyOrRetrieve<R> right;
+        private SupplyOrRetrieve<TimeSeries<R>> right;
 
         /**
          * Baseline data source. Optional.
          */
 
-        private SupplyOrRetrieve<R> baseline;
+        private SupplyOrRetrieve<TimeSeries<R>> baseline;
 
         /**
          * Pairer.
@@ -183,7 +184,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * @param climatology the climatology to set
          * @return the builder
          */
-        public PoolSupplierBuilder<L, R> setClimatology( SupplyOrRetrieve<L> climatology )
+        public PoolSupplierBuilder<L, R> setClimatology( SupplyOrRetrieve<TimeSeries<L>> climatology )
         {
             this.climatology = climatology;
 
@@ -194,7 +195,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * @param left the left to set
          * @return the builder
          */
-        public PoolSupplierBuilder<L, R> setLeft( SupplyOrRetrieve<L> left )
+        public PoolSupplierBuilder<L, R> setLeft( SupplyOrRetrieve<TimeSeries<L>> left )
         {
             this.left = left;
 
@@ -205,7 +206,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * @param right the right to set
          * @return the builder
          */
-        public PoolSupplierBuilder<L, R> setRight( SupplyOrRetrieve<R> right )
+        public PoolSupplierBuilder<L, R> setRight( SupplyOrRetrieve<TimeSeries<R>> right )
         {
             this.right = right;
 
@@ -216,7 +217,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * @param baseline the baseline to set
          * @return the builder
          */
-        public PoolSupplierBuilder<L, R> setBaseline( SupplyOrRetrieve<R> baseline )
+        public PoolSupplierBuilder<L, R> setBaseline( SupplyOrRetrieve<TimeSeries<R>> baseline )
         {
             this.baseline = baseline;
 
