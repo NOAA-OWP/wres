@@ -314,8 +314,7 @@ public class PoolSupplierTest
                       .addEvent( Event.of( Instant.parse( "2551-03-18T09:00:00Z" ), Pair.of( 517.67, 103.0 ) ) )
                       .addReferenceTime( Instant.parse( "2551-03-17T12:00:00Z" ),
                                          ReferenceTimeType.DEFAULT )
-                      .setTimeScale( desiredTimeScale )
-                      .build();
+                      .setTimeScale( desiredTimeScale );
 
         PoolOfPairs<Double, Double> poolOneExpected =
                 new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolOneBuilder.build() )
@@ -354,8 +353,7 @@ public class PoolSupplierTest
                       .addEvent( Event.of( Instant.parse( "2551-03-18T21:00:00Z" ), Pair.of( 602.33, 127.0 ) ) )
                       .addReferenceTime( Instant.parse( "2551-03-17T12:00:00Z" ),
                                          ReferenceTimeType.DEFAULT )
-                      .setTimeScale( desiredTimeScale )
-                      .build();
+                      .setTimeScale( desiredTimeScale );
 
         PoolOfPairs<Double, Double> poolTwoExpected =
                 new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolTwoBuilder.build() )
@@ -395,8 +393,7 @@ public class PoolSupplierTest
                         .addEvent( Event.of( Instant.parse( "2551-03-18T09:00:00Z" ), Pair.of( 517.67, 103.0 ) ) )
                         .addReferenceTime( Instant.parse( "2551-03-17T12:00:00Z" ),
                                            ReferenceTimeType.DEFAULT )
-                        .setTimeScale( desiredTimeScale )
-                        .build();
+                        .setTimeScale( desiredTimeScale );
 
         PoolOfPairs<Double, Double> poolThreeExpected =
                 new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolThreeBuilder.build() )
@@ -435,8 +432,7 @@ public class PoolSupplierTest
                        .addEvent( Event.of( Instant.parse( "2551-03-18T21:00:00Z" ), Pair.of( 602.33, 127.0 ) ) )
                        .addReferenceTime( Instant.parse( "2551-03-17T12:00:00Z" ),
                                           ReferenceTimeType.DEFAULT )
-                       .setTimeScale( desiredTimeScale )
-                       .build();
+                       .setTimeScale( desiredTimeScale );
 
         PoolOfPairs<Double, Double> poolFourExpected =
                 new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolFourBuilder.build() )
@@ -476,8 +472,7 @@ public class PoolSupplierTest
                        .addEvent( Event.of( Instant.parse( "2551-03-18T21:00:00Z" ), Pair.of( 602.33, 163.0 ) ) )
                        .addReferenceTime( Instant.parse( "2551-03-18T00:00:00Z" ),
                                           ReferenceTimeType.DEFAULT )
-                       .setTimeScale( desiredTimeScale )
-                       .build();
+                       .setTimeScale( desiredTimeScale );
 
         PoolOfPairs<Double, Double> poolFiveExpected =
                 new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolFiveBuilder.build() )
@@ -516,8 +511,7 @@ public class PoolSupplierTest
                       .addEvent( Event.of( Instant.parse( "2551-03-19T09:00:00Z" ), Pair.of( 670.33, 181.0 ) ) )
                       .addReferenceTime( Instant.parse( "2551-03-18T00:00:00Z" ),
                                          ReferenceTimeType.DEFAULT )
-                      .setTimeScale( desiredTimeScale )
-                      .build();
+                      .setTimeScale( desiredTimeScale );
 
         PoolOfPairs<Double, Double> poolSixExpected =
                 new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolSixBuilder.build() )
@@ -557,8 +551,7 @@ public class PoolSupplierTest
                         .addEvent( Event.of( Instant.parse( "2551-03-18T21:00:00Z" ), Pair.of( 602.33, 163.0 ) ) )
                         .addReferenceTime( Instant.parse( "2551-03-18T00:00:00Z" ),
                                            ReferenceTimeType.DEFAULT )
-                        .setTimeScale( desiredTimeScale )
-                        .build();
+                        .setTimeScale( desiredTimeScale );
 
         PoolOfPairs<Double, Double> poolSevenExpected =
                 new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolSevenBuilder.build() )
@@ -597,8 +590,7 @@ public class PoolSupplierTest
                         .addEvent( Event.of( Instant.parse( "2551-03-19T09:00:00Z" ), Pair.of( 670.33, 181.0 ) ) )
                         .addReferenceTime( Instant.parse( "2551-03-18T00:00:00Z" ),
                                            ReferenceTimeType.DEFAULT )
-                        .setTimeScale( desiredTimeScale )
-                        .build();
+                        .setTimeScale( desiredTimeScale );
 
         PoolOfPairs<Double, Double> poolEightExpected =
                 new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolEightBuilder.build() )
@@ -638,8 +630,7 @@ public class PoolSupplierTest
                        .addEvent( Event.of( Instant.parse( "2551-03-19T09:00:00Z" ), Pair.of( 670.33, 227.0 ) ) )
                        .addReferenceTime( Instant.parse( "2551-03-18T12:00:00Z" ),
                                           ReferenceTimeType.DEFAULT )
-                       .setTimeScale( desiredTimeScale )
-                       .build();
+                       .setTimeScale( desiredTimeScale );
 
         PoolOfPairs<Double, Double> poolNineExpected =
                 new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolNineBuilder.build() )
@@ -678,8 +669,7 @@ public class PoolSupplierTest
                       .addEvent( Event.of( Instant.parse( "2551-03-19T21:00:00Z" ), Pair.of( 756.33, 241.0 ) ) )
                       .addReferenceTime( Instant.parse( "2551-03-18T12:00:00Z" ),
                                          ReferenceTimeType.DEFAULT )
-                      .setTimeScale( desiredTimeScale )
-                      .build();
+                      .setTimeScale( desiredTimeScale );
 
         PoolOfPairs<Double, Double> poolTenExpected =
                 new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolTenBuilder.build() )
@@ -720,8 +710,7 @@ public class PoolSupplierTest
                             .addEvent( Event.of( Instant.parse( "2551-03-19T09:00:00Z" ), Pair.of( 670.33, 227.0 ) ) )
                             .addReferenceTime( Instant.parse( "2551-03-18T12:00:00Z" ),
                                                ReferenceTimeType.DEFAULT )
-                            .setTimeScale( desiredTimeScale )
-                            .build();
+                            .setTimeScale( desiredTimeScale );
 
         TimeSeriesBuilder<Pair<Double, Double>> poolElevenTwoBuilder = new TimeSeriesBuilder<>();
         poolElevenTwoBuilder.addEvent( Event.of( Instant.parse( "2551-03-19T03:00:00Z" ), Pair.of( 638.33, 251.0 ) ) )
@@ -733,8 +722,7 @@ public class PoolSupplierTest
                             .addEvent( Event.of( Instant.parse( "2551-03-19T21:00:00Z" ), Pair.of( 756.33, 281.0 ) ) )
                             .addReferenceTime( Instant.parse( "2551-03-19T00:00:00Z" ),
                                                ReferenceTimeType.DEFAULT )
-                            .setTimeScale( desiredTimeScale )
-                            .build();
+                            .setTimeScale( desiredTimeScale );
 
         PoolOfPairs<Double, Double> poolElevenExpected =
                 new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolElevenOneBuilder.build() )
@@ -775,8 +763,7 @@ public class PoolSupplierTest
                             .addEvent( Event.of( Instant.parse( "2551-03-19T21:00:00Z" ), Pair.of( 756.33, 241.0 ) ) )
                             .addReferenceTime( Instant.parse( "2551-03-18T12:00:00Z" ),
                                                ReferenceTimeType.DEFAULT )
-                            .setTimeScale( desiredTimeScale )
-                            .build();
+                            .setTimeScale( desiredTimeScale );
 
         TimeSeriesBuilder<Pair<Double, Double>> poolTwelveTwoBuilder = new TimeSeriesBuilder<>();
         poolTwelveTwoBuilder.addEvent( Event.of( Instant.parse( "2551-03-19T18:00:00Z" ), Pair.of( 738.33, 277.0 ) ) )
@@ -787,8 +774,7 @@ public class PoolSupplierTest
                             .addEvent( Event.of( Instant.parse( "2551-03-20T09:00:00Z" ), Pair.of( 840.33, 311.0 ) ) )
                             .addReferenceTime( Instant.parse( "2551-03-19T00:00:00Z" ),
                                                ReferenceTimeType.DEFAULT )
-                            .setTimeScale( desiredTimeScale )
-                            .build();
+                            .setTimeScale( desiredTimeScale );
 
         PoolOfPairs<Double, Double> poolTwelveExpected =
                 new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolTwelveOneBuilder.build() )
@@ -829,8 +815,7 @@ public class PoolSupplierTest
                            .addEvent( Event.of( Instant.parse( "2551-03-19T21:00:00Z" ), Pair.of( 756.33, 281.0 ) ) )
                            .addReferenceTime( Instant.parse( "2551-03-19T00:00:00Z" ),
                                               ReferenceTimeType.DEFAULT )
-                           .setTimeScale( desiredTimeScale )
-                           .build();
+                           .setTimeScale( desiredTimeScale );
 
         PoolOfPairs<Double, Double> poolThirteenExpected =
                 new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolThirteenBuilder.build() )
@@ -869,8 +854,7 @@ public class PoolSupplierTest
                            .addEvent( Event.of( Instant.parse( "2551-03-20T09:00:00Z" ), Pair.of( 840.33, 311.0 ) ) )
                            .addReferenceTime( Instant.parse( "2551-03-19T00:00:00Z" ),
                                               ReferenceTimeType.DEFAULT )
-                           .setTimeScale( desiredTimeScale )
-                           .build();
+                           .setTimeScale( desiredTimeScale );
 
         PoolOfPairs<Double, Double> poolFourteenExpected =
                 new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolFourteenBuilder.build() )
@@ -901,8 +885,7 @@ public class PoolSupplierTest
 
         // Pool Fifteen expected
         TimeSeriesBuilder<Pair<Double, Double>> poolFifteenBuilder = new TimeSeriesBuilder<>();
-        poolFifteenBuilder.setTimeScale( desiredTimeScale )
-                          .build();
+        poolFifteenBuilder.setTimeScale( desiredTimeScale );
 
         PoolOfPairs<Double, Double> poolFifteenExpected =
                 new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolFifteenBuilder.build() )
@@ -933,8 +916,7 @@ public class PoolSupplierTest
 
         // Pool Sixteen expected
         TimeSeriesBuilder<Pair<Double, Double>> poolSixteenBuilder = new TimeSeriesBuilder<>();
-        poolSixteenBuilder.setTimeScale( desiredTimeScale )
-                          .build();
+        poolSixteenBuilder.setTimeScale( desiredTimeScale );
 
         PoolOfPairs<Double, Double> poolSixteenExpected =
                 new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolSixteenBuilder.build() )
@@ -965,8 +947,7 @@ public class PoolSupplierTest
 
         // Pool Seventeen expected
         TimeSeriesBuilder<Pair<Double, Double>> poolSeventeenBuilder = new TimeSeriesBuilder<>();
-        poolSeventeenBuilder.setTimeScale( desiredTimeScale )
-                            .build();
+        poolSeventeenBuilder.setTimeScale( desiredTimeScale );
 
         PoolOfPairs<Double, Double> poolSeventeenExpected =
                 new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolSeventeenBuilder.build() )
@@ -997,8 +978,7 @@ public class PoolSupplierTest
 
         // Pool Eighteen expected
         TimeSeriesBuilder<Pair<Double, Double>> poolEighteenBuilder = new TimeSeriesBuilder<>();
-        poolEighteenBuilder.setTimeScale( desiredTimeScale )
-                           .build();
+        poolEighteenBuilder.setTimeScale( desiredTimeScale );
 
         PoolOfPairs<Double, Double> poolEighteenExpected =
                 new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolEighteenBuilder.build() )
