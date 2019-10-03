@@ -13,7 +13,17 @@ import wres.datamodel.time.TimeSeriesPairer;
 import wres.datamodel.time.TimeSeriesUpscaler;
 
 /**
- * <p>Supplies a {@link PoolOfPairs}, which is used to compute one or more verification statistics. 
+ * <p>Supplies a {@link PoolOfPairs}, which is used to compute one or more verification statistics. The overall 
+ * responsibility of the {@link PoolSupplier} is to supply a {@link PoolOfPairs} on request. This is fulfilled by
+ * completing several smaller activities in sequence, namely:</p> 
+ * 
+ * <ol>
+ * <li>Consuming the (possibly pool-shaped) left/right/baseline data for pairing, which is supplied by retrievers;</li>
+ * <li>Rescaling the data, where needed, so that pairs can be formed at the desired time scale;</li>
+ * <li>Creating pairs;</li>
+ * <li>Trimming pairs to the pool boundaries; and</li>
+ * <li>Supplying the pool-shaped pairs.</li>
+ * </ol>
  * 
  * @author james.brown@hydrosolved.com
  * @param <L> the type of left value in each pair
@@ -103,7 +113,9 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
 
         // Create the climatology
 
-        // Build the pool
+        // Filter the pairs against the pool boundaries in the metadata
+        
+        // Create the pool
 
         // TODO Auto-generated method stub
         return null;
