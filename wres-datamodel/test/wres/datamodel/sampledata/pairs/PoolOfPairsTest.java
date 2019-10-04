@@ -18,7 +18,6 @@ import org.junit.Test;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
 import wres.datamodel.time.Event;
-import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeWindow;

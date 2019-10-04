@@ -706,7 +706,7 @@ public final class Slicer
         Double first = qF.applyAsDouble( threshold.getProbabilities().first() );
         if ( Objects.nonNull( digits ) )
         {
-            first = round().apply( first, digits );
+            first = Slicer.rounder().apply( first, digits );
         }
         Double second = null;
         if ( threshold.hasBetweenCondition() )
@@ -714,7 +714,7 @@ public final class Slicer
             second = qF.applyAsDouble( threshold.getProbabilities().second() );
             if ( Objects.nonNull( digits ) )
             {
-                second = round().apply( second, digits );
+                second = Slicer.rounder().apply( second, digits );
             }
         }
         return Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( first, second ),
@@ -749,10 +749,24 @@ public final class Slicer
     /**
      * Rounds the input to the prescribed number of decimal places using {@link BigDecimal#ROUND_HALF_UP}.
      * 
+     * @param decimalPlaces the number of decimal places
      * @return a function that rounds to a prescribed number of decimal places
      */
 
-    private static BiFunction<Double, Integer, Double> round()
+    public static DoubleUnaryOperator rounder( int decimalPlaces )
+    {
+        BiFunction<Double, Integer, Double> round = Slicer.rounder();
+        
+        return in -> round.apply( in, decimalPlaces );
+    }
+    
+    /**
+     * Rounds the input to the prescribed number of decimal places using {@link BigDecimal#ROUND_HALF_UP}.
+     * 
+     * @return a function that rounds to a prescribed number of decimal places
+     */
+
+    private static BiFunction<Double, Integer, Double> rounder()
     {
         return ( input, digits ) -> {
             BigDecimal bd = new BigDecimal( Double.toString( input ) ); //Always use String constructor
