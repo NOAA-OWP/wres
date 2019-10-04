@@ -4,8 +4,6 @@ import static org.junit.Assert.assertEquals;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.function.DoubleUnaryOperator;
-import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -15,7 +13,6 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
@@ -31,7 +28,6 @@ import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 import wres.datamodel.time.TimeSeriesOfDoubleBasicUpscaler;
 import wres.datamodel.time.TimeSeriesPairer;
 import wres.datamodel.time.TimeSeriesPairerByExactTime;
-import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesUpscaler;
 import wres.datamodel.time.TimeWindow;
 import wres.io.retrieval.datashop.PoolSupplier.PoolSupplierBuilder;
@@ -382,11 +378,6 @@ public class PoolSupplierTest
         // Pairer for the left and right data
         TimeSeriesPairer<Double, Double> pairer = TimeSeriesPairerByExactTime.of();
 
-        // Rounder to round the actual time-series values to 2 d.p. for assertion against expected
-        DoubleUnaryOperator rounder = Slicer.rounder( 2 );
-        UnaryOperator<Pair<Double, Double>> pairRounder =
-                pair -> Pair.of( rounder.applyAsDouble( pair.getLeft() ), rounder.applyAsDouble( pair.getRight() ) );
-
         // Pool One actual
         Mockito.when( this.forecastRetriever.getAll() ).thenReturn( Stream.of( forecastOnePartOne ) );
         SupplyOrRetrieve<TimeSeries<Double>> forcSupplierOne = SupplyOrRetrieve.of( this.forecastRetriever );
@@ -409,24 +400,36 @@ public class PoolSupplierTest
 
         PoolOfPairs<Double, Double> poolOneActual = poolOneSupplier.get();
 
-        // Round for comparison
-        poolOneActual = TimeSeriesSlicer.transform( poolOneActual, pairRounder );
-
         // Pool One expected
-        TimeSeriesBuilder<Pair<Double, Double>> poolOneBuilder = new TimeSeriesBuilder<>();
-        poolOneBuilder.addEvent( Event.of( T2551_03_17T15_00_00Z, Pair.of( 409.67, 73.0 ) ) )
-                      .addEvent( Event.of( T2551_03_17T18_00_00Z, Pair.of( 428.33, 79.0 ) ) )
-                      .addEvent( Event.of( T2551_03_17T21_00_00Z, Pair.of( 443.67, 83.0 ) ) )
-                      .addEvent( Event.of( T2551_03_18T00_00_00Z, Pair.of( 460.33, 89.0 ) ) )
-                      .addEvent( Event.of( T2551_03_18T03_00_00Z, Pair.of( 477.67, 97.0 ) ) )
-                      .addEvent( Event.of( T2551_03_18T06_00_00Z, Pair.of( 497.67, 101.0 ) ) )
-                      .addEvent( Event.of( T2551_03_18T09_00_00Z, Pair.of( 517.67, 103.0 ) ) )
-                      .addReferenceTime( T2551_03_17T12_00_00Z,
-                                         ReferenceTimeType.DEFAULT )
-                      .setTimeScale( desiredTimeScale );
+        TimeSeries<Pair<Double, Double>> poolOneSeries =
+                new TimeSeriesBuilder<Pair<Double, Double>>().addEvent( Event.of( T2551_03_17T15_00_00Z,
+                                                                                  Pair.of( 409.6666666666667,
+                                                                                           73.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_17T18_00_00Z,
+                                                                                  Pair.of( 428.3333333333333,
+                                                                                           79.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_17T21_00_00Z,
+                                                                                  Pair.of( 443.6666666666667,
+                                                                                           83.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T00_00_00Z,
+                                                                                  Pair.of( 460.3333333333333,
+                                                                                           89.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T03_00_00Z,
+                                                                                  Pair.of( 477.6666666666667,
+                                                                                           97.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T06_00_00Z,
+                                                                                  Pair.of( 497.6666666666667,
+                                                                                           101.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T09_00_00Z,
+                                                                                  Pair.of( 517.6666666666666,
+                                                                                           103.0 ) ) )
+                                                             .addReferenceTime( T2551_03_17T12_00_00Z,
+                                                                                ReferenceTimeType.DEFAULT )
+                                                             .setTimeScale( desiredTimeScale )
+                                                             .build();
 
         PoolOfPairs<Double, Double> poolOneExpected =
-                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolOneBuilder.build() )
+                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolOneSeries )
                                                         .setMetadata( poolOneMetadata )
                                                         .build();
 
@@ -454,23 +457,33 @@ public class PoolSupplierTest
 
         PoolOfPairs<Double, Double> poolTwoActual = poolTwoSupplier.get();
 
-        // Round for comparison
-        poolTwoActual = TimeSeriesSlicer.transform( poolTwoActual, pairRounder );
-
         // Pool Two expected
-        TimeSeriesBuilder<Pair<Double, Double>> poolTwoBuilder = new TimeSeriesBuilder<>();
-        poolTwoBuilder.addEvent( Event.of( T2551_03_18T06_00_00Z, Pair.of( 497.67, 101.0 ) ) )
-                      .addEvent( Event.of( T2551_03_18T09_00_00Z, Pair.of( 517.67, 103.0 ) ) )
-                      .addEvent( Event.of( T2551_03_18T12_00_00Z, Pair.of( 548.33, 107.0 ) ) )
-                      .addEvent( Event.of( T2551_03_18T15_00_00Z, Pair.of( 567.67, 109.0 ) ) )
-                      .addEvent( Event.of( T2551_03_18T18_00_00Z, Pair.of( 585.67, 113.0 ) ) )
-                      .addEvent( Event.of( T2551_03_18T21_00_00Z, Pair.of( 602.33, 127.0 ) ) )
-                      .addReferenceTime( T2551_03_17T12_00_00Z,
-                                         ReferenceTimeType.DEFAULT )
-                      .setTimeScale( desiredTimeScale );
+        TimeSeries<Pair<Double, Double>> poolTwoSeries =
+                new TimeSeriesBuilder<Pair<Double, Double>>().addEvent( Event.of( T2551_03_18T06_00_00Z,
+                                                                                  Pair.of( 497.6666666666667,
+                                                                                           101.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T09_00_00Z,
+                                                                                  Pair.of( 517.6666666666666,
+                                                                                           103.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T12_00_00Z,
+                                                                                  Pair.of( 548.3333333333334,
+                                                                                           107.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T15_00_00Z,
+                                                                                  Pair.of( 567.6666666666666,
+                                                                                           109.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T18_00_00Z,
+                                                                                  Pair.of( 585.6666666666666,
+                                                                                           113.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T21_00_00Z,
+                                                                                  Pair.of( 602.3333333333334,
+                                                                                           127.0 ) ) )
+                                                             .addReferenceTime( T2551_03_17T12_00_00Z,
+                                                                                ReferenceTimeType.DEFAULT )
+                                                             .setTimeScale( desiredTimeScale )
+                                                             .build();
 
         PoolOfPairs<Double, Double> poolTwoExpected =
-                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolTwoBuilder.build() )
+                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolTwoSeries )
                                                         .setMetadata( poolTwoMetadata )
                                                         .build();
 
@@ -498,24 +511,31 @@ public class PoolSupplierTest
 
         PoolOfPairs<Double, Double> poolThreeActual = poolThreeSupplier.get();
 
-        // Round for comparison
-        poolThreeActual = TimeSeriesSlicer.transform( poolThreeActual, pairRounder );
-
         // Pool Three expected
-        TimeSeriesBuilder<Pair<Double, Double>> poolThreeBuilder = new TimeSeriesBuilder<>();
-        poolThreeBuilder.addEvent( Event.of( T2551_03_17T15_00_00Z, Pair.of( 409.67, 73.0 ) ) )
-                        .addEvent( Event.of( T2551_03_17T18_00_00Z, Pair.of( 428.33, 79.0 ) ) )
-                        .addEvent( Event.of( T2551_03_17T21_00_00Z, Pair.of( 443.67, 83.0 ) ) )
-                        .addEvent( Event.of( T2551_03_18T00_00_00Z, Pair.of( 460.33, 89.0 ) ) )
-                        .addEvent( Event.of( T2551_03_18T03_00_00Z, Pair.of( 477.67, 97.0 ) ) )
-                        .addEvent( Event.of( T2551_03_18T06_00_00Z, Pair.of( 497.67, 101.0 ) ) )
-                        .addEvent( Event.of( T2551_03_18T09_00_00Z, Pair.of( 517.67, 103.0 ) ) )
-                        .addReferenceTime( T2551_03_17T12_00_00Z,
-                                           ReferenceTimeType.DEFAULT )
-                        .setTimeScale( desiredTimeScale );
+        TimeSeries<Pair<Double, Double>> poolThreeSeries =
+                new TimeSeriesBuilder<Pair<Double, Double>>().addEvent( Event.of( T2551_03_17T15_00_00Z,
+                                                                                  Pair.of( 409.6666666666667, 73.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_17T18_00_00Z,
+                                                                                  Pair.of( 428.3333333333333, 79.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_17T21_00_00Z,
+                                                                                  Pair.of( 443.6666666666667, 83.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T00_00_00Z,
+                                                                                  Pair.of( 460.3333333333333, 89.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T03_00_00Z,
+                                                                                  Pair.of( 477.6666666666667, 97.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T06_00_00Z,
+                                                                                  Pair.of( 497.6666666666667,
+                                                                                           101.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T09_00_00Z,
+                                                                                  Pair.of( 517.6666666666666,
+                                                                                           103.0 ) ) )
+                                                             .addReferenceTime( T2551_03_17T12_00_00Z,
+                                                                                ReferenceTimeType.DEFAULT )
+                                                             .setTimeScale( desiredTimeScale )
+                                                             .build();
 
         PoolOfPairs<Double, Double> poolThreeExpected =
-                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolThreeBuilder.build() )
+                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolThreeSeries )
                                                         .setMetadata( poolThreeMetadata )
                                                         .build();
 
@@ -543,23 +563,33 @@ public class PoolSupplierTest
 
         PoolOfPairs<Double, Double> poolFourActual = poolFourSupplier.get();
 
-        // Round for comparison
-        poolFourActual = TimeSeriesSlicer.transform( poolFourActual, pairRounder );
-
         // Pool Four expected
-        TimeSeriesBuilder<Pair<Double, Double>> poolFourBuilder = new TimeSeriesBuilder<>();
-        poolFourBuilder.addEvent( Event.of( T2551_03_18T06_00_00Z, Pair.of( 497.67, 101.0 ) ) )
-                       .addEvent( Event.of( T2551_03_18T09_00_00Z, Pair.of( 517.67, 103.0 ) ) )
-                       .addEvent( Event.of( T2551_03_18T12_00_00Z, Pair.of( 548.33, 107.0 ) ) )
-                       .addEvent( Event.of( T2551_03_18T15_00_00Z, Pair.of( 567.67, 109.0 ) ) )
-                       .addEvent( Event.of( T2551_03_18T18_00_00Z, Pair.of( 585.67, 113.0 ) ) )
-                       .addEvent( Event.of( T2551_03_18T21_00_00Z, Pair.of( 602.33, 127.0 ) ) )
-                       .addReferenceTime( T2551_03_17T12_00_00Z,
-                                          ReferenceTimeType.DEFAULT )
-                       .setTimeScale( desiredTimeScale );
+        TimeSeries<Pair<Double, Double>> poolFourSeries =
+                new TimeSeriesBuilder<Pair<Double, Double>>().addEvent( Event.of( T2551_03_18T06_00_00Z,
+                                                                                  Pair.of( 497.6666666666667,
+                                                                                           101.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T09_00_00Z,
+                                                                                  Pair.of( 517.6666666666666,
+                                                                                           103.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T12_00_00Z,
+                                                                                  Pair.of( 548.3333333333334,
+                                                                                           107.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T15_00_00Z,
+                                                                                  Pair.of( 567.6666666666666,
+                                                                                           109.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T18_00_00Z,
+                                                                                  Pair.of( 585.6666666666666,
+                                                                                           113.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T21_00_00Z,
+                                                                                  Pair.of( 602.3333333333334,
+                                                                                           127.0 ) ) )
+                                                             .addReferenceTime( T2551_03_17T12_00_00Z,
+                                                                                ReferenceTimeType.DEFAULT )
+                                                             .setTimeScale( desiredTimeScale )
+                                                             .build();
 
         PoolOfPairs<Double, Double> poolFourExpected =
-                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolFourBuilder.build() )
+                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolFourSeries )
                                                         .setMetadata( poolFourMetadata )
                                                         .build();
 
@@ -587,24 +617,36 @@ public class PoolSupplierTest
 
         PoolOfPairs<Double, Double> poolFiveActual = poolFiveSupplier.get();
 
-        // Round for comparison
-        poolFiveActual = TimeSeriesSlicer.transform( poolFiveActual, pairRounder );
-
         // Pool Five expected
-        TimeSeriesBuilder<Pair<Double, Double>> poolFiveBuilder = new TimeSeriesBuilder<>();
-        poolFiveBuilder.addEvent( Event.of( T2551_03_17T03_00_00Z, Pair.of( 477.67, 131.0 ) ) )
-                       .addEvent( Event.of( T2551_03_17T06_00_00Z, Pair.of( 497.67, 137.0 ) ) )
-                       .addEvent( Event.of( T2551_03_17T09_00_00Z, Pair.of( 517.67, 139.0 ) ) )
-                       .addEvent( Event.of( T2551_03_18T12_00_00Z, Pair.of( 548.33, 149.0 ) ) )
-                       .addEvent( Event.of( T2551_03_18T15_00_00Z, Pair.of( 567.67, 151.0 ) ) )
-                       .addEvent( Event.of( T2551_03_18T18_00_00Z, Pair.of( 585.67, 157.0 ) ) )
-                       .addEvent( Event.of( T2551_03_18T21_00_00Z, Pair.of( 602.33, 163.0 ) ) )
-                       .addReferenceTime( T2551_03_18T00_00_00Z,
-                                          ReferenceTimeType.DEFAULT )
-                       .setTimeScale( desiredTimeScale );
+        TimeSeries<Pair<Double, Double>> poolFiveSeries =
+                new TimeSeriesBuilder<Pair<Double, Double>>().addEvent( Event.of( T2551_03_17T03_00_00Z,
+                                                                                  Pair.of( 477.6666666666667,
+                                                                                           131.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_17T06_00_00Z,
+                                                                                  Pair.of( 497.6666666666667,
+                                                                                           137.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_17T09_00_00Z,
+                                                                                  Pair.of( 517.6666666666666,
+                                                                                           139.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T12_00_00Z,
+                                                                                  Pair.of( 548.3333333333334,
+                                                                                           149.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T15_00_00Z,
+                                                                                  Pair.of( 567.6666666666666,
+                                                                                           151.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T18_00_00Z,
+                                                                                  Pair.of( 585.6666666666666,
+                                                                                           157.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T21_00_00Z,
+                                                                                  Pair.of( 602.3333333333334,
+                                                                                           163.0 ) ) )
+                                                             .addReferenceTime( T2551_03_18T00_00_00Z,
+                                                                                ReferenceTimeType.DEFAULT )
+                                                             .setTimeScale( desiredTimeScale )
+                                                             .build();
 
         PoolOfPairs<Double, Double> poolFiveExpected =
-                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolFiveBuilder.build() )
+                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolFiveSeries )
                                                         .setMetadata( poolFiveMetadata )
                                                         .build();
 
@@ -632,23 +674,32 @@ public class PoolSupplierTest
 
         PoolOfPairs<Double, Double> poolSixActual = poolSixSupplier.get();
 
-        // Round for comparison
-        poolSixActual = TimeSeriesSlicer.transform( poolSixActual, pairRounder );
-
         // Pool Six expected
-        TimeSeriesBuilder<Pair<Double, Double>> poolSixBuilder = new TimeSeriesBuilder<>();
-        poolSixBuilder.addEvent( Event.of( T2551_03_18T18_00_00Z, Pair.of( 585.67, 157.0 ) ) )
-                      .addEvent( Event.of( T2551_03_18T21_00_00Z, Pair.of( 602.33, 163.0 ) ) )
-                      .addEvent( Event.of( T2551_03_19T00_00_00Z, Pair.of( 616.33, 167.0 ) ) )
-                      .addEvent( Event.of( T2551_03_19T03_00_00Z, Pair.of( 638.33, 173.0 ) ) )
-                      .addEvent( Event.of( T2551_03_19T06_00_00Z, Pair.of( 653.0, 179.0 ) ) )
-                      .addEvent( Event.of( T2551_03_19T09_00_00Z, Pair.of( 670.33, 181.0 ) ) )
-                      .addReferenceTime( T2551_03_18T00_00_00Z,
-                                         ReferenceTimeType.DEFAULT )
-                      .setTimeScale( desiredTimeScale );
+        TimeSeries<Pair<Double, Double>> poolSixSeries =
+                new TimeSeriesBuilder<Pair<Double, Double>>().addEvent( Event.of( T2551_03_18T18_00_00Z,
+                                                                                  Pair.of( 585.6666666666666,
+                                                                                           157.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T21_00_00Z,
+                                                                                  Pair.of( 602.3333333333334,
+                                                                                           163.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T00_00_00Z,
+                                                                                  Pair.of( 616.3333333333334,
+                                                                                           167.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T03_00_00Z,
+                                                                                  Pair.of( 638.3333333333334,
+                                                                                           173.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T06_00_00Z,
+                                                                                  Pair.of( 653.0, 179.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T09_00_00Z,
+                                                                                  Pair.of( 670.3333333333334,
+                                                                                           181.0 ) ) )
+                                                             .addReferenceTime( T2551_03_18T00_00_00Z,
+                                                                                ReferenceTimeType.DEFAULT )
+                                                             .setTimeScale( desiredTimeScale )
+                                                             .build();
 
         PoolOfPairs<Double, Double> poolSixExpected =
-                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolSixBuilder.build() )
+                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolSixSeries )
                                                         .setMetadata( poolSixMetadata )
                                                         .build();
 
@@ -676,24 +727,36 @@ public class PoolSupplierTest
 
         PoolOfPairs<Double, Double> poolSevenActual = poolSevenSupplier.get();
 
-        // Round for comparison
-        poolSevenActual = TimeSeriesSlicer.transform( poolSevenActual, pairRounder );
-
         // Pool Seven expected
-        TimeSeriesBuilder<Pair<Double, Double>> poolSevenBuilder = new TimeSeriesBuilder<>();
-        poolSevenBuilder.addEvent( Event.of( T2551_03_17T03_00_00Z, Pair.of( 477.67, 131.0 ) ) )
-                        .addEvent( Event.of( T2551_03_17T06_00_00Z, Pair.of( 497.67, 137.0 ) ) )
-                        .addEvent( Event.of( T2551_03_17T09_00_00Z, Pair.of( 517.67, 139.0 ) ) )
-                        .addEvent( Event.of( T2551_03_18T12_00_00Z, Pair.of( 548.33, 149.0 ) ) )
-                        .addEvent( Event.of( T2551_03_18T15_00_00Z, Pair.of( 567.67, 151.0 ) ) )
-                        .addEvent( Event.of( T2551_03_18T18_00_00Z, Pair.of( 585.67, 157.0 ) ) )
-                        .addEvent( Event.of( T2551_03_18T21_00_00Z, Pair.of( 602.33, 163.0 ) ) )
-                        .addReferenceTime( T2551_03_18T00_00_00Z,
-                                           ReferenceTimeType.DEFAULT )
-                        .setTimeScale( desiredTimeScale );
+        TimeSeries<Pair<Double, Double>> poolSevenSeries =
+                new TimeSeriesBuilder<Pair<Double, Double>>().addEvent( Event.of( T2551_03_17T03_00_00Z,
+                                                                                  Pair.of( 477.6666666666667,
+                                                                                           131.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_17T06_00_00Z,
+                                                                                  Pair.of( 497.6666666666667,
+                                                                                           137.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_17T09_00_00Z,
+                                                                                  Pair.of( 517.6666666666666,
+                                                                                           139.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T12_00_00Z,
+                                                                                  Pair.of( 548.3333333333334,
+                                                                                           149.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T15_00_00Z,
+                                                                                  Pair.of( 567.6666666666666,
+                                                                                           151.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T18_00_00Z,
+                                                                                  Pair.of( 585.6666666666666,
+                                                                                           157.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T21_00_00Z,
+                                                                                  Pair.of( 602.3333333333334,
+                                                                                           163.0 ) ) )
+                                                             .addReferenceTime( T2551_03_18T00_00_00Z,
+                                                                                ReferenceTimeType.DEFAULT )
+                                                             .setTimeScale( desiredTimeScale )
+                                                             .build();
 
         PoolOfPairs<Double, Double> poolSevenExpected =
-                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolSevenBuilder.build() )
+                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolSevenSeries )
                                                         .setMetadata( poolSevenMetadata )
                                                         .build();
 
@@ -721,23 +784,32 @@ public class PoolSupplierTest
 
         PoolOfPairs<Double, Double> poolEightActual = poolEightSupplier.get();
 
-        // Round for comparison
-        poolEightActual = TimeSeriesSlicer.transform( poolEightActual, pairRounder );
-
         // Pool Eight expected
-        TimeSeriesBuilder<Pair<Double, Double>> poolEightBuilder = new TimeSeriesBuilder<>();
-        poolEightBuilder.addEvent( Event.of( T2551_03_18T18_00_00Z, Pair.of( 585.67, 157.0 ) ) )
-                        .addEvent( Event.of( T2551_03_18T21_00_00Z, Pair.of( 602.33, 163.0 ) ) )
-                        .addEvent( Event.of( T2551_03_19T00_00_00Z, Pair.of( 616.33, 167.0 ) ) )
-                        .addEvent( Event.of( T2551_03_19T03_00_00Z, Pair.of( 638.33, 173.0 ) ) )
-                        .addEvent( Event.of( T2551_03_19T06_00_00Z, Pair.of( 653.0, 179.0 ) ) )
-                        .addEvent( Event.of( T2551_03_19T09_00_00Z, Pair.of( 670.33, 181.0 ) ) )
-                        .addReferenceTime( T2551_03_18T00_00_00Z,
-                                           ReferenceTimeType.DEFAULT )
-                        .setTimeScale( desiredTimeScale );
+        TimeSeries<Pair<Double, Double>> poolEightSeries =
+                new TimeSeriesBuilder<Pair<Double, Double>>().addEvent( Event.of( T2551_03_18T18_00_00Z,
+                                                                                  Pair.of( 585.6666666666666,
+                                                                                           157.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T21_00_00Z,
+                                                                                  Pair.of( 602.3333333333334,
+                                                                                           163.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T00_00_00Z,
+                                                                                  Pair.of( 616.3333333333334,
+                                                                                           167.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T03_00_00Z,
+                                                                                  Pair.of( 638.3333333333334,
+                                                                                           173.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T06_00_00Z,
+                                                                                  Pair.of( 653.0, 179.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T09_00_00Z,
+                                                                                  Pair.of( 670.3333333333334,
+                                                                                           181.0 ) ) )
+                                                             .addReferenceTime( T2551_03_18T00_00_00Z,
+                                                                                ReferenceTimeType.DEFAULT )
+                                                             .setTimeScale( desiredTimeScale )
+                                                             .build();
 
         PoolOfPairs<Double, Double> poolEightExpected =
-                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolEightBuilder.build() )
+                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolEightSeries )
                                                         .setMetadata( poolEightMetadata )
                                                         .build();
 
@@ -765,24 +837,35 @@ public class PoolSupplierTest
 
         PoolOfPairs<Double, Double> poolNineActual = poolNineSupplier.get();
 
-        // Round for comparison
-        poolNineActual = TimeSeriesSlicer.transform( poolNineActual, pairRounder );
-
         // Pool Nine expected
-        TimeSeriesBuilder<Pair<Double, Double>> poolNineBuilder = new TimeSeriesBuilder<>();
-        poolNineBuilder.addEvent( Event.of( T2551_03_18T15_00_00Z, Pair.of( 567.67, 191.0 ) ) )
-                       .addEvent( Event.of( T2551_03_18T18_00_00Z, Pair.of( 585.67, 193.0 ) ) )
-                       .addEvent( Event.of( T2551_03_18T21_00_00Z, Pair.of( 602.33, 197.0 ) ) )
-                       .addEvent( Event.of( T2551_03_19T00_00_00Z, Pair.of( 616.33, 199.0 ) ) )
-                       .addEvent( Event.of( T2551_03_19T03_00_00Z, Pair.of( 638.33, 211.0 ) ) )
-                       .addEvent( Event.of( T2551_03_19T06_00_00Z, Pair.of( 653.0, 223.0 ) ) )
-                       .addEvent( Event.of( T2551_03_19T09_00_00Z, Pair.of( 670.33, 227.0 ) ) )
-                       .addReferenceTime( T2551_03_18T12_00_00Z,
-                                          ReferenceTimeType.DEFAULT )
-                       .setTimeScale( desiredTimeScale );
+        TimeSeries<Pair<Double, Double>> poolNineSeries =
+                new TimeSeriesBuilder<Pair<Double, Double>>().addEvent( Event.of( T2551_03_18T15_00_00Z,
+                                                                                  Pair.of( 567.6666666666666,
+                                                                                           191.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T18_00_00Z,
+                                                                                  Pair.of( 585.6666666666666,
+                                                                                           193.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T21_00_00Z,
+                                                                                  Pair.of( 602.3333333333334,
+                                                                                           197.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T00_00_00Z,
+                                                                                  Pair.of( 616.3333333333334,
+                                                                                           199.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T03_00_00Z,
+                                                                                  Pair.of( 638.3333333333334,
+                                                                                           211.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T06_00_00Z,
+                                                                                  Pair.of( 653.0, 223.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T09_00_00Z,
+                                                                                  Pair.of( 670.3333333333334,
+                                                                                           227.0 ) ) )
+                                                             .addReferenceTime( T2551_03_18T12_00_00Z,
+                                                                                ReferenceTimeType.DEFAULT )
+                                                             .setTimeScale( desiredTimeScale )
+                                                             .build();
 
         PoolOfPairs<Double, Double> poolNineExpected =
-                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolNineBuilder.build() )
+                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolNineSeries )
                                                         .setMetadata( poolNineMetadata )
                                                         .build();
 
@@ -810,23 +893,32 @@ public class PoolSupplierTest
 
         PoolOfPairs<Double, Double> poolTenActual = poolTenSupplier.get();
 
-        // Round for comparison
-        poolTenActual = TimeSeriesSlicer.transform( poolTenActual, pairRounder );
-
         // Pool Ten expected
-        TimeSeriesBuilder<Pair<Double, Double>> poolTenBuilder = new TimeSeriesBuilder<>();
-        poolTenBuilder.addEvent( Event.of( T2551_03_19T06_00_00Z, Pair.of( 653.0, 223.0 ) ) )
-                      .addEvent( Event.of( T2551_03_19T09_00_00Z, Pair.of( 670.33, 227.0 ) ) )
-                      .addEvent( Event.of( T2551_03_19T12_00_00Z, Pair.of( 691.67, 229.0 ) ) )
-                      .addEvent( Event.of( T2551_03_19T15_00_00Z, Pair.of( 718.33, 233.0 ) ) )
-                      .addEvent( Event.of( T2551_03_19T18_00_00Z, Pair.of( 738.33, 239.0 ) ) )
-                      .addEvent( Event.of( T2551_03_19T21_00_00Z, Pair.of( 756.33, 241.0 ) ) )
-                      .addReferenceTime( T2551_03_18T12_00_00Z,
-                                         ReferenceTimeType.DEFAULT )
-                      .setTimeScale( desiredTimeScale );
+        TimeSeries<Pair<Double, Double>> poolTenSeries =
+                new TimeSeriesBuilder<Pair<Double, Double>>().addEvent( Event.of( T2551_03_19T06_00_00Z,
+                                                                                  Pair.of( 653.0, 223.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T09_00_00Z,
+                                                                                  Pair.of( 670.3333333333334,
+                                                                                           227.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T12_00_00Z,
+                                                                                  Pair.of( 691.6666666666666,
+                                                                                           229.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T15_00_00Z,
+                                                                                  Pair.of( 718.3333333333334,
+                                                                                           233.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T18_00_00Z,
+                                                                                  Pair.of( 738.3333333333334,
+                                                                                           239.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T21_00_00Z,
+                                                                                  Pair.of( 756.3333333333334,
+                                                                                           241.0 ) ) )
+                                                             .addReferenceTime( T2551_03_18T12_00_00Z,
+                                                                                ReferenceTimeType.DEFAULT )
+                                                             .setTimeScale( desiredTimeScale )
+                                                             .build();
 
         PoolOfPairs<Double, Double> poolTenExpected =
-                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolTenBuilder.build() )
+                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolTenSeries )
                                                         .setMetadata( poolTenMetadata )
                                                         .build();
 
@@ -855,37 +947,62 @@ public class PoolSupplierTest
 
         PoolOfPairs<Double, Double> poolElevenActual = poolElevenSupplier.get();
 
-        // Round for comparison
-        poolElevenActual = TimeSeriesSlicer.transform( poolElevenActual, pairRounder );
-
         // Pool Eleven expected
-        TimeSeriesBuilder<Pair<Double, Double>> poolElevenOneBuilder = new TimeSeriesBuilder<>();
-        poolElevenOneBuilder.addEvent( Event.of( T2551_03_18T15_00_00Z, Pair.of( 567.67, 191.0 ) ) )
-                            .addEvent( Event.of( T2551_03_18T18_00_00Z, Pair.of( 585.67, 193.0 ) ) )
-                            .addEvent( Event.of( T2551_03_18T21_00_00Z, Pair.of( 602.33, 197.0 ) ) )
-                            .addEvent( Event.of( T2551_03_19T00_00_00Z, Pair.of( 616.33, 199.0 ) ) )
-                            .addEvent( Event.of( T2551_03_19T03_00_00Z, Pair.of( 638.33, 211.0 ) ) )
-                            .addEvent( Event.of( T2551_03_19T06_00_00Z, Pair.of( 653.0, 223.0 ) ) )
-                            .addEvent( Event.of( T2551_03_19T09_00_00Z, Pair.of( 670.33, 227.0 ) ) )
-                            .addReferenceTime( T2551_03_18T12_00_00Z,
-                                               ReferenceTimeType.DEFAULT )
-                            .setTimeScale( desiredTimeScale );
+        TimeSeries<Pair<Double, Double>> poolElevenOneSeries =
+                new TimeSeriesBuilder<Pair<Double, Double>>().addEvent( Event.of( T2551_03_18T15_00_00Z,
+                                                                                  Pair.of( 567.6666666666666,
+                                                                                           191.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T18_00_00Z,
+                                                                                  Pair.of( 585.6666666666666,
+                                                                                           193.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T21_00_00Z,
+                                                                                  Pair.of( 602.3333333333334,
+                                                                                           197.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T00_00_00Z,
+                                                                                  Pair.of( 616.3333333333334,
+                                                                                           199.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T03_00_00Z,
+                                                                                  Pair.of( 638.3333333333334,
+                                                                                           211.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T06_00_00Z,
+                                                                                  Pair.of( 653.0, 223.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T09_00_00Z,
+                                                                                  Pair.of( 670.3333333333334,
+                                                                                           227.0 ) ) )
+                                                             .addReferenceTime( T2551_03_18T12_00_00Z,
+                                                                                ReferenceTimeType.DEFAULT )
+                                                             .setTimeScale( desiredTimeScale )
+                                                             .build();
 
-        TimeSeriesBuilder<Pair<Double, Double>> poolElevenTwoBuilder = new TimeSeriesBuilder<>();
-        poolElevenTwoBuilder.addEvent( Event.of( T2551_03_19T03_00_00Z, Pair.of( 638.33, 251.0 ) ) )
-                            .addEvent( Event.of( T2551_03_19T06_00_00Z, Pair.of( 653.0, 257.0 ) ) )
-                            .addEvent( Event.of( T2551_03_19T09_00_00Z, Pair.of( 670.33, 263.0 ) ) )
-                            .addEvent( Event.of( T2551_03_19T12_00_00Z, Pair.of( 691.67, 269.0 ) ) )
-                            .addEvent( Event.of( T2551_03_19T15_00_00Z, Pair.of( 718.33, 271.0 ) ) )
-                            .addEvent( Event.of( T2551_03_19T18_00_00Z, Pair.of( 738.33, 277.0 ) ) )
-                            .addEvent( Event.of( T2551_03_19T21_00_00Z, Pair.of( 756.33, 281.0 ) ) )
-                            .addReferenceTime( T2551_03_19T00_00_00Z,
-                                               ReferenceTimeType.DEFAULT )
-                            .setTimeScale( desiredTimeScale );
+        TimeSeries<Pair<Double, Double>> poolElevenTwoSeries =
+                new TimeSeriesBuilder<Pair<Double, Double>>().addEvent( Event.of( T2551_03_19T03_00_00Z,
+                                                                                  Pair.of( 638.3333333333334,
+                                                                                           251.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T06_00_00Z,
+                                                                                  Pair.of( 653.0, 257.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T09_00_00Z,
+                                                                                  Pair.of( 670.3333333333334,
+                                                                                           263.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T12_00_00Z,
+                                                                                  Pair.of( 691.6666666666666,
+                                                                                           269.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T15_00_00Z,
+                                                                                  Pair.of( 718.3333333333334,
+                                                                                           271.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T18_00_00Z,
+                                                                                  Pair.of( 738.3333333333334,
+                                                                                           277.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T21_00_00Z,
+                                                                                  Pair.of( 756.3333333333334,
+                                                                                           281.0 ) ) )
+                                                             .addReferenceTime( T2551_03_19T00_00_00Z,
+                                                                                ReferenceTimeType.DEFAULT )
+                                                             .setTimeScale( desiredTimeScale )
+                                                             .build();
 
         PoolOfPairs<Double, Double> poolElevenExpected =
-                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolElevenOneBuilder.build() )
-                                                        .addTimeSeries( poolElevenTwoBuilder.build() )
+                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolElevenOneSeries )
+                                                        .addTimeSeries( poolElevenTwoSeries )
                                                         .setMetadata( poolElevenMetadata )
                                                         .build();
 
@@ -914,35 +1031,57 @@ public class PoolSupplierTest
 
         PoolOfPairs<Double, Double> poolTwelveActual = poolTwelveSupplier.get();
 
-        // Round for comparison
-        poolTwelveActual = TimeSeriesSlicer.transform( poolTwelveActual, pairRounder );
-
         // Pool Twelve expected
-        TimeSeriesBuilder<Pair<Double, Double>> poolTwelveOneBuilder = new TimeSeriesBuilder<>();
-        poolTwelveOneBuilder.addEvent( Event.of( T2551_03_19T06_00_00Z, Pair.of( 653.0, 223.0 ) ) )
-                            .addEvent( Event.of( T2551_03_19T09_00_00Z, Pair.of( 670.33, 227.0 ) ) )
-                            .addEvent( Event.of( T2551_03_19T12_00_00Z, Pair.of( 691.67, 229.0 ) ) )
-                            .addEvent( Event.of( T2551_03_19T15_00_00Z, Pair.of( 718.33, 233.0 ) ) )
-                            .addEvent( Event.of( T2551_03_19T18_00_00Z, Pair.of( 738.33, 239.0 ) ) )
-                            .addEvent( Event.of( T2551_03_19T21_00_00Z, Pair.of( 756.33, 241.0 ) ) )
-                            .addReferenceTime( T2551_03_18T12_00_00Z,
-                                               ReferenceTimeType.DEFAULT )
-                            .setTimeScale( desiredTimeScale );
+        TimeSeries<Pair<Double, Double>> poolTwelveOneSeries =
+                new TimeSeriesBuilder<Pair<Double, Double>>().addEvent( Event.of( T2551_03_19T06_00_00Z,
+                                                                                  Pair.of( 653.0, 223.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T09_00_00Z,
+                                                                                  Pair.of( 670.3333333333334,
+                                                                                           227.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T12_00_00Z,
+                                                                                  Pair.of( 691.6666666666666,
+                                                                                           229.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T15_00_00Z,
+                                                                                  Pair.of( 718.3333333333334,
+                                                                                           233.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T18_00_00Z,
+                                                                                  Pair.of( 738.3333333333334,
+                                                                                           239.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T21_00_00Z,
+                                                                                  Pair.of( 756.3333333333334,
+                                                                                           241.0 ) ) )
+                                                             .addReferenceTime( T2551_03_18T12_00_00Z,
+                                                                                ReferenceTimeType.DEFAULT )
+                                                             .setTimeScale( desiredTimeScale )
+                                                             .build();
 
-        TimeSeriesBuilder<Pair<Double, Double>> poolTwelveTwoBuilder = new TimeSeriesBuilder<>();
-        poolTwelveTwoBuilder.addEvent( Event.of( T2551_03_19T18_00_00Z, Pair.of( 738.33, 277.0 ) ) )
-                            .addEvent( Event.of( T2551_03_19T21_00_00Z, Pair.of( 756.33, 281.0 ) ) )
-                            .addEvent( Event.of( T2551_03_20T00_00_00Z, Pair.of( 776.33, 283.0 ) ) )
-                            .addEvent( Event.of( T2551_03_20T03_00_00Z, Pair.of( 805.67, 293.0 ) ) )
-                            .addEvent( Event.of( T2551_03_20T06_00_00Z, Pair.of( 823.67, 307.0 ) ) )
-                            .addEvent( Event.of( T2551_03_20T09_00_00Z, Pair.of( 840.33, 311.0 ) ) )
-                            .addReferenceTime( T2551_03_19T00_00_00Z,
-                                               ReferenceTimeType.DEFAULT )
-                            .setTimeScale( desiredTimeScale );
+        TimeSeries<Pair<Double, Double>> poolTwelveTwoSeries =
+                new TimeSeriesBuilder<Pair<Double, Double>>().addEvent( Event.of( T2551_03_19T18_00_00Z,
+                                                                                  Pair.of( 738.3333333333334,
+                                                                                           277.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T21_00_00Z,
+                                                                                  Pair.of( 756.3333333333334,
+                                                                                           281.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_20T00_00_00Z,
+                                                                                  Pair.of( 776.3333333333334,
+                                                                                           283.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_20T03_00_00Z,
+                                                                                  Pair.of( 805.6666666666666,
+                                                                                           293.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_20T06_00_00Z,
+                                                                                  Pair.of( 823.6666666666666,
+                                                                                           307.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_20T09_00_00Z,
+                                                                                  Pair.of( 840.3333333333334,
+                                                                                           311.0 ) ) )
+                                                             .addReferenceTime( T2551_03_19T00_00_00Z,
+                                                                                ReferenceTimeType.DEFAULT )
+                                                             .setTimeScale( desiredTimeScale )
+                                                             .build();
 
         PoolOfPairs<Double, Double> poolTwelveExpected =
-                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolTwelveOneBuilder.build() )
-                                                        .addTimeSeries( poolTwelveTwoBuilder.build() )
+                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolTwelveOneSeries )
+                                                        .addTimeSeries( poolTwelveTwoSeries )
                                                         .setMetadata( poolTwelveMetadata )
                                                         .build();
 
@@ -970,24 +1109,35 @@ public class PoolSupplierTest
 
         PoolOfPairs<Double, Double> poolThirteenActual = poolThirteenSupplier.get();
 
-        // Round for comparison
-        poolThirteenActual = TimeSeriesSlicer.transform( poolThirteenActual, pairRounder );
-
         // Pool Thirteen expected
-        TimeSeriesBuilder<Pair<Double, Double>> poolThirteenBuilder = new TimeSeriesBuilder<>();
-        poolThirteenBuilder.addEvent( Event.of( T2551_03_19T03_00_00Z, Pair.of( 638.33, 251.0 ) ) )
-                           .addEvent( Event.of( T2551_03_19T06_00_00Z, Pair.of( 653.0, 257.0 ) ) )
-                           .addEvent( Event.of( T2551_03_19T09_00_00Z, Pair.of( 670.33, 263.0 ) ) )
-                           .addEvent( Event.of( T2551_03_19T12_00_00Z, Pair.of( 691.67, 269.0 ) ) )
-                           .addEvent( Event.of( T2551_03_19T15_00_00Z, Pair.of( 718.33, 271.0 ) ) )
-                           .addEvent( Event.of( T2551_03_19T18_00_00Z, Pair.of( 738.33, 277.0 ) ) )
-                           .addEvent( Event.of( T2551_03_19T21_00_00Z, Pair.of( 756.33, 281.0 ) ) )
-                           .addReferenceTime( T2551_03_19T00_00_00Z,
-                                              ReferenceTimeType.DEFAULT )
-                           .setTimeScale( desiredTimeScale );
+        TimeSeries<Pair<Double, Double>> poolThirteenSeries =
+                new TimeSeriesBuilder<Pair<Double, Double>>().addEvent( Event.of( T2551_03_19T03_00_00Z,
+                                                                                  Pair.of( 638.3333333333334,
+                                                                                           251.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T06_00_00Z,
+                                                                                  Pair.of( 653.0, 257.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T09_00_00Z,
+                                                                                  Pair.of( 670.3333333333334,
+                                                                                           263.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T12_00_00Z,
+                                                                                  Pair.of( 691.6666666666666,
+                                                                                           269.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T15_00_00Z,
+                                                                                  Pair.of( 718.3333333333334,
+                                                                                           271.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T18_00_00Z,
+                                                                                  Pair.of( 738.3333333333334,
+                                                                                           277.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T21_00_00Z,
+                                                                                  Pair.of( 756.3333333333334,
+                                                                                           281.0 ) ) )
+                                                             .addReferenceTime( T2551_03_19T00_00_00Z,
+                                                                                ReferenceTimeType.DEFAULT )
+                                                             .setTimeScale( desiredTimeScale )
+                                                             .build();
 
         PoolOfPairs<Double, Double> poolThirteenExpected =
-                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolThirteenBuilder.build() )
+                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolThirteenSeries )
                                                         .setMetadata( poolThirteenMetadata )
                                                         .build();
 
@@ -1015,23 +1165,33 @@ public class PoolSupplierTest
 
         PoolOfPairs<Double, Double> poolFourteenActual = poolFourteenSupplier.get();
 
-        // Round for comparison
-        poolFourteenActual = TimeSeriesSlicer.transform( poolFourteenActual, pairRounder );
-
         // Pool Fourteen expected
-        TimeSeriesBuilder<Pair<Double, Double>> poolFourteenBuilder = new TimeSeriesBuilder<>();
-        poolFourteenBuilder.addEvent( Event.of( T2551_03_19T18_00_00Z, Pair.of( 738.33, 277.0 ) ) )
-                           .addEvent( Event.of( T2551_03_19T21_00_00Z, Pair.of( 756.33, 281.0 ) ) )
-                           .addEvent( Event.of( T2551_03_20T00_00_00Z, Pair.of( 776.33, 283.0 ) ) )
-                           .addEvent( Event.of( T2551_03_20T03_00_00Z, Pair.of( 805.67, 293.0 ) ) )
-                           .addEvent( Event.of( T2551_03_20T06_00_00Z, Pair.of( 823.67, 307.0 ) ) )
-                           .addEvent( Event.of( T2551_03_20T09_00_00Z, Pair.of( 840.33, 311.0 ) ) )
-                           .addReferenceTime( T2551_03_19T00_00_00Z,
-                                              ReferenceTimeType.DEFAULT )
-                           .setTimeScale( desiredTimeScale );
+        TimeSeries<Pair<Double, Double>> poolFourteenSeries =
+                new TimeSeriesBuilder<Pair<Double, Double>>().addEvent( Event.of( T2551_03_19T18_00_00Z,
+                                                                                  Pair.of( 738.3333333333334,
+                                                                                           277.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T21_00_00Z,
+                                                                                  Pair.of( 756.3333333333334,
+                                                                                           281.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_20T00_00_00Z,
+                                                                                  Pair.of( 776.3333333333334,
+                                                                                           283.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_20T03_00_00Z,
+                                                                                  Pair.of( 805.6666666666666,
+                                                                                           293.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_20T06_00_00Z,
+                                                                                  Pair.of( 823.6666666666666,
+                                                                                           307.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_20T09_00_00Z,
+                                                                                  Pair.of( 840.3333333333334,
+                                                                                           311.0 ) ) )
+                                                             .addReferenceTime( T2551_03_19T00_00_00Z,
+                                                                                ReferenceTimeType.DEFAULT )
+                                                             .setTimeScale( desiredTimeScale )
+                                                             .build();
 
         PoolOfPairs<Double, Double> poolFourteenExpected =
-                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolFourteenBuilder.build() )
+                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolFourteenSeries )
                                                         .setMetadata( poolFourteenMetadata )
                                                         .build();
 
@@ -1060,11 +1220,13 @@ public class PoolSupplierTest
         PoolOfPairs<Double, Double> poolFifteenActual = poolFifteenSupplier.get();
 
         // Pool Fifteen expected
-        TimeSeriesBuilder<Pair<Double, Double>> poolFifteenBuilder = new TimeSeriesBuilder<>();
-        poolFifteenBuilder.setTimeScale( desiredTimeScale );
+        TimeSeries<Pair<Double, Double>> poolFifteenSeries =
+                new TimeSeriesBuilder<Pair<Double, Double>>()
+                                                             .setTimeScale( desiredTimeScale )
+                                                             .build();
 
         PoolOfPairs<Double, Double> poolFifteenExpected =
-                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolFifteenBuilder.build() )
+                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolFifteenSeries )
                                                         .setMetadata( poolFifteenMetadata )
                                                         .build();
 
@@ -1093,11 +1255,13 @@ public class PoolSupplierTest
         PoolOfPairs<Double, Double> poolSixteenActual = poolSixteenSupplier.get();
 
         // Pool Sixteen expected
-        TimeSeriesBuilder<Pair<Double, Double>> poolSixteenBuilder = new TimeSeriesBuilder<>();
-        poolSixteenBuilder.setTimeScale( desiredTimeScale );
+        TimeSeries<Pair<Double, Double>> poolSixteenSeries =
+                new TimeSeriesBuilder<Pair<Double, Double>>()
+                                                             .setTimeScale( desiredTimeScale )
+                                                             .build();
 
         PoolOfPairs<Double, Double> poolSixteenExpected =
-                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolSixteenBuilder.build() )
+                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolSixteenSeries )
                                                         .setMetadata( poolSixteenMetadata )
                                                         .build();
 
@@ -1126,11 +1290,13 @@ public class PoolSupplierTest
         PoolOfPairs<Double, Double> poolSeventeenActual = poolSeventeenSupplier.get();
 
         // Pool Seventeen expected
-        TimeSeriesBuilder<Pair<Double, Double>> poolSeventeenBuilder = new TimeSeriesBuilder<>();
-        poolSeventeenBuilder.setTimeScale( desiredTimeScale );
+        TimeSeries<Pair<Double, Double>> poolSeventeenSeries =
+                new TimeSeriesBuilder<Pair<Double, Double>>()
+                                                             .setTimeScale( desiredTimeScale )
+                                                             .build();
 
         PoolOfPairs<Double, Double> poolSeventeenExpected =
-                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolSeventeenBuilder.build() )
+                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolSeventeenSeries )
                                                         .setMetadata( poolSeventeenMetadata )
                                                         .build();
 
@@ -1159,11 +1325,13 @@ public class PoolSupplierTest
         PoolOfPairs<Double, Double> poolEighteenActual = poolEighteenSupplier.get();
 
         // Pool Eighteen expected
-        TimeSeriesBuilder<Pair<Double, Double>> poolEighteenBuilder = new TimeSeriesBuilder<>();
-        poolEighteenBuilder.setTimeScale( desiredTimeScale );
+        TimeSeries<Pair<Double, Double>> poolEighteenSeries =
+                new TimeSeriesBuilder<Pair<Double, Double>>()
+                                                             .setTimeScale( desiredTimeScale )
+                                                             .build();
 
         PoolOfPairs<Double, Double> poolEighteenExpected =
-                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolEighteenBuilder.build() )
+                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolEighteenSeries )
                                                         .setMetadata( poolEighteenMetadata )
                                                         .build();
 
