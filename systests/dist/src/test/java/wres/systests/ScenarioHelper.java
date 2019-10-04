@@ -10,7 +10,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -23,13 +22,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.Sets;
-
-import wres.Main;
 import wres.control.Control;
 
 /**
@@ -190,6 +185,7 @@ public class ScenarioHelper
      * @return The {@link Path} to the directory listing file created.
      * @throws IOException
      */
+    @SuppressWarnings( "unused" )
     private static Path constructDirListingFile( Set<Path> generatedOutputs )
             throws IOException
     {

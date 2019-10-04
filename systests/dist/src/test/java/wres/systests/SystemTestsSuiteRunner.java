@@ -13,7 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A runner for executing classes in a test suite in randome orer.  
+ * A runner for executing classes in a test suite in random order.  
  * 
  * @author hank.herr
  *
@@ -24,19 +24,22 @@ public class SystemTestsSuiteRunner extends Suite
 
     /** Super class constructor wrapper. */
     public SystemTestsSuiteRunner(Class<?> klass, RunnerBuilder builder)
-            throws InitializationError {
+            throws InitializationError 
+    {
         super(klass, builder);
     }
 
     /** Super class constructor wrapper. */
     public SystemTestsSuiteRunner(RunnerBuilder builder, Class<?>[] classes)
-            throws InitializationError {
+            throws InitializationError 
+    {
         super(builder, classes);
     }
 
     /** Super class constructor wrapper. */
     protected SystemTestsSuiteRunner(Class<?> klass, List<Runner> runners)
-            throws InitializationError {
+            throws InitializationError 
+    {
         super(klass, runners);
     }
     
