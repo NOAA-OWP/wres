@@ -130,7 +130,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyWithoutThresholds.xml";
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<PoolOfPairs<Double, Double>, StatisticsForProject> processor =
+        MetricProcessor<PoolOfPairs<Double, Double>> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         null,
                                                                         Executors.newSingleThreadExecutor(),
@@ -172,7 +172,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         String configPath = TEST_SOURCE;
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<PoolOfPairs<Double, Double>, StatisticsForProject> processor =
+        MetricProcessor<PoolOfPairs<Double, Double>> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config, StatisticGroup.set() );
         PoolOfPairs<Double, Double> pairs = MetricTestDataFactory.getSingleValuedPairsFour();
 
@@ -254,7 +254,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
     {
         String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/testAllValid.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<PoolOfPairs<Double, Double>, StatisticsForProject> processor =
+        MetricProcessor<PoolOfPairs<Double, Double>> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         StatisticGroup.set() );
 
@@ -283,7 +283,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                    null,
                                    null );
 
-        MetricProcessor<PoolOfPairs<Double, Double>, StatisticsForProject> processor =
+        MetricProcessor<PoolOfPairs<Double, Double>> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( mockedConfig,
                                                                         StatisticGroup.set() );
 
@@ -371,7 +371,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                    null,
                                    null );
 
-        MetricProcessor<PoolOfPairs<Double, Double>, StatisticsForProject> processor =
+        MetricProcessor<PoolOfPairs<Double, Double>> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( mockedConfig,
                                                                         StatisticGroup.set() );
 
@@ -466,7 +466,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyTimeSeriesSummaryStats.xml";
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<PoolOfPairs<Double, Double>, StatisticsForProject> processor =
+        MetricProcessor<PoolOfPairs<Double, Double>> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         StatisticGroup.set() );
 
@@ -555,7 +555,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         ThresholdsByMetric thresholdsByMetric = builder.build();
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<PoolOfPairs<Double, Double>, StatisticsForProject> processor =
+        MetricProcessor<PoolOfPairs<Double, Double>> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         thresholdsByMetric,
                                                                         StatisticGroup.set() );
@@ -638,7 +638,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         String configPath = TEST_SOURCE;
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<PoolOfPairs<Double, Double>, StatisticsForProject> processor =
+        MetricProcessor<PoolOfPairs<Double, Double>> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config, StatisticGroup.set() );
         PoolOfPairs<Double, Double> pairs = MetricTestDataFactory.getSingleValuedPairsSeven();
 
@@ -722,7 +722,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
 
-        MetricProcessor<PoolOfPairs<Double, Double>, StatisticsForProject> processor =
+        MetricProcessor<PoolOfPairs<Double, Double>> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         StatisticGroup.set() );
 
@@ -779,7 +779,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         String configPath = TEST_SOURCE;
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<PoolOfPairs<Double, Double>, StatisticsForProject> processor =
+        MetricProcessor<PoolOfPairs<Double, Double>> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config, StatisticGroup.set() );
         PoolOfPairs<Double, Double> pairs = MetricTestDataFactory.getSingleValuedPairsEight();
 
@@ -817,7 +817,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
     {
         exception.expect( NullPointerException.class );
         exception.expectMessage( "Expected non-null input to the metric processor." );
-        MetricProcessor<PoolOfPairs<Double, Double>, StatisticsForProject> processor =
+        MetricProcessor<PoolOfPairs<Double, Double>> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( new ProjectConfig( null,
                                                                                            null,
                                                                                            null,
@@ -840,7 +840,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                 new MetricsConfig( null,
                                    Arrays.asList( new MetricConfig( null, null, MetricConfigName.FREQUENCY_BIAS ) ),
                                    null );
-        MetricProcessor<PoolOfPairs<Double, Double>, StatisticsForProject> processor =
+        MetricProcessor<PoolOfPairs<Double, Double>> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( new ProjectConfig( null,
                                                                                            null,
                                                                                            Arrays.asList( metrics ),
@@ -881,7 +881,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                    null );
 
 
-        MetricProcessor<PoolOfPairs<Double, Double>, StatisticsForProject> processor =
+        MetricProcessor<PoolOfPairs<Double, Double>> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( mockedConfig,
                                                                         Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
         processor.apply( MetricTestDataFactory.getSingleValuedPairsSix() );

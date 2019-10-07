@@ -130,7 +130,7 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
      */
 
     @Override
-    public Stream<TimeSeries<Ensemble>> getAll()
+    public Stream<TimeSeries<Ensemble>> get()
     {
         this.validateForMultiSeriesRetrieval();
 

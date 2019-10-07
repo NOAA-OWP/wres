@@ -3,6 +3,7 @@ package wres.io.retrieval.datashop;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.LongFunction;
+import java.util.function.Supplier;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
@@ -14,7 +15,7 @@ import java.util.stream.Stream;
  * @param <T> the type of object to retrieve
  */
 
-public interface Retriever<T>
+public interface Retriever<T> extends Supplier<Stream<T>>
 {
 
     /**
@@ -67,7 +68,7 @@ public interface Retriever<T>
      * @throws DataAccessException if the data could not be accessed for whatever reason
      */
 
-    default Stream<T> getAll()
+    default Stream<T> get()
     {
         return this.get( this.getAllIdentifiers() );
     }

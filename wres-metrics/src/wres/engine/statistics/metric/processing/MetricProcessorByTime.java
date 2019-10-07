@@ -42,7 +42,7 @@ import wres.engine.statistics.metric.MetricParameterException;
  */
 
 public abstract class MetricProcessorByTime<S extends SampleData<?>>
-        extends MetricProcessor<S, StatisticsForProject>
+        extends MetricProcessor<S>
 {
 
     /**
