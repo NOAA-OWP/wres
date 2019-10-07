@@ -1,0 +1,166 @@
+package wres.io.reading.nwm;
+
+import java.time.Duration;
+import java.util.Objects;
+
+/**
+ * Represents a profile of a NWM forecast
+ */
+class NWMProfile
+{
+    enum TimeLabel
+    {
+        f,
+        tm
+    }
+
+    /** Name of the global attribute containing a reference datetime */
+    private static final String REFERENCE_DATETIME_VARIABLE = "reference_time";
+
+    /** Name of the dimension for stations/features/etc. */
+    private static final String FEATURE_DIMENSION = "feature_id";
+
+    /** Name of the variable that contains feature ids */
+    private static final String FEATURE_VARIABLE = "feature_id";
+
+    /** Name of the variable that contains the valid datetime */
+    private static final String VALID_DATETIME_VARIABLE = "time";
+
+    /** Name of the variable that contains the valid datetime */
+    private static final String MEMBER_ATTRIBUTE = "ensemble_member_number";
+
+    /** Count of how many blobs comprise a single forecast for each trace */
+    private final int blobCount;
+
+    /** Count of how many members are in this forecast. (1 if no ensemble) */
+    private final int memberCount;
+
+    /** Width of a time step between each valid datetime in the forecast */
+    private final Duration durationBetweenValidDatetimes;
+
+    /** True when vector, false when gridded */
+    private final boolean isVector;
+
+    /**
+     * The time label used by this NWM timeseries, "f" for forecast, "tm" for
+     * analysis_assimilation.
+     */
+    private final TimeLabel timeLabel;
+
+    /**
+     * The class of forecast, e.g. analysis_assim_long, medium_range.
+     * Does not include the "member" label.
+     */
+    private final String nwmConfiguration;
+
+    /**
+     * The type of forecast, e.g. land, reservoir, channel_rt.
+     */
+    private final String nwmOutputType;
+
+    NWMProfile( int blobCount,
+                int memberCount,
+                Duration durationBetweenValidDatetimes,
+                boolean isVector,
+                String nwmConfiguration,
+                String nwmOutputType,
+                TimeLabel timeLabel )
+    {
+        Objects.requireNonNull( durationBetweenValidDatetimes );
+        Objects.requireNonNull( nwmConfiguration );
+        Objects.requireNonNull( nwmOutputType );
+        Objects.requireNonNull( timeLabel );
+
+        if ( blobCount < 1 )
+        {
+            throw new IllegalArgumentException( "Must have one or more blobs, not "
+                                                + blobCount );
+        }
+
+        if ( memberCount < 1 )
+        {
+            throw new IllegalArgumentException( "Must have one or more members, not "
+                                                + memberCount );
+        }
+
+        if ( durationBetweenValidDatetimes.isNegative() )
+        {
+            throw new IllegalArgumentException( "Must have positive timestep duration, not "
+                                                + durationBetweenValidDatetimes );
+        }
+
+        if ( durationBetweenValidDatetimes.isZero() )
+        {
+            throw new IllegalArgumentException( "Must have positive timestep duration, not "
+                                                + durationBetweenValidDatetimes );
+        }
+
+        this.blobCount = blobCount;
+        this.memberCount = memberCount;
+        this.durationBetweenValidDatetimes = durationBetweenValidDatetimes;
+        this.isVector = isVector;
+        this.nwmConfiguration = nwmConfiguration;
+        this.nwmOutputType = nwmOutputType;
+        this.timeLabel = timeLabel;
+    }
+
+    int getBlobCount()
+    {
+        return this.blobCount;
+    }
+
+    int getMemberCount()
+    {
+        return this.memberCount;
+    }
+
+    Duration getDurationBetweenValidDatetimes()
+    {
+        return this.durationBetweenValidDatetimes;
+    }
+
+    boolean isVector()
+    {
+        return this.isVector;
+    }
+
+    String getNwmConfiguration()
+    {
+        return this.nwmConfiguration;
+    }
+
+    String getNwmOutputType()
+    {
+        return this.nwmOutputType;
+    }
+
+    TimeLabel getTimeLabel()
+    {
+        return this.timeLabel;
+    }
+
+    String getFeatureDimension()
+    {
+        return NWMProfile.FEATURE_DIMENSION;
+    }
+
+    String getReferenceDatetimeVariable()
+    {
+        return NWMProfile.REFERENCE_DATETIME_VARIABLE;
+    }
+
+    String getFeatureVariable()
+    {
+        return NWMProfile.FEATURE_VARIABLE;
+    }
+
+    String getValidDatetimeVariable()
+    {
+        return NWMProfile.VALID_DATETIME_VARIABLE;
+    }
+
+    String getMemberAttribute()
+    {
+        return NWMProfile.MEMBER_ATTRIBUTE;
+    }
+}
