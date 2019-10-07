@@ -85,8 +85,8 @@ import wres.engine.statistics.metric.config.MetricConfigHelper;
  * @author james.brown@hydrosolved.com
  */
 
-public abstract class MetricProcessor<S extends SampleData<?>, T extends StatisticsForProject>
-        implements Function<S, T>
+public abstract class MetricProcessor<S extends SampleData<?>>
+        implements Function<S, StatisticsForProject>
 {
     /**
      * Logger instance.
@@ -203,7 +203,7 @@ public abstract class MetricProcessor<S extends SampleData<?>, T extends Statist
      * @throws MetricOutputMergeException if the cached output cannot be merged across calls
      */
 
-    public T getCachedMetricOutput() throws InterruptedException
+    public StatisticsForProject getCachedMetricOutput() throws InterruptedException
     {
         //Complete any end-of-pipeline processing
         this.completeCachedOutput();
@@ -318,7 +318,7 @@ public abstract class MetricProcessor<S extends SampleData<?>, T extends Statist
      * @throws MetricOutputMergeException if the outputs cannot be merged across calls
      */
 
-    abstract T getCachedMetricOutputInternal();
+    abstract StatisticsForProject getCachedMetricOutputInternal();
 
     /**
      * Constructor.

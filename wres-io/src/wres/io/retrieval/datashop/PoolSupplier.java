@@ -10,6 +10,7 @@ import java.util.TreeSet;
 import java.util.function.Supplier;
 import java.util.function.ToDoubleFunction;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -59,7 +60,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
      * Climatological data source.
      */
 
-    private final SupplyOrRetrieve<TimeSeries<L>> climatology;
+    private final Supplier<Stream<TimeSeries<L>>> climatology;
 
     /**
      * Mapper from the left-type of climatological data to a double-type.
@@ -71,19 +72,19 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
      * Left data source. Optional, unless the climatological source is undefined.
      */
 
-    private final SupplyOrRetrieve<TimeSeries<L>> left;
+    private final Supplier<Stream<TimeSeries<L>>> left;
 
     /**
      * Right data source.
      */
 
-    private final SupplyOrRetrieve<TimeSeries<R>> right;
+    private final Supplier<Stream<TimeSeries<R>>> right;
 
     /**
      * Baseline data source. Optional.
      */
 
-    private final SupplyOrRetrieve<TimeSeries<R>> baseline;
+    private final Supplier<Stream<TimeSeries<R>>> baseline;
 
     /**
      * Pairer.
@@ -143,16 +144,22 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         builder.setMetadata( this.metadata );
         builder.setMetadataForBaseline( this.baselineMetadata );
 
-        SupplyOrRetrieve<TimeSeries<L>> leftData = this.left;
-
         // Left data provided or is climatology the left data?
-        if ( Objects.isNull( this.left ) )
+        Stream<TimeSeries<L>> cStream;
+        if ( Objects.nonNull( this.left ) )
         {
-            leftData = this.climatology;
+            cStream = this.left.get();
+        }
+        else
+        {
+            cStream = this.climatology.get();
         }
 
-        // Create the main pairs
-        List<TimeSeries<Pair<L, R>>> mainPairs = this.createPairs( leftData, this.right );
+        // Create the main pairs    
+        List<TimeSeries<L>> leftData = cStream.collect( Collectors.toList() );
+        List<TimeSeries<R>> rightData = this.right.get().collect( Collectors.toList() );
+
+        List<TimeSeries<Pair<L, R>>> mainPairs = this.createPairs( leftData, rightData );
 
         for ( TimeSeries<Pair<L, R>> pairs : mainPairs )
         {
@@ -173,7 +180,9 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
                           this.metadata,
                           this.baselineMetadata );
 
-            List<TimeSeries<Pair<L, R>>> basePairs = this.createPairs( leftData, this.right );
+            List<TimeSeries<R>> baselinetData = this.baseline.get().collect( Collectors.toList() );
+
+            List<TimeSeries<Pair<L, R>>> basePairs = this.createPairs( leftData, baselinetData );
 
             for ( TimeSeries<Pair<L, R>> pairs : basePairs )
             {
@@ -216,7 +225,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * Climatological data source. Optional.
          */
 
-        private SupplyOrRetrieve<TimeSeries<L>> climatology;
+        private Supplier<Stream<TimeSeries<L>>> climatology;
 
         /**
          * Climatology mapper.
@@ -228,19 +237,19 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * Left data source. Optional, unless the climatological source is undefined.
          */
 
-        private SupplyOrRetrieve<TimeSeries<L>> left;
+        private Supplier<Stream<TimeSeries<L>>> left;
 
         /**
          * Right data source.
          */
 
-        private SupplyOrRetrieve<TimeSeries<R>> right;
+        private Supplier<Stream<TimeSeries<R>>> right;
 
         /**
          * Baseline data source. Optional.
          */
 
-        private SupplyOrRetrieve<TimeSeries<R>> baseline;
+        private Supplier<Stream<TimeSeries<R>>> baseline;
 
         /**
          * Pairer.
@@ -283,7 +292,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * @param climatologyMapper the mapper from the climatological type to a double type
          * @return the builder
          */
-        public PoolSupplierBuilder<L, R> setClimatology( SupplyOrRetrieve<TimeSeries<L>> climatology,
+        public PoolSupplierBuilder<L, R> setClimatology( Supplier<Stream<TimeSeries<L>>> climatology,
                                                          ToDoubleFunction<L> climatologyMapper )
         {
             this.climatology = climatology;
@@ -295,7 +304,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * @param left the left to set
          * @return the builder
          */
-        public PoolSupplierBuilder<L, R> setLeft( SupplyOrRetrieve<TimeSeries<L>> left )
+        public PoolSupplierBuilder<L, R> setLeft( Supplier<Stream<TimeSeries<L>>> left )
         {
             this.left = left;
 
@@ -306,7 +315,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * @param right the right to set
          * @return the builder
          */
-        public PoolSupplierBuilder<L, R> setRight( SupplyOrRetrieve<TimeSeries<R>> right )
+        public PoolSupplierBuilder<L, R> setRight( Supplier<Stream<TimeSeries<R>>> right )
         {
             this.right = right;
 
@@ -317,7 +326,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * @param baseline the baseline to set
          * @return the builder
          */
-        public PoolSupplierBuilder<L, R> setBaseline( SupplyOrRetrieve<TimeSeries<R>> baseline )
+        public PoolSupplierBuilder<L, R> setBaseline( Supplier<Stream<TimeSeries<R>>> baseline )
         {
             this.baseline = baseline;
 
@@ -413,8 +422,8 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
      * @return the pairs
      */
 
-    private List<TimeSeries<Pair<L, R>>> createPairs( SupplyOrRetrieve<TimeSeries<L>> left,
-                                                      SupplyOrRetrieve<TimeSeries<R>> right )
+    private List<TimeSeries<Pair<L, R>>> createPairs( List<TimeSeries<L>> left,
+                                                      List<TimeSeries<R>> right )
     {
         Objects.requireNonNull( left );
 
@@ -422,9 +431,9 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
 
         List<TimeSeries<Pair<L, R>>> returnMe = new ArrayList<>();
 
-        for ( TimeSeries<L> nextLeft : left.get() )
+        for ( TimeSeries<L> nextLeft : left )
         {
-            for ( TimeSeries<R> nextRight : right.get() )
+            for ( TimeSeries<R> nextRight : right )
             {
                 TimeSeries<Pair<L, R>> pairs = this.createSeriesPairs( nextLeft, nextRight );
 
@@ -539,7 +548,10 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
             LOGGER.debug( "Creating climatolology for pool {}.", this.metadata );
 
             // Map from TimeSeries<L> to VectorOfDoubles
-            for ( TimeSeries<L> next : this.climatology.get() )
+            List<TimeSeries<L>> climate = this.climatology.get()
+                                                          .collect( Collectors.toList() );
+
+            for ( TimeSeries<L> next : climate )
             {
                 TimeSeries<Double> transformed =
                         TimeSeriesSlicer.transform( next, this.climatologyMapper::applyAsDouble );

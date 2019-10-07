@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -135,14 +136,14 @@ public class PoolSupplierTest
      */
 
     @Mock
-    private Retriever<TimeSeries<Double>> observationRetriever;
+    private Supplier<Stream<TimeSeries<Double>>> observationRetriever;
 
     /**
      * Retriever for forecasts.
      */
 
     @Mock
-    private Retriever<TimeSeries<Double>> forecastRetriever;
+    private Supplier<Stream<TimeSeries<Double>>> forecastRetriever;
 
     /**
      * Observations.
@@ -390,12 +391,12 @@ public class PoolSupplierTest
     public void testGetReturnsPoolThatContainsSevenPairsInOneSeries()
     {
         // Pool One actual        
-        Mockito.when( this.observationRetriever.getAll() ).thenReturn( Stream.of( this.observations ) );
-        SupplyOrRetrieve<TimeSeries<Double>> obsSupplier = SupplyOrRetrieve.of( this.observationRetriever );
+        Mockito.when( this.observationRetriever.get() ).thenReturn( Stream.of( this.observations ) );
+        Supplier<Stream<TimeSeries<Double>>> obsSupplier = CachingRetriever.of( this.observationRetriever );
 
-        Mockito.when( this.forecastRetriever.getAll() ).thenReturn( Stream.of( this.forecastOne ) );
+        Mockito.when( this.forecastRetriever.get() ).thenReturn( Stream.of( this.forecastOne ) );
 
-        SupplyOrRetrieve<TimeSeries<Double>> forcSupplierOne = SupplyOrRetrieve.of( this.forecastRetriever );
+        Supplier<Stream<TimeSeries<Double>>> forcSupplierOne = this.forecastRetriever;
 
         TimeWindow poolOneWindow = TimeWindow.of( T2551_03_17T00_00_00Z, //2551-03-17T00:00:00Z
                                                   T2551_03_17T13_00_00Z, //2551-03-17T13:00:00Z
@@ -404,7 +405,7 @@ public class PoolSupplierTest
 
         SampleMetadata poolOneMetadata = SampleMetadata.of( this.metadata, poolOneWindow );
 
-        PoolSupplier<Double, Double> poolOneSupplier =
+        Supplier<PoolOfPairs<Double, Double>> poolOneSupplier =
                 new PoolSupplierBuilder<Double, Double>().setLeft( obsSupplier )
                                                          .setRight( forcSupplierOne )
                                                          .setLeftUpscaler( this.upscaler )
@@ -460,13 +461,13 @@ public class PoolSupplierTest
     public void testGetReturnsPoolThatContainsFourteenPairsInTwoSeries()
     {
         // Pool Eleven actual: NOTE two forecasts
-        Mockito.when( this.observationRetriever.getAll() ).thenReturn( Stream.of( this.observations ) );
-        SupplyOrRetrieve<TimeSeries<Double>> obsSupplier = SupplyOrRetrieve.of( this.observationRetriever );
+        Mockito.when( this.observationRetriever.get() ).thenReturn( Stream.of( this.observations ) );
+        Supplier<Stream<TimeSeries<Double>>> obsSupplier = CachingRetriever.of( this.observationRetriever );
 
-        Mockito.when( this.forecastRetriever.getAll() )
+        Mockito.when( this.forecastRetriever.get() )
                .thenReturn( Stream.of( this.forecastThree, this.forecastFour ) );
 
-        SupplyOrRetrieve<TimeSeries<Double>> forcSupplierEleven = SupplyOrRetrieve.of( this.forecastRetriever );
+        Supplier<Stream<TimeSeries<Double>>> forcSupplierEleven = CachingRetriever.of( this.forecastRetriever );
 
         TimeWindow poolElevenWindow = TimeWindow.of( T2551_03_18T11_00_00Z, //2551-03-18T11:00:00Z
                                                      T2551_03_19T00_00_00Z, //2551-03-19T00:00:00Z
@@ -475,7 +476,7 @@ public class PoolSupplierTest
 
         SampleMetadata poolElevenMetadata = SampleMetadata.of( this.metadata, poolElevenWindow );
 
-        PoolSupplier<Double, Double> poolElevenSupplier =
+        Supplier<PoolOfPairs<Double, Double>> poolElevenSupplier =
                 new PoolSupplierBuilder<Double, Double>().setLeft( obsSupplier )
                                                          .setRight( forcSupplierEleven )
                                                          .setLeftUpscaler( this.upscaler )
@@ -558,12 +559,12 @@ public class PoolSupplierTest
     {
         // Pool Eighteen actual
         // Supply all possible forecasts
-        Mockito.when( this.observationRetriever.getAll() ).thenReturn( Stream.of( this.observations ) );
-        SupplyOrRetrieve<TimeSeries<Double>> obsSupplier = SupplyOrRetrieve.of( this.observationRetriever );
+        Mockito.when( this.observationRetriever.get() ).thenReturn( Stream.of( this.observations ) );
+        Supplier<Stream<TimeSeries<Double>>> obsSupplier = CachingRetriever.of( this.observationRetriever );
 
-        Mockito.when( this.forecastRetriever.getAll() )
+        Mockito.when( this.forecastRetriever.get() )
                .thenReturn( Stream.of( this.forecastOne, this.forecastTwo, this.forecastThree, this.forecastFour ) );
-        SupplyOrRetrieve<TimeSeries<Double>> forcSupplierEighteen = SupplyOrRetrieve.of( this.forecastRetriever );
+        Supplier<Stream<TimeSeries<Double>>> forcSupplierEighteen = CachingRetriever.of( this.forecastRetriever );
 
         TimeWindow poolEighteenWindow = TimeWindow.of( T2551_03_19T08_00_00Z, //2551-03-19T08:00:00Z
                                                        T2551_03_19T21_00_00Z, //2551-03-19T21:00:00Z
@@ -572,7 +573,7 @@ public class PoolSupplierTest
 
         SampleMetadata poolEighteenMetadata = SampleMetadata.of( this.metadata, poolEighteenWindow );
 
-        PoolSupplier<Double, Double> poolEighteenSupplier =
+        Supplier<PoolOfPairs<Double, Double>> poolEighteenSupplier =
                 new PoolSupplierBuilder<Double, Double>().setLeft( obsSupplier )
                                                          .setRight( forcSupplierEighteen )
                                                          .setLeftUpscaler( this.upscaler )

@@ -79,7 +79,7 @@ public class MetricProcessorForProject
     }
 
     /**
-     * Returns a {@link MetricProcessorByTime} for single-valued pairs or throws an exception if this 
+     * Returns a {@link MetricProcessor} for single-valued pairs or throws an exception if this 
      * {@link MetricProcessorForProject} was not constructed to process single-valued pairs.
      * 
      * @return a single-valued metric processor
@@ -87,7 +87,7 @@ public class MetricProcessorForProject
      *            single-valued pairs
      */
 
-    public MetricProcessorByTime<PoolOfPairs<Double, Double>> getMetricProcessorForSingleValuedPairs()
+    public MetricProcessor<PoolOfPairs<Double, Double>> getMetricProcessorForSingleValuedPairs()
     {
         if ( Objects.isNull( singleValuedProcessor ) )
         {
@@ -97,7 +97,7 @@ public class MetricProcessorForProject
     }
 
     /**
-     * Returns a {@link MetricProcessorByTime} for ensemble pairs or throws an exception if this 
+     * Returns a {@link MetricProcessor} for ensemble pairs or throws an exception if this 
      * {@link MetricProcessorForProject} was not constructed to process ensemble pairs.
      * 
      * @return a single-valued metric processor
@@ -105,7 +105,7 @@ public class MetricProcessorForProject
      *            ensemble pairs
      */
 
-    public MetricProcessorByTime<PoolOfPairs<Double, Ensemble>> getMetricProcessorForEnsemblePairs()
+    public MetricProcessor<PoolOfPairs<Double, Ensemble>> getMetricProcessorForEnsemblePairs()
     {
         if ( Objects.isNull( ensembleProcessor ) )
         {

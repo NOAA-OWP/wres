@@ -24,6 +24,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -94,8 +95,8 @@ class ProcessorHelper
         // wres-control, since they make processing decisions, or passing ResolvedProject onwards
         final Map<FeaturePlus, ThresholdsByMetric> thresholds =
                 new TreeMap<>( FeaturePlus::compareByLocationId );
-        thresholds.putAll( ConfigHelper.readExternalThresholdsFromProjectConfig( projectConfig ) );        
-        
+        thresholds.putAll( ConfigHelper.readExternalThresholdsFromProjectConfig( projectConfig ) );
+
         LOGGER.debug( "Beginning ingest for project {}...", projectConfigPlus );
 
         // Need to ingest first
@@ -130,7 +131,7 @@ class ProcessorHelper
                                                               projectIdentifier,
                                                               thresholds,
                                                               outputDirectory );
-        
+
         // Obtain the duration units for outputs: #55441
         String durationUnitsString = projectConfig.getOutputs().getDurationFormat().value().toUpperCase();
         ChronoUnit durationUnits = ChronoUnit.valueOf( durationUnitsString );
@@ -159,7 +160,7 @@ class ProcessorHelper
 
         SharedSampleDataWriters sharedSampleDataWriters = null;
         SharedSampleDataWriters sharedBaselineSampleDataWriters = null;
-        
+
         // If there are multiple destinations for pairs, ignore these. The system chooses the destination.
         // Writing the same pairs, more than once, to that single destination does not make sense.
         // See #55948-12 and #55948-13. Ultimate solution is to improve the schema to prevent multiple occurrences.
@@ -205,13 +206,13 @@ class ProcessorHelper
         // Create one task per feature
         for ( FeaturePlus feature : decomposedFeatures )
         {
-            FeatureProcessor featureProcessor = new FeatureProcessor( feature,
-                                                                      resolvedProject,
-                                                                      project,
-                                                                      executors,
-                                                                      sharedStatisticsWriters,
-                                                                      sharedSampleDataWriters,
-                                                                      sharedBaselineSampleDataWriters );
+            Supplier<FeatureProcessingResult> featureProcessor = new FeatureProcessor( feature,
+                                                                                       resolvedProject,
+                                                                                       project,
+                                                                                       executors,
+                                                                                       sharedStatisticsWriters,
+                                                                                       sharedSampleDataWriters,
+                                                                                       sharedBaselineSampleDataWriters );
 
             CompletableFuture<Void> nextFeatureTask = CompletableFuture.supplyAsync( featureProcessor,
                                                                                      executors.getFeatureExecutor() )
@@ -227,23 +228,23 @@ class ProcessorHelper
         {
             // Complete the feature tasks
             ProcessorHelper.doAllOrException( featureTasks ).join();
-            
+
             // Report on the features
-            featureReport.report();   
+            featureReport.report();
 
             // Find the paths written to by writers
-            pathsWrittenTo.addAll( featureReport.getPathsWrittenTo() );             
-            
+            pathsWrittenTo.addAll( featureReport.getPathsWrittenTo() );
+
             // Find the paths written to by shared writers
             pathsWrittenTo.addAll( sharedStatisticsWriters.get() );
-            if( Objects.nonNull( sharedSampleDataWriters ) )
+            if ( Objects.nonNull( sharedSampleDataWriters ) )
             {
                 pathsWrittenTo.addAll( sharedSampleDataWriters.get() );
             }
-            if( Objects.nonNull( sharedBaselineSampleDataWriters ) )
+            if ( Objects.nonNull( sharedBaselineSampleDataWriters ) )
             {
                 pathsWrittenTo.addAll( sharedBaselineSampleDataWriters.get() );
-            }            
+            }
         }
         catch ( CompletionException e )
         {
@@ -253,16 +254,16 @@ class ProcessorHelper
         {
             // Clean up by closing shared writers
             sharedStatisticsWriters.close();
-            
-            if( Objects.nonNull( sharedSampleDataWriters ) )
+
+            if ( Objects.nonNull( sharedSampleDataWriters ) )
             {
                 sharedSampleDataWriters.close();
             }
-            if( Objects.nonNull( sharedBaselineSampleDataWriters ) )
+            if ( Objects.nonNull( sharedBaselineSampleDataWriters ) )
             {
                 sharedBaselineSampleDataWriters.close();
             }
-            
+
             // Clean-up an empty output directory: #67088
             try ( Stream<Path> outputs = Files.list( outputDirectory ) )
             {
@@ -280,7 +281,7 @@ class ProcessorHelper
 
         return Collections.unmodifiableSet( pathsWrittenTo );
     }
-    
+
     /**
      * Creates a temporary directory for the outputs with the correct permissions. 
      *
@@ -518,7 +519,7 @@ class ProcessorHelper
             return this.productExecutor;
         }
     }
-    
+
 
     private ProcessorHelper()
     {

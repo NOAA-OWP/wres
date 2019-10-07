@@ -133,7 +133,7 @@ public class SingleValuedForecastRetrieverTest
                                                            .build();
 
         // Get the time-series
-        Stream<TimeSeries<Double>> forecastSeries = forecastRetriever.getAll();
+        Stream<TimeSeries<Double>> forecastSeries = forecastRetriever.get();
 
         // Stream into a collection
         List<TimeSeries<Double>> actualCollection = forecastSeries.collect( Collectors.toList() );
@@ -198,7 +198,7 @@ public class SingleValuedForecastRetrieverTest
                                                            .build();
 
         // Get the time-series
-        Stream<TimeSeries<Double>> forecastSeries = forecastRetriever.getAll();
+        Stream<TimeSeries<Double>> forecastSeries = forecastRetriever.get();
 
         // Stream into a collection
         List<TimeSeries<Double>> actualCollection = forecastSeries.collect( Collectors.toList() );

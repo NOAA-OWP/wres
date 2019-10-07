@@ -130,7 +130,7 @@ public class ObservationRetrieverTest
                                                   .build();
 
         // Get the time-series
-        Stream<TimeSeries<Double>> observedSeries = observedRetriever.getAll();
+        Stream<TimeSeries<Double>> observedSeries = observedRetriever.get();
 
         // Stream into a collection
         List<TimeSeries<Double>> actualCollection = observedSeries.collect( Collectors.toList() );
@@ -178,7 +178,7 @@ public class ObservationRetrieverTest
                                                   .build();
 
         // Get the time-series
-        Stream<TimeSeries<Double>> observedSeries = observedRetriever.getAll();
+        Stream<TimeSeries<Double>> observedSeries = observedRetriever.get();
 
         // Stream into a collection
         List<TimeSeries<Double>> actualCollection = observedSeries.collect( Collectors.toList() );

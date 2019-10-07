@@ -133,7 +133,7 @@ public class EnsembleForecastRetrieverTest
                                                        .build();
 
         // Get the time-series
-        Stream<TimeSeries<Ensemble>> forecastSeries = forecastRetriever.getAll();
+        Stream<TimeSeries<Ensemble>> forecastSeries = forecastRetriever.get();
 
         // Stream into a collection
         List<TimeSeries<Ensemble>> actualCollection = forecastSeries.collect( Collectors.toList() );

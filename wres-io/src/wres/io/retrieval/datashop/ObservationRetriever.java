@@ -118,7 +118,7 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
      */
 
     @Override
-    public Stream<TimeSeries<Double>> getAll()
+    public Stream<TimeSeries<Double>> get()
     {
         this.validateForMultiSeriesRetrieval();
 
