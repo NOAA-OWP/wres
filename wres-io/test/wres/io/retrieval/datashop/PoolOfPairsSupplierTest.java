@@ -32,16 +32,16 @@ import wres.datamodel.time.TimeSeriesPairer;
 import wres.datamodel.time.TimeSeriesPairerByExactTime;
 import wres.datamodel.time.TimeSeriesUpscaler;
 import wres.datamodel.time.TimeWindow;
-import wres.io.retrieval.datashop.PoolSupplier.PoolSupplierBuilder;
+import wres.io.retrieval.datashop.PoolOfPairsSupplier.PoolSupplierBuilder;
 
 /**
- * Tests the {@link PoolSupplier}.
+ * Tests the {@link PoolOfPairsSupplier}.
  * 
  * @author james.brown@hydrosolved.com
  */
 
 @RunWith( MockitoJUnitRunner.class )
-public class PoolSupplierTest
+public class PoolOfPairsSupplierTest
 {
 
     // Times used    

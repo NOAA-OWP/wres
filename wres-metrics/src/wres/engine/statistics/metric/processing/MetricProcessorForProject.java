@@ -21,21 +21,22 @@ import wres.engine.statistics.metric.config.MetricConfigHelper;
  * Helper class that collates concrete metric processors together.
  * 
  * @author james.brown@hydrosolved.com
+ * @deprecated
  */
-
+@Deprecated(since="1.8", forRemoval=true)
 public class MetricProcessorForProject
 {
     /**
      * Processor for ensemble pairs.
      */
 
-    private final MetricProcessorByTime<PoolOfPairs<Double, Ensemble>> ensembleProcessor;
+    private final MetricProcessor<PoolOfPairs<Double, Ensemble>> ensembleProcessor;
 
     /**
      * Processor for single-valued pairs.
      */
 
-    private final MetricProcessorByTime<PoolOfPairs<Double, Double>> singleValuedProcessor;
+    private final MetricProcessor<PoolOfPairs<Double, Double>> singleValuedProcessor;
 
     /**
      * Build the processor collection.
@@ -60,20 +61,20 @@ public class MetricProcessorForProject
 
         if ( type.equals( DatasourceType.ENSEMBLE_FORECASTS ) )
         {
-            ensembleProcessor = MetricFactory.ofMetricProcessorByTimeEnsemblePairs( projectConfig,
-                                                                                    externalThresholds,
-                                                                                    thresholdExecutor,
-                                                                                    metricExecutor,
-                                                                                    mergeTheseResults );
+            ensembleProcessor = MetricFactory.ofMetricProcessorForEnsemblePairs( projectConfig,
+                                                                                 externalThresholds,
+                                                                                 thresholdExecutor,
+                                                                                 metricExecutor,
+                                                                                 mergeTheseResults );
             singleValuedProcessor = null;
         }
         else
         {
-            singleValuedProcessor = MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( projectConfig,
-                                                                                            externalThresholds,
-                                                                                            thresholdExecutor,
-                                                                                            metricExecutor,
-                                                                                            mergeTheseResults );
+            singleValuedProcessor = MetricFactory.ofMetricProcessorForSingleValuedPairs( projectConfig,
+                                                                                         externalThresholds,
+                                                                                         thresholdExecutor,
+                                                                                         metricExecutor,
+                                                                                         mergeTheseResults );
             ensembleProcessor = null;
         }
     }

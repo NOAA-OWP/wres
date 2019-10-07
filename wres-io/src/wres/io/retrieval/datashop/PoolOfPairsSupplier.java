@@ -31,7 +31,7 @@ import wres.datamodel.time.TimeSeriesUpscaler;
 
 /**
  * <p>Supplies a {@link PoolOfPairs}, which is used to compute one or more verification statistics. The overall 
- * responsibility of the {@link PoolSupplier} is to supply a {@link PoolOfPairs} on request. This is fulfilled by
+ * responsibility of the {@link PoolOfPairsSupplier} is to supply a {@link PoolOfPairs} on request. This is fulfilled by
  * completing several smaller activities in sequence, namely:</p> 
  * 
  * <ol>
@@ -47,14 +47,14 @@ import wres.datamodel.time.TimeSeriesUpscaler;
  * @param <R> the type of right value in each pair and, where applicable, the type of baseline value
  */
 
-public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
+public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
 {
 
     /**
      * Logger.
      */
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( PoolSupplier.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( PoolOfPairsSupplier.class );
 
     /**
      * Climatological data source.
@@ -211,7 +211,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
     }
 
     /**
-     * Builder for a {@link PoolSupplier}.
+     * Builder for a {@link PoolOfPairsSupplier}.
      * 
      * @author james.brown@hydrosolved.com
      * @param <L> the left type of paired value
@@ -400,14 +400,14 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         }
 
         /**
-         * Builds a {@link PoolSupplier}.
+         * Builds a {@link PoolOfPairsSupplier}.
          * 
          * @return a pool supplier
          */
 
-        public PoolSupplier<L, R> build()
+        public PoolOfPairsSupplier<L, R> build()
         {
-            return new PoolSupplier<>( this );
+            return new PoolOfPairsSupplier<>( this );
         }
     }
 
@@ -647,7 +647,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
      * @throws IllegalArgumentException if some input is inconsistent
      */
 
-    private PoolSupplier( PoolSupplierBuilder<L, R> builder )
+    private PoolOfPairsSupplier( PoolSupplierBuilder<L, R> builder )
     {
         // Set
         this.climatology = builder.climatology;

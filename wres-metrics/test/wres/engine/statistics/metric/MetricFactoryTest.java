@@ -408,19 +408,19 @@ public final class MetricFactoryTest
     }
 
     /**
-     * Tests the {@link MetricFactory#ofMetricProcessorByTimeSingleValuedPairs(ProjectConfig, java.util.Set)}. 
+     * Tests the {@link MetricFactory#ofMetricProcessorForSingleValuedPairs(ProjectConfig, java.util.Set)}. 
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
     @Test
     public void testOfMetricProcessorByTimeSingleValuedPairs() throws MetricParameterException
     {
-        assertTrue( MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( mockSingleValued,
+        assertTrue( MetricFactory.ofMetricProcessorForSingleValuedPairs( mockSingleValued,
                                                                             null ) instanceof MetricProcessorByTimeSingleValuedPairs );
     }
 
     /**
-     * Tests the {@link MetricFactory#ofMetricProcessorByTimeEnsemblePairs(ProjectConfig, 
+     * Tests the {@link MetricFactory#ofMetricProcessorForEnsemblePairs(ProjectConfig, 
      * wres.datamodel.ThresholdsByMetric, java.util.Set)}. 
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
@@ -428,12 +428,12 @@ public final class MetricFactoryTest
     @Test
     public void testOfMetricProcessorByTimeEnsemblePairs() throws MetricParameterException
     {
-        assertTrue( MetricFactory.ofMetricProcessorByTimeEnsemblePairs( mockEnsemble,
+        assertTrue( MetricFactory.ofMetricProcessorForEnsemblePairs( mockEnsemble,
                                                                         null ) instanceof MetricProcessorByTimeEnsemblePairs );
     }
 
     /**
-     * Tests the {@link MetricFactory#ofMetricProcessorByTimeSingleValuedPairs(ProjectConfig, 
+     * Tests the {@link MetricFactory#ofMetricProcessorForSingleValuedPairs(ProjectConfig, 
      * wres.datamodel.ThresholdsByMetric, java.util.Set)}. 
      * @throws IOException if the input configuration could not be read
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
@@ -443,13 +443,13 @@ public final class MetricFactoryTest
     public void testOfMetricProcessorByTimeSingleValuedPairsWithExternalThresholds()
             throws MetricParameterException
     {
-        assertTrue( MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( mockSingleValued,
+        assertTrue( MetricFactory.ofMetricProcessorForSingleValuedPairs( mockSingleValued,
                                                                             null,
                                                                             null ) instanceof MetricProcessorByTimeSingleValuedPairs );
     }
 
     /**
-     * Tests the {@link MetricFactory#ofMetricProcessorByTimeEnsemblePairs(ProjectConfig, 
+     * Tests the {@link MetricFactory#ofMetricProcessorForEnsemblePairs(ProjectConfig, 
      * wres.datamodel.ThresholdsByMetric, java.util.Set)}. 
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
@@ -458,7 +458,7 @@ public final class MetricFactoryTest
     public void testOfMetricProcessorByTimeEnsemblePairsWithExternalThresholds()
             throws MetricParameterException
     {
-        assertTrue( MetricFactory.ofMetricProcessorByTimeEnsemblePairs( mockEnsemble,
+        assertTrue( MetricFactory.ofMetricProcessorForEnsemblePairs( mockEnsemble,
                                                                         null,
                                                                         null ) instanceof MetricProcessorByTimeEnsemblePairs );
     }

@@ -18,15 +18,16 @@ import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
 
 /**
- * Represents a project that has been "resolved", i.e. any kind of translation
+ * <p>Represents a project that has been "resolved", i.e. any kind of translation
  * from the ProjectConfig into WRES that has happened can be captured here.
- * The existence of this class is a possible solution to these discomforts:
- * 1) decomposed features which are disconnected from the original config
- * 2) project identity in the database (discovered post-ingest)
- *
- * Both the decomposed features and project identity are resolved outside of
+ * The existence of this class is a possible solution to these discomforts:</p>
+ * <ol>
+ * <li>decomposed features which are disconnected from the original config</li>
+ * <li>project identity in the database (discovered post-ingest)</li>
+ * </ol>
+ * <p>Both the decomposed features and project identity are resolved outside of
  * the original project config, and need a home for sharing. This class might
- * be that home.
+ * be that home.</p>
  *
  */
 class ResolvedProject
