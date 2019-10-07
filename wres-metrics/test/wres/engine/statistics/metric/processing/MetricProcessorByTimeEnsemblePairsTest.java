@@ -43,7 +43,6 @@ import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.MatrixStatistic;
-import wres.datamodel.statistics.StatisticException;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
@@ -113,9 +112,9 @@ public final class MetricProcessorByTimeEnsemblePairsTest
     {
         String configPath = "testinput/metricProcessorEnsemblePairsByTimeTest/testApplyWithoutThresholds.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessorByTime<PoolOfPairs<Double, Ensemble>> processor =
-                MetricFactory.ofMetricProcessorByTimeEnsemblePairs( config,
-                                                                    null );
+        MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
+                MetricFactory.ofMetricProcessorForEnsemblePairs( config,
+                                                                 null );
         StatisticsForProject results =
                 processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
         DoubleScoreStatistic bias =
@@ -161,8 +160,8 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
-                MetricFactory.ofMetricProcessorByTimeEnsemblePairs( config,
-                                                                    StatisticGroup.set() );
+                MetricFactory.ofMetricProcessorForEnsemblePairs( config,
+                                                                 StatisticGroup.set() );
         processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
 
         //Validate bias
@@ -262,9 +261,9 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null,
                                    null );
 
-        MetricProcessorByTime<PoolOfPairs<Double, Ensemble>> processor =
-                MetricFactory.ofMetricProcessorByTimeEnsemblePairs( mockedConfig,
-                                                                    Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
+        MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
+                MetricFactory.ofMetricProcessorForEnsemblePairs( mockedConfig,
+                                                                 Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
 
         processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
 
@@ -292,8 +291,8 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
-                MetricFactory.ofMetricProcessorByTimeEnsemblePairs( config,
-                                                                    Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
+                MetricFactory.ofMetricProcessorForEnsemblePairs( config,
+                                                                 Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
         processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
 
         //Obtain the results
@@ -360,13 +359,13 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         exception.expect( NullPointerException.class );
         exception.expectMessage( "Expected non-null input to the metric processor." );
         MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
-                MetricFactory.ofMetricProcessorByTimeEnsemblePairs( new ProjectConfig( null,
-                                                                                       null,
-                                                                                       null,
-                                                                                       null,
-                                                                                       null,
-                                                                                       null ),
-                                                                    Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
+                MetricFactory.ofMetricProcessorForEnsemblePairs( new ProjectConfig( null,
+                                                                                    null,
+                                                                                    null,
+                                                                                    null,
+                                                                                    null,
+                                                                                    null ),
+                                                                 Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
         processor.apply( null );
     }
 
@@ -383,16 +382,16 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    Arrays.asList( new MetricConfig( null, null, MetricConfigName.BRIER_SCORE ) ),
                                    null );
         MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
-                MetricFactory.ofMetricProcessorByTimeEnsemblePairs( new ProjectConfig( null,
-                                                                                       null,
-                                                                                       Arrays.asList( metrics ),
-                                                                                       null,
-                                                                                       null,
-                                                                                       null ),
-                                                                    Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
+                MetricFactory.ofMetricProcessorForEnsemblePairs( new ProjectConfig( null,
+                                                                                    null,
+                                                                                    Arrays.asList( metrics ),
+                                                                                    null,
+                                                                                    null,
+                                                                                    null ),
+                                                                 Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
         processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
     }
-    
+
     @Test
     public void testApplyThrowsExceptionWhenClimatologicalObservationsAreMissing()
             throws MetricParameterException
@@ -423,8 +422,8 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
 
         MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
-                MetricFactory.ofMetricProcessorByTimeEnsemblePairs( mockedConfig,
-                                                                    Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
+                MetricFactory.ofMetricProcessorForEnsemblePairs( mockedConfig,
+                                                                 Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
         processor.apply( MetricTestDataFactory.getEnsemblePairsThree() );
     }
 
@@ -449,8 +448,8 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null );
 
         MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
-                MetricFactory.ofMetricProcessorByTimeEnsemblePairs( mockedConfig,
-                                                                    Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
+                MetricFactory.ofMetricProcessorForEnsemblePairs( mockedConfig,
+                                                                 Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
         processor.apply( MetricTestDataFactory.getEnsemblePairsThree() );
     }
 
@@ -482,8 +481,8 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null,
                                    null );
 
-        MetricFactory.ofMetricProcessorByTimeEnsemblePairs( mockedConfig,
-                                                            Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
+        MetricFactory.ofMetricProcessorForEnsemblePairs( mockedConfig,
+                                                         Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
     }
 
     @Test
@@ -514,8 +513,8 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null,
                                    null );
 
-        MetricFactory.ofMetricProcessorByTimeEnsemblePairs( mockedConfig,
-                                                            Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
+        MetricFactory.ofMetricProcessorForEnsemblePairs( mockedConfig,
+                                                         Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
     }
 
     @Test
@@ -525,8 +524,8 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
-                MetricFactory.ofMetricProcessorByTimeEnsemblePairs( config,
-                                                                    StatisticGroup.set() );
+                MetricFactory.ofMetricProcessorForEnsemblePairs( config,
+                                                                 StatisticGroup.set() );
         //Check for the expected number of metrics
         //One fewer than total, as sample size appears in both ensemble and single-valued
         assertTrue( processor.metrics.size() == SampleDataGroup.ENSEMBLE.getMetrics().size()
@@ -543,9 +542,9 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
-                MetricFactory.ofMetricProcessorByTimeEnsemblePairs( config,
-                                                                    StatisticGroup.set() );
-        
+                MetricFactory.ofMetricProcessorForEnsemblePairs( config,
+                                                                 StatisticGroup.set() );
+
         processor.apply( MetricTestDataFactory.getEnsemblePairsOneWithMissings() );
 
         //Obtain the results
@@ -612,7 +611,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
-                MetricFactory.ofMetricProcessorByTimeEnsemblePairs( config, StatisticGroup.set() );
+                MetricFactory.ofMetricProcessorForEnsemblePairs( config, StatisticGroup.set() );
         processor.apply( MetricTestDataFactory.getEnsemblePairsTwo() );
 
         // Expected result
@@ -727,7 +726,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
-                MetricFactory.ofMetricProcessorByTimeEnsemblePairs( config, StatisticGroup.set() );
+                MetricFactory.ofMetricProcessorForEnsemblePairs( config, StatisticGroup.set() );
         processor.apply( MetricTestDataFactory.getEnsemblePairsFour() );
 
         //Obtain the results
@@ -770,7 +769,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null );
 
         MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
-                MetricFactory.ofMetricProcessorByTimeEnsemblePairs( mock, StatisticGroup.set() );
+                MetricFactory.ofMetricProcessorForEnsemblePairs( mock, StatisticGroup.set() );
 
         Set<MetricConstants> actualSingleValuedScores =
                 Set.of( processor.getMetrics( SampleDataGroup.SINGLE_VALUED, StatisticGroup.DOUBLE_SCORE ) );
@@ -825,7 +824,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null );
 
         MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
-                MetricFactory.ofMetricProcessorByTimeEnsemblePairs( mock, StatisticGroup.set() );
+                MetricFactory.ofMetricProcessorForEnsemblePairs( mock, StatisticGroup.set() );
 
         Set<MetricConstants> actualSingleValuedScores =
                 Set.of( processor.getMetrics( SampleDataGroup.SINGLE_VALUED, StatisticGroup.DOUBLE_SCORE ) );
