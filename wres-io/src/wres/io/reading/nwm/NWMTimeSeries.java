@@ -1,0 +1,407 @@
+package wres.io.reading.nwm;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.net.URI;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import ucar.ma2.Array;
+import ucar.ma2.DataType;
+import ucar.ma2.InvalidRangeException;
+import ucar.nc2.Attribute;
+import ucar.nc2.NetcdfFile;
+import ucar.nc2.Variable;
+
+
+import wres.datamodel.time.Event;
+import wres.datamodel.time.ReferenceTimeType;
+import wres.datamodel.time.TimeSeries;
+import wres.io.reading.PreIngestException;
+
+/**
+ * Goal: a variable/feature/timeseries combination in a Vector NWM dataset is
+ * considered a source.
+ *
+ * Only the variable and feature selected for an evaluation will be ingested
+ * from a vector NWM dataset.
+ *
+ * All the NWM netCDF blobs for a given timeseries will first be found and
+ * opened prior to attempting to identify the timeseries, prior to attempting
+ * to ingest any rows of timeseries data.
+ *
+ * This class opens a set of NWM netCDF blobs as a timeseries, based on a profile.
+ */
+
+class NWMTimeSeries implements Closeable
+{
+    private static final Logger LOGGER = LoggerFactory.getLogger( NWMTimeSeries.class );
+    private static final DateTimeFormatter NWM_DATE_FORMATTER = DateTimeFormatter.ofPattern( "yyyyMMdd" );
+    private static final DateTimeFormatter NWM_HOUR_FORMATTER = DateTimeFormatter.ofPattern( "HH" );
+
+    private final NWMProfile profile;
+
+    /** The reference datetime of this NWM Forecast */
+    private final Instant referenceDatetime;
+
+    /** The base URI from where to find the members of this forecast */
+    private final URI baseUri;
+
+    private final Set<NetcdfFile> netcdfFiles = new HashSet<>();
+
+    /**
+     *
+     * @param profile
+     * @param referenceDatetime
+     * @param baseUri
+     * @throws NullPointerException When any argument is null.
+     * @throws PreIngestException When any netCDF blob could not be opened.
+     */
+    NWMTimeSeries( NWMProfile profile,
+                   Instant referenceDatetime,
+                   URI baseUri )
+    {
+        Objects.requireNonNull( profile );
+        Objects.requireNonNull( referenceDatetime );
+        Objects.requireNonNull( baseUri );
+        this.profile = profile;
+        this.referenceDatetime = referenceDatetime;
+        this.baseUri = baseUri;
+
+        // Build the set of URIs based on the profile given.
+        Set<URI> netcdfUris = NWMTimeSeries.getNetcdfUris( profile,
+                                                           referenceDatetime,
+                                                           baseUri );
+
+        // Open all the relevant files during construction, or fail.
+        for ( URI netcdfUri : netcdfUris )
+        {
+            NetcdfFile netcdfFile = NWMTimeSeries.openFile( netcdfUri );
+            this.netcdfFiles.add( netcdfFile );
+        }
+    }
+
+
+    /**
+     * Create the Set of URIs for the whole forecast based on given nwm profile.
+     * <br />
+     * Assumes:
+     * <ol>
+     *     <li>NWM emits a regular timeseries using a single timestep.</li>
+     *     <li>The first value in a timeseries is one timestep after reference
+     *         date.</li>
+     * </ol>
+     * @param profile The metadata describing the NWM timeseries(es).
+     * @param referenceDatetime The reference datetime for the forecast set.
+     * @param baseUri The file or network protocol and path prefix.
+     * @return The full Set of URIs for a single forecast
+     */
+
+    static Set<URI> getNetcdfUris( NWMProfile profile,
+                                   Instant referenceDatetime,
+                                   URI baseUri )
+    {
+        LOGGER.debug( "Called getNetcdfUris with {}, {}, {}", profile,
+                      referenceDatetime, baseUri );
+        Set<URI> uris = new HashSet<>();
+        final String NWM_DOT = "nwm.";
+
+        // Formatter cannot handle Instant
+        OffsetDateTime referenceOffsetDateTime = OffsetDateTime.ofInstant( referenceDatetime,
+                                                                           ZoneId.of( "UTC" ) );
+        String nwmDatePath = NWM_DOT
+                             + NWM_DATE_FORMATTER.format( referenceOffsetDateTime );
+
+        for ( short i = 1; i <= profile.getMemberCount(); i++ )
+        {
+            URI uriWithDate = baseUri.resolve( nwmDatePath + "/" );
+
+            String directoryName = profile.getNwmConfiguration();
+
+            if ( profile.getMemberCount() > 1 )
+            {
+                directoryName += "_mem" + i ;
+            }
+
+            URI uriWithDirectory = uriWithDate.resolve( directoryName + "/" );
+
+            for ( short j = 1; j <= profile.getBlobCount(); j++ )
+            {
+                String ncFilePartOne = NWM_DOT + "t"
+                                       + NWM_HOUR_FORMATTER.format( referenceOffsetDateTime )
+                                       + "z." + profile.getNwmConfiguration()
+                                       + "." + profile.getNwmOutputType();
+
+                // Ensemble number appended if greater than one member present.
+                if ( profile.getMemberCount() > 1 )
+                {
+                    ncFilePartOne += "_" + i;
+                }
+
+                String ncFilePartTwo = "." + profile.getTimeLabel();
+
+                long hours = profile.getDurationBetweenValidDatetimes()
+                                    .toHours()
+                             * j;
+
+                if ( profile.getTimeLabel()
+                            .equals( NWMProfile.TimeLabel.f ) )
+                {
+                    String forecastLabel = String.format( "%03d", hours );
+                    ncFilePartTwo += forecastLabel;
+                }
+                else if ( profile.getTimeLabel()
+                                 .equals( NWMProfile.TimeLabel.tm ))
+                {
+                    // Analysis files go back in valid datetime as j increases.
+                    String analysisLabel = String.format( "%02d", j - 1 );
+                    ncFilePartTwo += analysisLabel;
+                }
+
+                String ncFilePartThree = ".conus.nc";
+                String ncFile = ncFilePartOne + ncFilePartTwo + ncFilePartThree;
+                LOGGER.trace( "Built a netCDF filename: {}", ncFile );
+
+                URI fullUri = uriWithDirectory.resolve( ncFile );
+                uris.add( fullUri );
+            }
+        }
+
+        LOGGER.debug( "Returning these netCDF URIs: {}", uris );
+        return Collections.unmodifiableSet( uris );
+    }
+
+    private static NetcdfFile openFile( URI netcdfUri )
+    {
+        try
+        {
+            return NetcdfFile.open( netcdfUri.toString() );
+        }
+        catch ( IOException ioe )
+        {
+            throw new PreIngestException( "Failed to open netCDF file "
+                                          + netcdfUri, ioe );
+        }
+    }
+
+    NWMProfile getProfile()
+    {
+        return this.profile;
+    }
+
+    Instant getReferenceDatetime()
+    {
+        return this.referenceDatetime;
+    }
+
+    URI getBaseUri()
+    {
+        return this.baseUri;
+    }
+
+    private Set<NetcdfFile> getNetcdfFiles()
+    {
+        return this.netcdfFiles;
+    }
+
+    int countOfNetcdfFiles()
+    {
+        return this.getNetcdfFiles().size();
+    }
+
+    TimeSeries<Double> readTimeSeries( int featureId, String variableName )
+    {
+        return readTimeSeries( featureId, variableName, 1 );
+    }
+
+    /**
+     * Read a TimeSeries from across several netCDF single-validdatetime files.
+     * @param featureId The NWM feature ID.
+     * @param variableName The NWM variable name.
+     * @return a TimeSeries containing the events.
+     */
+
+    TimeSeries<Double> readTimeSeries( int featureId, String variableName, int memberNumber )
+    {
+        SortedSet<Event<Double>> events = new TreeSet<>();
+        final int NOT_FOUND = -1;
+
+        for ( NetcdfFile netcdfFile : this.getNetcdfFiles() )
+        {
+            // Get the ensemble_member_number
+            String memberNumberAttributeName = this.getProfile().getMemberAttribute();
+            Attribute memberNumberAttribute = netcdfFile.findAttribute( memberNumberAttributeName );
+            int ncEnsembleNumber;
+
+            if ( Objects.nonNull( memberNumberAttribute ) )
+            {
+                ncEnsembleNumber = memberNumberAttribute.getNumericValue()
+                                                        .intValue();
+            }
+            else if ( memberNumber != 1 )
+            {
+                throw new PreIngestException( "Could not find ensemble member attribute "
+                                              + memberNumberAttributeName +
+                                              " in netCDF file "
+                                              + netcdfFile );
+            }
+
+            // Get the valid datetime
+            String validDatetimeVariableName = this.getProfile().getValidDatetimeVariable();
+            Instant validDatetime = this.readMinutesFromEpoch( netcdfFile,
+                                                               validDatetimeVariableName );
+
+            // Get the reference datetime
+            String referenceDatetimeAttributeName = getProfile().getReferenceDatetimeVariable();
+            Instant ncReferenceDatetime = this.readMinutesFromEpoch( netcdfFile,
+                                                                     referenceDatetimeAttributeName );
+
+            // Validate: this referenceDatetime should match what was set originally.
+            // (This doesn't work for analysis_assim)
+            if ( !ncReferenceDatetime.equals( this.getReferenceDatetime() ) )
+            {
+                throw new PreIngestException( "The reference datetime "
+                                              + ncReferenceDatetime
+                                              + " from netCDF file "
+                                              + netcdfFile
+                                              + " does not match expected value "
+                                              + this.getReferenceDatetime() );
+            }
+
+            // Get the value at the variable in question.
+            String featureVariableName = getProfile().getFeatureVariable();
+            Variable featureVariable = netcdfFile.findVariable( featureVariableName );
+
+            int indexOfFeature = NOT_FOUND;
+
+            // Must find the location of the variable.
+            // Might be nice to assume these are sorted to do a binary search,
+            // but I think it is an unsafe assumption that the values are sorted
+            // and we are looking for the index of the feature id to use for
+            // getting a value from the actual variable needed.
+            try
+            {
+                Array allFeatures = featureVariable.read();
+                int[] rawFeatures = (int[]) allFeatures.get1DJavaArray( DataType.INT );
+
+                for ( int i = 0; i < rawFeatures.length; i++ )
+                {
+                    if ( rawFeatures[i] == featureId )
+                    {
+                        indexOfFeature = i;
+                        break;
+                    }
+                }
+            }
+            catch ( IOException ioe )
+            {
+                throw new PreIngestException( "Failed to read features from "
+                                              + netcdfFile, ioe );
+            }
+
+            if ( indexOfFeature == NOT_FOUND )
+            {
+                throw new PreIngestException( "Could not find feature id "
+                                              + featureId + " in netCDF file "
+                                              + netcdfFile );
+            }
+
+            Variable variableVariable =  netcdfFile.findVariable( variableName );
+            int[] origin = { indexOfFeature };
+            int[] shape = { 1 };
+            double variableValue;
+            Event<Double> event;
+
+            try
+            {
+                Array array = variableVariable.read( origin, shape );
+                double[] values = (double[]) array.get1DJavaArray( DataType.DOUBLE );
+
+                if ( values.length != 1 )
+                {
+                    throw new PreIngestException( "Expected to read exactly one value, instead got "
+                                                  + values.length );
+                }
+
+                variableValue = values[0];
+            }
+            catch ( IOException | InvalidRangeException e )
+            {
+                throw new PreIngestException( "Failed to read variable "
+                                              + variableVariable
+                                              + " at origin "
+                                              + Arrays.toString( origin )
+                                              + " and shape "
+                                              + Arrays.toString( shape )
+                                              + " from netCDF file " + netcdfFile,
+                                              e );
+            }
+
+            event = Event.of( validDatetime, variableValue );
+            events.add( event );
+        }
+
+        return TimeSeries.of( this.getReferenceDatetime(),
+                              ReferenceTimeType.T0,
+                              events );
+    }
+
+
+    /**
+     * Helper to read minutes from epoch into an Instant
+     * @param netcdfFile the (open) netCDF file to read from
+     * @param variableName the name of the variable to read
+     *                     assumes cardinality 1
+     *                     assumes the value is an int
+     *                     assumes the value is minutes since unix epoch
+     * @return the Instant representation of the value
+     */
+
+    private Instant readMinutesFromEpoch( NetcdfFile netcdfFile,
+                                          String variableName )
+    {
+        Variable ncVariable = netcdfFile.findVariable( variableName );
+
+        try
+        {
+            Array allValidDateTimes = ncVariable.read();
+            int minutesSinceEpoch = allValidDateTimes.getInt( 0 );
+            Duration durationSinceEpoch = Duration.ofMinutes( minutesSinceEpoch );
+            return Instant.ofEpochSecond( durationSinceEpoch.toSeconds() );
+        }
+        catch ( IOException ioe )
+        {
+            throw new PreIngestException( "Failed to read Instant for variable "
+                                          + ncVariable
+                                          + " from netCDF file "
+                                          + netcdfFile );
+        }
+    }
+
+    public void close()
+    {
+        for ( NetcdfFile netcdfFile : this.netcdfFiles )
+        {
+            try
+            {
+                netcdfFile.close();
+            }
+            catch ( IOException ioe )
+            {
+                LOGGER.warn( "Could not close netCDF file {}", netcdfFile, ioe );
+            }
+        }
+    }
+}
