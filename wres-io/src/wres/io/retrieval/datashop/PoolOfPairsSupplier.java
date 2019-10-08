@@ -127,8 +127,19 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
     private final SampleMetadata baselineMetadata;
 
     /**
-     * Returns a {@link PoolOfPairs} for metric calculation. Callers should cache the output for re-use. Each call of
-     * this method initiates a separate retrieval.
+     * The pool to return.
+     */
+    
+    private PoolOfPairs<L, R> pool;
+    
+    /**
+     * Pool creation lock. Only create a pool once.
+     */
+    
+    private final Object creationLock = new Object();
+    
+    /**
+     * Returns a {@link PoolOfPairs} for metric calculation.
      * 
      * @return a pool of pairs
      * @throws DataAccessException if the pool data could not be retrieved
@@ -139,6 +150,33 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
 
     @Override
     public PoolOfPairs<L, R> get()
+    {
+        // Create pool if needed
+        synchronized( creationLock )
+        {
+            if( Objects.nonNull( this.pool ) )
+            {
+                return this.pool;
+            }
+            
+            this.createPool();
+        }
+
+        LOGGER.debug( "Returning existing pool for {}.", this.metadata );
+        
+        return this.pool;
+    }
+    
+    /**
+     * Creates a {@link PoolOfPairs}.
+     * 
+     * @throws DataAccessException if the pool data could not be retrieved
+     * @throws RescalingException if the pool data could not be rescaled
+     * @throws PairingException if the pool data could not be paired
+     * @throws NoSuchUnitConversionException if the data units could not be converted
+     */
+
+    public void createPool()
     {
         LOGGER.debug( "Creating pool {}.", this.metadata );
 
@@ -211,8 +249,8 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
                       this.metadata,
                       returnMe.getRawData().size() );
 
-        return returnMe;
-    }
+        this.pool = returnMe;
+    }    
 
     /**
      * Builder for a {@link PoolOfPairsSupplier}.

@@ -230,7 +230,7 @@ public class SingleValuedPoolGenerator implements Supplier<List<Supplier<PoolOfP
                                                                        leftVariableFeatureId,
                                                                        inputsConfig.getLeft().getType(),
                                                                        LeftOrRightOrBaseline.LEFT,
-                                                                       null,
+                                                                       nextWindow,
                                                                        desiredTimeScale,
                                                                        unitMapper ) );
                     builder.setLeft( leftSupplier );
