@@ -138,7 +138,8 @@ public class NWMTimeSeriesTest
     }
 
     @Test
-    @Ignore // If you want to try this against real service, remove @Ignore.
+    // To try this against the real service, use a new date, remove @Ignore
+    @Ignore
     public void openForecastsFromNomads()
     {
         // To see it fail to find a file, change blobCount to 4
@@ -161,7 +162,8 @@ public class NWMTimeSeriesTest
     }
 
     @Test
-    @Ignore // If you want to try this against real service, remove @Ignore.
+    // To try this against the real service, use a new date, remove @Ignore
+    @Ignore
     public void readForecastFromNomads()
     {
         // To see it fail to find a file, change blobCount to 25
@@ -186,8 +188,9 @@ public class NWMTimeSeriesTest
 
 
     @Test
-    @Ignore // If you want to try this against real service, remove @Ignore.
-    public void readForecastFromDstore()
+    // If you want to try this against real service, set FQDN, remove @Ignore.
+    @Ignore
+    public void readNWM20ShortRangeForecastFromDstore()
     {
         // To see it fail to find a file, change blobCount to 25
         NWMProfile nwmProfile = new NWMProfile( 18,
@@ -201,6 +204,83 @@ public class NWMTimeSeriesTest
         try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
                                                                Instant.parse( "2019-10-06T02:00:00Z" ),
                                                                URI.create( "https://dstore-fqdn/nwm/2.0/" ) ) )
+        {
+            TimeSeries<Double> timeSeries = nwmTimeSeries.readTimeSeries( 18384141, "streamflow" );
+            System.err.println( "Here is the timeseries: " + timeSeries );
+            assertNotNull( timeSeries );
+            assertNotEquals( 0, timeSeries.getEvents().size() );
+        }
+    }
+
+    @Test
+    // If you want to try this against real service, set FQDN, remove @Ignore.
+    @Ignore
+    public void readNWM12ShortRangeForecastFromDstore()
+    {
+        // To see it fail to find a file, change blobCount to 25
+        NWMProfile nwmProfile = new NWMProfile( 18,
+                                                1,
+                                                Duration.ofHours( 1 ),
+                                                true,
+                                                "short_range",
+                                                "channel_rt",
+                                                NWMProfile.TimeLabel.f );
+
+        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
+                                                               Instant.parse( "2018-05-06T04:00:00Z" ),
+                                                               URI.create( "https://dstore-fqdn/nwm/1.2/" ) ) )
+        {
+            TimeSeries<Double> timeSeries = nwmTimeSeries.readTimeSeries( 18384141, "streamflow" );
+            System.err.println( "Here is the timeseries: " + timeSeries );
+            assertNotNull( timeSeries );
+            assertNotEquals( 0, timeSeries.getEvents().size() );
+        }
+    }
+
+
+    @Test
+    // If you want to try this against real service, set FQDN, remove @Ignore.
+    @Ignore
+    public void readNWM11ShortRangeForecastFromDstore()
+    {
+        // To see it fail to find a file, change blobCount to 25
+        NWMProfile nwmProfile = new NWMProfile( 18,
+                                                1,
+                                                Duration.ofHours( 1 ),
+                                                true,
+                                                "short_range",
+                                                "channel_rt",
+                                                NWMProfile.TimeLabel.f );
+
+        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
+                                                               Instant.parse( "2017-10-06T17:00:00Z" ),
+                                                               URI.create( "https://dstore-fqdn/nwm/1.1/" ) ) )
+        {
+            TimeSeries<Double> timeSeries = nwmTimeSeries.readTimeSeries( 18384141, "streamflow" );
+            System.err.println( "Here is the timeseries: " + timeSeries );
+            assertNotNull( timeSeries );
+            assertNotEquals( 0, timeSeries.getEvents().size() );
+        }
+    }
+
+
+    @Test
+    @Ignore // If you want to try this against real service, remove @Ignore.
+    // Fails because NWM 1.0 had .nc.gz extension.
+    public void readNWM10ShortRangeForecastFromDstore()
+    {
+        // To see it fail to find a file, change blobCount to 25
+        NWMProfile nwmProfile = new NWMProfile( 18,
+                                                1,
+                                                Duration.ofHours( 1 ),
+                                                true,
+                                                "short_range",
+                                                "channel_rt",
+                                                NWMProfile.TimeLabel.f );
+
+        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
+                                                               Instant.parse( "2016-10-18T17:00:00Z" ),
+                                                               URI.create( "https://dstore-fqdn/nwm/1.0/" ) ) )
         {
             TimeSeries<Double> timeSeries = nwmTimeSeries.readTimeSeries( 18384141, "streamflow" );
             System.err.println( "Here is the timeseries: " + timeSeries );
