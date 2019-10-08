@@ -12,6 +12,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 
+import wres.datamodel.Ensemble;
 import wres.datamodel.time.TimeSeries;
 
 public class NWMTimeSeriesTest
@@ -312,5 +313,33 @@ public class NWMTimeSeriesTest
             assertNotEquals( 0, timeSeries.getEvents().size() );
         }
     }
+
+
+    @Test
+    // If you want to try this against real service, set FQDN, remove @Ignore.
+    @Ignore
+    public void readNWM20MediumRangeForecastFromDstore()
+    {
+        // To see it fail to find a file, change blobCount to 70
+        // To see it run OutOfMemoryError, change blobCount to full 68
+        NWMProfile nwmProfile = new NWMProfile( 10,
+                                                7,
+                                                Duration.ofHours( 3 ),
+                                                true,
+                                                "medium_range",
+                                                "channel_rt",
+                                                NWMProfile.TimeLabel.f );
+
+        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
+                                                               Instant.parse( "2019-10-01T12:00:00Z" ),
+                                                               URI.create( "https://dstore-fqdn/nwm/2.0/" ) ) )
+        {
+            TimeSeries<Ensemble> timeSeries = nwmTimeSeries.readEnsembleTimeSeries( 18384141, "streamflow" );
+            System.err.println( "Here is the timeseries: " + timeSeries );
+            assertNotNull( timeSeries );
+            assertNotEquals( 0, timeSeries.getEvents().size() );
+        }
+    }
+
 }
 
