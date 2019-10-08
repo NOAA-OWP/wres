@@ -102,12 +102,6 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
             a -> Double.isFinite( a ) ? a : MissingValues.MISSING_DOUBLE;
 
     /**
-     * List of validation events encountered when attempting to upscale the last time-series provided.
-     */
-
-    private final List<ScaleValidationEvent> validationEvents = new ArrayList<>();
-
-    /**
      * Creates an instance.
      * 
      * @return an instance of the upscaler
@@ -119,16 +113,16 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
     }
 
     @Override
-    public TimeSeries<Double> upscale( TimeSeries<Double> timeSeries,
-                                       TimeScale desiredTimeScale )
+    public RescaledTimeSeriesPlusValidation<Double> upscale( TimeSeries<Double> timeSeries,
+                                                             TimeScale desiredTimeScale )
     {
         return this.upscale( timeSeries, desiredTimeScale, Collections.emptySet() );
     }
 
     @Override
-    public TimeSeries<Double> upscale( TimeSeries<Double> timeSeries,
-                                       TimeScale desiredTimeScale,
-                                       Set<Instant> endsAt )
+    public RescaledTimeSeriesPlusValidation<Double> upscale( TimeSeries<Double> timeSeries,
+                                                             TimeScale desiredTimeScale,
+                                                             Set<Instant> endsAt )
     {
         Objects.requireNonNull( timeSeries );
 
@@ -137,7 +131,7 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
         Objects.requireNonNull( endsAt );
 
         // Validate the request
-        this.validate( timeSeries, desiredTimeScale );
+        List<ScaleValidationEvent> validationEvents = this.validate( timeSeries, desiredTimeScale );
 
         // Empty time-series
         if ( timeSeries.getEvents().isEmpty() )
@@ -148,7 +142,7 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
                               timeSeries.hashCode() );
             }
 
-            return timeSeries;
+            return RescaledTimeSeriesPlusValidation.of( timeSeries, validationEvents );
         }
 
         // No times at which values should end, so start at the beginning
@@ -157,7 +151,9 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
             endsAt = this.getEndTimesFromSeries( timeSeries, desiredTimeScale );
         }
 
-        if ( desiredTimeScale.equals( timeSeries.getTimeScale() ) )
+        // If the period is the same, return the existing series with the desired scale
+        // The validation of the function happens above. For example, the existing could be UNKNOWN
+        if ( desiredTimeScale.getPeriod().equals( timeSeries.getTimeScale().getPeriod() ) )
         {
             if ( LOGGER.isTraceEnabled() )
             {
@@ -167,7 +163,12 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
                               desiredTimeScale );
             }
 
-            return timeSeries;
+            TimeSeries<Double> returnMe = new TimeSeriesBuilder<Double>().addEvents( timeSeries.getEvents() )
+                                                                         .addReferenceTimes( timeSeries.getReferenceTimes() )
+                                                                         .setTimeScale( desiredTimeScale )
+                                                                         .build();
+
+            return RescaledTimeSeriesPlusValidation.of( returnMe, validationEvents );
         }
 
         // Group the events according to whether their valid times fall within the desired period that ends at a 
@@ -199,13 +200,7 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
         // Set the upscaled scale
         builder.setTimeScale( desiredTimeScale );
 
-        return builder.build();
-    }
-
-    @Override
-    public List<ScaleValidationEvent> getScaleValidationEvents()
-    {
-        return Collections.unmodifiableList( this.validationEvents );
+        return RescaledTimeSeriesPlusValidation.of( builder.build(), validationEvents );
     }
 
     /**
@@ -252,21 +247,18 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
      * @param timeSeries the time-series to upscale
      * @param desiredTimeScale the desired scale
      * @throws RescalingException if the input cannot be rescaled to the desired scale
+     * @return the validation events
      */
 
-    private <T> void validate( TimeSeries<T> timeSeries, TimeScale desiredTimeScale )
+    private <T> List<ScaleValidationEvent> validate( TimeSeries<T> timeSeries, TimeScale desiredTimeScale )
     {
-        this.validationEvents.clear(); // Clear any existing events
-
         List<ScaleValidationEvent> events =
                 TimeSeriesOfDoubleBasicUpscaler.validateForUpscaling( timeSeries.getTimeScale(), desiredTimeScale );
 
-        this.validationEvents.addAll( events );
-
         // Exception?
-        List<ScaleValidationEvent> errors = this.validationEvents.stream()
-                                                                 .filter( a -> a.getEventType() == EventType.ERROR )
-                                                                 .collect( Collectors.toList() );
+        List<ScaleValidationEvent> errors = events.stream()
+                                                  .filter( a -> a.getEventType() == EventType.ERROR )
+                                                  .collect( Collectors.toList() );
         String spacer = "    ";
 
         if ( !errors.isEmpty() )
@@ -283,6 +275,8 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
 
             throw new RescalingException( message.toString() );
         }
+
+        return Collections.unmodifiableList( events );
     }
 
     /**
@@ -303,7 +297,9 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
 
         if ( events.size() < 2 )
         {
-            this.logSkippedGroup( BECAUSE_THERE_WERE_FEWER_THAN_TWO_EVENTS_TO_UPSCALE, events, endsAt );
+            this.logSkippedGroup( BECAUSE_THERE_WERE_FEWER_THAN_TWO_EVENTS_TO_UPSCALE,
+                                  events,
+                                  endsAt );
 
             return false;
         }

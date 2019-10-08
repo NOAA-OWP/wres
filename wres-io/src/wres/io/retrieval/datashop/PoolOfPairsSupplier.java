@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.Supplier;
@@ -22,8 +23,11 @@ import wres.datamodel.sampledata.pairs.PairingException;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
 import wres.datamodel.scale.RescalingException;
+import wres.datamodel.scale.ScaleValidationEvent;
 import wres.datamodel.scale.TimeScale;
+import wres.datamodel.scale.ScaleValidationEvent.EventType;
 import wres.datamodel.time.Event;
+import wres.datamodel.time.RescaledTimeSeriesPlusValidation;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesPairer;
 import wres.datamodel.time.TimeSeriesSlicer;
@@ -180,9 +184,9 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
                           this.metadata,
                           this.baselineMetadata );
 
-            List<TimeSeries<R>> baselinetData = this.baseline.get().collect( Collectors.toList() );
+            List<TimeSeries<R>> baselineData = this.baseline.get().collect( Collectors.toList() );
 
-            List<TimeSeries<Pair<L, R>>> basePairs = this.createPairs( leftData, baselinetData );
+            List<TimeSeries<Pair<L, R>>> basePairs = this.createPairs( leftData, baselineData );
 
             for ( TimeSeries<Pair<L, R>> pairs : basePairs )
             {
@@ -218,7 +222,7 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
      * @param <R> the right type of paired value and, where required, the baseline type
      */
 
-    public static class PoolSupplierBuilder<L, R>
+    public static class PoolOfPairsSupplierBuilder<L, R>
     {
 
         /**
@@ -292,8 +296,8 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * @param climatologyMapper the mapper from the climatological type to a double type
          * @return the builder
          */
-        public PoolSupplierBuilder<L, R> setClimatology( Supplier<Stream<TimeSeries<L>>> climatology,
-                                                         ToDoubleFunction<L> climatologyMapper )
+        public PoolOfPairsSupplierBuilder<L, R> setClimatology( Supplier<Stream<TimeSeries<L>>> climatology,
+                                                                ToDoubleFunction<L> climatologyMapper )
         {
             this.climatology = climatology;
 
@@ -304,7 +308,7 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * @param left the left to set
          * @return the builder
          */
-        public PoolSupplierBuilder<L, R> setLeft( Supplier<Stream<TimeSeries<L>>> left )
+        public PoolOfPairsSupplierBuilder<L, R> setLeft( Supplier<Stream<TimeSeries<L>>> left )
         {
             this.left = left;
 
@@ -315,7 +319,7 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * @param right the right to set
          * @return the builder
          */
-        public PoolSupplierBuilder<L, R> setRight( Supplier<Stream<TimeSeries<R>>> right )
+        public PoolOfPairsSupplierBuilder<L, R> setRight( Supplier<Stream<TimeSeries<R>>> right )
         {
             this.right = right;
 
@@ -326,7 +330,7 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * @param baseline the baseline to set
          * @return the builder
          */
-        public PoolSupplierBuilder<L, R> setBaseline( Supplier<Stream<TimeSeries<R>>> baseline )
+        public PoolOfPairsSupplierBuilder<L, R> setBaseline( Supplier<Stream<TimeSeries<R>>> baseline )
         {
             this.baseline = baseline;
 
@@ -337,7 +341,7 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * @param pairer the pairer to set
          * @return the builder
          */
-        public PoolSupplierBuilder<L, R> setPairer( TimeSeriesPairer<L, R> pairer )
+        public PoolOfPairsSupplierBuilder<L, R> setPairer( TimeSeriesPairer<L, R> pairer )
         {
             this.pairer = pairer;
 
@@ -348,7 +352,7 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * @param leftUpscaler the leftUpscaler to set
          * @return the builder
          */
-        public PoolSupplierBuilder<L, R> setLeftUpscaler( TimeSeriesUpscaler<L> leftUpscaler )
+        public PoolOfPairsSupplierBuilder<L, R> setLeftUpscaler( TimeSeriesUpscaler<L> leftUpscaler )
         {
             this.leftUpscaler = leftUpscaler;
 
@@ -359,7 +363,7 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * @param rightUpscaler the rightUpscaler to set
          * @return the builder
          */
-        public PoolSupplierBuilder<L, R> setRightUpscaler( TimeSeriesUpscaler<R> rightUpscaler )
+        public PoolOfPairsSupplierBuilder<L, R> setRightUpscaler( TimeSeriesUpscaler<R> rightUpscaler )
         {
             this.rightUpscaler = rightUpscaler;
 
@@ -370,7 +374,7 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * @param desiredTimeScale the desiredTimeScale to set
          * @return the builder
          */
-        public PoolSupplierBuilder<L, R> setDesiredTimeScale( TimeScale desiredTimeScale )
+        public PoolOfPairsSupplierBuilder<L, R> setDesiredTimeScale( TimeScale desiredTimeScale )
         {
             this.desiredTimeScale = desiredTimeScale;
 
@@ -381,7 +385,7 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * @param metadata the metadata to set
          * @return the builder
          */
-        public PoolSupplierBuilder<L, R> setMetadata( SampleMetadata metadata )
+        public PoolOfPairsSupplierBuilder<L, R> setMetadata( SampleMetadata metadata )
         {
             this.metadata = metadata;
 
@@ -392,7 +396,7 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * @param baselineMetadata the baselineMetadata to set
          * @return the builder
          */
-        public PoolSupplierBuilder<L, R> setBaselineMetadata( SampleMetadata baselineMetadata )
+        public PoolOfPairsSupplierBuilder<L, R> setBaselineMetadata( SampleMetadata baselineMetadata )
         {
             this.baselineMetadata = baselineMetadata;
 
@@ -484,8 +488,15 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
                          .map( Event::getTime )
                          .collect( Collectors.toCollection( TreeSet::new ) );
 
-            left = this.getLeftUpscaler()
-                       .upscale( left, this.getDesiredTimeScale(), Collections.unmodifiableSortedSet( endsAt ) );
+            RescaledTimeSeriesPlusValidation<L> upscaledLeft = this.getLeftUpscaler()
+                                                                   .upscale( left,
+                                                                             this.getDesiredTimeScale(),
+                                                                             Collections.unmodifiableSortedSet( endsAt ) );
+
+            left = upscaledLeft.getTimeSeries();
+
+            // Log any warnings
+            PoolOfPairsSupplier.logScaleValidationWarnings( left, upscaledLeft.getValidationEvents() );
         }
 
         if ( !right.getTimeScale().equals( this.getDesiredTimeScale() ) )
@@ -505,8 +516,15 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
                         .map( Event::getTime )
                         .collect( Collectors.toCollection( TreeSet::new ) );
 
-            right = this.getRightUpscaler()
-                        .upscale( right, this.getDesiredTimeScale(), Collections.unmodifiableSortedSet( endsAt ) );
+            RescaledTimeSeriesPlusValidation<R> upscaledRight = this.getRightUpscaler()
+                                                                    .upscale( right,
+                                                                              this.getDesiredTimeScale(),
+                                                                              Collections.unmodifiableSortedSet( endsAt ) );
+
+            right = upscaledRight.getTimeSeries();
+
+            // Log any warnings
+            PoolOfPairsSupplier.logScaleValidationWarnings( right, upscaledRight.getValidationEvents() );
         }
 
         // Create the pairs, if any
@@ -519,7 +537,7 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
                           + "which contained {} values, "
                           + "with right time-series {},"
                           + " which contained {} values: "
-                          + "created {} pairs.",
+                          + "created {} pairs at the desired time scale of {}.",
                           left.hashCode(),
                           left.getEvents().size(),
                           right.hashCode(),
@@ -640,6 +658,39 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
     }
 
     /**
+     * Logs the validation events of type {@link ScaleValidationEvent#WARN} associated with rescaling.
+     * 
+     * TODO: these warnings could probably be consolidated and the context information improved. May need to add 
+     * more complete metadata information to the times-series.
+     * 
+     * @param context the context for the warnings
+     * @param scaleValidationEvents the scale validation events
+     */
+
+    private static void logScaleValidationWarnings( TimeSeries<?> context,
+                                                    List<ScaleValidationEvent> scaleValidationEvents )
+    {
+        Objects.requireNonNull( scaleValidationEvents );
+
+        // Any warnings? Log those individually.              
+        if ( LOGGER.isWarnEnabled() )
+        {
+            Set<ScaleValidationEvent> warnEvents = scaleValidationEvents.stream()
+                                                                        .filter( a -> a.getEventType() == EventType.WARN )
+                                                                        .collect( Collectors.toSet() );
+            if ( !warnEvents.isEmpty() )
+            {
+                LOGGER.warn( "While rescaling a time-series with reference time {}, encountered {} validation warnings, "
+                             + "as follows",
+                             context.getReferenceTimes().values().iterator().next(),
+                             warnEvents.size() );
+
+                warnEvents.forEach( e -> LOGGER.warn( e.toString() ) );
+            }
+        }
+    }
+
+    /**
      * Hidden constructor.  
      * 
      * @param builder the builder
@@ -647,7 +698,7 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
      * @throws IllegalArgumentException if some input is inconsistent
      */
 
-    private PoolOfPairsSupplier( PoolSupplierBuilder<L, R> builder )
+    private PoolOfPairsSupplier( PoolOfPairsSupplierBuilder<L, R> builder )
     {
         // Set
         this.climatology = builder.climatology;

@@ -73,7 +73,8 @@ public class TimeSeriesOfEnsembleUpscalerTest
 
         TimeScale desiredTimeScale = TimeScale.of( Duration.ofHours( 12 ), TimeScaleFunction.MEAN );
 
-        TimeSeries<Ensemble> actualForecast = this.upscaler.upscale( forecast, desiredTimeScale, endsAt );
+        TimeSeries<Ensemble> actualForecast = this.upscaler.upscale( forecast, desiredTimeScale, endsAt )
+                                                           .getTimeSeries();
 
         // Create the expected series with the desired time scale
         Ensemble expectedOne = Ensemble.of( 7, 8, 9, 10 );

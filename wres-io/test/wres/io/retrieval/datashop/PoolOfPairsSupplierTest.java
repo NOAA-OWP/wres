@@ -32,7 +32,7 @@ import wres.datamodel.time.TimeSeriesPairer;
 import wres.datamodel.time.TimeSeriesPairerByExactTime;
 import wres.datamodel.time.TimeSeriesUpscaler;
 import wres.datamodel.time.TimeWindow;
-import wres.io.retrieval.datashop.PoolOfPairsSupplier.PoolSupplierBuilder;
+import wres.io.retrieval.datashop.PoolOfPairsSupplier.PoolOfPairsSupplierBuilder;
 
 /**
  * Tests the {@link PoolOfPairsSupplier}.
@@ -406,7 +406,7 @@ public class PoolOfPairsSupplierTest
         SampleMetadata poolOneMetadata = SampleMetadata.of( this.metadata, poolOneWindow );
 
         Supplier<PoolOfPairs<Double, Double>> poolOneSupplier =
-                new PoolSupplierBuilder<Double, Double>().setLeft( obsSupplier )
+                new PoolOfPairsSupplierBuilder<Double, Double>().setLeft( obsSupplier )
                                                          .setRight( forcSupplierOne )
                                                          .setLeftUpscaler( this.upscaler )
                                                          .setPairer( this.pairer )
@@ -477,7 +477,7 @@ public class PoolOfPairsSupplierTest
         SampleMetadata poolElevenMetadata = SampleMetadata.of( this.metadata, poolElevenWindow );
 
         Supplier<PoolOfPairs<Double, Double>> poolElevenSupplier =
-                new PoolSupplierBuilder<Double, Double>().setLeft( obsSupplier )
+                new PoolOfPairsSupplierBuilder<Double, Double>().setLeft( obsSupplier )
                                                          .setRight( forcSupplierEleven )
                                                          .setLeftUpscaler( this.upscaler )
                                                          .setPairer( this.pairer )
@@ -574,7 +574,7 @@ public class PoolOfPairsSupplierTest
         SampleMetadata poolEighteenMetadata = SampleMetadata.of( this.metadata, poolEighteenWindow );
 
         Supplier<PoolOfPairs<Double, Double>> poolEighteenSupplier =
-                new PoolSupplierBuilder<Double, Double>().setLeft( obsSupplier )
+                new PoolOfPairsSupplierBuilder<Double, Double>().setLeft( obsSupplier )
                                                          .setRight( forcSupplierEighteen )
                                                          .setLeftUpscaler( this.upscaler )
                                                          .setPairer( this.pairer )

@@ -42,14 +42,12 @@ import wres.util.TimeHelper;
  * <p>The {@link Path} is supplied on construction and no guarantee is made that anything is created at that 
  * {@link Path}. It is the responsibility of the caller to determine whether something was written, if that matters.
  * 
- * @param <L> the type of left data
- * @param <R> the type of right data
- * @param <T> the composition in which the left and right data are found
+ * @param <L> the type of left data in the pairing
+ * @param <R> the type of right data in the pairing
  * @author james.brown@hydrosolved.com
  */
 
-public abstract class PairsWriter<L,R, T extends PoolOfPairs<L,R>>
-        implements Consumer<T>, Supplier<Path>, Closeable
+public abstract class PairsWriter<L, R> implements Consumer<PoolOfPairs<L, R>>, Supplier<Path>, Closeable
 {
 
     /**
@@ -87,7 +85,7 @@ public abstract class PairsWriter<L,R, T extends PoolOfPairs<L,R>>
      */
 
     private final Path pathToPairs;
-    
+
     /**
      * The time resolution.
      */
@@ -98,28 +96,28 @@ public abstract class PairsWriter<L,R, T extends PoolOfPairs<L,R>>
      * Formatter that maps from a paired value to a {@link String}.
      */
 
-    private final Function<Pair<L,R>, String> pairFormatter;
+    private final Function<Pair<L, R>, String> pairFormatter;
 
     /**
      * Is <code>true</code> if the header needs to be written, <code>false</code> when it has already been written. 
      */
 
-    private final AtomicBoolean isHeaderRequired = new AtomicBoolean( true );   
-    
+    private final AtomicBoolean isHeaderRequired = new AtomicBoolean( true );
+
     /**
      * Shared instance of a {@link BufferedWriter} to be closed on completion.
      */
 
     private BufferedWriter writer = null;
-    
+
     @Override
     public void close() throws IOException
     {
-        if( Objects.nonNull( this.writer ) )
+        if ( Objects.nonNull( this.writer ) )
         {
             writer.close();
-        }        
-    }    
+        }
+    }
 
     /**
      * Returns a basic header for the pairs from the input. Override this method to add information for specific types
@@ -129,7 +127,7 @@ public abstract class PairsWriter<L,R, T extends PoolOfPairs<L,R>>
      * @throws NullPointerException if the pairs are null
      */
 
-    StringJoiner getHeaderFromPairs( T pairs )
+    StringJoiner getHeaderFromPairs( PoolOfPairs<L, R> pairs )
     {
         Objects.requireNonNull( pairs, "Cannot obtain header from null pairs." );
 
@@ -200,7 +198,7 @@ public abstract class PairsWriter<L,R, T extends PoolOfPairs<L,R>>
      */
 
     @Override
-    public void accept( T pairs )
+    public void accept( PoolOfPairs<L, R> pairs )
     {
         Objects.requireNonNull( pairs, "Cannot write null pairs." );
 
@@ -220,21 +218,22 @@ public abstract class PairsWriter<L,R, T extends PoolOfPairs<L,R>>
                 this.writeHeaderIfRequired( pairs );
 
                 // Feature to write, which is fixed across all pairs
-                
+
                 // TODO: need a more consistent representation of a geographic feature throughout the application
                 // See #55231-131
                 // For now, use the location name OR the coordinates, preferentially
-                Location location =  pairs.getMetadata().getIdentifier().getGeospatialID();
+                Location location = pairs.getMetadata().getIdentifier().getGeospatialID();
                 String featureName = location.toString();
-                
-                if( location.hasLocationName() )
+
+                if ( location.hasLocationName() )
                 {
                     featureName = location.getLocationName();
                 }
-                else if( location.hasCoordinates() )
+                else if ( location.hasCoordinates() )
                 {
-                    featureName = Float.toString( location.getLongitude() ) + 
-                            " " + Float.toString( location.getLatitude() );
+                    featureName = Float.toString( location.getLongitude() ) +
+                                  " "
+                                  + Float.toString( location.getLatitude() );
                 }
 
                 // Time window to write, which is fixed across all pairs
@@ -247,30 +246,30 @@ public abstract class PairsWriter<L,R, T extends PoolOfPairs<L,R>>
 
                 // Lock for writing
                 this.getWriteLock().lock();
-                
+
                 LOGGER.trace( "Acquired pair writing lock on {}", this.getPath() );
-                
+
                 // Write using shared instance
                 BufferedWriter sharedWriter = this.getBufferedWriter();
-                
+
                 try
                 {
 
                     // Iterate in time-series order
-                    for ( TimeSeries<Pair<L,R>> nextSeries : pairs.get() )
+                    for ( TimeSeries<Pair<L, R>> nextSeries : pairs.get() )
                     {
                         // There is always one reference datetime, and the pairs format can only support one
                         // and does not yet qualify the type
-                        Map<ReferenceTimeType,Instant> referenceTimes = nextSeries.getReferenceTimes();
-                        
+                        Map<ReferenceTimeType, Instant> referenceTimes = nextSeries.getReferenceTimes();
+
                         Instant basisTime = referenceTimes.values().iterator().next();
 
-                        for ( Event<Pair<L,R>> nextPair : nextSeries.getEvents() )
+                        for ( Event<Pair<L, R>> nextPair : nextSeries.getEvents() )
                         {
 
                             // Move to next line
                             sharedWriter.write( System.lineSeparator() );
-                            
+
                             // Compose next line with a string joiner
                             StringJoiner joiner = new StringJoiner( PairsWriter.DELIMITER );
 
@@ -285,9 +284,9 @@ public abstract class PairsWriter<L,R, T extends PoolOfPairs<L,R>>
                                 joiner.add( timeWindow.getEarliestValidTime().toString() );
                                 joiner.add( timeWindow.getLatestValidTime().toString() );
                                 joiner.add( Long.toString( TimeHelper.durationToLongUnits( timeWindow.getEarliestLeadDuration(),
-                                                                                             this.getTimeResolution() ) ) );
+                                                                                           this.getTimeResolution() ) ) );
                                 joiner.add( Long.toString( TimeHelper.durationToLongUnits( timeWindow.getLatestLeadDuration(),
-                                                                                             this.getTimeResolution() ) ) );
+                                                                                           this.getTimeResolution() ) ) );
                             }
 
                             // ISO8601 datetime string
@@ -307,10 +306,10 @@ public abstract class PairsWriter<L,R, T extends PoolOfPairs<L,R>>
                         }
 
                     }
-                    
+
                     // Flush the buffer
                     sharedWriter.flush();
-                    
+
                     LOGGER.debug( "{} pairs written to {} for {} at time window {}.",
                                   pairs.getRawData().size(),
                                   this.getPath(),
@@ -322,7 +321,7 @@ public abstract class PairsWriter<L,R, T extends PoolOfPairs<L,R>>
                 {
                     // Unlock to expose for other writing
                     this.getWriteLock().unlock();
-                    
+
                     LOGGER.trace( "Released pair writing lock on {}", this.getPath() );
                 }
             }
@@ -381,10 +380,10 @@ public abstract class PairsWriter<L,R, T extends PoolOfPairs<L,R>>
 
     private BufferedWriter getBufferedWriter() throws IOException
     {
-        if( Objects.isNull( this.writer ) )
+        if ( Objects.isNull( this.writer ) )
         {
             this.getWriteLock().lock();
-            
+
             try
             {
                 this.writer = Files.newBufferedWriter( this.getPath(),
@@ -404,13 +403,12 @@ public abstract class PairsWriter<L,R, T extends PoolOfPairs<L,R>>
     /**
      * Helper that writes the specified header information if it has not been written already.
      * 
-     * @param <T> the type of pairs for which a header is required
      * @param pairs the pairs
      * @throws IOException if the header cannot be written
      * @throws NullPointerException if the header is null
      */
 
-    private void writeHeaderIfRequired( final T pairs ) throws IOException
+    private void writeHeaderIfRequired( final PoolOfPairs<L, R> pairs ) throws IOException
     {
         Objects.requireNonNull( pairs, "Specify a non-null header for writing pairs." );
 
@@ -422,12 +420,12 @@ public abstract class PairsWriter<L,R, T extends PoolOfPairs<L,R>>
 
             // Lock for writing
             this.getWriteLock().lock();
-            
+
             LOGGER.trace( "Acquired pair writing lock on {}", this.getPath() );
-            
+
             // Write using shared instance
             BufferedWriter sharedWriter = this.getBufferedWriter();
-            
+
             try
             {
                 // Check again in case header written between first check and lock acquired
@@ -446,10 +444,10 @@ public abstract class PairsWriter<L,R, T extends PoolOfPairs<L,R>>
             {
                 // Flush the buffer
                 sharedWriter.flush();
-                
+
                 // Unlock to expose for other writing
                 this.getWriteLock().unlock();
-                
+
                 LOGGER.trace( "Released pair writing lock on {}", this.getPath() );
             }
         }
@@ -473,7 +471,7 @@ public abstract class PairsWriter<L,R, T extends PoolOfPairs<L,R>>
      * @return the formatter
      */
 
-    private Function<Pair<L,R>, String> getPairFormatter()
+    private Function<Pair<L, R>, String> getPairFormatter()
     {
         return this.pairFormatter;
     }
@@ -481,14 +479,13 @@ public abstract class PairsWriter<L,R, T extends PoolOfPairs<L,R>>
     /**
      * Hidden constructor.
      * 
-     * @param <S> the type of pairs to write
      * @param pathToPairs the required path to write
      * @param timeResolution the required time resolution at which to write datetime and duration information
      * @param formatter the required formatter for writing pairs
      * @throws NullPointerException if any of the expected inputs is null
      */
 
-    PairsWriter( Path pathToPairs, ChronoUnit timeResolution, Function<Pair<L,R>, String> formatter )
+    PairsWriter( Path pathToPairs, ChronoUnit timeResolution, Function<Pair<L, R>, String> formatter )
     {
         Objects.requireNonNull( pathToPairs, "Specify a non-null path to write." );
 
