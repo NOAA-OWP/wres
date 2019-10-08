@@ -269,7 +269,7 @@ class FeatureProcessorTwo implements Supplier<FeatureProcessingResult>
                 // Complete all statistics tasks asynchronously:
                 // 1. Get some sample data from the database
                 // 2. Compute statistics from the sample data
-                // 3. Produce outputs from the statistics                
+                // 3. Produce outputs from the statistics 
                 final CompletableFuture<Set<Path>> statisticsTasks =
                         CompletableFuture.supplyAsync( nextInput, this.executors.getPairExecutor() )
                                          .thenApplyAsync( this.getStatisticsProcessingTask( processor ),

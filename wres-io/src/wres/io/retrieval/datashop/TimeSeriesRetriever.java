@@ -717,6 +717,16 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                               this.variableFeatureId,
                               this.lrb );
             }
+
+            if ( Objects.nonNull( this.timeWindow ) || Objects.isNull( this.desiredTimeScale ) )
+            {
+                LOGGER.debug( start + "discovered a time window of {} and a desired time scale of {}.",
+                              this.projectId,
+                              this.variableFeatureId,
+                              this.lrb,
+                              this.timeWindow,
+                              this.desiredTimeScale );
+            }
         }
 
     }
