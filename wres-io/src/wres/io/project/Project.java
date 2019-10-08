@@ -1489,7 +1489,7 @@ public class Project
         }
 
         return this.baselineVariableID;
-    }
+    }    
 
     /**
      * @return The name of the baseline variable
@@ -1503,6 +1503,58 @@ public class Project
         }
         return name;
     }
+    
+    /**
+     * Determines the <code>variablefeature_id</code> of the left dataset for a given feature.
+     * @param feature the feature
+     * @return the left variablefeature_id
+     * @throws SQLException if the identifier cannot be determined
+     * @throws NullPointerException if the feature is null
+     */
+    public Integer getLeftVariableFeatureId( Feature feature ) throws SQLException
+    {
+        Objects.requireNonNull( feature );
+
+        Integer variableId = this.getLeftVariableID();
+        return  Features.getVariableFeatureID( feature, variableId );
+    }    
+    
+    /**
+     * Determines the <code>variablefeature_id</code> of the right dataset for a given feature.
+     * @param feature the feature
+     * @return the right variablefeature_id
+     * @throws SQLException if the identifier cannot be determined
+     * @throws NullPointerException if the feature is null
+     */
+    public Integer getRightVariableFeatureId( Feature feature ) throws SQLException
+    {
+        Objects.requireNonNull( feature );
+
+        Integer variableId = this.getRightVariableID();
+        return  Features.getVariableFeatureID( feature, variableId );
+    }
+    
+    /**
+     * Determines the <code>variablefeature_id</code> of the baseline dataset for a given feature.
+     * @param feature the feature
+     * @return the baseline variablefeature_id
+     * @throws SQLException if the identifier cannot be determined
+     * @throws NullPointerException if the feature is null
+     */
+    public Integer getBaselineVariableFeatureId( Feature feature ) throws SQLException
+    {
+        Objects.requireNonNull( feature );
+        
+        Integer returnMe = null;
+        
+        if ( this.hasBaseline() )
+        {
+            Integer variableId = this.getBaselineVariableID();
+            returnMe = Features.getVariableFeatureID( feature, variableId );
+        }
+
+        return returnMe;
+    }     
 
     /**
      * @return The largest possible value for the data. Double.MAX_VALUE by default.

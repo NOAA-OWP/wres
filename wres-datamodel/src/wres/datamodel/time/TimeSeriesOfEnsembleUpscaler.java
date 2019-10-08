@@ -27,12 +27,6 @@ public class TimeSeriesOfEnsembleUpscaler implements TimeSeriesUpscaler<Ensemble
 {
 
     /**
-     * List of validation events encountered when attempting to upscale the last time-series provided.
-     */
-
-    private final List<ScaleValidationEvent> validationEvents = new ArrayList<>();
-
-    /**
      * Atomic upscaler.
      */
 
@@ -63,16 +57,16 @@ public class TimeSeriesOfEnsembleUpscaler implements TimeSeriesUpscaler<Ensemble
     }
 
     @Override
-    public TimeSeries<Ensemble> upscale( TimeSeries<Ensemble> timeSeries,
-                                         TimeScale desiredTimeScale )
+    public RescaledTimeSeriesPlusValidation<Ensemble> upscale( TimeSeries<Ensemble> timeSeries,
+                                                               TimeScale desiredTimeScale )
     {
         return this.upscale( timeSeries, desiredTimeScale, Collections.emptySet() );
     }
 
     @Override
-    public TimeSeries<Ensemble> upscale( TimeSeries<Ensemble> timeSeries,
-                                         TimeScale desiredTimeScale,
-                                         Set<Instant> endsAt )
+    public RescaledTimeSeriesPlusValidation<Ensemble> upscale( TimeSeries<Ensemble> timeSeries,
+                                                               TimeScale desiredTimeScale,
+                                                               Set<Instant> endsAt )
     {
         Objects.requireNonNull( timeSeries );
 
@@ -86,15 +80,16 @@ public class TimeSeriesOfEnsembleUpscaler implements TimeSeriesUpscaler<Ensemble
         // Upscale each trace separately and then recompose
         List<TimeSeries<Double>> upscaled = new ArrayList<>();
 
+        Set<ScaleValidationEvent> uniqueEvents = new HashSet<>();
+
         for ( TimeSeries<Double> next : traces )
         {
-            upscaled.add( this.getUpscaler().upscale( next, desiredTimeScale, endsAt ) );
+            RescaledTimeSeriesPlusValidation<Double> nextUp =
+                    this.getUpscaler().upscale( next, desiredTimeScale, endsAt );
+            upscaled.add( nextUp.getTimeSeries() );
 
             // Only retain the unique validation events
-            Set<ScaleValidationEvent> uniqueEvents = new HashSet<>( this.getScaleValidationEvents() );
-            uniqueEvents.addAll( this.getUpscaler().getScaleValidationEvents() );
-            this.validationEvents.clear();
-            this.validationEvents.addAll( uniqueEvents );
+            uniqueEvents.addAll( nextUp.getValidationEvents() );
         }
 
         // Get the labels
@@ -109,13 +104,10 @@ public class TimeSeriesOfEnsembleUpscaler implements TimeSeriesUpscaler<Ensemble
             }
         }
 
-        return TimeSeriesSlicer.compose( Collections.unmodifiableList( upscaled ), labels );
-    }
+        TimeSeries<Ensemble> up = TimeSeriesSlicer.compose( Collections.unmodifiableList( upscaled ),
+                                                            labels );
 
-    @Override
-    public List<ScaleValidationEvent> getScaleValidationEvents()
-    {
-        return Collections.unmodifiableList( this.validationEvents );
+        return RescaledTimeSeriesPlusValidation.of( up, new ArrayList<>( uniqueEvents ) );
     }
 
     /**

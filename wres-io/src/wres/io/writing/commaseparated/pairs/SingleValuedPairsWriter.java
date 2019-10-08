@@ -17,7 +17,7 @@ import wres.datamodel.sampledata.pairs.PoolOfPairs;
  * @author james.brown@hydrosolved.com
  */
 
-public class SingleValuedPairsWriter extends PairsWriter<Double,Double,PoolOfPairs<Double,Double>>
+public class SingleValuedPairsWriter extends PairsWriter<Double,Double>
 {
 
     /**

@@ -7,7 +7,6 @@ import static org.junit.Assert.assertTrue;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -17,7 +16,6 @@ import org.junit.Test;
 
 import wres.datamodel.MetricConstants.MissingValues;
 import wres.datamodel.scale.RescalingException;
-import wres.datamodel.scale.ScaleValidationEvent;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.scale.TimeScale.TimeScaleFunction;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
@@ -83,7 +81,8 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
         // The desired scale: total amounts over PT2H
         TimeScale desiredTimeScale = TimeScale.of( Duration.ofHours( 2 ), TimeScaleFunction.TOTAL );
 
-        TimeSeries<Double> actual = this.upscaler.upscale( timeSeries, desiredTimeScale, endsAt );
+        TimeSeries<Double> actual = this.upscaler.upscale( timeSeries, desiredTimeScale, endsAt )
+                                                 .getTimeSeries();
 
         // Create the expected series with the desired time scale
         TimeSeries<Double> expected = new TimeSeriesBuilder<Double>().addEvent( Event.of( second, 3.0 ) )
@@ -97,7 +96,8 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
         assertEquals( expected, actual );
 
         // Upscale without end times (i.e., start at the beginning)
-        TimeSeries<Double> actualUnconditional = this.upscaler.upscale( timeSeries, desiredTimeScale );
+        TimeSeries<Double> actualUnconditional = this.upscaler.upscale( timeSeries, desiredTimeScale )
+                                                              .getTimeSeries();
 
         assertEquals( expected, actualUnconditional );
     }
@@ -143,7 +143,8 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
         // The desired scale: mean over PT2H
         TimeScale desiredTimeScale = TimeScale.of( Duration.ofHours( 2 ), TimeScaleFunction.MEAN );
 
-        TimeSeries<Double> actual = this.upscaler.upscale( timeSeries, desiredTimeScale, endsAt );
+        TimeSeries<Double> actual = this.upscaler.upscale( timeSeries, desiredTimeScale, endsAt )
+                                                 .getTimeSeries();
 
         // Create the expected series with the desired time scale
         TimeSeries<Double> expected = new TimeSeriesBuilder<Double>().addEvent( Event.of( third, 9.0 ) )
@@ -235,7 +236,8 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
                                       .map( Event::getTime )
                                       .collect( Collectors.toSet() );
 
-        TimeSeries<Double> actualForecast = this.upscaler.upscale( forecast, desiredTimeScale, endsAt );
+        TimeSeries<Double> actualForecast = this.upscaler.upscale( forecast, desiredTimeScale, endsAt )
+                                                         .getTimeSeries();
 
         // Create the expected series with the desired time scale
         TimeSeries<Double> expectedForecast = new TimeSeriesBuilder<Double>().addEvent( Event.of( seventh, 13.0 ) )
@@ -278,16 +280,14 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
 
         TimeSeries<Double> fake = new TimeSeriesBuilder<Double>().setTimeScale( existingTimeScale ).build();
 
-        assertThrows( RescalingException.class, () -> this.upscaler.upscale( fake, desiredTimeScale ) );
+        RescalingException exception =
+                assertThrows( RescalingException.class, () -> this.upscaler.upscale( fake, desiredTimeScale ) );
 
-        List<ScaleValidationEvent> events = this.upscaler.getScaleValidationEvents();
+        String message = "ERROR: Downscaling is not supported: the desired "
+                         + "time scale of 'PT1M' cannot be smaller than "
+                         + "the existing time scale of 'PT1H'.";
 
-        ScaleValidationEvent expectedEvent =
-                ScaleValidationEvent.error( "Downscaling is not supported: the desired "
-                                            + "time scale of 'PT1M' cannot be smaller than "
-                                            + "the existing time scale of 'PT1H'." );
-
-        assertTrue( events.contains( expectedEvent ) );
+        assertTrue( exception.getMessage().contains( message ) );
     }
 
     @Test
@@ -301,15 +301,13 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
 
         TimeSeries<Double> fake = new TimeSeriesBuilder<Double>().setTimeScale( existingTimeScale ).build();
 
-        assertThrows( RescalingException.class, () -> this.upscaler.upscale( fake, desiredTimeScale ) );
+        RescalingException exception =
+                assertThrows( RescalingException.class, () -> this.upscaler.upscale( fake, desiredTimeScale ) );
 
-        List<ScaleValidationEvent> events = this.upscaler.getScaleValidationEvents();
+        String message = "ERROR: The desired time scale function is 'UNKNOWN': the function must be "
+                         + "known to conduct rescaling.";
 
-        ScaleValidationEvent expectedEvent =
-                ScaleValidationEvent.error( "The desired time scale function is 'UNKNOWN': the function must be "
-                                            + "known to conduct rescaling." );
-
-        assertTrue( events.contains( expectedEvent ) );
+        assertTrue( exception.getMessage().contains( message ) );
     }
 
     @Test
@@ -323,18 +321,16 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
 
         TimeSeries<Double> fake = new TimeSeriesBuilder<Double>().setTimeScale( existingTimeScale ).build();
 
-        assertThrows( RescalingException.class, () -> this.upscaler.upscale( fake, desiredTimeScale ) );
+        RescalingException exception =
+                assertThrows( RescalingException.class, () -> this.upscaler.upscale( fake, desiredTimeScale ) );
 
-        List<ScaleValidationEvent> events = this.upscaler.getScaleValidationEvents();
+        String message = "ERROR: The desired period of 'PT1H15M' is not an integer multiple of the existing "
+                         + "period, which is 'PT1H'. If the data has multiple time-steps that vary by time or "
+                         + "feature, it may not be possible to achieve the desired time scale for all of the data. In "
+                         + "that case, consider removing the desired time scale and performing an evaluation at the "
+                         + "existing time scale of the data, where possible.";
 
-        ScaleValidationEvent expectedEvent =
-                ScaleValidationEvent.error( "The desired period of 'PT1H15M' is not an integer multiple of the existing "
-                                            + "period, which is 'PT1H'. If the data has multiple time-steps that vary by time or feature, "
-                                            + "it may not be possible to achieve the desired time scale for all of the data. In that case, "
-                                            + "consider removing the desired time scale and performing an evaluation at the existing time "
-                                            + "scale of the data, where possible." );
-
-        assertTrue( events.contains( expectedEvent ) );
+        assertTrue( exception.getMessage().contains( message ) );
     }
 
     @Test
@@ -348,17 +344,15 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
 
         TimeSeries<Double> fake = new TimeSeriesBuilder<Double>().setTimeScale( existingTimeScale ).build();
 
-        assertThrows( RescalingException.class, () -> this.upscaler.upscale( fake, desiredTimeScale ) );
+        RescalingException exception =
+                assertThrows( RescalingException.class, () -> this.upscaler.upscale( fake, desiredTimeScale ) );
 
-        List<ScaleValidationEvent> events = this.upscaler.getScaleValidationEvents();
+        String message = "ERROR: The period associated with the existing and desired time scales is "
+                         + "'PT1H', but the time scale function associated with the existing time scale is 'MEAN', "
+                         + "which differs from the function associated with the desired time scale, namely 'TOTAL'. "
+                         + "This is not allowed. The function cannot be changed without changing the period.";
 
-        ScaleValidationEvent expectedEvent =
-                ScaleValidationEvent.error( "The period associated with the existing and desired time scales is "
-                                            + "'PT1H', but the time scale function associated with the existing time scale is 'MEAN', "
-                                            + "which differs from the function associated with the desired time scale, namely 'TOTAL'. "
-                                            + "This is not allowed. The function cannot be changed without changing the period." );
-
-        assertTrue( events.contains( expectedEvent ) );
+        assertTrue( exception.getMessage().contains( message ) );
     }
 
     @Test
@@ -372,16 +366,14 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
 
         TimeSeries<Double> fake = new TimeSeriesBuilder<Double>().setTimeScale( existingTimeScale ).build();
 
-        assertThrows( RescalingException.class, () -> this.upscaler.upscale( fake, desiredTimeScale ) );
+        RescalingException exception =
+                assertThrows( RescalingException.class, () -> this.upscaler.upscale( fake, desiredTimeScale ) );
 
-        List<ScaleValidationEvent> events = this.upscaler.getScaleValidationEvents();
+        String message = "ERROR: Cannot accumulate instantaneous values. Change the existing time scale or "
+                         + "change the function associated with the desired time scale to something other than a "
+                         + "'TOTAL'.";
 
-        ScaleValidationEvent expectedEvent =
-                ScaleValidationEvent.error( "Cannot accumulate instantaneous values. Change the existing time scale or "
-                                            + "change the function associated with the desired time scale to something other than a "
-                                            + "'TOTAL'." );
-
-        assertTrue( events.contains( expectedEvent ) );
+        assertTrue( exception.getMessage().contains( message ) );
     }
 
     @Test
@@ -395,17 +387,15 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
 
         TimeSeries<Double> fake = new TimeSeriesBuilder<Double>().setTimeScale( existingTimeScale ).build();
 
-        assertThrows( RescalingException.class, () -> this.upscaler.upscale( fake, desiredTimeScale ) );
+        RescalingException exception =
+                assertThrows( RescalingException.class, () -> this.upscaler.upscale( fake, desiredTimeScale ) );
 
-        List<ScaleValidationEvent> events = this.upscaler.getScaleValidationEvents();
+        String message = "ERROR: Cannot accumulate values that are not already accumulations. The "
+                         + "function associated with the existing time scale must be a 'TOTAL', "
+                         + "rather than a 'MEAN', or the function associated with the desired time "
+                         + "scale must be changed.";
 
-        ScaleValidationEvent expectedEvent =
-                ScaleValidationEvent.error( "Cannot accumulate values that are not already accumulations. The "
-                                            + "function associated with the existing time scale must be a 'TOTAL', "
-                                            + "rather than a 'MEAN', or the function associated with the desired time "
-                                            + "scale must be changed." );
-
-        assertTrue( events.contains( expectedEvent ) );
+        assertTrue( exception.getMessage().contains( message ) );
     }
 
 }

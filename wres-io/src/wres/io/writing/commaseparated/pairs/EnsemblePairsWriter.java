@@ -19,7 +19,7 @@ import wres.datamodel.sampledata.pairs.PoolOfPairs;
  * @author james.brown@hydrosolved.com
  */
 
-public class EnsemblePairsWriter extends PairsWriter<Double, Ensemble, PoolOfPairs<Double,Ensemble>>
+public class EnsemblePairsWriter extends PairsWriter<Double, Ensemble>
 {
 
     /**
@@ -52,7 +52,7 @@ public class EnsemblePairsWriter extends PairsWriter<Double, Ensemble, PoolOfPai
     }
 
     @Override
-    StringJoiner getHeaderFromPairs( PoolOfPairs<Double,Ensemble> pairs )
+    StringJoiner getHeaderFromPairs( PoolOfPairs<Double, Ensemble> pairs )
     {
         StringJoiner joiner = super.getHeaderFromPairs( pairs );
 
@@ -95,7 +95,7 @@ public class EnsemblePairsWriter extends PairsWriter<Double, Ensemble, PoolOfPai
      * @return the string formatter
      */
 
-    private static Function<Pair<Double,Ensemble>, String> getPairFormatter( DecimalFormat decimalFormatter )
+    private static Function<Pair<Double, Ensemble>, String> getPairFormatter( DecimalFormat decimalFormatter )
     {
         return pair -> {
 

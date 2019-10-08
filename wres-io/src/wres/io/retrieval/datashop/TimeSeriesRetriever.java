@@ -12,6 +12,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
@@ -33,10 +36,23 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 {
 
     /**
+     * Logger.
+     */
+
+    private static final Logger LOGGER = LoggerFactory.getLogger( TimeSeriesRetriever.class );
+
+    /**
      * Time window filter.
      */
 
     private final TimeWindow timeWindow;
+
+    /**
+     * The desired time scale, which is used to adjust retrieval when a forecast lead duration ends within
+     * the {@link #timeWindow} but starts outside it.
+     */
+
+    private final TimeScale desiredTimeScale;
 
     /**
      * The <code>wres.Project.project_id</code>.
@@ -200,6 +216,24 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             if ( !filter.getEarliestLeadDuration().equals( TimeWindow.DURATION_MIN ) )
             {
                 long lowerLead = filter.getEarliestLeadDuration().toMinutes();
+
+                // Adjust by the desired time scale if the desired time scale is not instantaneous
+                if ( Objects.nonNull( this.desiredTimeScale ) && !this.desiredTimeScale.isInstantaneous() )
+                {
+
+                    Duration lowered = filter.getEarliestLeadDuration()
+                                             .minus( this.desiredTimeScale.getPeriod() );
+
+                    LOGGER.debug( "Adjusting the lower lead duration of time window {} from {} to {} "
+                                  + "in order to acquire data at the desired time scale of {}.",
+                                  this.timeWindow,
+                                  filter.getEarliestLeadDuration(),
+                                  lowered,
+                                  this.desiredTimeScale );
+
+                    lowerLead = lowered.toMinutes();
+                }
+
                 this.addWhereOrAndClause( script, tabsIn, "TSV.lead > '", lowerLead, "'" );
             }
 
@@ -553,6 +587,12 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         private UnitMapper unitMapper;
 
         /**
+         * Desired time scale.
+         */
+
+        private TimeScale desiredTimeScale;
+
+        /**
          * Sets the <code>wres.Project.project_id</code>.
          * 
          * @param projectId the <code>wres.Project.project_id</code>
@@ -605,6 +645,20 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         }
 
         /**
+         * Sets the desired time scale, which is used to adjust retrieval when a forecast lead duration ends within
+         * the {@link #timeWindow} but starts outside it.
+         * 
+         * @param desiredTimeScale the desired time scale
+         * @return the builder
+         */
+
+        TimeSeriesRetrieverBuilder<S> setDesiredTimeScale( TimeScale desiredTimeScale )
+        {
+            this.desiredTimeScale = desiredTimeScale;
+            return this;
+        }
+
+        /**
          * Sets the measurement unit mapper.
          * 
          * @param unitMapper the measurement unit mapper
@@ -632,12 +686,38 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         this.variableFeatureId = builder.variableFeatureId;
         this.lrb = builder.lrb;
         this.timeWindow = builder.timeWindow;
+        this.desiredTimeScale = builder.desiredTimeScale;
         this.unitMapper = builder.unitMapper;
 
         // Validate
         Objects.requireNonNull( this.getMeasurementUnitMapper(),
                                 "Cannot build a time-series retriever without a "
                                                                  + "measurement unit mapper." );
+
+        // Log missing information
+        if ( LOGGER.isDebugEnabled() )
+        {
+            String start = "While building the retriever for project_id '{}' "
+                           + "with variablefeature_id '{}' "
+                           + "and data type {}, ";
+
+            if ( Objects.isNull( this.timeWindow ) )
+            {
+                LOGGER.debug( start + "the time window was null: the retrieval will be unconditional in time.",
+                              this.projectId,
+                              this.variableFeatureId,
+                              this.lrb );
+            }
+
+            if ( Objects.isNull( this.desiredTimeScale ) )
+            {
+                LOGGER.debug( start + "the desired time scale was null: the retrieval will not be adjusted to account "
+                              + "for the desired time scale.",
+                              this.projectId,
+                              this.variableFeatureId,
+                              this.lrb );
+            }
+        }
 
     }
 

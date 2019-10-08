@@ -98,9 +98,11 @@ public class SharedSampleDataWriters implements Consumer<SampleData<?>>, Supplie
      * 
      * @throws NullPointerException if the input is null or required metadata is null
      * @throws IllegalArgumentException if the input is an unexpected type
+     * @deprecated
      */
 
     @Override
+    @Deprecated( since = "1.8", forRemoval = true )
     public void accept( SampleData<?> sampleData )
     {
         Objects.requireNonNull( sampleData, "Cannot accept a null sample container for writing." );
@@ -160,7 +162,7 @@ public class SharedSampleDataWriters implements Consumer<SampleData<?>>, Supplie
      * @return the single-valued writer
      */
 
-    private SingleValuedPairsWriter getSingleValuedWriter()
+    public SingleValuedPairsWriter getSingleValuedWriter()
     {
         return this.singleValuedWriter;
     }
@@ -171,7 +173,7 @@ public class SharedSampleDataWriters implements Consumer<SampleData<?>>, Supplie
      * @return the single-valued writer
      */
 
-    private EnsemblePairsWriter getEnsembleWriter()
+    public EnsemblePairsWriter getEnsembleWriter()
     {
         return this.ensembleWriter;
     }

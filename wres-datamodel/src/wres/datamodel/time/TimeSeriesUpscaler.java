@@ -1,12 +1,9 @@
 package wres.datamodel.time;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.Set;
 
 import wres.datamodel.scale.RescalingException;
-import wres.datamodel.scale.ScaleValidationEvent;
-import wres.datamodel.scale.ScaleValidationEvent.EventType;
 import wres.datamodel.scale.TimeScale;
 
 /**
@@ -30,13 +27,13 @@ public interface TimeSeriesUpscaler<T>
      * 
      * @param timeSeries the time-series to upscale
      * @param desiredTimeScale the desired time scale
-     * @return an upscaled time-series
+     * @return an upscaled time-series, plus any validation events
      * @throws RescalingException if the time-series could not be upscaled
      * @throws NullPointerException if any input is null
      */
-    
-    TimeSeries<T> upscale( TimeSeries<T> timeSeries, TimeScale desiredTimeScale );    
-    
+
+    RescaledTimeSeriesPlusValidation<T> upscale( TimeSeries<T> timeSeries, TimeScale desiredTimeScale );
+
     /**
      * Upscales the input {@link TimeSeries} to the desired {@link TimeScale} such that each upscaled value ends at one
      * of the prescribed times. For upscaling without constraints, see {@link #upscale(TimeSeries, TimeScale)}. If no
@@ -46,21 +43,13 @@ public interface TimeSeriesUpscaler<T>
      * @param timeSeries the time-series to upscale
      * @param desiredTimeScale the desired time scale
      * @param endsAt the time at which each upscaled value should end
-     * @return an upscaled time-series with (up to) as many events as times in endAt
+     * @return an upscaled time-series with (up to) as many events as times in endAt, plus and validation events
      * @throws RescalingException if the time-series could not be upscaled
      * @throws NullPointerException if any input is null
      */
-    
-    TimeSeries<T> upscale( TimeSeries<T> timeSeries, TimeScale desiredTimeScale, Set<Instant> endsAt );
-    
-    /**
-     * Returns any {@link ScaleValidationEvent} that were encountered on upscaling for the last attempt made. Events 
-     * are not accumulated across calls. In general, when an {@link EventType#ERROR} is encountered, an exception 
-     * should be thrown on upscaling.
-     * 
-     * @return any scale validation events encountered on the last attempt to upscale
-     */
-    
-    List<ScaleValidationEvent> getScaleValidationEvents();
-    
+
+    RescaledTimeSeriesPlusValidation<T> upscale( TimeSeries<T> timeSeries,
+                                                 TimeScale desiredTimeScale,
+                                                 Set<Instant> endsAt );
+
 }

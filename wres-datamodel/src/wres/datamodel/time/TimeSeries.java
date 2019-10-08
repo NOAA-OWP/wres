@@ -100,7 +100,7 @@ public class TimeSeries<T>
     }
 
     /**
-     * Returns a {@link TimeSeries}.  Also assumes a time-scale of {@link TimeScale#of()}.
+     * Returns a {@link TimeSeries}. Also assumes a time-scale of {@link TimeScale#of()}.
      * 
      * @param <T> the event type
      * @param referenceTime the reference time
