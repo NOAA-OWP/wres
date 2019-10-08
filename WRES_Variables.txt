@@ -1,7 +1,0 @@
-export WRES_DB_NAME=wres7
-export WRES_LOG_LEVEL=debug
-export TESTS_DIR=/wres_share/dev/raymond.chui/wres_testing/wres/systests
-#export WRES_LOG_LEVEL=info
-export WRES_DB_USERNAME=wres_user7
-export WRES_DB_HOSTNAME=***REMOVED***wresdb-dev01.***REMOVED***.***REMOVED***
-export WRES_DB_PASSWORD=EvalWaterRes
