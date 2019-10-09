@@ -66,10 +66,11 @@ public class SingleValuedPoolGenerator implements Supplier<List<Supplier<PoolOfP
     private final TimeSeriesUpscaler<Double> upscaler = TimeSeriesOfDoubleBasicUpscaler.of();
 
     /**
-     * The pairer. TODO: expose to constructor.
+     * The pairer, which admits finite value pairs. TODO: expose to constructor.
      */
 
-    private final TimeSeriesPairer<Double, Double> pairer = TimeSeriesPairerByExactTime.of();
+    private final TimeSeriesPairer<Double, Double> pairer = TimeSeriesPairerByExactTime.of( Double::isFinite,
+                                                                                            Double::isFinite );
 
     /**
      * Returns an instance that generates pools for a particular project and feature.
@@ -122,7 +123,7 @@ public class SingleValuedPoolGenerator implements Supplier<List<Supplier<PoolOfP
         int projectId = project.getId();
 
         String featureString = ConfigHelper.getFeatureDescription( feature );
-        
+
         LOGGER.debug( "Creating pool suppliers for project '{}' and feature '{}'.",
                       projectId,
                       featureString );
@@ -139,7 +140,7 @@ public class SingleValuedPoolGenerator implements Supplier<List<Supplier<PoolOfP
                .setRightUpscaler( this.getUpscaler() )
                .setPairer( this.getPairer() )
                .setDesiredTimeScale( desiredTimeScale );
-        
+
         // Create the time windows, iterate over them and create the retrievers 
         try
         {

@@ -9,7 +9,7 @@ import java.util.function.DoubleUnaryOperator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.datamodel.MetricConstants.MissingValues;
+import wres.datamodel.MissingValues;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.ScriptBuilder;
@@ -136,7 +136,7 @@ class UnitMapper
                 // Converted value or missing value when the input is not finite
                 DoubleUnaryOperator mapper =
                         input -> Double.isFinite( input ) ? ( input + initialOffset ) * factor + finalOffset
-                                                          : MissingValues.MISSING_DOUBLE;
+                                                          : MissingValues.DOUBLE;
 
                 this.conversions.put( measurementUnitId, mapper );
             }

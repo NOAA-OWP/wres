@@ -16,7 +16,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.MetricConstants.MissingValues;
+import wres.datamodel.MissingValues;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleData;
@@ -78,8 +78,8 @@ public class RankHistogram extends Diagram<SampleData<Pair<Double, Ensemble>>, D
             throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
 
-        double[] ranks = new double[] { MissingValues.MISSING_DOUBLE };
-        double[] relativeFrequencies = new double[] { MissingValues.MISSING_DOUBLE };
+        double[] ranks = new double[] { MissingValues.DOUBLE };
+        double[] relativeFrequencies = new double[] { MissingValues.DOUBLE };
 
         // Some data to process
         if ( !s.getRawData().isEmpty() )

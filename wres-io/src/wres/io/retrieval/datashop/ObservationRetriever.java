@@ -10,6 +10,7 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.datamodel.MissingValues;
 import wres.datamodel.time.TimeSeries;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.ScriptBuilder;
@@ -166,7 +167,7 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
             
             if( !Double.isFinite( unmapped ) )
             {
-                return Double.NaN;
+                return MissingValues.DOUBLE;
             }
             
             // Existing units

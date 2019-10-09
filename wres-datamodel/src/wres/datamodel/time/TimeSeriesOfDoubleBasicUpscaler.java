@@ -21,10 +21,10 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.datamodel.MetricConstants.MissingValues;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.scale.TimeScale.TimeScaleFunction;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
+import wres.datamodel.MissingValues;
 import wres.datamodel.scale.RescalingException;
 import wres.datamodel.scale.ScaleValidationEvent;
 import wres.datamodel.scale.ScaleValidationEvent.EventType;
@@ -34,7 +34,7 @@ import wres.datamodel.scale.ScaleValidationEvent.EventType;
  * values. An upscaled value is produced from a collection of values that fall within an interval that ends at a 
  * prescribed time. The interval has the same width as the period associated with the desired {@link TimeScale}. If 
  * the events are not evenly spaced within the interval, that interval is skipped and logged. If any event value is 
- * non-finite, then the upscaled event value is {@link MissingValues#MISSING_DOUBLE}. The interval is right-closed, 
+ * non-finite, then the upscaled event value is {@link MissingValues#DOUBLE}. The interval is right-closed, 
  * i.e. <code>(end-period,end]</code>. Thus, for example, when upscaling a sequence of instantaneous values 
  * (0Z,6Z,12Z,18Z,0Z] to form an average that ends at 0Z and spans a period of PT24H, the four-point average is taken 
  * for the values at 6Z, 12Z, 18Z and 0Z and not the five-point average. Indeed, if these values represented an average 
@@ -95,11 +95,11 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
     private static final Logger LOGGER = LoggerFactory.getLogger( TimeSeriesOfDoubleBasicUpscaler.class );
 
     /**
-     * Function that returns a double value or {@link MissingValues.MISSING_DOUBLE} if the input is not finite. 
+     * Function that returns a double value or {@link wres.datamodel.MissingValues.MissingValues.MISSING_DOUBLE} if the input is not finite. 
      */
 
     private static final DoubleUnaryOperator RETURN_DOUBLE_OR_MISSING =
-            a -> Double.isFinite( a ) ? a : MissingValues.MISSING_DOUBLE;
+            a -> Double.isFinite( a ) ? a : wres.datamodel.MissingValues.DOUBLE;
 
     /**
      * Creates an instance.

@@ -17,8 +17,8 @@ import java.util.function.ToDoubleFunction;
 import org.apache.commons.math3.stat.descriptive.rank.Median;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MissingValues;
 import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.MissingValues;
 import wres.datamodel.VectorOfDoubles;
 
 /**
@@ -96,7 +96,7 @@ public class FunctionFactory
 
     /**
      * <p>
-     * Return a function that produces the identity of the finite input or {@link MissingValues#MISSING_DOUBLE} if the 
+     * Return a function that produces the identity of the finite input or {@link MissingValues#DOUBLE} if the 
      * input is non-finite.
      * </p>
      * 
@@ -105,7 +105,7 @@ public class FunctionFactory
 
     public static DoubleUnaryOperator finiteOrMissing()
     {
-        return a -> Double.isFinite( a ) ? a : MissingValues.MISSING_DOUBLE;
+        return a -> Double.isFinite( a ) ? a : MissingValues.DOUBLE;
     }
 
     /**

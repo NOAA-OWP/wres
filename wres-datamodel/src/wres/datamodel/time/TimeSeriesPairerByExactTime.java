@@ -11,6 +11,8 @@ import java.util.function.Predicate;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.datamodel.sampledata.pairs.PairingException;
 
@@ -31,6 +33,12 @@ import wres.datamodel.sampledata.pairs.PairingException;
 
 public class TimeSeriesPairerByExactTime<L, R> implements TimeSeriesPairer<L, R>
 {
+
+    /**
+     * Logger.
+     */
+
+    private static final Logger LOGGER = LoggerFactory.getLogger( TimeSeriesPairerByExactTime.class );
 
     /**
      * Admissible values on the left.
@@ -101,21 +109,48 @@ public class TimeSeriesPairerByExactTime<L, R> implements TimeSeriesPairer<L, R>
         // The pairs
         SortedSet<Event<Pair<L, R>>> pairs = new TreeSet<>();
 
+        int leftInadmissible = 0;
+        int rightInadmissible = 0;
+
         // Find the right with corresponding valid times to the left
         for ( Event<R> nextRight : right.getEvents() )
         {
             // Right value admissible and right time present in map?
-            if ( this.rightAdmissibleValue.test( nextRight.getValue() ) && mapper.containsKey( nextRight.getTime() ) )
+            if ( this.rightAdmissibleValue.test( nextRight.getValue() ) )
             {
-                Event<L> nextLeft = mapper.get( nextRight.getTime() );
-
-                // Left value admissible?
-                if ( this.leftAdmissibleValue.test( nextLeft.getValue() ) )
+                if ( mapper.containsKey( nextRight.getTime() ) )
                 {
-                    pairs.add( Event.of( nextLeft.getTime(),
-                                         Pair.of( nextLeft.getValue(), nextRight.getValue() ) ) );
+                    Event<L> nextLeft = mapper.get( nextRight.getTime() );
+
+                    // Left value admissible?
+                    if ( this.leftAdmissibleValue.test( nextLeft.getValue() ) )
+                    {
+                        pairs.add( Event.of( nextLeft.getTime(),
+                                             Pair.of( nextLeft.getValue(), nextRight.getValue() ) ) );
+                    }
+                    else
+                    {
+                        leftInadmissible++;
+                    }
                 }
             }
+            else
+            {
+                rightInadmissible++;
+            }
+        }
+
+        // Log inadmissible cases
+        if ( LOGGER.isTraceEnabled() && ( leftInadmissible > 0 || rightInadmissible > 0 ) )
+        {
+            LOGGER.trace( "While pairing left time-series {} with right time-series {}, found {} of {} left values that"
+                          + " were inadmissible and {} of {} right values that were inadmissible.",
+                          left.hashCode(),
+                          right.hashCode(),
+                          leftInadmissible,
+                          left.getEvents().size(),
+                          rightInadmissible,
+                          right.getEvents().size() );
         }
 
         return new TimeSeriesBuilder<Pair<L, R>>().addReferenceTimes( right.getReferenceTimes() )

@@ -12,7 +12,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MissingValues;
+import wres.datamodel.MissingValues;
 import wres.datamodel.VectorOfDoubles;
 
 /**
@@ -92,13 +92,13 @@ public final class FunctionFactoryTest
         assertTrue( doubleTester.test( FunctionFactory.finiteOrMissing().applyAsDouble( 1.13 ), 1.13 ) );
 
         assertTrue( doubleTester.test( FunctionFactory.finiteOrMissing().applyAsDouble( Double.NEGATIVE_INFINITY ),
-                                       MissingValues.MISSING_DOUBLE ) );
+                                       MissingValues.DOUBLE ) );
 
         assertTrue( doubleTester.test( FunctionFactory.finiteOrMissing().applyAsDouble( Double.POSITIVE_INFINITY ),
-                                       MissingValues.MISSING_DOUBLE ) );
+                                       MissingValues.DOUBLE ) );
 
         assertTrue( doubleTester.test( FunctionFactory.finiteOrMissing().applyAsDouble( Double.NaN ),
-                                       MissingValues.MISSING_DOUBLE ) );
+                                       MissingValues.DOUBLE ) );
     }
 
     @Test

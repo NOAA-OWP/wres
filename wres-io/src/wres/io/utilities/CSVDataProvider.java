@@ -23,6 +23,7 @@ import java.util.TreeMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.datamodel.MissingValues;
 import wres.util.Strings;
 import wres.util.TimeHelper;
 
@@ -495,7 +496,7 @@ class CSVDataProvider implements DataProvider
     }
 
     @Override
-    public Double getDouble(String columnName)
+    public double getDouble(String columnName)
     {
         if (this.isClosed())
         {
@@ -506,7 +507,7 @@ class CSVDataProvider implements DataProvider
 
         if (value == null)
         {
-            return null;
+            return MissingValues.DOUBLE;
         }
 
         try

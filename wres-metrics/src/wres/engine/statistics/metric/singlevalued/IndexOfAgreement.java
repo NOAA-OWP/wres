@@ -5,7 +5,7 @@ import java.util.Objects;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MissingValues;
+import wres.datamodel.MissingValues;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DoubleScoreStatistic;
@@ -55,7 +55,7 @@ public class IndexOfAgreement extends DoubleErrorScore<SampleData<Pair<Double,Do
             throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
 
-        double returnMe = MissingValues.MISSING_DOUBLE;
+        double returnMe = MissingValues.DOUBLE;
 
         // Data available
         if ( !s.getRawData().isEmpty() )
