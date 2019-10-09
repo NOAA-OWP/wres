@@ -26,6 +26,7 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.datamodel.MissingValues;
 import wres.util.TimeHelper;
 
 /**
@@ -490,7 +491,7 @@ public class SQLDataProvider implements DataProvider
     }
 
     @Override
-    public Double getDouble( String columnName )
+    public double getDouble( String columnName )
     {
         try
         {
@@ -499,7 +500,16 @@ public class SQLDataProvider implements DataProvider
             {
                 this.resultSet.next();
             }
-            return this.resultSet.getDouble( columnName );
+            
+            double returnMe = this.resultSet.getDouble( columnName );
+            
+            // Return Double.NaN if the value was SQL NULL
+            if( this.resultSet.wasNull() )
+            {
+                return MissingValues.DOUBLE;
+            }
+            
+            return returnMe;
         }
         catch ( SQLException e )
         {

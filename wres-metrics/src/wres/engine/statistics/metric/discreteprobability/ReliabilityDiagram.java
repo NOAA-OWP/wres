@@ -15,7 +15,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.Probability;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.MetricConstants.MissingValues;
+import wres.datamodel.MissingValues;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DiagramStatistic;
@@ -99,8 +99,8 @@ public class ReliabilityDiagram extends Diagram<SampleData<Pair<Probability, Pro
                 // Bin with no samples
                 else
                 {
-                    fProbFinal.add( MissingValues.MISSING_DOUBLE );
-                    oProbFinal.add( MissingValues.MISSING_DOUBLE );
+                    fProbFinal.add( MissingValues.DOUBLE );
+                    oProbFinal.add( MissingValues.DOUBLE );
                 }
             }
 
@@ -111,8 +111,8 @@ public class ReliabilityDiagram extends Diagram<SampleData<Pair<Probability, Pro
         // No data available
         else
         {
-            Arrays.fill( fProb, MissingValues.MISSING_DOUBLE );
-            Arrays.fill( oProb, MissingValues.MISSING_DOUBLE );
+            Arrays.fill( fProb, MissingValues.DOUBLE );
+            Arrays.fill( oProb, MissingValues.DOUBLE );
         }
 
         // Set the results

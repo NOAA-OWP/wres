@@ -14,7 +14,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Test;
 
-import wres.datamodel.MetricConstants.MissingValues;
+import wres.datamodel.MissingValues;
 import wres.datamodel.scale.RescalingException;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.scale.TimeScale.TimeScaleFunction;
@@ -118,7 +118,7 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
         Event<Double> two = Event.of( second, 15.0 );
         Event<Double> three = Event.of( third, 3.0 );
         Event<Double> four = Event.of( fourth, 22.0 );
-        Event<Double> five = Event.of( fifth, MissingValues.MISSING_DOUBLE );
+        Event<Double> five = Event.of( fifth, MissingValues.DOUBLE );
         Event<Double> six = Event.of( sixth, 25.0 );
 
         // Time scale of the event values: instantaneous
@@ -149,7 +149,7 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
         // Create the expected series with the desired time scale
         TimeSeries<Double> expected = new TimeSeriesBuilder<Double>().addEvent( Event.of( third, 9.0 ) )
                                                                      .addEvent( Event.of( sixth,
-                                                                                          MissingValues.MISSING_DOUBLE ) )
+                                                                                          MissingValues.DOUBLE ) )
                                                                      .setTimeScale( desiredTimeScale )
                                                                      .addReferenceTime( first,
                                                                                         ReferenceTimeType.DEFAULT )

@@ -26,6 +26,8 @@ import javax.json.JsonValue;
 import wres.util.functional.ExceptionalConsumer;
 import wres.util.functional.ExceptionalFunction;
 
+import wres.datamodel.MissingValues;
+
 /**
  * <p>Provides access and operations on tabular data.
  * 
@@ -398,12 +400,13 @@ public interface DataProvider extends AutoCloseable
      * @param columnName The name of the column containing the desired
      *                   <code>double</code>
      * @return The <code>double</code> value contained within the desired
-     * column. If the value is <code>null</code>, the returned value is null
+     * column. If the value is <code>null</code>, the returned value is 
+     * {@link MissingValues#DOUBLE}. See #56214-240 and later.
      * @throws IllegalStateException Thrown if the data has been closed down
      * or the column name doesn't exist
      * @throws IndexOutOfBoundsException Thrown if the data is empty
      */
-    Double getDouble(final String columnName);
+    double getDouble(final String columnName);
 
     /**
      * @param columnName The name of the column containing the desired

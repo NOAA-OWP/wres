@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import wres.datamodel.MissingValues;
 import wres.util.TimeHelper;
 
 /**
@@ -513,7 +514,7 @@ public class DataSetProvider implements DataProvider
     }
 
     @Override
-    public Double getDouble(String columnName)
+    public double getDouble(String columnName)
     {
         if (this.isClosed())
         {
@@ -524,7 +525,7 @@ public class DataSetProvider implements DataProvider
 
         if (value == null)
         {
-            return null;
+            return MissingValues.DOUBLE;
         }
         else if (value instanceof Double)
         {

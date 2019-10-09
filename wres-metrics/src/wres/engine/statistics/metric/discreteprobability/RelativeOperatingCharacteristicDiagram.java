@@ -12,7 +12,7 @@ import org.apache.commons.math3.util.Precision;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Probability;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.MetricConstants.MissingValues;
+import wres.datamodel.MissingValues;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleData;
@@ -85,8 +85,8 @@ public class RelativeOperatingCharacteristicDiagram
         double[] pOFD = new double[points + 1];
 
         // Initialize arrays
-        Arrays.fill( pOD, MissingValues.MISSING_DOUBLE );
-        Arrays.fill( pOFD, MissingValues.MISSING_DOUBLE );
+        Arrays.fill( pOD, MissingValues.DOUBLE );
+        Arrays.fill( pOFD, MissingValues.DOUBLE );
 
         // Some data to process        
         if ( !s.getRawData().isEmpty() )

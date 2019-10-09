@@ -6,8 +6,8 @@ import java.util.function.ToDoubleFunction;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MissingValues;
 import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.MissingValues;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.SampleData;
@@ -69,7 +69,7 @@ public abstract class DoubleErrorScore<S extends SampleData<Pair<Double, Double>
                                       id );
 
         //Compute the atomic errors in a stream
-        double doubleScore = MissingValues.MISSING_DOUBLE;
+        double doubleScore = MissingValues.DOUBLE;
         if ( !s.getRawData().isEmpty() )
         {
             double[] doubles = s.getRawData().stream().mapToDouble( this.getErrorFunction() ).toArray();

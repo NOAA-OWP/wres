@@ -12,7 +12,7 @@ import java.util.function.Function;
 import java.util.function.ToDoubleFunction;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MissingValues;
+import wres.datamodel.MissingValues;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DurationScoreStatistic;
@@ -91,7 +91,7 @@ public class TimingErrorDurationStatistics implements Function<PairedStatistic<I
             // No data available
             else
             {
-                returnMe.put( nextIdentifier, MissingValues.MISSING_DURATION );
+                returnMe.put( nextIdentifier, MissingValues.DURATION );
             }
         }
 

@@ -15,6 +15,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MissingValues;
 import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
@@ -196,7 +197,7 @@ public final class TimingErrorDurationStatisticsTest
         DurationScoreStatistic actual = ttps.apply( peakError.apply( input ) );
 
         Map<MetricConstants, Duration> expectedSource = new EnumMap<>( MetricConstants.class );
-        expectedSource.put( MetricConstants.MEAN, MetricConstants.MissingValues.MISSING_DURATION );
+        expectedSource.put( MetricConstants.MEAN, MissingValues.DURATION );
 
         // Expected, which uses identifier of MetricConstants.MAIN for convenience
         DurationScoreStatistic expected = DurationScoreStatistic.of( expectedSource, m1 );
