@@ -129,15 +129,15 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
     /**
      * The pool to return.
      */
-    
+
     private PoolOfPairs<L, R> pool;
-    
+
     /**
      * Pool creation lock. Only create a pool once.
      */
-    
+
     private final Object creationLock = new Object();
-    
+
     /**
      * Returns a {@link PoolOfPairs} for metric calculation.
      * 
@@ -152,21 +152,21 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
     public PoolOfPairs<L, R> get()
     {
         // Create pool if needed
-        synchronized( creationLock )
+        synchronized ( this.creationLock )
         {
-            if( Objects.nonNull( this.pool ) )
+            if ( Objects.nonNull( this.pool ) )
             {
                 return this.pool;
             }
-            
+
             this.createPool();
         }
 
         LOGGER.debug( "Returning existing pool for {}.", this.metadata );
-        
+
         return this.pool;
     }
-    
+
     /**
      * Creates a {@link PoolOfPairs}.
      * 
@@ -250,7 +250,7 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
                       returnMe.getRawData().size() );
 
         this.pool = returnMe;
-    }    
+    }
 
     /**
      * Builder for a {@link PoolOfPairsSupplier}.
@@ -338,6 +338,7 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
                                                                 ToDoubleFunction<L> climatologyMapper )
         {
             this.climatology = climatology;
+            this.climatologyMapper = climatologyMapper;
 
             return this;
         }
@@ -509,6 +510,9 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
 
         Objects.requireNonNull( right );
 
+        TimeSeries<L> scaledLeft = left;
+        TimeSeries<R> scaledRight = right;
+
         if ( !left.getTimeScale().equals( this.getDesiredTimeScale() ) )
         {
             if ( LOGGER.isTraceEnabled() )
@@ -519,7 +523,7 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
                               this.getDesiredTimeScale() );
             }
 
-            // Acquire the times from the right series at which left upscaled should end
+            // Acquire the times from the right series at which left upscaled values should end
             SortedSet<Instant> endsAt =
                     right.getEvents()
                          .stream()
@@ -531,7 +535,17 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
                                                                              this.getDesiredTimeScale(),
                                                                              Collections.unmodifiableSortedSet( endsAt ) );
 
-            left = upscaledLeft.getTimeSeries();
+            scaledLeft = upscaledLeft.getTimeSeries();
+
+            if ( LOGGER.isTraceEnabled() )
+            {
+                LOGGER.trace( "Finished upscaling left time-series {} from {} to {}, which produced a "
+                              + "new time-series, {}.",
+                              left.hashCode(),
+                              left.getTimeScale(),
+                              this.getDesiredTimeScale(),
+                              scaledLeft.hashCode() );
+            }
 
             // Log any warnings
             PoolOfPairsSupplier.logScaleValidationWarnings( left, upscaledLeft.getValidationEvents() );
@@ -547,7 +561,7 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
                               this.getDesiredTimeScale() );
             }
 
-            // Acquire the times from the left series at which right upscaled should end
+            // Acquire the times from the left series at which right upscaled values should end
             SortedSet<Instant> endsAt =
                     left.getEvents()
                         .stream()
@@ -559,14 +573,24 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
                                                                               this.getDesiredTimeScale(),
                                                                               Collections.unmodifiableSortedSet( endsAt ) );
 
-            right = upscaledRight.getTimeSeries();
+            scaledRight = upscaledRight.getTimeSeries();
+
+            if ( LOGGER.isTraceEnabled() )
+            {
+                LOGGER.trace( "Finished upscaling right time-series {} from {} to {}, which produced a "
+                              + "new time-series, {}.",
+                              right.hashCode(),
+                              right.getTimeScale(),
+                              this.getDesiredTimeScale(),
+                              scaledRight.hashCode() );
+            }
 
             // Log any warnings
             PoolOfPairsSupplier.logScaleValidationWarnings( right, upscaledRight.getValidationEvents() );
         }
 
         // Create the pairs, if any
-        TimeSeries<Pair<L, R>> pairs = this.getPairer().pair( left, right );
+        TimeSeries<Pair<L, R>> pairs = this.getPairer().pair( scaledLeft, scaledRight );
 
         // Log the pairing 
         if ( LOGGER.isTraceEnabled() )
@@ -576,10 +600,10 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
                           + "with right time-series {},"
                           + " which contained {} values: "
                           + "created {} pairs at the desired time scale of {}.",
-                          left.hashCode(),
-                          left.getEvents().size(),
-                          right.hashCode(),
-                          right.getEvents().size(),
+                          scaledLeft.hashCode(),
+                          scaledLeft.getEvents().size(),
+                          scaledRight.hashCode(),
+                          scaledRight.getEvents().size(),
                           pairs.getEvents().size(),
                           this.getDesiredTimeScale() );
         }

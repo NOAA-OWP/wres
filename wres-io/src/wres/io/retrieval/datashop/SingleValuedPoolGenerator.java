@@ -121,9 +121,11 @@ public class SingleValuedPoolGenerator implements Supplier<List<Supplier<PoolOfP
         // Project identifier
         int projectId = project.getId();
 
+        String featureString = ConfigHelper.getFeatureDescription( feature );
+        
         LOGGER.debug( "Creating pool suppliers for project '{}' and feature '{}'.",
                       projectId,
-                      feature );
+                      featureString );
 
         ProjectConfig projectConfig = project.getProjectConfig();
         PairConfig pairConfig = projectConfig.getPair();
@@ -137,7 +139,7 @@ public class SingleValuedPoolGenerator implements Supplier<List<Supplier<PoolOfP
                .setRightUpscaler( this.getUpscaler() )
                .setPairer( this.getPairer() )
                .setDesiredTimeScale( desiredTimeScale );
-
+        
         // Create the time windows, iterate over them and create the retrievers 
         try
         {
@@ -158,7 +160,7 @@ public class SingleValuedPoolGenerator implements Supplier<List<Supplier<PoolOfP
                 LOGGER.debug( "While genenerating pools for project '{}' and feature '{}', added a retriever for "
                               + "climatological data.",
                               projectId,
-                              feature );
+                              featureString );
 
                 // Re-use the climatology across pools with a caching retriever
                 Supplier<Stream<TimeSeries<Double>>> leftSupplier =
@@ -191,7 +193,7 @@ public class SingleValuedPoolGenerator implements Supplier<List<Supplier<PoolOfP
                 LOGGER.debug( "While genenerating pools for project '{}' and feature '{}', discovered a baseline data "
                               + "source to retrieve.",
                               projectId,
-                              feature );
+                              featureString );
                 baselineVariableFeatureId = project.getBaselineVariableFeatureId( feature );
                 baselineMetadata = this.getMetadata( projectConfig,
                                                      feature,
@@ -222,6 +224,9 @@ public class SingleValuedPoolGenerator implements Supplier<List<Supplier<PoolOfP
                 builder.setMetadata( poolMeta );
 
                 // Add left data if no climatology
+                // TODO: consider acquiring all the left data upfront with a caching retriever 
+                // when the climatology is not available. In that case, prepare something similar to
+                // climatology above, but bounded by any overall time bounds in the declaration
                 if ( !project.usesProbabilityThresholds() )
                 {
                     // Re-use the climatology across pools with a caching retriever
@@ -262,7 +267,7 @@ public class SingleValuedPoolGenerator implements Supplier<List<Supplier<PoolOfP
             LOGGER.debug( "Created {} pool suppliers for project '{}' and feature '{}'.",
                           returnMe.size(),
                           projectId,
-                          feature );
+                          featureString );
 
             return Collections.unmodifiableList( returnMe );
         }
@@ -270,7 +275,7 @@ public class SingleValuedPoolGenerator implements Supplier<List<Supplier<PoolOfP
         {
             throw new PoolCreationException( "While attempting to create pools for project '" + project.getId()
                                              + "' and feature '"
-                                             + feature
+                                             + featureString
                                              + "':",
                                              e );
         }

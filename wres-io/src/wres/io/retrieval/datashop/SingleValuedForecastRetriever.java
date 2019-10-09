@@ -266,6 +266,11 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
             // Raw value
             double unmapped = provider.getDouble( MEASUREMENT );
             
+            if( !Double.isFinite( unmapped ) )
+            {
+                return Double.NaN;
+            }
+            
             // Existing units
             int measurementUnitId = provider.getInt( "measurementunit_id" );
             
