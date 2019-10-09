@@ -297,7 +297,7 @@ class FeatureProcessorTwo implements Supplier<FeatureProcessingResult>
                     listOfFutures.add( sampleDataTask );
                 }
 
-                // Create a task for serializing the baseline data
+                // Create a task for serializing the baseline sample data
                 if ( Objects.nonNull( this.sharedBaselineSampleWriters ) )
                 {
                     CompletableFuture<Set<Path>> baselineSampleDataTask =

@@ -318,20 +318,113 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
         if ( Objects.nonNull( filter ) )
         {
-            // Lower bound
-            if ( !filter.getEarliestValidTime().equals( Instant.MIN ) )
+
+            Instant lowerValidTime = this.getOrInferLowerValidTime( filter );
+            Instant upperValidTime = this.getOrInferUpperValidTime( filter );
+
+            // Add the clauses
+            if ( !lowerValidTime.equals( Instant.MIN ) )
             {
-                String lowerValidTime = filter.getEarliestValidTime().toString();
                 this.addWhereOrAndClause( script, tabsIn, "O.observation_time > '", lowerValidTime, "'" );
             }
 
-            // Upper bound
-            if ( !filter.getLatestValidTime().equals( Instant.MAX ) )
+            if ( !upperValidTime.equals( Instant.MAX ) )
             {
-                String upperValidTime = filter.getLatestValidTime().toString();
                 this.addWhereOrAndClause( script, tabsIn, "O.observation_time <= '", upperValidTime, "'" );
             }
+
+            // Log the bounds in case they were inferred
+            if ( LOGGER.isDebugEnabled() && !lowerValidTime.equals( Instant.MIN )
+                 || !upperValidTime.equals( Instant.MAX ) )
+            {
+                String message = "While building the retriever for project_id '{}' "
+                                 + "with variablefeature_id '{}' "
+                                 + "and data type {}, used an earliest valid time of {} "
+                                 + "and a latest valid time of {}.";
+
+                LOGGER.debug( message,
+                              this.getProjectId(),
+                              this.getVariableFeatureId(),
+                              this.getLeftOrRightOrBaseline(),
+                              lowerValidTime,
+                              upperValidTime );
+            }
         }
+    }
+
+    /**
+     * Helper that returns the lower valid time from the {@link TimeWindow}, preferentially, but otherwise infers the 
+     * lower valid time from the forecast information present.
+     * 
+     * @param timeWindow the time window
+     * @return the lower valid time
+     */
+
+    private Instant getOrInferLowerValidTime( TimeWindow timeWindow )
+    {
+        Instant lowerValidTime = Instant.MIN;
+
+        // Lower bound present
+        if ( !timeWindow.getEarliestValidTime().equals( Instant.MIN ) )
+        {
+            lowerValidTime = timeWindow.getEarliestValidTime();
+        }
+        // Make a best effort to infer the valid times from any forecast information
+        else
+        {
+            // Lower reference time available?
+            if ( !timeWindow.getEarliestReferenceTime().equals( Instant.MIN ) )
+            {
+                // Use the lower reference time
+                lowerValidTime = timeWindow.getEarliestReferenceTime();
+
+                // Adjust for the earliest lead duration
+                if ( !timeWindow.getEarliestLeadDuration().equals( TimeWindow.DURATION_MIN ) )
+                {
+                    lowerValidTime = lowerValidTime.plus( timeWindow.getEarliestLeadDuration() );
+
+                    //Adjust for the desired time scale
+                    if ( Objects.nonNull( this.getDesiredTimeScale() ) )
+                    {
+                        lowerValidTime = lowerValidTime.minus( this.getDesiredTimeScale().getPeriod() );
+                    }
+                }
+            }
+        }
+
+        return lowerValidTime;
+    }
+
+    /**
+     * Helper that returns the upper valid time from the {@link TimeWindow}, preferentially, but otherwise infers the 
+     * upper valid time from the forecast information present.
+     * 
+     * @param timeWindow the time window
+     * @return the upper valid time
+     */
+
+    private Instant getOrInferUpperValidTime( TimeWindow timeWindow )
+    {
+        Instant upperValidTime = Instant.MAX;
+
+        // Upper bound present
+        if ( !timeWindow.getLatestValidTime().equals( Instant.MAX ) )
+        {
+            upperValidTime = timeWindow.getLatestValidTime();
+        }
+        // Make a best effort to infer the valid times from any forecast information
+        else
+        {
+            // Both the latest reference time and the latest lead duration available?
+            if ( !timeWindow.getLatestReferenceTime().equals( Instant.MIN )
+                 && !timeWindow.getLatestLeadDuration().equals( TimeWindow.DURATION_MAX ) )
+            {
+                // Use the lower reference time
+                upperValidTime = timeWindow.getLatestReferenceTime().plus( timeWindow.getLatestLeadDuration() );
+            }
+        }
+
+        return upperValidTime;
     }
 
     /**
@@ -420,6 +513,17 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     TimeWindow getTimeWindow()
     {
         return this.timeWindow;
+    }
+
+    /**
+     * Returns the desired time scale.
+     * 
+     * @return the desired time scale
+     */
+
+    TimeScale getDesiredTimeScale()
+    {
+        return this.desiredTimeScale;
     }
 
     /**
@@ -699,11 +803,12 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         {
             String start = "While building the retriever for project_id '{}' "
                            + "with variablefeature_id '{}' "
-                           + "and data type {}, ";
+                           + "and data type {}, {}";
 
             if ( Objects.isNull( this.timeWindow ) )
             {
-                LOGGER.debug( start + "the time window was null: the retrieval will be unconditional in time.",
+                LOGGER.debug( start,
+                              "the time window was null: the retrieval will be unconditional in time.",
                               this.projectId,
                               this.variableFeatureId,
                               this.lrb );
@@ -711,8 +816,9 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
             if ( Objects.isNull( this.desiredTimeScale ) )
             {
-                LOGGER.debug( start + "the desired time scale was null: the retrieval will not be adjusted to account "
-                              + "for the desired time scale.",
+                LOGGER.debug( start,
+                              "the desired time scale was null: the retrieval will not be adjusted to account "
+                                     + "for the desired time scale.",
                               this.projectId,
                               this.variableFeatureId,
                               this.lrb );
@@ -720,7 +826,8 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
             if ( Objects.nonNull( this.timeWindow ) || Objects.isNull( this.desiredTimeScale ) )
             {
-                LOGGER.debug( start + "discovered a time window of {} and a desired time scale of {}.",
+                String add = start + "discovered a time window of {} and a desired time scale of {}.";
+                LOGGER.debug( add,
                               this.projectId,
                               this.variableFeatureId,
                               this.lrb,

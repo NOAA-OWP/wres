@@ -6,6 +6,7 @@ import java.util.Objects;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.Predicate;
 
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 
@@ -14,11 +15,14 @@ import org.apache.commons.lang3.tuple.Pair;
 import wres.datamodel.sampledata.pairs.PairingException;
 
 /**
- * Implements pairing of two {@link TimeSeries} by valid time with exact matching. In other words, pairs are created
+ * <p>Implements pairing of two {@link TimeSeries} by valid time with exact matching. In other words, pairs are created
  * for each corresponding {@link Instant} in the left and right inputs. Additionally, when the left and right inputs 
  * both contain reference times, as shown by {@link TimeSeries#getReferenceTimes()}, then the reference times associated 
  * with the right input are preserved in the pairs and those associated with the left are discarded. Different behavior
  * should be implemented in different implementations of {@link TimeSeriesPairer}.
+ * 
+ * <p>Can optionally add validation checks for admissible values on the left and right. If either the left or
+ * right values are not admissible, no pair is added.
  * 
  * @param <L> the left type of event value
  * @param <R> the right type of event value
@@ -27,6 +31,18 @@ import wres.datamodel.sampledata.pairs.PairingException;
 
 public class TimeSeriesPairerByExactTime<L, R> implements TimeSeriesPairer<L, R>
 {
+
+    /**
+     * Admissible values on the left.
+     */
+
+    private final Predicate<L> leftAdmissibleValue;
+
+    /**
+     * Admissible values on the right.
+     */
+
+    private final Predicate<R> rightAdmissibleValue;
 
     /**
      * Creates an instance. By default, when the left and right inputs both contain reference times, as shown by
@@ -40,9 +56,26 @@ public class TimeSeriesPairerByExactTime<L, R> implements TimeSeriesPairer<L, R>
 
     public static <L, R> TimeSeriesPairerByExactTime<L, R> of()
     {
-        return new TimeSeriesPairerByExactTime<>();
+        // Admit all values
+        return new TimeSeriesPairerByExactTime<>( left -> true, right -> true );
     }
 
+    /**
+     * Creates an instance with left and rightr value guards. See also {@link #of()}.
+     * 
+     * @param <L> the left type of event value
+     * @param <R> the right type of event value
+     * @param leftAdmissibleValue the left value guard
+     * @param rightAdmissibleValue the right value guard
+     * @return an instance of the pairer
+     * @throws NullPointerException if either input is null
+     */
+
+    public static <L, R> TimeSeriesPairerByExactTime<L, R> of( Predicate<L> leftAdmissibleValue,
+                                                               Predicate<R> rightAdmissibleValue )
+    {
+        return new TimeSeriesPairerByExactTime<>( leftAdmissibleValue, rightAdmissibleValue );
+    }
 
     @Override
     public TimeSeries<Pair<L, R>> pair( TimeSeries<L> left, TimeSeries<R> right )
@@ -71,10 +104,17 @@ public class TimeSeriesPairerByExactTime<L, R> implements TimeSeriesPairer<L, R>
         // Find the right with corresponding valid times to the left
         for ( Event<R> nextRight : right.getEvents() )
         {
-            if ( mapper.containsKey( nextRight.getTime() ) )
+            // Right value admissible and right time present in map?
+            if ( this.rightAdmissibleValue.test( nextRight.getValue() ) && mapper.containsKey( nextRight.getTime() ) )
             {
                 Event<L> nextLeft = mapper.get( nextRight.getTime() );
-                pairs.add( Event.of( nextLeft.getTime(), Pair.of( nextLeft.getValue(), nextRight.getValue() ) ) );
+
+                // Left value admissible?
+                if ( this.leftAdmissibleValue.test( nextLeft.getValue() ) )
+                {
+                    pairs.add( Event.of( nextLeft.getTime(),
+                                         Pair.of( nextLeft.getValue(), nextRight.getValue() ) ) );
+                }
             }
         }
 
@@ -86,10 +126,19 @@ public class TimeSeriesPairerByExactTime<L, R> implements TimeSeriesPairer<L, R>
 
     /**
      * Hidden constructor.
+     * 
+     * @param leftAdmissibleValue the left value guard
+     * @param rightAdmissibleValue the right value guard
+     * @throws NullPointerException if either input is null
      */
 
-    private TimeSeriesPairerByExactTime()
+    private TimeSeriesPairerByExactTime( Predicate<L> leftAdmissibleValue, Predicate<R> rightAdmissibleValue )
     {
+        Objects.requireNonNull( leftAdmissibleValue );
+        Objects.requireNonNull( rightAdmissibleValue );
+
+        this.leftAdmissibleValue = leftAdmissibleValue;
+        this.rightAdmissibleValue = rightAdmissibleValue;
     }
 
 }

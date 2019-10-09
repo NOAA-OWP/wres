@@ -164,6 +164,11 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
             // Raw value
             double unmapped = provider.getDouble( "observation" );
             
+            if( !Double.isFinite( unmapped ) )
+            {
+                return Double.NaN;
+            }
+            
             // Existing units
             int measurementUnitId = provider.getInt( "measurementunit_id" );
             
