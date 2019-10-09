@@ -10,7 +10,10 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
@@ -25,7 +28,7 @@ import ucar.nc2.Attribute;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
 
-
+import wres.datamodel.Ensemble;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
@@ -221,10 +224,95 @@ class NWMTimeSeries implements Closeable
         return this.getNetcdfFiles().size();
     }
 
-    TimeSeries<Double> readTimeSeries( int featureId, String variableName )
+
+    TimeSeries<Ensemble> readEnsembleTimeSeries( int featureId, String variableName )
     {
-        return readTimeSeries( featureId, variableName, 1 );
+        final int NOT_FOUND = Integer.MIN_VALUE;
+
+        int memberCount = this.getProfile().getMemberCount();
+        int validDatetimeCount = this.getProfile().getBlobCount();
+
+
+        // Map from ensemble number to map of instant to double[]
+        Map<Instant,double[]> ensembleValues = new HashMap<>( memberCount );
+
+        for ( NetcdfFile netcdfFile : this.getNetcdfFiles() )
+        {
+            // Get the ensemble_member_number
+            String memberNumberAttributeName = this.getProfile().getMemberAttribute();
+            List<Attribute> globalAttributes = netcdfFile.getGlobalAttributes();
+
+            int ncEnsembleNumber = NOT_FOUND;
+
+            for ( Attribute globalAttribute : globalAttributes )
+            {
+                if ( globalAttribute.getShortName().equals( memberNumberAttributeName ) )
+                {
+                    ncEnsembleNumber = globalAttribute.getNumericValue()
+                                                      .intValue();
+                    break;
+                }
+            }
+
+            if ( ncEnsembleNumber == NOT_FOUND )
+            {
+                throw new PreIngestException( "Could not find ensemble member attribute "
+                                              + memberNumberAttributeName +
+                                              " in netCDF file "
+                                              + netcdfFile );
+            }
+
+            if ( ncEnsembleNumber > memberCount )
+            {
+                throw new PreIngestException( "Ensemble number "
+                                              + ncEnsembleNumber
+                                              + " unexpectedly exceeds member count "
+                                              + memberCount );
+            }
+
+            if ( ncEnsembleNumber < 1 )
+            {
+                throw new PreIngestException( "Ensemble number "
+                                              + ncEnsembleNumber
+                                              + " is unexpectedly less than 1." );
+            }
+
+            Event<Double> event = readDouble( netcdfFile, featureId, variableName );
+            double[] ensembleRow = ensembleValues.get( event.getTime() );
+
+            if ( Objects.isNull( ensembleRow ) )
+            {
+                ensembleRow = new double[memberCount];
+                ensembleValues.put( event.getTime(), ensembleRow );
+            }
+
+            ensembleRow[ncEnsembleNumber - 1] = event.getValue();
+        }
+
+        if ( ensembleValues.size() != validDatetimeCount )
+        {
+            throw new PreIngestException( "Expected "
+                                          + validDatetimeCount
+                                          + " different valid datetimes but only found "
+                                          + ensembleValues.size()
+                                          + " in netCDF files "
+                                          + this.getNetcdfFiles() );
+        }
+
+        SortedSet<Event<Ensemble>> sortedEvents = new TreeSet<>();
+
+        for ( Map.Entry<Instant,double[]> entry : ensembleValues.entrySet() )
+        {
+            Ensemble ensemble = Ensemble.of( entry.getValue() );
+            Event<Ensemble> ensembleEvent = Event.of( entry.getKey(), ensemble );
+            sortedEvents.add( ensembleEvent );
+        }
+
+        return TimeSeries.of( this.getReferenceDatetime(),
+                              sortedEvents );
     }
+
+
 
     /**
      * Read a TimeSeries from across several netCDF single-validdatetime files.
@@ -233,129 +321,128 @@ class NWMTimeSeries implements Closeable
      * @return a TimeSeries containing the events.
      */
 
-    TimeSeries<Double> readTimeSeries( int featureId, String variableName, int memberNumber )
+    TimeSeries<Double> readTimeSeries( int featureId, String variableName )
     {
         SortedSet<Event<Double>> events = new TreeSet<>();
-        final int NOT_FOUND = -1;
 
         for ( NetcdfFile netcdfFile : this.getNetcdfFiles() )
         {
-            // Get the ensemble_member_number
-            String memberNumberAttributeName = this.getProfile().getMemberAttribute();
-            Attribute memberNumberAttribute = netcdfFile.findAttribute( memberNumberAttributeName );
-            int ncEnsembleNumber;
-
-            if ( Objects.nonNull( memberNumberAttribute ) )
-            {
-                ncEnsembleNumber = memberNumberAttribute.getNumericValue()
-                                                        .intValue();
-            }
-            else if ( memberNumber != 1 )
-            {
-                throw new PreIngestException( "Could not find ensemble member attribute "
-                                              + memberNumberAttributeName +
-                                              " in netCDF file "
-                                              + netcdfFile );
-            }
-
-            // Get the valid datetime
-            String validDatetimeVariableName = this.getProfile().getValidDatetimeVariable();
-            Instant validDatetime = this.readMinutesFromEpoch( netcdfFile,
-                                                               validDatetimeVariableName );
-
-            // Get the reference datetime
-            String referenceDatetimeAttributeName = getProfile().getReferenceDatetimeVariable();
-            Instant ncReferenceDatetime = this.readMinutesFromEpoch( netcdfFile,
-                                                                     referenceDatetimeAttributeName );
-
-            // Validate: this referenceDatetime should match what was set originally.
-            // (This doesn't work for analysis_assim)
-            if ( !ncReferenceDatetime.equals( this.getReferenceDatetime() ) )
-            {
-                throw new PreIngestException( "The reference datetime "
-                                              + ncReferenceDatetime
-                                              + " from netCDF file "
-                                              + netcdfFile
-                                              + " does not match expected value "
-                                              + this.getReferenceDatetime() );
-            }
-
-            // Get the value at the variable in question.
-            String featureVariableName = getProfile().getFeatureVariable();
-            Variable featureVariable = netcdfFile.findVariable( featureVariableName );
-
-            int indexOfFeature = NOT_FOUND;
-
-            // Must find the location of the variable.
-            // Might be nice to assume these are sorted to do a binary search,
-            // but I think it is an unsafe assumption that the values are sorted
-            // and we are looking for the index of the feature id to use for
-            // getting a value from the actual variable needed.
-            try
-            {
-                Array allFeatures = featureVariable.read();
-                int[] rawFeatures = (int[]) allFeatures.get1DJavaArray( DataType.INT );
-
-                for ( int i = 0; i < rawFeatures.length; i++ )
-                {
-                    if ( rawFeatures[i] == featureId )
-                    {
-                        indexOfFeature = i;
-                        break;
-                    }
-                }
-            }
-            catch ( IOException ioe )
-            {
-                throw new PreIngestException( "Failed to read features from "
-                                              + netcdfFile, ioe );
-            }
-
-            if ( indexOfFeature == NOT_FOUND )
-            {
-                throw new PreIngestException( "Could not find feature id "
-                                              + featureId + " in netCDF file "
-                                              + netcdfFile );
-            }
-
-            Variable variableVariable =  netcdfFile.findVariable( variableName );
-            int[] origin = { indexOfFeature };
-            int[] shape = { 1 };
-            double variableValue;
-            Event<Double> event;
-
-            try
-            {
-                Array array = variableVariable.read( origin, shape );
-                double[] values = (double[]) array.get1DJavaArray( DataType.DOUBLE );
-
-                if ( values.length != 1 )
-                {
-                    throw new PreIngestException( "Expected to read exactly one value, instead got "
-                                                  + values.length );
-                }
-
-                variableValue = values[0];
-            }
-            catch ( IOException | InvalidRangeException e )
-            {
-                throw new PreIngestException( "Failed to read variable "
-                                              + variableVariable
-                                              + " at origin "
-                                              + Arrays.toString( origin )
-                                              + " and shape "
-                                              + Arrays.toString( shape )
-                                              + " from netCDF file " + netcdfFile,
-                                              e );
-            }
-
-            event = Event.of( validDatetime, variableValue );
+            Event<Double> event = readDouble( netcdfFile, featureId, variableName );
             events.add( event );
         }
 
         return TimeSeries.of( this.getReferenceDatetime(),
                               ReferenceTimeType.T0,
                               events );
+    }
+
+
+    Event<Double> readDouble( NetcdfFile netcdfFile, int featureId, String variableName )
+    {
+        final int NOT_FOUND = -1;
+
+        // Get the ensemble_member_number
+        String memberNumberAttributeName = this.getProfile().getMemberAttribute();
+        Attribute memberNumberAttribute = netcdfFile.findAttribute( memberNumberAttributeName );
+        int ncEnsembleNumber;
+
+        if ( Objects.nonNull( memberNumberAttribute ) )
+        {
+            ncEnsembleNumber = memberNumberAttribute.getNumericValue()
+                                                    .intValue();
+        }
+
+        // Get the valid datetime
+        String validDatetimeVariableName = this.getProfile().getValidDatetimeVariable();
+        Instant validDatetime = this.readMinutesFromEpoch( netcdfFile,
+                                                           validDatetimeVariableName );
+
+        // Get the reference datetime
+        String referenceDatetimeAttributeName = getProfile().getReferenceDatetimeVariable();
+        Instant ncReferenceDatetime = this.readMinutesFromEpoch( netcdfFile,
+                                                                 referenceDatetimeAttributeName );
+
+        // Validate: this referenceDatetime should match what was set originally.
+        // (This doesn't work for analysis_assim)
+        if ( !ncReferenceDatetime.equals( this.getReferenceDatetime() ) )
+        {
+            throw new PreIngestException( "The reference datetime "
+                                          + ncReferenceDatetime
+                                          + " from netCDF file "
+                                          + netcdfFile
+                                          + " does not match expected value "
+                                          + this.getReferenceDatetime() );
+        }
+
+        // Get the value at the variable in question.
+        String featureVariableName = getProfile().getFeatureVariable();
+        Variable featureVariable = netcdfFile.findVariable( featureVariableName );
+
+        int indexOfFeature = NOT_FOUND;
+
+        // Must find the location of the variable.
+        // Might be nice to assume these are sorted to do a binary search,
+        // but I think it is an unsafe assumption that the values are sorted
+        // and we are looking for the index of the feature id to use for
+        // getting a value from the actual variable needed.
+        try
+        {
+            Array allFeatures = featureVariable.read();
+            int[] rawFeatures = (int[]) allFeatures.get1DJavaArray( DataType.INT );
+
+            for ( int i = 0; i < rawFeatures.length; i++ )
+            {
+                if ( rawFeatures[i] == featureId )
+                {
+                    indexOfFeature = i;
+                    break;
+                }
+            }
+        }
+        catch ( IOException ioe )
+        {
+            throw new PreIngestException( "Failed to read features from "
+                                          + netcdfFile, ioe );
+        }
+
+        if ( indexOfFeature == NOT_FOUND )
+        {
+            throw new PreIngestException( "Could not find feature id "
+                                          + featureId + " in netCDF file "
+                                          + netcdfFile );
+        }
+
+        Variable variableVariable =  netcdfFile.findVariable( variableName );
+        int[] origin = { indexOfFeature };
+        int[] shape = { 1 };
+        double variableValue;
+
+        try
+        {
+            Array array = variableVariable.read( origin, shape );
+            double[] values = (double[]) array.get1DJavaArray( DataType.DOUBLE );
+
+            if ( values.length != 1 )
+            {
+                throw new PreIngestException( "Expected to read exactly one value, instead got "
+                                              + values.length );
+            }
+
+            variableValue = values[0];
+        }
+        catch ( IOException | InvalidRangeException e )
+        {
+            throw new PreIngestException( "Failed to read variable "
+                                          + variableVariable
+                                          + " at origin "
+                                          + Arrays.toString( origin )
+                                          + " and shape "
+                                          + Arrays.toString( shape )
+                                          + " from netCDF file " + netcdfFile,
+                                          e );
+        }
+
+        return Event.of( validDatetime, variableValue );
     }
 
 
