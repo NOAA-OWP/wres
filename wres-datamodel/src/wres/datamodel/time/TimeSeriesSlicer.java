@@ -440,7 +440,8 @@ public final class TimeSeriesSlicer
                                                     + "ensemble." );
             }
             // Unequal time scales
-            else if ( !nextSeries.getTimeScale().equals( timeScale ) )
+            else if ( Objects.nonNull( timeScale ) != nextSeries.hasTimeScale()
+                      || ( nextSeries.hasTimeScale() && !nextSeries.getTimeScale().equals( timeScale ) ) )
             {
                 throw new IllegalArgumentException( "One or more of the input series have different time scales, "
                                                     + "which is not allowed when composing them into an "
@@ -486,7 +487,7 @@ public final class TimeSeriesSlicer
 
         return builder.build();
     }
-    
+
     /**
      * Transforms the input type to another type.
      * 
@@ -499,40 +500,40 @@ public final class TimeSeriesSlicer
      * @return the transformed type
      * @throws NullPointerException if either input is null
      */
-    
+
     public static <L, R, P, Q> PoolOfPairs<P, Q> transform( PoolOfPairs<L, R> input,
                                                             Function<Pair<L, R>, Pair<P, Q>> transformer )
     {
         Objects.requireNonNull( input );
-    
+
         Objects.requireNonNull( transformer );
-    
+
         PoolOfPairsBuilder<P, Q> builder = new PoolOfPairsBuilder<>();
-    
+
         builder.setClimatology( input.getClimatology() )
                .setMetadata( input.getMetadata() );
-    
+
         // Add the main series
         for ( TimeSeries<Pair<L, R>> next : input.get() )
         {
             builder.addTimeSeries( transform( next, transformer ) );
         }
-    
+
         // Add the baseline series if available
         if ( input.hasBaseline() )
         {
             PoolOfPairs<L, R> baseline = input.getBaselineData();
-    
+
             for ( TimeSeries<Pair<L, R>> nextBase : baseline.get() )
             {
                 builder.addTimeSeriesForBaseline( transform( nextBase, transformer ) );
             }
-    
+
             builder.setMetadataForBaseline( baseline.getMetadata() );
         }
-    
+
         return builder.build();
-    }    
+    }
 
     /**
      * Returns the subset of pairs where the condition is met. Applies to both the main pairs and any baseline pairs.
@@ -546,51 +547,51 @@ public final class TimeSeriesSlicer
      * @return the subset of pairs that meet the condition
      * @throws NullPointerException if either the input or condition is null
      */
-    
+
     public static <L, R> PoolOfPairs<L, R> filter( PoolOfPairs<L, R> input,
                                                    Predicate<Pair<L, R>> condition,
                                                    DoublePredicate applyToClimatology )
     {
         Objects.requireNonNull( input );
-    
+
         Objects.requireNonNull( condition );
-    
+
         PoolOfPairsBuilder<L, R> builder = new PoolOfPairsBuilder<>();
-    
+
         builder.setMetadata( input.getMetadata() );
-    
+
         //Filter climatology as required
         if ( input.hasClimatology() )
         {
             VectorOfDoubles climatology = input.getClimatology();
-    
+
             if ( Objects.nonNull( applyToClimatology ) )
             {
                 climatology = Slicer.filter( input.getClimatology(), applyToClimatology );
             }
-    
+
             builder.setClimatology( climatology );
         }
-    
+
         // Filter the main data
         for ( TimeSeries<Pair<L, R>> next : input.get() )
         {
             builder.addTimeSeries( filter( next, condition ) );
         }
-    
+
         //Filter baseline as required
         if ( input.hasBaseline() )
         {
             PoolOfPairs<L, R> baseline = input.getBaselineData();
-    
+
             for ( TimeSeries<Pair<L, R>> nextBase : baseline.get() )
             {
                 builder.addTimeSeriesForBaseline( filter( nextBase, condition ) );
             }
-    
+
             builder.setMetadataForBaseline( baseline.getMetadata() );
         }
-    
+
         return builder.build();
     }
 
@@ -607,32 +608,32 @@ public final class TimeSeriesSlicer
      * @return the subset of pairs that meet the condition
      * @throws NullPointerException if either the input or condition is null
      */
-    
+
     public static <L, R> PoolOfPairs<L, R> filterPerSeries( PoolOfPairs<L, R> input,
                                                             Predicate<TimeSeries<Pair<L, R>>> condition,
                                                             DoublePredicate applyToClimatology )
     {
         Objects.requireNonNull( input );
-    
+
         Objects.requireNonNull( condition );
-    
+
         PoolOfPairsBuilder<L, R> builder = new PoolOfPairsBuilder<>();
-    
+
         builder.setMetadata( input.getMetadata() );
-    
+
         //Filter climatology as required
         if ( input.hasClimatology() )
         {
             VectorOfDoubles climatology = input.getClimatology();
-    
+
             if ( Objects.nonNull( applyToClimatology ) )
             {
                 climatology = Slicer.filter( input.getClimatology(), applyToClimatology );
             }
-    
+
             builder.setClimatology( climatology );
         }
-    
+
         // Filter the main data
         for ( TimeSeries<Pair<L, R>> next : input.get() )
         {
@@ -641,12 +642,12 @@ public final class TimeSeriesSlicer
                 builder.addTimeSeries( next );
             }
         }
-    
+
         //Filter baseline as required
         if ( input.hasBaseline() )
         {
             PoolOfPairs<L, R> baseline = input.getBaselineData();
-    
+
             for ( TimeSeries<Pair<L, R>> nextBase : baseline.get() )
             {
                 if ( condition.test( nextBase ) )
@@ -654,13 +655,13 @@ public final class TimeSeriesSlicer
                     builder.addTimeSeriesForBaseline( nextBase );
                 }
             }
-    
+
             builder.setMetadataForBaseline( baseline.getMetadata() );
         }
-    
+
         return builder.build();
-    }    
-    
+    }
+
     /**
      * <p>Composes an ensemble time-series from a map of values.
      *
@@ -669,7 +670,7 @@ public final class TimeSeriesSlicer
      * @param timeScale the time scale
      * @param labels the member labels
      * @return an ensemble times-series
-     * @throws NullPointerException if any input is null
+     * @throws NullPointerException if any input other than the time scale is null
      */
 
     private static TimeSeries<Ensemble> compose( Map<Instant, List<Double>> ensembles,
@@ -680,8 +681,6 @@ public final class TimeSeriesSlicer
         Objects.requireNonNull( ensembles );
 
         Objects.requireNonNull( referenceTimes );
-
-        Objects.requireNonNull( timeScale );
 
         Objects.requireNonNull( labels );
 

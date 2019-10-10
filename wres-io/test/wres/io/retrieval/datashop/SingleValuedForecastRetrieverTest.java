@@ -152,6 +152,7 @@ public class SingleValuedForecastRetrieverTest
                           .addEvent( Event.of( Instant.parse( "2023-04-01T03:00:00Z" ), 44.0 ) )
                           .addEvent( Event.of( Instant.parse( "2023-04-01T04:00:00Z" ), 51.0 ) )
                           .addEvent( Event.of( Instant.parse( "2023-04-01T05:00:00Z" ), 58.0 ) )
+                          .setTimeScale( TimeScale.of() )
                           .build();
 
         // Actual series equals expected series
@@ -166,6 +167,7 @@ public class SingleValuedForecastRetrieverTest
                           .addEvent( Event.of( Instant.parse( "2023-04-01T20:00:00Z" ), 79.0 ) )
                           .addEvent( Event.of( Instant.parse( "2023-04-01T21:00:00Z" ), 86.0 ) )
                           .addEvent( Event.of( Instant.parse( "2023-04-01T22:00:00Z" ), 93.0 ) )
+                          .setTimeScale( TimeScale.of() )
                           .build();
 
         // Actual series equals expected series
@@ -213,6 +215,7 @@ public class SingleValuedForecastRetrieverTest
         TimeSeries<Double> expectedSeriesOne =
                 builderOne.addReferenceTime( Instant.parse( "2023-04-01T00:00:00Z" ), ReferenceTimeType.DEFAULT )
                           .addEvent( Event.of( Instant.parse( "2023-04-01T04:00:00Z" ), 51.0 ) )
+                          .setTimeScale( TimeScale.of() )
                           .build();
 
         // Actual series equals expected series
@@ -223,6 +226,7 @@ public class SingleValuedForecastRetrieverTest
         TimeSeries<Double> expectedSeriesTwo =
                 builderTwo.addReferenceTime( Instant.parse( "2023-04-01T17:00:00Z" ), ReferenceTimeType.DEFAULT )
                           .addEvent( Event.of( Instant.parse( "2023-04-01T19:00:00Z" ), 72.0 ) )
+                          .setTimeScale( TimeScale.of() )
                           .build();
 
         // Actual series equals expected series

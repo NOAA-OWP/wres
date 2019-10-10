@@ -3,7 +3,11 @@ package wres.io.retrieval.datashop;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.StringJoiner;
@@ -34,6 +38,14 @@ import wres.io.utilities.ScriptBuilder;
 
 abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 {
+
+    /**
+     * Message used several times.
+     */
+
+    private static final String WHILE_BUILDING_THE_RETRIEVER = "While building the retriever for project_id '{}' "
+                                                               + "with variablefeature_id '{}' "
+                                                               + "and data type {}, ";
 
     /**
      * Logger.
@@ -105,11 +117,23 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         {
             Map<Integer, TimeSeriesBuilder<S>> builders = new TreeMap<>();
 
+            // Time-series are duplicated per common source in wres.ProjectSource, 
+            // so de-duplicate here. See #56214-272
+            Map<Integer, Integer> seriesCounts = new HashMap<>();
+
             TimeScale timeScale = null;
 
             while ( provider.next() )
             {
                 int seriesId = provider.getInt( "series_id" );
+                int seriesCount = 1;
+
+                // Records occurrences?
+                if ( provider.hasColumn( "occurrences" ) )
+                {
+                    seriesCount = provider.getInt( "occurrences" );
+                }
+                seriesCounts.put( seriesId, seriesCount );
 
                 TimeSeriesBuilder<S> builder = builders.get( seriesId );
 
@@ -133,18 +157,25 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                 // Add the event     
                 S value = mapper.apply( provider );
                 Event<S> event = Event.of( validTime, value );
-                builder.addEvent( event );
+                this.addEventToTimeSeries( event, builder );
 
                 // Add the time-scale info
                 String functionString = provider.getString( "scale_function" );
                 Duration period = provider.getDuration( "scale_period" );
 
-                TimeScale.TimeScaleFunction function =
-                        TimeScale.TimeScaleFunction.valueOf( functionString.toUpperCase() );
+                TimeScale latestScale = null;
 
-                TimeScale latestScale = TimeScale.of( period, function );
+                // Time scale available?
+                if ( Objects.nonNull( period ) && Objects.nonNull( functionString ) )
+                {
+                    TimeScale.TimeScaleFunction function =
+                            TimeScale.TimeScaleFunction.valueOf( functionString.toUpperCase() );
 
-                if ( Objects.nonNull( timeScale ) && !latestScale.equals( timeScale ) )
+                    latestScale = TimeScale.of( period, function );
+                    builder.setTimeScale( latestScale );
+                }
+
+                if ( Objects.nonNull( timeScale ) && !timeScale.equals( latestScale ) )
                 {
                     throw new DataAccessException( "The time scale information associated with event '" + event
                                                    + "' is '"
@@ -156,15 +187,69 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                 }
 
                 timeScale = latestScale;
-                builder.setTimeScale( latestScale );
             }
 
-            return builders.values().stream().map( TimeSeriesBuilder::build );
+            return this.composeWithDuplicates( Collections.unmodifiableMap( builders ),
+                                               Collections.unmodifiableMap( seriesCounts ) );
         }
         catch ( SQLException e )
         {
             throw new DataAccessException( "Failed to access the time-series data.", e );
         }
+    }
+    
+    /**
+     * Adds an event to a time-series and annotates any exception raised.
+     * 
+     * @param event the event
+     * @param builder the builder
+     * @throws DataAccessException if the event could not be added
+     */
+    
+    private <S> void addEventToTimeSeries( Event<S> event, TimeSeriesBuilder<S> builder )
+    {
+        try
+        {
+            builder.addEvent( event );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            throw new DataAccessException( "While processing a time-series for project_id '"
+                                           + this.getProjectId()
+                                           + "' with variablefeature_id '"
+                                           + this.getVariableFeatureId()
+                                           + "' and data type '"
+                                           + this.getLeftOrRightOrBaseline()
+                                           + "', encountered an error: ",
+                                           e );
+        }       
+    }
+
+    /**
+     * Returns a stream of time-series from the inputs. For each builder in the map of builders, create as many series 
+     * as indicated in the map of series counts.
+     * 
+     * @param <S> the event value type
+     * @param builders the builders
+     * @param seriesCounts the sreies counts
+     * @return a stream of time-series
+     */
+
+    private <S> Stream<TimeSeries<S>> composeWithDuplicates( Map<Integer, TimeSeriesBuilder<S>> builders,
+                                                             Map<Integer, Integer> seriesCounts )
+    {
+        List<TimeSeries<S>> streamMe = new ArrayList<>();
+
+        for ( Map.Entry<Integer, TimeSeriesBuilder<S>> nextSeries : builders.entrySet() )
+        {
+            int count = seriesCounts.get( nextSeries.getKey() );
+            for ( int i = 0; i < count; i++ )
+            {
+                streamMe.add( nextSeries.getValue().build() );
+            }
+        }
+
+        return streamMe.stream();
     }
 
     /**
@@ -193,267 +278,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             else
             {
                 this.addValidTimeBoundsToObservedScript( script, filter, tabsIn );
-            }
-        }
-    }
-
-    /**
-     * Adds the lead duration bounds (if any) to the script. The interval is left-closed.
-     * 
-     * @param script the script to augment
-     * @param tabsIn the number of tabs in for the outermost clause
-     * @param filter the time window filter
-     * @throws NullPointerException if the script is null
-     */
-
-    void addLeadBoundsToScript( ScriptBuilder script, TimeWindow filter, int tabsIn )
-    {
-        Objects.requireNonNull( script );
-
-        if ( Objects.nonNull( filter ) )
-        {
-            // Lower bound
-            if ( !filter.getEarliestLeadDuration().equals( TimeWindow.DURATION_MIN ) )
-            {
-                long lowerLead = filter.getEarliestLeadDuration().toMinutes();
-
-                // Adjust by the desired time scale if the desired time scale is not instantaneous
-                if ( Objects.nonNull( this.desiredTimeScale ) && !this.desiredTimeScale.isInstantaneous() )
-                {
-
-                    Duration lowered = filter.getEarliestLeadDuration()
-                                             .minus( this.desiredTimeScale.getPeriod() );
-
-                    LOGGER.debug( "Adjusting the lower lead duration of time window {} from {} to {} "
-                                  + "in order to acquire data at the desired time scale of {}.",
-                                  this.timeWindow,
-                                  filter.getEarliestLeadDuration(),
-                                  lowered,
-                                  this.desiredTimeScale );
-
-                    lowerLead = lowered.toMinutes();
-                }
-
-                this.addWhereOrAndClause( script, tabsIn, "TSV.lead > '", lowerLead, "'" );
-            }
-
-            // Upper bound
-            if ( !filter.getLatestLeadDuration().equals( TimeWindow.DURATION_MAX ) )
-            {
-                long upperLead = filter.getLatestLeadDuration().toMinutes();
-                this.addWhereOrAndClause( script, tabsIn, "TSV.lead <= '", upperLead, "'" );
-            }
-        }
-    }
-
-    /**
-     * Adds the valid time bounds (if any) to the script. The interval is left-closed.
-     * 
-     * @param script the script to augment
-     * @param filter the time window filter
-     * @param tabsIn the number of tabs in for the outermost clause
-     * @throws NullPointerException if the script is null
-     */
-
-    void addValidTimeBoundsToForecastScript( ScriptBuilder script, TimeWindow filter, int tabsIn )
-    {
-        Objects.requireNonNull( script );
-
-        if ( Objects.nonNull( filter ) )
-        {
-            // Lower bound
-            if ( !filter.getEarliestValidTime().equals( Instant.MIN ) )
-            {
-                String lowerValidTime = filter.getEarliestValidTime().toString();
-
-                String clause = "TS.initialization_date + INTERVAL '1' MINUTE * TSV.lead > '";
-
-                // Observation?
-                if ( !this.isForecastRetriever() )
-                {
-                    clause = "O.observation_time > '";
-                }
-
-                this.addWhereOrAndClause( script,
-                                          tabsIn,
-                                          clause,
-                                          lowerValidTime,
-                                          "'" );
-            }
-
-            // Upper bound
-            if ( !filter.getLatestValidTime().equals( Instant.MAX ) )
-            {
-                String upperValidTime = filter.getLatestValidTime().toString();
-
-                String clause = "TS.initialization_date + INTERVAL '1' MINUTE * TSV.lead <= '";
-
-                // Observation?
-                if ( !this.isForecastRetriever() )
-                {
-                    clause = "O.observation_time <= '";
-                }
-
-                this.addWhereOrAndClause( script,
-                                          tabsIn,
-                                          clause,
-                                          upperValidTime,
-                                          "'" );
-            }
-        }
-    }
-
-    /**
-     * Adds the valid time bounds (if any) to the script. The interval is left-closed.
-     * 
-     * @param script the script to augment
-     * @param filter the time window filter
-     * @param tabsIn the number of tabs in for the outermost clause
-     * @throws NullPointerException if the script is null
-     */
-
-    void addValidTimeBoundsToObservedScript( ScriptBuilder script, TimeWindow filter, int tabsIn )
-    {
-        Objects.requireNonNull( script );
-
-        if ( Objects.nonNull( filter ) )
-        {
-
-            Instant lowerValidTime = this.getOrInferLowerValidTime( filter );
-            Instant upperValidTime = this.getOrInferUpperValidTime( filter );
-
-            // Add the clauses
-            if ( !lowerValidTime.equals( Instant.MIN ) )
-            {
-                this.addWhereOrAndClause( script, tabsIn, "O.observation_time > '", lowerValidTime, "'" );
-            }
-
-            if ( !upperValidTime.equals( Instant.MAX ) )
-            {
-                this.addWhereOrAndClause( script, tabsIn, "O.observation_time <= '", upperValidTime, "'" );
-            }
-
-            // Log the bounds in case they were inferred
-            if ( LOGGER.isDebugEnabled() && !lowerValidTime.equals( Instant.MIN )
-                 || !upperValidTime.equals( Instant.MAX ) )
-            {
-                String message = "While building the retriever for project_id '{}' "
-                                 + "with variablefeature_id '{}' "
-                                 + "and data type {}, used an earliest valid time of {} "
-                                 + "and a latest valid time of {}.";
-
-                LOGGER.debug( message,
-                              this.getProjectId(),
-                              this.getVariableFeatureId(),
-                              this.getLeftOrRightOrBaseline(),
-                              lowerValidTime,
-                              upperValidTime );
-            }
-        }
-    }
-
-    /**
-     * Helper that returns the lower valid time from the {@link TimeWindow}, preferentially, but otherwise infers the 
-     * lower valid time from the forecast information present.
-     * 
-     * @param timeWindow the time window
-     * @return the lower valid time
-     */
-
-    private Instant getOrInferLowerValidTime( TimeWindow timeWindow )
-    {
-        Instant lowerValidTime = Instant.MIN;
-
-        // Lower bound present
-        if ( !timeWindow.getEarliestValidTime().equals( Instant.MIN ) )
-        {
-            lowerValidTime = timeWindow.getEarliestValidTime();
-        }
-        // Make a best effort to infer the valid times from any forecast information
-        else
-        {
-            // Lower reference time available?
-            if ( !timeWindow.getEarliestReferenceTime().equals( Instant.MIN ) )
-            {
-                // Use the lower reference time
-                lowerValidTime = timeWindow.getEarliestReferenceTime();
-
-                // Adjust for the earliest lead duration
-                if ( !timeWindow.getEarliestLeadDuration().equals( TimeWindow.DURATION_MIN ) )
-                {
-                    lowerValidTime = lowerValidTime.plus( timeWindow.getEarliestLeadDuration() );
-
-                    //Adjust for the desired time scale
-                    if ( Objects.nonNull( this.getDesiredTimeScale() ) )
-                    {
-                        lowerValidTime = lowerValidTime.minus( this.getDesiredTimeScale().getPeriod() );
-                    }
-                }
-            }
-        }
-
-        return lowerValidTime;
-    }
-
-    /**
-     * Helper that returns the upper valid time from the {@link TimeWindow}, preferentially, but otherwise infers the 
-     * upper valid time from the forecast information present.
-     * 
-     * @param timeWindow the time window
-     * @return the upper valid time
-     */
-
-    private Instant getOrInferUpperValidTime( TimeWindow timeWindow )
-    {
-        Instant upperValidTime = Instant.MAX;
-
-        // Upper bound present
-        if ( !timeWindow.getLatestValidTime().equals( Instant.MAX ) )
-        {
-            upperValidTime = timeWindow.getLatestValidTime();
-        }
-        // Make a best effort to infer the valid times from any forecast information
-        else
-        {
-            // Both the latest reference time and the latest lead duration available?
-            if ( !timeWindow.getLatestReferenceTime().equals( Instant.MIN )
-                 && !timeWindow.getLatestLeadDuration().equals( TimeWindow.DURATION_MAX ) )
-            {
-                // Use the lower reference time
-                upperValidTime = timeWindow.getLatestReferenceTime().plus( timeWindow.getLatestLeadDuration() );
-            }
-        }
-
-        return upperValidTime;
-    }
-
-    /**
-     * Adds the reference time bounds (if any) to the script.
-     * 
-     * @param script the script to augment
-     * @param filter the time window filter
-     * @param tabsIn the number of tabs in for the outermost clause
-     * @throws NullPointerException if the script is null
-     */
-
-    void addReferenceTimeBoundsToScript( ScriptBuilder script, TimeWindow filter, int tabsIn )
-    {
-        Objects.requireNonNull( script );
-
-        if ( Objects.nonNull( filter ) )
-        {
-            // Lower bound
-            if ( !filter.getEarliestReferenceTime().equals( Instant.MIN ) )
-            {
-                String lowerReferenceTime = filter.getEarliestReferenceTime().toString();
-                this.addWhereOrAndClause( script, tabsIn, "TS.initialization_date > '", lowerReferenceTime, "'" );
-            }
-
-            // Upper bound
-            if ( !filter.getLatestReferenceTime().equals( Instant.MAX ) )
-            {
-                String upperReferenceTime = filter.getLatestReferenceTime().toString();
-                this.addWhereOrAndClause( script, tabsIn, "TS.initialization_date <= '", upperReferenceTime, "'" );
             }
         }
     }
@@ -652,6 +476,325 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     }
 
     /**
+     * Adds the lead duration bounds (if any) to the script. The interval is left-closed.
+     * 
+     * @param script the script to augment
+     * @param tabsIn the number of tabs in for the outermost clause
+     * @param filter the time window filter
+     * @throws NullPointerException if any input is null
+     */
+
+    private void addLeadBoundsToScript( ScriptBuilder script, TimeWindow filter, int tabsIn )
+    {
+        Objects.requireNonNull( script );
+
+        Objects.requireNonNull( filter );
+
+        Long lowerLead = null;
+        Long upperLead = null;
+
+        // Lower bound
+        if ( !filter.getEarliestLeadDuration().equals( TimeWindow.DURATION_MIN ) )
+        {
+            lowerLead = filter.getEarliestLeadDuration().toMinutes();
+
+            // Adjust by the desired time scale if the desired time scale is not instantaneous
+            if ( Objects.nonNull( this.desiredTimeScale ) && !this.desiredTimeScale.isInstantaneous() )
+            {
+
+                Duration lowered = filter.getEarliestLeadDuration()
+                                         .minus( this.desiredTimeScale.getPeriod() );
+
+                LOGGER.debug( "Adjusting the lower lead duration of time window {} from {} to {} "
+                              + "in order to acquire data at the desired time scale of {}.",
+                              this.timeWindow,
+                              filter.getEarliestLeadDuration(),
+                              lowered,
+                              this.desiredTimeScale );
+
+                lowerLead = lowered.toMinutes();
+            }
+        }
+        // Upper bound
+        if ( !filter.getLatestLeadDuration().equals( TimeWindow.DURATION_MAX ) )
+        {
+            upperLead = filter.getLatestLeadDuration().toMinutes();
+        }
+
+        this.addLeadBoundsClauseToScript( script, lowerLead, upperLead, tabsIn );
+    }
+
+    /**
+     * Adds the lead time constraints to a script.
+     * 
+     * @param script the script
+     * @param lowerLead the lower lead time
+     * @param upperLead the upper lead time
+     * @param tabsIn the number of tabs in
+     */
+
+    private void addLeadBoundsClauseToScript( ScriptBuilder script, Long lowerLead, Long upperLead, int tabsIn )
+    {
+        // Add the clause
+        if ( Objects.nonNull( lowerLead ) && Objects.nonNull( upperLead )
+             && Long.compare( lowerLead, upperLead ) == 0 )
+        {
+            this.addWhereOrAndClause( script, tabsIn, "TSV.lead = '", upperLead, "'" );
+        }
+        else
+        {
+            if ( Objects.nonNull( lowerLead ) )
+            {
+                this.addWhereOrAndClause( script, tabsIn, "TSV.lead > '", lowerLead, "'" );
+            }
+            if ( Objects.nonNull( upperLead ) )
+            {
+                this.addWhereOrAndClause( script, tabsIn, "TSV.lead <= '", upperLead, "'" );
+            }
+        }
+    }
+
+    /**
+     * Adds the valid time bounds (if any) to the script. The interval is left-closed.
+     * 
+     * @param script the script to augment
+     * @param filter the time window filter
+     * @param tabsIn the number of tabs in for the outermost clause
+     * @throws NullPointerException if any input is null
+     */
+
+    private void addValidTimeBoundsToForecastScript( ScriptBuilder script, TimeWindow filter, int tabsIn )
+    {
+        Objects.requireNonNull( script );
+
+        Objects.requireNonNull( filter );
+
+        // Lower and upper bounds are equal
+        if ( filter.getEarliestValidTime().equals( filter.getLatestValidTime() ) )
+        {
+            String validTime = filter.getEarliestValidTime().toString();
+
+            String clause = "TS.initialization_date + INTERVAL '1' MINUTE * TSV.lead = '";
+
+            // Observation?
+            if ( !this.isForecastRetriever() )
+            {
+                clause = "O.observation_time = '";
+            }
+
+            this.addWhereOrAndClause( script,
+                                      tabsIn,
+                                      clause,
+                                      validTime,
+                                      "'" );
+        }
+        // Lower bound
+        else
+        {
+
+            if ( !filter.getEarliestValidTime().equals( Instant.MIN ) )
+            {
+                String lowerValidTime = filter.getEarliestValidTime().toString();
+
+                String clause = "TS.initialization_date + INTERVAL '1' MINUTE * TSV.lead > '";
+
+                // Observation?
+                if ( !this.isForecastRetriever() )
+                {
+                    clause = "O.observation_time > '";
+                }
+
+                this.addWhereOrAndClause( script,
+                                          tabsIn,
+                                          clause,
+                                          lowerValidTime,
+                                          "'" );
+            }
+
+            // Upper bound
+            if ( !filter.getLatestValidTime().equals( Instant.MAX ) )
+            {
+                String upperValidTime = filter.getLatestValidTime().toString();
+
+                String clause = "TS.initialization_date + INTERVAL '1' MINUTE * TSV.lead <= '";
+
+                // Observation?
+                if ( !this.isForecastRetriever() )
+                {
+                    clause = "O.observation_time <= '";
+                }
+
+                this.addWhereOrAndClause( script,
+                                          tabsIn,
+                                          clause,
+                                          upperValidTime,
+                                          "'" );
+            }
+        }
+    }
+
+    /**
+     * Adds the valid time bounds (if any) to the script. The interval is left-closed.
+     * 
+     * @param script the script to augment
+     * @param filter the time window filter
+     * @param tabsIn the number of tabs in for the outermost clause
+     * @throws NullPointerException if any input is null
+     */
+
+    private void addValidTimeBoundsToObservedScript( ScriptBuilder script, TimeWindow filter, int tabsIn )
+    {
+        Objects.requireNonNull( script );
+
+        Objects.requireNonNull( filter );
+
+        Instant lowerValidTime = this.getOrInferLowerValidTime( filter );
+        Instant upperValidTime = this.getOrInferUpperValidTime( filter );
+
+        // Add the clauses
+        if ( !lowerValidTime.equals( Instant.MIN ) )
+        {
+            this.addWhereOrAndClause( script, tabsIn, "O.observation_time > '", lowerValidTime, "'" );
+        }
+
+        if ( !upperValidTime.equals( Instant.MAX ) )
+        {
+            this.addWhereOrAndClause( script, tabsIn, "O.observation_time <= '", upperValidTime, "'" );
+        }
+
+        // Log the bounds in case they were inferred
+        if ( LOGGER.isDebugEnabled() && !lowerValidTime.equals( Instant.MIN )
+             || !upperValidTime.equals( Instant.MAX ) )
+        {
+            String message = WHILE_BUILDING_THE_RETRIEVER
+                             + "used an earliest valid time of {} "
+                             + "and a latest valid time of {}.";
+
+            LOGGER.debug( message,
+                          this.getProjectId(),
+                          this.getVariableFeatureId(),
+                          this.getLeftOrRightOrBaseline(),
+                          lowerValidTime,
+                          upperValidTime );
+        }
+    }
+
+    /**
+     * Helper that returns the lower valid time from the {@link TimeWindow}, preferentially, but otherwise infers the 
+     * lower valid time from the forecast information present.
+     * 
+     * @param timeWindow the time window
+     * @return the lower valid time
+     */
+
+    private Instant getOrInferLowerValidTime( TimeWindow timeWindow )
+    {
+        Instant lowerValidTime = Instant.MIN;
+
+        // Lower bound present
+        if ( !timeWindow.getEarliestValidTime().equals( Instant.MIN ) )
+        {
+            lowerValidTime = timeWindow.getEarliestValidTime();
+        }
+        // Make a best effort to infer the valid times from any forecast information
+        else
+        {
+            // Lower reference time available?
+            if ( !timeWindow.getEarliestReferenceTime().equals( Instant.MIN ) )
+            {
+                // Use the lower reference time
+                lowerValidTime = timeWindow.getEarliestReferenceTime();
+
+                // Adjust for the earliest lead duration
+                if ( !timeWindow.getEarliestLeadDuration().equals( TimeWindow.DURATION_MIN ) )
+                {
+                    lowerValidTime = lowerValidTime.plus( timeWindow.getEarliestLeadDuration() );
+
+                    //Adjust for the desired time scale
+                    if ( Objects.nonNull( this.getDesiredTimeScale() ) )
+                    {
+                        lowerValidTime = lowerValidTime.minus( this.getDesiredTimeScale().getPeriod() );
+                    }
+                }
+            }
+        }
+
+        return lowerValidTime;
+    }
+
+    /**
+     * Helper that returns the upper valid time from the {@link TimeWindow}, preferentially, but otherwise infers the 
+     * upper valid time from the forecast information present.
+     * 
+     * @param timeWindow the time window
+     * @return the upper valid time
+     */
+
+    private Instant getOrInferUpperValidTime( TimeWindow timeWindow )
+    {
+        Instant upperValidTime = Instant.MAX;
+
+        // Upper bound present
+        if ( !timeWindow.getLatestValidTime().equals( Instant.MAX ) )
+        {
+            upperValidTime = timeWindow.getLatestValidTime();
+        }
+        // Make a best effort to infer the valid times from any forecast information
+        else
+        {
+            // Both the latest reference time and the latest lead duration available?
+            if ( !timeWindow.getLatestReferenceTime().equals( Instant.MAX )
+                 && !timeWindow.getLatestLeadDuration().equals( TimeWindow.DURATION_MAX ) )
+            {
+                // Use the upper reference time plus upper lead duration
+                upperValidTime = timeWindow.getLatestReferenceTime().plus( timeWindow.getLatestLeadDuration() );
+            }
+        }
+
+        return upperValidTime;
+    }
+
+    /**
+     * Adds the reference time bounds (if any) to the script.
+     * 
+     * @param script the script to augment
+     * @param filter the time window filter
+     * @param tabsIn the number of tabs in for the outermost clause
+     * @throws NullPointerException if any input is null
+     */
+
+    private void addReferenceTimeBoundsToScript( ScriptBuilder script, TimeWindow filter, int tabsIn )
+    {
+        Objects.requireNonNull( script );
+
+        Objects.requireNonNull( filter );
+
+        // Lower and upper bounds are equal
+        if ( filter.getEarliestReferenceTime().equals( filter.getLatestReferenceTime() ) )
+        {
+            String referenceTime = filter.getEarliestReferenceTime().toString();
+
+            this.addWhereOrAndClause( script, tabsIn, "TS.initialization_date = '", referenceTime, "'" );
+        }
+        else
+        {
+            // Lower bound
+            if ( !filter.getEarliestReferenceTime().equals( Instant.MIN ) )
+            {
+                String lowerReferenceTime = filter.getEarliestReferenceTime().toString();
+                this.addWhereOrAndClause( script, tabsIn, "TS.initialization_date > '", lowerReferenceTime, "'" );
+            }
+
+            // Upper bound
+            if ( !filter.getLatestReferenceTime().equals( Instant.MAX ) )
+            {
+                String upperReferenceTime = filter.getLatestReferenceTime().toString();
+                this.addWhereOrAndClause( script, tabsIn, "TS.initialization_date <= '", upperReferenceTime, "'" );
+            }
+        }
+    }
+
+    /**
      * Abstract builder.
      * 
      * @author james.brown@hydrosolved.com
@@ -801,33 +944,34 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         // Log missing information
         if ( LOGGER.isDebugEnabled() )
         {
-            String start = "While building the retriever for project_id '{}' "
-                           + "with variablefeature_id '{}' "
-                           + "and data type {}, {}";
+            String start = WHILE_BUILDING_THE_RETRIEVER
+                           + "{}";
 
             if ( Objects.isNull( this.timeWindow ) )
             {
                 LOGGER.debug( start,
-                              "the time window was null: the retrieval will be unconditional in time.",
                               this.projectId,
                               this.variableFeatureId,
-                              this.lrb );
+                              this.lrb,
+                              "the time window was null: the retrieval will be unconditional in time." );
             }
 
             if ( Objects.isNull( this.desiredTimeScale ) )
             {
                 LOGGER.debug( start,
-                              "the desired time scale was null: the retrieval will not be adjusted to account "
-                                     + "for the desired time scale.",
                               this.projectId,
                               this.variableFeatureId,
-                              this.lrb );
+                              this.lrb,
+                              "the desired time scale was null: the retrieval will not be adjusted to account "
+                                        + "for the desired time scale." );
             }
 
             if ( Objects.nonNull( this.timeWindow ) || Objects.isNull( this.desiredTimeScale ) )
             {
-                String add = start + "discovered a time window of {} and a desired time scale of {}.";
-                LOGGER.debug( add,
+                String message = WHILE_BUILDING_THE_RETRIEVER
+                                 + "discovered a time window of {} and a desired time scale of {}.";
+
+                LOGGER.debug( message,
                               this.projectId,
                               this.variableFeatureId,
                               this.lrb,

@@ -34,6 +34,7 @@ import org.powermock.modules.junit4.PowerMockRunner;
 
 import wres.system.DatabaseConnectionSupplier;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.scale.TimeScale;
 import wres.datamodel.scale.TimeScale.TimeScaleFunction;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
@@ -152,6 +153,7 @@ public class ObservationRetrieverTest
                        .addEvent( Event.of( Instant.parse( "2023-04-01T08:00:00Z" ), 79.0 ) )
                        .addEvent( Event.of( Instant.parse( SECOND_TIME ), 86.0 ) )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T10:00:00Z" ), 93.0 ) )
+                       .setTimeScale( TimeScale.of() )
                        .build();
 
         // Actual series equals expected series
@@ -200,6 +202,7 @@ public class ObservationRetrieverTest
                        .addEvent( Event.of( Instant.parse( "2023-04-01T07:00:00Z" ), 72.0 ) )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T08:00:00Z" ), 79.0 ) )
                        .addEvent( Event.of( Instant.parse( SECOND_TIME ), 86.0 ) )
+                       .setTimeScale( TimeScale.of() )
                        .build();
 
         // Actual series equals expected series

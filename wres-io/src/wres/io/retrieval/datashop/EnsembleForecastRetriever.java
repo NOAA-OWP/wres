@@ -150,7 +150,7 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
                           + "TS.measurementunit_id" );
         
         // Add ORDER BY clause
-        scripter.addLine( "ORDER BY TS.initialization_date, series_id, TSV.lead;" );
+        scripter.addLine( "ORDER BY series_id, TS.initialization_date, valid_time;" );
 
         String script = scripter.toString();
 
@@ -213,8 +213,8 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
 
         scripter.addLine( "SELECT " );
         scripter.addTab().addLine( "MIN(TS.timeseries_id) AS series_id," );
-        scripter.addTab().addLine( "TS.initialization_date + INTERVAL '1' MINUTE * TSV.lead AS valid_time," );
         scripter.addTab().addLine( "TS.initialization_date AS reference_time," );
+        scripter.addTab().addLine( "TS.initialization_date + INTERVAL '1' MINUTE * TSV.lead AS valid_time," );
         scripter.addTab().addLine( "ARRAY_AGG(" );
         scripter.addTab( 2 ).addLine( "TSV.series_value" );
         scripter.addTab( 2 ).addLine( "ORDER BY TS.ensemble_id" );

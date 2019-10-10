@@ -129,7 +129,7 @@ public class SingleValuedPoolGeneratorTest
                     .thenReturn( "STREAMFLOW" );
 
         // Create the actual output
-        SingleValuedPoolGenerator generator = SingleValuedPoolGenerator.of( project, feature );
+        SingleValuedPoolGenerator generator = SingleValuedPoolGenerator.of( project, feature, mapper );
 
         List<Supplier<PoolOfPairs<Double, Double>>> actual = generator.get();
 

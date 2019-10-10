@@ -79,14 +79,19 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
                                                                + "existing time scale is ''{1}''. "
                                                                + "Assuming that the latter is also a ''{2}''.";
 
+    private static final String EXISTING_TIME_SCALE_IS_MISSING = "When attempting to upscale to a desired time scale "
+                                                                 + "of ''{0}'', encountered an existing time-scale "
+                                                                 + "that was missing. Assuming that the existing time "
+                                                                 + "scale is the desired time scale.";
+
     private static final String BECAUSE_THE_VALUES_WERE_NOT_EVENLY_SPACED_WITHIN_THE_INTERVAL =
-            "because the values were not evenly spaced within the interval.";
+            "Skipped upscaling a collection of {} events in an interval ending at {} because the values were not "
+                                                                                                + "evenly spaced within"
+                                                                                                + " the interval.";
 
     private static final String BECAUSE_THERE_WERE_FEWER_THAN_TWO_EVENTS_TO_UPSCALE =
-            "because there were fewer than two events to upscale.";
-
-    private static final String MESSAGE_START = "Skipped upscaling a collection of {} events "
-                                                + "in an interval ending at {} {}";
+            "Skipped upscaling a collection of {} events in an interval ending at {} because there were fewer than two "
+                                                                                      + "events to upscale.";
 
     /**
      * Logger.
@@ -145,10 +150,18 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
             return RescaledTimeSeriesPlusValidation.of( timeSeries, validationEvents );
         }
 
-        // No times at which values should end, so start at the beginning
-        if ( endsAt.isEmpty() )
+        // Existing time scale missing
+        if ( !timeSeries.hasTimeScale() )
         {
-            endsAt = this.getEndTimesFromSeries( timeSeries, desiredTimeScale );
+            if ( LOGGER.isTraceEnabled() )
+            {
+                LOGGER.trace( "Skipped upscaling time-series {} to the desired time scale of {} because the existing "
+                              + "time scale was missing. Assuming that the existing and desired scales are the same.'",
+                              timeSeries.hashCode(),
+                              desiredTimeScale );
+            }
+
+            return RescaledTimeSeriesPlusValidation.of( timeSeries, validationEvents );
         }
 
         // If the period is the same, return the existing series with the desired scale
@@ -163,12 +176,19 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
                               desiredTimeScale );
             }
 
+            // Create new series in case the function differs
             TimeSeries<Double> returnMe = new TimeSeriesBuilder<Double>().addEvents( timeSeries.getEvents() )
                                                                          .addReferenceTimes( timeSeries.getReferenceTimes() )
                                                                          .setTimeScale( desiredTimeScale )
                                                                          .build();
 
             return RescaledTimeSeriesPlusValidation.of( returnMe, validationEvents );
+        }
+
+        // No times at which values should end, so start at the beginning
+        if ( endsAt.isEmpty() )
+        {
+            endsAt = this.getEndTimesFromSeries( timeSeries, desiredTimeScale );
         }
 
         // Group the events according to whether their valid times fall within the desired period that ends at a 
@@ -287,13 +307,14 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
      * @param endsAt the end of the interval to aggregate, which is used for logging
      * @param the period over which to upscale
      * @return true if the events can be upscaled, otherwise false
+     * @throws NullPointerException if any input is null
      */
 
     private boolean canUpscale( SortedSet<Event<Double>> events, Instant endsAt, Duration period )
     {
         Objects.requireNonNull( events );
-
         Objects.requireNonNull( endsAt );
+        Objects.requireNonNull( period );
 
         if ( events.size() < 2 )
         {
@@ -389,14 +410,15 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
     /**
      * Logs a skipped group of events at an appropriate logging level.
      * 
+     * @param messageString the message string
      * @param events the events
      * @param endsAt the end of the interval to aggregate, which is used for logging
      */
-    private void logSkippedGroup( String messageEnd, SortedSet<Event<Double>> events, Instant endsAt )
+    private void logSkippedGroup( String messageString, SortedSet<Event<Double>> events, Instant endsAt )
     {
         if ( LOGGER.isTraceEnabled() )
         {
-            LOGGER.trace( MESSAGE_START, messageEnd, events.size(), endsAt );
+            LOGGER.trace( messageString, events.size(), endsAt );
         }
     }
 
@@ -415,6 +437,15 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
     private static List<ScaleValidationEvent> validateForUpscaling( TimeScale existingTimeScale,
                                                                     TimeScale desiredTimeScale )
     {
+        // Existing time-scale is unknown
+        // This will happen repeatedly for some datasets so qualify with a neutral message
+        if ( Objects.isNull( existingTimeScale ) )
+        {
+            String message = MessageFormat.format( EXISTING_TIME_SCALE_IS_MISSING, desiredTimeScale );
+
+            return List.of( ScaleValidationEvent.info( message ) );
+        }
+
         // The validation events encountered
         List<ScaleValidationEvent> allEvents = new ArrayList<>();
 
