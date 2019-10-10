@@ -56,21 +56,21 @@ public final class TimeWindowGenerator
             // Lead duration pools only
             if ( Objects.isNull( issuedDatesPools ) )
             {
-                LOGGER.debug( "Building time windows for lead durations." );
+                LOGGER.trace( "Building time windows for lead durations." );
 
                 return TimeWindowGenerator.getLeadDurationTimeWindows( pairConfig );
             }
             // Issued date pools only
             else if ( Objects.isNull( leadDurationPools ) )
             {
-                LOGGER.debug( "Building time windows for issued dates." );
+                LOGGER.trace( "Building time windows for issued dates." );
 
                 return TimeWindowGenerator.getIssuedDatesTimeWindows( pairConfig );
             }
             // Both lead duration and issued date pools
             else
             {
-                LOGGER.debug( "Building time windows for issued dates and lead durations." );
+                LOGGER.trace( "Building time windows for issued dates and lead durations." );
 
                 return TimeWindowGenerator.getIssuedDatesAndLeadDurationTimeWindows( pairConfig );
             }
@@ -78,7 +78,7 @@ public final class TimeWindowGenerator
         // One big pool
         else
         {
-            LOGGER.debug( "Building one big time window." );
+            LOGGER.trace( "Building one big time window." );
 
             return Collections.singleton( TimeWindowGenerator.getOneBigTimeWindow( pairConfig ) );
         }

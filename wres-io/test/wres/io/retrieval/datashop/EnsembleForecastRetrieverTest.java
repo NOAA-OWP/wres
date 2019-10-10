@@ -156,6 +156,7 @@ public class EnsembleForecastRetrieverTest
                                             Ensemble.of( 51.0, 86.0, 121.0 ) ) )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T05:00:00Z" ),
                                             Ensemble.of( 58.0, 93.0, 128.0 ) ) )
+                       .setTimeScale( TimeScale.of() )
                        .build();
 
         // Actual series equals expected series

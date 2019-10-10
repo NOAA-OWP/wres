@@ -77,12 +77,15 @@ public class SingleValuedPoolGenerator implements Supplier<List<Supplier<PoolOfP
      * 
      * @param project the project
      * @param feature the feature 
+     * @param unitMapper the unit mapper
      * @return an instance
+     * @throws NullPointerException if any input is null
+     * @throws IllegalArgumentException if the declaration is inconsistent with the type of pool expected 
      */
 
-    public static SingleValuedPoolGenerator of( Project project, Feature feature )
+    public static SingleValuedPoolGenerator of( Project project, Feature feature, UnitMapper unitMapper )
     {
-        return new SingleValuedPoolGenerator( project, feature );
+        return new SingleValuedPoolGenerator( project, feature, unitMapper );
     }
 
     @Override
@@ -96,16 +99,18 @@ public class SingleValuedPoolGenerator implements Supplier<List<Supplier<PoolOfP
      * 
      * @param projectthe project
      * @param feature the feature
+     * @param unitMapper the unit mapper
      * @throws NullPointerException if any input is null
      * @throws IllegalArgumentException if the declaration is inconsistent with the type of pool expected
      */
 
-    private SingleValuedPoolGenerator( Project project, Feature feature )
+    private SingleValuedPoolGenerator( Project project, Feature feature, UnitMapper unitMapper )
     {
         Objects.requireNonNull( project );
         Objects.requireNonNull( feature );
+        Objects.requireNonNull( unitMapper );
 
-        this.pools = this.createPools( project, feature );
+        this.pools = this.createPools( project, feature, unitMapper );
     }
 
     /**
@@ -113,11 +118,13 @@ public class SingleValuedPoolGenerator implements Supplier<List<Supplier<PoolOfP
      * 
      * @param project the project
      * @param feature the feature
+     * @param unitMapper the unit mapper
      * @return a collection of pools
      * @throws PoolCreationException if the pools could not be created for any reason
      */
 
-    private List<Supplier<PoolOfPairs<Double, Double>>> createPools( Project project, Feature feature )
+    private List<Supplier<PoolOfPairs<Double, Double>>>
+            createPools( Project project, Feature feature, UnitMapper unitMapper )
     {
         // Project identifier
         int projectId = project.getId();
@@ -133,6 +140,15 @@ public class SingleValuedPoolGenerator implements Supplier<List<Supplier<PoolOfP
         Inputs inputsConfig = projectConfig.getInputs();
 
         TimeScale desiredTimeScale = project.getDesiredTimeScale();
+
+        // Log absence of the desired time scale
+        if ( Objects.isNull( desiredTimeScale ) )
+        {
+            LOGGER.debug( "While creating pool suppliers for project '{}' and feature '{}', "
+                          + "discovered that the desired time scale was missing.",
+                          projectId,
+                          featureString );
+        }
 
         // Create the common builder
         PoolOfPairsSupplierBuilder<Double, Double> builder = new PoolOfPairsSupplierBuilder<>();
@@ -151,9 +167,7 @@ public class SingleValuedPoolGenerator implements Supplier<List<Supplier<PoolOfP
             int leftVariableFeatureId = project.getLeftVariableFeatureId( feature );
             int rightVariableFeatureId = project.getRightVariableFeatureId( feature );
 
-            // Unit mapper
             String desiredMeasurementUnits = pairConfig.getUnit();
-            UnitMapper unitMapper = UnitMapper.of( desiredMeasurementUnits );
 
             // Climatological data required?
             if ( project.usesProbabilityThresholds() )

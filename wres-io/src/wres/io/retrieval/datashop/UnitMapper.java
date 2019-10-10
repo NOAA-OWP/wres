@@ -24,7 +24,7 @@ import wres.io.utilities.ScriptBuilder;
  * @author james.brown@hydrosolved.com
  */
 
-class UnitMapper
+public class UnitMapper
 {
     /**
      * Logger.
@@ -50,6 +50,7 @@ class UnitMapper
      * Returns an instance.
      * 
      * @param desiredMeasurementUnit the desired units
+     * @return an instance
      * @throws NullPointerException if the input is null
      * @throws DataAccessException if the data could not be accessed 
      */

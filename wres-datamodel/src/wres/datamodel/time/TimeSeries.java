@@ -153,16 +153,28 @@ public class TimeSeries<T>
     }
 
     /**
-     * Returns the {@link TimeScale} associated with the events.
+     * Returns the {@link TimeScale} associated with the events or <code>null</code> if {@link #hasTimeScale()} returns
+     * <code>false</code>.
      * 
-     * @return the time-scale
+     * @return the time-scale or null
      */
 
     public TimeScale getTimeScale()
     {
         return this.timeScale;
     }
+    
+    /**
+     * Returns <code>true</code> if the time-scale is known, otherwise <code>false</code>.
+     * 
+     * @return true if the time scale is known, otherwise false
+     */
 
+    public boolean hasTimeScale()
+    {
+        return Objects.nonNull( this.timeScale );
+    }
+    
     /**
      * Returns the reference datetime.
      * 
@@ -249,10 +261,9 @@ public class TimeSeries<T>
 
         if ( Objects.isNull( builder.timeScale ) )
         {
-            this.timeScale = TimeScale.of();
-
-            LOGGER.trace( "No time-scale information was provided for time-series {}: building a time-series with a "
-                          + "default time-scale.",
+            this.timeScale = null;
+            
+            LOGGER.trace( "No time-scale information was provided for time-series {}.",
                           this.hashCode() );
         }
         else
@@ -361,8 +372,8 @@ public class TimeSeries<T>
             {
                 throw new IllegalArgumentException( "Attemped to add an event at the same valid datetime as an "
                                                     + "existing event, which is not allowed. The duplicate event "
-                                                    + "time is '"
-                                                    + event.getTime()
+                                                    + "by time is '"
+                                                    + event
                                                     + "'." );
             }
 

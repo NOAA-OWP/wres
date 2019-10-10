@@ -91,15 +91,7 @@ public class TimeSeriesPairerByExactTime<L, R> implements TimeSeriesPairer<L, R>
         Objects.requireNonNull( left, "Cannot pair a left time-series that is null." );
         Objects.requireNonNull( right, "Cannot pair a right time-series that is null." );
 
-        if ( !left.getTimeScale().equals( right.getTimeScale() ) )
-        {
-            throw new PairingException( "Cannot pair two datasets with different time scales. The left time-series "
-                                        + "has a time-scale of '"
-                                        + left.getTimeScale()
-                                        + "' and the right time-series has a time-scale of '"
-                                        + right.getTimeScale()
-                                        + "'." );
-        }
+        this.validateTimeScalesForPairing( left, right );
 
         Map<Instant, Event<L>> mapper = new TreeMap<>();
 
@@ -157,6 +149,59 @@ public class TimeSeriesPairerByExactTime<L, R> implements TimeSeriesPairer<L, R>
                                                   .addEvents( pairs )
                                                   .setTimeScale( left.getTimeScale() )
                                                   .build();
+    }
+
+    /**
+     * Validates the time-scale information for pairing.
+     * 
+     * @param left the left series
+     * @param right the right series
+     * @throws PairingException if the scales are inconsistent
+     */
+
+    private void validateTimeScalesForPairing( TimeSeries<L> left, TimeSeries<R> right )
+    {
+        if ( left.hasTimeScale() && right.hasTimeScale() && !left.getTimeScale().equals( right.getTimeScale() ) )
+        {
+            throw new PairingException( "Cannot pair two datasets with different time scales. The left time-series "
+                                        + "has a time-scale of '"
+                                        + left.getTimeScale()
+                                        + "' and the right time-series has a time-scale of '"
+                                        + right.getTimeScale()
+                                        + "'." );
+        }
+
+        if ( !left.hasTimeScale() && LOGGER.isTraceEnabled() )
+        {
+            String add = "";
+            if ( right.hasTimeScale() )
+            {
+                add = " which has time scale " + right.getTimeScale().toString() + ",";
+            }
+
+            LOGGER.trace( "While attempting to pair left time-series {} with right time-series {},{} discovered that "
+                          + "the left time-series has missing time scale information. Proceeding and assuming that the "
+                          + "left and right time-series have equivalent time scales.",
+                          left.hashCode(),
+                          right.hashCode(),
+                          add );
+        }
+
+        if ( !right.hasTimeScale() && LOGGER.isTraceEnabled() )
+        {
+            String add = "";
+            if ( left.hasTimeScale() )
+            {
+                add = ", which has time scale " + left.getTimeScale().toString() + ", ";
+            }
+
+            LOGGER.trace( "While attempting to pair left time-series {}{} with right time-series {}, discovered that "
+                          + "the right time-series has missing time scale information. Proceeding and assuming that "
+                          + "the left and right time-series have equivalent time scales.",
+                          left.hashCode(),
+                          right.hashCode(),
+                          add );
+        }
     }
 
     /**

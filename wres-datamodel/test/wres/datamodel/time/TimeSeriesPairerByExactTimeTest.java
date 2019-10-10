@@ -235,7 +235,7 @@ public class TimeSeriesPairerByExactTimeTest
         TimeSeriesPairer<Object, Object> pairer = TimeSeriesPairerByExactTime.of();
 
         TimeSeries<Object> seriesOne =
-                new TimeSeries.TimeSeriesBuilder<>().build();
+                new TimeSeries.TimeSeriesBuilder<>().setTimeScale( TimeScale.of() ).build();
 
         TimeSeries<Object> seriesTwo =
                 new TimeSeries.TimeSeriesBuilder<>().setTimeScale( TimeScale.of( Duration.ofHours( 1 ) ) ).build();

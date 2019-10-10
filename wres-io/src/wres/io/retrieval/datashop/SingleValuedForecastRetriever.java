@@ -30,6 +30,20 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
 {
 
     /**
+     * <code>ORDER BY</code> clause, which is repeated several times.
+     */
+    
+    private static final String ORDER_BY_OCCURRENCES_SERIES_ID_TS_INITIALIZATION_DATE_VALID_TIME = 
+            "ORDER BY occurrences, series_id, TS.initialization_date, valid_time;";
+
+    /**
+     * <code>GROUP BY</code> clause, which is repeated several times.
+     */
+    
+    private static final String GROUP_BY_SERIES_ID_TSV_LEAD_TSV_SERIES_VALUE = 
+            "GROUP BY series_id, TSV.lead, TSV.series_value";
+
+    /**
      * Script string re-used several times. 
      */
 
@@ -107,8 +121,9 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         // Time window constraint for individual series?
         this.addTimeWindowClause( scripter, 0 );
 
-        // Add ORDER BY clause
-        scripter.addLine( "ORDER BY TSV.lead;" );
+        // Add GROUP BY and ORDER BY clauses
+        scripter.addLine( GROUP_BY_SERIES_ID_TSV_LEAD_TSV_SERIES_VALUE ); // #56214-272
+        scripter.addLine( ORDER_BY_OCCURRENCES_SERIES_ID_TS_INITIALIZATION_DATE_VALID_TIME );
 
         script = scripter.toString();
 
@@ -198,8 +213,9 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         identifiers.forEach( next -> joiner.add( Long.toString( next ) ) );
         scripter.addTab( 1 ).addLine( "AND TS.timeseries_id = ANY( '", joiner.toString(), "' )::integer[]" );
 
-        // Add ORDER BY clause
-        scripter.addLine( "ORDER BY TS.initialization_date, TSV.lead;" );
+        // Add GROUP BY and ORDER BY clauses
+        scripter.addLine( GROUP_BY_SERIES_ID_TSV_LEAD_TSV_SERIES_VALUE ); // #56214-272
+        scripter.addLine( ORDER_BY_OCCURRENCES_SERIES_ID_TS_INITIALIZATION_DATE_VALID_TIME );
 
         String script = scripter.toString();
 
@@ -234,7 +250,9 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         // Add time window constraint
         this.addTimeWindowClause( scripter, 0 );
         
-        scripter.addLine( "ORDER BY TS.initialization_date, TSV.lead;" );
+        // Add GROUP BY and ORDER BY clauses
+        scripter.addLine( GROUP_BY_SERIES_ID_TSV_LEAD_TSV_SERIES_VALUE ); // #56214-272
+        scripter.addLine( ORDER_BY_OCCURRENCES_SERIES_ID_TS_INITIALIZATION_DATE_VALID_TIME );
 
         String script = scripter.toString();
 
@@ -295,8 +313,8 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         ScriptBuilder scripter = new ScriptBuilder();
 
         scripter.addLine( "SELECT " );
-        scripter.addTab().addLine( "TS.initialization_date + INTERVAL ''1 MINUTE'' * TSV.lead AS valid_time," );
         scripter.addTab().addLine( "TS.initialization_date AS reference_time," );
+        scripter.addTab().addLine( "TS.initialization_date + INTERVAL ''1 MINUTE'' * TSV.lead AS valid_time," );
         scripter.addTab().addLine( "TSV.series_value AS measurement," );
         scripter.addTab().addLine( "TS.measurementunit_id" ); 
         scripter.addTab().addLine( FROM_WRES_TIME_SERIES_TS );
@@ -319,13 +337,13 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
 
         scripter.addLine( "SELECT " );
         scripter.addTab().addLine( "TS.timeseries_id AS series_id," );
-        scripter.addTab().addLine( "TS.initialization_date + INTERVAL '1' MINUTE * TSV.lead AS valid_time," );
         scripter.addTab().addLine( "TS.initialization_date AS reference_time," );
+        scripter.addTab().addLine( "TS.initialization_date + INTERVAL '1' MINUTE * TSV.lead AS valid_time," );
         scripter.addTab().addLine( "TSV.series_value AS measurement," );
         scripter.addTab().addLine( "TS.measurementunit_id," );
         scripter.addTab().addLine( "TS.scale_period," );
         scripter.addTab().addLine( "TS.scale_function," );
-        scripter.addTab().addLine( "TS.measurementunit_id" ); 
+        scripter.addTab().addLine( "COUNT(*) AS occurrences" );
         scripter.addLine( FROM_WRES_TIME_SERIES_TS );
         scripter.addTab().addLine( "INNER JOIN wres.TimeSeriesValue TSV" );
         scripter.addTab( 2 ).addLine( "ON TSV.timeseries_id = TS.timeseries_id" );

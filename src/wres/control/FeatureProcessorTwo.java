@@ -21,6 +21,7 @@ import wres.config.generated.DatasourceType;
 import wres.config.generated.DestinationType;
 import wres.config.generated.ProjectConfig;
 import wres.control.ProcessorHelper.ExecutorServices;
+import wres.control.ProcessorHelper.SharedWriters;
 import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
@@ -33,9 +34,8 @@ import wres.engine.statistics.metric.processing.MetricProcessor;
 import wres.io.config.ConfigHelper;
 import wres.io.project.Project;
 import wres.io.retrieval.datashop.SingleValuedPoolGenerator;
+import wres.io.retrieval.datashop.UnitMapper;
 import wres.util.IterationFailedException;
-import wres.io.writing.SharedSampleDataWriters;
-import wres.io.writing.SharedStatisticsWriters;
 import wres.io.writing.commaseparated.pairs.PairsWriter;
 
 /**
@@ -83,7 +83,7 @@ class FeatureProcessorTwo implements Supplier<FeatureProcessingResult>
      * The shared writers.
      */
 
-    private final SharedStatisticsWriters sharedWriters;
+    private final SharedWriters sharedWriters;
 
     /**
      * Error message.
@@ -92,16 +92,10 @@ class FeatureProcessorTwo implements Supplier<FeatureProcessingResult>
     private final String errorMessage;
 
     /**
-     * Shared writers for paired sample data.
+     * Unit mapper.
      */
 
-    private SharedSampleDataWriters sharedSampleWriters;
-
-    /**
-     * Shared writers for paired sample data associated with a baseline source.
-     */
-
-    private SharedSampleDataWriters sharedBaselineSampleWriters;
+    private final UnitMapper unitMapper;
 
     /**
      * Build a processor. 
@@ -109,41 +103,32 @@ class FeatureProcessorTwo implements Supplier<FeatureProcessingResult>
      * @param feature the feature to process
      * @param resolvedProject the resolved project
      * @param project the project to use
+     * @param unitMapper the unit mapper
      * @param executors the executors for pairs, thresholds, and metrics
-     * @param sharedStatisticsWriters writers of statistics that are shared across features
-     * @param sharedSampleWriters writers of sample data that are shared across features
-     * @param sharedBaselineSampleWriters writers of baseline sample data that are shared across features
-     * @throws NullPointerException if any input is null
+     * @param sharedWriters shared writers
+     * @throws NullPointerException if any required input is null
      */
 
     FeatureProcessorTwo( FeaturePlus feature,
                          ResolvedProject resolvedProject,
                          Project project,
+                         UnitMapper unitMapper,
                          ExecutorServices executors,
-                         SharedStatisticsWriters sharedStatisticsWriters,
-                         SharedSampleDataWriters sharedSampleWriters,
-                         SharedSampleDataWriters sharedBaselineSampleWriters )
+                         SharedWriters sharedWriters )
     {
 
         Objects.requireNonNull( feature );
         Objects.requireNonNull( resolvedProject );
         Objects.requireNonNull( executors );
-        Objects.requireNonNull( sharedStatisticsWriters );
-        Objects.requireNonNull( sharedSampleWriters );
-
-        // Baseline pair writer is conditionally required
-        if ( Objects.nonNull( project.getProjectConfig().getInputs().getBaseline() ) )
-        {
-            Objects.requireNonNull( sharedSampleWriters );
-        }
+        Objects.requireNonNull( sharedWriters );
+        Objects.requireNonNull( unitMapper );
 
         this.feature = feature;
         this.resolvedProject = resolvedProject;
         this.project = project;
         this.executors = executors;
-        this.sharedWriters = sharedStatisticsWriters;
-        this.sharedSampleWriters = sharedSampleWriters;
-        this.sharedBaselineSampleWriters = sharedBaselineSampleWriters;
+        this.sharedWriters = sharedWriters;
+        this.unitMapper = unitMapper;
 
         // Error message
         String featureDescription = ConfigHelper.getFeatureDescription( this.feature );
@@ -177,16 +162,20 @@ class FeatureProcessorTwo implements Supplier<FeatureProcessingResult>
             if ( type == DatasourceType.ENSEMBLE_FORECASTS )
             {
 //                EnsemblePoolGenerator poolGenerator =
-//                        EnsemblePoolGenerator.of( this.project, this.feature.getFeature() );
+//                        EnsemblePoolGenerator.of( this.project, this.feature.getFeature(), this.unitMapper );
 //                List<Supplier<PoolOfPairs<Double, Ensemble>>> pools = poolGenerator.get();
                 List<Supplier<PoolOfPairs<Double, Ensemble>>> pools = null;
 
                 // Stand-up the pair writers
-                PairsWriter<Double, Ensemble> pairsWriter = this.sharedSampleWriters.getEnsembleWriter();
+                PairsWriter<Double, Ensemble> pairsWriter = null;
                 PairsWriter<Double, Ensemble> basePairsWriter = null;
-                if ( Objects.nonNull( this.sharedBaselineSampleWriters ) )
+                if ( this.sharedWriters.hasSharedSampleWriters() )
                 {
-                    basePairsWriter = this.sharedBaselineSampleWriters.getEnsembleWriter();
+                    pairsWriter = this.sharedWriters.getSampleDataWriters().getEnsembleWriter();
+                }
+                if ( this.sharedWriters.hasSharedBaselineSampleWriters() )
+                {
+                    basePairsWriter = this.sharedWriters.getBaselineSampleDataWriters().getEnsembleWriter();
                 }
 
                 MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
@@ -205,15 +194,19 @@ class FeatureProcessorTwo implements Supplier<FeatureProcessingResult>
             else
             {
                 SingleValuedPoolGenerator poolGenerator =
-                        SingleValuedPoolGenerator.of( this.project, this.feature.getFeature() );
+                        SingleValuedPoolGenerator.of( this.project, this.feature.getFeature(), this.unitMapper );
                 List<Supplier<PoolOfPairs<Double, Double>>> pools = poolGenerator.get();
 
                 // Stand-up the pair writers
-                PairsWriter<Double, Double> pairsWriter = this.sharedSampleWriters.getSingleValuedWriter();
+                PairsWriter<Double, Double> pairsWriter = null;
                 PairsWriter<Double, Double> basePairsWriter = null;
-                if ( Objects.nonNull( this.sharedBaselineSampleWriters ) )
+                if ( this.sharedWriters.hasSharedSampleWriters() )
                 {
-                    basePairsWriter = this.sharedBaselineSampleWriters.getSingleValuedWriter();
+                    pairsWriter = this.sharedWriters.getSampleDataWriters().getSingleValuedWriter();
+                }
+                if ( this.sharedWriters.hasSharedBaselineSampleWriters() )
+                {
+                    basePairsWriter = this.sharedWriters.getBaselineSampleDataWriters().getSingleValuedWriter();
                 }
 
                 MetricProcessor<PoolOfPairs<Double, Double>> processor =
@@ -278,7 +271,7 @@ class FeatureProcessorTwo implements Supplier<FeatureProcessingResult>
                                              ProduceOutputsFromStatistics outputProcessor =
                                                      ProduceOutputsFromStatistics.of( this.resolvedProject,
                                                                                       onlyWriteTheseTypes,
-                                                                                      this.sharedWriters );
+                                                                                      this.sharedWriters.getStatisticsWriters() );
                                              outputProcessor.accept( metricOutputs );
                                              outputProcessor.close();
                                              return outputProcessor.get();
@@ -289,7 +282,7 @@ class FeatureProcessorTwo implements Supplier<FeatureProcessingResult>
                 listOfFutures.add( statisticsTasks );
 
                 // Create a task for serializing the sample data
-                if ( Objects.nonNull( this.sharedSampleWriters ) )
+                if ( Objects.nonNull( this.sharedWriters.getSampleDataWriters() ) )
                 {
                     CompletableFuture<Set<Path>> sampleDataTask =
                             this.getPairWritingTask( nextInput, false, sampleWriter );
@@ -298,7 +291,8 @@ class FeatureProcessorTwo implements Supplier<FeatureProcessingResult>
                 }
 
                 // Create a task for serializing the baseline sample data
-                if ( Objects.nonNull( this.sharedBaselineSampleWriters ) )
+                if ( Objects.nonNull( projectConfig.getInputs().getBaseline() )
+                     && Objects.nonNull( this.sharedWriters.getBaselineSampleDataWriters() ) )
                 {
                     CompletableFuture<Set<Path>> baselineSampleDataTask =
                             this.getPairWritingTask( nextInput,
@@ -437,7 +431,7 @@ class FeatureProcessorTwo implements Supplier<FeatureProcessingResult>
                       ProduceOutputsFromStatistics endOfPipeline =
                               ProduceOutputsFromStatistics.of( this.resolvedProject,
                                                                nowWriteTheseTypes,
-                                                               this.sharedWriters ) )
+                                                               this.sharedWriters.getStatisticsWriters() ) )
                 {
                     // Generate output
                     endOfPipeline.accept( processor.getCachedMetricOutput() );

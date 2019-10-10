@@ -65,6 +65,7 @@ public class TimeSeriesTest
                             .addEvent( iterator.next() )
                             .addEvent( iterator.next() )
                             .addEvent( iterator.next() )
+                            .setTimeScale( TimeScale.of() )
                             .build();
     }
 
@@ -110,9 +111,15 @@ public class TimeSeriesTest
         assertEquals( this.testSeries.hashCode(), this.testSeries.hashCode() );
 
         // Consistent when invoked multiple times
-        TimeSeries<Double> test = TimeSeries.of( this.referenceTime,
-                                                 ReferenceTimeType.T0,
-                                                 this.events );
+        TimeSeries<Double> test =
+                new TimeSeriesBuilder<Double>().addReferenceTime( this.referenceTime, ReferenceTimeType.T0 )
+                                               .addEvents( this.events )
+                                               .setTimeScale( TimeScale.of() )
+                                               .build();
+
+        TimeSeries.of( this.referenceTime,
+                       ReferenceTimeType.T0,
+                       this.events );
         for ( int i = 0; i < 100; i++ )
         {
             assertEquals( this.testSeries.hashCode(), test.hashCode() );
@@ -131,15 +138,19 @@ public class TimeSeriesTest
 
         // Symmetric
         TimeSeries<Double> anotherTestSeries =
-                TimeSeries.of( Collections.singletonMap( ReferenceTimeType.T0, this.referenceTime ),
-                               this.events );
+                new TimeSeriesBuilder<Double>().addReferenceTime( this.referenceTime, ReferenceTimeType.T0 )
+                                               .addEvents( this.events )
+                                               .setTimeScale( TimeScale.of() )
+                                               .build();
 
         assertTrue( anotherTestSeries.equals( this.testSeries ) && this.testSeries.equals( anotherTestSeries ) );
 
         // Transitive
-        TimeSeries<Double> oneMoreTestSeries = TimeSeries.of( this.referenceTime,
-                                                              ReferenceTimeType.T0,
-                                                              this.events );
+        TimeSeries<Double> oneMoreTestSeries =
+                new TimeSeriesBuilder<Double>().addReferenceTime( this.referenceTime, ReferenceTimeType.T0 )
+                                               .addEvents( this.events )
+                                               .setTimeScale( TimeScale.of() )
+                                               .build();
 
         assertTrue( this.testSeries.equals( anotherTestSeries ) && anotherTestSeries.equals( oneMoreTestSeries )
                     && this.testSeries.equals( oneMoreTestSeries ) );
@@ -220,8 +231,8 @@ public class TimeSeriesTest
                 assertThrows( IllegalArgumentException.class, () -> builder.addEvent( Event.of( Instant.MIN, 2.0 ) ) );
 
         assertEquals( "Attemped to add an event at the same valid datetime as an existing event, which is not allowed. "
-                      + "The duplicate event time is '"
-                      + Instant.MIN
+                      + "The duplicate event by time is '"
+                      + Event.of( Instant.MIN, 2.0 )
                       + "'.",
                       exception.getMessage() );
     }

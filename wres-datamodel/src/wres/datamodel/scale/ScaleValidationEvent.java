@@ -38,6 +38,11 @@ public class ScaleValidationEvent implements Comparable<ScaleValidationEvent>
         ERROR,
         
         /**
+         * A neutral information message.
+         */
+        INFO,
+        
+        /**
          * An event that represents a validation pass.
          */
         PASS;
@@ -96,8 +101,7 @@ public class ScaleValidationEvent implements Comparable<ScaleValidationEvent>
     }   
 
     /**
-     * Creates a scale validation event that indicates valid scale information.
-     * 
+     * Construct a validation event of type {@link EventType#PASS}.
      * 
      * @param message the message
      * @throws NullPointerException if the message is null
@@ -108,6 +112,19 @@ public class ScaleValidationEvent implements Comparable<ScaleValidationEvent>
     {
         return new ScaleValidationEvent( EventType.PASS, message );
     }
+    
+    /**
+     * Construct a validation event of type {@link EventType#ERROR}.
+     * 
+     * @param message the message
+     * @throws NullPointerException if the message is null
+     * @return a validation event
+     */
+    
+    public static ScaleValidationEvent info( String message )
+    {
+        return new ScaleValidationEvent( EventType.INFO, message );
+    }    
 
     /**
      * Returns the event type.

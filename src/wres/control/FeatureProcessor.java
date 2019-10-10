@@ -20,6 +20,7 @@ import wres.config.FeaturePlus;
 import wres.config.generated.DestinationType;
 import wres.config.generated.ProjectConfig;
 import wres.control.ProcessorHelper.ExecutorServices;
+import wres.control.ProcessorHelper.SharedWriters;
 import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.thresholds.ThresholdsByMetric;
@@ -32,7 +33,6 @@ import wres.io.project.Project;
 import wres.io.retrieval.DataGenerator;
 import wres.util.IterationFailedException;
 import wres.io.writing.SharedSampleDataWriters;
-import wres.io.writing.SharedStatisticsWriters;
 
 /**
  * Encapsulates a task (with subtasks) for processing all verification results associated with one {@link FeaturePlus}.
@@ -48,7 +48,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      */
 
     private static final Logger LOGGER = LoggerFactory.getLogger( FeatureProcessor.class );
-    
+
     /**
      * The feature.
      */
@@ -77,7 +77,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      * The shared writers.
      */
 
-    private final SharedStatisticsWriters sharedWriters;
+    private final SharedWriters sharedWriters;
 
     /**
      * Error message.
@@ -85,44 +85,35 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
 
     private final String errorMessage;
 
-    /**
-     * Shared writers for paired sample data.
-     */
-    
-    private SharedSampleDataWriters sharedSampleWriters;
-
-    /**
-     * Shared writers for paired sample data associated with a baseline source.
-     */
-    
-    private SharedSampleDataWriters sharedBaselineSampleWriters;
 
     /**
      * Build a processor. 
      * 
      * @param feature the feature to process
      * @param resolvedProject the resolved project
-     * @param project the project details to use
+     * @param project the project to use
      * @param executors the executors for pairs, thresholds, and metrics
-     * @param sharedSampleWriters writers of sample data that are shared across features
-     * @param sharedBaselineSampleWriters writers of baseline sample data that are shared across features
+     * @param sharedWriters shared writers
+     * @throws NullPointerException if any required input is null
      */
 
     FeatureProcessor( FeaturePlus feature,
                       ResolvedProject resolvedProject,
                       Project project,
                       ExecutorServices executors,
-                      SharedStatisticsWriters sharedWriters,
-                      SharedSampleDataWriters sharedSampleWriters,
-                      SharedSampleDataWriters sharedBaselineSampleWriters )
+                      SharedWriters sharedWriters )
     {
+
+        Objects.requireNonNull( feature );
+        Objects.requireNonNull( resolvedProject );
+        Objects.requireNonNull( executors );
+        Objects.requireNonNull( sharedWriters );
+
         this.feature = feature;
         this.resolvedProject = resolvedProject;
         this.project = project;
         this.executors = executors;
         this.sharedWriters = sharedWriters;
-        this.sharedSampleWriters = sharedSampleWriters;
-        this.sharedBaselineSampleWriters = sharedBaselineSampleWriters;
 
         // Error message
         String featureDescription = ConfigHelper.getFeatureDescription( this.feature );
@@ -136,9 +127,9 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         if ( LOGGER.isDebugEnabled() )
         {
             LOGGER.debug( "Started feature '{}'",
-                         ConfigHelper.getFeatureDescription( this.feature.getFeature() ) );
+                          ConfigHelper.getFeatureDescription( this.feature.getFeature() ) );
         }
-        
+
         final ProjectConfig projectConfig = this.resolvedProject.getProjectConfig();
         final ThresholdsByMetric thresholds =
                 this.resolvedProject.getThresholdForFeature( this.feature );
@@ -183,7 +174,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                 // 2. Compute statistics from the sample data
                 // 3. Produce outputs from the statistics                
                 SampleDataSupplier pairSupplier = SampleDataSupplier.of( nextInput );
-                
+
                 final CompletableFuture<Set<Path>> statisticsTasks =
                         CompletableFuture.supplyAsync( pairSupplier, this.executors.getPairExecutor() )
                                          .thenApplyAsync( ProduceStatisticsFromSampleData.of( processor ),
@@ -192,7 +183,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                              ProduceOutputsFromStatistics outputProcessor =
                                                      ProduceOutputsFromStatistics.of( this.resolvedProject,
                                                                                       onlyWriteTheseTypes,
-                                                                                      this.sharedWriters );
+                                                                                      this.sharedWriters.getStatisticsWriters() );
                                              outputProcessor.accept( metricOutputs );
                                              outputProcessor.close();
                                              return outputProcessor.get();
@@ -200,24 +191,24 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                                           this.executors.getProductExecutor() );
 
                 // Add the task to the list
-                listOfFutures.add( statisticsTasks );               
+                listOfFutures.add( statisticsTasks );
 
                 // Create a task for serializing the sample data
-                if ( Objects.nonNull( this.sharedSampleWriters ) )
+                if ( this.sharedWriters.hasSharedSampleWriters() )
                 {
                     CompletableFuture<Set<Path>> sampleDataTask =
-                            this.getPairWritingTask( pairSupplier, this.sharedSampleWriters );
+                            this.getPairWritingTask( pairSupplier, this.sharedWriters.getSampleDataWriters() );
 
                     listOfFutures.add( sampleDataTask );
                 }
 
                 // Create a task for serializing the baseline data
                 if ( Objects.nonNull( projectConfig.getInputs().getBaseline() )
-                     && Objects.nonNull( this.sharedBaselineSampleWriters ) )
+                     && this.sharedWriters.hasSharedBaselineSampleWriters() )
                 {
                     CompletableFuture<Set<Path>> baselineSampleDataTask =
                             this.getPairWritingTask( SampleDataSupplier.of( nextInput, true ),
-                                                     this.sharedBaselineSampleWriters );
+                                                     this.sharedWriters.getBaselineSampleDataWriters() );
 
                     listOfFutures.add( baselineSampleDataTask );
                 }
@@ -259,7 +250,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         return new FeatureProcessingResult( this.feature.getFeature(),
                                             allPaths );
     }
-    
+
     /**
      * Returns a task that writes pairs.
      * 
@@ -277,7 +268,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                 },
                                                  this.executors.getProductExecutor() );
     }
-    
+
     /**
      * Generates products at the end of the processing pipeline.
      * 
@@ -302,7 +293,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                       ProduceOutputsFromStatistics endOfPipeline =
                               ProduceOutputsFromStatistics.of( this.resolvedProject,
                                                                nowWriteTheseTypes,
-                                                               this.sharedWriters ) )
+                                                               this.sharedWriters.getStatisticsWriters() ) )
                 {
                     // Generate output
                     endOfPipeline.accept( processor.getCachedMetricOutput() );

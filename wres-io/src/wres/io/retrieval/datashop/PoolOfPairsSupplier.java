@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.StringJoiner;
 import java.util.TreeSet;
 import java.util.function.Supplier;
 import java.util.function.ToDoubleFunction;
@@ -513,7 +514,7 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         TimeSeries<L> scaledLeft = left;
         TimeSeries<R> scaledRight = right;
 
-        if ( !left.getTimeScale().equals( this.getDesiredTimeScale() ) )
+        if ( this.hasDesiredTimeScale() && !this.getDesiredTimeScale().equals( left.getTimeScale() ) )
         {
             if ( LOGGER.isTraceEnabled() )
             {
@@ -551,7 +552,7 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
             PoolOfPairsSupplier.logScaleValidationWarnings( left, upscaledLeft.getValidationEvents() );
         }
 
-        if ( !right.getTimeScale().equals( this.getDesiredTimeScale() ) )
+        if ( this.hasDesiredTimeScale() && !this.getDesiredTimeScale().equals( right.getTimeScale() ) )
         {
             if ( LOGGER.isTraceEnabled() )
             {
@@ -673,6 +674,17 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
     }
 
     /**
+     * Returns <code>true</code> if the desired time scale is available, otherwise <code>false</code>.
+     * 
+     * @return true if the desired time scale is known
+     */
+
+    private boolean hasDesiredTimeScale()
+    {
+        return Objects.nonNull( this.getDesiredTimeScale() );
+    }
+
+    /**
      * Returns the upscaler for left values, if any. Throws an exception if not available, because this is an internal
      * call and is only requested when necessary.
      * 
@@ -742,12 +754,16 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
                                                                         .collect( Collectors.toSet() );
             if ( !warnEvents.isEmpty() )
             {
-                LOGGER.warn( "While rescaling a time-series with reference time {}, encountered {} validation warnings, "
-                             + "as follows",
-                             context.getReferenceTimes().values().iterator().next(),
-                             warnEvents.size() );
+                StringJoiner message = new StringJoiner( System.lineSeparator() );
+                String spacer = "    ";
+                warnEvents.stream().forEach( e -> message.add( spacer + e.toString() ) );
 
-                warnEvents.forEach( e -> LOGGER.warn( e.toString() ) );
+                LOGGER.warn( "While rescaling a time-series with reference time {}, encountered {} validation "
+                             + "warnings, as follows: {}{}",
+                             context.getReferenceTimes().values().iterator().next(),
+                             warnEvents.size(),
+                             System.lineSeparator(),
+                             message );
             }
         }
     }
@@ -776,15 +792,20 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         this.climatologyMapper = builder.climatologyMapper;
 
         // Validate
-        String messageStart = "Cannot build the pool retriever: ";
+        String messageStart = "Cannot build the pool supplier: ";
 
         Objects.requireNonNull( this.right, messageStart + "add a right data source." );
 
         Objects.requireNonNull( this.pairer, messageStart + "add a pairer, in order to pair the data." );
 
-        Objects.requireNonNull( this.desiredTimeScale, messageStart + "add the desired time scale." );
-
         Objects.requireNonNull( this.metadata, messageStart + "add the metadata for the main pairs." );
+
+        if ( !this.hasDesiredTimeScale() )
+        {
+            LOGGER.debug( "While constructing a pool supplier for {}, "
+                          + "discovered that the desired time scale was undefined.",
+                          this.metadata );
+        }
 
         // Needs a climatology source OR a left source
         if ( Objects.isNull( this.climatology ) && Objects.isNull( this.left ) )

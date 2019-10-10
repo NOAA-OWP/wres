@@ -17,8 +17,11 @@ import org.junit.Test;
 
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
+import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.Event;
+import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeWindow;
 
@@ -181,8 +184,12 @@ public final class PoolOfPairsTest
                                  Pair.of( 1.0, 1.0 ) ) );
         }
 
-        TimeSeries<Pair<Double, Double>> firstSeries = TimeSeries.of( basisTime,
-                                                                      first );
+        TimeSeries<Pair<Double, Double>> firstSeries =
+                new TimeSeriesBuilder<Pair<Double, Double>>().addReferenceTime( basisTime, ReferenceTimeType.DEFAULT )
+                                                             .addEvents( first )
+                                                             .setTimeScale( TimeScale.of() )
+                                                             .build();
+
 
         b.addTimeSeries( firstSeries ).setMetadata( meta );
 
@@ -209,8 +216,13 @@ public final class PoolOfPairsTest
                                   Pair.of( 1.0, 1.0 ) ) );
         }
 
-        TimeSeries<Pair<Double, Double>> secondSeries = TimeSeries.of( nextBasisTime,
-                                                                       second );
+        TimeSeries<Pair<Double, Double>> secondSeries =
+                new TimeSeriesBuilder<Pair<Double, Double>>().addReferenceTime( nextBasisTime,
+                                                                                ReferenceTimeType.DEFAULT )
+                                                             .addEvents( second )
+                                                             .setTimeScale( TimeScale.of() )
+                                                             .build();
+
         b.addTimeSeries( secondSeries );
 
         String expectedFirst = "Reference times: {DEFAULT=1985-01-01T00:00:00Z}, "
@@ -392,7 +404,7 @@ public final class PoolOfPairsTest
     @Test
     public void testEquals()
     {
-        
+
 
     }
 

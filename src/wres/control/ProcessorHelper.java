@@ -43,6 +43,7 @@ import wres.engine.statistics.metric.config.MetricConfigHelper;
 import wres.io.Operations;
 import wres.io.config.ConfigHelper;
 import wres.io.project.Project;
+import wres.io.retrieval.datashop.UnitMapper;
 import wres.io.writing.SharedSampleDataWriters;
 import wres.io.writing.SharedStatisticsWriters;
 import wres.io.writing.SharedStatisticsWriters.SharedWritersBuilder;
@@ -158,8 +159,8 @@ class ProcessorHelper
                                                                                outputDirectory ) );
         }
 
-        SharedSampleDataWriters sharedSampleDataWriters = null;
-        SharedSampleDataWriters sharedBaselineSampleDataWriters = null;
+        SharedSampleDataWriters sharedSampleWriters = null;
+        SharedSampleDataWriters sharedBaselineSampleWriters = null;
 
         // If there are multiple destinations for pairs, ignore these. The system chooses the destination.
         // Writing the same pairs, more than once, to that single destination does not make sense.
@@ -172,17 +173,17 @@ class ProcessorHelper
                 decimalFormatter = ConfigHelper.getDecimalFormatter( project.getPairDestinations().get( 0 ) );
             }
 
-            sharedSampleDataWriters =
+            sharedSampleWriters =
                     SharedSampleDataWriters.of( Paths.get( outputDirectory.toString(), PairsWriter.DEFAULT_PAIRS_NAME ),
                                                 durationUnits,
                                                 decimalFormatter );
             // Baseline writer?
             if ( Objects.nonNull( projectConfig.getInputs().getBaseline() ) )
             {
-                sharedBaselineSampleDataWriters = SharedSampleDataWriters.of( Paths.get( outputDirectory.toString(),
-                                                                                         PairsWriter.DEFAULT_BASELINE_PAIRS_NAME ),
-                                                                              durationUnits,
-                                                                              decimalFormatter );
+                sharedBaselineSampleWriters = SharedSampleDataWriters.of( Paths.get( outputDirectory.toString(),
+                                                                                     PairsWriter.DEFAULT_BASELINE_PAIRS_NAME ),
+                                                                          durationUnits,
+                                                                          decimalFormatter );
             }
         }
 
@@ -203,16 +204,23 @@ class ProcessorHelper
         // completion state of features has no value when reported in this way
         ProgressMonitor.deactivate();
 
+        // Share an instance of a unit mapper across features
+        //String desiredMeasurementUnit = projectConfig.getPair().getUnit();
+        //UnitMapper unitMapper = UnitMapper.of( desiredMeasurementUnit );
+
+        SharedWriters sharedWriters = SharedWriters.of( sharedStatisticsWriters,
+                                                        sharedSampleWriters,
+                                                        sharedBaselineSampleWriters );
+
         // Create one task per feature
         for ( FeaturePlus feature : decomposedFeatures )
         {
             Supplier<FeatureProcessingResult> featureProcessor = new FeatureProcessor( feature,
                                                                                        resolvedProject,
                                                                                        project,
+                                                                                       //unitMapper,
                                                                                        executors,
-                                                                                       sharedStatisticsWriters,
-                                                                                       sharedSampleDataWriters,
-                                                                                       sharedBaselineSampleDataWriters );
+                                                                                       sharedWriters );
 
             CompletableFuture<Void> nextFeatureTask = CompletableFuture.supplyAsync( featureProcessor,
                                                                                      executors.getFeatureExecutor() )
@@ -237,13 +245,13 @@ class ProcessorHelper
 
             // Find the paths written to by shared writers
             pathsWrittenTo.addAll( sharedStatisticsWriters.get() );
-            if ( Objects.nonNull( sharedSampleDataWriters ) )
+            if ( sharedWriters.hasSharedSampleWriters() )
             {
-                pathsWrittenTo.addAll( sharedSampleDataWriters.get() );
+                pathsWrittenTo.addAll( sharedWriters.getSampleDataWriters().get() );
             }
-            if ( Objects.nonNull( sharedBaselineSampleDataWriters ) )
+            if ( sharedWriters.hasSharedBaselineSampleWriters() )
             {
-                pathsWrittenTo.addAll( sharedBaselineSampleDataWriters.get() );
+                pathsWrittenTo.addAll( sharedWriters.getBaselineSampleDataWriters().get() );
             }
         }
         catch ( CompletionException e )
@@ -253,16 +261,7 @@ class ProcessorHelper
         finally
         {
             // Clean up by closing shared writers
-            sharedStatisticsWriters.close();
-
-            if ( Objects.nonNull( sharedSampleDataWriters ) )
-            {
-                sharedSampleDataWriters.close();
-            }
-            if ( Objects.nonNull( sharedBaselineSampleDataWriters ) )
-            {
-                sharedBaselineSampleDataWriters.close();
-            }
+            sharedWriters.close();
 
             // Clean-up an empty output directory: #67088
             try ( Stream<Path> outputs = Files.list( outputDirectory ) )
@@ -520,6 +519,152 @@ class ProcessorHelper
         }
     }
 
+    /**
+     * A value object for shared writers.
+     */
+
+    static class SharedWriters
+    {
+        /**
+         * Shared writers for statstics.
+         */
+
+        private final SharedStatisticsWriters sharedStatisticsWriters;
+
+        /**
+         * Shared writers for sample data.
+         */
+
+        private final SharedSampleDataWriters sharedSampleWriters;
+
+        /**
+         * Shared writers for baseline sampled data.
+         */
+
+        private final SharedSampleDataWriters sharedBaselineSampleWriters;
+
+        /**
+         * Returns an instance.
+         * 
+         * @param sharedStatisticsWriters
+         * @param sharedSampleWriters
+         * @param sharedBaselineSampleWriters
+         */
+        static SharedWriters of( SharedStatisticsWriters sharedStatisticsWriters,
+                                 SharedSampleDataWriters sharedSampleWriters,
+                                 SharedSampleDataWriters sharedBaselineSampleWriters )
+
+        {
+            return new SharedWriters( sharedStatisticsWriters, sharedSampleWriters, sharedBaselineSampleWriters );
+        }
+
+        /**
+         * Returns the shared statistics writers.
+         * 
+         * @return the shared statistics writers.
+         */
+
+        SharedStatisticsWriters getStatisticsWriters()
+        {
+            return this.sharedStatisticsWriters;
+        }
+
+        /**
+         * Returns the shared sample data writers.
+         * 
+         * @return the shared sample data writers.
+         */
+
+        SharedSampleDataWriters getSampleDataWriters()
+        {
+            return this.sharedSampleWriters;
+        }
+
+        /**
+         * Returns the shared sample data writers for baseline data.
+         * 
+         * @return the shared sample data writers  for baseline data.
+         */
+
+        SharedSampleDataWriters getBaselineSampleDataWriters()
+        {
+            return this.sharedBaselineSampleWriters;
+        }
+
+        /**
+         * Returns <code>true</code> if shared statistics writers are available, otherwise <code>false</code>.
+         * 
+         * @return true if shared statistics writers are available
+         */
+
+        boolean hasSharedStatisticsWriters()
+        {
+            return Objects.nonNull( this.sharedStatisticsWriters );
+        }
+
+        /**
+         * Returns <code>true</code> if shared sample writers are available, otherwise <code>false</code>.
+         * 
+         * @return true if shared sample writers are available
+         */
+
+        boolean hasSharedSampleWriters()
+        {
+            return Objects.nonNull( this.sharedSampleWriters );
+        }
+
+        /**
+         * Returns <code>true</code> if shared sample writers are available for the baseline samples, otherwise 
+         * <code>false</code>.
+         * 
+         * @return true if shared sample writers are available for the baseline samples
+         */
+
+        boolean hasSharedBaselineSampleWriters()
+        {
+            return Objects.nonNull( this.sharedBaselineSampleWriters );
+        }
+
+        /**
+         * Attempts to close all shared writers.
+         * @throws IOException when a resource could not be closed
+         */
+
+        void close() throws IOException
+        {
+            if ( this.hasSharedStatisticsWriters() )
+            {
+                this.getStatisticsWriters().close();
+            }
+
+            if ( this.hasSharedSampleWriters() )
+            {
+                this.getSampleDataWriters().close();
+            }
+
+            if ( this.hasSharedBaselineSampleWriters() )
+            {
+                this.getBaselineSampleDataWriters().close();
+            }
+        }
+
+        /**
+         * Hidden constructor.
+         * 
+         * @param sharedStatisticsWriters
+         * @param sharedSampleWriters
+         * @param sharedBaselineSampleWriters
+         */
+        private SharedWriters( SharedStatisticsWriters sharedStatisticsWriters,
+                               SharedSampleDataWriters sharedSampleWriters,
+                               SharedSampleDataWriters sharedBaselineSampleWriters )
+        {
+            this.sharedStatisticsWriters = sharedStatisticsWriters;
+            this.sharedSampleWriters = sharedSampleWriters;
+            this.sharedBaselineSampleWriters = sharedBaselineSampleWriters;
+        }
+
+    }
 
     private ProcessorHelper()
     {
