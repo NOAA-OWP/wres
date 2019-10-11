@@ -18,12 +18,6 @@
         <unit>CMS</unit>
         <feature locationId="GLOO2" />
         <leadHours minimum="-126" maximum="120" />
-        <!-- See #55216, notably #55216-57-->
-        <leadTimesPoolingWindow>
-            <period>6</period>
-            <frequency>6</frequency>
-            <unit>hours</unit>
-        </leadTimesPoolingWindow>
     </pair>
 
     <metrics>
