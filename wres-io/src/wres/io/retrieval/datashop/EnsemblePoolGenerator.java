@@ -2,6 +2,7 @@ package wres.io.retrieval.datashop;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -20,6 +21,7 @@ import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.config.generated.SourceTransformationType;
+import wres.datamodel.Ensemble;
 import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
@@ -29,11 +31,11 @@ import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesOfDoubleBasicUpscaler;
+import wres.datamodel.time.TimeSeriesOfEnsembleUpscaler;
 import wres.datamodel.time.TimeSeriesPairer;
 import wres.datamodel.time.TimeSeriesPairerByExactTime;
 import wres.datamodel.time.TimeSeriesUpscaler;
 import wres.datamodel.time.TimeWindow;
-import wres.datamodel.time.generators.PersistenceGenerator;
 import wres.datamodel.time.generators.TimeWindowGenerator;
 import wres.io.config.ConfigHelper;
 import wres.io.config.LeftOrRightOrBaseline;
@@ -41,39 +43,47 @@ import wres.io.project.Project;
 import wres.io.retrieval.datashop.PoolOfPairsSupplier.PoolOfPairsSupplierBuilder;
 
 /**
- * Generates a collection of pools that contain single-valued pairs using a {@link Project} supplied on construction, 
+ * Generates a collection of pools that contain ensemble pairs using a {@link Project} supplied on construction, 
  * together with a particular {@link Feature} for which pools are required.
  * 
  * @author james.brown@hydrosolved.com
  */
 
-public class SingleValuedPoolGenerator implements Supplier<List<Supplier<PoolOfPairs<Double, Double>>>>
+public class EnsemblePoolGenerator implements Supplier<List<Supplier<PoolOfPairs<Double, Ensemble>>>>
 {
 
     /**
      * Logger.
      */
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( SingleValuedPoolGenerator.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( EnsemblePoolGenerator.class );
 
     /**
      * The pool suppliers.
      */
 
-    private final List<Supplier<PoolOfPairs<Double, Double>>> pools;
+    private final List<Supplier<PoolOfPairs<Double, Ensemble>>> pools;
 
     /**
-     * The upscaler. TODO: expose to constructor.
+     * The left upscaler. TODO: expose to constructor.
      */
 
-    private final TimeSeriesUpscaler<Double> upscaler = TimeSeriesOfDoubleBasicUpscaler.of();
+    private final TimeSeriesUpscaler<Double> leftUpscaler = TimeSeriesOfDoubleBasicUpscaler.of();
+
+    /**
+     * The right upscaler, which uses the same strategy as the left. TODO: expose to constructor.
+     */
+
+    private final TimeSeriesUpscaler<Ensemble> rightUpscaler = TimeSeriesOfEnsembleUpscaler.of( this.leftUpscaler );
 
     /**
      * The pairer, which admits finite value pairs. TODO: expose to constructor.
      */
 
-    private final TimeSeriesPairer<Double, Double> pairer = TimeSeriesPairerByExactTime.of( Double::isFinite,
-                                                                                            Double::isFinite );
+    private final TimeSeriesPairer<Double, Ensemble> pairer =
+            TimeSeriesPairerByExactTime.of( Double::isFinite,
+                                            en -> Arrays.stream( en.getMembers() )
+                                                        .allMatch( Double::isFinite ) );
 
     /**
      * Returns an instance that generates pools for a particular project and feature.
@@ -86,13 +96,13 @@ public class SingleValuedPoolGenerator implements Supplier<List<Supplier<PoolOfP
      * @throws IllegalArgumentException if the declaration is inconsistent with the type of pool expected 
      */
 
-    public static SingleValuedPoolGenerator of( Project project, Feature feature, UnitMapper unitMapper )
+    public static EnsemblePoolGenerator of( Project project, Feature feature, UnitMapper unitMapper )
     {
-        return new SingleValuedPoolGenerator( project, feature, unitMapper );
+        return new EnsemblePoolGenerator( project, feature, unitMapper );
     }
 
     @Override
-    public List<Supplier<PoolOfPairs<Double, Double>>> get()
+    public List<Supplier<PoolOfPairs<Double, Ensemble>>> get()
     {
         return this.pools;
     }
@@ -107,7 +117,7 @@ public class SingleValuedPoolGenerator implements Supplier<List<Supplier<PoolOfP
      * @throws IllegalArgumentException if the declaration is inconsistent with the type of pool expected
      */
 
-    private SingleValuedPoolGenerator( Project project, Feature feature, UnitMapper unitMapper )
+    private EnsemblePoolGenerator( Project project, Feature feature, UnitMapper unitMapper )
     {
         Objects.requireNonNull( project );
         Objects.requireNonNull( feature );
@@ -126,9 +136,9 @@ public class SingleValuedPoolGenerator implements Supplier<List<Supplier<PoolOfP
      * @throws PoolCreationException if the pools could not be created for any reason
      */
 
-    private List<Supplier<PoolOfPairs<Double, Double>>> createPools( Project project, 
-                                                                     Feature feature, 
-                                                                     UnitMapper unitMapper )
+    private List<Supplier<PoolOfPairs<Double, Ensemble>>> createPools( Project project,
+                                                                       Feature feature,
+                                                                       UnitMapper unitMapper )
     {
         // Project identifier
         int projectId = project.getId();
@@ -144,9 +154,9 @@ public class SingleValuedPoolGenerator implements Supplier<List<Supplier<PoolOfP
         Inputs inputsConfig = projectConfig.getInputs();
 
         // Create the common builder
-        PoolOfPairsSupplierBuilder<Double, Double> builder = new PoolOfPairsSupplierBuilder<>();
-        builder.setLeftUpscaler( this.getUpscaler() )
-               .setRightUpscaler( this.getUpscaler() )
+        PoolOfPairsSupplierBuilder<Double, Ensemble> builder = new PoolOfPairsSupplierBuilder<>();
+        builder.setLeftUpscaler( this.getLeftUpscaler() )
+               .setRightUpscaler( this.getRightUpscaler() )
                .setPairer( this.getPairer() )
                .setInputsDeclaration( inputsConfig );
 
@@ -184,13 +194,13 @@ public class SingleValuedPoolGenerator implements Supplier<List<Supplier<PoolOfP
 
                 // Re-use the climatology across pools with a caching retriever
                 climatologySupplier =
-                        CachingRetriever.of( this.createRetriever( projectId,
-                                                                   leftVariableFeatureId,
-                                                                   inputsConfig.getLeft(),
-                                                                   LeftOrRightOrBaseline.LEFT,
-                                                                   null,
-                                                                   desiredTimeScale,
-                                                                   unitMapper ) );
+                        CachingRetriever.of( this.createLeftRetriever( projectId,
+                                                                       leftVariableFeatureId,
+                                                                       inputsConfig.getLeft(),
+                                                                       LeftOrRightOrBaseline.LEFT,
+                                                                       null,
+                                                                       desiredTimeScale,
+                                                                       unitMapper ) );
 
                 builder.setClimatology( climatologySupplier, Double::doubleValue );
             }
@@ -198,11 +208,11 @@ public class SingleValuedPoolGenerator implements Supplier<List<Supplier<PoolOfP
             // Metadata
             SampleMetadata mainMetadata =
                     this.createMetadata( projectConfig,
-                                      feature,
-                                      ConfigHelper.getVariableIdFromProjectConfig( projectConfig, false ),
-                                      inputsConfig.getRight().getLabel(),
-                                      desiredMeasurementUnits,
-                                      desiredTimeScale );
+                                         feature,
+                                         ConfigHelper.getVariableIdFromProjectConfig( projectConfig, false ),
+                                         inputsConfig.getRight().getLabel(),
+                                         desiredMeasurementUnits,
+                                         desiredTimeScale );
 
             SampleMetadata baselineMetadata = null;
 
@@ -216,26 +226,27 @@ public class SingleValuedPoolGenerator implements Supplier<List<Supplier<PoolOfP
                               featureString );
                 baselineVariableFeatureId = project.getBaselineVariableFeatureId( feature );
                 baselineMetadata = this.createMetadata( projectConfig,
-                                                     feature,
-                                                     ConfigHelper.getVariableIdFromProjectConfig( projectConfig, true ),
-                                                     inputsConfig.getBaseline().getLabel(),
-                                                     desiredMeasurementUnits,
-                                                     desiredTimeScale );
+                                                        feature,
+                                                        ConfigHelper.getVariableIdFromProjectConfig( projectConfig,
+                                                                                                     true ),
+                                                        inputsConfig.getBaseline().getLabel(),
+                                                        desiredMeasurementUnits,
+                                                        desiredTimeScale );
             }
 
-            List<Supplier<PoolOfPairs<Double, Double>>> returnMe = new ArrayList<>();
+            List<Supplier<PoolOfPairs<Double, Ensemble>>> returnMe = new ArrayList<>();
 
             // Create the retrievers for each time window
             for ( TimeWindow nextWindow : timeWindows )
             {
-                Supplier<Stream<TimeSeries<Double>>> rightSupplier =
-                        this.createRetriever( projectId,
-                                              rightVariableFeatureId,
-                                              inputsConfig.getRight(),
-                                              LeftOrRightOrBaseline.RIGHT,
-                                              nextWindow,
-                                              desiredTimeScale,
-                                              unitMapper );
+                Supplier<Stream<TimeSeries<Ensemble>>> rightSupplier =
+                        this.createRightRetriever( projectId,
+                                                   rightVariableFeatureId,
+                                                   inputsConfig.getRight(),
+                                                   LeftOrRightOrBaseline.RIGHT,
+                                                   nextWindow,
+                                                   desiredTimeScale,
+                                                   unitMapper );
 
                 builder.setRight( rightSupplier );
 
@@ -251,13 +262,13 @@ public class SingleValuedPoolGenerator implements Supplier<List<Supplier<PoolOfP
                 {
                     // Re-use the climatology across pools with a caching retriever
                     Supplier<Stream<TimeSeries<Double>>> leftSupplier =
-                            CachingRetriever.of( this.createRetriever( projectId,
-                                                                       leftVariableFeatureId,
-                                                                       inputsConfig.getLeft(),
-                                                                       LeftOrRightOrBaseline.LEFT,
-                                                                       nextWindow,
-                                                                       desiredTimeScale,
-                                                                       unitMapper ) );
+                            CachingRetriever.of( this.createLeftRetriever( projectId,
+                                                                           leftVariableFeatureId,
+                                                                           inputsConfig.getLeft(),
+                                                                           LeftOrRightOrBaseline.LEFT,
+                                                                           nextWindow,
+                                                                           desiredTimeScale,
+                                                                           unitMapper ) );
                     builder.setLeft( leftSupplier );
                 }
 
@@ -269,29 +280,17 @@ public class SingleValuedPoolGenerator implements Supplier<List<Supplier<PoolOfP
                     SampleMetadata poolBaseMeta = SampleMetadata.of( baselineMetadata, nextWindow );
                     builder.setBaselineMetadata( poolBaseMeta );
 
-                    // Generated baseline?
-                    if ( this.hasGeneratedBaseline( projectConfig.getInputs().getBaseline() ) )
-                    {
-                        this.setGeneratedBaseline( projectConfig.getInputs().getBaseline(),
-                                                   builder,
-                                                   climatologySupplier,
-                                                   this.getUpscaler(),
-                                                   poolBaseMeta );
-                    }
                     // Data-source baseline
-                    else
-                    {
-                        Supplier<Stream<TimeSeries<Double>>> baselineSupplier =
-                                this.createRetriever( projectId,
-                                                      baselineVariableFeatureId,
-                                                      inputsConfig.getBaseline(),
-                                                      LeftOrRightOrBaseline.BASELINE,
-                                                      nextWindow,
-                                                      desiredTimeScale,
-                                                      unitMapper );
+                    Supplier<Stream<TimeSeries<Ensemble>>> baselineSupplier =
+                            this.createRightRetriever( projectId,
+                                                       baselineVariableFeatureId,
+                                                       inputsConfig.getBaseline(),
+                                                       LeftOrRightOrBaseline.BASELINE,
+                                                       nextWindow,
+                                                       desiredTimeScale,
+                                                       unitMapper );
 
-                        builder.setBaseline( baselineSupplier );
-                    }
+                    builder.setBaseline( baselineSupplier );
                 }
 
                 returnMe.add( builder.build() );
@@ -330,45 +329,7 @@ public class SingleValuedPoolGenerator implements Supplier<List<Supplier<PoolOfP
     }
 
     /**
-     * Adds a generated baseline dataset to the builder if required.
-     * 
-     * @param baselineConfig the baseline declaration
-     * @param builder the pool builder
-     * @param source the data source for the generated baseline 
-     * @param upscaler an upscaler, which is optional unless the generated series requires upscaling
-     * @param baselineMeta the baseline metadata to assist with logging
-     */
-
-    private void setGeneratedBaseline( DataSourceConfig baselineConfig,
-                                       PoolOfPairsSupplierBuilder<Double, Double> builder,
-                                       Supplier<Stream<TimeSeries<Double>>> source,
-                                       TimeSeriesUpscaler<Double> upscaler,
-                                       SampleMetadata baselineMeta )
-    {
-        if ( this.hasGeneratedBaseline( baselineConfig ) )
-        {
-            // Persistence is supported
-            if ( baselineConfig.getTransformation() == SourceTransformationType.PERSISTENCE )
-            {
-                LOGGER.trace( "Creating a persistence generator for pool {}.", baselineMeta );
-
-                // Order 1 by default. If others are supported later, add these
-                PersistenceGenerator<Double> generator = PersistenceGenerator.of( source, upscaler, Double::isFinite );
-                builder.setBaselineGenerator( generator );
-            }
-            // Other types are not supported
-            else
-            {
-                throw new UnsupportedOperationException( "While attempting to generate a baseline: unrecognized "
-                                                         + "type of baseline to generate, '"
-                                                         + baselineConfig.getTransformation()
-                                                         + "'." );
-            }
-        }
-    }
-
-    /**
-     * Creates a retriever.
+     * Creates a retriever for left data.
      * 
      * @param projectId the project_id
      * @param variableFeatureId the variablefeature_id
@@ -380,13 +341,13 @@ public class SingleValuedPoolGenerator implements Supplier<List<Supplier<PoolOfP
      * @return the retriever
      */
 
-    private Supplier<Stream<TimeSeries<Double>>> createRetriever( int projectId,
-                                                                  int variableFeatureId,
-                                                                  DataSourceConfig dataSource,
-                                                                  LeftOrRightOrBaseline lrb,
-                                                                  TimeWindow timeWindow,
-                                                                  TimeScale desiredTimeScale,
-                                                                  UnitMapper unitMapper )
+    private Supplier<Stream<TimeSeries<Double>>> createLeftRetriever( int projectId,
+                                                                      int variableFeatureId,
+                                                                      DataSourceConfig dataSource,
+                                                                      LeftOrRightOrBaseline lrb,
+                                                                      TimeWindow timeWindow,
+                                                                      TimeScale desiredTimeScale,
+                                                                      UnitMapper unitMapper )
     {
 
         // Type to iterate
@@ -430,6 +391,60 @@ public class SingleValuedPoolGenerator implements Supplier<List<Supplier<PoolOfP
     }
 
     /**
+     * Creates a retriever for left data.
+     * 
+     * @param projectId the project_id
+     * @param variableFeatureId the variablefeature_id
+     * @param dataSource the data sourece declaration
+     * @param lrb the data type
+     * @param timeWindow the time window
+     * @param desiredTimeScale the desired time scale
+     * @param unitMapper the unit mapper
+     * @return the retriever
+     */
+
+    private Supplier<Stream<TimeSeries<Ensemble>>> createRightRetriever( int projectId,
+                                                                         int variableFeatureId,
+                                                                         DataSourceConfig dataSource,
+                                                                         LeftOrRightOrBaseline lrb,
+                                                                         TimeWindow timeWindow,
+                                                                         TimeScale desiredTimeScale,
+                                                                         UnitMapper unitMapper )
+    {
+
+        // Type to iterate
+        DatasourceType dataType = dataSource.getType();
+
+        // Declared existing scale, which can be used to augment a source
+        TimeScale declaredExistingTimeScale = null;
+
+        if ( Objects.nonNull( dataSource.getExistingTimeScale() ) )
+        {
+            declaredExistingTimeScale = TimeScale.of( dataSource.getExistingTimeScale() );
+        }
+
+        if ( dataType == DatasourceType.ENSEMBLE_FORECASTS )
+        {
+            return new EnsembleForecastRetriever.Builder().setProjectId( projectId )
+                                                          .setVariableFeatureId( variableFeatureId )
+                                                          .setLeftOrRightOrBaseline( lrb )
+                                                          .setTimeWindow( timeWindow )
+                                                          .setDesiredTimeScale( desiredTimeScale )
+                                                          .setDeclaredExistingTimeScale( declaredExistingTimeScale )
+                                                          .setUnitMapper( unitMapper )
+                                                          .build();
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Unrecognized data type from which to create the ensemble "
+                                                + "retriever: "
+                                                + dataType
+                                                + "'." );
+        }
+
+    }
+
+    /**
      * Returns a metadata representation of the input.
      * 
      * @param projectConfig the project declaration
@@ -442,11 +457,11 @@ public class SingleValuedPoolGenerator implements Supplier<List<Supplier<PoolOfP
      */
 
     private SampleMetadata createMetadata( ProjectConfig projectConfig,
-                                        Feature feature,
-                                        String variableId,
-                                        String scenarioId,
-                                        String measurementUnitString,
-                                        TimeScale desiredTimeScale )
+                                           Feature feature,
+                                           String variableId,
+                                           String scenarioId,
+                                           String measurementUnitString,
+                                           TimeScale desiredTimeScale )
     {
         Float longitude = null;
         Float latitude = null;
@@ -476,14 +491,25 @@ public class SingleValuedPoolGenerator implements Supplier<List<Supplier<PoolOfP
     }
 
     /**
-     * Return the upscaler.
+     * Return the upscaler for left values.
      * 
-     * @return the upscaler
+     * @return the upscaler for left values
      */
 
-    private TimeSeriesUpscaler<Double> getUpscaler()
+    private TimeSeriesUpscaler<Double> getLeftUpscaler()
     {
-        return this.upscaler;
+        return this.leftUpscaler;
+    }
+
+    /**
+     * Return the upscaler for right values.
+     * 
+     * @return the upscaler for right values
+     */
+
+    private TimeSeriesUpscaler<Ensemble> getRightUpscaler()
+    {
+        return this.rightUpscaler;
     }
 
     /**
@@ -492,7 +518,7 @@ public class SingleValuedPoolGenerator implements Supplier<List<Supplier<PoolOfP
      * @return the pairer
      */
 
-    private TimeSeriesPairer<Double, Double> getPairer()
+    private TimeSeriesPairer<Double, Ensemble> getPairer()
     {
         return this.pairer;
     }

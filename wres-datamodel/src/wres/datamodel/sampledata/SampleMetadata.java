@@ -48,11 +48,11 @@ public class SampleMetadata implements Comparable<SampleMetadata>
      */
 
     private final ProjectConfig projectConfig;
-    
+
     /**
      * The optional time scale information, may be null.
      */
-    
+
     private final TimeScale timeScale;
 
     /**
@@ -72,7 +72,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
      * @param unit the required measurement unit
      * @return a {@link SampleMetadata} object
      */
-    
+
     public static SampleMetadata of( final MeasurementUnit unit )
     {
         return new SampleMetadataBuilder().setMeasurementUnit( unit ).build();
@@ -143,6 +143,41 @@ public class SampleMetadata implements Comparable<SampleMetadata>
     }
 
     /**
+     * Builds a {@link SampleMetadata} from a prescribed input source and an override {@link TimeScale}.
+     * 
+     * @param input the source metadata
+     * @param timeScale the new time scale
+     * @return a {@link SampleMetadata} object
+     * @throws NullPointerException if the input is null
+     */
+
+    public static SampleMetadata of( final SampleMetadata input, final TimeScale timeScale )
+    {
+        return new SampleMetadataBuilder().setFromExistingInstance( input ).setTimeScale( timeScale ).build();
+    }
+
+    /**
+     * Builds a {@link SampleMetadata} from a prescribed input source and an override {@link TimeWindow} and 
+     * {@link TimeScale}.
+     * 
+     * @param input the source metadata
+     * @param timeWindow the new time window
+     * @param timeScale the new time scale
+     * @return a {@link SampleMetadata} object
+     * @throws NullPointerException if the input is null
+     */
+
+    public static SampleMetadata of( final SampleMetadata input,
+                                     final TimeWindow timeWindow,
+                                     final TimeScale timeScale )
+    {
+        return new SampleMetadataBuilder().setFromExistingInstance( input )
+                                          .setTimeWindow( timeWindow )
+                                          .setTimeScale( timeScale )
+                                          .build();
+    }
+
+    /**
      * Builds a {@link SampleMetadata} from a prescribed input source and an override {@link TimeWindow} and 
      * {@link OneOrTwoThresholds}.
      * 
@@ -153,12 +188,14 @@ public class SampleMetadata implements Comparable<SampleMetadata>
      * @throws NullPointerException if the input is null
      */
 
-    public static SampleMetadata
-            of( final SampleMetadata input, final TimeWindow timeWindow, final OneOrTwoThresholds thresholds )
+    public static SampleMetadata of( final SampleMetadata input,
+                                     final TimeWindow timeWindow,
+                                     final OneOrTwoThresholds thresholds )
     {
         return new SampleMetadataBuilder().setFromExistingInstance( input )
                                           .setThresholds( thresholds )
-                                          .setTimeWindow( timeWindow ).build();
+                                          .setTimeWindow( timeWindow )
+                                          .build();
     }
 
     /**
@@ -174,47 +211,47 @@ public class SampleMetadata implements Comparable<SampleMetadata>
      * @throws SampleMetadataException if the input contains metadata whose differences extend beyond the time windows and
      *            thresholds
      */
-    
+
     public static SampleMetadata unionOf( List<SampleMetadata> input )
     {
         String nullString = "Cannot find the union of null metadata.";
-    
+
         Objects.requireNonNull( input, nullString );
-    
+
         if ( input.isEmpty() )
         {
             throw new IllegalArgumentException( "Cannot find the union of empty input." );
         }
         List<TimeWindow> unionWindow = new ArrayList<>();
-    
+
         // Test entry
         SampleMetadata test = input.get( 0 );
-    
+
         // Validate for equivalence with the first entry and add window to list
         for ( SampleMetadata next : input )
         {
             Objects.requireNonNull( next, nullString );
-    
+
             if ( !next.equalsWithoutTimeWindowOrThresholds( test ) )
             {
                 throw new SampleMetadataException( "Only the time window and thresholds can differ when finding the union of "
-                                             + "metadata." );
+                                                   + "metadata." );
             }
             if ( next.hasTimeWindow() )
             {
                 unionWindow.add( next.getTimeWindow() );
             }
         }
-    
+
         // Remove any threshold information from the result
         test = of( test, (OneOrTwoThresholds) null );
-    
+
         if ( !unionWindow.isEmpty() )
         {
             test = of( test, TimeWindow.unionOf( unionWindow ) );
         }
         return test;
-    }    
+    }
 
     @Override
     public int compareTo( SampleMetadata input )
@@ -369,7 +406,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
     {
         return Objects.nonNull( this.getProjectConfig() );
     }
-    
+
     /**
      * Returns <code>true</code> if {@link #getTimeScale()} returns non-null, otherwise <code>false</code>.
      * 
@@ -378,7 +415,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
     public boolean hasTimeScale()
     {
         return Objects.nonNull( this.getTimeScale() );
-    }    
+    }
 
     /**
      * Returns <code>true</code> if the input is equal to the current {@link SampleMetadata} without considering the 
@@ -410,7 +447,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
         {
             returnMe = returnMe && this.getProjectConfig().equals( input.getProjectConfig() );
         }
-        
+
         if ( this.hasTimeScale() )
         {
             returnMe = returnMe && this.getTimeScale().equals( input.getTimeScale() );
@@ -497,7 +534,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
          */
 
         private static final String NULL_INPUT_ERROR = "Specify a non-null source from which to build the metadata.";
-        
+
         /**
          * The measurement unit associated with the data.
          */
@@ -527,11 +564,11 @@ public class SampleMetadata implements Comparable<SampleMetadata>
          */
 
         private ProjectConfig projectConfig;
-        
+
         /**
          * The optional time scale information.
          */
-        
+
         private TimeScale timeScale;
 
         /**
@@ -598,20 +635,20 @@ public class SampleMetadata implements Comparable<SampleMetadata>
             this.projectConfig = projectConfig;
             return this;
         }
-        
+
         /**
          * Sets the time scale information.
          * 
          * @param timeScale the time scale
          * @return the builder
          */
-        
+
         public SampleMetadataBuilder setTimeScale( TimeScale timeScale )
         {
             this.timeScale = timeScale;
             return this;
         }
-        
+
         /**
          * Sets the contents from an existing metadata instance.
          * 
@@ -623,28 +660,28 @@ public class SampleMetadata implements Comparable<SampleMetadata>
         public SampleMetadataBuilder setFromExistingInstance( SampleMetadata sampleMetadata )
         {
             Objects.requireNonNull( sampleMetadata, NULL_INPUT_ERROR );
-            
+
             this.unit = sampleMetadata.unit;
             this.identifier = sampleMetadata.identifier;
             this.timeWindow = sampleMetadata.timeWindow;
             this.thresholds = sampleMetadata.thresholds;
             this.projectConfig = sampleMetadata.projectConfig;
             this.timeScale = sampleMetadata.timeScale;
-            
+
             return this;
         }
-        
+
         /**
          * Build the metadata.
          * 
          * @return the metadata instance
          */
-        
+
         public SampleMetadata build()
         {
             return new SampleMetadata( this );
         }
-        
+
     }
 
     /**
