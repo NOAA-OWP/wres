@@ -3,6 +3,7 @@ package wres.io.retrieval.datashop;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -11,6 +12,7 @@ import java.util.StringJoiner;
 import java.util.TreeSet;
 import java.util.function.Supplier;
 import java.util.function.ToDoubleFunction;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -18,6 +20,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.generated.TimeScaleConfig;
+import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PairingException;
@@ -30,14 +34,16 @@ import wres.datamodel.scale.ScaleValidationEvent.EventType;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.RescaledTimeSeriesPlusValidation;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 import wres.datamodel.time.TimeSeriesPairer;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesUpscaler;
+import wres.datamodel.time.TimeWindow;
 
 /**
  * <p>Supplies a {@link PoolOfPairs}, which is used to compute one or more verification statistics. The overall 
- * responsibility of the {@link PoolOfPairsSupplier} is to supply a {@link PoolOfPairs} on request. This is fulfilled by
- * completing several smaller activities in sequence, namely:</p> 
+ * responsibility of the {@link PoolOfPairsSupplier} is to supply a {@link PoolOfPairs} on request. This is fulfilled 
+ * by completing several smaller activities in sequence, namely:</p> 
  * 
  * <ol>
  * <li>Consuming the (possibly pool-shaped) left/right/baseline data for pairing, which is supplied by retrievers;</li>
@@ -46,6 +52,12 @@ import wres.datamodel.time.TimeSeriesUpscaler;
  * <li>Trimming pairs to the pool boundaries; and</li>
  * <li>Supplying the pool-shaped pairs.</li>
  * </ol>
+ * 
+ * <p>Once retrieved, the {@link PoolOfPairs} is cached and supplied on demand. 
+ * 
+ * <p><b>Implementation notes:</b></p>
+ * 
+ * <p>This class is thread safe.
  * 
  * @author james.brown@hydrosolved.com
  * @param <L> the type of left value in each pair
@@ -90,6 +102,12 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
      */
 
     private final Supplier<Stream<TimeSeries<R>>> baseline;
+
+    /**
+     * Generator for baseline data source. Optional.
+     */
+
+    private final UnaryOperator<TimeSeries<R>> baselineGenerator;
 
     /**
      * Pairer.
@@ -138,6 +156,12 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
      */
 
     private final Object creationLock = new Object();
+
+    /**
+     * The inputs declaration, which is used to help compute the desired time scale, if required.
+     */
+
+    private final Inputs inputs;
 
     /**
      * Returns a {@link PoolOfPairs} for metric calculation.
@@ -198,11 +222,25 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
             cStream = this.climatology.get();
         }
 
-        // Create the main pairs    
+        // Retrieve the data
         List<TimeSeries<L>> leftData = cStream.collect( Collectors.toList() );
         List<TimeSeries<R>> rightData = this.right.get().collect( Collectors.toList() );
+        List<TimeSeries<R>> baselineData = null;
 
-        List<TimeSeries<Pair<L, R>>> mainPairs = this.createPairs( leftData, rightData );
+        // Baseline that contains data?
+        if ( this.hasBaseline() && Objects.isNull( this.baselineGenerator ) )
+        {
+            baselineData = this.baseline.get().collect( Collectors.toList() );
+        }
+
+        // Obtained the desired time scale. If this is unavailable, use the Least Common Scale.
+        TimeScale desiredTimeScaleToUse = this.getDesiredTimeScale( leftData, rightData, baselineData, this.inputs );
+
+        // Consolidate and snip the left data to the right bounds
+        // This is a performance optimization for when the left dataset is large (e.g., climatology)
+        TimeSeries<L> snippedLeft = this.snipAndConsolidate( leftData, rightData );
+
+        List<TimeSeries<Pair<L, R>>> mainPairs = this.createPairs( snippedLeft, rightData, desiredTimeScaleToUse );
 
         for ( TimeSeries<Pair<L, R>> pairs : mainPairs )
         {
@@ -223,9 +261,15 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
                           this.metadata,
                           this.baselineMetadata );
 
-            List<TimeSeries<R>> baselineData = this.baseline.get().collect( Collectors.toList() );
+            // Generator?
+            if ( Objects.nonNull( this.baselineGenerator ) )
+            {
+                baselineData = this.createBaseline( this.baselineGenerator, mainPairs );
+            }
 
-            List<TimeSeries<Pair<L, R>>> basePairs = this.createPairs( leftData, baselineData );
+            List<TimeSeries<Pair<L, R>>> basePairs = this.createPairs( snippedLeft,
+                                                                       baselineData,
+                                                                       desiredTimeScaleToUse );
 
             for ( TimeSeries<Pair<L, R>> pairs : basePairs )
             {
@@ -240,7 +284,7 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         }
 
         // Set the climatology
-        VectorOfDoubles clim = this.createClimatology();
+        VectorOfDoubles clim = this.createClimatology( desiredTimeScaleToUse );
         builder.setClimatology( clim );
 
         // Create the pairs
@@ -261,7 +305,7 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
      * @param <R> the right type of paired value and, where required, the baseline type
      */
 
-    public static class PoolOfPairsSupplierBuilder<L, R>
+    static class PoolOfPairsSupplierBuilder<L, R>
     {
 
         /**
@@ -293,6 +337,12 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          */
 
         private Supplier<Stream<TimeSeries<R>>> baseline;
+
+        /**
+         * Generator for baseline data source. Optional.
+         */
+
+        private UnaryOperator<TimeSeries<R>> baselineGenerator;
 
         /**
          * Pairer.
@@ -329,6 +379,12 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          */
 
         private SampleMetadata baselineMetadata;
+
+        /**
+         * Inputs declaration for the pool.
+         */
+
+        private Inputs inputs;
 
         /**
          * @param climatology the climatology to set
@@ -373,6 +429,17 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         public PoolOfPairsSupplierBuilder<L, R> setBaseline( Supplier<Stream<TimeSeries<R>>> baseline )
         {
             this.baseline = baseline;
+
+            return this;
+        }
+
+        /**
+         * @param baselineGenerator a baseline generator to set
+         * @return the builder
+         */
+        public PoolOfPairsSupplierBuilder<L, R> setBaselineGenerator( UnaryOperator<TimeSeries<R>> baselineGenerator )
+        {
+            this.baselineGenerator = baselineGenerator;
 
             return this;
         }
@@ -444,6 +511,17 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         }
 
         /**
+         * @param inputs the inputs declaration to set
+         * @return the builder
+         */
+        public PoolOfPairsSupplierBuilder<L, R> setInputsDeclaration( Inputs inputs )
+        {
+            this.inputs = inputs;
+
+            return this;
+        }
+
+        /**
          * Builds a {@link PoolOfPairsSupplier}.
          * 
          * @return a pool supplier
@@ -458,39 +536,37 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
     /**
      * Creates a paired dataset from the input, rescaling the left/right data as needed.
      * 
-     * @param left the left data supplier
-     * @param right the right data supplier
+     * @param left the left data
+     * @param right the right data
+     * @param desiredTimeScale the desired time scale
      * @throws RescalingException if the pool data could not be rescaled
      * @throws PairingException if the pool data could not be paired
      * @throws NoSuchUnitConversionException if the data units could not be converted
      * @return the pairs
      */
 
-    private List<TimeSeries<Pair<L, R>>> createPairs( List<TimeSeries<L>> left,
-                                                      List<TimeSeries<R>> right )
+    private List<TimeSeries<Pair<L, R>>> createPairs( TimeSeries<L> left,
+                                                      List<TimeSeries<R>> right,
+                                                      TimeScale desiredTimeScale )
     {
         Objects.requireNonNull( left );
 
         Objects.requireNonNull( right );
 
         List<TimeSeries<Pair<L, R>>> returnMe = new ArrayList<>();
-
-        for ( TimeSeries<L> nextLeft : left )
+        for ( TimeSeries<R> nextRight : right )
         {
-            for ( TimeSeries<R> nextRight : right )
-            {
-                TimeSeries<Pair<L, R>> pairs = this.createSeriesPairs( nextLeft, nextRight );
+            TimeSeries<Pair<L, R>> pairs = this.createSeriesPairs( left, nextRight, desiredTimeScale );
 
-                if ( !pairs.getEvents().isEmpty() )
-                {
-                    returnMe.add( pairs );
-                }
-                else if ( LOGGER.isTraceEnabled() )
-                {
-                    LOGGER.trace( "Found zero pairs while intersecting time-series {} with time-series {}.",
-                                  nextLeft.hashCode(),
-                                  nextRight.hashCode() );
-                }
+            if ( !pairs.getEvents().isEmpty() )
+            {
+                returnMe.add( pairs );
+            }
+            else if ( LOGGER.isTraceEnabled() )
+            {
+                LOGGER.trace( "Found zero pairs while intersecting time-series {} with time-series {}.",
+                              left.hashCode(),
+                              nextRight.hashCode() );
             }
         }
 
@@ -498,14 +574,82 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
     }
 
     /**
+     * Consolidates and snips the input series to the prescribed time window.
+     * 
+     * @param <P> the time-series event type for the data to be snipped
+     * @param <Q> the time-series event type for the data to use when snipping
+     * @param toSnip the time-series to consolidate and snip
+     * @param bounds the data whose bounds will be used for snipping
+     * @return the snipped data
+     */
+
+    private <P, Q> TimeSeries<P> snipAndConsolidate( List<TimeSeries<P>> toSnip, List<TimeSeries<Q>> bounds )
+    {
+        TimeSeriesBuilder<P> builder = new TimeSeriesBuilder<>();
+
+        TimeWindow timeWindow = this.getTimeWindowFromSeries( bounds );
+
+        for ( TimeSeries<P> next : toSnip )
+        {
+            builder.addEvents( TimeSeriesSlicer.filter( next, timeWindow ).getEvents() );
+            builder.setTimeScale( next.getTimeScale() ).addReferenceTimes( next.getReferenceTimes() );
+        }
+
+        return builder.build();
+    }
+
+    /**
+     * Returns a time-window whose valid times span the input series. The lower bound is adjusted for the time-scale of
+     * the input series.
+     * 
+     * @param <T> the time-series event type
+     * @param bounds the time-series whose bounds must be determined
+     * @return the time window
+     */
+
+    private <T> TimeWindow getTimeWindowFromSeries( List<TimeSeries<T>> bounds )
+    {
+        SortedSet<Instant> validTimes = new TreeSet<>();
+
+        TimeScale timeScale = null;
+        for ( TimeSeries<T> next : bounds )
+        {
+            // Add both reference times and valid times
+            validTimes.addAll( next.getReferenceTimes().values() );
+            validTimes.add( next.getEvents().first().getTime() );
+            validTimes.add( next.getEvents().last().getTime() );
+            timeScale = next.getTimeScale();
+        }
+
+        Instant lowerBound = Instant.MIN;
+        Instant upperBound = Instant.MAX;
+        
+        if( !validTimes.isEmpty() )
+        {
+            lowerBound = validTimes.first();
+            upperBound = validTimes.last();
+        }
+
+        if ( Objects.nonNull( timeScale ) && !timeScale.isInstantaneous() )
+        {
+            lowerBound = lowerBound.minus( timeScale.getPeriod() );
+        }
+
+        return TimeWindow.of( lowerBound, upperBound );
+    }
+
+    /**
      * Returns a time-series of pairs from a left and right series, rescaling as needed.
      * 
      * @param left the left time-series
      * @param right the right time-series
+     * @param desiredTimeScale the desired time scale
      * @return a paired time-series
      */
 
-    private TimeSeries<Pair<L, R>> createSeriesPairs( TimeSeries<L> left, TimeSeries<R> right )
+    private TimeSeries<Pair<L, R>> createSeriesPairs( TimeSeries<L> left,
+                                                      TimeSeries<R> right,
+                                                      TimeScale desiredTimeScale )
     {
         Objects.requireNonNull( left );
 
@@ -514,14 +658,14 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         TimeSeries<L> scaledLeft = left;
         TimeSeries<R> scaledRight = right;
 
-        if ( this.hasDesiredTimeScale() && !this.getDesiredTimeScale().equals( left.getTimeScale() ) )
+        if ( Objects.nonNull( desiredTimeScale ) && !desiredTimeScale.equals( left.getTimeScale() ) )
         {
             if ( LOGGER.isTraceEnabled() )
             {
                 LOGGER.trace( "Upscaling left time-series {} from {} to {}.",
                               left.hashCode(),
                               left.getTimeScale(),
-                              this.getDesiredTimeScale() );
+                              desiredTimeScale );
             }
 
             // Acquire the times from the right series at which left upscaled values should end
@@ -533,7 +677,7 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
 
             RescaledTimeSeriesPlusValidation<L> upscaledLeft = this.getLeftUpscaler()
                                                                    .upscale( left,
-                                                                             this.getDesiredTimeScale(),
+                                                                             desiredTimeScale,
                                                                              Collections.unmodifiableSortedSet( endsAt ) );
 
             scaledLeft = upscaledLeft.getTimeSeries();
@@ -544,7 +688,7 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
                               + "new time-series, {}.",
                               left.hashCode(),
                               left.getTimeScale(),
-                              this.getDesiredTimeScale(),
+                              desiredTimeScale,
                               scaledLeft.hashCode() );
             }
 
@@ -552,14 +696,14 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
             PoolOfPairsSupplier.logScaleValidationWarnings( left, upscaledLeft.getValidationEvents() );
         }
 
-        if ( this.hasDesiredTimeScale() && !this.getDesiredTimeScale().equals( right.getTimeScale() ) )
+        if ( Objects.nonNull( desiredTimeScale ) && !desiredTimeScale.equals( right.getTimeScale() ) )
         {
             if ( LOGGER.isTraceEnabled() )
             {
                 LOGGER.trace( "Upscaling right time-series {} from {} to {}.",
                               right.hashCode(),
                               right.getTimeScale(),
-                              this.getDesiredTimeScale() );
+                              desiredTimeScale );
             }
 
             // Acquire the times from the left series at which right upscaled values should end
@@ -571,7 +715,7 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
 
             RescaledTimeSeriesPlusValidation<R> upscaledRight = this.getRightUpscaler()
                                                                     .upscale( right,
-                                                                              this.getDesiredTimeScale(),
+                                                                              desiredTimeScale,
                                                                               Collections.unmodifiableSortedSet( endsAt ) );
 
             scaledRight = upscaledRight.getTimeSeries();
@@ -582,7 +726,7 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
                               + "new time-series, {}.",
                               right.hashCode(),
                               right.getTimeScale(),
-                              this.getDesiredTimeScale(),
+                              desiredTimeScale,
                               scaledRight.hashCode() );
             }
 
@@ -606,7 +750,7 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
                           scaledRight.hashCode(),
                           scaledRight.getEvents().size(),
                           pairs.getEvents().size(),
-                          this.getDesiredTimeScale() );
+                          desiredTimeScale );
         }
 
         return pairs;
@@ -615,10 +759,11 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
     /**
      * Creates the climatological data as needed.
      * 
+     * @param desiredTimeScale the desired time scale
      * @return the climatological data or null if no climatology is defined
      */
 
-    private VectorOfDoubles createClimatology()
+    private VectorOfDoubles createClimatology( TimeScale desiredTimeScale )
     {
         VectorOfDoubles returnMe = null;
 
@@ -634,8 +779,21 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
 
             for ( TimeSeries<L> next : climate )
             {
+                TimeSeries<L> nextSeries = next;
+
+                // Upscale?
+                if ( Objects.nonNull( desiredTimeScale )
+                     && !desiredTimeScale.equals( nextSeries.getTimeScale() ) )
+                {
+                    nextSeries = this.getLeftUpscaler().upscale( nextSeries, desiredTimeScale ).getTimeSeries();
+                    LOGGER.debug( "Upscaled the climatological time-series from {} to {}.",
+                                  nextSeries.getTimeScale(),
+                                  desiredTimeScale );
+
+                }
+
                 TimeSeries<Double> transformed =
-                        TimeSeriesSlicer.transform( next, this.climatologyMapper::applyAsDouble );
+                        TimeSeriesSlicer.transform( nextSeries, this.climatologyMapper::applyAsDouble );
                 transformed.getEvents().forEach( event -> listOfDoubles.add( event.getValue() ) );
             }
 
@@ -652,6 +810,33 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
     }
 
     /**
+     * Creates a baseline dataset from a generator function using the right side of the input pairs as the source to
+     * mimic.
+     * 
+     * @param generator the baseline generator function
+     * @param pairs the pairs whose right side will be used to create the baseline
+     * @return a list of generated baseline time-series
+     */
+
+    private List<TimeSeries<R>> createBaseline( UnaryOperator<TimeSeries<R>> generator,
+                                                List<TimeSeries<Pair<L, R>>> pairs )
+    {
+        LOGGER.debug( "Creating baseline time-series with a generator function." );
+
+        List<TimeSeries<R>> returnMe = new ArrayList<>();
+
+        for ( TimeSeries<Pair<L, R>> next : pairs )
+        {
+            TimeSeries<R> rhs = TimeSeriesSlicer.transform( next, Pair::getRight );
+            returnMe.add( generator.apply( rhs ) );
+        }
+
+        LOGGER.debug( "Finished creating baseline time-series with a generator function." );
+
+        return Collections.unmodifiableList( returnMe );
+    }
+
+    /**
      * Returns true if the supplier includes a baseline, otherwise false.
      * 
      * @return true if the supplier contains a baseline, otherwise false.
@@ -659,29 +844,102 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
 
     private boolean hasBaseline()
     {
-        return Objects.nonNull( this.baseline );
+        return Objects.nonNull( this.baseline ) || Objects.nonNull( this.baselineGenerator );
     }
 
     /**
-     * Returns the desired time scale.
+     * Returns the desired time scale. In order of availability, this is:
      * 
+     * <ol>
+     * <li>The desired time scale provided on construction;</li>
+     * <li>The Least Common Scale (LCS) computed from the input data; or</li>
+     * <li>The LCS computed from the <code>existingTimeScale</code> provided in the input declaration.</li>
+     * </ol>
+     * 
+     * The LCS is the smallest common multiple of the time scales associated with every ingested dataset for a given 
+     * project, variable and feature. The LCS is computed from all sides of a pairing (left, right and baseline) 
+     * collectively. 
+     * 
+     * @param leftData the left data
+     * @param rightData the right data
+     * @param baselineData the baseline data
+     * @param input the input declaration
      * @return the desired time scale.
      */
 
-    private TimeScale getDesiredTimeScale()
+    private TimeScale getDesiredTimeScale( List<TimeSeries<L>> leftData,
+                                           List<TimeSeries<R>> rightData,
+                                           List<TimeSeries<R>> baselineData,
+                                           Inputs inputDeclaration )
     {
-        return this.desiredTimeScale;
-    }
+        if ( Objects.nonNull( this.desiredTimeScale ) )
+        {
+            LOGGER.trace( "While retrieving data for pool {}, discovered that the desired time scale of {} was "
+                          + "supplied on construction of the pool.",
+                          this.metadata );
 
-    /**
-     * Returns <code>true</code> if the desired time scale is available, otherwise <code>false</code>.
-     * 
-     * @return true if the desired time scale is known
-     */
+            return this.desiredTimeScale;
+        }
 
-    private boolean hasDesiredTimeScale()
-    {
-        return Objects.nonNull( this.getDesiredTimeScale() );
+        // Find the Least Common Scale
+        TimeScale leastCommonScale = null;
+        Set<TimeScale> existingTimeScales = new HashSet<>();
+        leftData.forEach( next -> existingTimeScales.add( next.getTimeScale() ) );
+        rightData.forEach( next -> existingTimeScales.add( next.getTimeScale() ) );
+        if ( Objects.nonNull( baselineData ) )
+        {
+            baselineData.forEach( next -> existingTimeScales.add( next.getTimeScale() ) );
+        }
+        // Remove any null element from the existing scales
+        existingTimeScales.remove( null );
+
+        // Look for the LCS among the ingested sources
+        if ( !existingTimeScales.isEmpty() )
+        {
+            leastCommonScale = TimeScale.getLeastCommonTimeScale( existingTimeScales );
+
+            LOGGER.debug( "While retrieving data for pool {}, discovered that the desired time scale was not supplied "
+                          + "on construction of the pool. Instead, determined the desired time scale from the Least "
+                          + "Common Scale of the ingested inputs, which was {}.",
+                          this.metadata );
+
+            return leastCommonScale;
+        }
+
+        // Look for the LCS among the declared inputs
+        if ( Objects.nonNull( inputs ) )
+        {
+            Set<TimeScale> declaredExistingTimeScales = new HashSet<>();
+            TimeScaleConfig leftScaleConfig = inputDeclaration.getLeft().getExistingTimeScale();
+            TimeScaleConfig rightScaleConfig = inputDeclaration.getLeft().getExistingTimeScale();
+
+            if ( Objects.nonNull( leftScaleConfig ) )
+            {
+                declaredExistingTimeScales.add( TimeScale.of( leftScaleConfig ) );
+            }
+            if ( Objects.nonNull( rightScaleConfig ) )
+            {
+                declaredExistingTimeScales.add( TimeScale.of( rightScaleConfig ) );
+            }
+            if ( Objects.nonNull( inputDeclaration.getBaseline() )
+                 && Objects.nonNull( inputDeclaration.getBaseline().getExistingTimeScale() ) )
+            {
+                declaredExistingTimeScales.add( TimeScale.of( inputDeclaration.getBaseline().getExistingTimeScale() ) );
+            }
+
+            if ( !declaredExistingTimeScales.isEmpty() )
+            {
+                leastCommonScale = TimeScale.getLeastCommonTimeScale( declaredExistingTimeScales );
+
+                LOGGER.debug( "While retrieving data for pool {}, discovered that the desired time scale was not supplied "
+                              + "on construction of the pool. Instead, determined the desired time scale from the Least "
+                              + "Common Scale of the declared inputs, which  was {}.",
+                              this.metadata,
+                              leastCommonScale );
+            }
+        }
+
+        return leastCommonScale;
     }
 
     /**
@@ -790,6 +1048,8 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         this.metadata = builder.metadata;
         this.baselineMetadata = builder.baselineMetadata;
         this.climatologyMapper = builder.climatologyMapper;
+        this.baselineGenerator = builder.baselineGenerator;
+        this.inputs = builder.inputs;
 
         // Validate
         String messageStart = "Cannot build the pool supplier: ";
@@ -800,10 +1060,17 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
 
         Objects.requireNonNull( this.metadata, messageStart + "add the metadata for the main pairs." );
 
-        if ( !this.hasDesiredTimeScale() )
+        if ( Objects.isNull( this.desiredTimeScale ) )
         {
             LOGGER.debug( "While constructing a pool supplier for {}, "
                           + "discovered that the desired time scale was undefined.",
+                          this.metadata );
+        }
+
+        if ( Objects.isNull( this.inputs ) )
+        {
+            LOGGER.debug( "While constructing a pool supplier for {}, "
+                          + "discovered that the inputs declaration was undefined.",
                           this.metadata );
         }
 
@@ -820,12 +1087,19 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         }
 
         // If adding a baseline, baseline metadata is needed. If not, it should not be supplied
-        if ( Objects.isNull( this.baseline ) != Objects.isNull( this.baselineMetadata ) )
+        if ( ( Objects.isNull( this.baseline )
+               && Objects.isNull( this.baselineGenerator ) ) != Objects.isNull( this.baselineMetadata ) )
         {
             throw new IllegalArgumentException( messageStart + "cannot add a baseline retriever without baseline "
                                                 + "metadata and vice versa." );
         }
 
+        // Cannot supply two baseline sources
+        if ( Objects.nonNull( this.baseline ) && Objects.nonNull( this.baselineGenerator ) )
+        {
+            throw new IllegalArgumentException( messageStart + "cannot add a baseline data source and a baseline "
+                                                + "generator to the same pool: only one is required." );
+        }
     }
 
 }

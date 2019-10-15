@@ -6,8 +6,13 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Adds a wrapper to a {@link Supplier} that supplies a {@link Stream} of retrieved data. This allow the retrieved 
- * data to be cached locally for re-use. On the second and further calls, the cached data is returned.
+ * <p>Adds a wrapper to a {@link Supplier} that supplies a {@link Stream} of retrieved data. This allow the retrieved 
+ * data to be cached locally for re-use. On the second and further calls, the cached data is returned. Use this
+ * wrapper whenever a data source is re-used between pools.
+ * 
+ * <p><b>Implementation notes:</b>
+ * 
+ * <p>This implementation is thread-safe.
  * 
  * @author james.brown@hydrosolved.com
  * @param <T> the type of data to retrieve
@@ -69,7 +74,7 @@ public class CachingRetriever<T> implements Supplier<Stream<T>>
                     this.cache = this.getRetriever()
                                      .get()
                                      .collect( Collectors.toUnmodifiableList() );
-
+                    
                     // Cache now available
                     this.hasCache = true;
                 }
@@ -95,7 +100,6 @@ public class CachingRetriever<T> implements Supplier<Stream<T>>
      * Hidden constructor.
      * 
      * @param retriever the retriever
-     * @param cache is true to cache the retrieved data for re-use
      */
 
     private CachingRetriever( Supplier<Stream<T>> retriever )

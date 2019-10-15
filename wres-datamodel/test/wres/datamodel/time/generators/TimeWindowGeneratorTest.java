@@ -1,4 +1,4 @@
-package wres.datamodel.time;
+package wres.datamodel.time.generators;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
@@ -16,6 +16,8 @@ import wres.config.generated.DurationUnit;
 import wres.config.generated.IntBoundsType;
 import wres.config.generated.PairConfig;
 import wres.config.generated.PoolingWindowConfig;
+import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.generators.TimeWindowGenerator;
 
 /**
  * <p>Tests the {@link TimeWindowGenerator}.

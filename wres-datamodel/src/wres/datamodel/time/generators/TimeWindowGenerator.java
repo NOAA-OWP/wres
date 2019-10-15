@@ -1,4 +1,4 @@
-package wres.datamodel.time;
+package wres.datamodel.time.generators;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -17,6 +17,7 @@ import wres.config.generated.IntBoundsType;
 import wres.config.generated.PairConfig;
 import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.time.TimeWindow;
 
 /**
  * <p>Helper class whose methods generate collections of {@link TimeWindow} from project declaration.

@@ -323,13 +323,17 @@ public class Project
     }
 
     /**
-     * Performs operations that are needed for the project to run between ingest and evaluation
+     * Performs operations that are needed for the project to run between ingest and evaluation.
+     * 
+     * Deprecated to favor stand-up without determining lead offsets or desired time scales or steps upfront.
+     * 
      * @throws SQLException if retrieval of data from the database fails
      * @throws IOException if loading fails
      * @throws CalculationException if required calculations could not be completed
      * @throws NoDataException if zero features have intersecting data
+     * @deprecated
      */
-
+    @Deprecated( since = "1.8", forRemoval = true )
     public void prepareForExecution() throws SQLException, IOException
     {
         LOGGER.trace( "prepareForExecution() entered" );
@@ -360,7 +364,40 @@ public class Project
         this.populateLeadOffsets();
     }
 
+    /**
+     * Performs operations that are needed for the project to run between ingest and evaluation.
+     * 
+     * @throws SQLException if retrieval of data from the database fails
+     * @throws IOException if loading fails
+     * @throws CalculationException if required calculations could not be completed
+     * @throws NoDataException if zero features have intersecting data
+     */
+    public void prepareForExecutionNew() throws SQLException, IOException
+    {
+        LOGGER.trace( "prepareForExecution() entered" );
 
+        // Gridded data will not be present in the database.
+        if ( !this.usesGriddedData( this.getRight() ) )
+        {
+            // Check for features that potentially have intersecting values.
+            // The query in getIntersectingFeatures checks that there is some
+            // data for each feature on each side, but does not guarantee pairs.
+            synchronized ( this.featureLock )
+            {
+                LOGGER.debug( "Features so far: {}", this.features );
+                this.features = this.getIntersectingFeatures();
+                LOGGER.debug( "Features after getting intersecting features: {}",
+                              this.features );
+            }
+
+            if ( this.features.isEmpty() )
+            {
+                throw new NoDataException( "No features had data on both the left and the right for the variables "
+                                           + "specified." );
+            }
+        }
+    }
+    
     /**
      * Get a set of features for this project with intersecting data.
      * Does not check if the data is pairable, simply checks that there is data
@@ -370,7 +407,7 @@ public class Project
 
     private Set<FeatureDetails> getIntersectingFeatures() throws SQLException
     {
-        Set<FeatureDetails> intersectingFeatures = new HashSet<>( this.features.size() );
+        Set<FeatureDetails> intersectingFeatures = new HashSet<>();
         DataScripter script = ProjectScriptGenerator.createIntersectingFeaturesScript( this );
 
         LOGGER.debug( "getIntersectingFeatures will run: {}", script );

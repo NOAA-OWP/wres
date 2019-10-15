@@ -3,6 +3,7 @@ package wres.datamodel.time;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -657,6 +658,42 @@ public final class TimeSeriesSlicer
             }
 
             builder.setMetadataForBaseline( baseline.getMetadata() );
+        }
+
+        return builder.build();
+    }
+
+    /**
+     * Consolidates the input collection into one series.
+     * 
+     * @param <T> the time-series event value type
+     * @param collectedSeries the collected series
+     * @return the consolidated series
+     * @throws NullPointerException if the consolidatedSeries is null
+     */
+
+    public static <T> TimeSeries<T> consolidate( Collection<TimeSeries<T>> collectedSeries )
+    {
+        Objects.requireNonNull( collectedSeries );
+
+        // Empty series
+        if ( collectedSeries.isEmpty() )
+        {
+            return TimeSeries.of();
+        }
+        // Singleton series
+        else if ( collectedSeries.size() == 1 )
+        {
+            return collectedSeries.iterator().next();
+        }
+
+        TimeSeriesBuilder<T> builder = new TimeSeriesBuilder<>();
+
+        for ( TimeSeries<T> next : collectedSeries )
+        {
+            builder.addEvents( next.getEvents() );
+            builder.addReferenceTimes( next.getReferenceTimes() );
+            builder.setTimeScale( next.getTimeScale() );
         }
 
         return builder.build();
