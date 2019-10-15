@@ -72,7 +72,7 @@ import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.thresholds.ThresholdsByMetric.ThresholdsByMetricBuilder;
 import wres.datamodel.time.TimeWindow;
-import wres.datamodel.time.TimeWindowGenerator;
+import wres.datamodel.time.generators.TimeWindowGenerator;
 import wres.grid.client.Fetcher;
 import wres.grid.client.Request;
 import wres.io.data.caching.Features;

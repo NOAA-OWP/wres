@@ -55,7 +55,7 @@ public class RescaledTimeSeriesPlusValidation<T>
 
     public TimeSeries<T> getTimeSeries()
     {
-        return timeSeries;
+        return this.timeSeries;
     }
 
     /**
@@ -66,7 +66,7 @@ public class RescaledTimeSeriesPlusValidation<T>
 
     public List<ScaleValidationEvent> getValidationEvents()
     {
-        return validationEvents; // Rendered immutable on construction
+        return this.validationEvents; // Rendered immutable on construction
     }
 
     /**

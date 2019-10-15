@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.datamodel.scale.TimeScale;
+import wres.datamodel.scale.TimeScale.TimeScaleFunction;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
@@ -91,6 +92,12 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     private final UnitMapper unitMapper;
 
     /**
+     * A declared existing time-scale, which can be used to augment a source, but not override it.
+     */
+
+    private final TimeScale declaredExistingTimeScale;
+
+    /**
      * Returns true if the retriever supplies forecast data.
      * 
      * @return true if this instance supplies forecast data
@@ -121,7 +128,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             // so de-duplicate here. See #56214-272
             Map<Integer, Integer> seriesCounts = new HashMap<>();
 
-            TimeScale timeScale = null;
+            TimeScale lastScale = null; // Record of last scale
 
             while ( provider.next() )
             {
@@ -163,30 +170,9 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                 String functionString = provider.getString( "scale_function" );
                 Duration period = provider.getDuration( "scale_period" );
 
-                TimeScale latestScale = null;
-
-                // Time scale available?
-                if ( Objects.nonNull( period ) && Objects.nonNull( functionString ) )
-                {
-                    TimeScale.TimeScaleFunction function =
-                            TimeScale.TimeScaleFunction.valueOf( functionString.toUpperCase() );
-
-                    latestScale = TimeScale.of( period, function );
-                    builder.setTimeScale( latestScale );
-                }
-
-                if ( Objects.nonNull( timeScale ) && !timeScale.equals( latestScale ) )
-                {
-                    throw new DataAccessException( "The time scale information associated with event '" + event
-                                                   + "' is '"
-                                                   + latestScale
-                                                   + "' but other events in the same series have a different time "
-                                                   + "scale of '"
-                                                   + timeScale
-                                                   + "', which is not allowed." );
-                }
-
-                timeScale = latestScale;
+                TimeScale latestScale = this.checkAndGetLatestScale( lastScale, period, functionString, event );
+                builder.setTimeScale( latestScale );
+                lastScale = latestScale;
             }
 
             return this.composeWithDuplicates( Collections.unmodifiableMap( builders ),
@@ -197,7 +183,71 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             throw new DataAccessException( "Failed to access the time-series data.", e );
         }
     }
-    
+
+    /**
+     * Checks that the time-scale information is consistent with the last time scale. If not, throws an exception. If
+     * so, returns the valid time scale, which is obtained from the input period and function, possibly augmented by
+     * any declared time scale information attached to this instance on construction. In using an existing time scale 
+     * from the project declaration, the principle is to augment, but not override, because the source is canonical 
+     * on its own time scale.
+     * 
+     * @param <S> the event value type
+     * @param lastScale the last scale information retrieved
+     * @param period the period of ther current time scale to be retrieved
+     * @param functionString the function string for the current time scale to be retrieved
+     * @param the event whose time scale is to be determined, which helps with messaging
+     * @return the current time scale
+     * @throws DataAccessException if the current time scale is inconsistent with the last time scale
+     */
+
+    private <S> TimeScale checkAndGetLatestScale( TimeScale lastScale,
+                                                  Duration period,
+                                                  String functionString,
+                                                  Event<S> event )
+    {
+
+        Duration periodToUse = null;
+        TimeScaleFunction functionToUse = null;
+
+        // Existing scale to help augment?
+        if ( Objects.nonNull( this.getDeclaredExistingTimeScale() ) )
+        {
+            periodToUse = this.getDeclaredExistingTimeScale().getPeriod();
+            functionToUse = this.getDeclaredExistingTimeScale().getFunction();
+        }
+        // Period available?
+        if ( Objects.nonNull( period ) )
+        {
+            periodToUse = period;
+        }
+        // Function available?
+        if ( Objects.nonNull( functionString ) )
+        {
+            functionToUse =
+                    TimeScale.TimeScaleFunction.valueOf( functionString.toUpperCase() );
+        }
+
+        TimeScale returnMe = null;
+
+        if ( Objects.nonNull( periodToUse ) && Objects.nonNull( functionToUse ) )
+        {
+            returnMe = TimeScale.of( periodToUse, functionToUse );
+        }
+
+        if ( Objects.nonNull( lastScale ) && !lastScale.equals( returnMe ) )
+        {
+            throw new DataAccessException( "The time scale information associated with event '" + event
+                                           + "' is '"
+                                           + returnMe
+                                           + "' but other events in the same series have a different time "
+                                           + "scale of '"
+                                           + lastScale
+                                           + "', which is not allowed." );
+        }
+
+        return returnMe;
+    }
+
     /**
      * Adds an event to a time-series and annotates any exception raised.
      * 
@@ -205,7 +255,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * @param builder the builder
      * @throws DataAccessException if the event could not be added
      */
-    
+
     private <S> void addEventToTimeSeries( Event<S> event, TimeSeriesBuilder<S> builder )
     {
         try
@@ -222,7 +272,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                                            + this.getLeftOrRightOrBaseline()
                                            + "', encountered an error: ",
                                            e );
-        }       
+        }
     }
 
     /**
@@ -348,6 +398,17 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     TimeScale getDesiredTimeScale()
     {
         return this.desiredTimeScale;
+    }
+
+    /**
+     * Returns the declared existing time scale, which may be null.
+     * 
+     * @return the declared existing time scale or null
+     */
+
+    TimeScale getDeclaredExistingTimeScale()
+    {
+        return this.declaredExistingTimeScale;
     }
 
     /**
@@ -840,6 +901,13 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         private TimeScale desiredTimeScale;
 
         /**
+         * Declared existing time scale;
+         */
+
+        private TimeScale declaredExistingTimeScale;
+
+
+        /**
          * Sets the <code>wres.Project.project_id</code>.
          * 
          * @param projectId the <code>wres.Project.project_id</code>
@@ -906,6 +974,20 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         }
 
         /**
+         * Sets the existing time scale from the project declaration, which can be used to augment a source, but not
+         * override it.
+         * 
+         * @param declaredExistingTimeScale the declared existing time scale
+         * @return the builder
+         */
+
+        TimeSeriesRetrieverBuilder<S> setDeclaredExistingTimeScale( TimeScale declaredExistingTimeScale )
+        {
+            this.declaredExistingTimeScale = declaredExistingTimeScale;
+            return this;
+        }
+
+        /**
          * Sets the measurement unit mapper.
          * 
          * @param unitMapper the measurement unit mapper
@@ -934,6 +1016,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         this.lrb = builder.lrb;
         this.timeWindow = builder.timeWindow;
         this.desiredTimeScale = builder.desiredTimeScale;
+        this.declaredExistingTimeScale = builder.declaredExistingTimeScale;
         this.unitMapper = builder.unitMapper;
 
         // Validate

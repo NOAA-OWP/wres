@@ -48,11 +48,10 @@ import wres.engine.statistics.metric.categorical.ContingencyTable;
  * {@link MetricConstants} may be defined. These metrics are ignored during calculation.
  * </p>
  * 
+ * @author james.brown@hydrosolved.com
  * @param <S> the input type
  * @param <T> the intermediate output type for {@link Collectable} metrics in this collection
  * @param <U> the output type
- * 
- * @author james.brown@hydrosolved.com
  */
 
 public class MetricCollection<S extends SampleData<?>, T extends Statistic<?>, U extends Statistic<?>>
@@ -123,12 +122,12 @@ public class MetricCollection<S extends SampleData<?>, T extends Statistic<?>, U
             throw new MetricCalculationException( "Computation of the metric collection was cancelled: ", e );
         }
     }
-    
+
     @Override
-    public String toString() 
+    public String toString()
     {
         Set<MetricConstants> m = this.getMetrics();
-        
+
         return "The following metrics are in collection object '" + this.hashCode() + "': " + m;
     }
 
@@ -302,8 +301,9 @@ public class MetricCollection<S extends SampleData<?>, T extends Statistic<?>, U
             }
         }
         //Create the futures for the ordinary metrics
-        localMetrics.forEach( ( key, value ) -> metricFutures.add( CompletableFuture.supplyAsync( () -> value.apply( input ),
-                                                                                                  this.metricPool ) ) );
+        localMetrics.forEach( ( key,
+                                value ) -> metricFutures.add( CompletableFuture.supplyAsync( () -> value.apply( input ),
+                                                                                             this.metricPool ) ) );
         //Compute the results
         List<U> unpacked = new ArrayList<>();
 
@@ -313,7 +313,7 @@ public class MetricCollection<S extends SampleData<?>, T extends Statistic<?>, U
         {
             unpacked.add( nextResult.get() ); //This is blocking
         }
-        
+
         ListOfStatistics<U> returnMe = ListOfStatistics.of( Collections.unmodifiableList( unpacked ) );
 
         this.logEndOfCalculation( LOGGER, returnMe );
@@ -428,11 +428,11 @@ public class MetricCollection<S extends SampleData<?>, T extends Statistic<?>, U
      * 
      * @return all stored metrics
      */
-    
-    private Set<MetricConstants> getMetrics() 
+
+    private Set<MetricConstants> getMetrics()
     {
         return Stream.concat( this.collectableMetrics.keySet().stream(), this.metrics.keySet().stream() )
                      .collect( Collectors.toSet() );
     }
-    
+
 }
