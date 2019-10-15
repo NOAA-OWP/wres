@@ -50,8 +50,7 @@ public class PersistenceGenerator<S> implements UnaryOperator<TimeSeries<S>>
 
     /**
      * The order of persistence relative to the start of the template series from which the persistence value should 
-     * be derived. Order means the number of time-steps away from the template reference time. The time-step is taken
-     * from the supplied source of persistence values.
+     * be derived. Order means the number of times prior to the reference time in the template.
      */
 
     private final int order;
@@ -63,13 +62,14 @@ public class PersistenceGenerator<S> implements UnaryOperator<TimeSeries<S>>
     private final TimeSeries<S> persistenceSource;
 
     /**
-     * An optional upscaler to use in generating a persistence value at a required time.
+     * An optional upscaler to use in generating a persistence value from the {@link #persistenceSource}.
      */
 
     private final TimeSeriesUpscaler<S> upscaler;
 
     /**
-     * An optional constraint on admissible values.
+     * An optional constraint on admissible values. If a value is not eligible for persistence, the empty series is
+     * returned.
      */
 
     private final Predicate<S> admissibleValue;
