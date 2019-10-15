@@ -403,16 +403,18 @@ public class PoolOfPairsSupplierTest
                                                   Duration.ofHours( 0 ),
                                                   Duration.ofHours( 23 ) );
 
-        SampleMetadata poolOneMetadata = SampleMetadata.of( this.metadata, poolOneWindow );
+        SampleMetadata poolOneMetadata = SampleMetadata.of( this.metadata,
+                                                            poolOneWindow,
+                                                            this.desiredTimeScale );
 
         Supplier<PoolOfPairs<Double, Double>> poolOneSupplier =
                 new PoolOfPairsSupplierBuilder<Double, Double>().setLeft( obsSupplier )
-                                                         .setRight( forcSupplierOne )
-                                                         .setLeftUpscaler( this.upscaler )
-                                                         .setPairer( this.pairer )
-                                                         .setDesiredTimeScale( this.desiredTimeScale )
-                                                         .setMetadata( poolOneMetadata )
-                                                         .build();
+                                                                .setRight( forcSupplierOne )
+                                                                .setLeftUpscaler( this.upscaler )
+                                                                .setPairer( this.pairer )
+                                                                .setDesiredTimeScale( this.desiredTimeScale )
+                                                                .setMetadata( poolOneMetadata )
+                                                                .build();
 
         PoolOfPairs<Double, Double> poolOneActual = poolOneSupplier.get();
 
@@ -474,16 +476,18 @@ public class PoolOfPairsSupplierTest
                                                      Duration.ofHours( 0 ),
                                                      Duration.ofHours( 23 ) );
 
-        SampleMetadata poolElevenMetadata = SampleMetadata.of( this.metadata, poolElevenWindow );
+        SampleMetadata poolElevenMetadata = SampleMetadata.of( this.metadata,
+                                                               poolElevenWindow,
+                                                               this.desiredTimeScale );
 
         Supplier<PoolOfPairs<Double, Double>> poolElevenSupplier =
                 new PoolOfPairsSupplierBuilder<Double, Double>().setLeft( obsSupplier )
-                                                         .setRight( forcSupplierEleven )
-                                                         .setLeftUpscaler( this.upscaler )
-                                                         .setPairer( this.pairer )
-                                                         .setDesiredTimeScale( this.desiredTimeScale )
-                                                         .setMetadata( poolElevenMetadata )
-                                                         .build();
+                                                                .setRight( forcSupplierEleven )
+                                                                .setLeftUpscaler( this.upscaler )
+                                                                .setPairer( this.pairer )
+                                                                .setDesiredTimeScale( this.desiredTimeScale )
+                                                                .setMetadata( poolElevenMetadata )
+                                                                .build();
 
         PoolOfPairs<Double, Double> poolElevenActual = poolElevenSupplier.get();
 
@@ -571,23 +575,24 @@ public class PoolOfPairsSupplierTest
                                                        Duration.ofHours( 17 ),
                                                        Duration.ofHours( 40 ) );
 
-        SampleMetadata poolEighteenMetadata = SampleMetadata.of( this.metadata, poolEighteenWindow );
+        SampleMetadata poolEighteenMetadata = SampleMetadata.of( this.metadata,
+                                                                 poolEighteenWindow,
+                                                                 this.desiredTimeScale );
 
         Supplier<PoolOfPairs<Double, Double>> poolEighteenSupplier =
                 new PoolOfPairsSupplierBuilder<Double, Double>().setLeft( obsSupplier )
-                                                         .setRight( forcSupplierEighteen )
-                                                         .setLeftUpscaler( this.upscaler )
-                                                         .setPairer( this.pairer )
-                                                         .setDesiredTimeScale( this.desiredTimeScale )
-                                                         .setMetadata( poolEighteenMetadata )
-                                                         .build();
+                                                                .setRight( forcSupplierEighteen )
+                                                                .setLeftUpscaler( this.upscaler )
+                                                                .setPairer( this.pairer )
+                                                                .setDesiredTimeScale( this.desiredTimeScale )
+                                                                .setMetadata( poolEighteenMetadata )
+                                                                .build();
 
         PoolOfPairs<Double, Double> poolEighteenActual = poolEighteenSupplier.get();
 
         // Pool Eighteen expected
         TimeSeries<Pair<Double, Double>> poolEighteenSeries =
-                new TimeSeriesBuilder<Pair<Double, Double>>()
-                                                             .setTimeScale( this.desiredTimeScale )
+                new TimeSeriesBuilder<Pair<Double, Double>>().setTimeScale( this.desiredTimeScale )
                                                              .build();
 
         PoolOfPairs<Double, Double> poolEighteenExpected =

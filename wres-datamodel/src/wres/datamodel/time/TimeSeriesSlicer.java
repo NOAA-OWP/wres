@@ -427,12 +427,10 @@ public final class TimeSeriesSlicer
                 next.add( nextEvent.getValue() );
             }
 
-
             // Set the reference times and time scale
             if ( Objects.isNull( referenceTimes ) )
             {
                 referenceTimes = nextSeries.getReferenceTimes();
-                timeScale = nextSeries.getTimeScale();
             }
             else if ( !nextSeries.getReferenceTimes().equals( referenceTimes ) )
             {
@@ -449,6 +447,8 @@ public final class TimeSeriesSlicer
                                                     + "ensemble." );
             }
 
+            // Set the time scale
+            timeScale = nextSeries.getTimeScale();
         }
 
         return TimeSeriesSlicer.compose( ensembles, referenceTimes, timeScale, labels );
@@ -722,7 +722,9 @@ public final class TimeSeriesSlicer
         Objects.requireNonNull( labels );
 
         TimeSeriesBuilder<Ensemble> builder = new TimeSeriesBuilder<>();
-        builder.addReferenceTimes( referenceTimes ).setTimeScale( timeScale );
+        builder.addReferenceTimes( referenceTimes )
+               .setTimeScale( timeScale );
+        
         String[] labs = null;
 
         if ( !labels.isEmpty() )

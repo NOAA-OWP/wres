@@ -207,10 +207,6 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
 
         PoolOfPairsBuilder<L, R> builder = new PoolOfPairsBuilder<>();
 
-        // Set the metadata
-        builder.setMetadata( this.metadata );
-        builder.setMetadataForBaseline( this.baselineMetadata );
-
         // Left data provided or is climatology the left data?
         Stream<TimeSeries<L>> cStream;
         if ( Objects.nonNull( this.left ) )
@@ -235,6 +231,13 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
 
         // Obtained the desired time scale. If this is unavailable, use the Least Common Scale.
         TimeScale desiredTimeScaleToUse = this.getDesiredTimeScale( leftData, rightData, baselineData, this.inputs );
+
+        // Set the metadata, adjusted to include the desired time scale
+        builder.setMetadata( SampleMetadata.of( this.metadata, desiredTimeScaleToUse ) );
+        if ( this.hasBaseline() )
+        {
+            builder.setMetadataForBaseline( SampleMetadata.of( this.baselineMetadata, desiredTimeScaleToUse ) );
+        }
 
         // Consolidate and snip the left data to the right bounds
         // This is a performance optimization for when the left dataset is large (e.g., climatology)
@@ -623,8 +626,8 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
 
         Instant lowerBound = Instant.MIN;
         Instant upperBound = Instant.MAX;
-        
-        if( !validTimes.isEmpty() )
+
+        if ( !validTimes.isEmpty() )
         {
             lowerBound = validTimes.first();
             upperBound = validTimes.last();

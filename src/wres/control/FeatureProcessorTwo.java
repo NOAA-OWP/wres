@@ -33,6 +33,7 @@ import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.processing.MetricProcessor;
 import wres.io.config.ConfigHelper;
 import wres.io.project.Project;
+import wres.io.retrieval.datashop.EnsemblePoolGenerator;
 import wres.io.retrieval.datashop.SingleValuedPoolGenerator;
 import wres.io.retrieval.datashop.UnitMapper;
 import wres.util.IterationFailedException;
@@ -161,10 +162,9 @@ class FeatureProcessorTwo implements Supplier<FeatureProcessingResult>
             // Pairs that contain ensemble forecasts
             if ( type == DatasourceType.ENSEMBLE_FORECASTS )
             {
-//                EnsemblePoolGenerator poolGenerator =
-//                        EnsemblePoolGenerator.of( this.project, this.feature.getFeature(), this.unitMapper );
-//                List<Supplier<PoolOfPairs<Double, Ensemble>>> pools = poolGenerator.get();
-                List<Supplier<PoolOfPairs<Double, Ensemble>>> pools = null;
+                EnsemblePoolGenerator poolGenerator =
+                        EnsemblePoolGenerator.of( this.project, this.feature.getFeature(), this.unitMapper );
+                List<Supplier<PoolOfPairs<Double, Ensemble>>> pools = poolGenerator.get();
 
                 // Stand-up the pair writers
                 PairsWriter<Double, Ensemble> pairsWriter = null;
