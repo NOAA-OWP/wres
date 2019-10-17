@@ -274,6 +274,60 @@ public final class TimeSeriesSlicerTest
     }
 
     @Test
+    public void testGroupEventsByOverlappingIntervalProducesTwoGroupsEachWithFourEvents()
+    {
+        // Create the events
+        SortedSet<Event<Double>> events = new TreeSet<>();
+
+        Event<Double> one = Event.of( Instant.parse( "2079-12-03T00:00:01Z" ), 1.0 );
+        Event<Double> two = Event.of( Instant.parse( "2079-12-03T06:00:00Z" ), 3.0 );
+        Event<Double> three = Event.of( Instant.parse( "2079-12-03T12:00:01Z" ), 4.0 );
+        Event<Double> four = Event.of( Instant.parse( "2079-12-03T18:00:00Z" ), 5.0 );
+        Event<Double> five = Event.of( Instant.parse( "2079-12-04T00:00:00Z" ), 14.0 );
+        Event<Double> six = Event.of( Instant.parse( "2079-12-04T06:00:00Z" ), 21.0 );
+
+        events.add( one );
+        events.add( two );
+        events.add( three );
+        events.add( four );
+        events.add( five );
+        events.add( six );
+
+        // Create the period
+        Duration period = Duration.ofHours( 18 );
+
+        // Create the endsAt times
+        Set<Instant> endsAt = new HashSet<>();
+        Instant first = Instant.parse( "2079-12-03T18:00:00Z" );
+        Instant second = Instant.parse( "2079-12-04T06:00:00Z" );
+
+        endsAt.add( first );
+        endsAt.add( second );
+
+        Map<Instant, SortedSet<Event<Double>>> actual =
+                TimeSeriesSlicer.groupEventsByInterval( events, endsAt, period );
+
+        Map<Instant, SortedSet<Event<Double>>> expected = new HashMap<>();
+
+        SortedSet<Event<Double>> groupOne = new TreeSet<>();
+        groupOne.add( one );
+        groupOne.add( two );
+        groupOne.add( three );
+        groupOne.add( four );
+        expected.put( first, groupOne );
+
+        SortedSet<Event<Double>> groupTwo = new TreeSet<>();
+        groupTwo.add( three );
+        groupTwo.add( four );
+        groupTwo.add( five );
+        groupTwo.add( six );
+        expected.put( second, groupTwo );
+
+        assertEquals( expected, actual );
+
+    }    
+    
+    @Test
     public void testDecomposeWithoutLabelsProducesFourTraces()
     {
         // Create an ensemble time-series with four members
@@ -438,13 +492,13 @@ public final class TimeSeriesSlicerTest
         TimeSeries<Ensemble> expected =
                 new TimeSeriesBuilder<Ensemble>()
                                                  .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 1 ) ),
-                                                                      Ensemble.of( 1, 2, 3, 4 ) ) )
+                                                                      Ensemble.of( 4, 3, 2, 1 ) ) )
                                                  .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 2 ) ),
                                                                       Ensemble.of( 5, 6, 7, 8 ) ) )
                                                  .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ),
-                                                                      Ensemble.of( 9, 10, 11, 12 ) ) )
+                                                                      Ensemble.of( 12, 11, 10, 9 ) ) )
                                                  .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ),
-                                                                      Ensemble.of( 13, 14, 15, 16 ) ) )
+                                                                      Ensemble.of( 13, 15, 14, 16 ) ) )
                                                  .addReferenceTime( baseInstant,
                                                                     ReferenceTimeType.DEFAULT )
                                                  .build();

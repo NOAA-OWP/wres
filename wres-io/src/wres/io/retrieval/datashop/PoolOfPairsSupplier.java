@@ -179,15 +179,12 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         // Create pool if needed
         synchronized ( this.creationLock )
         {
-            if ( Objects.nonNull( this.pool ) )
+            if ( Objects.isNull( this.pool ) )
             {
-                return this.pool;
+                LOGGER.debug( "Creating pool for {}.", this.metadata );
+                this.pool = this.createPool();
             }
-
-            this.createPool();
         }
-
-        LOGGER.debug( "Returning existing pool for {}.", this.metadata );
 
         return this.pool;
     }
@@ -199,9 +196,10 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
      * @throws RescalingException if the pool data could not be rescaled
      * @throws PairingException if the pool data could not be paired
      * @throws NoSuchUnitConversionException if the data units could not be converted
+     * @return the pool
      */
 
-    public void createPool()
+    private PoolOfPairs<L, R> createPool()
     {
         LOGGER.debug( "Creating pool {}.", this.metadata );
 
@@ -286,9 +284,12 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
             }
         }
 
-        // Set the climatology
-        VectorOfDoubles clim = this.createClimatology( desiredTimeScaleToUse );
-        builder.setClimatology( clim );
+        if ( Objects.nonNull( this.climatology ) )
+        {
+            VectorOfDoubles clim = this.createClimatology( desiredTimeScaleToUse );
+            builder.setClimatology( clim );
+        }
+
 
         // Create the pairs
         PoolOfPairs<L, R> returnMe = builder.build();
@@ -297,7 +298,7 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
                       this.metadata,
                       returnMe.getRawData().size() );
 
-        this.pool = returnMe;
+        return returnMe;
     }
 
     /**
@@ -711,10 +712,10 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
 
             // Acquire the times from the left series at which right upscaled values should end
             SortedSet<Instant> endsAt =
-                    left.getEvents()
-                        .stream()
-                        .map( Event::getTime )
-                        .collect( Collectors.toCollection( TreeSet::new ) );
+                    scaledLeft.getEvents()
+                              .stream()
+                              .map( Event::getTime )
+                              .collect( Collectors.toCollection( TreeSet::new ) );
 
             RescaledTimeSeriesPlusValidation<R> upscaledRight = this.getRightUpscaler()
                                                                     .upscale( right,
@@ -770,44 +771,53 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
     {
         VectorOfDoubles returnMe = null;
 
+        List<TimeSeries<L>> climData = this.climatology.get()
+                                                       .collect( Collectors.toList() );
+
         List<Double> listOfDoubles = new ArrayList<>();
 
-        if ( Objects.nonNull( this.climatology ) )
+        LOGGER.debug( "Creating climatolology for pool {}.", this.metadata );
+
+        for ( TimeSeries<L> next : climData )
         {
-            LOGGER.debug( "Creating climatolology for pool {}.", this.metadata );
+            TimeSeries<L> nextSeries = next;
 
-            // Map from TimeSeries<L> to VectorOfDoubles
-            List<TimeSeries<L>> climate = this.climatology.get()
-                                                          .collect( Collectors.toList() );
-
-            for ( TimeSeries<L> next : climate )
+            // Upscale?
+            if ( Objects.nonNull( desiredTimeScale )
+                 && !desiredTimeScale.equals( nextSeries.getTimeScale() ) )
             {
-                TimeSeries<L> nextSeries = next;
+                LOGGER.trace( "Upscaling the climatological time-series from {} to {}.",
+                              nextSeries.getTimeScale(),
+                              desiredTimeScale );
 
-                // Upscale?
-                if ( Objects.nonNull( desiredTimeScale )
-                     && !desiredTimeScale.equals( nextSeries.getTimeScale() ) )
-                {
-                    nextSeries = this.getLeftUpscaler().upscale( nextSeries, desiredTimeScale ).getTimeSeries();
-                    LOGGER.debug( "Upscaled the climatological time-series from {} to {}.",
-                                  nextSeries.getTimeScale(),
-                                  desiredTimeScale );
+                nextSeries = this.getLeftUpscaler().upscale( nextSeries, desiredTimeScale ).getTimeSeries();
 
-                }
+                LOGGER.debug( "Upscaled the climatological time-series from {} to {}.",
+                              nextSeries.getTimeScale(),
+                              desiredTimeScale );
 
-                TimeSeries<Double> transformed =
-                        TimeSeriesSlicer.transform( nextSeries, this.climatologyMapper::applyAsDouble );
-                transformed.getEvents().forEach( event -> listOfDoubles.add( event.getValue() ) );
             }
 
-            returnMe = VectorOfDoubles.of( listOfDoubles.stream()
-                                                        .mapToDouble( Double::doubleValue )
-                                                        .toArray() );
+            TimeSeries<Double> transformed =
+                    TimeSeriesSlicer.transform( nextSeries, this.climatologyMapper::applyAsDouble );
 
-            LOGGER.debug( "Finished creating climatology for pool {}. Discovered {} climatological values.",
-                          this.metadata,
-                          listOfDoubles.size() );
+            // Filter for admissible values
+            List<Double> seriesDoubles = transformed.getEvents()
+                                                    .stream()
+                                                    .map( Event::getValue )
+                                                    .filter( Double::isFinite )
+                                                    .collect( Collectors.toList() );
+
+            listOfDoubles.addAll( seriesDoubles );
         }
+
+        returnMe = VectorOfDoubles.of( listOfDoubles.stream()
+                                                    .mapToDouble( Double::doubleValue )
+                                                    .toArray() );
+
+        LOGGER.debug( "Finished creating climatology for pool {}. Discovered {} climatological values.",
+                      this.metadata,
+                      listOfDoubles.size() );
 
         return returnMe;
     }
@@ -879,7 +889,8 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         {
             LOGGER.trace( "While retrieving data for pool {}, discovered that the desired time scale of {} was "
                           + "supplied on construction of the pool.",
-                          this.metadata );
+                          this.metadata,
+                          this.desiredTimeScale );
 
             return this.desiredTimeScale;
         }

@@ -147,7 +147,8 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
                           + "TSV.lead, "
                           + "TS.scale_period, "
                           + "TS.scale_function, "
-                          + "TS.measurementunit_id" );
+                          + "TS.measurementunit_id, "
+                          + "TSS.source_id" );
         
         // Add ORDER BY clause
         scripter.addLine( "ORDER BY series_id, TS.initialization_date, valid_time;" );
@@ -203,6 +204,11 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
 
     /**
      * Returns the start of a script to acquire a time-series from the WRES database for all time-series.
+     * 
+     * TODO: support reduplication of time-series for ensemble forecasts. See #56214-272. Also see 
+     * {@link SingleValuedForecastRetriever} and {@link TimeSeriesRetriever} for the hint required in the form of a
+     * series count for each identified series. Note that the <code>timeseries_id</code> is common across duplicated
+     * series.
      * 
      * @return the start of a script for the time-series
      */

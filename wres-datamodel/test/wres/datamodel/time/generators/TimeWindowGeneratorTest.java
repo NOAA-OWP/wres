@@ -757,6 +757,57 @@ public final class TimeWindowGeneratorTest
         // Assert that the expected and actual are equal
         assertEquals( expectedTimeWindows, actualTimeWindows );
     }
+    
+    /**
+     * <p>Tests the {@link TimeWindowGenerator#getTimeWindowsFromPairConfig(PairConfig)}
+     * where the project declaration includes a <code>leadHours</code> and an <code>leadTimesPoolingWindow</code> and 
+     * the <code>minimum</code> and <code>maximum</code> lead hours are the same value and the period associated with 
+     * the <code>leadTimesPoolingWindow</code> is zero wide. This is equivalent to system test scenario010 as of 
+     * commit 8480aa4d4ddc09275746fe590623ecfd83e452ae and is used to check that a zero-wide pool centered on a
+     * single lead duration does not increment infinitely.
+     */
+
+    @Test
+    public void testGetTimeWindowsWithZeroWideLeadHoursAndLeadTimesPoolingWindowWithZeroPeriodReturnsOneWindows()
+    {
+        // Mock the sufficient elements of the ProjectConfig
+        IntBoundsType leadBoundsConfig = new IntBoundsType( 43, 43 );
+        
+        PoolingWindowConfig leadTimesPoolingWindowConfig =
+                new PoolingWindowConfig( 0, null, DurationUnit.HOURS );
+        
+        PairConfig pairsConfig = new PairConfig( null,
+                                                 null,
+                                                 null,
+                                                 leadBoundsConfig,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 leadTimesPoolingWindowConfig,
+                                                 null,
+                                                 null );
+
+        // Generate the expected windows
+        Set<TimeWindow> expectedTimeWindows = new HashSet<>( 1 );
+
+        Duration first = Duration.ofHours( 43 );
+        Duration last = Duration.ofHours( 43 );
+
+        expectedTimeWindows.add( TimeWindow.of( first,
+                                                last ) );
+        
+        // Generate the actual windows
+        Set<TimeWindow> actualTimeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfig );
+
+        // Assert the expected cardinality
+        assertEquals( 1, actualTimeWindows.size() );
+
+        // Assert that the expected and actual are equal
+        assertEquals( expectedTimeWindows, actualTimeWindows );
+    }    
 
     /**
      * Tests the {@link TimeWindowGenerator#getTimeWindowsFromPairConfig(PairConfig)} for an expected exception when 

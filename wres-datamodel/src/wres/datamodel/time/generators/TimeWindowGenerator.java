@@ -160,19 +160,33 @@ public final class TimeWindowGenerator
 
         // Increment left-to-right and stop when the right bound extends past the 
         // latestLeadDurationInclusive: #56213-104
-        while ( latestInclusive.compareTo( latestLeadDurationInclusive ) <= 0 )
+        // Window increments are zero?
+        if ( Duration.ZERO.equals( increment ) )
         {
-            // Add the current time window
             timeWindows.add( TimeWindow.of( baseWindow.getEarliestReferenceTime(),
                                             baseWindow.getLatestReferenceTime(),
                                             baseWindow.getEarliestValidTime(),
                                             baseWindow.getLatestValidTime(),
                                             earliestExclusive,
                                             latestInclusive ) );
+        }
+        // Create as many windows as required at the prescribed increment
+        else
+        {
+            while ( latestInclusive.compareTo( latestLeadDurationInclusive ) <= 0 )
+            {
+                // Add the current time window
+                timeWindows.add( TimeWindow.of( baseWindow.getEarliestReferenceTime(),
+                                                baseWindow.getLatestReferenceTime(),
+                                                baseWindow.getEarliestValidTime(),
+                                                baseWindow.getLatestValidTime(),
+                                                earliestExclusive,
+                                                latestInclusive ) );
 
-            // Increment from left-to-right: #56213-104
-            earliestExclusive = earliestExclusive.plus( increment );
-            latestInclusive = latestInclusive.plus( increment );
+                // Increment from left-to-right: #56213-104
+                earliestExclusive = earliestExclusive.plus( increment );
+                latestInclusive = latestInclusive.plus( increment );
+            }
         }
 
         return Collections.unmodifiableSet( timeWindows );

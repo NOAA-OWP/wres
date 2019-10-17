@@ -85,13 +85,22 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
                                                                  + "scale is the desired time scale.";
 
     private static final String BECAUSE_THE_VALUES_WERE_NOT_EVENLY_SPACED_WITHIN_THE_INTERVAL =
-            "Skipped upscaling a collection of {} events in an interval ending at {} because the values were not "
-                                                                                                + "evenly spaced within"
-                                                                                                + " the interval.";
+            "Skipped upscaling a collection of {} events in an interval ending at {} because the values were not evenly "
+                                                                                                + "spaced within the "
+                                                                                                + "interval. Identified "
+                                                                                                + "these intervals "
+                                                                                                + "before stopping: "
+                                                                                                + "{}.";
 
     private static final String BECAUSE_THERE_WERE_FEWER_THAN_TWO_EVENTS_TO_UPSCALE =
             "Skipped upscaling a collection of {} events in an interval ending at {} because there were fewer than two "
                                                                                       + "events to upscale.";
+
+    /**
+     * Lenient on values that match the {@link MissingValues.DOUBLE}? TODO: expose this to declaration.
+     */
+
+    private static final boolean LENIENT = false;
 
     /**
      * Logger.
@@ -100,11 +109,12 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
     private static final Logger LOGGER = LoggerFactory.getLogger( TimeSeriesOfDoubleBasicUpscaler.class );
 
     /**
-     * Function that returns a double value or {@link wres.datamodel.MissingValues.MissingValues.MISSING_DOUBLE} if the input is not finite. 
+     * Function that returns a double value or {@link MissingValues.MISSING_DOUBLE} if the 
+     * input is not finite. 
      */
 
     private static final DoubleUnaryOperator RETURN_DOUBLE_OR_MISSING =
-            a -> Double.isFinite( a ) ? a : wres.datamodel.MissingValues.DOUBLE;
+            a -> Double.isFinite( a ) ? a : MissingValues.DOUBLE;
 
     /**
      * Creates an instance.
@@ -213,6 +223,7 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
             if ( this.canUpscale( nextGroup.getValue(), nextGroup.getKey(), period ) )
             {
                 Event<Double> upscaled = Event.of( nextGroup.getKey(), upscaler.applyAsDouble( nextGroup.getValue() ) );
+
                 builder.addEvent( upscaled );
             }
         }
@@ -251,6 +262,7 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
         // Subtract the time-step so that the first value is always considered
         // because the interval is right-closed
         Instant check = firstTime.minus( timeStep );
+
         while ( check.isBefore( lastTime ) )
         {
             Instant next = check.plus( period );
@@ -343,14 +355,19 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
 
             for ( Instant next : times )
             {
-                if ( Objects.nonNull( lastPeriod )
-                     && !lastPeriod.equals( Duration.between( last, next ) ) )
+                if ( Objects.nonNull( lastPeriod ) )
                 {
-                    this.logSkippedGroup( BECAUSE_THE_VALUES_WERE_NOT_EVENLY_SPACED_WITHIN_THE_INTERVAL,
-                                          events,
-                                          endsAt );
+                    Duration nextPeriod = Duration.between( last, next );
 
-                    return false;
+                    if ( !Objects.equals( lastPeriod, nextPeriod ) )
+                    {
+                        this.logSkippedGroup( BECAUSE_THE_VALUES_WERE_NOT_EVENLY_SPACED_WITHIN_THE_INTERVAL,
+                                              events,
+                                              endsAt,
+                                              Set.of( lastPeriod, nextPeriod ) );
+
+                        return false;
+                    }
                 }
 
                 if ( Objects.nonNull( last ) )
@@ -360,7 +377,6 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
 
                 last = next;
             }
-
         }
 
         return true;
@@ -381,19 +397,39 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
 
             double upscaled;
 
+            SortedSet<Event<Double>> eventsToUse = events;
+
+            if ( TimeSeriesOfDoubleBasicUpscaler.LENIENT )
+            {
+                eventsToUse = eventsToUse.stream()
+                                         .filter( next -> Double.isFinite( next.getValue() ) )
+                                         .collect( Collectors.toCollection( TreeSet::new ) );
+            }
+
             switch ( function )
             {
                 case MAXIMUM:
-                    upscaled = events.stream().mapToDouble( Event::getValue ).max().getAsDouble();
+                    upscaled = eventsToUse.stream()
+                                          .mapToDouble( Event::getValue )
+                                          .max()
+                                          .getAsDouble();
                     break;
                 case MEAN:
-                    upscaled = events.stream().mapToDouble( Event::getValue ).average().getAsDouble();
+                    upscaled = eventsToUse.stream()
+                                          .mapToDouble( Event::getValue )
+                                          .average()
+                                          .getAsDouble();
                     break;
                 case MINIMUM:
-                    upscaled = events.stream().mapToDouble( Event::getValue ).min().getAsDouble();
+                    upscaled = eventsToUse.stream()
+                                          .mapToDouble( Event::getValue )
+                                          .min()
+                                          .getAsDouble();
                     break;
                 case TOTAL:
-                    upscaled = events.stream().mapToDouble( Event::getValue ).sum();
+                    upscaled = eventsToUse.stream()
+                                          .mapToDouble( Event::getValue )
+                                          .sum();
                     break;
                 default:
                     throw new UnsupportedOperationException( "Could not create an upscaling function for the "
@@ -406,19 +442,23 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
             return RETURN_DOUBLE_OR_MISSING.applyAsDouble( upscaled );
         };
     }
-
+    
     /**
      * Logs a skipped group of events at an appropriate logging level.
      * 
      * @param messageString the message string
      * @param events the events
      * @param endsAt the end of the interval to aggregate, which is used for logging
+     * @param other other parameterized objects to log
      */
-    private void logSkippedGroup( String messageString, SortedSet<Event<Double>> events, Instant endsAt )
+    private void logSkippedGroup( String messageString,
+                                  SortedSet<Event<Double>> events,
+                                  Instant endsAt,
+                                  Object... other )
     {
         if ( LOGGER.isTraceEnabled() )
         {
-            LOGGER.trace( messageString, events.size(), endsAt );
+            LOGGER.trace( messageString, events.size(), endsAt, other );
         }
     }
 

@@ -69,7 +69,7 @@ public class TimeSeriesPairerByExactTime<L, R> implements TimeSeriesPairer<L, R>
     }
 
     /**
-     * Creates an instance with left and rightr value guards. See also {@link #of()}.
+     * Creates an instance with left and right value guards. See also {@link #of()}.
      * 
      * @param <L> the left type of event value
      * @param <R> the right type of event value
