@@ -125,7 +125,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             Map<Integer, TimeSeriesBuilder<S>> builders = new TreeMap<>();
 
             // Time-series are duplicated per common source in wres.ProjectSource, 
-            // so de-duplicate here. See #56214-272
+            // so re-duplicate here. See #56214-272
             Map<Integer, Integer> seriesCounts = new HashMap<>();
 
             TimeScale lastScale = null; // Record of last scale

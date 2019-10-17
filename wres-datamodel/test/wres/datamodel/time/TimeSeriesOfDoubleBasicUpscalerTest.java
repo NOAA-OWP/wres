@@ -8,6 +8,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -267,6 +269,101 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
                                                              .build();
 
         assertEquals( expectedPairs, actualPairs );
+    }
+
+    /**
+     * Tests the {@link TimeSeriesOfDoubleBasicUpscaler#upscale(TimeSeries, TimeScale, Set)} to upscale eighteen 
+     * values into a maximum value that spans PT96H and ends at 2017-01-08T18:00:00Z.
+     */
+
+    @Test
+    public void testUpscaleEighteenValuesToFormMaximumOverPT96H()
+    {
+        // Eighteen event times, PT6H apart
+        Instant first = Instant.parse( "2017-01-04T12:00:00Z" );
+        Instant second = Instant.parse( "2017-01-04T18:00:00Z" );
+        Instant third = Instant.parse( "2017-01-05T00:00:00Z" );
+        Instant fourth = Instant.parse( "2017-01-05T06:00:00Z" );
+        Instant fifth = Instant.parse( "2017-01-05T12:00:00Z" );
+        Instant sixth = Instant.parse( "2017-01-05T18:00:00Z" );
+        Instant seventh = Instant.parse( "2017-01-06T00:00:00Z" );
+        Instant eighth = Instant.parse( "2017-01-06T06:00:00Z" );
+        Instant ninth = Instant.parse( "2017-01-06T12:00:00Z" );
+        Instant tenth = Instant.parse( "2017-01-06T18:00:00Z" );
+        Instant eleventh = Instant.parse( "2017-01-07T00:00:00Z" );
+        Instant twelfth = Instant.parse( "2017-01-07T06:00:00Z" );
+        Instant thirteenth = Instant.parse( "2017-01-07T12:00:00Z" );
+        Instant fourteenth = Instant.parse( "2017-01-07T18:00:00Z" );
+        Instant fifteenth = Instant.parse( "2017-01-08T00:00:00Z" );
+        Instant sixteenth = Instant.parse( "2017-01-08T06:00:00Z" );
+        Instant seventeenth = Instant.parse( "2017-01-08T12:00:00Z" );
+        Instant eighteenth = Instant.parse( "2017-01-08T18:00:00Z" );
+
+        // Eleven events
+        Event<Double> one = Event.of( first, 6.575788 );
+        Event<Double> two = Event.of( second, 6.999999 );
+        Event<Double> three = Event.of( third, 6.969816 );
+        Event<Double> four = Event.of( fourth, 6.983924 );
+        Event<Double> five = Event.of( fifth, 6.9274936 );
+        Event<Double> six = Event.of( sixth, 6.8008533 );
+        Event<Double> seven = Event.of( seventh, 6.6371393 );
+        Event<Double> eight = Event.of( eighth, 6.475394 );
+        Event<Double> nine = Event.of( ninth, 6.331365 );
+        Event<Double> ten = Event.of( tenth, 6.1879926 );
+        Event<Double> eleven = Event.of( eleventh, 6.031824 );
+        Event<Double> twelve = Event.of( twelfth, 5.874672 );
+        Event<Double> thirteen = Event.of( thirteenth, 5.725722 );
+        Event<Double> fourteen = Event.of( fourteenth, 5.57874 );
+        Event<Double> fifteen = Event.of( fifteenth, 5.424213 );
+        Event<Double> sixteen = Event.of( sixteenth, 5.284777 );
+        Event<Double> seventeen = Event.of( seventeenth, 5.174213 );
+        Event<Double> eighteen = Event.of( eighteenth, 5.0879264 );
+
+        // Time scale of the event values: instantaneous
+        TimeScale existingScale = TimeScale.of();
+
+        // Forecast reference time
+        Instant referenceTime = Instant.parse( "2017-01-02T12:00:00Z" );
+
+        // Time-series to upscale
+        TimeSeries<Double> forecast = new TimeSeriesBuilder<Double>().addEvent( one )
+                                                                     .addEvent( two )
+                                                                     .addEvent( three )
+                                                                     .addEvent( four )
+                                                                     .addEvent( five )
+                                                                     .addEvent( six )
+                                                                     .addEvent( seven )
+                                                                     .addEvent( eight )
+                                                                     .addEvent( nine )
+                                                                     .addEvent( ten )
+                                                                     .addEvent( eleven )
+                                                                     .addEvent( twelve )
+                                                                     .addEvent( thirteen )
+                                                                     .addEvent( fourteen )
+                                                                     .addEvent( fifteen )
+                                                                     .addEvent( sixteen )
+                                                                     .addEvent( seventeen )
+                                                                     .addEvent( eighteen )
+                                                                     .addReferenceTime( referenceTime,
+                                                                                        ReferenceTimeType.DEFAULT )
+                                                                     .setTimeScale( existingScale )
+                                                                     .build();
+
+        TimeScale desiredTimeScale = TimeScale.of( Duration.ofHours( 96 ), TimeScaleFunction.MAXIMUM );
+
+        SortedSet<Instant> endsAt = new TreeSet<>( Set.of( eighteenth ) );
+        TimeSeries<Double> actual = this.upscaler.upscale( forecast, desiredTimeScale, endsAt )
+                                                 .getTimeSeries();
+
+        TimeSeries<Double> expected = new TimeSeriesBuilder<Double>()
+                                                                     .addEvent( Event.of( eighteen.getTime(),
+                                                                                          four.getValue() ) )
+                                                                     .addReferenceTime( referenceTime,
+                                                                                        ReferenceTimeType.DEFAULT )
+                                                                     .setTimeScale( desiredTimeScale )
+                                                                     .build();
+
+        assertEquals( expected, actual );
     }
 
     @Test

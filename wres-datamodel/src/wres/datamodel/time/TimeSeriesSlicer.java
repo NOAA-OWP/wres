@@ -255,6 +255,7 @@ public final class TimeSeriesSlicer
      * @throws NullPointerException if any input is null
      */
 
+
     public static <T> Map<Instant, SortedSet<Event<T>>> groupEventsByInterval( SortedSet<Event<T>> events,
                                                                                Set<Instant> endsAt,
                                                                                Duration period )
@@ -267,21 +268,28 @@ public final class TimeSeriesSlicer
 
         Map<Instant, SortedSet<Event<T>>> grouped = new HashMap<>();
 
+        // Events in a sorted list
+        List<Event<T>> listedEvents = new ArrayList<>( events );
+        int eventCount = listedEvents.size();
+
+        SortedSet<Instant> ends = new TreeSet<>( endsAt );
+
         // Iterate the end times and group events whose times fall in (nextEnd-period,nextEnd]
-        for ( Instant nextEnd : endsAt )
+        int startIndex = 0; // Position at which to start searching the listed events
+        for ( Instant nextEnd : ends )
         {
             // Lower bound exclusive
             Instant nextStart = nextEnd.minus( period );
 
-            for ( Event<T> nextEvent : events )
+            for ( int i = startIndex; i < eventCount; i++ )
             {
+                Event<T> nextEvent = listedEvents.get( i );
                 Instant eventTime = nextEvent.getTime();
 
                 // Is event time within (start,nextEnd]?
+                SortedSet<Event<T>> nextGroup = grouped.get( nextEnd );
                 if ( eventTime.compareTo( nextEnd ) <= 0 && eventTime.compareTo( nextStart ) > 0 )
                 {
-                    SortedSet<Event<T>> nextGroup = grouped.get( nextEnd );
-
                     // Create a new group
                     if ( Objects.isNull( nextGroup ) )
                     {
@@ -291,11 +299,58 @@ public final class TimeSeriesSlicer
 
                     nextGroup.add( nextEvent );
                 }
-            }
 
+                // Events are sorted, so stop looking and reset the start
+                // position to test containment in the next interval
+                // If the interval is overlapping, then count back to the first date that fits within 
+                // the overlapping interval and start there.
+                if ( eventTime.isAfter( nextEnd ) )
+                {
+                    startIndex = TimeSeriesSlicer.getIndexOfEarliestTimeThatIsGreaterThanInputTime( i,
+                                                                                                    nextStart,
+                                                                                                    listedEvents );
+
+                    break;
+                }
+            }
         }
 
         return Collections.unmodifiableMap( grouped );
+    }
+
+    /**
+     * Inspects the sorted list of events by counting backwards from the input index. Returns the index of the earliest 
+     * time that is larger than the prescribed start time. This is useful for backfilling when searching for groups of
+     * events by time. See {@link #groupEventsByInterval(SortedSet, Set, Duration)}.
+     * 
+     * @param workBackFromhere the index at which to begin searching backwards
+     * @param startTime the start time that must be exceeded
+     * @param events the list of events in time order
+     */
+
+    private static <T> int getIndexOfEarliestTimeThatIsGreaterThanInputTime( int workBackFromHere,
+                                                                             Instant startTime,
+                                                                             List<Event<T>> events )
+    {
+        // Set the new start time
+        int nextStartIndex = workBackFromHere;
+        int onePriorToStart = nextStartIndex - 1;
+        for ( int j = onePriorToStart; j > -1; j-- )
+        {
+            Event<T> backEvent = events.get( j );
+            Instant backTime = backEvent.getTime();
+
+            if ( backTime.isAfter( startTime ) )
+            {
+                nextStartIndex--;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        return nextStartIndex;
     }
 
     /**
@@ -724,7 +779,7 @@ public final class TimeSeriesSlicer
         TimeSeriesBuilder<Ensemble> builder = new TimeSeriesBuilder<>();
         builder.addReferenceTimes( referenceTimes )
                .setTimeScale( timeScale );
-        
+
         String[] labs = null;
 
         if ( !labels.isEmpty() )

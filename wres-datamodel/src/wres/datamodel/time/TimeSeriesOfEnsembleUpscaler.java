@@ -73,7 +73,7 @@ public class TimeSeriesOfEnsembleUpscaler implements TimeSeriesUpscaler<Ensemble
         Objects.requireNonNull( desiredTimeScale );
 
         Objects.requireNonNull( endsAt );
-
+        
         // Decompose
         List<TimeSeries<Double>> traces = TimeSeriesSlicer.decompose( timeSeries );
 

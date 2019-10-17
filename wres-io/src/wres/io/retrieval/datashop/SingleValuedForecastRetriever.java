@@ -343,6 +343,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         scripter.addTab().addLine( "TS.measurementunit_id," );
         scripter.addTab().addLine( "TS.scale_period," );
         scripter.addTab().addLine( "TS.scale_function," );
+        // See #56214-272. Add the count to allow re-duplication of duplicate series
         scripter.addTab().addLine( "COUNT(*) AS occurrences" );
         scripter.addLine( FROM_WRES_TIME_SERIES_TS );
         scripter.addTab().addLine( "INNER JOIN wres.TimeSeriesValue TSV" );
