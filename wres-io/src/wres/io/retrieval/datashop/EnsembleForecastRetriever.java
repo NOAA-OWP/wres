@@ -1,7 +1,10 @@
 package wres.io.retrieval.datashop;
 
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.StringJoiner;
 import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
 import java.util.stream.LongStream;
@@ -59,11 +62,62 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
     private static final Logger LOGGER = LoggerFactory.getLogger( EnsembleForecastRetriever.class );
 
     /**
+     * A set of <code>ensemble_id</code> to include in the selection.
+     */
+
+    private final Set<Integer> ensembleIdsToInclude;
+
+    /**
+     * A set of <code>ensemble_id</code> to exclude from the selection.
+     */
+
+    private final Set<Integer> ensembleIdsToExclude;
+
+    /**
      * Builder.
      */
 
     static class Builder extends TimeSeriesRetrieverBuilder<Ensemble>
     {
+        /**
+         * A set of <code>ensemble_id</code> to include in the selection.
+         */
+
+        private Set<Integer> ensembleIdsToInclude;
+
+        /**
+         * A set of <code>ensemble_id</code> to exclude from the selection.
+         */
+
+        private Set<Integer> ensembleIdsToExclude;
+
+        /**
+         * Adds a set of <code>ensemble_id</code> to include in the selection.
+         * 
+         * @param ensembleIdsToInclude the ensemble identifiers to include
+         * @return the builder
+         */
+
+        Builder setEnsembleIdsToInclude( Set<Integer> ensembleIdsToInclude )
+        {
+            this.ensembleIdsToInclude = ensembleIdsToInclude;
+
+            return this;
+        }
+
+        /**
+         * Adds a set of <code>ensemble_id</code> to exclude from the selection.
+         * 
+         * @param ensembleIdsToExclude the ensemble identifiers to exclude
+         * @return the builder
+         */
+
+        Builder setEnsembleIdsToExclude( Set<Integer> ensembleIdsToExclude )
+        {
+            this.ensembleIdsToExclude = ensembleIdsToExclude;
+
+            return this;
+        }
 
         @Override
         EnsembleForecastRetriever build()
@@ -142,15 +196,21 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
         // Add time window constraint
         this.addTimeWindowClause( scripter, 0 );
 
+        // Add season constraint
+        this.addSeasonClause( scripter, 1 );
+
+        // Add ensemble member constraints
+        this.addEnsembleMemberClauses( scripter, 1 );
+
         String groupBySource = ", TSS.source_id";
-        
+
         // Group by source? 
         // TODO: please remove me when ingest is time-series-shaped.
-        if( this.hasMultipleSourcesPerSeries() )
+        if ( this.hasMultipleSourcesPerSeries() )
         {
             groupBySource = "";
         }
-        
+
         // Add GROUP BY clause
         scripter.addLine( "GROUP BY TS.initialization_date, "
                           + "TSV.lead, "
@@ -158,7 +218,7 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
                           + "TS.scale_function, "
                           + "TS.measurementunit_id"
                           + groupBySource );
-        
+
         // Add ORDER BY clause
         scripter.addLine( "ORDER BY TS.initialization_date, valid_time, series_id;" );
 
@@ -179,6 +239,52 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
     boolean isForecastRetriever()
     {
         return true;
+    }
+
+    /**
+     * Adds clause for each ensemble member constraint discovered.
+     * 
+     * @param script the script to augment
+     * @param tabsIn the number of tabs in for the outermost clause
+     * @throws NullPointerException if the input is null
+     */
+
+    void addEnsembleMemberClauses( ScriptBuilder script, int tabsIn )
+    {
+        Objects.requireNonNull( script );
+
+        // Does the filter exist?
+        if ( this.hasEnsembleConstraint() )
+        {
+            // Include these
+            if ( Objects.nonNull( this.ensembleIdsToInclude )
+                 && !this.ensembleIdsToInclude.isEmpty() )
+            {
+                StringJoiner include = new StringJoiner( ",", "ANY( '{", "}'::integer[] )" );
+                this.ensembleIdsToInclude.forEach( next -> include.add( next.toString() ) );
+                script.addTab( tabsIn ).addLine( "AND ensemble_id = ", include.toString() );
+            }
+
+            // Ignore these
+            if ( Objects.nonNull( this.ensembleIdsToExclude )
+                 && !this.ensembleIdsToExclude.isEmpty() )
+            {
+                StringJoiner exclude = new StringJoiner( ",", "ANY( '{", "}'::integer[] )" );
+                this.ensembleIdsToExclude.forEach( next -> exclude.add( next.toString() ) );
+                script.addTab( tabsIn ).addLine( "AND NOT ensemble_id = ", exclude.toString() );
+            }
+        }
+    }
+
+    /**
+     * Returns <code>true</code> if one or more ensemble constraints are present, otherwise <code>false</code>.
+     * 
+     * @return true if one or more ensemble constraints are defined, otherwise false
+     */
+
+    private boolean hasEnsembleConstraint()
+    {
+        return Objects.nonNull( this.ensembleIdsToInclude ) || Objects.nonNull( this.ensembleIdsToExclude );
     }
 
     /**
@@ -259,6 +365,8 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
     private EnsembleForecastRetriever( Builder builder )
     {
         super( builder );
+        this.ensembleIdsToInclude = builder.ensembleIdsToInclude;
+        this.ensembleIdsToExclude = builder.ensembleIdsToExclude;
     }
 
 
