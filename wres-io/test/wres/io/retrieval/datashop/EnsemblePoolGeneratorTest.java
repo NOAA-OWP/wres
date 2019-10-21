@@ -43,6 +43,8 @@ import wres.io.project.Project;
 public class EnsemblePoolGeneratorTest
 {
 
+    private static final String STREAMFLOW = "STREAMFLOW";
+
     /**
      * Tests {@link EnsemblePoolGenerator#get()} using project declaration that is representative of system test
      * scenario505 as of commit 43332ccbb45e712722ef2ca52904b18d8f98397c. While that scenario does not supply ensemble 
@@ -89,7 +91,7 @@ public class EnsemblePoolGeneratorTest
 
         DataSourceConfig right = new DataSourceConfig( DatasourceType.fromValue( "ensemble forecasts" ),
                                                        sourceList,
-                                                       new Variable( "STREAMFLOW", null, null ),
+                                                       new Variable( STREAMFLOW, null, null ),
                                                        null,
                                                        null,
                                                        null,
@@ -127,9 +129,9 @@ public class EnsemblePoolGeneratorTest
 
         PowerMockito.mockStatic( ConfigHelper.class );
         PowerMockito.when( ConfigHelper.class, "getVariableIdFromProjectConfig", projectConfig, false )
-                    .thenReturn( "STREAMFLOW" );
+                    .thenReturn( STREAMFLOW );
         PowerMockito.when( ConfigHelper.class, "getVariableIdFromProjectConfig", projectConfig, true )
-                    .thenReturn( "STREAMFLOW" );
+                    .thenReturn( STREAMFLOW );
 
         // Create the actual output
         EnsemblePoolGenerator generator = EnsemblePoolGenerator.of( project, feature, mapper );

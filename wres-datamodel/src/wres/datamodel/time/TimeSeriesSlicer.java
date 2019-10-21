@@ -205,15 +205,11 @@ public final class TimeSeriesSlicer
         Map<ReferenceTimeType, Instant> referenceTimes =
                 TimeSeriesSlicer.filterReferenceTimes( input.getReferenceTimes(), timeWindow );
 
-        // No need to proceed: return an empty series
-        if ( referenceTimes.isEmpty() )
-        {
-            return TimeSeries.of();
-        }
+        TimeSeriesBuilder<T> builder = new TimeSeriesBuilder<>();
+        builder.addReferenceTimes( referenceTimes )
+               .setTimeScale( input.getTimeScale() );
 
         // Iterate through the events and include events within the window
-        SortedSet<Event<T>> events = new TreeSet<>();
-
         for ( Event<T> nextEvent : input.getEvents() )
         {
             Instant nextValidTime = nextEvent.getTime();
@@ -233,19 +229,25 @@ public final class TimeSeriesSlicer
                          || ( leadDuration.compareTo( timeWindow.getEarliestLeadDuration() ) > 0
                               && leadDuration.compareTo( timeWindow.getLatestLeadDuration() ) < 0 ) )
                     {
-                        events.add( nextEvent );
+                        builder.addEvent( nextEvent );
                     }
                 }
             }
         }
 
-        return TimeSeries.of( referenceTimes, events );
+        return builder.build();
     }
 
     /**
      * Groups the input events according to the event valid time. An event falls within a group if its valid time falls 
-     * within an interval that ends at a prescribed time and begins the specified duration before the end. The interval 
-     * is right-closed. In other words, <code>(endsAt-duration,endsAt]</code> for each instant in <code>endsAt</code>.
+     * within an interval that ends at a prescribed time and begins a specified period before that time. The interval 
+     * is right-closed. In other words, when an event time falls within <code>(endsAt-period,endsAt]</code>, then add
+     * that event to the group associated with <code>endsAt</code>. Use this method to determine groups of events for
+     * upscaling values that end at <code>endsAt</code>.
+     * 
+     * TODO: this method has a nested loop, which implies O(n^2) complexity, where <code>n</code> is the cardinality of
+     * <code>endsAt</code>. While it does exploit time-ordering to avoid searching the entire set of 
+     * <code>endsAt</code>, it does not scale well for very large datasets.
      * 
      * @param <T> the type of event value
      * @param events the events to group

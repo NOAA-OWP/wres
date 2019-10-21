@@ -270,6 +270,31 @@ public class ConfigHelper
 
         return usesNetcdf;
     }
+    
+    /**
+     * Returns true if the input declaration contains one or more source formats that distribute time-series across
+     * multiple sources. Currently returns true if any of {@link Format#NET_CDF} or {@link Format#S_3} is found.
+     * 
+     * TODO: Consider removing this helper when ingest becomes time-series-shaped and the way in which series are 
+     * attached to sources no longer matters. Currently, that is the context in which this helper is being used. See
+     * #65216. More generally, this helper is unlikely to have value, as source formats and their contents are 
+     * orthogonal things, in general, and especially for highly generic formats, like netCDF.
+     * 
+     * @param dataSourceConfig the data source declaration
+     * @return true if the declaration contains source formats that distribute time-series across sources
+     * @throws NullPointerException if the input is null
+     */
+
+    public static boolean hasSourceFormatWithMultipleSourcesPerSeries( DataSourceConfig dataSourceConfig )
+    {
+        Objects.requireNonNull( dataSourceConfig );
+
+        return dataSourceConfig.getSource()
+                               .stream()
+                               .anyMatch( next -> next.getFormat() == Format.NET_CDF
+                                                  || next.getFormat() == Format.S_3 );
+
+    }
 
     public static String getVariableFeatureClause( Feature feature, int variableId, String alias )
             throws SQLException

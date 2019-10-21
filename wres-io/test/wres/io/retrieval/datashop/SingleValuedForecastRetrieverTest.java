@@ -65,6 +65,9 @@ import wres.system.SystemSettings;
 @PowerMockIgnore( { "javax.management.*", "java.io.*", "javax.xml.*", "com.sun.*", "org.xml.*" } )
 public class SingleValuedForecastRetrieverTest
 {
+    private static final String T2023_04_01T19_00_00Z = "2023-04-01T19:00:00Z";
+    private static final String T2023_04_01T17_00_00Z = "2023-04-01T17:00:00Z";
+    private static final String T2023_04_01T00_00_00Z = "2023-04-01T00:00:00Z";
     private TestDatabase testDatabase;
     private ComboPooledDataSource dataSource;
     private Connection rawConnection;
@@ -146,7 +149,7 @@ public class SingleValuedForecastRetrieverTest
         // Create the first expected series
         TimeSeriesBuilder<Double> builderOne = new TimeSeriesBuilder<>();
         TimeSeries<Double> expectedSeriesOne =
-                builderOne.addReferenceTime( Instant.parse( "2023-04-01T00:00:00Z" ), ReferenceTimeType.DEFAULT )
+                builderOne.addReferenceTime( Instant.parse( T2023_04_01T00_00_00Z ), ReferenceTimeType.DEFAULT )
                           .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ), 30.0 ) )
                           .addEvent( Event.of( Instant.parse( "2023-04-01T02:00:00Z" ), 37.0 ) )
                           .addEvent( Event.of( Instant.parse( "2023-04-01T03:00:00Z" ), 44.0 ) )
@@ -161,9 +164,9 @@ public class SingleValuedForecastRetrieverTest
         // Create the second expected series
         TimeSeriesBuilder<Double> builderTwo = new TimeSeriesBuilder<>();
         TimeSeries<Double> expectedSeriesTwo =
-                builderTwo.addReferenceTime( Instant.parse( "2023-04-01T17:00:00Z" ), ReferenceTimeType.DEFAULT )
+                builderTwo.addReferenceTime( Instant.parse( T2023_04_01T17_00_00Z ), ReferenceTimeType.DEFAULT )
                           .addEvent( Event.of( Instant.parse( "2023-04-01T18:00:00Z" ), 65.0 ) )
-                          .addEvent( Event.of( Instant.parse( "2023-04-01T19:00:00Z" ), 72.0 ) )
+                          .addEvent( Event.of( Instant.parse( T2023_04_01T19_00_00Z ), 72.0 ) )
                           .addEvent( Event.of( Instant.parse( "2023-04-01T20:00:00Z" ), 79.0 ) )
                           .addEvent( Event.of( Instant.parse( "2023-04-01T21:00:00Z" ), 86.0 ) )
                           .addEvent( Event.of( Instant.parse( "2023-04-01T22:00:00Z" ), 93.0 ) )
@@ -182,9 +185,9 @@ public class SingleValuedForecastRetrieverTest
 
         // Set the time window filter, aka pool boundaries
         Instant referenceStart = Instant.parse( "2023-03-31T23:00:00Z" );
-        Instant referenceEnd = Instant.parse( "2023-04-01T19:00:00Z" );
+        Instant referenceEnd = Instant.parse( T2023_04_01T19_00_00Z );
         Instant validStart = Instant.parse( "2023-04-01T03:00:00Z" );
-        Instant validEnd = Instant.parse( "2023-04-01T19:00:00Z" );
+        Instant validEnd = Instant.parse( T2023_04_01T19_00_00Z );
         Duration leadStart = Duration.ofHours( 1 );
         Duration leadEnd = Duration.ofHours( 4 );
 
@@ -213,7 +216,7 @@ public class SingleValuedForecastRetrieverTest
         // Create the first expected series
         TimeSeriesBuilder<Double> builderOne = new TimeSeriesBuilder<>();
         TimeSeries<Double> expectedSeriesOne =
-                builderOne.addReferenceTime( Instant.parse( "2023-04-01T00:00:00Z" ), ReferenceTimeType.DEFAULT )
+                builderOne.addReferenceTime( Instant.parse( T2023_04_01T00_00_00Z ), ReferenceTimeType.DEFAULT )
                           .addEvent( Event.of( Instant.parse( "2023-04-01T04:00:00Z" ), 51.0 ) )
                           .setTimeScale( TimeScale.of() )
                           .build();
@@ -224,8 +227,8 @@ public class SingleValuedForecastRetrieverTest
         // Create the second expected series
         TimeSeriesBuilder<Double> builderTwo = new TimeSeriesBuilder<>();
         TimeSeries<Double> expectedSeriesTwo =
-                builderTwo.addReferenceTime( Instant.parse( "2023-04-01T17:00:00Z" ), ReferenceTimeType.DEFAULT )
-                          .addEvent( Event.of( Instant.parse( "2023-04-01T19:00:00Z" ), 72.0 ) )
+                builderTwo.addReferenceTime( Instant.parse( T2023_04_01T17_00_00Z ), ReferenceTimeType.DEFAULT )
+                          .addEvent( Event.of( Instant.parse( T2023_04_01T19_00_00Z ), 72.0 ) )
                           .setTimeScale( TimeScale.of() )
                           .build();
 
@@ -404,8 +407,8 @@ public class SingleValuedForecastRetrieverTest
         // although H2 reported the expected type. See #56214-102        
 
         // Two reference times, PT17H apart
-        Instant firstReference = Instant.parse( "2023-04-01T00:00:00Z" );
-        Instant secondReference = Instant.parse( "2023-04-01T17:00:00Z" );
+        Instant firstReference = Instant.parse( T2023_04_01T00_00_00Z );
+        Instant secondReference = Instant.parse( T2023_04_01T17_00_00Z );
 
         TimeScale timeScale = TimeScale.of( Duration.ofMinutes( 1 ), TimeScaleFunction.UNKNOWN );
 

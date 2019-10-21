@@ -43,7 +43,7 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
      */
 
     private static final String LOG_SCRIPT =
-            "Built retriever {} for the retrieval of ensemble forecasts:{}{}";
+            "Built retriever {} for the retrieval of ensemble forecasts using script:{}{}";
 
     /**
      * Start of script for {@link #getAll()}.
@@ -142,16 +142,25 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
         // Add time window constraint
         this.addTimeWindowClause( scripter, 0 );
 
+        String groupBySource = ", TSS.source_id";
+        
+        // Group by source? 
+        // TODO: please remove me when ingest is time-series-shaped.
+        if( this.hasMultipleSourcesPerSeries() )
+        {
+            groupBySource = "";
+        }
+        
         // Add GROUP BY clause
         scripter.addLine( "GROUP BY TS.initialization_date, "
                           + "TSV.lead, "
                           + "TS.scale_period, "
                           + "TS.scale_function, "
-                          + "TS.measurementunit_id, "
-                          + "TSS.source_id" );
+                          + "TS.measurementunit_id"
+                          + groupBySource );
         
         // Add ORDER BY clause
-        scripter.addLine( "ORDER BY series_id, TS.initialization_date, valid_time;" );
+        scripter.addLine( "ORDER BY TS.initialization_date, valid_time, series_id;" );
 
         String script = scripter.toString();
 
