@@ -180,9 +180,10 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
         {
             if ( LOGGER.isTraceEnabled() )
             {
-                LOGGER.trace( "No upscaling required for time-series {}: the existing time scale of {} matches the "
-                              + "desired time scale.'",
+                LOGGER.trace( "No upscaling required for time-series {}: the existing time scale of {} effectively "
+                              + "matches the desired time scale of {}.'",
                               timeSeries.hashCode(),
+                              timeSeries.getTimeScale(),
                               desiredTimeScale );
             }
 
@@ -442,7 +443,7 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
             return RETURN_DOUBLE_OR_MISSING.applyAsDouble( upscaled );
         };
     }
-    
+
     /**
      * Logs a skipped group of events at an appropriate logging level.
      * 

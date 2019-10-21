@@ -98,6 +98,17 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     private final TimeScale declaredExistingTimeScale;
 
     /**
+     * Is <code>true</code> to retrieve values from time-series that were distributed across multiple sources. The need
+     * for this distinction persists while ingest is not time-series-shaped, rather event-shaped. For example, one 
+     * consequence is the need to group by <code>source_id</code>, in general, but not when individual time-series were 
+     * distributed across multiple different sources. See #65216.
+     * 
+     * TODO: please remove me when ingest is time-series-shaped.
+     */
+
+    private final boolean hasMultipleSourcesPerSeries;
+
+    /**
      * Returns true if the retriever supplies forecast data.
      * 
      * @return true if this instance supplies forecast data
@@ -189,7 +200,8 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * so, returns the valid time scale, which is obtained from the input period and function, possibly augmented by
      * any declared time scale information attached to this instance on construction. In using an existing time scale 
      * from the project declaration, the principle is to augment, but not override, because the source is canonical 
-     * on its own time scale.
+     * on its own time scale. The only exception is the function {@link TimeScaleFunction.UNKNOWN}, which can be 
+     * overridden.
      * 
      * @param <S> the event value type
      * @param lastScale the last scale information retrieved
@@ -209,22 +221,34 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         Duration periodToUse = null;
         TimeScaleFunction functionToUse = null;
 
-        // Existing scale to help augment?
-        if ( Objects.nonNull( this.getDeclaredExistingTimeScale() ) )
-        {
-            periodToUse = this.getDeclaredExistingTimeScale().getPeriod();
-            functionToUse = this.getDeclaredExistingTimeScale().getFunction();
-        }
         // Period available?
         if ( Objects.nonNull( period ) )
         {
             periodToUse = period;
         }
+
         // Function available?
         if ( Objects.nonNull( functionString ) )
         {
-            functionToUse =
-                    TimeScale.TimeScaleFunction.valueOf( functionString.toUpperCase() );
+            functionToUse = TimeScale.TimeScaleFunction.valueOf( functionString.toUpperCase() );
+        }
+
+        // Otherwise, existing scale to help augment?
+        if ( Objects.nonNull( this.getDeclaredExistingTimeScale() ) )
+        {
+            TimeScale declared = this.getDeclaredExistingTimeScale();
+
+            if ( Objects.isNull( periodToUse ) )
+            {
+                periodToUse = declared.getPeriod();
+            }
+
+            // Can override null or TimeScaleFunction.UNKNOWN
+            if ( Objects.nonNull( declared.getFunction() )
+                 && ( Objects.isNull( functionToUse ) || functionToUse == TimeScaleFunction.UNKNOWN ) )
+            {
+                functionToUse = declared.getFunction();
+            }
         }
 
         TimeScale returnMe = null;
@@ -453,6 +477,19 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     UnitMapper getMeasurementUnitMapper()
     {
         return this.unitMapper;
+    }
+
+    /**
+     * Gets the status of individual time-series as originating from several sources.
+     * 
+     * TODO: please remove me when ingest is time-series-shaped.
+     * 
+     * @return true if each series originates from multiple sources, otherwise false
+     */
+
+    boolean hasMultipleSourcesPerSeries()
+    {
+        return this.hasMultipleSourcesPerSeries;
     }
 
     /**
@@ -906,6 +943,14 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
         private TimeScale declaredExistingTimeScale;
 
+        /**
+         * Is <code>true</code> to retrieve values from time-series that were distributed across multiple sources. 
+         * See #65216.
+         * 
+         * TODO: please remove me when ingest is time-series-shaped.
+         */
+
+        private boolean hasMultipleSourcesPerSeries;
 
         /**
          * Sets the <code>wres.Project.project_id</code>.
@@ -988,6 +1033,21 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         }
 
         /**
+         * Sets the status of individual time-series as originating from several sources.
+         * 
+         * TODO: please remove me when ingest is time-series-shaped.
+         * 
+         * @param hasMultipleSourcesPerSeries is true if each series originates from multiple sources
+         * @return the builder
+         */
+
+        TimeSeriesRetrieverBuilder<S> setHasMultipleSourcesPerSeries( boolean hasMultipleSourcesPerSeries )
+        {
+            this.hasMultipleSourcesPerSeries = hasMultipleSourcesPerSeries;
+            return this;
+        }
+
+        /**
          * Sets the measurement unit mapper.
          * 
          * @param unitMapper the measurement unit mapper
@@ -1018,6 +1078,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         this.desiredTimeScale = builder.desiredTimeScale;
         this.declaredExistingTimeScale = builder.declaredExistingTimeScale;
         this.unitMapper = builder.unitMapper;
+        this.hasMultipleSourcesPerSeries = builder.hasMultipleSourcesPerSeries;
 
         // Validate
         Objects.requireNonNull( this.getMeasurementUnitMapper(),

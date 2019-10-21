@@ -42,6 +42,8 @@ import wres.io.project.Project;
 public class SingleValuedPoolGeneratorTest
 {
 
+    private static final String STREAMFLOW = "STREAMFLOW";
+
     /**
      * Tests {@link SingleValuedPoolGenerator#get()} using project declaration that is representative of system test
      * scenario505 as of commit 43332ccbb45e712722ef2ca52904b18d8f98397c.
@@ -86,7 +88,7 @@ public class SingleValuedPoolGeneratorTest
 
         DataSourceConfig right = new DataSourceConfig( DatasourceType.fromValue( "single valued forecasts" ),
                                                        sourceList,
-                                                       new Variable( "STREAMFLOW", null, null ),
+                                                       new Variable( STREAMFLOW, null, null ),
                                                        null,
                                                        null,
                                                        null,
@@ -124,9 +126,9 @@ public class SingleValuedPoolGeneratorTest
 
         PowerMockito.mockStatic( ConfigHelper.class );
         PowerMockito.when( ConfigHelper.class, "getVariableIdFromProjectConfig", projectConfig, false )
-                    .thenReturn( "STREAMFLOW" );
+                    .thenReturn( STREAMFLOW );
         PowerMockito.when( ConfigHelper.class, "getVariableIdFromProjectConfig", projectConfig, true )
-                    .thenReturn( "STREAMFLOW" );
+                    .thenReturn( STREAMFLOW );
 
         // Create the actual output
         SingleValuedPoolGenerator generator = SingleValuedPoolGenerator.of( project, feature, mapper );

@@ -689,6 +689,7 @@ public final class Slicer
         {
             throw new IllegalArgumentException( "The input threshold must be a probability threshold." );
         }
+        
         if ( sorted.length == 0 )
         {
             // #65881
@@ -704,11 +705,13 @@ public final class Slicer
         }
         DoubleUnaryOperator qF = Slicer.getQuantileFunction( sorted );
         Double first = qF.applyAsDouble( threshold.getProbabilities().first() );
+        
         if ( Objects.nonNull( digits ) )
         {
             first = Slicer.rounder().apply( first, digits );
         }
         Double second = null;
+        
         if ( threshold.hasBetweenCondition() )
         {
             second = qF.applyAsDouble( threshold.getProbabilities().second() );

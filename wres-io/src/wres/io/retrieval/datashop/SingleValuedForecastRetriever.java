@@ -60,7 +60,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
      */
 
     private static final String LOG_SCRIPT =
-            "Built retriever {} for the retrieval of single-valued forecasts:{}{}";
+            "Built retriever {} for the retrieval of single-valued forecasts using script:{}{}";
 
     /**
      * Template script for the {@link #get(long)}.

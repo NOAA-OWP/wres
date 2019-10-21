@@ -1,13 +1,18 @@
 package wres.io.retrieval.datashop;
 
 import java.sql.SQLException;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.DoubleUnaryOperator;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
@@ -16,12 +21,14 @@ import org.slf4j.LoggerFactory;
 import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
+import wres.config.generated.DoubleBoundsType;
 import wres.config.generated.Feature;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.config.generated.SourceTransformationType;
 import wres.datamodel.Ensemble;
+import wres.datamodel.MissingValues;
 import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
@@ -30,10 +37,12 @@ import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 import wres.datamodel.time.TimeSeriesOfDoubleBasicUpscaler;
 import wres.datamodel.time.TimeSeriesOfEnsembleUpscaler;
 import wres.datamodel.time.TimeSeriesPairer;
 import wres.datamodel.time.TimeSeriesPairerByExactTime;
+import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesUpscaler;
 import wres.datamodel.time.TimeWindow;
 import wres.datamodel.time.generators.TimeWindowGenerator;
@@ -77,13 +86,13 @@ public class EnsemblePoolGenerator implements Supplier<List<Supplier<PoolOfPairs
     private final TimeSeriesUpscaler<Ensemble> rightUpscaler = TimeSeriesOfEnsembleUpscaler.of( this.leftUpscaler );
 
     /**
-     * The pairer, which admits finite value pairs. TODO: expose to constructor.
+     * The pairer, which admits pairs with one or more finite values on both sides. TODO: expose to constructor.
      */
 
     private final TimeSeriesPairer<Double, Ensemble> pairer =
             TimeSeriesPairerByExactTime.of( Double::isFinite,
                                             en -> Arrays.stream( en.getMembers() )
-                                                        .allMatch( Double::isFinite ) );
+                                                        .anyMatch( Double::isFinite ) );
 
     /**
      * Returns an instance that generates pools for a particular project and feature.
@@ -153,23 +162,21 @@ public class EnsemblePoolGenerator implements Supplier<List<Supplier<PoolOfPairs
         PairConfig pairConfig = projectConfig.getPair();
         Inputs inputsConfig = projectConfig.getInputs();
 
+        // Acquire any transformers needed
+        DoubleUnaryOperator leftTransformer = this.getLeftTransformer( pairConfig.getValues() );
+        UnaryOperator<Ensemble> rightTransformer = this.getRightTransformer( leftTransformer );
+
         // Create the common builder
         PoolOfPairsSupplierBuilder<Double, Ensemble> builder = new PoolOfPairsSupplierBuilder<>();
         builder.setLeftUpscaler( this.getLeftUpscaler() )
                .setRightUpscaler( this.getRightUpscaler() )
                .setPairer( this.getPairer() )
-               .setInputsDeclaration( inputsConfig );
+               .setInputsDeclaration( inputsConfig )
+               .setLeftTransformer( leftTransformer::applyAsDouble )
+               .setRightTransformer( rightTransformer );
 
-        // Obtain the desired time scale. 
-        TimeScale desiredTimeScale = null;
-
-        // Obtain from the declaration if available
-        if ( Objects.nonNull( pairConfig )
-             && Objects.nonNull( pairConfig.getDesiredTimeScale() ) )
-        {
-            desiredTimeScale = TimeScale.of( projectConfig.getPair().getDesiredTimeScale() );
-            builder.setDesiredTimeScale( desiredTimeScale );
-        }
+        // Obtain and set the desired time scale. 
+        TimeScale desiredTimeScale = this.setAndGetDesiredTimeScale( pairConfig, builder );
 
         // Create the time windows, iterate over them and create the retrievers 
         try
@@ -202,7 +209,16 @@ public class EnsemblePoolGenerator implements Supplier<List<Supplier<PoolOfPairs
                                                                        desiredTimeScale,
                                                                        unitMapper ) );
 
-                builder.setClimatology( climatologySupplier, Double::doubleValue );
+                // Get the climatology at an appropriate scale and with any transformations required and add to the 
+                // builder, but retain the existing scale for the main supplier, as that may be re-used for left data, 
+                //and left data is rescaled with respect to right data
+                Supplier<Stream<TimeSeries<Double>>> climatologyAtScale =
+                        this.getClimatologyAtDesiredTimeScale( climatologySupplier, 
+                                                               this.getLeftUpscaler(), 
+                                                               desiredTimeScale, 
+                                                               leftTransformer );
+
+                builder.setClimatology( climatologyAtScale, Double::doubleValue );
             }
 
             // Metadata
@@ -254,23 +270,24 @@ public class EnsemblePoolGenerator implements Supplier<List<Supplier<PoolOfPairs
                 SampleMetadata poolMeta = SampleMetadata.of( mainMetadata, nextWindow );
                 builder.setMetadata( poolMeta );
 
-                // Add left data if no climatology
+                // Add left data
                 // TODO: consider acquiring all the left data upfront with a caching retriever 
                 // when the climatology is not available. In that case, prepare something similar to
                 // climatology above, but bounded by any overall time bounds in the declaration
+                Supplier<Stream<TimeSeries<Double>>> leftSupplier = climatologySupplier;
+
                 if ( !project.usesProbabilityThresholds() )
                 {
-                    // Re-use the climatology across pools with a caching retriever
-                    Supplier<Stream<TimeSeries<Double>>> leftSupplier =
-                            CachingRetriever.of( this.createLeftRetriever( projectId,
-                                                                           leftVariableFeatureId,
-                                                                           inputsConfig.getLeft(),
-                                                                           LeftOrRightOrBaseline.LEFT,
-                                                                           nextWindow,
-                                                                           desiredTimeScale,
-                                                                           unitMapper ) );
-                    builder.setLeft( leftSupplier );
+                    leftSupplier = CachingRetriever.of( this.createLeftRetriever( projectId,
+                                                                                  leftVariableFeatureId,
+                                                                                  inputsConfig.getLeft(),
+                                                                                  LeftOrRightOrBaseline.LEFT,
+                                                                                  nextWindow,
+                                                                                  desiredTimeScale,
+                                                                                  unitMapper ) );
                 }
+
+                builder.setLeft( leftSupplier );
 
                 // Set baseline if needed
                 if ( project.hasBaseline() )
@@ -395,7 +412,7 @@ public class EnsemblePoolGenerator implements Supplier<List<Supplier<PoolOfPairs
      * 
      * @param projectId the project_id
      * @param variableFeatureId the variablefeature_id
-     * @param dataSource the data sourece declaration
+     * @param dataSourceConfig the data sourece declaration
      * @param lrb the data type
      * @param timeWindow the time window
      * @param desiredTimeScale the desired time scale
@@ -405,7 +422,7 @@ public class EnsemblePoolGenerator implements Supplier<List<Supplier<PoolOfPairs
 
     private Supplier<Stream<TimeSeries<Ensemble>>> createRightRetriever( int projectId,
                                                                          int variableFeatureId,
-                                                                         DataSourceConfig dataSource,
+                                                                         DataSourceConfig dataSourceConfig,
                                                                          LeftOrRightOrBaseline lrb,
                                                                          TimeWindow timeWindow,
                                                                          TimeScale desiredTimeScale,
@@ -413,18 +430,20 @@ public class EnsemblePoolGenerator implements Supplier<List<Supplier<PoolOfPairs
     {
 
         // Type to iterate
-        DatasourceType dataType = dataSource.getType();
+        DatasourceType dataType = dataSourceConfig.getType();
 
         // Declared existing scale, which can be used to augment a source
         TimeScale declaredExistingTimeScale = null;
 
-        if ( Objects.nonNull( dataSource.getExistingTimeScale() ) )
+        if ( Objects.nonNull( dataSourceConfig.getExistingTimeScale() ) )
         {
-            declaredExistingTimeScale = TimeScale.of( dataSource.getExistingTimeScale() );
+            declaredExistingTimeScale = TimeScale.of( dataSourceConfig.getExistingTimeScale() );
         }
 
         if ( dataType == DatasourceType.ENSEMBLE_FORECASTS )
         {
+            boolean manySourcesPerSeries = ConfigHelper.hasSourceFormatWithMultipleSourcesPerSeries( dataSourceConfig );
+
             return new EnsembleForecastRetriever.Builder().setProjectId( projectId )
                                                           .setVariableFeatureId( variableFeatureId )
                                                           .setLeftOrRightOrBaseline( lrb )
@@ -432,6 +451,7 @@ public class EnsemblePoolGenerator implements Supplier<List<Supplier<PoolOfPairs
                                                           .setDesiredTimeScale( desiredTimeScale )
                                                           .setDeclaredExistingTimeScale( declaredExistingTimeScale )
                                                           .setUnitMapper( unitMapper )
+                                                          .setHasMultipleSourcesPerSeries( manySourcesPerSeries )
                                                           .build();
         }
         else
@@ -488,6 +508,216 @@ public class EnsemblePoolGenerator implements Supplier<List<Supplier<PoolOfPairs
                                           .setMeasurementUnit( measurementUnit )
                                           .setTimeScale( desiredTimeScale )
                                           .build();
+    }
+
+    /**
+     * Sets and gets the desired time scale associated with the pair declaration.
+     * 
+     * TODO: consider abstracting somewhere accessible to different pool shapes, as this is pool-shape invariant. Use
+     * generics to abstract.
+     * 
+     * @param pairConfig the pair declaration
+     * @param builder the builder
+     */
+
+    private TimeScale setAndGetDesiredTimeScale( PairConfig pairConfig,
+                                                 PoolOfPairsSupplierBuilder<Double, Ensemble> builder )
+    {
+
+        TimeScale desiredTimeScale = null;
+        // Obtain from the declaration if available
+        if ( Objects.nonNull( pairConfig )
+             && Objects.nonNull( pairConfig.getDesiredTimeScale() ) )
+        {
+            desiredTimeScale = TimeScale.of( pairConfig.getDesiredTimeScale() );
+            builder.setDesiredTimeScale( desiredTimeScale );
+
+            if ( Objects.nonNull( pairConfig.getDesiredTimeScale().getFrequency() ) )
+            {
+                ChronoUnit unit = ChronoUnit.valueOf( pairConfig.getDesiredTimeScale()
+                                                                .getUnit()
+                                                                .value()
+                                                                .toUpperCase() );
+
+                Duration frequency = Duration.of( pairConfig.getDesiredTimeScale().getFrequency(), unit );
+
+                builder.setFrequencyOfPairs( frequency );
+            }
+        }
+
+        return desiredTimeScale;
+    }
+
+    /**
+     * Returns a climatological data supply at the desired time scale.
+     * 
+     * @param climatologySupplier the raw data supplier
+     * @param upscaler the uspcaler
+     * @param desiredTimeScale the desired time scale
+     * @return a climatological supply at the desired time scale
+     */
+
+    private Supplier<Stream<TimeSeries<Double>>>
+            getClimatologyAtDesiredTimeScale( Supplier<Stream<TimeSeries<Double>>> climatologySupplier,
+                                              TimeSeriesUpscaler<Double> upscaler,
+                                              TimeScale desiredTimeScale,
+                                              DoubleUnaryOperator leftTransformer )
+    {
+        List<TimeSeries<Double>> climData = climatologySupplier.get()
+                                                               .collect( Collectors.toList() );
+
+        TimeSeriesBuilder<Double> builder = new TimeSeriesBuilder<>();
+        builder.setTimeScale( desiredTimeScale );
+
+        for ( TimeSeries<Double> next : climData )
+        {
+            TimeSeries<Double> nextSeries = next;
+
+            TimeScale nextScale = nextSeries.getTimeScale();
+
+            // Upscale? A difference in period is the minimum needed
+            if ( Objects.nonNull( desiredTimeScale )
+                 && Objects.nonNull( nextScale )
+                 && !desiredTimeScale.getPeriod().equals( nextScale.getPeriod() ) )
+            {
+                if ( Objects.isNull( upscaler ) )
+                {
+                    throw new IllegalArgumentException( "The climatological time-series "
+                                                        + nextSeries.hashCode()
+                                                        + " needed upscaling from "
+                                                        + nextScale
+                                                        + " to "
+                                                        + desiredTimeScale
+                                                        + " but no upscaler was provided.");
+                }
+
+                nextSeries = upscaler.upscale( nextSeries, desiredTimeScale )
+                                     .getTimeSeries();
+
+                LOGGER.debug( "Upscaled the climatological time-series {} from {} to {}.",
+                              nextSeries.hashCode(),
+                              nextScale,
+                              desiredTimeScale );
+
+            }
+
+            // Left transformer too? Inline this to the climate mapper
+            if ( Objects.nonNull( leftTransformer ) )
+            {
+                nextSeries = TimeSeriesSlicer.transform( nextSeries, leftTransformer::applyAsDouble );
+            }
+
+            // Filter inadmissible values. Do this LAST because a transformer may produce 
+            // non-finite values
+            nextSeries = TimeSeriesSlicer.filter( nextSeries, Double::isFinite );  
+            
+            builder.addEvents( nextSeries.getEvents() );
+        }
+
+        TimeSeries<Double> climatologyAtScale = builder.build();
+
+        LOGGER.debug( "Created a new climatological time-series {} with {} climatological values.",
+                      climatologyAtScale.hashCode(),
+                      climatologyAtScale.getEvents().size() );
+
+        return () -> Stream.of( climatologyAtScale );
+    }
+
+    /**
+     * Returns a transformer for left-ish data if required.
+     * 
+     * @param valueConfig the value declaration 
+     * @return a transformer or null
+     */
+
+    private DoubleUnaryOperator getLeftTransformer( DoubleBoundsType valueConfig )
+    {
+        if ( Objects.isNull( valueConfig ) )
+        {
+            return DoubleUnaryOperator.identity();
+        }
+
+        double assignToLowMiss = MissingValues.DOUBLE;
+        double assignToHighMiss = MissingValues.DOUBLE;
+
+        double minimum = Double.NEGATIVE_INFINITY;
+        double maximum = Double.POSITIVE_INFINITY;
+
+        if ( Objects.nonNull( valueConfig.getDefaultMinimum() ) )
+        {
+            assignToLowMiss = valueConfig.getDefaultMinimum();
+        }
+
+        if ( Objects.nonNull( valueConfig.getDefaultMaximum() ) )
+        {
+            assignToHighMiss = valueConfig.getDefaultMaximum();
+        }
+
+        if ( Objects.nonNull( valueConfig.getMinimum() ) )
+        {
+            minimum = valueConfig.getMinimum();
+        }
+
+        if ( Objects.nonNull( valueConfig.getMaximum() ) )
+        {
+            maximum = valueConfig.getMaximum();
+        }
+
+        // Effectively final constants for use 
+        // within enclosing scope
+        double assignLow = assignToLowMiss;
+        double assignHigh = assignToHighMiss;
+
+        double low = minimum;
+        double high = maximum;
+
+        return toTransform -> {
+
+            // Low miss
+            if ( toTransform < low )
+            {
+                return assignLow;
+            }
+
+            // High miss
+            if ( toTransform > high )
+            {
+                return assignHigh;
+            }
+
+            // Within bounds
+            return toTransform;
+        };
+    }
+
+    /**
+     * Returns a transformer for right-ish data if required.
+     * 
+     * @param valueConfig the value declaration 
+     * @return a transformer or null
+     */
+
+    private UnaryOperator<Ensemble> getRightTransformer( DoubleUnaryOperator leftTransformer )
+    {
+        if ( Objects.isNull( leftTransformer ) )
+        {
+            return null;
+        }
+
+        return toTransform -> {
+
+            double[] transformed = Arrays.stream( toTransform.getMembers() )
+                                         .map( leftTransformer )
+                                         .toArray();
+
+            String[] labels = null;
+            if ( toTransform.getLabels().isPresent() )
+            {
+                labels = toTransform.getLabels().get();
+            }
+
+            return Ensemble.of( transformed, labels );
+        };
     }
 
     /**

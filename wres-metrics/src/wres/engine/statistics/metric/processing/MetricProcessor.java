@@ -520,8 +520,14 @@ public abstract class MetricProcessor<S extends SampleData<?>>
     }
 
     /**
-     * Helper that returns a sorted set of values from the left side of the input pairs if any of the thresholds have
-     * probabilities associated with them.
+     * <p>Helper that inspects the {@link SampleData#getClimatology()} and returns a sorted set of values when the 
+     * following two conditions are both met, otherwise <code>null</code>:
+     * 
+     * <ol>
+     * <li>The {@link SampleData#hasClimatology()} returns <code>true</code>; and</li>
+     * <li>One or more of the input thresholds is a probability threshold according to 
+     * {@link Threshold#hasProbabilities()}.</li>
+     * </ol>
      * 
      * @param input the inputs pairs
      * @param thresholds the thresholds to test
