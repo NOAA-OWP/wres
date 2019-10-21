@@ -1,7 +1,6 @@
 package wres.io.retrieval.datashop;
 
 import java.sql.SQLException;
-import java.time.Duration;
 import java.time.MonthDay;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -158,11 +157,6 @@ public class SingleValuedPoolGenerator extends PoolGenerator<Double, Double>
         MonthDay seasonStart = project.getEarliestDayInSeason();
         MonthDay seasonEnd = project.getLatestDayInSeason();
 
-        // Obtain any time offsets
-        Duration leftOffset = ConfigHelper.getTimeShift( inputsConfig.getLeft() );
-        Duration rightOffset = ConfigHelper.getTimeShift( inputsConfig.getRight() );
-        Duration baselineOffset = ConfigHelper.getTimeShift( inputsConfig.getBaseline() );
-
         // Create the time windows, iterate over them and create the retrievers 
         try
         {
@@ -183,8 +177,11 @@ public class SingleValuedPoolGenerator extends PoolGenerator<Double, Double>
                               + "climatological data.",
                               projectId,
                               featureString );
+                
+                // TODO: reconsider how seasons are applied. For now, do not apply to
+                // left-ish data because the current interpretation of right-ish data
+                // that is a forecast type is to use reference time, not valid time. See #40405
 
-                // Re-use the climatology across pools with a caching retriever
                 // Re-use the climatology across pools with a caching retriever
                 Supplier<Stream<TimeSeries<Double>>> leftSupplier =
                         this.getRetrieverBuilder( leftConfig.getType() )
@@ -194,6 +191,8 @@ public class SingleValuedPoolGenerator extends PoolGenerator<Double, Double>
                             .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale( leftConfig ) )
                             .setDesiredTimeScale( desiredTimeScale )
                             .setUnitMapper( unitMapper )
+                            //.setSeasonStart( seasonStart )
+                            //.setSeasonEnd( seasonEnd )
                             .build();
 
                 climatologySupplier = CachingRetriever.of( leftSupplier );
@@ -255,7 +254,6 @@ public class SingleValuedPoolGenerator extends PoolGenerator<Double, Double>
                             .setUnitMapper( unitMapper )
                             .setSeasonStart( seasonStart )
                             .setSeasonEnd( seasonEnd )
-                            .setSeasonOffset( rightOffset )
                             .build();
 
                 builder.setRight( rightSupplier );
@@ -280,9 +278,8 @@ public class SingleValuedPoolGenerator extends PoolGenerator<Double, Double>
                                        .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale( leftConfig ) )
                                        .setDesiredTimeScale( desiredTimeScale )
                                        .setUnitMapper( unitMapper )
-                                       .setSeasonStart( seasonStart )
-                                       .setSeasonEnd( seasonEnd )
-                                       .setSeasonOffset( leftOffset )
+                                       //.setSeasonStart( seasonStart )
+                                       //.setSeasonEnd( seasonEnd )
                                        .build();
                 }
 
@@ -319,7 +316,6 @@ public class SingleValuedPoolGenerator extends PoolGenerator<Double, Double>
                                     .setUnitMapper( unitMapper )
                                     .setSeasonStart( seasonStart )
                                     .setSeasonEnd( seasonEnd )
-                                    .setSeasonOffset( baselineOffset )
                                     .build();
 
                         builder.setBaseline( baselineSupplier );

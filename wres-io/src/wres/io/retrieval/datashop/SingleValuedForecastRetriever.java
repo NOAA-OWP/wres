@@ -120,6 +120,9 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
 
         // Time window constraint for individual series?
         this.addTimeWindowClause( scripter, 0 );
+        
+        // Add season constraint
+        this.addSeasonClause( scripter, 1 );
 
         // Add GROUP BY and ORDER BY clauses
         scripter.addLine( GROUP_BY_SERIES_ID_TSV_LEAD_TSV_SERIES_VALUE ); // #56214-272
@@ -208,6 +211,9 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         // Time window constraint
         this.addTimeWindowClause( scripter, 0 );
         
+        // Add season constraint
+        this.addSeasonClause( scripter, 1 );
+        
         // Add constraint on the timeseries_ids provided
         StringJoiner joiner = new StringJoiner( ",", "{", "}" );
         identifiers.forEach( next -> joiner.add( Long.toString( next ) ) );
@@ -249,6 +255,9 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         
         // Add time window constraint
         this.addTimeWindowClause( scripter, 0 );
+        
+        // Add season constraint
+        this.addSeasonClause( scripter, 1 );
         
         // Add GROUP BY and ORDER BY clauses
         scripter.addLine( GROUP_BY_SERIES_ID_TSV_LEAD_TSV_SERIES_VALUE ); // #56214-272

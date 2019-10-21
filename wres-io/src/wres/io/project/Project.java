@@ -397,7 +397,7 @@ public class Project
             }
         }
     }
-    
+
     /**
      * Get a set of features for this project with intersecting data.
      * Does not check if the data is pairable, simply checks that there is data
@@ -524,6 +524,58 @@ public class Project
     }
 
     /**
+     * Returns a set of <code>ensemble_id</code> that should be included or excluded. The empty set should be 
+     * interpreted as no constraints existing and, hence, that all possible <code>ensemble_id</code> should be included.
+     * 
+     * @param dataType the data type
+     * @param include is true to search for constraints to include, false to exclude
+     * @return the members to include
+     * @throws SQLException if the ensemble identifiers could not be retrieved
+     * @throws NullPointerException if the dataType is null
+     * @throws IllegalArgumentException if the dataType declaration is invalid
+     */
+
+    public Set<Integer> getEnsembleMembersToFilter( LeftOrRightOrBaseline dataType, boolean include )
+            throws SQLException
+    {
+        Objects.requireNonNull( dataType );
+
+        DataSourceConfig config = null;
+        switch ( dataType )
+        {
+            case LEFT:
+                config = this.getProjectConfig().getInputs().getLeft();
+                break;
+            case RIGHT:
+                config = this.getProjectConfig().getInputs().getRight();
+                break;
+            case BASELINE:
+                config = this.getProjectConfig().getInputs().getBaseline();
+                break;
+            default:
+                throw new IllegalArgumentException( "Unrecognized data type '" + dataType + "'." );
+
+        }
+
+        Set<Integer> returnMe = new TreeSet<>();
+
+        if ( Objects.nonNull( config ) && !config.getEnsemble().isEmpty() )
+        {
+            List<EnsembleCondition> conditions = config.getEnsemble();
+
+            for ( EnsembleCondition condition : conditions )
+            {
+                if ( condition.isExclude() != include )
+                {
+                    returnMe.addAll( Ensembles.getEnsembleIDs( condition ) );
+                }
+            }
+        }
+
+        return Collections.unmodifiableSet( returnMe );
+    }
+
+    /**
      * <p> Sets and validates the time scale and time step at which evaluation should be conducted.
      * 
      * <p>Determines the "desired time scale" information from the intersection of the declaration and
@@ -615,17 +667,17 @@ public class Project
                           existingScalesAndSteps.size(),
                           desiredScale );
 
-            Map<ScaleValidationEvent,Set<String>> events = new TreeMap<>();
-            
+            Map<ScaleValidationEvent, Set<String>> events = new TreeMap<>();
+
             events.putAll( this.validateTimeScale( Collections.unmodifiableSet( leftScalesAndSteps ),
-                                               desiredScale,
-                                               this.getLeft(),
-                                               LeftOrRightOrBaseline.LEFT ) );
+                                                   desiredScale,
+                                                   this.getLeft(),
+                                                   LeftOrRightOrBaseline.LEFT ) );
             events.putAll( this.validateTimeScale( Collections.unmodifiableSet( rightScalesAndSteps ),
-                                               desiredScale,
-                                               this.getRight(),
-                                               LeftOrRightOrBaseline.RIGHT ) );
-            
+                                                   desiredScale,
+                                                   this.getRight(),
+                                                   LeftOrRightOrBaseline.RIGHT ) );
+
             if ( !baselineScalesAndSteps.isEmpty() )
             {
                 events.putAll( this.validateTimeScale( Collections.unmodifiableSet( baselineScalesAndSteps ),
@@ -633,7 +685,7 @@ public class Project
                                                        this.getBaseline(),
                                                        LeftOrRightOrBaseline.BASELINE ) );
             }
-            
+
             // Report on them
             this.reportOnScaleValidationEvents( Collections.unmodifiableMap( events ) );
 
@@ -701,28 +753,28 @@ public class Project
                                                                         desiredTimeScale,
                                                                         next.getTimeStep(),
                                                                         dataType.toString() );
-                
+
                 String context = next.getContext();
-                
+
                 // Unwrap the events and record with the context in which they arose
-                for( ScaleValidationEvent nextEvent : validation )
+                for ( ScaleValidationEvent nextEvent : validation )
                 {
                     Set<String> pattern = events.get( nextEvent );
-                    
+
                     // Validation pattern exists already
-                    if( Objects.isNull( pattern ) )
-                    {                       
+                    if ( Objects.isNull( pattern ) )
+                    {
                         pattern = new TreeSet<>();
                         events.put( nextEvent, pattern );
                     }
-                                      
+
                     // Add the context
-                    if( ! context.isBlank() )
+                    if ( !context.isBlank() )
                     {
                         pattern.add( context );
                     }
-                    
-                }                
+
+                }
             }
         }
 
@@ -986,7 +1038,7 @@ public class Project
 
         return Collections.unmodifiableSet( mutableCopy );
     }
-    
+
     /**
      * <p>Reports on a collection of {@link ScaleValidationEvent}. Currently, this involves aggregating events whose
      * type is {@link EventType#ERROR} and throwing a {@link RescalingException} and logging events whose type is
@@ -1057,15 +1109,15 @@ public class Project
         {
             // Reverse the map, grouping by context
             Map<String, Set<ScaleValidationEvent>> eventsWithContextInv = new TreeMap<>();
-            
+
             Set<String> allContexts = new TreeSet<>();
-            
+
             for ( Map.Entry<ScaleValidationEvent, Set<String>> nextEntry : events.entrySet() )
             {
                 String nextContext = nextEntry.getValue().toString();
-                
+
                 allContexts.addAll( nextEntry.getValue() );
-                
+
                 Set<ScaleValidationEvent> eventsInv = eventsWithContextInv.get( nextContext );
 
                 if ( Objects.isNull( eventsInv ) )
@@ -1103,7 +1155,7 @@ public class Project
             }
         }
     }
-    
+
     /**
      * <p>Reports on a collection of {@link ScaleValidationEvent} of type {@link EventType#ERROR} where no context 
      * information is available.
@@ -1118,7 +1170,7 @@ public class Project
         Objects.requireNonNull( events );
 
         String spacer = "    ";
-        
+
         if ( !events.isEmpty() )
         {
             StringJoiner message = new StringJoiner( System.lineSeparator() );
@@ -1129,8 +1181,8 @@ public class Project
 
             throw new RescalingException( message.toString() );
         }
-    }      
-    
+    }
+
     /**
      * Wraps the {@link {@link #getValueInterval(DataSourceConfig)}} and performs locking because this method involves
      * mutation. TODO: it would be cleaner if the helper itself handled the locking.
@@ -1526,7 +1578,7 @@ public class Project
         }
 
         return this.baselineVariableID;
-    }    
+    }
 
     /**
      * @return The name of the baseline variable
@@ -1540,7 +1592,7 @@ public class Project
         }
         return name;
     }
-    
+
     /**
      * Determines the <code>variablefeature_id</code> of the left dataset for a given feature.
      * @param feature the feature
@@ -1553,9 +1605,9 @@ public class Project
         Objects.requireNonNull( feature );
 
         Integer variableId = this.getLeftVariableID();
-        return  Features.getVariableFeatureID( feature, variableId );
-    }    
-    
+        return Features.getVariableFeatureID( feature, variableId );
+    }
+
     /**
      * Determines the <code>variablefeature_id</code> of the right dataset for a given feature.
      * @param feature the feature
@@ -1568,9 +1620,9 @@ public class Project
         Objects.requireNonNull( feature );
 
         Integer variableId = this.getRightVariableID();
-        return  Features.getVariableFeatureID( feature, variableId );
+        return Features.getVariableFeatureID( feature, variableId );
     }
-    
+
     /**
      * Determines the <code>variablefeature_id</code> of the baseline dataset for a given feature.
      * @param feature the feature
@@ -1581,9 +1633,9 @@ public class Project
     public Integer getBaselineVariableFeatureId( Feature feature ) throws SQLException
     {
         Objects.requireNonNull( feature );
-        
+
         Integer returnMe = null;
-        
+
         if ( this.hasBaseline() )
         {
             Integer variableId = this.getBaselineVariableID();
@@ -1591,7 +1643,7 @@ public class Project
         }
 
         return returnMe;
-    }     
+    }
 
     /**
      * @return The largest possible value for the data. Double.MAX_VALUE by default.
@@ -1810,7 +1862,7 @@ public class Project
     {
         // Indicates one basis per period
         // Period is required: #67319
-        return  this.getIssuePoolingWindow().getPeriod();
+        return this.getIssuePoolingWindow().getPeriod();
     }
 
     /**
@@ -2318,11 +2370,11 @@ public class Project
     {
         // Get the offsets, if any
         Map<FeatureDetails.FeatureKey, Future<Integer>> futureOffsets = this.getLeadOffsetFutures();
-        
+
         // Consume them
         this.populateLeadOffsetsFromFutures( Collections.unmodifiableMap( futureOffsets ) );
-    }    
-    
+    }
+
     /**
      * <p>Populates the lead offsets from futures of those offset values, together with their corresponding feature.
      * 
@@ -2347,7 +2399,7 @@ public class Project
             timer.start();
         }
 
-        for( Map.Entry<FeatureDetails.FeatureKey, Future<Integer>> next : futureOffsets.entrySet() )
+        for ( Map.Entry<FeatureDetails.FeatureKey, Future<Integer>> next : futureOffsets.entrySet() )
         {
             FeatureDetails.FeatureKey key = next.getKey();
             Future<Integer> futureOffset = next.getValue();
@@ -2380,7 +2432,7 @@ public class Project
                 {
                     LOGGER.trace( "Found a null lead offset for '{}'", ConfigHelper.getFeatureDescription( feature ) );
                 }
-                
+
             }
             catch ( InterruptedException e )
             {
@@ -2400,10 +2452,10 @@ public class Project
             timer.stop();
             LOGGER.debug( "It took {} to get the offsets for all locations.",
                           timer.getFormattedDuration() );
-        }        
-        
-    }    
-    
+        }
+
+    }
+
     /**
      * Returns the lead time offsets for each feature in the project
      * <p>
@@ -2429,12 +2481,12 @@ public class Project
     private Map<FeatureDetails.FeatureKey, Future<Integer>> getLeadOffsetFutures() throws IOException, SQLException
     {
         // Only determine lead offsets when they are absolutely required    
-        
+
         // Do not need offsets for non-forecasts because there is no forecast horizon
         if ( !ConfigHelper.isForecast( this.getRight() ) )
         {
-            LOGGER.debug( "Lead offsets were not computed because the right source does not contain " 
-                    + "forecasts and offsets are only needed for forecasts." );
+            LOGGER.debug( "Lead offsets were not computed because the right source does not contain "
+                          + "forecasts and offsets are only needed for forecasts." );
 
             return Collections.emptyMap();
         }
@@ -2444,7 +2496,7 @@ public class Project
         if ( ProjectConfigs.hasTimeSeriesMetrics( this.getProjectConfig() ) )
         {
             LOGGER.debug( "Lead offsets were not computed because the evaluation contains time-series metrics "
-                    + "for which the retrieval pulls complete time-series." );
+                          + "for which the retrieval pulls complete time-series." );
 
             return Collections.emptyMap();
         }
@@ -2453,7 +2505,7 @@ public class Project
         if ( this.usesGriddedData( this.getRight() ) )
         {
             LOGGER.debug( "Lead offsets were not computed because the evaluation uses gridded data for which "
-                    + "lead offsets cannot be computed at present." );
+                          + "lead offsets cannot be computed at present." );
 
             return Collections.emptyMap();
         }
@@ -2463,7 +2515,7 @@ public class Project
         if ( Objects.nonNull( desiredScale ) && desiredScale.isInstantaneous() )
         {
             LOGGER.debug( "Lead offsets were not computed because the desired time scale is instantaneous and lead "
-                    + "offsets are only needed when upscaling." );
+                          + "offsets are only needed when upscaling." );
 
             return Collections.emptyMap();
         }
@@ -2511,7 +2563,7 @@ public class Project
 
         return Collections.unmodifiableMap( futureOffsets );
     }
-    
+
     /**
      * Determines the number of pools for issue date pooling for a feature
      *
@@ -3372,14 +3424,14 @@ public class Project
             Duration period = value.getDuration( "scale_period" );
             String functionString = value.getString( "scale_function" );
             Duration timeStep = value.getDuration( "time_step" );
-            
+
             // Add some context information if available: see #64542
             String context = null;
-            if( value.hasColumn( "lid" ) )
+            if ( value.hasColumn( "lid" ) )
             {
                 context = value.getString( "lid" );
             }
-            
+
             // Ignore if the time step is zero by returning
             if ( Duration.ZERO.equals( timeStep ) )
             {
@@ -3451,13 +3503,13 @@ public class Project
                 timeScale = TimeScale.of( period, function );
             }
 
-            if( Objects.nonNull( context ) )
+            if ( Objects.nonNull( context ) )
             {
                 LOGGER.trace( "The time scale {} and time step {} appears in context {}.",
-                             timeScale,
-                             timeStep,
-                             context );
-                
+                              timeScale,
+                              timeStep,
+                              context );
+
                 this.existingScalesAndSteps.add( TimeScaleAndTimeStep.of( timeScale, timeStep, context ) );
             }
             else
@@ -3602,7 +3654,7 @@ public class Project
         {
             return this.timeStep;
         }
-        
+
         /**
          * Returns the context in which the time scale and step arose.
          * @return a context string
@@ -3612,7 +3664,7 @@ public class Project
         {
             return this.context;
         }
-        
+
         @Override
         public boolean equals( Object o )
         {
@@ -3639,22 +3691,22 @@ public class Project
         public int compareTo( TimeScaleAndTimeStep o )
         {
             int returnMe = Objects.compare( this.getTimeScale(), o.getTimeScale(), Comparator.naturalOrder() );
-            
-            if( returnMe != 0 )
+
+            if ( returnMe != 0 )
             {
                 return returnMe;
             }
-            
+
             returnMe = this.getTimeStep().compareTo( o.getTimeStep() );
-            
-            if( returnMe != 0 )
+
+            if ( returnMe != 0 )
             {
                 return returnMe;
             }
-            
+
             return this.getContext().compareTo( o.getContext() );
         }
-        
+
         /**
          * Construct a time-scale and time-step.
          * @param timeScale the required time scale

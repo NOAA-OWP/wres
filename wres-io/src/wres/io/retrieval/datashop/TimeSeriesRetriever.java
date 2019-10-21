@@ -111,12 +111,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     private final MonthDay seasonEnd;
 
     /**
-     * The time offset applied to a seasonal constraint.
-     */
-
-    private final Duration seasonOffset;
-
-    /**
      * Is <code>true</code> to retrieve values from time-series that were distributed across multiple sources. The need
      * for this distinction persists while ingest is not time-series-shaped, rather event-shaped. For example, one 
      * consequence is the need to group by <code>source_id</code>, in general, but not when individual time-series were 
@@ -380,6 +374,10 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     /**
      * Adds a seasonal constraint to the retrieval script, if available.
      * 
+     * TODO: reconsider how seasons are applied. Currently, they are applied to forecast reference times, 
+     * which means they would need to be adjusted for observation valid times. Either way, this complexity 
+     * should probably not be delegated to the caller without a much more explicit API. See #40405. 
+     * 
      * @param script the script to augment
      * @param tabsIn the number of tabs in for the outermost clause
      * @throws NullPointerException if the input is null
@@ -400,14 +398,14 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                 columnName = "TS.initialization_date";
             }
 
-            String dateTemplate = "MAKE_DATE(EXTRACT( YEAR FROM " + columnName + ")::INTEGER, %d, %d)";
-            
+            String dateTemplate = "MAKE_DATE( EXTRACT( YEAR FROM " + columnName + " )::INTEGER, %d, %d)";
+
             // Seasons can wrap, so order the start and end correctly
             MonthDay earliestDay = this.seasonStart;
             MonthDay latestDay = this.seasonEnd;
             boolean daysFlipped = false;
 
-            if ( !this.seasonStart.isAfter( this.seasonEnd ) )
+            if ( this.seasonStart.isAfter( this.seasonEnd ) )
             {
                 earliestDay = this.seasonEnd;
                 latestDay = this.seasonStart;
@@ -419,12 +417,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             String latestConstraint =
                     String.format( dateTemplate, latestDay.getMonthValue(), latestDay.getDayOfMonth() );
 
-            if ( Objects.nonNull( this.seasonOffset ) )
-            {
-                earliestConstraint += " INTERVAL '" + this.seasonOffset + "'";
-                latestConstraint += " INTERVAL '" + this.seasonOffset + "'";
-            }
-
             if ( daysFlipped )
             {
                 script.addTab( tabsIn )
@@ -432,8 +424,9 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                                 "so we're going to check for values before the latest ",
                                 "date and after the earliest" );
                 script.addTab( tabsIn + 1 )
-                      .addLine( columnName,
-                                "::DATE <= ",
+                      .addLine( "("
+                                + columnName
+                                + ")::DATE <= ",
                                 earliestConstraint,
                                 " -- In the set [1/1, ",
                                 earliestDay.getMonthValue(),
@@ -441,9 +434,9 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                                 earliestDay.getDayOfMonth(),
                                 "]" );
                 script.addTab( tabsIn + 1 )
-                      .addLine( "OR ",
+                      .addLine( "OR (",
                                 columnName,
-                                "::DATE >= ",
+                                ")::DATE >= ",
                                 latestConstraint,
                                 " -- Or in the set [",
                                 latestDay.getMonthValue(),
@@ -454,8 +447,8 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             }
             else
             {
-                script.addTab().addLine( "AND ", columnName + "::DATE >= ", earliestConstraint );
-                script.addTab().addLine( "AND ", columnName, "::DATE <= ", latestConstraint );
+                script.addTab().addLine( "AND (", columnName + ")::DATE >= ", earliestConstraint );
+                script.addTab().addLine( "AND (", columnName, ")::DATE <= ", latestConstraint );
             }
         }
     }
@@ -604,7 +597,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     boolean hasSeason()
     {
-        return false;
+        return Objects.nonNull( this.seasonStart );
     }
 
     /**
@@ -1064,12 +1057,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         private MonthDay seasonEnd;
 
         /**
-         * The time offset applied to a seasonal constraint.
-         */
-
-        private Duration seasonOffset;
-
-        /**
          * Is <code>true</code> to retrieve values from time-series that were distributed across multiple sources. 
          * See #65216.
          * 
@@ -1200,19 +1187,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         }
 
         /**
-         * Sets the time offset to use when selecting by season.
-         * 
-         * @param seasonOffset the time offset for a season
-         * @return the builder
-         */
-
-        TimeSeriesRetrieverBuilder<S> setSeasonOffset( Duration seasonOffset )
-        {
-            this.seasonOffset = seasonOffset;
-            return this;
-        }
-
-        /**
          * Sets the measurement unit mapper.
          * 
          * @param unitMapper the measurement unit mapper
@@ -1246,7 +1220,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         this.hasMultipleSourcesPerSeries = builder.hasMultipleSourcesPerSeries;
         this.seasonStart = builder.seasonStart;
         this.seasonEnd = builder.seasonEnd;
-        this.seasonOffset = builder.seasonOffset;
 
         // Validate
         Objects.requireNonNull( this.getMeasurementUnitMapper(),

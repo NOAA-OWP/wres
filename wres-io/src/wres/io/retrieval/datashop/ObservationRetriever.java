@@ -130,6 +130,9 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
 
         // Add time window constraint
         this.addTimeWindowClause( scripter, 0 );
+        
+        // Add season constraint
+        this.addSeasonClause( scripter, 1 );
 
         // Add ORDER BY clause
         scripter.addLine( "ORDER BY O.observation_time;" );

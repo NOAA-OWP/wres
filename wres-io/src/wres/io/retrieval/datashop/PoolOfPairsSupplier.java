@@ -93,6 +93,12 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
     private static final boolean REGULAR_PAIRS = true;
 
     /**
+     * Message re-used several times.
+     */
+
+    private static final String WHILE_CONSTRUCTING_A_POOL_SUPPLIER_FOR = "While constructing a pool supplier for {}, ";
+
+    /**
      * Climatological data source at the desired time scale.
      */
 
@@ -786,7 +792,7 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         Objects.requireNonNull( right );
 
         // Snip the left data
-        TimeSeries<L> scaledLeft = this.snip( left, right, desiredTimeScale ); // Snip left to right
+        TimeSeries<L> scaledLeft = this.snip( left, right, leftOffset, rightOffset, desiredTimeScale ); // Snip left to right
         TimeSeries<R> scaledRight = right;
 
         if ( Objects.nonNull( desiredTimeScale ) && !desiredTimeScale.equals( left.getTimeScale() ) )
@@ -1019,7 +1025,8 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
             LOGGER.debug( "While retrieving data for pool {}, discovered that the desired time scale was not supplied "
                           + "on construction of the pool. Instead, determined the desired time scale from the Least "
                           + "Common Scale of the ingested inputs, which was {}.",
-                          this.metadata );
+                          this.metadata,
+                          leastCommonScale );
 
             return leastCommonScale;
         }
@@ -1362,10 +1369,14 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
      * @return a snipped series
      */
 
-    private <S, T> TimeSeries<S> snip( TimeSeries<S> toSnip, TimeSeries<T> snipTo, TimeScale desiredTimeScale )
+    private <S, T> TimeSeries<S> snip( TimeSeries<S> toSnip,
+                                       TimeSeries<T> snipTo,
+                                       Duration leftOffset,
+                                       Duration rightOffset,
+                                       TimeScale desiredTimeScale )
     {
-        Instant lower = snipTo.getEvents().first().getTime();
-        Instant upper = snipTo.getEvents().last().getTime();
+        Instant lower = snipTo.getEvents().first().getTime().plus( rightOffset );
+        Instant upper = snipTo.getEvents().last().getTime().plus( rightOffset );
 
         // Subtract the period from the lower bound
         if ( Objects.nonNull( desiredTimeScale ) )
@@ -1378,7 +1389,7 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
                      .setTimeScale( toSnip.getTimeScale() );
         for ( Event<S> next : toSnip.getEvents() )
         {
-            Instant nextTime = next.getTime();
+            Instant nextTime = next.getTime().plus( leftOffset );
 
             if ( nextTime.compareTo( lower ) >= 0 && nextTime.compareTo( upper ) <= 0 )
             {
@@ -1423,6 +1434,14 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         this.rightOffset = offsets.get( LeftOrRightOrBaseline.RIGHT );
         this.baselineOffset = offsets.get( LeftOrRightOrBaseline.BASELINE );
 
+        if ( !offsets.isEmpty() )
+        {
+            LOGGER.debug( WHILE_CONSTRUCTING_A_POOL_SUPPLIER_FOR
+                          + "discovered that these time offsets by data type {}.",
+                          this.metadata,
+                          offsets );
+        }
+
         // Validate
         String messageStart = "Cannot build the pool supplier: ";
 
@@ -1436,7 +1455,7 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
 
         if ( Objects.isNull( this.desiredTimeScale ) )
         {
-            LOGGER.debug( "While constructing a pool supplier for {}, "
+            LOGGER.debug( WHILE_CONSTRUCTING_A_POOL_SUPPLIER_FOR
                           + "discovered that the desired time scale was undefined.",
                           this.metadata );
         }
@@ -1450,7 +1469,7 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
 
         if ( Objects.isNull( this.inputs ) )
         {
-            LOGGER.debug( "While constructing a pool supplier for {}, "
+            LOGGER.debug( WHILE_CONSTRUCTING_A_POOL_SUPPLIER_FOR
                           + "discovered that the inputs declaration was undefined.",
                           this.metadata );
         }
@@ -1508,6 +1527,24 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
                 Duration baselineOff = ConfigHelper.getTimeShift( inputsConfig.getLeft() );
                 returnMe.put( LeftOrRightOrBaseline.BASELINE, baselineOff );
             }
+        }
+
+        // Add benign offsets
+        if ( !returnMe.containsKey( LeftOrRightOrBaseline.LEFT ) )
+        {
+            returnMe.put( LeftOrRightOrBaseline.LEFT, Duration.ZERO );
+        }
+
+        if ( !returnMe.containsKey( LeftOrRightOrBaseline.RIGHT ) )
+        {
+            returnMe.put( LeftOrRightOrBaseline.RIGHT, Duration.ZERO );
+        }
+
+        if ( Objects.nonNull( inputsConfig )
+             && Objects.nonNull( inputsConfig.getBaseline() )
+             && !returnMe.containsKey( LeftOrRightOrBaseline.BASELINE ) )
+        {
+            returnMe.put( LeftOrRightOrBaseline.BASELINE, Duration.ZERO );
         }
 
         return returnMe;

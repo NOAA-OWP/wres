@@ -1,7 +1,6 @@
 package wres.io.retrieval.datashop;
 
 import java.sql.SQLException;
-import java.time.Duration;
 import java.time.MonthDay;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -164,11 +163,6 @@ public class EnsemblePoolGenerator extends PoolGenerator<Double, Ensemble>
         MonthDay seasonStart = project.getEarliestDayInSeason();
         MonthDay seasonEnd = project.getLatestDayInSeason();
 
-        // Obtain any time offsets
-        Duration leftOffset = ConfigHelper.getTimeShift( inputsConfig.getLeft() );
-        Duration rightOffset = ConfigHelper.getTimeShift( inputsConfig.getRight() );
-        Duration baselineOffset = ConfigHelper.getTimeShift( inputsConfig.getBaseline() );
-
         // Create the time windows, iterate over them and create the retrievers 
         try
         {
@@ -181,6 +175,16 @@ public class EnsemblePoolGenerator extends PoolGenerator<Double, Ensemble>
 
             String desiredMeasurementUnits = pairConfig.getUnit();
 
+            // Obtain any ensemble member constraints
+            Set<Integer> includeTheseMembersRight =
+                    project.getEnsembleMembersToFilter( LeftOrRightOrBaseline.RIGHT, true );
+            Set<Integer> excludeTheseMembersRight =
+                    project.getEnsembleMembersToFilter( LeftOrRightOrBaseline.RIGHT, false );
+            Set<Integer> includeTheseMembersBaseline =
+                    project.getEnsembleMembersToFilter( LeftOrRightOrBaseline.BASELINE, true );
+            Set<Integer> excludeTheseMembersBaseline =
+                    project.getEnsembleMembersToFilter( LeftOrRightOrBaseline.BASELINE, false );
+
             // Climatological data required?
             Supplier<Stream<TimeSeries<Double>>> climatologySupplier = null;
             if ( project.usesProbabilityThresholds() || this.hasGeneratedBaseline( inputsConfig.getBaseline() ) )
@@ -189,6 +193,10 @@ public class EnsemblePoolGenerator extends PoolGenerator<Double, Ensemble>
                               + "climatological data.",
                               projectId,
                               featureString );
+
+                // TODO: reconsider how seasons are applied. For now, do not apply to
+                // left-ish data because the current interpretation of right-ish data
+                // that is a forecast type is to use reference time, not valid time. See #40405
 
                 // Re-use the climatology across pools with a caching retriever
                 Supplier<Stream<TimeSeries<Double>>> leftSupplier =
@@ -199,6 +207,8 @@ public class EnsemblePoolGenerator extends PoolGenerator<Double, Ensemble>
                             .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale( leftConfig ) )
                             .setDesiredTimeScale( desiredTimeScale )
                             .setUnitMapper( unitMapper )
+                            //.setSeasonStart( seasonStart )
+                            //.setSeasonEnd( seasonEnd )
                             .build();
 
                 climatologySupplier = CachingRetriever.of( leftSupplier );
@@ -251,6 +261,8 @@ public class EnsemblePoolGenerator extends PoolGenerator<Double, Ensemble>
             {
                 Supplier<Stream<TimeSeries<Ensemble>>> rightSupplier =
                         this.getRightRetrieverBuilder( rightConfig.getType() )
+                            .setEnsembleIdsToInclude( includeTheseMembersRight )
+                            .setEnsembleIdsToExclude( excludeTheseMembersRight )
                             .setProjectId( projectId )
                             .setVariableFeatureId( rightVariableFeatureId )
                             .setLeftOrRightOrBaseline( LeftOrRightOrBaseline.RIGHT )
@@ -260,7 +272,6 @@ public class EnsemblePoolGenerator extends PoolGenerator<Double, Ensemble>
                             .setUnitMapper( unitMapper )
                             .setSeasonStart( seasonStart )
                             .setSeasonEnd( seasonEnd )
-                            .setSeasonOffset( rightOffset )
                             .build();
 
                 builder.setRight( rightSupplier );
@@ -285,9 +296,8 @@ public class EnsemblePoolGenerator extends PoolGenerator<Double, Ensemble>
                                        .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale( leftConfig ) )
                                        .setDesiredTimeScale( desiredTimeScale )
                                        .setUnitMapper( unitMapper )
-                                       .setSeasonStart( seasonStart )
-                                       .setSeasonEnd( seasonEnd )
-                                       .setSeasonOffset( leftOffset )
+                                       //.setSeasonStart( seasonStart )
+                                       //.setSeasonEnd( seasonEnd )
                                        .build();
                 }
 
@@ -304,6 +314,8 @@ public class EnsemblePoolGenerator extends PoolGenerator<Double, Ensemble>
                     // Data-source baseline
                     Supplier<Stream<TimeSeries<Ensemble>>> baselineSupplier =
                             this.getRightRetrieverBuilder( baselineConfig.getType() )
+                                .setEnsembleIdsToInclude( includeTheseMembersBaseline )
+                                .setEnsembleIdsToExclude( excludeTheseMembersBaseline )
                                 .setProjectId( projectId )
                                 .setVariableFeatureId( baselineVariableFeatureId )
                                 .setLeftOrRightOrBaseline( LeftOrRightOrBaseline.BASELINE )
@@ -313,7 +325,6 @@ public class EnsemblePoolGenerator extends PoolGenerator<Double, Ensemble>
                                 .setUnitMapper( unitMapper )
                                 .setSeasonStart( seasonStart )
                                 .setSeasonEnd( seasonEnd )
-                                .setSeasonOffset( baselineOffset )
                                 .build();
 
                     builder.setBaseline( baselineSupplier );
@@ -373,7 +384,7 @@ public class EnsemblePoolGenerator extends PoolGenerator<Double, Ensemble>
      * @throws IllegalArgumentException if the data type is unrecognized in this context
      */
 
-    private TimeSeriesRetrieverBuilder<Ensemble> getRightRetrieverBuilder( DatasourceType dataType )
+    private EnsembleForecastRetriever.Builder getRightRetrieverBuilder( DatasourceType dataType )
     {
         if ( dataType == DatasourceType.ENSEMBLE_FORECASTS )
         {
