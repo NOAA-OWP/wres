@@ -3,6 +3,7 @@ package wres.io.retrieval.datashop;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.MonthDay;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -96,6 +97,24 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      */
 
     private final TimeScale declaredExistingTimeScale;
+
+    /**
+     * The start monthday of a season constraint.
+     */
+
+    private final MonthDay seasonStart;
+
+    /**
+     * The end monthday of a season constraint.
+     */
+
+    private final MonthDay seasonEnd;
+
+    /**
+     * The time offset applied to a seasonal constraint.
+     */
+
+    private final Duration seasonOffset;
 
     /**
      * Is <code>true</code> to retrieve values from time-series that were distributed across multiple sources. The need
@@ -327,7 +346,8 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     }
 
     /**
-     * Adds an empty {@link TimeWindow} constraint to the retrieval script. All intervals are treated as left-closed.
+     * Adds a {@link TimeWindow} constraint to the retrieval script, if available. All intervals are treated as 
+     * right-closed.
      * 
      * @param script the script to augment
      * @param tabsIn the number of tabs in for the outermost clause
@@ -339,9 +359,10 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         Objects.requireNonNull( script );
 
         // Does the filter exist?
-        TimeWindow filter = this.getTimeWindow();
-        if ( Objects.nonNull( filter ) )
+        if ( this.hasTimeWindow() )
         {
+            TimeWindow filter = this.getTimeWindow();
+
             // Forecasts?
             if ( this.isForecastRetriever() )
             {
@@ -352,6 +373,89 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             else
             {
                 this.addValidTimeBoundsToObservedScript( script, filter, tabsIn );
+            }
+        }
+    }
+
+    /**
+     * Adds a seasonal constraint to the retrieval script, if available.
+     * 
+     * @param script the script to augment
+     * @param tabsIn the number of tabs in for the outermost clause
+     * @throws NullPointerException if the input is null
+     */
+
+    void addSeasonClause( ScriptBuilder script, int tabsIn )
+    {
+        Objects.requireNonNull( script );
+
+        // Does the filter exist?
+        if ( this.hasSeason() )
+        {
+            String columnName = "O.observation_time";
+
+            // Forecasts?
+            if ( this.isForecastRetriever() )
+            {
+                columnName = "TS.initialization_date";
+            }
+
+            String dateTemplate = "MAKE_DATE(EXTRACT( YEAR FROM " + columnName + ")::INTEGER, %d, %d)";
+            
+            // Seasons can wrap, so order the start and end correctly
+            MonthDay earliestDay = this.seasonStart;
+            MonthDay latestDay = this.seasonEnd;
+            boolean daysFlipped = false;
+
+            if ( !this.seasonStart.isAfter( this.seasonEnd ) )
+            {
+                earliestDay = this.seasonEnd;
+                latestDay = this.seasonStart;
+                daysFlipped = true;
+            }
+
+            String earliestConstraint =
+                    String.format( dateTemplate, earliestDay.getMonthValue(), earliestDay.getDayOfMonth() );
+            String latestConstraint =
+                    String.format( dateTemplate, latestDay.getMonthValue(), latestDay.getDayOfMonth() );
+
+            if ( Objects.nonNull( this.seasonOffset ) )
+            {
+                earliestConstraint += " INTERVAL '" + this.seasonOffset + "'";
+                latestConstraint += " INTERVAL '" + this.seasonOffset + "'";
+            }
+
+            if ( daysFlipped )
+            {
+                script.addTab( tabsIn )
+                      .addLine( "AND ( -- The dates should wrap around the end of the year, ",
+                                "so we're going to check for values before the latest ",
+                                "date and after the earliest" );
+                script.addTab( tabsIn + 1 )
+                      .addLine( columnName,
+                                "::DATE <= ",
+                                earliestConstraint,
+                                " -- In the set [1/1, ",
+                                earliestDay.getMonthValue(),
+                                "/",
+                                earliestDay.getDayOfMonth(),
+                                "]" );
+                script.addTab( tabsIn + 1 )
+                      .addLine( "OR ",
+                                columnName,
+                                "::DATE >= ",
+                                latestConstraint,
+                                " -- Or in the set [",
+                                latestDay.getMonthValue(),
+                                "/",
+                                latestDay.getDayOfMonth(),
+                                ", 12/31]" );
+                script.addTab( tabsIn ).addLine( ")" );
+            }
+            else
+            {
+                script.addTab().addLine( "AND ", columnName + "::DATE >= ", earliestConstraint );
+                script.addTab().addLine( "AND ", columnName, "::DATE <= ", latestConstraint );
             }
         }
     }
@@ -490,6 +594,28 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     boolean hasMultipleSourcesPerSeries()
     {
         return this.hasMultipleSourcesPerSeries;
+    }
+
+    /**
+     * Returns <code>true</code> if a seasonal constraint is defined, otherwise <code>false</code>.
+     * 
+     * @return true if a seasonal constraint is defined, otherwise false
+     */
+
+    boolean hasSeason()
+    {
+        return false;
+    }
+
+    /**
+     * Returns <code>true</code> if a time window is defined, otherwise <code>false</code>.
+     * 
+     * @return true if a time window is defined, otherwise false
+     */
+
+    boolean hasTimeWindow()
+    {
+        return Objects.nonNull( this.getTimeWindow() );
     }
 
     /**
@@ -653,7 +779,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     }
 
     /**
-     * Adds the valid time bounds (if any) to the script. The interval is left-closed.
+     * Adds the valid time bounds (if any) to the script. The interval is right-closed.
      * 
      * @param script the script to augment
      * @param filter the time window filter
@@ -674,12 +800,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
             String clause = "TS.initialization_date + INTERVAL '1' MINUTE * TSV.lead = '";
 
-            // Observation?
-            if ( !this.isForecastRetriever() )
-            {
-                clause = "O.observation_time = '";
-            }
-
             this.addWhereOrAndClause( script,
                                       tabsIn,
                                       clause,
@@ -696,12 +816,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
                 String clause = "TS.initialization_date + INTERVAL '1' MINUTE * TSV.lead > '";
 
-                // Observation?
-                if ( !this.isForecastRetriever() )
-                {
-                    clause = "O.observation_time > '";
-                }
-
                 this.addWhereOrAndClause( script,
                                           tabsIn,
                                           clause,
@@ -716,12 +830,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
                 String clause = "TS.initialization_date + INTERVAL '1' MINUTE * TSV.lead <= '";
 
-                // Observation?
-                if ( !this.isForecastRetriever() )
-                {
-                    clause = "O.observation_time <= '";
-                }
-
                 this.addWhereOrAndClause( script,
                                           tabsIn,
                                           clause,
@@ -732,7 +840,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     }
 
     /**
-     * Adds the valid time bounds (if any) to the script. The interval is left-closed.
+     * Adds the valid time bounds (if any) to the script. The interval is right-closed.
      * 
      * @param script the script to augment
      * @param filter the time window filter
@@ -944,6 +1052,24 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         private TimeScale declaredExistingTimeScale;
 
         /**
+         * The start monthday of a season constraint.
+         */
+
+        private MonthDay seasonStart;
+
+        /**
+         * The end monthday of a season constraint.
+         */
+
+        private MonthDay seasonEnd;
+
+        /**
+         * The time offset applied to a seasonal constraint.
+         */
+
+        private Duration seasonOffset;
+
+        /**
          * Is <code>true</code> to retrieve values from time-series that were distributed across multiple sources. 
          * See #65216.
          * 
@@ -1048,6 +1174,45 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         }
 
         /**
+         * Sets the start of a season in which values will be selected.
+         * 
+         * @param seasonStart the start of the season
+         * @return the builder
+         */
+
+        TimeSeriesRetrieverBuilder<S> setSeasonStart( MonthDay seasonStart )
+        {
+            this.seasonStart = seasonStart;
+            return this;
+        }
+
+        /**
+         * Sets the end of a season in which values will be selected.
+         * 
+         * @param seasonEnd the end of the season
+         * @return the builder
+         */
+
+        TimeSeriesRetrieverBuilder<S> setSeasonEnd( MonthDay seasonEnd )
+        {
+            this.seasonEnd = seasonEnd;
+            return this;
+        }
+
+        /**
+         * Sets the time offset to use when selecting by season.
+         * 
+         * @param seasonOffset the time offset for a season
+         * @return the builder
+         */
+
+        TimeSeriesRetrieverBuilder<S> setSeasonOffset( Duration seasonOffset )
+        {
+            this.seasonOffset = seasonOffset;
+            return this;
+        }
+
+        /**
          * Sets the measurement unit mapper.
          * 
          * @param unitMapper the measurement unit mapper
@@ -1079,11 +1244,22 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         this.declaredExistingTimeScale = builder.declaredExistingTimeScale;
         this.unitMapper = builder.unitMapper;
         this.hasMultipleSourcesPerSeries = builder.hasMultipleSourcesPerSeries;
+        this.seasonStart = builder.seasonStart;
+        this.seasonEnd = builder.seasonEnd;
+        this.seasonOffset = builder.seasonOffset;
 
         // Validate
         Objects.requireNonNull( this.getMeasurementUnitMapper(),
                                 "Cannot build a time-series retriever without a "
                                                                  + "measurement unit mapper." );
+
+        if ( Objects.isNull( this.seasonStart ) != Objects.isNull( this.seasonEnd ) )
+        {
+            throw new IllegalArgumentException( "Cannot build a retriever with only half of a season. Season start: "
+                                                + this.seasonStart
+                                                + "Season end: "
+                                                + this.seasonEnd );
+        }
 
         // Log missing information
         if ( LOGGER.isDebugEnabled() )

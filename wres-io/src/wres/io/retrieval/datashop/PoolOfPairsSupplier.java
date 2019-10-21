@@ -858,8 +858,12 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         }
 
         // Transform the rescaled values, if required
-        TimeSeries<L> scaledAndTransformedLeft = this.transform( scaledLeft, this.leftTransformer, leftOffset );
-        TimeSeries<R> scaledAndTransformedRight = this.transform( scaledRight, this.rightTransformer, rightOffset );
+        TimeSeries<L> scaledAndTransformedLeft = this.transformAndApplyTimeOffset( scaledLeft,
+                                                                                   this.leftTransformer,
+                                                                                   leftOffset );
+        TimeSeries<R> scaledAndTransformedRight = this.transformAndApplyTimeOffset( scaledRight,
+                                                                                    this.rightTransformer,
+                                                                                    rightOffset );
 
         // Create the pairs, if any
         TimeSeries<Pair<L, R>> pairs = this.getPairer().pair( scaledAndTransformedLeft, scaledAndTransformedRight );
@@ -1057,17 +1061,25 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
     }
 
     /**
-     * Transforms a time-series by value.
+     * Applies a transformation and/or a time offset to the input series.
      * 
      * @param <T> the event value type
      * @param toTransform the time-series to transform
-     * @param transformer the transformer
+     * @param transformer the optional transformer
      * @param offset an optional offset for the valid times 
      * @return the transformed series
      */
 
-    private <T> TimeSeries<T> transform( TimeSeries<T> toTransform, UnaryOperator<T> transformer, Duration offset )
+    private <T> TimeSeries<T> transformAndApplyTimeOffset( TimeSeries<T> toTransform,
+                                                           UnaryOperator<T> transformer,
+                                                           Duration offset )
     {
+        // No transformations?
+        if ( Objects.isNull( transformer ) && Objects.isNull( offset ) )
+        {
+            return toTransform;
+        }
+
         TimeSeries<T> transformed = toTransform;
 
         // Transform values?

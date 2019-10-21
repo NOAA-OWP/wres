@@ -1190,16 +1190,16 @@ public class ConfigHelper
     {
         Duration timeShift = null;
 
-        if (dataSourceConfig.getTimeShift() != null)
+        if ( Objects.nonNull( dataSourceConfig )
+             && Objects.nonNull( dataSourceConfig.getTimeShift() ) )
         {
             timeShift = Duration.of(
-                    dataSourceConfig.getTimeShift().getWidth(),
-                    ChronoUnit.valueOf(
-                            dataSourceConfig.getTimeShift()
-                                            .getUnit()
-                                            .toString()
-                                            .toUpperCase() )
-            );
+                                     dataSourceConfig.getTimeShift().getWidth(),
+                                     ChronoUnit.valueOf(
+                                                         dataSourceConfig.getTimeShift()
+                                                                         .getUnit()
+                                                                         .toString()
+                                                                         .toUpperCase() ) );
         }
 
         return timeShift;
