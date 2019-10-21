@@ -206,7 +206,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
             String huc = dataProvider.getString( "huc" );
             Float longitude = dataProvider.getFloat( "longitude" );
             Float latitude = dataProvider.getFloat( "latitude" );
-            return new FeatureDetails.FeatureKey( comid, lid, huc, gageId, longitude, latitude );
+            return new FeatureDetails.FeatureKey( comid, lid, gageId, huc, longitude, latitude );
         }
     }
 
