@@ -7,6 +7,8 @@ import java.util.Set;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -17,6 +19,8 @@ import wres.datamodel.time.TimeSeries;
 
 public class NWMTimeSeriesTest
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger( NWMTimeSeriesTest.class );
+
     @Test
     public void generateFakeNwmForecastNames()
     {
@@ -153,7 +157,7 @@ public class NWMTimeSeriesTest
                                                 NWMProfile.TimeLabel.tm );
 
         try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
-                                                               Instant.parse( "2019-10-06T02:00:00Z" ),
+                                                               Instant.parse( "2019-10-22T02:00:00Z" ),
                                                                URI.create( "https://nomads.ncep.***REMOVED***/pub/data/nccf/com/nwm/prod/" ) ) )
         {
             assertEquals( nwmProfile, nwmTimeSeries.getProfile() );
@@ -168,7 +172,7 @@ public class NWMTimeSeriesTest
     public void readForecastFromNomads()
     {
         // To see it fail to find a file, change blobCount to 25
-        NWMProfile nwmProfile = new NWMProfile( 18,
+        NWMProfile nwmProfile = new NWMProfile( 2,
                                                 1,
                                                 Duration.ofHours( 1 ),
                                                 true,
@@ -176,12 +180,15 @@ public class NWMTimeSeriesTest
                                                 "channel_rt",
                                                 NWMProfile.TimeLabel.f );
 
+        LOGGER.info( "Opening a forecast based on {}", nwmProfile );
+
         try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
-                                                               Instant.parse( "2019-10-06T02:00:00Z" ),
+                                                               Instant.parse( "2019-10-22T02:00:00Z" ),
                                                                URI.create( "https://nomads.ncep.***REMOVED***/pub/data/nccf/com/nwm/prod/" ) ) )
         {
+            LOGGER.info( "Finished opening forecast files, now reading..." );
             TimeSeries<Double> timeSeries = nwmTimeSeries.readTimeSeries( 18384141, "streamflow" );
-            System.err.println( "Here is the timeseries: " + timeSeries );
+            LOGGER.info( "Here is the timeseries: {}", timeSeries );
             assertNotNull( timeSeries );
             assertNotEquals( 0, timeSeries.getEvents().size() );
         }
@@ -202,12 +209,15 @@ public class NWMTimeSeriesTest
                                                 "channel_rt",
                                                 NWMProfile.TimeLabel.f );
 
+        LOGGER.info( "Opening a forecast based on {}", nwmProfile );
+
         try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
                                                                Instant.parse( "2019-10-06T02:00:00Z" ),
                                                                URI.create( "https://dstore-fqdn/nwm/2.0/" ) ) )
         {
+            LOGGER.info( "Finished opening forecast files, now reading..." );
             TimeSeries<Double> timeSeries = nwmTimeSeries.readTimeSeries( 18384141, "streamflow" );
-            System.err.println( "Here is the timeseries: " + timeSeries );
+            LOGGER.info( "Here is the timeseries: {}", timeSeries );
             assertNotNull( timeSeries );
             assertNotEquals( 0, timeSeries.getEvents().size() );
         }
@@ -227,12 +237,15 @@ public class NWMTimeSeriesTest
                                                 "channel_rt",
                                                 NWMProfile.TimeLabel.f );
 
+        LOGGER.info( "Opening a forecast based on {}", nwmProfile );
+
         try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
                                                                Instant.parse( "2018-05-06T04:00:00Z" ),
                                                                URI.create( "https://dstore-fqdn/nwm/1.2/" ) ) )
         {
+            LOGGER.info( "Finished opening forecast files, now reading..." );
             TimeSeries<Double> timeSeries = nwmTimeSeries.readTimeSeries( 18384141, "streamflow" );
-            System.err.println( "Here is the timeseries: " + timeSeries );
+            LOGGER.info( "Here is the timeseries: {}", timeSeries );
             assertNotNull( timeSeries );
             assertNotEquals( 0, timeSeries.getEvents().size() );
         }
@@ -253,12 +266,14 @@ public class NWMTimeSeriesTest
                                                 "channel_rt",
                                                 NWMProfile.TimeLabel.f );
 
+        LOGGER.info( "Opening a forecast based on {}", nwmProfile );
         try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
                                                                Instant.parse( "2017-10-06T17:00:00Z" ),
                                                                URI.create( "https://dstore-fqdn/nwm/1.1/" ) ) )
         {
+            LOGGER.info( "Finished opening forecast files, now reading..." );
             TimeSeries<Double> timeSeries = nwmTimeSeries.readTimeSeries( 18384141, "streamflow" );
-            System.err.println( "Here is the timeseries: " + timeSeries );
+            LOGGER.info( "Here is the timeseries: {}", timeSeries );
             assertNotNull( timeSeries );
             assertNotEquals( 0, timeSeries.getEvents().size() );
         }
@@ -278,20 +293,22 @@ public class NWMTimeSeriesTest
                                                 "short_range",
                                                 "channel_rt",
                                                 NWMProfile.TimeLabel.f );
+        LOGGER.info( "Opening a forecast based on {}", nwmProfile );
 
         try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
                                                                Instant.parse( "2016-10-18T17:00:00Z" ),
                                                                URI.create( "https://dstore-fqdn/nwm/1.0/" ) ) )
         {
+            LOGGER.info( "Finished opening forecast files, now reading..." );
             TimeSeries<Double> timeSeries = nwmTimeSeries.readTimeSeries( 18384141, "streamflow" );
-            System.err.println( "Here is the timeseries: " + timeSeries );
+            LOGGER.info( "Here is the timeseries: {}", timeSeries );
             assertNotNull( timeSeries );
             assertNotEquals( 0, timeSeries.getEvents().size() );
         }
     }
 
     @Test
-    @Ignore // If you want to try this against real service, remove @Ignore.
+    @Ignore // If you want to try this against real volume, remove @Ignore.
     public void readForecastFromFilesystem()
     {
         // To see it fail to find a file, change blobCount to 25
@@ -303,12 +320,14 @@ public class NWMTimeSeriesTest
                                                 "channel_rt",
                                                 NWMProfile.TimeLabel.f );
 
+        LOGGER.info( "Opening a forecast based on {}", nwmProfile );
         try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
                                                                Instant.parse( "2019-10-06T02:00:00Z" ),
                                                                URI.create( "H:/netcdf_data/" ) ) )
         {
+            LOGGER.info( "Finished opening forecast files, now reading..." );
             TimeSeries<Double> timeSeries = nwmTimeSeries.readTimeSeries( 18384141, "streamflow" );
-            System.err.println( "Here is the timeseries: " + timeSeries );
+            LOGGER.info( "Here is the timeseries: {}", timeSeries );
             assertNotNull( timeSeries );
             assertNotEquals( 0, timeSeries.getEvents().size() );
         }
@@ -322,7 +341,7 @@ public class NWMTimeSeriesTest
     {
         // To see it fail to find a file, change blobCount to 70
         // To see it run OutOfMemoryError, change blobCount to full 68
-        NWMProfile nwmProfile = new NWMProfile( 10,
+        NWMProfile nwmProfile = new NWMProfile( 68,
                                                 7,
                                                 Duration.ofHours( 3 ),
                                                 true,
@@ -330,16 +349,63 @@ public class NWMTimeSeriesTest
                                                 "channel_rt",
                                                 NWMProfile.TimeLabel.f );
 
+        LOGGER.info( "Opening a forecast based on {}", nwmProfile );
+
         try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
-                                                               Instant.parse( "2019-10-01T12:00:00Z" ),
+                                                               Instant.parse( "2019-10-21T06:00:00Z" ),
                                                                URI.create( "https://dstore-fqdn/nwm/2.0/" ) ) )
         {
+            LOGGER.info( "Finished opening forecast files, now reading..." );
             TimeSeries<Ensemble> timeSeries = nwmTimeSeries.readEnsembleTimeSeries( 18384141, "streamflow" );
-            System.err.println( "Here is the timeseries: " + timeSeries );
+            LOGGER.info( "Here is the timeseries: {}", timeSeries );
+            TimeSeries<Ensemble> timeSeries2 = nwmTimeSeries.readEnsembleTimeSeries( 18696047, "streamflow" );
+            LOGGER.info( "Here is timeseries 2: {}", timeSeries2 );
+            TimeSeries<Ensemble> timeSeries3 = nwmTimeSeries.readEnsembleTimeSeries( 942030011, "streamflow" );
+            LOGGER.info( "Here is timeseries 3: {}", timeSeries3 );
             assertNotNull( timeSeries );
+            assertNotNull( timeSeries2 );
+            assertNotNull( timeSeries3 );
             assertNotEquals( 0, timeSeries.getEvents().size() );
+            assertNotEquals( 0, timeSeries2.getEvents().size() );
+            assertNotEquals( 0, timeSeries3.getEvents().size() );
         }
     }
 
-}
 
+    @Test
+    // To try this against real filesystem, download data, set URI, remove @Ignore.
+    @Ignore
+    public void readNWM20MediumRangeForecastFromFilesystem()
+    {
+        // To see it fail to find a file, change blobCount to 70
+        // To see it run OutOfMemoryError, change blobCount to full 68
+        NWMProfile nwmProfile = new NWMProfile( 68,
+                                                7,
+                                                Duration.ofHours( 3 ),
+                                                true,
+                                                "medium_range",
+                                                "channel_rt",
+                                                NWMProfile.TimeLabel.f );
+
+        LOGGER.info( "Opening a forecast based on {}", nwmProfile );
+
+        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
+                                                               Instant.parse( "2019-10-21T06:00:00Z" ),
+                                                               URI.create( "C:/nwm_data/" ) ) )
+        {
+            LOGGER.info( "Finished opening forecast files, now reading..." );
+            TimeSeries<Ensemble> timeSeries = nwmTimeSeries.readEnsembleTimeSeries( 18384141, "streamflow" );
+            LOGGER.info( "Here is the timeseries: {}", timeSeries );
+            TimeSeries<Ensemble> timeSeries2 = nwmTimeSeries.readEnsembleTimeSeries( 18696047, "streamflow" );
+            LOGGER.info( "Here is timeseries 2: {}", timeSeries2 );
+            TimeSeries<Ensemble> timeSeries3 = nwmTimeSeries.readEnsembleTimeSeries( 942030011, "streamflow" );
+            LOGGER.info( "Here is timeseries 3: {}", timeSeries3 );
+            assertNotNull( timeSeries );
+            assertNotNull( timeSeries2 );
+            assertNotNull( timeSeries3 );
+            assertNotEquals( 0, timeSeries.getEvents().size() );
+            assertNotEquals( 0, timeSeries2.getEvents().size() );
+            assertNotEquals( 0, timeSeries3.getEvents().size() );
+        }
+    }
+}
