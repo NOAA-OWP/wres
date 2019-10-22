@@ -791,8 +791,8 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
 
         Objects.requireNonNull( right );
 
-        // Snip the left data
-        TimeSeries<L> scaledLeft = this.snip( left, right, leftOffset, rightOffset, desiredTimeScale ); // Snip left to right
+        // Snip the left data to the right
+        TimeSeries<L> scaledLeft = this.snip( left, right, leftOffset, rightOffset, desiredTimeScale );
         TimeSeries<R> scaledRight = right;
 
         if ( Objects.nonNull( desiredTimeScale ) && !desiredTimeScale.equals( left.getTimeScale() ) )
@@ -1096,7 +1096,7 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         }
 
         // Transform valid times?
-        if ( Objects.nonNull( offset ) )
+        if ( Objects.nonNull( offset ) && ! Duration.ZERO.equals( offset ) )
         {
             SortedSet<Event<T>> events = transformed.getEvents();
             TimeSeriesBuilder<T> timeTransformed = new TimeSeriesBuilder<>();
