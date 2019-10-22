@@ -357,11 +357,7 @@ final class ProjectScriptGenerator
                                             project.getId() );
             script.addTab(    4    ).addLine( "AND PS.member = 'right'" );
             script.addTab(    4    ).addLine( "AND TS.variablefeature_id = VF.variablefeature_id" );
-            script.addTab(    4    ).addLine( "AND EXISTS (" );
-            script.addTab(     5     ).addLine( "SELECT 1" );
-            script.addTab(     5     ).addLine( "FROM wres.TimeSeriesValue TSV" );
-            script.addTab(     5     ).addLine( "WHERE TSV.timeseries_id = TS.timeseries_id" );
-            script.addTab(    4    ).addLine( ")" );
+            // Do NOT additionally inspect wres.TimeSeriesValue. See #70130.
         }
         else
         {
