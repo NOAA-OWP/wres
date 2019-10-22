@@ -341,17 +341,6 @@ class NWMTimeSeries implements Closeable
     {
         final int NOT_FOUND = -1;
 
-        // Get the ensemble_member_number
-        String memberNumberAttributeName = this.getProfile().getMemberAttribute();
-        Attribute memberNumberAttribute = netcdfFile.findAttribute( memberNumberAttributeName );
-        int ncEnsembleNumber;
-
-        if ( Objects.nonNull( memberNumberAttribute ) )
-        {
-            ncEnsembleNumber = memberNumberAttribute.getNumericValue()
-                                                    .intValue();
-        }
-
         // Get the valid datetime
         String validDatetimeVariableName = this.getProfile().getValidDatetimeVariable();
         Instant validDatetime = this.readMinutesFromEpoch( netcdfFile,
