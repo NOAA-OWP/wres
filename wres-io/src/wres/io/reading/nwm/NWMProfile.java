@@ -3,11 +3,28 @@ package wres.io.reading.nwm;
 import java.time.Duration;
 import java.util.Objects;
 
+import org.apache.commons.lang3.builder.ToStringBuilder;
+
 /**
  * Represents a profile of a NWM forecast
  */
 class NWMProfile
 {
+    @Override
+    public String toString()
+    {
+        return new ToStringBuilder( this )
+                .append( "blobCount", blobCount )
+                .append( "memberCount", memberCount )
+                .append( "durationBetweenValidDatetimes",
+                         durationBetweenValidDatetimes )
+                .append( "isVector", isVector )
+                .append( "timeLabel", timeLabel )
+                .append( "nwmConfiguration", nwmConfiguration )
+                .append( "nwmOutputType", nwmOutputType )
+                .toString();
+    }
+
     enum TimeLabel
     {
         f,
