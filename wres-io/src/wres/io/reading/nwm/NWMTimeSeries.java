@@ -131,7 +131,7 @@ class NWMTimeSeries implements Closeable
         {
             URI uriWithDate = baseUri.resolve( nwmDatePath + "/" );
 
-            String directoryName = profile.getNwmConfiguration();
+            String directoryName = profile.getNwmSubdirectoryPrefix();
 
             if ( profile.getMemberCount() > 1 )
             {
@@ -173,7 +173,8 @@ class NWMTimeSeries implements Closeable
                     ncFilePartTwo += analysisLabel;
                 }
 
-                String ncFilePartThree = ".conus.nc";
+                String ncFilePartThree = "." + profile .getNwmLocationLabel()
+                                         + ".nc";
                 String ncFile = ncFilePartOne + ncFilePartTwo + ncFilePartThree;
                 LOGGER.trace( "Built a netCDF filename: {}", ncFile );
 

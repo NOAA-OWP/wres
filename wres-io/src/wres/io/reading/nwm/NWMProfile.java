@@ -22,6 +22,10 @@ class NWMProfile
                 .append( "timeLabel", timeLabel )
                 .append( "nwmConfiguration", nwmConfiguration )
                 .append( "nwmOutputType", nwmOutputType )
+                .append( "nwmSubdirectoryPrefix", nwmSubdirectoryPrefix )
+                .append( "nwmLocationLabel", nwmLocationLabel )
+                .append( "durationBetweenReferenceDatetimes",
+                         durationBetweenReferenceDatetimes )
                 .toString();
     }
 
@@ -43,7 +47,7 @@ class NWMProfile
     /** Name of the variable that contains the valid datetime */
     private static final String VALID_DATETIME_VARIABLE = "time";
 
-    /** Name of the variable that contains the valid datetime */
+    /** Name of the variable that contains the ensemble member number */
     private static final String MEMBER_ATTRIBUTE = "ensemble_member_number";
 
     /** Count of how many blobs comprise a single forecast for each trace */
@@ -65,15 +69,36 @@ class NWMProfile
     private final TimeLabel timeLabel;
 
     /**
-     * The class of forecast, e.g. analysis_assim_long, medium_range.
+     * The class of timeseries, e.g. analysis_assim_long, medium_range.
      * Does not include the "member" label.
      */
     private final String nwmConfiguration;
 
     /**
-     * The type of forecast, e.g. land, reservoir, channel_rt.
+     * The type of timeseries, e.g. land, reservoir, channel_rt.
      */
     private final String nwmOutputType;
+
+    /**
+     * The subdirectory in which the data is found, e.g. analysis_assim_extend
+     * or forcing_analysis_assim_extend or short_range_hawaii. This differs
+     * from the nwmConfiguration, and is extended in an ensemble dataset, e.g.
+     * medium_range becomes medium_range_mem4.
+     */
+    private final String nwmSubdirectoryPrefix;
+
+    /**
+     * The location label, e.g. "conus" or "hawaii"
+     */
+    private final String nwmLocationLabel;
+
+
+    /**
+     * The duration between each NWM timeseries dataset reference datetime.
+     * Assumes a fixed interval between executions of the NWM model software or
+     * at least between each executions configured reference datetimes.
+     */
+    private final Duration durationBetweenReferenceDatetimes;
 
     NWMProfile( int blobCount,
                 int memberCount,
@@ -81,12 +106,18 @@ class NWMProfile
                 boolean isVector,
                 String nwmConfiguration,
                 String nwmOutputType,
-                TimeLabel timeLabel )
+                TimeLabel timeLabel,
+                String nwmSubdirectoryPrefix,
+                String nwmLocationLabel,
+                Duration durationBetweenReferenceDateTimes )
     {
         Objects.requireNonNull( durationBetweenValidDatetimes );
         Objects.requireNonNull( nwmConfiguration );
         Objects.requireNonNull( nwmOutputType );
         Objects.requireNonNull( timeLabel );
+        Objects.requireNonNull( nwmSubdirectoryPrefix );
+        Objects.requireNonNull( nwmLocationLabel );
+        Objects.requireNonNull( durationBetweenReferenceDateTimes );
 
         if ( blobCount < 1 )
         {
@@ -119,6 +150,9 @@ class NWMProfile
         this.nwmConfiguration = nwmConfiguration;
         this.nwmOutputType = nwmOutputType;
         this.timeLabel = timeLabel;
+        this.nwmSubdirectoryPrefix = nwmSubdirectoryPrefix;
+        this.nwmLocationLabel = nwmLocationLabel;
+        this.durationBetweenReferenceDatetimes = durationBetweenReferenceDateTimes;
     }
 
     int getBlobCount()
@@ -179,5 +213,15 @@ class NWMProfile
     String getMemberAttribute()
     {
         return NWMProfile.MEMBER_ATTRIBUTE;
+    }
+
+    String getNwmSubdirectoryPrefix()
+    {
+        return this.nwmSubdirectoryPrefix;
+    }
+
+    String getNwmLocationLabel()
+    {
+        return this.nwmLocationLabel;
     }
 }
