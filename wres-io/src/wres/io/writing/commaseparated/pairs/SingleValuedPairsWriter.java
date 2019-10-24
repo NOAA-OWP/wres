@@ -17,7 +17,7 @@ import wres.datamodel.sampledata.pairs.PoolOfPairs;
  * @author james.brown@hydrosolved.com
  */
 
-public class SingleValuedPairsWriter extends PairsWriter<Double,Double>
+public class SingleValuedPairsWriter extends PairsWriter<Double, Double>
 {
 
     /**
@@ -25,13 +25,16 @@ public class SingleValuedPairsWriter extends PairsWriter<Double,Double>
      * 
      * @param pathToPairs the path to write
      * @param timeResolution the time resolution at which to write datetime and duration information
+     * @param hasForecastType is true to include calculated lead durations, false to declare them as zero
      * @return the writer
      * @throws NullPointerException if either input is null
      */
 
-    public static SingleValuedPairsWriter of( Path pathToPairs, ChronoUnit timeResolution )
+    public static SingleValuedPairsWriter of( Path pathToPairs,
+                                              ChronoUnit timeResolution,
+                                              boolean hasForecastType )
     {
-        return new SingleValuedPairsWriter( pathToPairs, timeResolution, null );
+        return new SingleValuedPairsWriter( pathToPairs, timeResolution, null, hasForecastType );
     }
 
     /**
@@ -39,19 +42,22 @@ public class SingleValuedPairsWriter extends PairsWriter<Double,Double>
      * 
      * @param pathToPairs the path to write
      * @param timeResolution the time resolution at which to write datetime and duration information
-     * @param decimalFormatter the optional formatter for writing decimal values 
+     * @param decimalFormatter the optional formatter for writing decimal values
+     * @param hasForecastType is true to include calculated lead durations, false to declare them as zero
      * @return the writer
      * @throws NullPointerException if the pathToPairs is null or the timeResolution is null
      */
 
-    public static SingleValuedPairsWriter
-            of( Path pathToPairs, ChronoUnit timeResolution, DecimalFormat decimalFormatter )
+    public static SingleValuedPairsWriter of( Path pathToPairs,
+                                              ChronoUnit timeResolution,
+                                              DecimalFormat decimalFormatter,
+                                              boolean hasForecastType )
     {
-        return new SingleValuedPairsWriter( pathToPairs, timeResolution, decimalFormatter );
+        return new SingleValuedPairsWriter( pathToPairs, timeResolution, decimalFormatter, hasForecastType );
     }
 
     @Override
-    StringJoiner getHeaderFromPairs( PoolOfPairs<Double,Double> pairs )
+    StringJoiner getHeaderFromPairs( PoolOfPairs<Double, Double> pairs )
     {
         StringJoiner joiner = super.getHeaderFromPairs( pairs );
 
@@ -68,12 +74,19 @@ public class SingleValuedPairsWriter extends PairsWriter<Double,Double>
      * @param pathToPairs the path to write
      * @param timeResolution the time resolution at which to write datetime and duration information
      * @param decimalFormatter the optional formatter for writing decimal values
+     * @param hasForecastType is true to include calculated lead durations, false to declare them as zero
      * @throws NullPointerException if any of the expected inputs is null
      */
 
-    private SingleValuedPairsWriter( Path pathToPairs, ChronoUnit timeResolution, DecimalFormat decimalFormatter )
+    private SingleValuedPairsWriter( Path pathToPairs,
+                                     ChronoUnit timeResolution,
+                                     DecimalFormat decimalFormatter,
+                                     boolean hasForecastType )
     {
-        super( pathToPairs, timeResolution, SingleValuedPairsWriter.getPairFormatter( decimalFormatter ) );
+        super( pathToPairs,
+               timeResolution,
+               SingleValuedPairsWriter.getPairFormatter( decimalFormatter ),
+               hasForecastType );
     }
 
     /**
@@ -83,7 +96,7 @@ public class SingleValuedPairsWriter extends PairsWriter<Double,Double>
      * @return the string formatter
      */
 
-    private static Function<Pair<Double,Double>, String> getPairFormatter( DecimalFormat decimalFormatter )
+    private static Function<Pair<Double, Double>, String> getPairFormatter( DecimalFormat decimalFormatter )
     {
         return pair -> {
 
@@ -105,7 +118,7 @@ public class SingleValuedPairsWriter extends PairsWriter<Double,Double>
             joiner.add( handleNaNs.apply( pair.getRight() ) );
 
             return joiner.toString();
-            
+
         };
     }
 

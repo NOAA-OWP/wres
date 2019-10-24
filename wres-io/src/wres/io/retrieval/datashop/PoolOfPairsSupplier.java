@@ -7,7 +7,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -280,6 +279,12 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         List<TimeSeries<R>> rightData = this.right.get().collect( Collectors.toList() );
         List<TimeSeries<R>> baselineData = null;
 
+        // Apply any time offsets immediately, in order to simplify further evaluation,
+        // which is then in the target time system
+        leftData = this.applyValidTimeOffset( leftData, this.leftOffset );
+        rightData = this.applyValidTimeOffset( rightData, this.rightOffset );
+        baselineData = this.applyValidTimeOffset( baselineData, this.baselineOffset );
+
         // Baseline that contains data?
         if ( this.hasBaseline() && Objects.isNull( this.baselineGenerator ) )
         {
@@ -294,15 +299,13 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
 
         // Consolidate and snip the left data to the right bounds of the pool
         // This improves performance when the left data is large (e.g., climatology)
-        TimeSeries<L> snippedLeft = this.snipAndConsolidate( leftData, rightData );
+        TimeSeries<L> snippedLeft = this.consolidateAndSnip( leftData, rightData );
 
         // Get the paired frequency
         Duration pairedFrequency = this.getPairedFrequency();
 
         List<TimeSeries<Pair<L, R>>> mainPairs = this.createPairs( snippedLeft,
                                                                    rightData,
-                                                                   this.leftOffset,
-                                                                   this.rightOffset,
                                                                    desiredTimeScaleToUse,
                                                                    pairedFrequency );
 
@@ -335,8 +338,6 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
 
             List<TimeSeries<Pair<L, R>>> basePairs = this.createPairs( snippedLeft,
                                                                        baselineData,
-                                                                       this.leftOffset,
-                                                                       this.baselineOffset,
                                                                        desiredTimeScaleToUse,
                                                                        pairedFrequency );
 
@@ -657,8 +658,6 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
      * 
      * @param left the left data
      * @param right the right data
-     * @param leftOffset an optional offset for the valid times of the left data
-     * @param rightOffset an optional offset for the valid times of the right data
      * @param desiredTimeScale the desired time scale
      * @param frequency the frequency with which to create pairs at the desired time scale
      * @throws RescalingException if the pool data could not be rescaled
@@ -669,8 +668,6 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
 
     private List<TimeSeries<Pair<L, R>>> createPairs( TimeSeries<L> left,
                                                       List<TimeSeries<R>> right,
-                                                      Duration leftOffset,
-                                                      Duration rightOffset,
                                                       TimeScale desiredTimeScale,
                                                       Duration frequency )
     {
@@ -683,8 +680,6 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         {
             TimeSeries<Pair<L, R>> pairs = this.createSeriesPairs( left,
                                                                    nextRight,
-                                                                   leftOffset,
-                                                                   rightOffset,
                                                                    desiredTimeScale,
                                                                    frequency );
 
@@ -704,77 +699,10 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
     }
 
     /**
-     * Consolidates and snips the input series to the prescribed time window.
-     * 
-     * @param <P> the time-series event type for the data to be snipped
-     * @param <Q> the time-series event type for the data to use when snipping
-     * @param toSnip the time-series to consolidate and snip
-     * @param bounds the data whose bounds will be used for snipping
-     * @return the snipped data
-     */
-
-    private <P, Q> TimeSeries<P> snipAndConsolidate( List<TimeSeries<P>> toSnip, List<TimeSeries<Q>> bounds )
-    {
-        TimeSeriesBuilder<P> builder = new TimeSeriesBuilder<>();
-
-        TimeWindow timeWindow = this.getTimeWindowFromSeries( bounds );
-
-        for ( TimeSeries<P> next : toSnip )
-        {
-            builder.addEvents( TimeSeriesSlicer.filter( next, timeWindow ).getEvents() );
-            builder.setTimeScale( next.getTimeScale() ).addReferenceTimes( next.getReferenceTimes() );
-        }
-
-        return builder.build();
-    }
-
-    /**
-     * Returns a time-window whose valid times span the input series. The lower bound is adjusted for the time-scale of
-     * the input series.
-     * 
-     * @param <T> the time-series event type
-     * @param bounds the time-series whose bounds must be determined
-     * @return the time window
-     */
-
-    private <T> TimeWindow getTimeWindowFromSeries( List<TimeSeries<T>> bounds )
-    {
-        SortedSet<Instant> validTimes = new TreeSet<>();
-
-        TimeScale timeScale = null;
-        for ( TimeSeries<T> next : bounds )
-        {
-            // Add both reference times and valid times
-            validTimes.addAll( next.getReferenceTimes().values() );
-            validTimes.add( next.getEvents().first().getTime() );
-            validTimes.add( next.getEvents().last().getTime() );
-            timeScale = next.getTimeScale();
-        }
-
-        Instant lowerBound = Instant.MIN;
-        Instant upperBound = Instant.MAX;
-
-        if ( !validTimes.isEmpty() )
-        {
-            lowerBound = validTimes.first();
-            upperBound = validTimes.last();
-        }
-
-        if ( Objects.nonNull( timeScale ) && !timeScale.isInstantaneous() )
-        {
-            lowerBound = lowerBound.minus( timeScale.getPeriod() );
-        }
-
-        return TimeWindow.of( lowerBound, upperBound );
-    }
-
-    /**
      * Returns a time-series of pairs from a left and right series, rescaling as needed.
      * 
      * @param left the left time-series
      * @param right the right time-series
-     * @param leftOffset an optional offset for the valid times of the left data
-     * @param rightOffset an optional offset for the valid times of the right data
      * @param desiredTimeScale the desired time scale
      * @param frequency the frequency with which to create pairs at the desired time scale
      * @return a paired time-series
@@ -782,8 +710,6 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
 
     private TimeSeries<Pair<L, R>> createSeriesPairs( TimeSeries<L> left,
                                                       TimeSeries<R> right,
-                                                      Duration leftOffset,
-                                                      Duration rightOffset,
                                                       TimeScale desiredTimeScale,
                                                       Duration frequency )
     {
@@ -792,10 +718,13 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         Objects.requireNonNull( right );
 
         // Snip the left data to the right
-        TimeSeries<L> scaledLeft = this.snip( left, right, leftOffset, rightOffset, desiredTimeScale );
+        TimeSeries<L> scaledLeft = this.snip( left, right, desiredTimeScale );
         TimeSeries<R> scaledRight = right;
+        boolean upscaleLeft = Objects.nonNull( desiredTimeScale ) && !desiredTimeScale.equals( left.getTimeScale() );
+        boolean upscaleRight = Objects.nonNull( desiredTimeScale ) && !desiredTimeScale.equals( right.getTimeScale() );
 
-        if ( Objects.nonNull( desiredTimeScale ) && !desiredTimeScale.equals( left.getTimeScale() ) )
+        // Upscale left?
+        if ( upscaleLeft )
         {
             if ( LOGGER.isTraceEnabled() )
             {
@@ -806,7 +735,7 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
             }
 
             // Acquire the times from the right series at which left upscaled values should end
-            SortedSet<Instant> endsAt = this.getEndTimesForUpscaledValues( right, desiredTimeScale, frequency );
+            SortedSet<Instant> endsAt = this.getEventValidTimes( right );
 
             RescaledTimeSeriesPlusValidation<L> upscaledLeft = this.getLeftUpscaler()
                                                                    .upscale( left,
@@ -829,7 +758,8 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
             PoolOfPairsSupplier.logScaleValidationWarnings( left, upscaledLeft.getValidationEvents() );
         }
 
-        if ( Objects.nonNull( desiredTimeScale ) && !desiredTimeScale.equals( right.getTimeScale() ) )
+        // Upscale right?
+        if ( upscaleRight )
         {
             if ( LOGGER.isTraceEnabled() )
             {
@@ -840,7 +770,7 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
             }
 
             // Acquire the times from the left series at which right upscaled values should end
-            SortedSet<Instant> endsAt = this.getEndTimesForUpscaledValues( scaledLeft, desiredTimeScale, frequency );
+            SortedSet<Instant> endsAt = this.getEventValidTimes( scaledLeft );
 
             RescaledTimeSeriesPlusValidation<R> upscaledRight = this.getRightUpscaler()
                                                                     .upscale( right,
@@ -864,15 +794,24 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         }
 
         // Transform the rescaled values, if required
-        TimeSeries<L> scaledAndTransformedLeft = this.transformAndApplyTimeOffset( scaledLeft,
-                                                                                   this.leftTransformer,
-                                                                                   leftOffset );
-        TimeSeries<R> scaledAndTransformedRight = this.transformAndApplyTimeOffset( scaledRight,
-                                                                                    this.rightTransformer,
-                                                                                    rightOffset );
+        TimeSeries<L> scaledAndTransformedLeft = this.transform( scaledLeft, this.leftTransformer );
+        TimeSeries<R> scaledAndTransformedRight = this.transform( scaledRight, this.rightTransformer );
 
         // Create the pairs, if any
         TimeSeries<Pair<L, R>> pairs = this.getPairer().pair( scaledAndTransformedLeft, scaledAndTransformedRight );
+
+        // When upscaling both sides, the superset of pairs may contain "unwanted" pairs.
+        // Unwanted pairs are pairs that occur more frequently than the desired frequency.
+        // By default, the desired frequency is the period associated with the desired time scale
+        // aka, "back-to-back", but an explicit frequency otherwise
+        // Filter any unwanted pairs from the superset
+        if ( PoolOfPairsSupplier.REGULAR_PAIRS && upscaleLeft && upscaleRight )
+        {
+            pairs = this.filterUpscaledPairsByFrequency( pairs,
+                                                         this.getReferenceTime( pairs ),
+                                                         desiredTimeScale.getPeriod(),
+                                                         frequency );
+        }
 
         // Log the pairing 
         if ( LOGGER.isTraceEnabled() )
@@ -1072,51 +1011,19 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
      * 
      * @param <T> the event value type
      * @param toTransform the time-series to transform
-     * @param transformer the optional transformer
-     * @param offset an optional offset for the valid times 
+     * @param transformer the transformer
      * @return the transformed series
      */
 
-    private <T> TimeSeries<T> transformAndApplyTimeOffset( TimeSeries<T> toTransform,
-                                                           UnaryOperator<T> transformer,
-                                                           Duration offset )
+    private <T> TimeSeries<T> transform( TimeSeries<T> toTransform, UnaryOperator<T> transformer )
     {
         // No transformations?
-        if ( Objects.isNull( transformer ) && Objects.isNull( offset ) )
+        if ( Objects.isNull( transformer ) )
         {
             return toTransform;
         }
 
-        TimeSeries<T> transformed = toTransform;
-
-        // Transform values?
-        if ( Objects.nonNull( transformer ) )
-        {
-            transformed = TimeSeriesSlicer.transform( toTransform, transformer );
-        }
-
-        // Transform valid times?
-        if ( Objects.nonNull( offset ) && ! Duration.ZERO.equals( offset ) )
-        {
-            SortedSet<Event<T>> events = transformed.getEvents();
-            TimeSeriesBuilder<T> timeTransformed = new TimeSeriesBuilder<>();
-            timeTransformed.addReferenceTimes( transformed.getReferenceTimes() )
-                           .setTimeScale( transformed.getTimeScale() );
-
-            for ( Event<T> next : events )
-            {
-                timeTransformed.addEvent( Event.of( next.getTime().plus( offset ), next.getValue() ) );
-            }
-
-            transformed = timeTransformed.build();
-
-            if ( LOGGER.isTraceEnabled() )
-            {
-                LOGGER.trace( "Added {} to the valid times associated with time-series {}.",
-                              offset,
-                              toTransform.hashCode() );
-            }
-        }
+        TimeSeries<T> transformed = TimeSeriesSlicer.transform( toTransform, transformer );
 
         if ( LOGGER.isTraceEnabled() )
         {
@@ -1176,18 +1083,14 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
     }
 
     /**
-     * Helper that returns the times at which values should end for upscaling purposes.
+     * Helper that returns the times associated with values in the input series.
      * 
      * @param <T> the time-series event value type
      * @param timeSeries the time-series to use in determining when values should end
-     * @param desiredTimeScale the desired time scale
-     * @param frequency the frequency with which to create pairs at the desired time scale
      * @return the times at which upscaled values should end
      */
 
-    private <T> SortedSet<Instant> getEndTimesForUpscaledValues( TimeSeries<T> timeSeries,
-                                                                 TimeScale desiredTimeScale,
-                                                                 Duration frequency )
+    private <T> SortedSet<Instant> getEventValidTimes( TimeSeries<T> timeSeries )
     {
         // All possible times
         SortedSet<Instant> endsAt =
@@ -1196,105 +1099,7 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
                           .map( Event::getTime )
                           .collect( Collectors.toCollection( TreeSet::new ) );
 
-        // Use only a subset of times that produce a particular 
-        // subset of back-to-back pairs, which may be one of N subsets?         
-        if ( PoolOfPairsSupplier.REGULAR_PAIRS )
-        {
-            // Count with respect to a reference time
-            Instant referenceTime = this.getReferenceTime( timeSeries );
-
-            endsAt = this.getEndTimesThatIncrementRegularly( endsAt,
-                                                             referenceTime,
-                                                             desiredTimeScale.getPeriod(),
-                                                             frequency );
-        }
-
         return Collections.unmodifiableSortedSet( endsAt );
-    }
-
-    /**
-     * Helper that returns the first available reference time from a time-series, otherwise <code>null</code>.
-     * 
-     * @return the first available reference time
-     */
-
-    private Instant getReferenceTime( TimeSeries<?> timeSeries )
-    {
-        Collection<Instant> times = timeSeries.getReferenceTimes().values();
-
-        Instant returnMe = null;
-
-        if ( !times.isEmpty() )
-        {
-            returnMe = times.iterator().next();
-        }
-
-        return returnMe;
-    }
-
-    /**
-     * Makes a best attempt to find the times at which upscaled values should end in order to produce pairs in a 
-     * regular sequence. Collectively, the input times represent the superset of times at which pairs could be created. 
-     * Consequently, this method effectively "thins out" the super-set of possible pairs in order to provide a subset 
-     * that are regular in some sense. Specifically, they are regular in the sense of iterating with a regular 
-     * frequency. See #47158-24.
-     * 
-     * @param times the times to inspect
-     * @param referenceTime an optional reference time from which to count
-     * @param period the period associated with the desired time scale
-     * @param frequency the regular frequency with which to count periods
-     */
-
-    private SortedSet<Instant> getEndTimesThatIncrementRegularly( SortedSet<Instant> times,
-                                                                  Instant referenceTime,
-                                                                  Duration period,
-                                                                  Duration frequency )
-    {
-        // Filter times that are separated by less than the period?
-        SortedSet<Instant> returnMe = times;
-        if ( !times.isEmpty() )
-        {
-            // Duration by which to jump between periods
-            // Default to the period, aka "back-to-back"
-            Duration jump = frequency;
-            if ( Objects.isNull( frequency ) )
-            {
-                jump = period;
-            }
-
-            returnMe = new TreeSet<>();
-
-            // Find the first time from which to count
-            // Increment by the period, initially, then increment
-            // by the frequency whenever a new time has been found
-            Instant startTime = referenceTime.plus( period );
-            Iterator<Instant> iterator = times.iterator();
-
-            // Iterate the times and allow those that are "back-to-back"
-            while ( iterator.hasNext() )
-            {
-                Instant next = iterator.next();
-
-                // Is the startPlusPeriod less than or equal to 
-                // the next time? If so, allow the next time
-                if ( startTime.compareTo( next ) <= 0 )
-                {
-                    returnMe.add( next );
-
-                    startTime = startTime.plus( jump );
-                }
-            }
-
-            if ( LOGGER.isTraceEnabled() )
-            {
-                LOGGER.trace( "Inspected {} input times at which values should end and eliminated {} times to be "
-                              + "consistent with the production of back-to-back values.",
-                              times.size(),
-                              times.size() - returnMe.size() );
-            }
-        }
-
-        return Collections.unmodifiableSortedSet( returnMe );
     }
 
     /**
@@ -1320,6 +1125,134 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         }
 
         return returnMe;
+    }
+
+    /**
+     * Helper that returns the first available reference time from a time-series, otherwise <code>null</code>.
+     * 
+     * @return the first available reference time
+     */
+
+    private Instant getReferenceTime( TimeSeries<?> timeSeries )
+    {
+        Collection<Instant> times = timeSeries.getReferenceTimes().values();
+
+        Instant returnMe = null;
+
+        if ( !times.isEmpty() )
+        {
+            returnMe = times.iterator().next();
+        }
+
+        return returnMe;
+    }
+
+    /**
+     * <p>When conducting upscaling, all possible pairs are produced; that is, every pair whose left and right values
+     * end at the same time and have the desired time scale. This may include pairs that are more frequent than the
+     * desired frequency. The desired frequency is the <code>period</code> associated with the desired time scale, 
+     * by default (aka "back-to-back" pairs), otherwise an explicit frequency.
+     * 
+     * <p>This method makes a best attempt to retain pairs from the input superset of pairs whose valid times follow a 
+     * prescribed frequency. Consequently, this method effectively "thins out" the superset of all possible pairs in 
+     * order to provide a subset of regularly spaced pairs. In general, there is no unique subset of pairs that follows 
+     * a prescribed frequency unless a starting position is defined. Here, counting occurs with respect to a reference 
+     * time (i.e., the reference time helps to select a subset). 
+     * 
+     * <p>See #47158-24.
+     * 
+     * <p>This is to re-assert my opinion, stated in #47158, that we should not attempt to find such a subset, but 
+     * instead compute all pairs. For the same reason, the <code>frequency</code> associated with the 
+     * <code>desiredTimeScale</code> should be eliminated. This method is an inevitable source of brittleness.
+     * 
+     * @param toFilter the time-series to inspect
+     * @param referenceTime the reference time from which to count
+     * @param period the period associated with the desired time scale
+     * @param frequency the regular frequency with which to count periods, defaults to the period
+     */
+
+    private TimeSeries<Pair<L, R>> filterUpscaledPairsByFrequency( TimeSeries<Pair<L, R>> toFilter,
+                                                                   Instant referenceTime,
+                                                                   Duration period,
+                                                                   Duration frequency )
+    {
+        Objects.requireNonNull( toFilter );
+
+        Objects.requireNonNull( referenceTime );
+
+        Objects.requireNonNull( period );
+
+        // More than one pair?
+        TimeSeries<Pair<L, R>> filtered = toFilter;
+        if ( toFilter.getEvents().size() > 1 )
+        {
+            // Duration by which to jump between periods
+            // Default to the period, aka "back-to-back"
+            Duration jump = frequency;
+            if ( Objects.isNull( frequency ) )
+            {
+                jump = period;
+            }
+
+            TimeSeriesBuilder<Pair<L, R>> filteredSeries = new TimeSeriesBuilder<>();
+            filteredSeries.addReferenceTimes( toFilter.getReferenceTimes() )
+                          .setTimeScale( toFilter.getTimeScale() );
+
+            List<Event<Pair<L, R>>> events = new ArrayList<>( toFilter.getEvents() );
+
+            // Count with respect to the reference time, starting with the period
+            // and then incrementing by the frequency         
+            int totalEvents = events.size();
+            Instant firstTime = events.get( 0 ).getTime();
+            Instant lastTime = events.get( totalEvents - 1 ).getTime();
+
+            // Compute the "offset" between the start of the first value period
+            // and the reference time           
+            // The offset plus one or more value periods
+            Duration offsetPlusPeriods = Duration.between( referenceTime, firstTime );
+            // The whole number of value periods in the offsetPlusPeriods
+            long periodsPerOffset = offsetPlusPeriods.dividedBy( period );
+            // The offset
+            Duration offset = offsetPlusPeriods.minus( period.multipliedBy( periodsPerOffset ) );
+
+            // Adjust for the offset, then start with the period and count forward
+            // by the frequency
+            Instant nextTime = referenceTime.plus( offset ).plus( period );
+            int start = 0;
+            while ( nextTime.compareTo( lastTime ) <= 0 )
+            {
+                // Does a pair exist at the next regular time?
+                for ( int i = start; i < totalEvents; i++ )
+                {
+                    Event<Pair<L, R>> nextEvent = events.get( i );
+                    Instant nextEventTime = nextEvent.getTime();
+
+                    // Yes it does. Add it.
+                    if ( nextEventTime.equals( nextTime ) )
+                    {
+                        filteredSeries.addEvent( nextEvent );
+                        start = i + 1;
+                        break;
+                    }
+                }
+
+                nextTime = nextTime.plus( jump );
+            }
+
+            filtered = filteredSeries.build();
+
+            if ( LOGGER.isTraceEnabled() )
+            {
+                LOGGER.trace( "Inspected {} pairs and eliminated {} pairs to be consistent with the production of "
+                              + "regular pairs that have a period of {} and repeat every {}.",
+                              toFilter.getEvents().size(),
+                              filtered.getEvents().size() - toFilter.getEvents().size(),
+                              period,
+                              frequency );
+            }
+        }
+
+        return filtered;
     }
 
     /**
@@ -1360,23 +1293,25 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
     }
 
     /**
-     * Snips the first series to the bounds of the second series. The {@TimeScale#getPeriod()} is subtracted from the
-     * lower bound of the second series before snipping.
+     * Snips the first series to the bounds of the second series. If supplied, the {@TimeScale#getPeriod()} is 
+     * subtracted from the lower bound of the second series before snipping.
      * 
      * @param toSnip the series to snip
      * @param snipTo the series to snip to
-     * @param desiredTimeScale the desired time scale
+     * @param desiredTimeScale the desired time scale, which is optional
      * @return a snipped series
+     * @throws NullPointerException if toSnip or snipTo is null
      */
 
     private <S, T> TimeSeries<S> snip( TimeSeries<S> toSnip,
                                        TimeSeries<T> snipTo,
-                                       Duration leftOffset,
-                                       Duration rightOffset,
                                        TimeScale desiredTimeScale )
     {
-        Instant lower = snipTo.getEvents().first().getTime().plus( rightOffset );
-        Instant upper = snipTo.getEvents().last().getTime().plus( rightOffset );
+        Objects.requireNonNull( toSnip );
+        Objects.requireNonNull( snipTo );
+
+        Instant lower = snipTo.getEvents().first().getTime();
+        Instant upper = snipTo.getEvents().last().getTime();
 
         // Subtract the period from the lower bound
         if ( Objects.nonNull( desiredTimeScale ) )
@@ -1389,7 +1324,7 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
                      .setTimeScale( toSnip.getTimeScale() );
         for ( Event<S> next : toSnip.getEvents() )
         {
-            Instant nextTime = next.getTime().plus( leftOffset );
+            Instant nextTime = next.getTime();
 
             if ( nextTime.compareTo( lower ) >= 0 && nextTime.compareTo( upper ) <= 0 )
             {
@@ -1398,6 +1333,125 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         }
 
         return snippedSeries.build();
+    }
+
+    /**
+     * Adds a prescribed offset to the valid time of each time-series in the list.
+     * 
+     * @param <T> the time-series event value type
+     * @param toTransform the list of time-series to transform
+     * @param offset the offset to add
+     * @return the adjusted time-series
+     */
+
+    private <T> List<TimeSeries<T>> applyValidTimeOffset( List<TimeSeries<T>> toTransform, Duration offset )
+    {
+
+        List<TimeSeries<T>> transformed = toTransform;
+
+        // Transform valid times?
+        if ( Objects.nonNull( toTransform )
+             && Objects.nonNull( offset )
+             && !Duration.ZERO.equals( offset ) )
+        {
+            transformed = new ArrayList<>();
+
+            for ( TimeSeries<T> nextSeries : toTransform )
+            {
+                SortedSet<Event<T>> events = nextSeries.getEvents();
+                TimeSeriesBuilder<T> timeTransformed = new TimeSeriesBuilder<>();
+                timeTransformed.addReferenceTimes( nextSeries.getReferenceTimes() )
+                               .setTimeScale( nextSeries.getTimeScale() );
+
+                for ( Event<T> next : events )
+                {
+                    Instant adjustedTime = next.getTime().plus( offset );
+                    timeTransformed.addEvent( Event.of( adjustedTime, next.getValue() ) );
+                }
+
+                transformed.add( timeTransformed.build() );
+
+                if ( LOGGER.isTraceEnabled() )
+                {
+                    LOGGER.trace( "Added {} to the valid times associated with time-series {}.",
+                                  offset,
+                                  transformed.hashCode() );
+                }
+            }
+
+            // Render immutable
+            transformed = Collections.unmodifiableList( transformed );
+        }
+
+        return transformed;
+    }
+
+    /**
+     * Consolidates and snips the input series to the prescribed time window.
+     * 
+     * @param <P> the time-series event type for the data to be snipped
+     * @param <Q> the time-series event type for the data to use when snipping
+     * @param toSnip the time-series to consolidate and snip
+     * @param bounds the data whose bounds will be used for snipping
+     * @return the snipped data
+     */
+
+    private <P, Q> TimeSeries<P> consolidateAndSnip( List<TimeSeries<P>> toSnip, List<TimeSeries<Q>> bounds )
+    {
+        TimeSeriesBuilder<P> builder = new TimeSeriesBuilder<>();
+
+        TimeWindow timeWindow = this.getTimeWindowFromSeries( bounds );
+
+        for ( TimeSeries<P> next : toSnip )
+        {
+            TimeSeries<P> filtered = TimeSeriesSlicer.filter( next, timeWindow );
+            builder.addEvents( filtered.getEvents() );
+            builder.setTimeScale( next.getTimeScale() ).addReferenceTimes( next.getReferenceTimes() );
+        }
+
+        return builder.build();
+    }
+
+    /**
+     * Returns a time-window whose valid times span the input series. The lower bound is adjusted for the time-scale of
+     * the input series and one instant/nanosecond is added to the lower bound to make it inclusive.
+     * 
+     * @param <T> the time-series event type
+     * @param bounds the time-series whose bounds must be determined
+     * @return the time window
+     */
+
+    private <T> TimeWindow getTimeWindowFromSeries( List<TimeSeries<T>> bounds )
+    {
+        SortedSet<Instant> validTimes = new TreeSet<>();
+
+        TimeScale timeScale = null;
+        for ( TimeSeries<T> next : bounds )
+        {
+            // Add both reference times and valid times
+            validTimes.addAll( next.getReferenceTimes().values() );
+            validTimes.add( next.getEvents().first().getTime() );
+            validTimes.add( next.getEvents().last().getTime() );
+            timeScale = next.getTimeScale();
+        }
+
+        Instant lowerBound = Instant.MIN;
+        Instant upperBound = Instant.MAX;
+
+        if ( !validTimes.isEmpty() )
+        {
+            // Lower bound inclusive
+            lowerBound = validTimes.first()
+                                   .minus( Duration.ofNanos( 1 ) );
+            upperBound = validTimes.last();
+        }
+
+        if ( Objects.nonNull( timeScale ) && !timeScale.isInstantaneous() )
+        {
+            lowerBound = lowerBound.minus( timeScale.getPeriod() );
+        }
+
+        return TimeWindow.of( lowerBound, upperBound );
     }
 
     /**

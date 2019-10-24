@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -365,16 +366,27 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
 
         if (this.shouldScale())
         {
-            leftAggregation = wres.util.Collections.aggregate(
+            leftAggregation = wres.util.Collections.upscale(
                     leftValues,
                     commonScale.getFunction().value()
             );
+            
+
+            
+            if( endDate.toInstant( ZoneOffset.of( "Z" ) ).equals( Instant.parse( "2017-09-25T12:00:00Z" ) ))
+            {
+                LOGGER.info( "While upscaling a value that ends at {}, supplied this input {} and received this output {}.",
+                              Instant.parse( "2017-09-25T12:00:00Z" ),
+                              this.getControlValues( startDate, endDate ),
+                              leftAggregation);
+            }
+            
         }
         else
         {
             leftAggregation = leftValues.iterator().next();
         }
-
+        
         return leftAggregation;
     }
     

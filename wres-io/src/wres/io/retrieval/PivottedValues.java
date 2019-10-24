@@ -107,7 +107,7 @@ class PivottedValues
                 // If we're scaling, we want to combine the values and add the result to the list for sorting
                 aggregatedValues.add(
                         Pair.of(values.getKey().ensembleId,
-                                Collections.aggregate(values.getValue(), function.value()))
+                                Collections.upscale(values.getValue(), function.value()))
                 );
             }
             else

@@ -176,14 +176,17 @@ class ProcessorHelper
             sharedSampleWriters =
                     SharedSampleDataWriters.of( Paths.get( outputDirectory.toString(), PairsWriter.DEFAULT_PAIRS_NAME ),
                                                 durationUnits,
-                                                decimalFormatter );
+                                                decimalFormatter,
+                                                ConfigHelper.isForecast( projectConfig.getInputs().getRight() ) );
             // Baseline writer?
             if ( Objects.nonNull( projectConfig.getInputs().getBaseline() ) )
             {
                 sharedBaselineSampleWriters = SharedSampleDataWriters.of( Paths.get( outputDirectory.toString(),
                                                                                      PairsWriter.DEFAULT_BASELINE_PAIRS_NAME ),
                                                                           durationUnits,
-                                                                          decimalFormatter );
+                                                                          decimalFormatter,
+                                                                          ConfigHelper.isForecast( projectConfig.getInputs()
+                                                                                                                .getRight() ) );
             }
         }
 

@@ -178,7 +178,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                 // Get the valid time
                 Instant validTime = provider.getInstant( "valid_time" );
 
-                // Add the reference time
+                // Add the explicit reference time
                 if ( provider.hasColumn( "reference_time" ) )
                 {
                     Instant referenceTime = provider.getInstant( "reference_time" );

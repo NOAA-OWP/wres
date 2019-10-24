@@ -5,6 +5,7 @@ import java.text.DecimalFormat;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.OptionalInt;
 import java.util.StringJoiner;
 import java.util.function.Function;
 
@@ -60,7 +61,7 @@ public class EnsemblePairsWriter extends PairsWriter<Double, Ensemble>
 
         if ( !pairs.getRawData().isEmpty() )
         {
-            int memberCount = pairs.getRawData().get( 0 ).getRight().size();
+            int memberCount = this.getEnsembleMemberCount( pairs );
             for ( int i = 1; i <= memberCount; i++ )
             {
                 joiner.add( "RIGHT MEMBER " + i + " IN " + pairs.getMetadata().getMeasurementUnit().getUnit() );
@@ -85,7 +86,29 @@ public class EnsemblePairsWriter extends PairsWriter<Double, Ensemble>
 
     private EnsemblePairsWriter( Path pathToPairs, ChronoUnit timeResolution, DecimalFormat decimalFormatter )
     {
-        super( pathToPairs, timeResolution, EnsemblePairsWriter.getPairFormatter( decimalFormatter ) );
+        super( pathToPairs, timeResolution, EnsemblePairsWriter.getPairFormatter( decimalFormatter ), true );
+    }
+
+    /**
+     * Returns the largest number of ensemble members in the input.
+     * 
+     * @param pairs the pairs
+     * @return the largest number of ensemble members
+     */
+
+    private int getEnsembleMemberCount( PoolOfPairs<Double, Ensemble> pairs )
+    {
+        OptionalInt members = pairs.getRawData()
+                                   .stream()
+                                   .mapToInt( next -> next.getRight().getMembers().length )
+                                   .max();
+
+        if ( members.isPresent() )
+        {
+            return members.getAsInt();
+        }
+
+        return 0;
     }
 
     /**
