@@ -189,7 +189,7 @@ project(':wres-util')
         compile 'com.google.guava:guava:28.1-jre'
         compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 
-        compile('edu.ucar:cdm:5.1.0')
+        compile('edu.ucar:cdm-core:5.2.0')
         {
             // Because we use slf4j, not jcl:
             exclude group: 'commons-logging', module: 'commons-logging'
@@ -294,7 +294,7 @@ project(':wres-io')
         compile 'org.glassfish.jersey.inject:jersey-hk2:2.29.1'
         compile 'org.glassfish.jersey.media:jersey-media-json-jackson:2.29.1'
 
-        compile('edu.ucar:cdm:5.1.0')
+        compile('edu.ucar:cdm-core:5.2.0')
         {
             // Because we use slf4j, not jcl:
             exclude group: 'commons-logging', module: 'commons-logging'
@@ -520,7 +520,7 @@ project(':wres-grid')
         compile project(':wres-util')
         compile project(':wres-system')
         compile 'org.slf4j:slf4j-api:1.8.0-beta4'
-        compile('edu.ucar:cdm:5.1.0')
+        compile('edu.ucar:cdm-core:5.2.0')
         {
             // Because we use slf4j, not jcl:
             exclude group: 'commons-logging', module: 'commons-logging'
