@@ -33,8 +33,8 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
      * <code>ORDER BY</code> clause, which is repeated several times.
      */
     
-    private static final String ORDER_BY_OCCURRENCES_SERIES_ID_TS_INITIALIZATION_DATE_VALID_TIME = 
-            "ORDER BY occurrences, series_id, TS.initialization_date, valid_time;";
+    private static final String ORDER_BY_OCCURRENCES_TS_INITIALIZATION_DATE_VALID_TIME_SERIES_ID = 
+            "ORDER BY occurrences, TS.initialization_date, valid_time, series_id;";
 
     /**
      * <code>GROUP BY</code> clause, which is repeated several times.
@@ -126,7 +126,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
 
         // Add GROUP BY and ORDER BY clauses
         scripter.addLine( GROUP_BY_SERIES_ID_TSV_LEAD_TSV_SERIES_VALUE ); // #56214-272
-        scripter.addLine( ORDER_BY_OCCURRENCES_SERIES_ID_TS_INITIALIZATION_DATE_VALID_TIME );
+        scripter.addLine( ORDER_BY_OCCURRENCES_TS_INITIALIZATION_DATE_VALID_TIME_SERIES_ID );
 
         script = scripter.toString();
 
@@ -221,7 +221,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
 
         // Add GROUP BY and ORDER BY clauses
         scripter.addLine( GROUP_BY_SERIES_ID_TSV_LEAD_TSV_SERIES_VALUE ); // #56214-272
-        scripter.addLine( ORDER_BY_OCCURRENCES_SERIES_ID_TS_INITIALIZATION_DATE_VALID_TIME );
+        scripter.addLine( ORDER_BY_OCCURRENCES_TS_INITIALIZATION_DATE_VALID_TIME_SERIES_ID );
 
         String script = scripter.toString();
 
@@ -261,7 +261,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         
         // Add GROUP BY and ORDER BY clauses
         scripter.addLine( GROUP_BY_SERIES_ID_TSV_LEAD_TSV_SERIES_VALUE ); // #56214-272
-        scripter.addLine( ORDER_BY_OCCURRENCES_SERIES_ID_TS_INITIALIZATION_DATE_VALID_TIME );
+        scripter.addLine( ORDER_BY_OCCURRENCES_TS_INITIALIZATION_DATE_VALID_TIME_SERIES_ID );
 
         String script = scripter.toString();
 

@@ -1,6 +1,5 @@
 package wres.util;
 
-import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -14,12 +13,7 @@ import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
-
-import org.apache.commons.math3.stat.descriptive.AbstractUnivariateStatistic;
-import org.apache.commons.math3.stat.descriptive.moment.Mean;
-import org.apache.commons.math3.stat.descriptive.rank.Max;
-import org.apache.commons.math3.stat.descriptive.rank.Min;
-import org.apache.commons.math3.stat.descriptive.summary.Sum;
+import java.util.function.ToDoubleFunction;
 
 import wres.util.functional.ExceptionalFunction;
 
@@ -83,13 +77,13 @@ public final class Collections
      */
     public static String toString(String[] strings, String delimiter) {
            StringBuilder concat = new StringBuilder();
-            boolean add_delimiter = false;
+            boolean addDelimiter = false;
             
             for (String string : strings) {
-                if (add_delimiter) {
+                if (addDelimiter) {
                     concat.append(delimiter);
                 } else {
-                    add_delimiter = true;
+                    addDelimiter = true;
                 }
                 
                 concat.append(string);
@@ -107,18 +101,18 @@ public final class Collections
      */
     public static <U> U find(U[] source, Predicate<U> expression)
     {
-        U found_element = null;
+        U foundElement = null;
         
         for (U element : source)
         {
             if (expression.test(element))
             {
-                found_element = element;
+                foundElement = element;
                 break;
             }
         }
         
-        return found_element;
+        return foundElement;
     }
     
     /**
@@ -333,7 +327,7 @@ public final class Collections
     }
 
     /**
-     * Translates a listing of values and a specified function to an aggregated
+     * Translates a listing of values and a specified function to an upscaled
      * value.
      * <p>
      *     <b>Note:</b> NaN is returned if there are missing values
@@ -342,51 +336,63 @@ public final class Collections
      * @param function The function to use to aggregate
      * @return The aggregated value
      */
-    public static Double aggregate(final Collection<Double> values, String function)
+    public static Double upscale( final Collection<Double> values, String function )
     {
-        function = function.trim().toLowerCase();
+        Objects.requireNonNull( values );
+        Objects.requireNonNull( function );
 
-        double aggregatedValue;
+        String trimmedFunction = function.trim().toLowerCase();
 
-        AbstractUnivariateStatistic operation;
+        double upscaledValue;
 
-        switch ( function )
+        ToDoubleFunction<Double> nullToNaN = input -> Objects.isNull( input ) ? Double.NaN : input;
+
+        // See #70346: switch to jdk methods for consistent NaN handling
+        switch ( trimmedFunction )
         {
+            case "maximum":
+            case "max":
+                upscaledValue = values.stream()
+                                      .mapToDouble( nullToNaN )
+                                      .max()
+                                      .getAsDouble();
+                break;
             case "mean":
             case "average":
             case "avg":
-                operation = new Mean();
-                break;
-            case "maximum":
-            case "max":
-                operation = new Max(  );
+                upscaledValue = values.stream()
+                                      .mapToDouble( nullToNaN )
+                                      .average()
+                                      .getAsDouble();
                 break;
             case "minimum":
             case "min":
-                operation = new Min();
+                upscaledValue = values.stream()
+                                      .mapToDouble( nullToNaN )
+                                      .min()
+                                      .getAsDouble();
                 break;
             case "sum":
             case "total":
-                operation = new Sum(  );
+                upscaledValue = values.stream()
+                                      .mapToDouble( nullToNaN )
+                                      .sum();
                 break;
             default:
-                throw new InvalidParameterException( "The function '" +
-                                                     String.valueOf(function) +
-                                                     "' is not a valid aggregation function.");
+                throw new UnsupportedOperationException( "Could not create an upscaling function for the "
+                                                         + "function identifier '"
+                                                         + trimmedFunction
+                                                         + "'." );
+
         }
 
-        aggregatedValue = operation.evaluate(
-                values.stream()
-                      .mapToDouble(
-                              value -> {
-                                  if (value == null)
-                                      return Double.NaN;
-                                  else
-                                      return value;
-                              } ).toArray()
-        );
+        // Finite result?
+        if ( !Double.isFinite( upscaledValue ) )
+        {
+            upscaledValue = Double.NaN;
+        }
 
-        return aggregatedValue;
+        return upscaledValue;
     }
 
     /**
@@ -480,4 +486,13 @@ public final class Collections
 
         return joiner.toString();
     }
+    
+    /**
+     * Hidden constructor.
+     */
+    
+    private Collections()
+    {        
+    }
+    
 }

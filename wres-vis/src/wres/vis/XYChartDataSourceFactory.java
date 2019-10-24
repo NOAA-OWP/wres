@@ -6,6 +6,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -31,7 +32,6 @@ import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleData;
-import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
@@ -50,6 +50,7 @@ import wres.util.TimeHelper;
 public abstract class XYChartDataSourceFactory
 {
 
+    private static final String METRIC_SHORT_NAME_METRIC_COMPONENT_NAME_SUFFIX_OUTPUT_UNITS_LABEL_SUFFIX = "@metricShortName@@metricComponentNameSuffix@@outputUnitsLabelSuffix@";
     /**
      * Number of milliseconds in an hour for conversion of {@link Duration} to decimal hours for plotting.
      */
@@ -150,39 +151,6 @@ public abstract class XYChartDataSourceFactory
         return source;
     }
 
-//    /**
-//     * Helper that returns the maximum number of whiskers associated with boxes in the input.
-//     * 
-//     * @param boxPlotStatistics the box plot statistics
-//     * @return the maximum number of whiskers in any box
-//     */
-//    
-//    private static int getMaxWhiskers( BoxPlotStatistics boxPlotStatistics )
-//    {
-//        int returnMe = 0;
-//        
-//        for ( BoxPlotStatistic next : boxPlotStatistics )
-//        {
-//            // A sample size of zero means an empty box
-//            // which is translated to a box with two whiskers 
-//            // for the charting library: see #62863-30
-//            if ( next.getMetadata().getSampleSize() == 0 )
-//            {
-//                // Two whiskers for empty boxes
-//                if( 2 > returnMe )
-//                {
-//                    returnMe = 2;
-//                }
-//            }
-//            else if( next.getData().size() > returnMe )
-//            {
-//                returnMe = next.getData().size() ;               
-//            }
-//        }       
-//        
-//        return returnMe;
-//    }
-
     /**
      * Factory method for single-valued pairs.
      * @param orderIndex Order index of the data source; lower index sources are drawn on top of higher index sources.
@@ -258,17 +226,27 @@ public abstract class XYChartDataSourceFactory
                     ListOfStatistics<PairedStatistic<Instant, Duration>> filtered =
                             Slicer.filter( input,
                                            data -> data.getSampleMetadata().getThresholds().equals( nextSeries ) );
+                    
+                    // Create a set-view by instant, because JFreeChart cannot handle duplicates
+                    // TODO: possibly upgrade JFreeChart or use an alternative
+                    Set<Instant> instants = new HashSet<>();
+
                     // Create the series
                     for ( PairedStatistic<Instant, Duration> nextSet : filtered )
                     {
                         for ( Pair<Instant, Duration> oneValue : nextSet )
                         {
-                            // Find the decimal hours
-                            BigDecimal result = BigDecimal.valueOf( oneValue.getRight().toMillis() )
-                                                          .divide( MILLIS_PER_HOUR, 2, RoundingMode.HALF_DOWN );
+                            if ( !instants.contains( oneValue.getKey() ) )
+                            {
+                                // Find the decimal hours
+                                BigDecimal result = BigDecimal.valueOf( oneValue.getRight().toMillis() )
+                                                              .divide( MILLIS_PER_HOUR, 2, RoundingMode.HALF_DOWN );
 
-                            next.add( new FixedMillisecond( oneValue.getLeft().toEpochMilli() ),
-                                      result.doubleValue() );
+                                next.add( new FixedMillisecond( oneValue.getLeft().toEpochMilli() ),
+                                          result.doubleValue() );
+
+                                instants.add( oneValue.getKey() );
+                            }
                         }
                     }
                     returnMe.addSeries( next );
@@ -286,7 +264,7 @@ public abstract class XYChartDataSourceFactory
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
               .setDefaultDomainAxisTitle( "FORECAST ISSUE DATE/TIME [UTC]" );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
-              .setDefaultRangeAxisTitle( "@metricShortName@@metricComponentNameSuffix@@outputUnitsLabelSuffix@" );
+              .setDefaultRangeAxisTitle( METRIC_SHORT_NAME_METRIC_COMPONENT_NAME_SUFFIX_OUTPUT_UNITS_LABEL_SUFFIX );
 
         return source;
     }
@@ -484,7 +462,7 @@ public abstract class XYChartDataSourceFactory
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
               .setDefaultDomainAxisTitle( "TIME AT CENTER OF WINDOW [UTC]" );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
-              .setDefaultRangeAxisTitle( "@metricShortName@@metricComponentNameSuffix@@outputUnitsLabelSuffix@" );
+              .setDefaultRangeAxisTitle( METRIC_SHORT_NAME_METRIC_COMPONENT_NAME_SUFFIX_OUTPUT_UNITS_LABEL_SUFFIX );
         source.setXAxisType( ChartConstants.AXIS_IS_TIME );
 
         return source;
@@ -528,7 +506,7 @@ public abstract class XYChartDataSourceFactory
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
               .setDefaultDomainAxisTitle( "THRESHOLD VALUE@inputUnitsLabelSuffix@" );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
-              .setDefaultRangeAxisTitle( "@metricShortName@@metricComponentNameSuffix@@outputUnitsLabelSuffix@" );
+              .setDefaultRangeAxisTitle( METRIC_SHORT_NAME_METRIC_COMPONENT_NAME_SUFFIX_OUTPUT_UNITS_LABEL_SUFFIX );
 
         return source;
     }
@@ -577,7 +555,7 @@ public abstract class XYChartDataSourceFactory
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
               .setDefaultDomainAxisTitle( "FORECAST LEAD TIME [" + durationUnits.name().toUpperCase() + "]" );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
-              .setDefaultRangeAxisTitle( "@metricShortName@@metricComponentNameSuffix@@outputUnitsLabelSuffix@" );
+              .setDefaultRangeAxisTitle( METRIC_SHORT_NAME_METRIC_COMPONENT_NAME_SUFFIX_OUTPUT_UNITS_LABEL_SUFFIX );
 
         return source;
     }
@@ -639,17 +617,6 @@ public abstract class XYChartDataSourceFactory
             }
             yAxisValuesBySeries.add( yValues );
 
-            //Define the legend entry.  The commented out code specifies the lead time.  But we decided
-            //not to include it for this plot.
-//            TimeWindow timeWindow = entry.getKey().getLeft();
-//            String leadKey = Long.toString( timeWindow.getLatestLeadTime().toHours() );
-//            if ( !timeWindow.getEarliestLeadTime().equals( timeWindow.getLatestLeadTime() ) )
-//            {
-//                leadKey = "(" + timeWindow.getEarliestLeadTime().toHours()
-//                          + ","
-//                          + timeWindow.getLatestLeadTime().toHours()
-//                          + "]";
-//            }
             legendEntryBySeries.add( entry.getMetadata().getSampleMetadata().getThresholds().toStringWithoutUnits() );
         }
 
@@ -691,7 +658,7 @@ public abstract class XYChartDataSourceFactory
         source.setXAxisType( ChartConstants.AXIS_IS_CATEGORICAL );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultDomainAxisTitle( "@metricName@" );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
-              .setDefaultRangeAxisTitle( "@metricShortName@@metricComponentNameSuffix@@outputUnitsLabelSuffix@" );
+              .setDefaultRangeAxisTitle( METRIC_SHORT_NAME_METRIC_COMPONENT_NAME_SUFFIX_OUTPUT_UNITS_LABEL_SUFFIX );
         applyEvenNonOverlappingBarDistribution( source.getDefaultFullySpecifiedDataSourceDrawingParameters() );
 
         //Pass in the legend entries here.

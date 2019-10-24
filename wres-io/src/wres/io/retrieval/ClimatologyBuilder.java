@@ -422,7 +422,7 @@ class ClimatologyBuilder
             {
                 if ( this.project.shouldScale() )
                 {
-                    Double aggregation = wres.util.Collections.aggregate(
+                    Double aggregation = wres.util.Collections.upscale(
                             valuesToAggregate,
                             this.project.getScale()
                                         .getFunction()

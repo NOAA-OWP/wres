@@ -259,6 +259,9 @@ public class EnsemblePoolGenerator extends PoolGenerator<Double, Ensemble>
             // Create the retrievers for each time window
             for ( TimeWindow nextWindow : timeWindows )
             {
+                // Many sources per time-series?
+                boolean hasManySourcesRight = ConfigHelper.hasSourceFormatWithMultipleSourcesPerSeries( rightConfig );
+
                 Supplier<Stream<TimeSeries<Ensemble>>> rightSupplier =
                         this.getRightRetrieverBuilder( rightConfig.getType() )
                             .setEnsembleIdsToInclude( includeTheseMembersRight )
@@ -272,6 +275,7 @@ public class EnsemblePoolGenerator extends PoolGenerator<Double, Ensemble>
                             .setUnitMapper( unitMapper )
                             .setSeasonStart( seasonStart )
                             .setSeasonEnd( seasonEnd )
+                            .setHasMultipleSourcesPerSeries( hasManySourcesRight )
                             .build();
 
                 builder.setRight( rightSupplier );
@@ -311,6 +315,10 @@ public class EnsemblePoolGenerator extends PoolGenerator<Double, Ensemble>
                     SampleMetadata poolBaseMeta = SampleMetadata.of( baselineMetadata, nextWindow );
                     builder.setBaselineMetadata( poolBaseMeta );
 
+                    // Many sources per time-series?
+                    boolean hasManySourcesBase =
+                            ConfigHelper.hasSourceFormatWithMultipleSourcesPerSeries( baselineConfig );
+
                     // Data-source baseline
                     Supplier<Stream<TimeSeries<Ensemble>>> baselineSupplier =
                             this.getRightRetrieverBuilder( baselineConfig.getType() )
@@ -325,6 +333,7 @@ public class EnsemblePoolGenerator extends PoolGenerator<Double, Ensemble>
                                 .setUnitMapper( unitMapper )
                                 .setSeasonStart( seasonStart )
                                 .setSeasonEnd( seasonEnd )
+                                .setHasMultipleSourcesPerSeries( hasManySourcesBase )
                                 .build();
 
                     builder.setBaseline( baselineSupplier );

@@ -920,7 +920,7 @@ class SampleDataRetriever extends Retriever
         }
 
         // aggregate!
-        double aggregated = wres.util.Collections.aggregate( valuesToAggregate,
+        double aggregated = wres.util.Collections.upscale( valuesToAggregate,
                                                              scaleConfig.getFunction()
                                                                         .value() );
 
