@@ -1,4 +1,4 @@
-package wres.io.griddedReader;
+package wres.grid.reading;
 
 public class GriddedCoordinate
 {
