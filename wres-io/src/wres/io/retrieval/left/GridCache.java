@@ -2,6 +2,7 @@ package wres.io.retrieval.left;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -14,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.Feature;
+import wres.datamodel.time.TimeWindow;
 import wres.grid.client.Fetcher;
 import wres.grid.client.Request;
 import wres.grid.client.Response;
@@ -42,35 +44,37 @@ class GridCache implements LeftHandCache
 
     @Override
     public Collection<Double> getLeftValues( Feature feature,
-                                             LocalDateTime earliestDate,
-                                             LocalDateTime latestDateTime )
+                                             LocalDateTime earliestTime,
+                                             LocalDateTime latestTime )
             throws IOException
     {
         List<Double> leftValues = new ArrayList<>();
 
-        Request gridRequest = ConfigHelper.getGridDataRequest(
-                this.project,
-                this.project.getLeft(),
-                feature
-        );
+        Instant earliestValidTime = earliestTime.toInstant( ZoneOffset.of( "Z" ) );
+        Instant latestValidTime = latestTime.toInstant( ZoneOffset.of( "Z" ) );        
+        TimeWindow timeWindow = TimeWindow.of( earliestValidTime, latestValidTime );
+        boolean isForecast = ConfigHelper.isForecast( this.project.getLeft() );
+        List<Feature> features = List.of( feature );
+        String variableName = this.project.getLeft().getVariable().getValue();
 
-        gridRequest.setEarliestValidTime( earliestDate.toInstant( ZoneOffset.UTC ) );
-        gridRequest.setLatestValidTime( latestDateTime.toInstant( ZoneOffset.UTC ) );
-
-        Collection<String> paths = Collections.getValuesInRange( this.cachedSources, earliestDate, latestDateTime );
-        if (paths.size() == 0)
+        Collection<String> paths = Collections.getValuesInRange( this.cachedSources, earliestTime, latestTime );
+        if ( paths.size() == 0 )
         {
-            LOGGER.debug("There are no gridded data files for left hand "
-                         + "comparison for this project between the dates of "
-                         + "'{}' and '{}'",
-                         TimeHelper.convertDateToString( earliestDate ),
-                         TimeHelper.convertDateToString( latestDateTime ));
+            LOGGER.debug( "There are no gridded data files for left hand "
+                          + "comparison for this project between the dates of "
+                          + "'{}' and '{}'",
+                          TimeHelper.convertDateToString( earliestTime ),
+                          TimeHelper.convertDateToString( latestTime ) );
             return leftValues;
         }
 
-        paths.forEach( gridRequest::addPath );
+        Request griddedRequest = Fetcher.prepareRequest( List.copyOf( paths ), 
+                                                         features, 
+                                                         variableName, 
+                                                         timeWindow, 
+                                                         isForecast );
 
-        Response gridResponse = Fetcher.getData(gridRequest);
+        Response gridResponse = Fetcher.getData( griddedRequest );
 
         for (List<Response.Series> seriesPerFeature : gridResponse)
         {

@@ -279,15 +279,15 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
         boolean isForecast = ConfigHelper.isForecast( dataSourceConfig );
 
         DataScripter script = new DataScripter();
-        script.addLine("SELECT path");
-        script.addLine("FROM wres.Source S");
-        script.addLine("WHERE S.is_point_data = FALSE");
+        script.addLine( "SELECT path" );
+        script.addLine( "FROM wres.Source S" );
+        script.addLine( "WHERE S.is_point_data = FALSE" );
 
         // Unwrap the time window for local use
         TimeWindow window = sampleMetadata.getMetadata().getTimeWindow();
 
         if ( sampleMetadata.getMinimumLead()
-                   .equals( window.getLatestLeadDuration() ) )
+                           .equals( window.getLatestLeadDuration() ) )
         {
             script.addTab()
                   .addLine( "AND S.lead = ",
@@ -396,7 +396,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
         script.addTab(   3   ).addLine("AND PS.source_id = S.source_id");
         script.addTab().addLine(");");
 
-        script.consume( pathRow -> paths.add(pathRow.getString( "path" )) );
+        script.consume( pathRow -> paths.add( pathRow.getString( "path" ) ) );
 
         return paths;
     }

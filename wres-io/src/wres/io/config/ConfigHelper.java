@@ -76,8 +76,6 @@ import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.thresholds.ThresholdsByMetric.ThresholdsByMetricBuilder;
 import wres.datamodel.time.TimeWindow;
 import wres.datamodel.time.generators.TimeWindowGenerator;
-import wres.grid.client.Fetcher;
-import wres.grid.client.Request;
 import wres.io.data.caching.Features;
 import wres.io.project.Project;
 import wres.io.reading.commaseparated.CommaSeparatedReader;
@@ -133,56 +131,6 @@ public class ConfigHelper
     private ConfigHelper()
     {
         // prevent construction
-    }
-
-    public static Request getGridDataRequest(
-            final Project project,
-            final DataSourceConfig dataSourceConfig,
-            final Feature feature)
-    {
-        Request griddedRequest = Fetcher.prepareRequest();
-        griddedRequest.addFeature( feature );
-        griddedRequest.setVariableName( dataSourceConfig.getVariable().getValue() );
-
-        boolean isForecast = ConfigHelper.isForecast( dataSourceConfig );
-
-        griddedRequest.setIsForecast( isForecast );
-
-        if ( isForecast && project.getMinimumLead() > Integer.MIN_VALUE)
-        {
-            griddedRequest.setEarliestLead(
-                    Duration.of( project.getMinimumLead(), TimeHelper.LEAD_RESOLUTION)
-            );
-        }
-
-        if ( isForecast && project.getMaximumLead() < Integer.MAX_VALUE)
-        {
-            griddedRequest.setLatestLead(
-                    Duration.of( project.getMaximumLead(), TimeHelper.LEAD_RESOLUTION)
-            );
-        }
-
-        if ( project.getEarliestDate() != null)
-        {
-            griddedRequest.setEarliestValidTime( Instant.parse( project.getEarliestDate() ) );
-        }
-
-        if ( project.getLatestDate() != null)
-        {
-            griddedRequest.setLatestValidTime( Instant.parse( project.getLatestDate() ) );
-        }
-
-        if ( isForecast && project.getEarliestIssueDate() != null)
-        {
-            griddedRequest.setEarliestIssueTime( Instant.parse( project.getEarliestIssueDate()) );
-        }
-
-        if ( isForecast && project.getLatestIssueDate() != null)
-        {
-            griddedRequest.setLatestIssueTime( Instant.parse( project.getLatestIssueDate()) );
-        }
-
-        return griddedRequest;
     }
 
     // TODO: Move to Project Details

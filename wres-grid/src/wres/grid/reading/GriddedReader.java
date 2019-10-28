@@ -1,7 +1,6 @@
 package wres.grid.reading;
 
 import thredds.client.catalog.ServiceType;
-import ucar.ma2.InvalidRangeException;
 import ucar.nc2.NetcdfFile;
 import wres.config.FeaturePlus;
 import wres.config.generated.Feature;
@@ -12,14 +11,13 @@ import wres.util.NetCDF;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.List;
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import ucar.ma2.Array;
 
 import ucar.nc2.dataset.DatasetUrl;
@@ -29,11 +27,10 @@ import ucar.nc2.dt.grid.GridDataset;
 
 public class GriddedReader
 {
-    private String variable_name;
-
-    private Queue<String> paths;
-    private List<Feature> features;
-
+    /**
+     * Stands-up resources per JVM.
+     */
+    
     static {
         NetcdfDataset.initNetcdfFileCache(
                 SystemSettings.getMinimumCachedNetcdf(),
@@ -42,6 +39,12 @@ public class GriddedReader
                 SystemSettings.getNetcdfCachePeriod()
         );
     }
+    
+    /**
+     * The request.
+     */
+    
+    private final Request request;
 
     private static final Object READER_LOCK = new Object();
 
@@ -49,10 +52,7 @@ public class GriddedReader
 
     private TimeSeriesResponse timeSeriesResponse;
 
-    private final boolean isForecast;
-
     private static GridFileReader getReader(final String filePath, final boolean isForecast)
-            throws IOException
     {
         synchronized ( READER_LOCK )
         {
@@ -73,24 +73,11 @@ public class GriddedReader
         }
     }
 
-    private static final Logger LOGGER = LoggerFactory.getLogger (GriddedReader.class);
-
-    public GriddedReader (Request request)
+    public GriddedReader( Request request )
     {
-        this.isForecast = request.getIsForecast();
-        this.paths = request.getPaths();
-        this.features = request.getFeatures();
-        this.variable_name = request.getVariableName();
-    }
-
-    public Queue<String> getPaths () {return paths;}
-
-    public List<Feature> getFeatures() {
-        return features;
-    }
-
-    public String getVariable_name() {
-        return variable_name;
+        Objects.requireNonNull( request );
+        
+        this.request = request;
     }
 
     private TimeSeriesResponse getTimeSeriesResponse()
@@ -98,29 +85,31 @@ public class GriddedReader
         if (this.timeSeriesResponse == null)
         {
             this.timeSeriesResponse = new TimeSeriesResponse();
-            this.timeSeriesResponse.setVariableName( this.getVariable_name() );
+            this.timeSeriesResponse.setVariableName( this.request.getVariableName() );
         }
 
         return this.timeSeriesResponse;
     }
 
 
-    public TimeSeriesResponse getData( ) throws IOException, InvalidRangeException
+    public TimeSeriesResponse getData() throws IOException
     {
         GridValue value;
 
-        while (!this.paths.isEmpty())
+        Queue<String> paths = new LinkedList<>( this.request.getPaths() );
+
+        while (! paths.isEmpty() )
         {
-            String path = this.paths.remove();
-            GridFileReader reader = GriddedReader.getReader( path, this.isForecast );
+            String path = paths.remove();
+            GridFileReader reader = GriddedReader.getReader( path, this.request.isForecast() );
 
             if (reader.isLocked())
             {
-                this.paths.add(path);
+                paths.add( path );
             }
             else
             {
-                for ( Feature feature : this.getFeatures() )
+                for ( Feature feature : this.request.getFeatures() )
                 {
                     FeaturePlus featurePlus = FeaturePlus.of( feature );
 
@@ -128,7 +117,7 @@ public class GriddedReader
                     // not the... time!
                     value = reader.read(
                             null,
-                            this.getVariable_name(), 
+                            this.request.getVariableName(), 
                             feature.getCoordinate().getLatitude(),
                             feature.getCoordinate().getLongitude()
                     );
@@ -198,7 +187,7 @@ public class GriddedReader
         }
 
         GridValue read(Integer time, String variableName, final double latitude, final double longitude)
-                throws IOException, InvalidRangeException
+                throws IOException
         {
             if (time == null)
             {
@@ -209,6 +198,7 @@ public class GriddedReader
 
             // This is underlying THREDDS code. It generally expects some semi-remote location for its data, but we're local, so we're using
             DatasetUrl url = new DatasetUrl( ServiceType.File, this.path );
+
             try (NetcdfDataset dataset = NetcdfDataset.acquireDataset( url, null ); GridDataset gridDataset = new GridDataset( dataset ))
             {
                 GridDatatype variable = gridDataset.findGridDatatype( variableName );
@@ -234,7 +224,7 @@ public class GriddedReader
             return this.readLock.isLocked();
         }
 
-        private Instant getValidTime() throws IOException, InvalidRangeException
+        private Instant getValidTime() throws IOException
         {
             if (this.validTime == null)
             {
@@ -248,7 +238,7 @@ public class GriddedReader
             return this.validTime;
         }
 
-        private Instant getIssueTime() throws IOException, InvalidRangeException
+        private Instant getIssueTime() throws IOException
         {
             if (this.issueTime == null && this.isForecast)
             {
