@@ -1,36 +1,42 @@
 package wres.grid.client;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.List;
-import java.util.Queue;
 
 import wres.config.generated.Feature;
+import wres.datamodel.time.TimeWindow;
 
 /**
  * Prototype Interface for requesting grid data
  */
 public interface Request
 {
-    void addPath(String path);
-    void addFeature(Feature feature);
-    void setEarliestIssueTime( Instant earliestIssueTime );
-    void setLatestIssueTime( Instant latestIssueTime );
-    void setEarliestValidTime( Instant earliestValidTime );
-    void setLatestValidTime( Instant latestValidTime );
-    void setEarliestLead( Duration earliestLead );
-    void setLatestLead( Duration latestLead );
-    void setVariableName( String variableName );
-    void setIsForecast(Boolean isForecast);
-
-    Queue<String> getPaths();
+    /**
+     * @return the paths to gridded data files
+     */
+    
+    List<String> getPaths();
+    
+    /**
+     * @return the features requested
+     */
+    
     List<Feature> getFeatures();
-    Instant getEarliestIssueTime();
-    Instant getLatestIssueTime();
-    Instant getEarliestValidTime();
-    Instant getLatestValidTime();
-    Duration getEarliestLead();
-    Duration getLatestLead();
+    
+    /**
+     * @return the time window
+     */
+    
+    TimeWindow getTimeWindow();
+    
+    /**
+     * @return the variable name
+     */
+    
     String getVariableName();
-    Boolean getIsForecast();
+    
+    /**
+     * @return true if the request involves forecasts, false otherwise
+     */
+    
+    boolean isForecast();
 }

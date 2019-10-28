@@ -21,16 +21,19 @@ import org.slf4j.LoggerFactory;
 import wres.config.ProjectConfigs;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
+import wres.config.generated.Feature;
 import wres.config.generated.TimeScaleConfig;
 import wres.datamodel.Ensemble;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfEnsemblePairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfEnsemblePairs.TimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeWindow;
 import wres.grid.client.Fetcher;
 import wres.grid.client.Request;
 import wres.grid.client.Response;
@@ -396,24 +399,21 @@ class SampleDataRetriever extends Retriever
 
     private Response getGriddedData(final DataSourceConfig dataSourceConfig)
     {
-        Request griddedRequest = ConfigHelper.getGridDataRequest(
-                this.getProjectDetails(),
-                dataSourceConfig,
-                this.getFeature()
-        );
-
-        griddedRequest.setEarliestLead( this.getSampleMetadata()
-                                            .getMetadata()
-                                            .getTimeWindow()
-                                            .getEarliestLeadDuration() );
-        griddedRequest.setLatestLead( this.getSampleMetadata().getMetadata().getTimeWindow().getLatestLeadDuration() );
-
+        Request griddedRequest = null;
         try
         {
-            DataSources.getSourcePaths(
-                    getSampleMetadata(),
-                    dataSourceConfig
-            ).forEach(griddedRequest::addPath);
+
+            List<String> paths = DataSources.getSourcePaths( this.getSampleMetadata(),
+                                                             dataSourceConfig );
+
+            OrderedSampleMetadata metadata = this.getSampleMetadata();
+            SampleMetadata sampleMetadata = metadata.getMetadata();
+            TimeWindow timeWindow = sampleMetadata.getTimeWindow();
+            boolean isForecast = ConfigHelper.isForecast( dataSourceConfig );
+            List<Feature> features = List.of( this.getFeature() );
+            String variableName = dataSourceConfig.getVariable().getValue();
+
+            griddedRequest = Fetcher.prepareRequest( paths, features, variableName, timeWindow, isForecast );
         }
         catch ( SQLException e )
         {

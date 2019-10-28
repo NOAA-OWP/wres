@@ -1,135 +1,96 @@
 package wres.grid.client;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
+import java.util.Objects;
 import java.util.StringJoiner;
 
 import wres.config.generated.Feature;
+import wres.datamodel.time.TimeWindow;
 
 /**
- * TODO: JBr - make this class immutable, probably using a builder given the number of instance variables.
+ * A request for gridded data.
  */
 
 class GridDataRequest implements Request
 {
-    GridDataRequest()
+
+    /**
+     * The paths to read.
+     */
+
+    private final List<String> paths;
+
+    /**
+     * The features to read.
+     */
+
+    private final List<Feature> features;
+
+    /**
+     * The variable name.
+     */
+
+    private final String variableName;
+
+    /**
+     * The time window to consider.
+     */
+    private final TimeWindow timeWindow;
+
+    /**
+     * Is <code>true</code> if the paths point to forecasts, <code>false</code> otherwise.
+     */
+
+    private final boolean isForecast;
+
+    /**
+     * Returns an instance.
+     * 
+     * @param paths the paths to read
+     * @param features the features to read
+     * @param variableName the variable to read
+     * @param timeWindow the time window to consider
+     * @param isForecast is true if the paths point to forecasts, otherwise false
+     * @return an instance
+     * @throws NullPointerException if any nullable input is null
+     */
+
+    static GridDataRequest of( List<String> paths,
+                               List<Feature> features,
+                               String variableName,
+                               TimeWindow timeWindow,
+                               boolean isForecast )
     {
-        this.features = new ArrayList<>(  );
-        this.paths = new LinkedList<>(  );
+        return new GridDataRequest( paths, features, variableName, timeWindow, isForecast );
     }
 
-    @Override
-    public void addPath(String path)
-    {
-        this.paths.add(path);
-    }
+    /**
+     * Hidden constructor.
+     * 
+     * @param paths the paths to read
+     * @param features the features to read
+     * @param variableName the variable to read
+     * @param timeWindow the time window to consider
+     * @param isForecast is true if the paths point to forecasts, otherwise false
+     */
 
-    @Override
-    public void addFeature(Feature feature)
+    private GridDataRequest( List<String> paths,
+                             List<Feature> features,
+                             String variableName,
+                             TimeWindow timeWindow,
+                             boolean isForecast )
     {
-        this.features.add(feature);
-    }
+        Objects.requireNonNull( paths );
+        Objects.requireNonNull( features );
+        Objects.requireNonNull( variableName );
+        Objects.requireNonNull( timeWindow );
 
-    @Override
-    public void setEarliestIssueTime( Instant earliestIssueTime )
-    {
-        this.earliestIssueTime = earliestIssueTime;
-    }
-
-    @Override
-    public void setLatestIssueTime( Instant latestIssueTime )
-    {
-        this.latestIssueTime = latestIssueTime;
-    }
-
-    @Override
-    public void setEarliestValidTime( Instant earliestValidTime )
-    {
-        this.earliestValidTime = earliestValidTime;
-    }
-
-    @Override
-    public void setLatestValidTime( Instant latestValidTime )
-    {
-        this.latestValidTime = latestValidTime;
-    }
-
-    @Override
-    public void setEarliestLead( Duration earliestLead )
-    {
-        this.earliestLead = earliestLead;
-    }
-
-    @Override
-    public void setLatestLead( Duration latestLead )
-    {
-        this.latestLead = latestLead;
-    }
-
-    @Override
-    public void setVariableName( String variableName )
-    {
+        this.paths = Collections.unmodifiableList( paths );
+        this.features = Collections.unmodifiableList( features );
         this.variableName = variableName;
-    }
-
-    @Override
-    public void setIsForecast(Boolean isForecast)
-    {
+        this.timeWindow = timeWindow;
         this.isForecast = isForecast;
-    }
-
-    @Override
-    public Queue<String> getPaths()
-    {
-        // Do not expose the internal container, create a new one
-        return new LinkedList<>(  this.paths );
-    }
-
-    @Override
-    public List<Feature> getFeatures()
-    {
-        return Collections.unmodifiableList( this.features );
-    }
-
-    @Override
-    public Instant getEarliestIssueTime()
-    {
-        return this.earliestIssueTime;
-    }
-
-    @Override
-    public Instant getLatestIssueTime()
-    {
-        return this.latestIssueTime;
-    }
-
-    @Override
-    public Instant getEarliestValidTime()
-    {
-        return this.earliestValidTime;
-    }
-
-    @Override
-    public Instant getLatestValidTime()
-    {
-        return this.latestValidTime;
-    }
-
-    @Override
-    public Duration getEarliestLead()
-    {
-        return this.earliestLead;
-    }
-
-    @Override
-    public Duration getLatestLead()
-    {
-        return this.latestLead;
     }
 
     @Override
@@ -139,11 +100,29 @@ class GridDataRequest implements Request
     }
 
     @Override
-    public Boolean getIsForecast()
+    public boolean isForecast()
     {
         return this.isForecast;
     }
-    
+
+    @Override
+    public List<String> getPaths()
+    {
+        return this.paths; // Rendered immutable on construction
+    }
+
+    @Override
+    public List<Feature> getFeatures()
+    {
+        return this.features; // Rendered immutable on construction
+    }
+
+    @Override
+    public TimeWindow getTimeWindow()
+    {
+        return this.timeWindow;
+    }
+
     @Override
     public String toString()
     {
@@ -151,13 +130,8 @@ class GridDataRequest implements Request
 
         joiner.add( "GridDataRequest instance " + this.hashCode() + ": { " );
         joiner.add( "    variableName: " + this.getVariableName() + "," );
-        joiner.add( "    earliestIssueTime: " + this.getEarliestIssueTime() + "," );
-        joiner.add( "    latestIssueTime: " + this.getLatestIssueTime() + "," );
-        joiner.add( "    earliestValidTime: " + this.getEarliestValidTime() + "," );
-        joiner.add( "    latestValidTime: " + this.getLatestValidTime() + "," );
-        joiner.add( "    earliestLead: " + this.getEarliestLead() + "," );
-        joiner.add( "    latestLead: " + this.getLatestLead() + "," );
-        joiner.add( "    isForecast: " + this.getIsForecast() + "," );
+        joiner.add( "    timeWindow: " + this.getTimeWindow() + "," );
+        joiner.add( "    isForecast: " + this.isForecast() + "," );
         joiner.add( "    features: " + this.getFeatures() + "," );
         joiner.add( "    paths: " + this.getPaths() );
         joiner.add( "}" );
@@ -165,14 +139,4 @@ class GridDataRequest implements Request
         return joiner.toString();
     }
 
-    private final Queue<String> paths;
-    private final List<Feature> features;
-    private String variableName;
-    private Instant earliestIssueTime;
-    private Instant latestIssueTime;
-    private Instant earliestValidTime;
-    private Instant latestValidTime;
-    private Duration earliestLead;
-    private Duration latestLead;
-    private Boolean isForecast;
 }

@@ -1,8 +1,10 @@
 package wres.grid.client;
 
 import java.io.IOException;
+import java.util.List;
 
-import ucar.ma2.InvalidRangeException;
+import wres.config.generated.Feature;
+import wres.datamodel.time.TimeWindow;
 import wres.grid.reading.GriddedReader;
 
 /**
@@ -10,25 +12,46 @@ import wres.grid.reading.GriddedReader;
  */
 public class Fetcher
 {
-    private Fetcher()
-    {
-    }
 
-    public static Response getData(Request request) throws IOException
+    public static Response getData( Request request ) throws IOException
     {
         GriddedReader griddedReader = new GriddedReader( request );
         try
         {
             return griddedReader.getData();
         }
-        catch ( InvalidRangeException e )
+        catch ( IOException e )
         {
             throw new IOException( "Data could not be retrieved from one or more NetCDF files", e );
         }
     }
 
-    public static Request prepareRequest()
+    /**
+     * Returns an instance.
+     * 
+     * @param paths the paths to read
+     * @param features the features to read
+     * @param variableName the variable to read
+     * @param timeWindow the time window to consider
+     * @param isForecast is true if the paths point to forecasts, otherwise false
+     * @return an instance
+     * @throws NullPointerException if any nullable input is null
+     */
+
+    public static GridDataRequest prepareRequest( List<String> paths,
+                                                  List<Feature> features,
+                                                  String variableName,
+                                                  TimeWindow timeWindow,
+                                                  boolean isForecast )
     {
-        return new GridDataRequest();
+        return GridDataRequest.of( paths, features, variableName, timeWindow, isForecast );
     }
+
+    /**
+     * Do not construct.
+     */
+    private Fetcher()
+    {
+    }
+
 }
