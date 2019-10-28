@@ -25,6 +25,7 @@ import wres.config.generated.PairConfig;
 import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.DataSourceConfig.Variable;
+import wres.datamodel.Ensemble;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.scale.TimeScale.TimeScaleFunction;
@@ -32,26 +33,28 @@ import wres.io.config.ConfigHelper;
 import wres.io.project.Project;
 
 /**
- * Tests the {@link SingleValuedPoolGenerator}.
+ * Tests the {@link PoolsGenerator}.
  * 
  * @author james.brown@hydrosolved.com
  */
 @RunWith( PowerMockRunner.class )
 @PrepareForTest( { UnitMapper.class, ConfigHelper.class } )
 @PowerMockIgnore( { "javax.management.*", "java.io.*", "javax.xml.*", "com.sun.*", "org.xml.*" } )
-public class SingleValuedPoolGeneratorTest
+public class PoolsGeneratorTest
 {
 
+    private static final String GET_VARIABLE_ID_FROM_PROJECT_CONFIG = "getVariableIdFromProjectConfig";
+    
     private static final String STREAMFLOW = "STREAMFLOW";
 
     /**
-     * Tests {@link SingleValuedPoolGenerator#get()} using project declaration that is representative of system test
+     * Tests {@link PoolsGenerator#get()} using project declaration that is representative of system test
      * scenario505 as of commit 43332ccbb45e712722ef2ca52904b18d8f98397c.
      * @throws Exception if the test set-up fails
      */
 
     @Test
-    public void testGetProducesEighteenPoolSuppliers() throws Exception
+    public void testGetProducesEighteenPoolSuppliersForSingleValuedCase() throws Exception
     {
         // Mock the sufficient elements of the ProjectConfig
         IntBoundsType leadBoundsConfig = new IntBoundsType( 0, 40 );
@@ -125,18 +128,112 @@ public class SingleValuedPoolGeneratorTest
                     .thenReturn( mapper );
 
         PowerMockito.mockStatic( ConfigHelper.class );
-        PowerMockito.when( ConfigHelper.class, "getVariableIdFromProjectConfig", projectConfig, false )
+        PowerMockito.when( ConfigHelper.class, GET_VARIABLE_ID_FROM_PROJECT_CONFIG, projectConfig, false )
                     .thenReturn( STREAMFLOW );
-        PowerMockito.when( ConfigHelper.class, "getVariableIdFromProjectConfig", projectConfig, true )
+        PowerMockito.when( ConfigHelper.class, GET_VARIABLE_ID_FROM_PROJECT_CONFIG, projectConfig, true )
                     .thenReturn( STREAMFLOW );
 
         // Create the actual output
-        SingleValuedPoolGenerator generator = SingleValuedPoolGenerator.of( project, feature, mapper );
-
-        List<Supplier<PoolOfPairs<Double, Double>>> actual = generator.get();
+        List<Supplier<PoolOfPairs<Double, Double>>> actual = PoolFactory.getSingleValuedPools( project, feature );
 
         // Assert expected number of suppliers
         assertEquals( 18, actual.size() );
     }
+
+    /**
+     * Tests {@link PoolsGenerator#get()} using project declaration that is representative of system test
+     * scenario505 as of commit 43332ccbb45e712722ef2ca52904b18d8f98397c. While that scenario does not supply ensemble 
+     * data, the purpose of this test is to assert that the correct number of pools is generated, rather than the 
+     * contents of each pool.
+     * @throws Exception if the test set-up fails
+     */
+
+    @Test
+    public void testGetProducesEighteenPoolSuppliersForEnsembleCase() throws Exception
+    {
+        // Mock the sufficient elements of the ProjectConfig
+        IntBoundsType leadBoundsConfig = new IntBoundsType( 0, 40 );
+        // (2551-03-17T00:00:00Z, 2551-03-20T00:00:00Z)
+        DateCondition issuedDatesConfig = new DateCondition( "2551-03-17T00:00:00Z", "2551-03-20T00:00:00Z" );
+        PoolingWindowConfig leadTimesPoolingWindowConfig =
+                new PoolingWindowConfig( 23, 17, DurationUnit.HOURS );
+        PoolingWindowConfig issuedDatesPoolingWindowConfig =
+                new PoolingWindowConfig( 13, 7, DurationUnit.HOURS );
+        PairConfig pairsConfig = new PairConfig( "CFS",
+                                                 null,
+                                                 null,
+                                                 leadBoundsConfig,
+                                                 null,
+                                                 issuedDatesConfig,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 issuedDatesPoolingWindowConfig,
+                                                 leadTimesPoolingWindowConfig,
+                                                 null,
+                                                 null );
+        List<DataSourceConfig.Source> sourceList = new ArrayList<>();
+
+        DataSourceConfig left = new DataSourceConfig( DatasourceType.fromValue( "observations" ),
+                                                      sourceList,
+                                                      new Variable( "DISCHARGE", null, null ),
+                                                      null,
+                                                      null,
+                                                      null,
+                                                      null,
+                                                      null,
+                                                      null );
+
+        DataSourceConfig right = new DataSourceConfig( DatasourceType.fromValue( "ensemble forecasts" ),
+                                                       sourceList,
+                                                       new Variable( STREAMFLOW, null, null ),
+                                                       null,
+                                                       null,
+                                                       null,
+                                                       null,
+                                                       null,
+                                                       null );
+
+        ProjectConfig.Inputs inputsConfig = new ProjectConfig.Inputs( left,
+                                                                      right,
+                                                                      null );
+
+        ProjectConfig projectConfig = new ProjectConfig( inputsConfig, pairsConfig, null, null, null, null );
+
+        TimeScale desiredTimeScale = TimeScale.of( Duration.ofHours( 3 ), TimeScaleFunction.MEAN );
+
+        Feature feature =
+                new Feature( null, null, null, null, null, "FAKE2", null, null, null, null, null, null, null );
+
+        // Mock the sufficient elements of Project
+        Project project = Mockito.mock( Project.class );
+        Mockito.when( project.getProjectConfig() ).thenReturn( projectConfig );
+        Mockito.when( project.getId() ).thenReturn( 12345 );
+        Mockito.when( project.getDesiredTimeScale() ).thenReturn( desiredTimeScale );
+        Mockito.when( project.getLeftVariableFeatureId( feature ) ).thenReturn( 1 );
+        Mockito.when( project.getRightVariableFeatureId( feature ) ).thenReturn( 2 );
+        Mockito.when( project.getBaselineVariableFeatureId( feature ) ).thenReturn( 3 );
+        Mockito.when( project.hasBaseline() ).thenReturn( false );
+        Mockito.when( project.usesProbabilityThresholds() ).thenReturn( false );
+
+        // Mock the unit mapper
+        UnitMapper mapper = Mockito.mock( UnitMapper.class );
+        PowerMockito.mockStatic( UnitMapper.class );
+        PowerMockito.when( UnitMapper.class, "of", "CFS" )
+                    .thenReturn( mapper );
+
+        PowerMockito.mockStatic( ConfigHelper.class );
+        PowerMockito.when( ConfigHelper.class, GET_VARIABLE_ID_FROM_PROJECT_CONFIG, projectConfig, false )
+                    .thenReturn( STREAMFLOW );
+        PowerMockito.when( ConfigHelper.class, GET_VARIABLE_ID_FROM_PROJECT_CONFIG, projectConfig, true )
+                    .thenReturn( STREAMFLOW );
+
+        // Create the actual output
+        List<Supplier<PoolOfPairs<Double, Ensemble>>> actual = PoolFactory.getEnsemblePools( project, feature );
+
+        // Assert expected number of suppliers
+        assertEquals( 18, actual.size() );
+    }
+    
 
 }

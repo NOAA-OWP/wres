@@ -33,9 +33,7 @@ import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.processing.MetricProcessor;
 import wres.io.config.ConfigHelper;
 import wres.io.project.Project;
-import wres.io.retrieval.datashop.EnsemblePoolGenerator;
-import wres.io.retrieval.datashop.SingleValuedPoolGenerator;
-import wres.io.retrieval.datashop.UnitMapper;
+import wres.io.retrieval.datashop.PoolFactory;
 import wres.util.IterationFailedException;
 import wres.io.writing.commaseparated.pairs.PairsWriter;
 
@@ -93,18 +91,11 @@ class FeatureProcessorTwo implements Supplier<FeatureProcessingResult>
     private final String errorMessage;
 
     /**
-     * Unit mapper.
-     */
-
-    private final UnitMapper unitMapper;
-
-    /**
      * Build a processor. 
      * 
      * @param feature the feature to process
      * @param resolvedProject the resolved project
      * @param project the project to use
-     * @param unitMapper the unit mapper
      * @param executors the executors for pairs, thresholds, and metrics
      * @param sharedWriters shared writers
      * @throws NullPointerException if any required input is null
@@ -113,7 +104,6 @@ class FeatureProcessorTwo implements Supplier<FeatureProcessingResult>
     FeatureProcessorTwo( FeaturePlus feature,
                          ResolvedProject resolvedProject,
                          Project project,
-                         UnitMapper unitMapper,
                          ExecutorServices executors,
                          SharedWriters sharedWriters )
     {
@@ -122,14 +112,12 @@ class FeatureProcessorTwo implements Supplier<FeatureProcessingResult>
         Objects.requireNonNull( resolvedProject );
         Objects.requireNonNull( executors );
         Objects.requireNonNull( sharedWriters );
-        Objects.requireNonNull( unitMapper );
 
         this.feature = feature;
         this.resolvedProject = resolvedProject;
         this.project = project;
         this.executors = executors;
         this.sharedWriters = sharedWriters;
-        this.unitMapper = unitMapper;
 
         // Error message
         String featureDescription = ConfigHelper.getFeatureDescription( this.feature );
@@ -162,9 +150,8 @@ class FeatureProcessorTwo implements Supplier<FeatureProcessingResult>
             // Pairs that contain ensemble forecasts
             if ( type == DatasourceType.ENSEMBLE_FORECASTS )
             {
-                EnsemblePoolGenerator poolGenerator =
-                        EnsemblePoolGenerator.of( this.project, this.feature.getFeature(), this.unitMapper );
-                List<Supplier<PoolOfPairs<Double, Ensemble>>> pools = poolGenerator.get();
+                List<Supplier<PoolOfPairs<Double, Ensemble>>> pools =
+                        PoolFactory.getEnsemblePools( this.project, this.feature.getFeature() );
 
                 // Stand-up the pair writers
                 PairsWriter<Double, Ensemble> pairsWriter = null;
@@ -193,9 +180,8 @@ class FeatureProcessorTwo implements Supplier<FeatureProcessingResult>
             // All other types
             else
             {
-                SingleValuedPoolGenerator poolGenerator =
-                        SingleValuedPoolGenerator.of( this.project, this.feature.getFeature(), this.unitMapper );
-                List<Supplier<PoolOfPairs<Double, Double>>> pools = poolGenerator.get();
+                List<Supplier<PoolOfPairs<Double, Double>>> pools =
+                        PoolFactory.getSingleValuedPools( this.project, this.feature.getFeature() );
 
                 // Stand-up the pair writers
                 PairsWriter<Double, Double> pairsWriter = null;

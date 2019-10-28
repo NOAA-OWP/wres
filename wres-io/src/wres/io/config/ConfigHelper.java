@@ -55,8 +55,10 @@ import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
 import wres.config.generated.OutputTypeSelection;
+import wres.config.generated.PairConfig;
 import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
+import wres.config.generated.SourceTransformationType;
 import wres.config.generated.ProjectConfig.Outputs;
 import wres.config.generated.ThresholdFormat;
 import wres.config.generated.ThresholdsConfig;
@@ -64,6 +66,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
+import wres.datamodel.scale.TimeScale;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -1691,6 +1694,41 @@ public class ConfigHelper
 
         return Collections.unmodifiableMap( returnMe );
     }  
+    
+    /**
+     * Returns <code>true</code> if a generated baseline is required, otherwise <code>false</code>.
+     * 
+     * @param baselineConfig the declaration to inspect
+     * @return true if a generated baseline is required
+     */
+
+    public static boolean hasGeneratedBaseline( DataSourceConfig baselineConfig )
+    {
+        // Currently only one generated type supported
+        return Objects.nonNull( baselineConfig )
+               && baselineConfig.getTransformation() == SourceTransformationType.PERSISTENCE;
+    }
+    
+
+    /**
+     * Gets the desired time scale associated with the pair declaration, if any.
+     * 
+     * @param pairConfig the pair declaration
+     * @return the desired time scale or null
+     */
+
+    public static TimeScale getDesiredTimeScale( PairConfig pairConfig )
+    {
+        TimeScale returnMe = null;
+
+        if ( Objects.nonNull( pairConfig )
+             && Objects.nonNull( pairConfig.getDesiredTimeScale() ) )
+        {
+            returnMe = TimeScale.of( pairConfig.getDesiredTimeScale() );
+        }
+
+        return returnMe;
+    }
     
     /**
      * Mutates a map of thresholds, adding the thresholds for one metric configuration group.

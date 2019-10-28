@@ -101,7 +101,7 @@ public abstract class MetricProcessor<S extends SampleData<?>>
     static final DoublePredicate ADMISSABLE_DATA = Double::isFinite;
 
     /**
-     * The dall data threshold.
+     * The all data threshold.
      */
 
     final Threshold allDataThreshold;

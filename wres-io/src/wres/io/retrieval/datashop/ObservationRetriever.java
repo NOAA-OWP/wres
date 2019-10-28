@@ -128,10 +128,10 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
         // Add basic constraints
         this.addProjectVariableAndMemberConstraints( scripter, 0 );
 
-        // Add time window constraint
+        // Add time window constraint at zero tabs
         this.addTimeWindowClause( scripter, 0 );
         
-        // Add season constraint
+        // Add season constraint at one tab
         this.addSeasonClause( scripter, 1 );
 
         // Add ORDER BY clause
@@ -157,7 +157,7 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
     }
     
     /**
-     * Returns a function that obtains the measured value in the desired units.
+     * Returns a function that obtains the measured value in the desired units from a {@link DataProvider}.
      * 
      * @return a function to obtain the measured value in the correct units
      */

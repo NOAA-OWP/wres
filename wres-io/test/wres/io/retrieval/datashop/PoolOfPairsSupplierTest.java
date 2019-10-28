@@ -32,10 +32,10 @@ import wres.datamodel.time.TimeSeriesPairer;
 import wres.datamodel.time.TimeSeriesPairerByExactTime;
 import wres.datamodel.time.TimeSeriesUpscaler;
 import wres.datamodel.time.TimeWindow;
-import wres.io.retrieval.datashop.PoolOfPairsSupplier.PoolOfPairsSupplierBuilder;
+import wres.io.retrieval.datashop.PoolSupplier.PoolOfPairsSupplierBuilder;
 
 /**
- * Tests the {@link PoolOfPairsSupplier}.
+ * Tests the {@link PoolSupplier}.
  * 
  * @author james.brown@hydrosolved.com
  */

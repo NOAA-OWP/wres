@@ -30,9 +30,10 @@ import wres.datamodel.time.TimeSeriesUpscaler;
  * <p>Other implementations of generated forecasts, such as climatology, can be represented with the same API.
  * 
  * @author james.brown@hydrosolved.com
+ * @param <T> the type of persistence value to generate
  */
 
-public class PersistenceGenerator<S> implements UnaryOperator<TimeSeries<S>>
+public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
 {
 
     /**
@@ -59,37 +60,37 @@ public class PersistenceGenerator<S> implements UnaryOperator<TimeSeries<S>>
      * The source data from which the persistence values should be generated.
      */
 
-    private final TimeSeries<S> persistenceSource;
+    private final TimeSeries<T> persistenceSource;
 
     /**
      * An optional upscaler to use in generating a persistence value from the {@link #persistenceSource}.
      */
 
-    private final TimeSeriesUpscaler<S> upscaler;
+    private final TimeSeriesUpscaler<T> upscaler;
 
     /**
      * An optional constraint on admissible values. If a value is not eligible for persistence, the empty series is
      * returned.
      */
 
-    private final Predicate<S> admissibleValue;
+    private final Predicate<T> admissibleValue;
 
     /**
      * Provides an instance for persistence of order one, i.e., lag-1 persistence.
      * 
-     * @param <S> the type of time-series event value
+     * @param <T> the type of time-series event value
      * @param persistenceSource the persistence data source
      * @param upscaler the temporal upscaler, which is required if the template series has a larger scale than the 
      *            persistenceSource
-     * @param admissibleValue an optional constrain on an admissible value to persist
+     * @param admissibleValue an optional constraint on values that should be persisted
      * @return an instance
      * @throws NullPointerException if the persistenceSource is null
      * @throws IllegalArgumentException if the order is negative
      */
 
-    public static <S> PersistenceGenerator<S> of( Supplier<Stream<TimeSeries<S>>> persistenceSource,
-                                                  TimeSeriesUpscaler<S> upscaler,
-                                                  Predicate<S> admissibleValue )
+    public static <T> PersistenceGenerator<T> of( Supplier<Stream<TimeSeries<T>>> persistenceSource,
+                                                  TimeSeriesUpscaler<T> upscaler,
+                                                  Predicate<T> admissibleValue )
     {
         return new PersistenceGenerator<>( 1, persistenceSource, upscaler, admissibleValue );
     }
@@ -104,7 +105,7 @@ public class PersistenceGenerator<S> implements UnaryOperator<TimeSeries<S>>
      */
 
     @Override
-    public TimeSeries<S> apply( TimeSeries<S> template )
+    public TimeSeries<T> apply( TimeSeries<T> template )
     {
         Objects.requireNonNull( template );
 
@@ -129,16 +130,16 @@ public class PersistenceGenerator<S> implements UnaryOperator<TimeSeries<S>>
             return template;
         }
 
-        Optional<S> persist = this.getPersistence( template );
+        Optional<T> persist = this.getPersistence( template );
 
-        TimeSeriesBuilder<S> builder = new TimeSeriesBuilder<>();
+        TimeSeriesBuilder<T> builder = new TimeSeriesBuilder<>();
         builder.addReferenceTimes( template.getReferenceTimes() )
                .setTimeScale( template.getTimeScale() );
 
         // Persistence value available?
         if ( persist.isPresent() )
         {
-            S value = persist.get();
+            T value = persist.get();
 
             // Persistence value admissible?
             if ( Objects.nonNull( this.admissibleValue )
@@ -156,7 +157,7 @@ public class PersistenceGenerator<S> implements UnaryOperator<TimeSeries<S>>
             }
             else
             {
-                for ( Event<S> next : template.getEvents() )
+                for ( Event<T> next : template.getEvents() )
                 {
                     builder.addEvent( Event.of( next.getTime(), value ) );
                 }
@@ -175,7 +176,7 @@ public class PersistenceGenerator<S> implements UnaryOperator<TimeSeries<S>>
      * @throws TimeSeriesGeneratorException if the persistence value could not be generated
      */
 
-    private Optional<S> getPersistence( TimeSeries<S> template )
+    private Optional<T> getPersistence( TimeSeries<T> template )
     {
 
         Map<ReferenceTimeType, Instant> referenceTimes = template.getReferenceTimes();
@@ -192,9 +193,9 @@ public class PersistenceGenerator<S> implements UnaryOperator<TimeSeries<S>>
 
         // Compute the instant at which the persistence value should end
         Instant referenceTime = referenceTimes.values().iterator().next();
-        Instant endsAt = this.getNthNearestValueInstant( referenceTime );
+        Instant endsAt = this.getNthNearestValueInstant( referenceTime, this.order );
 
-        TimeSeries<S> persistenceSeries = this.persistenceSource;
+        TimeSeries<T> persistenceSeries = this.persistenceSource;
 
         // Upscale? 
         TimeScale desiredTimeScale = template.getTimeScale();
@@ -222,7 +223,7 @@ public class PersistenceGenerator<S> implements UnaryOperator<TimeSeries<S>>
         }
 
         // Finds the value that ends at the required time
-        Optional<S> value = persistenceSeries.getEvents()
+        Optional<T> value = persistenceSeries.getEvents()
                                              .stream()
                                              .filter( in -> in.getTime().equals( endsAt ) )
                                              .map( Event::getValue )
@@ -243,23 +244,24 @@ public class PersistenceGenerator<S> implements UnaryOperator<TimeSeries<S>>
 
     /**
      * Returns the time in the persistence source that is Nth nearest to, and earlier than, the reference time, where N 
-     * is the {@link #order} supplied on construction.
+     * is the order of persistence.
      * 
      * @param reference time the reference time
+     * @param order the order of persistence
      * @return the time-step
      */
 
-    private Instant getNthNearestValueInstant( Instant referenceTime )
+    private Instant getNthNearestValueInstant( Instant referenceTime, int order )
     {
         // Put the persistence values into a list. There are at least N+1 values in the list, established at 
         // construction
-        List<Event<S>> events = this.persistenceSource.getEvents()
+        List<Event<T>> events = this.persistenceSource.getEvents()
                                                       .stream()
                                                       .collect( Collectors.toList() );
 
         Instant returnMe = null;
         Instant lastTime = events.get( 0 ).getTime();
-        for ( int i = this.order; i < events.size(); i++ )
+        for ( int i = order; i < events.size(); i++ )
         {
             Instant currentTime = events.get( i ).getTime();
 
@@ -289,9 +291,9 @@ public class PersistenceGenerator<S> implements UnaryOperator<TimeSeries<S>>
      */
 
     private PersistenceGenerator( int order,
-                                  Supplier<Stream<TimeSeries<S>>> persistenceSource,
-                                  TimeSeriesUpscaler<S> upscaler,
-                                  Predicate<S> admissibleValue )
+                                  Supplier<Stream<TimeSeries<T>>> persistenceSource,
+                                  TimeSeriesUpscaler<T> upscaler,
+                                  Predicate<T> admissibleValue )
     {
         Objects.requireNonNull( persistenceSource );
 
@@ -303,7 +305,7 @@ public class PersistenceGenerator<S> implements UnaryOperator<TimeSeries<S>>
         this.order = order;
 
         // Retrieve the time-series on construction
-        List<TimeSeries<S>> source = persistenceSource.get()
+        List<TimeSeries<T>> source = persistenceSource.get()
                                                       .collect( Collectors.toList() );
 
         // Consolidate into one series

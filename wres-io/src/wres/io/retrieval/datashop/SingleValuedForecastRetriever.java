@@ -205,13 +205,13 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
 
         ScriptBuilder scripter = new ScriptBuilder( GET_ALL_TIME_SERIES_SCRIPT );
 
-        // Add basic constraints
+        // Add basic constraints at zero tabs
         this.addProjectVariableAndMemberConstraints( scripter, 0 );
 
-        // Time window constraint
+        // Time window constraint at zero tabs
         this.addTimeWindowClause( scripter, 0 );
         
-        // Add season constraint
+        // Add season constraint at one tab
         this.addSeasonClause( scripter, 1 );
         
         // Add constraint on the timeseries_ids provided
@@ -219,8 +219,10 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         identifiers.forEach( next -> joiner.add( Long.toString( next ) ) );
         scripter.addTab( 1 ).addLine( "AND TS.timeseries_id = ANY( '", joiner.toString(), "' )::integer[]" );
 
-        // Add GROUP BY and ORDER BY clauses
+        // Add GROUP BY clause
         scripter.addLine( GROUP_BY_SERIES_ID_TSV_LEAD_TSV_SERIES_VALUE ); // #56214-272
+        
+        // Add ORDER BY clause
         scripter.addLine( ORDER_BY_OCCURRENCES_TS_INITIALIZATION_DATE_VALID_TIME_SERIES_ID );
 
         String script = scripter.toString();
@@ -250,17 +252,19 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
 
         ScriptBuilder scripter = new ScriptBuilder( GET_ALL_TIME_SERIES_SCRIPT );
 
-        // Add basic constraints
+        // Add basic constraints at zero tabs
         this.addProjectVariableAndMemberConstraints( scripter, 0 );
         
-        // Add time window constraint
+        // Add time window constraint at zero tabs
         this.addTimeWindowClause( scripter, 0 );
         
-        // Add season constraint
+        // Add season constraint at one tab
         this.addSeasonClause( scripter, 1 );
         
-        // Add GROUP BY and ORDER BY clauses
+        // Add GROUP BY clause
         scripter.addLine( GROUP_BY_SERIES_ID_TSV_LEAD_TSV_SERIES_VALUE ); // #56214-272
+        
+        // Add ORDER BY clause
         scripter.addLine( ORDER_BY_OCCURRENCES_TS_INITIALIZATION_DATE_VALID_TIME_SERIES_ID );
 
         String script = scripter.toString();
@@ -283,7 +287,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
     }
     
     /**
-     * Returns a function that obtains the measured value in the desired units.
+     * Returns a function that obtains the measured value in the desired units from a {@link DataProvider}.
      * 
      * @return a function to obtain the measured value in the correct units
      */
