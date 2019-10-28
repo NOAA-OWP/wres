@@ -1,4 +1,4 @@
-package wres.io.griddedReader;
+package wres.grid.reading;
 
 import java.nio.file.Path;
 import java.time.Duration;

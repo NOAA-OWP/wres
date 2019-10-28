@@ -3,7 +3,7 @@ package wres.grid.client;
 import java.io.IOException;
 
 import ucar.ma2.InvalidRangeException;
-import wres.io.griddedReader.GriddedReader;
+import wres.grid.reading.GriddedReader;
 
 /**
  * Stand in module for integration development between IO and the Grid module

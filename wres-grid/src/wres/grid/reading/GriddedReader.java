@@ -1,4 +1,4 @@
-package wres.io.griddedReader;
+package wres.grid.reading;
 
 import thredds.client.catalog.ServiceType;
 import ucar.ma2.InvalidRangeException;
