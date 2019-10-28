@@ -24,7 +24,7 @@ import wres.io.utilities.ScriptBuilder;
  * @author james.brown@hydrosolved.com
  */
 
-public class UnitMapper
+class UnitMapper
 {
     /**
      * Logger.
@@ -55,7 +55,7 @@ public class UnitMapper
      * @throws DataAccessException if the data could not be accessed 
      */
     
-    public static UnitMapper of( String desiredMeasurementUnit )
+    static UnitMapper of( String desiredMeasurementUnit )
     {
         return new UnitMapper( desiredMeasurementUnit );
     }

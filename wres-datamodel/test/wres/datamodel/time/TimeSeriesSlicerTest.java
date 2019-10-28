@@ -36,20 +36,22 @@ import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 public final class TimeSeriesSlicerTest
 {
 
-    private static final String FIRST_TIME = "1985-01-01T00:00:00Z";
-    private static final String SECOND_TIME = "1985-01-01T01:00:00Z";
-    private static final String THIRD_TIME = "1985-01-01T02:00:00Z";
-    private static final String FOURTH_TIME = "1985-01-01T03:00:00Z";
-    private static final String FIFTH_TIME = "1985-01-02T00:00:00Z";
-    private static final String SIXTH_TIME = "1985-01-02T01:00:00Z";
-    private static final String SEVENTH_TIME = "1985-01-02T02:00:00Z";
-    private static final String EIGHTH_TIME = "1985-01-02T03:00:00Z";
-    private static final String NINTH_TIME = "1985-01-03T00:00:00Z";
-    private static final String TENTH_TIME = "1985-01-03T01:00:00Z";
-    private static final String ELEVENTH_TIME = "1985-01-03T02:00:00Z";
-    private static final String TWELFTH_TIME = "1985-01-03T03:00:00Z";
-    private static final String THIRTEENTH_TIME = "2086-05-01T00:00:00Z";
-    
+    private static final Instant T2010_01_01T15_00_00Z = Instant.parse( "2010-01-01T15:00:00Z" );
+    private static final Instant T2010_01_01T12_00_00Z = Instant.parse( "2010-01-01T12:00:00Z" );
+    private static final Instant T1985_01_01T00_00_00Z = Instant.parse( "1985-01-01T00:00:00Z" );
+    private static final Instant T1985_01_01T01_00_00Z = Instant.parse( "1985-01-01T01:00:00Z" );
+    private static final Instant T1985_01_01T02_00_00Z = Instant.parse( "1985-01-01T02:00:00Z" );
+    private static final Instant T1985_01_01T03_00_00Z = Instant.parse( "1985-01-01T03:00:00Z" );
+    private static final Instant T1985_01_02T00_00_00Z = Instant.parse( "1985-01-02T00:00:00Z" );
+    private static final Instant T1985_01_02T01_00_00Z = Instant.parse( "1985-01-02T01:00:00Z" );
+    private static final Instant T1985_01_02T02_00_00Z = Instant.parse( "1985-01-02T02:00:00Z" );
+    private static final Instant T1985_01_02T03_00_00Z = Instant.parse( "1985-01-02T03:00:00Z" );
+    private static final Instant T1985_01_03T00_00_00Z = Instant.parse( "1985-01-03T00:00:00Z" );
+    private static final Instant T1985_01_03T01_00_00Z = Instant.parse( "1985-01-03T01:00:00Z" );
+    private static final Instant T1985_01_03T02_00_00Z = Instant.parse( "1985-01-03T02:00:00Z" );
+    private static final Instant T1985_01_03T03_00_00Z = Instant.parse( "1985-01-03T03:00:00Z" );
+    private static final Instant T2086_05_01T00_00_00Z = Instant.parse( "2086-05-01T00:00:00Z" );
+
     @Test
     public void testFilterByReferenceTime()
     {
@@ -58,18 +60,18 @@ public final class TimeSeriesSlicerTest
         SortedSet<Event<Pair<Double, Double>>> second = new TreeSet<>();
         SortedSet<Event<Pair<Double, Double>>> third = new TreeSet<>();
 
-        Instant firstBasisTime = Instant.parse( FIRST_TIME );
-        first.add( Event.of( Instant.parse( SECOND_TIME ), Pair.of( 1.0, 1.0 ) ) );
-        first.add( Event.of( Instant.parse( THIRD_TIME ), Pair.of( 2.0, 2.0 ) ) );
-        first.add( Event.of( Instant.parse( FOURTH_TIME ), Pair.of( 3.0, 3.0 ) ) );
-        Instant secondBasisTime = Instant.parse( FIFTH_TIME );
-        second.add( Event.of( Instant.parse( SIXTH_TIME ), Pair.of( 4.0, 4.0 ) ) );
-        second.add( Event.of( Instant.parse( SEVENTH_TIME ), Pair.of( 5.0, 5.0 ) ) );
-        second.add( Event.of( Instant.parse( EIGHTH_TIME ), Pair.of( 6.0, 6.0 ) ) );
-        Instant thirdBasisTime = Instant.parse( NINTH_TIME );
-        third.add( Event.of( Instant.parse( TENTH_TIME ), Pair.of( 7.0, 7.0 ) ) );
-        third.add( Event.of( Instant.parse( ELEVENTH_TIME ), Pair.of( 8.0, 8.0 ) ) );
-        third.add( Event.of( Instant.parse( TWELFTH_TIME ), Pair.of( 9.0, 9.0 ) ) );
+        Instant firstBasisTime = T1985_01_01T00_00_00Z;
+        first.add( Event.of( T1985_01_01T01_00_00Z, Pair.of( 1.0, 1.0 ) ) );
+        first.add( Event.of( T1985_01_01T02_00_00Z, Pair.of( 2.0, 2.0 ) ) );
+        first.add( Event.of( T1985_01_01T03_00_00Z, Pair.of( 3.0, 3.0 ) ) );
+        Instant secondBasisTime = T1985_01_02T00_00_00Z;
+        second.add( Event.of( T1985_01_02T01_00_00Z, Pair.of( 4.0, 4.0 ) ) );
+        second.add( Event.of( T1985_01_02T02_00_00Z, Pair.of( 5.0, 5.0 ) ) );
+        second.add( Event.of( T1985_01_02T03_00_00Z, Pair.of( 6.0, 6.0 ) ) );
+        Instant thirdBasisTime = T1985_01_03T00_00_00Z;
+        third.add( Event.of( T1985_01_03T01_00_00Z, Pair.of( 7.0, 7.0 ) ) );
+        third.add( Event.of( T1985_01_03T02_00_00Z, Pair.of( 8.0, 8.0 ) ) );
+        third.add( Event.of( T1985_01_03T03_00_00Z, Pair.of( 9.0, 9.0 ) ) );
 
         //Add the time-series
         TimeSeries<Pair<Double, Double>> one = TimeSeries.of( firstBasisTime, first );
@@ -117,26 +119,26 @@ public final class TimeSeriesSlicerTest
 
         // Create the series to filter
         SortedSet<Event<Pair<Double, Double>>> first = new TreeSet<>();
-        Instant firstBasisTime = Instant.parse( FIRST_TIME );
-        
-        first.add( Event.of( Instant.parse( SECOND_TIME ), Pair.of( 1.0, 1.0 ) ) );
-        first.add( Event.of( Instant.parse( THIRD_TIME ), Pair.of( 2.0, 2.0 ) ) );
-        first.add( Event.of( Instant.parse( FOURTH_TIME ), Pair.of( 3.0, 3.0 ) ) );
+        Instant firstBasisTime = T1985_01_01T00_00_00Z;
+
+        first.add( Event.of( T1985_01_01T01_00_00Z, Pair.of( 1.0, 1.0 ) ) );
+        first.add( Event.of( T1985_01_01T02_00_00Z, Pair.of( 2.0, 2.0 ) ) );
+        first.add( Event.of( T1985_01_01T03_00_00Z, Pair.of( 3.0, 3.0 ) ) );
 
         TimeSeries<Pair<Double, Double>> one = TimeSeries.of( firstBasisTime, first );
 
         // Filter the series
         TimeSeries<Pair<Double, Double>> actual =
                 TimeSeriesSlicer.filter( one,
-                                         TimeWindow.of( Instant.parse( SECOND_TIME ),
-                                                        Instant.parse( THIRD_TIME ) ) );
+                                         TimeWindow.of( T1985_01_01T01_00_00Z,
+                                                        T1985_01_01T02_00_00Z ) );
 
         // Create the expected series
-        SortedSet<Event<Pair<Double,Double>>> expectedEvents = new TreeSet<>();
-        expectedEvents.add( Event.of( Instant.parse( THIRD_TIME ), Pair.of( 2.0, 2.0 ) ) );
-        
-        TimeSeries<Pair<Double,Double>> expected = TimeSeries.of( firstBasisTime, expectedEvents );
-        
+        SortedSet<Event<Pair<Double, Double>>> expectedEvents = new TreeSet<>();
+        expectedEvents.add( Event.of( T1985_01_01T02_00_00Z, Pair.of( 2.0, 2.0 ) ) );
+
+        TimeSeries<Pair<Double, Double>> expected = TimeSeries.of( firstBasisTime, expectedEvents );
+
         assertEquals( expected, actual );
     }
 
@@ -149,18 +151,18 @@ public final class TimeSeriesSlicerTest
         SortedSet<Event<Pair<Double, Double>>> third = new TreeSet<>();
         PoolOfPairsBuilder<Double, Double> b = new PoolOfPairsBuilder<>();
 
-        Instant firstBasisTime = Instant.parse( FIRST_TIME );
-        first.add( Event.of( Instant.parse( SECOND_TIME ), Pair.of( 1.0, 1.0 ) ) );
-        first.add( Event.of( Instant.parse( THIRD_TIME ), Pair.of( 2.0, 2.0 ) ) );
-        first.add( Event.of( Instant.parse( FOURTH_TIME ), Pair.of( 3.0, 3.0 ) ) );
-        Instant secondBasisTime = Instant.parse( FIFTH_TIME );
-        second.add( Event.of( Instant.parse( SIXTH_TIME ), Pair.of( 1.0, 1.0 ) ) );
-        second.add( Event.of( Instant.parse( SEVENTH_TIME ), Pair.of( 2.0, 2.0 ) ) );
-        second.add( Event.of( Instant.parse( EIGHTH_TIME ), Pair.of( 3.0, 3.0 ) ) );
-        Instant thirdBasisTime = Instant.parse( NINTH_TIME );
-        third.add( Event.of( Instant.parse( TENTH_TIME ), Pair.of( 1.0, 1.0 ) ) );
-        third.add( Event.of( Instant.parse( ELEVENTH_TIME ), Pair.of( 2.0, 2.0 ) ) );
-        third.add( Event.of( Instant.parse( TWELFTH_TIME ), Pair.of( 3.0, 3.0 ) ) );
+        Instant firstBasisTime = T1985_01_01T00_00_00Z;
+        first.add( Event.of( T1985_01_01T01_00_00Z, Pair.of( 1.0, 1.0 ) ) );
+        first.add( Event.of( T1985_01_01T02_00_00Z, Pair.of( 2.0, 2.0 ) ) );
+        first.add( Event.of( T1985_01_01T03_00_00Z, Pair.of( 3.0, 3.0 ) ) );
+        Instant secondBasisTime = T1985_01_02T00_00_00Z;
+        second.add( Event.of( T1985_01_02T01_00_00Z, Pair.of( 1.0, 1.0 ) ) );
+        second.add( Event.of( T1985_01_02T02_00_00Z, Pair.of( 2.0, 2.0 ) ) );
+        second.add( Event.of( T1985_01_02T03_00_00Z, Pair.of( 3.0, 3.0 ) ) );
+        Instant thirdBasisTime = T1985_01_03T00_00_00Z;
+        third.add( Event.of( T1985_01_03T01_00_00Z, Pair.of( 1.0, 1.0 ) ) );
+        third.add( Event.of( T1985_01_03T02_00_00Z, Pair.of( 2.0, 2.0 ) ) );
+        third.add( Event.of( T1985_01_03T03_00_00Z, Pair.of( 3.0, 3.0 ) ) );
         SampleMetadata meta = SampleMetadata.of();
         //Add the time-series, with only one for baseline
         PoolOfPairs<Double, Double> ts = b.addTimeSeries( TimeSeries.of( firstBasisTime, first ) )
@@ -197,7 +199,7 @@ public final class TimeSeriesSlicerTest
 
         //Check the regular duration of a time-series with one duration
         SortedSet<Event<Pair<Double, Double>>> fourth = new TreeSet<>();
-        fourth.add( Event.of( Instant.parse( TWELFTH_TIME ), Pair.of( 3.0, 3.0 ) ) );
+        fourth.add( Event.of( T1985_01_03T03_00_00Z, Pair.of( 3.0, 3.0 ) ) );
 
         PoolOfPairsBuilder<Double, Double> bu = new PoolOfPairsBuilder<>();
 
@@ -325,13 +327,13 @@ public final class TimeSeriesSlicerTest
 
         assertEquals( expected, actual );
 
-    }    
-    
+    }
+
     @Test
     public void testDecomposeWithoutLabelsProducesFourTraces()
     {
         // Create an ensemble time-series with four members
-        Instant baseInstant = Instant.parse( THIRTEENTH_TIME );
+        Instant baseInstant = T2086_05_01T00_00_00Z;
 
         TimeSeries<Ensemble> ensemble =
                 new TimeSeriesBuilder<Ensemble>()
@@ -406,7 +408,7 @@ public final class TimeSeriesSlicerTest
     public void testDecomposeWithLabelsProducesFourTraces()
     {
         // Create an ensemble time-series with four members
-        Instant baseInstant = Instant.parse( THIRTEENTH_TIME );
+        Instant baseInstant = T2086_05_01T00_00_00Z;
 
         String[] labels = new String[] { "a", "b", "c", "d" };
 
@@ -487,7 +489,7 @@ public final class TimeSeriesSlicerTest
     public void testDecomposeAndThenComposeWithoutLabelsProducesTheSameSeries()
     {
         // Create an ensemble time-series with four members
-        Instant baseInstant = Instant.parse( THIRTEENTH_TIME );
+        Instant baseInstant = T2086_05_01T00_00_00Z;
 
         TimeSeries<Ensemble> expected =
                 new TimeSeriesBuilder<Ensemble>()
@@ -513,7 +515,7 @@ public final class TimeSeriesSlicerTest
     public void testDecomposeAndThenComposeWithLabelsProducesTheSameSeries()
     {
         // Create an ensemble time-series with four members
-        Instant baseInstant = Instant.parse( THIRTEENTH_TIME );
+        Instant baseInstant = T2086_05_01T00_00_00Z;
 
         String[] labels = new String[] { "a", "b", "c", "d" };
 
@@ -552,48 +554,48 @@ public final class TimeSeriesSlicerTest
         SortedSet<Event<Pair<Double, Double>>> third = new TreeSet<>();
         PoolOfPairsBuilder<Double, Double> b = new PoolOfPairsBuilder<>();
 
-        Instant firstBasisTime = Instant.parse( FIRST_TIME );
-        first.add( Event.of( Instant.parse( SECOND_TIME ), Pair.of( 1.0, 10.0 ) ) );
-        first.add( Event.of( Instant.parse( THIRD_TIME ), Pair.of( 2.0, 11.0 ) ) );
-        first.add( Event.of( Instant.parse( FOURTH_TIME ), Pair.of( 3.0, 12.0 ) ) );
+        Instant firstBasisTime = T1985_01_01T00_00_00Z;
+        first.add( Event.of( T1985_01_01T01_00_00Z, Pair.of( 1.0, 10.0 ) ) );
+        first.add( Event.of( T1985_01_01T02_00_00Z, Pair.of( 2.0, 11.0 ) ) );
+        first.add( Event.of( T1985_01_01T03_00_00Z, Pair.of( 3.0, 12.0 ) ) );
 
-        Instant secondBasisTime = Instant.parse( FIFTH_TIME );
-        second.add( Event.of( Instant.parse( SIXTH_TIME ),
+        Instant secondBasisTime = T1985_01_02T00_00_00Z;
+        second.add( Event.of( T1985_01_02T01_00_00Z,
                               Pair.of( 4.0, 13.0 ) ) );
-        second.add( Event.of( Instant.parse( SEVENTH_TIME ),
+        second.add( Event.of( T1985_01_02T02_00_00Z,
                               Pair.of( 5.0, 14.0 ) ) );
-        second.add( Event.of( Instant.parse( EIGHTH_TIME ),
+        second.add( Event.of( T1985_01_02T03_00_00Z,
                               Pair.of( 6.0, 15.0 ) ) );
 
-        Instant thirdBasisTime = Instant.parse( NINTH_TIME );
-        third.add( Event.of( Instant.parse( TENTH_TIME ), Pair.of( 7.0, 16.0 ) ) );
-        third.add( Event.of( Instant.parse( ELEVENTH_TIME ), Pair.of( 8.0, 17.0 ) ) );
-        third.add( Event.of( Instant.parse( TWELFTH_TIME ), Pair.of( 9.0, 18.0 ) ) );
+        Instant thirdBasisTime = T1985_01_03T00_00_00Z;
+        third.add( Event.of( T1985_01_03T01_00_00Z, Pair.of( 7.0, 16.0 ) ) );
+        third.add( Event.of( T1985_01_03T02_00_00Z, Pair.of( 8.0, 17.0 ) ) );
+        third.add( Event.of( T1985_01_03T03_00_00Z, Pair.of( 9.0, 18.0 ) ) );
         SampleMetadata meta = SampleMetadata.of();
 
         //Add the time-series
         PoolOfPairs<Double, Double> firstSeries = b.addTimeSeries( TimeSeries.of( firstBasisTime,
-                                                                                        first ) )
-                                                         .addTimeSeries( TimeSeries.of( secondBasisTime,
-                                                                                        second ) )
-                                                         .addTimeSeries( TimeSeries.of( thirdBasisTime,
-                                                                                        third ) )
-                                                         .setMetadata( meta )
-                                                         .build();
+                                                                                  first ) )
+                                                   .addTimeSeries( TimeSeries.of( secondBasisTime,
+                                                                                  second ) )
+                                                   .addTimeSeries( TimeSeries.of( thirdBasisTime,
+                                                                                  third ) )
+                                                   .setMetadata( meta )
+                                                   .build();
 
         // Filter all values where the left side is greater than 0
         PoolOfPairs<Double, Double> firstResult =
                 TimeSeriesSlicer.filter( firstSeries,
-                               Slicer.left( value -> value > 0 ),
-                               null );
+                                         Slicer.left( value -> value > 0 ),
+                                         null );
 
         assertTrue( firstResult.getRawData().equals( firstSeries.getRawData() ) );
 
         // Filter all values where the left side is greater than 3
         PoolOfPairs<Double, Double> secondResult =
                 TimeSeriesSlicer.filter( firstSeries,
-                               Slicer.left( value -> value > 3 ),
-                               clim -> clim > 0 );
+                                         Slicer.left( value -> value > 3 ),
+                                         clim -> clim > 0 );
 
         List<Event<Pair<Double, Double>>> secondData = new ArrayList<>();
         secondResult.get().forEach( nextSeries -> nextSeries.getEvents().forEach( secondData::add ) );
@@ -612,8 +614,8 @@ public final class TimeSeriesSlicerTest
         // Filter all values where the left and right sides are both greater than or equal to 7
         PoolOfPairs<Double, Double> thirdResult =
                 TimeSeriesSlicer.filter( firstSeries,
-                               Slicer.leftAndRight( value -> value >= 7 ),
-                               null );
+                                         Slicer.leftAndRight( value -> value >= 7 ),
+                                         null );
 
         List<Event<Pair<Double, Double>>> thirdData = new ArrayList<>();
         thirdResult.get().forEach( nextSeries -> nextSeries.getEvents().forEach( thirdData::add ) );
@@ -625,9 +627,9 @@ public final class TimeSeriesSlicerTest
         // Filter on climatology simultaneously
         PoolOfPairs<Double, Double> fourthResult =
                 TimeSeriesSlicer.filter( b.build(),
-                               Slicer.leftAndRight( value -> value > 7 ),
-                               Double::isFinite );
-        
+                                         Slicer.leftAndRight( value -> value > 7 ),
+                                         Double::isFinite );
+
         assertTrue( fourthResult.getClimatology().equals( climatologyExpected ) );
 
         // Also filter baseline data
@@ -638,8 +640,8 @@ public final class TimeSeriesSlicerTest
         // Filter all values where both sides are greater than or equal to 4
         PoolOfPairs<Double, Double> fifthResult =
                 TimeSeriesSlicer.filter( b.build(),
-                               Slicer.left( value -> value >= 4 ),
-                               clim -> clim > 0 );
+                                         Slicer.left( value -> value >= 4 ),
+                                         clim -> clim > 0 );
 
         List<Event<Pair<Double, Double>>> fifthData = new ArrayList<>();
         fifthResult.get().forEach( nextSeries -> nextSeries.getEvents().forEach( fifthData::add ) );
@@ -658,5 +660,66 @@ public final class TimeSeriesSlicerTest
         assertTrue( fifthDataBase.equals( fifthBenchmarkBase ) );
 
     }
+
+    @Test
+    public void testSnipWithBufferOnLowerBoundAndUpperBound()
+    {
+        // Build a time-series to snip
+        SortedSet<Event<Double>> first = new TreeSet<>();
+
+        first.add( Event.of( Instant.parse( "2010-01-01T13:00:00Z" ), 1.0 ) );
+        first.add( Event.of( Instant.parse( "2010-01-01T14:00:00Z" ), 2.0 ) );
+        first.add( Event.of( T2010_01_01T15_00_00Z, 3.0 ) );
+        first.add( Event.of( Instant.parse( "2010-01-01T16:00:00Z" ), 4.0 ) );
+        first.add( Event.of( Instant.parse( "2010-01-01T17:00:00Z" ), 5.0 ) );
+
+        TimeSeries<Double> toSnip = TimeSeries.of( T2010_01_01T12_00_00Z, first );
+
+        // Build a time-series to snip against
+        TimeSeries<Double> snipTo =
+                TimeSeries.of( T2010_01_01T12_00_00Z,
+                               new TreeSet<>( Set.of( Event.of( T2010_01_01T15_00_00Z,
+                                                                6.0 ) ) ) );
+
+        // Add a buffer of one time-step on the lower and upper boundaries
+        Duration buffer = Duration.ofHours( 1 );
+
+        // Snip
+        TimeSeries<Double> actual = TimeSeriesSlicer.snip( toSnip, snipTo, buffer, buffer );
+
+        // Create the expected series
+        SortedSet<Event<Double>> expectedEvents = new TreeSet<>();
+
+        expectedEvents.add( Event.of( Instant.parse( "2010-01-01T14:00:00Z" ), 2.0 ) );
+        expectedEvents.add( Event.of( T2010_01_01T15_00_00Z, 3.0 ) );
+        expectedEvents.add( Event.of( Instant.parse( "2010-01-01T16:00:00Z" ), 4.0 ) );
+
+        TimeSeries<Double> expected = TimeSeries.of( T2010_01_01T12_00_00Z, expectedEvents );
+
+        assertEquals( expected, actual );
+    }
     
+    @Test
+    public void testApplyTimeOffsetToValidTimes()
+    {
+        // Build a time-series to adjust
+        SortedSet<Event<Double>> first = new TreeSet<>();
+        first.add( Event.of( T2010_01_01T15_00_00Z, 3.0 ) );
+
+        TimeSeries<Double> toAdjust = TimeSeries.of( T2010_01_01T12_00_00Z, first );
+
+        // Add an offset of one hour
+        Duration offset = Duration.ofHours( 1 );
+
+        // Adjust
+        TimeSeries<Double> actual = TimeSeriesSlicer.applyOffsetToValidTimes( toAdjust, offset );
+
+        // Create the expected series
+        SortedSet<Event<Double>> expectedEvents = new TreeSet<>();
+        expectedEvents.add( Event.of( Instant.parse( "2010-01-01T16:00:00Z" ), 3.0 ) );
+        TimeSeries<Double> expected = TimeSeries.of( T2010_01_01T12_00_00Z, expectedEvents );
+
+        assertEquals( expected, actual );
+    }    
+
 }

@@ -27,6 +27,8 @@ import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A utility class for slicing/dicing and transforming time-series datasets. 
@@ -42,6 +44,12 @@ public final class TimeSeriesSlicer
      * Null input error message.
      */
     private static final String NULL_INPUT_EXCEPTION = "Specify a non-null input.";
+
+    /**
+     * Logger.
+     */
+
+    private static final Logger LOGGER = LoggerFactory.getLogger( TimeSeriesSlicer.class );
 
     /**
      * <p>Composes the input predicate as applying to the left side of any paired value within a time-series.
@@ -797,6 +805,102 @@ public final class TimeSeriesSlicer
         }
 
         return builder.build();
+    }
+
+    /**
+     * Snips the first series to the bounds of the second series.
+     * 
+     * @param <S> the type of time-series event value in the series to snip
+     * @param toSnip the series to snip
+     * @param snipTo the series to snip to
+     * @param lowerBuffer an optional buffer to subtract from the lower bound
+     * @param upperBuffer an optional buffer to add to the upper bound
+     * @return a snipped series
+     * @throws NullPointerException if toSnip or snipTo is null
+     */
+
+    public static <S> TimeSeries<S> snip( TimeSeries<S> toSnip,
+                                          TimeSeries<?> snipTo,
+                                          Duration lowerBuffer,
+                                          Duration upperBuffer )
+    {
+        Objects.requireNonNull( toSnip );
+        Objects.requireNonNull( snipTo );
+
+        Instant lower = snipTo.getEvents().first().getTime();
+        Instant upper = snipTo.getEvents().last().getTime();
+
+        // Adjust the lower bound
+        if ( Objects.nonNull( lowerBuffer ) )
+        {
+            lower = lower.minus( lowerBuffer );
+        }
+
+        // Adjust the upper bound
+        if ( Objects.nonNull( upperBuffer ) )
+        {
+            upper = upper.plus( upperBuffer );
+        }
+
+        TimeSeriesBuilder<S> snippedSeries = new TimeSeriesBuilder<>();
+        snippedSeries.addReferenceTimes( toSnip.getReferenceTimes() )
+                     .setTimeScale( toSnip.getTimeScale() );
+        for ( Event<S> next : toSnip.getEvents() )
+        {
+            Instant nextTime = next.getTime();
+
+            if ( nextTime.compareTo( lower ) >= 0 && nextTime.compareTo( upper ) <= 0 )
+            {
+                snippedSeries.addEvent( next );
+            }
+        }
+
+        return snippedSeries.build();
+    }
+
+    /**
+     * Adds a prescribed offset to the valid time of each time-series in the list.
+     * 
+     * @param <T> the time-series event value type
+     * @param toTransform the list of time-series to transform
+     * @param offset the offset to add
+     * @return the adjusted time-series
+     */
+
+    public static <T> TimeSeries<T> applyOffsetToValidTimes( TimeSeries<T> toTransform, Duration offset )
+    {
+        Objects.requireNonNull( toTransform );
+        Objects.requireNonNull( offset );
+
+        TimeSeries<T> transformed = toTransform;
+
+        // Transform valid times?
+        if ( !Duration.ZERO.equals( offset ) )
+        {
+            SortedSet<Event<T>> events = toTransform.getEvents();
+            TimeSeriesBuilder<T> timeTransformed = new TimeSeriesBuilder<>();
+            timeTransformed.addReferenceTimes( toTransform.getReferenceTimes() )
+                           .setTimeScale( toTransform.getTimeScale() );
+
+            for ( Event<T> next : events )
+            {
+                Instant adjustedTime = next.getTime()
+                                           .plus( offset );
+                Event<T> event = Event.of( adjustedTime, next.getValue() );
+                timeTransformed.addEvent( event );
+            }
+
+            transformed = timeTransformed.build();
+
+            if ( LOGGER.isTraceEnabled() )
+            {
+                LOGGER.trace( "Added {} to the valid times associated with time-series {}.",
+                              offset,
+                              transformed.hashCode() );
+            }
+        }
+
+        return transformed;
     }
 
     /**

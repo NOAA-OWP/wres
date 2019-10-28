@@ -190,16 +190,16 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
 
         ScriptBuilder scripter = new ScriptBuilder( GET_ALL_TIME_SERIES_SCRIPT );
 
-        // Add basic constraints
+        // Add basic constraints at zero tabs
         this.addProjectVariableAndMemberConstraints( scripter, 0 );
 
-        // Add time window constraint
+        // Add time window constraint at zero tabs
         this.addTimeWindowClause( scripter, 0 );
 
-        // Add season constraint
+        // Add season constraint at one tab
         this.addSeasonClause( scripter, 1 );
 
-        // Add ensemble member constraints
+        // Add ensemble member constraints at one tab
         this.addEnsembleMemberClauses( scripter, 1 );
 
         String groupBySource = ", TSS.source_id";
@@ -249,7 +249,7 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
      * @throws NullPointerException if the input is null
      */
 
-    void addEnsembleMemberClauses( ScriptBuilder script, int tabsIn )
+    private void addEnsembleMemberClauses( ScriptBuilder script, int tabsIn )
     {
         Objects.requireNonNull( script );
 
@@ -288,7 +288,7 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
     }
 
     /**
-     * Returns a function that obtains the measured value in the desired units.
+     * Returns a function that obtains the measured value in the desired units from a {@link DataProvider}.
      * 
      * TODO: include the labels too, once they are needed. See #56214-37 for the amended script. When processing these, 
      * obtain the labels from a local cache, because they will be repeated across many ensembles, typically, and 

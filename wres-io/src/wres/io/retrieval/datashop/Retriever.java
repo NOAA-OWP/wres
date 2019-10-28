@@ -9,7 +9,7 @@ import java.util.stream.Stream;
 
 /**
  * <p>An API for performing read operations on data objects of type <code>T</code>. Retrievers that read specific data 
- * types, <code>T</code>, from specific data stores should implement this interface.
+ * types from specific data stores should implement this interface.
  * 
  * @author james.brown@hydrosolved.com
  * @param <T> the type of object to retrieve
@@ -27,7 +27,7 @@ public interface Retriever<T> extends Supplier<Stream<T>>
      */
 
     Optional<T> get( long identifier );
-    
+
     /**
      * Returns the identifiers associated with all objects.
      * 
@@ -36,7 +36,7 @@ public interface Retriever<T> extends Supplier<Stream<T>>
      */
 
     LongStream getAllIdentifiers();
-    
+
     /**
      * Reads a collection of objects, by unique identifier, into a stream. This implementation reads each object
      * sequentially. Implementations that benefit from reading multiple objects at once should override this default.
@@ -57,9 +57,10 @@ public interface Retriever<T> extends Supplier<Stream<T>>
         Stream<Optional<T>> optionals = identifiers.mapToObj( supplier );
 
         // Filter for objects that exist
-        return optionals.filter( Optional::isPresent ).map( Optional::get );
+        return optionals.filter( Optional::isPresent )
+                        .map( Optional::get );
     }
-    
+
     /**
      * Reads all objects. This implementation reads each object sequentially. Implementations that benefit from reading 
      * multiple objects at once should override this default.
@@ -72,5 +73,5 @@ public interface Retriever<T> extends Supplier<Stream<T>>
     {
         return this.get( this.getAllIdentifiers() );
     }
-    
+
 }

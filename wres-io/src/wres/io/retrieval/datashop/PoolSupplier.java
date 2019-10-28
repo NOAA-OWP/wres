@@ -51,7 +51,7 @@ import wres.config.generated.DesiredTimeScaleConfig;
 
 /**
  * <p>Supplies a {@link PoolOfPairs}, which is used to compute one or more verification statistics. The overall 
- * responsibility of the {@link PoolOfPairsSupplier} is to supply a {@link PoolOfPairs} on request. This is fulfilled 
+ * responsibility of the {@link PoolSupplier} is to supply a {@link PoolOfPairs} on request. This is fulfilled 
  * by completing several smaller activities in sequence, namely:</p> 
  * 
  * <ol>
@@ -73,14 +73,14 @@ import wres.config.generated.DesiredTimeScaleConfig;
  * @param <R> the type of right value in each pair and, where applicable, the type of baseline value
  */
 
-public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
+public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
 {
 
     /**
      * Logger.
      */
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( PoolOfPairsSupplier.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( PoolSupplier.class );
 
     /**
      * If <code>true</code>, when conducting upscaling, target periods that increment regularly, <code>false</code>
@@ -367,7 +367,7 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
     }
 
     /**
-     * Builder for a {@link PoolOfPairsSupplier}.
+     * Builder for a {@link PoolSupplier}.
      * 
      * @author james.brown@hydrosolved.com
      * @param <L> the left type of paired value
@@ -642,14 +642,14 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         }
 
         /**
-         * Builds a {@link PoolOfPairsSupplier}.
+         * Builds a {@link PoolSupplier}.
          * 
          * @return a pool supplier
          */
 
-        PoolOfPairsSupplier<L, R> build()
+        PoolSupplier<L, R> build()
         {
-            return new PoolOfPairsSupplier<>( this );
+            return new PoolSupplier<>( this );
         }
     }
 
@@ -717,8 +717,9 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
 
         Objects.requireNonNull( right );
 
-        // Snip the left data to the right
-        TimeSeries<L> scaledLeft = this.snip( left, right, desiredTimeScale );
+        // Snip the left data to the right with a buffer on the lower bound, if required
+        Duration period = this.getPeriodFromTimeScale( desiredTimeScale );
+        TimeSeries<L> scaledLeft = TimeSeriesSlicer.snip( left, right, period, Duration.ZERO );
         TimeSeries<R> scaledRight = right;
         boolean upscaleLeft = Objects.nonNull( desiredTimeScale ) && !desiredTimeScale.equals( left.getTimeScale() );
         boolean upscaleRight = Objects.nonNull( desiredTimeScale ) && !desiredTimeScale.equals( right.getTimeScale() );
@@ -755,7 +756,7 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
             }
 
             // Log any warnings
-            PoolOfPairsSupplier.logScaleValidationWarnings( left, upscaledLeft.getValidationEvents() );
+            PoolSupplier.logScaleValidationWarnings( left, upscaledLeft.getValidationEvents() );
         }
 
         // Upscale right?
@@ -790,7 +791,7 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
             }
 
             // Log any warnings
-            PoolOfPairsSupplier.logScaleValidationWarnings( right, upscaledRight.getValidationEvents() );
+            PoolSupplier.logScaleValidationWarnings( right, upscaledRight.getValidationEvents() );
         }
 
         // Transform the rescaled values, if required
@@ -805,7 +806,7 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         // By default, the desired frequency is the period associated with the desired time scale
         // aka, "back-to-back", but an explicit frequency otherwise
         // Filter any unwanted pairs from the superset
-        if ( PoolOfPairsSupplier.REGULAR_PAIRS && upscaleLeft && upscaleRight )
+        if ( PoolSupplier.REGULAR_PAIRS && upscaleLeft && upscaleRight )
         {
             pairs = this.filterUpscaledPairsByFrequency( pairs,
                                                          this.getReferenceTime( pairs ),
@@ -1007,7 +1008,7 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
     }
 
     /**
-     * Applies a transformation and/or a time offset to the input series.
+     * Applies a transformation to the input series.
      * 
      * @param <T> the event value type
      * @param toTransform the time-series to transform
@@ -1293,100 +1294,6 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
     }
 
     /**
-     * Snips the first series to the bounds of the second series. If supplied, the {@TimeScale#getPeriod()} is 
-     * subtracted from the lower bound of the second series before snipping.
-     * 
-     * @param toSnip the series to snip
-     * @param snipTo the series to snip to
-     * @param desiredTimeScale the desired time scale, which is optional
-     * @return a snipped series
-     * @throws NullPointerException if toSnip or snipTo is null
-     */
-
-    private <S, T> TimeSeries<S> snip( TimeSeries<S> toSnip,
-                                       TimeSeries<T> snipTo,
-                                       TimeScale desiredTimeScale )
-    {
-        Objects.requireNonNull( toSnip );
-        Objects.requireNonNull( snipTo );
-
-        Instant lower = snipTo.getEvents().first().getTime();
-        Instant upper = snipTo.getEvents().last().getTime();
-
-        // Subtract the period from the lower bound
-        if ( Objects.nonNull( desiredTimeScale ) )
-        {
-            lower = lower.minus( desiredTimeScale.getPeriod() );
-        }
-
-        TimeSeriesBuilder<S> snippedSeries = new TimeSeriesBuilder<>();
-        snippedSeries.addReferenceTimes( toSnip.getReferenceTimes() )
-                     .setTimeScale( toSnip.getTimeScale() );
-        for ( Event<S> next : toSnip.getEvents() )
-        {
-            Instant nextTime = next.getTime();
-
-            if ( nextTime.compareTo( lower ) >= 0 && nextTime.compareTo( upper ) <= 0 )
-            {
-                snippedSeries.addEvent( next );
-            }
-        }
-
-        return snippedSeries.build();
-    }
-
-    /**
-     * Adds a prescribed offset to the valid time of each time-series in the list.
-     * 
-     * @param <T> the time-series event value type
-     * @param toTransform the list of time-series to transform
-     * @param offset the offset to add
-     * @return the adjusted time-series
-     */
-
-    private <T> List<TimeSeries<T>> applyValidTimeOffset( List<TimeSeries<T>> toTransform, Duration offset )
-    {
-
-        List<TimeSeries<T>> transformed = toTransform;
-
-        // Transform valid times?
-        if ( Objects.nonNull( toTransform )
-             && Objects.nonNull( offset )
-             && !Duration.ZERO.equals( offset ) )
-        {
-            transformed = new ArrayList<>();
-
-            for ( TimeSeries<T> nextSeries : toTransform )
-            {
-                SortedSet<Event<T>> events = nextSeries.getEvents();
-                TimeSeriesBuilder<T> timeTransformed = new TimeSeriesBuilder<>();
-                timeTransformed.addReferenceTimes( nextSeries.getReferenceTimes() )
-                               .setTimeScale( nextSeries.getTimeScale() );
-
-                for ( Event<T> next : events )
-                {
-                    Instant adjustedTime = next.getTime().plus( offset );
-                    timeTransformed.addEvent( Event.of( adjustedTime, next.getValue() ) );
-                }
-
-                transformed.add( timeTransformed.build() );
-
-                if ( LOGGER.isTraceEnabled() )
-                {
-                    LOGGER.trace( "Added {} to the valid times associated with time-series {}.",
-                                  offset,
-                                  transformed.hashCode() );
-                }
-            }
-
-            // Render immutable
-            transformed = Collections.unmodifiableList( transformed );
-        }
-
-        return transformed;
-    }
-
-    /**
      * Consolidates and snips the input series to the prescribed time window.
      * 
      * @param <P> the time-series event type for the data to be snipped
@@ -1455,6 +1362,58 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
     }
 
     /**
+     * Adds a prescribed offset to the valid time of each time-series in the list.
+     * 
+     * @param <T> the time-series event value type
+     * @param toTransform the list of time-series to transform
+     * @param offset the offset to add
+     * @return the adjusted time-series
+     */
+
+    private <T> List<TimeSeries<T>> applyValidTimeOffset( List<TimeSeries<T>> toTransform, Duration offset )
+    {
+
+        List<TimeSeries<T>> transformed = toTransform;
+
+        // Transform valid times?
+        if ( Objects.nonNull( toTransform )
+             && Objects.nonNull( offset )
+             && !Duration.ZERO.equals( offset ) )
+        {
+            transformed = new ArrayList<>();
+
+            for ( TimeSeries<T> nextSeries : toTransform )
+            {
+                TimeSeries<T> nextTransformed = TimeSeriesSlicer.applyOffsetToValidTimes( nextSeries, offset );
+                transformed.add( nextTransformed );
+            }
+
+            // Render immutable
+            transformed = Collections.unmodifiableList( transformed );
+        }
+
+        return transformed;
+    }
+
+    /**
+     * Returns the period from the prescribed time scale or <code>null</code> if the time scale is <code>null</code>.
+     * 
+     * @return the period associated with the time scale or null
+     */
+
+    private Duration getPeriodFromTimeScale( TimeScale timeScale )
+    {
+        Duration period = null;
+
+        if ( Objects.nonNull( timeScale ) )
+        {
+            period = timeScale.getPeriod();
+        }
+
+        return period;
+    }
+
+    /**
      * Hidden constructor.  
      * 
      * @param builder the builder
@@ -1462,7 +1421,7 @@ public class PoolOfPairsSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
      * @throws IllegalArgumentException if some input is inconsistent
      */
 
-    private PoolOfPairsSupplier( PoolOfPairsSupplierBuilder<L, R> builder )
+    private PoolSupplier( PoolOfPairsSupplierBuilder<L, R> builder )
     {
         // Set
         this.climatology = builder.climatology;
