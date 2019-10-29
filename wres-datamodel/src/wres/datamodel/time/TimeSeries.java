@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 import wres.datamodel.scale.TimeScale;
 
 /**
- * <p>A time-series contains a time-ordered set of {@link Event}, together with one or more reference datetimes and 
+ * <p>A time-series contains a time-ordered set of {@link Event}, together with zero or more reference datetimes and 
  * associated {@link ReferenceTimeType}.
  * 
  * <p><b>Implementation Notes:</b>
@@ -37,7 +37,7 @@ public class TimeSeries<T>
     private static final Logger LOGGER = LoggerFactory.getLogger( TimeSeries.class );
 
     /**
-     * The one or more reference datetimes associated with the time-series.
+     * The zero or more reference datetimes associated with the time-series.
      */
 
     private final Map<ReferenceTimeType, Instant> referenceTimes;
@@ -67,9 +67,7 @@ public class TimeSeries<T>
     }
     
     /**
-     * Returns a {@link TimeSeries} with a reference time equal to the {@link Event#getTime()} of the first event or 
-     * {@link Instant#MIN} when the input is empty. Assumes a type of {@link ReferenceTimeType#DEFAULT}. Also assumes
-     * a time-scale of {@link TimeScale#of()}.
+     * Returns a {@link TimeSeries} without any reference times. Assumes a time-scale of {@link TimeScale#of()}.
      *
      * @param <T> the event type
      * @param events the events
@@ -83,7 +81,7 @@ public class TimeSeries<T>
     }
 
     /**
-     * Returns a {@link TimeSeries} with a reference time type of {@link ReferenceTimeType#DEFAULT}. Assumes a 
+     * Returns a {@link TimeSeries} with a reference time type of {@link ReferenceTimeType#UNKNOWN}. Assumes a 
      * time-scale of {@link TimeScale#of()}.
      * 
      * @param <T> the event type
@@ -96,11 +94,11 @@ public class TimeSeries<T>
     public static <T> TimeSeries<T> of( Instant referenceTime,
                                         SortedSet<Event<T>> events )
     {
-        return TimeSeries.of( Collections.singletonMap( ReferenceTimeType.DEFAULT, referenceTime ), events );
+        return TimeSeries.of( Collections.singletonMap( ReferenceTimeType.UNKNOWN, referenceTime ), events );
     }
 
     /**
-     * Returns a {@link TimeSeries}. Also assumes a time-scale of {@link TimeScale#of()}.
+     * Returns a {@link TimeSeries}. Assumes a time-scale of {@link TimeScale#of()}.
      * 
      * @param <T> the event type
      * @param referenceTime the reference time
@@ -118,7 +116,7 @@ public class TimeSeries<T>
     }
 
     /**
-     * Returns a {@link TimeSeries}.  Also assumes a time-scale of {@link TimeScale#of()}.
+     * Returns a {@link TimeSeries}.  Assumes a time-scale of {@link TimeScale#of()}.
      * 
      * @param <T> the event type
      * @param referenceTimes the reference times
@@ -237,25 +235,6 @@ public class TimeSeries<T>
 
         Map<ReferenceTimeType, Instant> localMap = new EnumMap<>( ReferenceTimeType.class );
         localMap.putAll( builder.referenceTimes );
-
-        // Add a default reference time if needed
-        if ( localMap.isEmpty() )
-        {
-            Instant defaultTime = Instant.MIN;
-            ReferenceTimeType defaultType = ReferenceTimeType.DEFAULT;
-
-            if ( !this.getEvents().isEmpty() )
-            {
-                defaultTime = this.getEvents().first().getTime();
-            }
-
-            localMap.put( defaultType, defaultTime );
-
-            LOGGER.trace( "Added a default reference time of {} and type {} for time-series {}.",
-                          defaultTime,
-                          defaultType,
-                          this.hashCode() );
-        }
 
         this.referenceTimes = Collections.unmodifiableMap( localMap );
 

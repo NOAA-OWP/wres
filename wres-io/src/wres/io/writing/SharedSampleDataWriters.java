@@ -61,15 +61,14 @@ public class SharedSampleDataWriters implements Consumer<SampleData<?>>, Supplie
      * @param outputPath the required output path
      * @param timeResolution the required time resolution for writing pairs
      * @param decimalFormatter the optional decimal formatter
-     * @param hasForecastType is true to include calculated lead durations, false to declare them as zero
      * @return the container of shared writers
      * @throws NullPointerException if the outputPath or timeResolution is null
      */
 
     public static SharedSampleDataWriters
-            of( Path outputPath, ChronoUnit timeResolution, DecimalFormat decimalFormatter, boolean hasForecastType )
+            of( Path outputPath, ChronoUnit timeResolution, DecimalFormat decimalFormatter )
     {
-        return new SharedSampleDataWriters( outputPath, timeResolution, decimalFormatter, hasForecastType );
+        return new SharedSampleDataWriters( outputPath, timeResolution, decimalFormatter );
     }
 
     @Override
@@ -185,18 +184,15 @@ public class SharedSampleDataWriters implements Consumer<SampleData<?>>, Supplie
      * @param outputPath the required output path
      * @param timeResolution the required time resolution for writing pairs
      * @param decimalFormatter the optional decimal formatter
-     * @param hasForecastType is true to include calculated lead durations, false to declare them as zero
      * @throws NullPointerException if the outputPath or timeResolution is null
      */
     private SharedSampleDataWriters( Path outputPath,
                                      ChronoUnit timeResolution,
-                                     DecimalFormat decimalFormatter,
-                                     boolean hasForecastType )
+                                     DecimalFormat decimalFormatter )
     {
         this.singleValuedWriter = SingleValuedPairsWriter.of( outputPath,
                                                               timeResolution,
-                                                              decimalFormatter,
-                                                              hasForecastType );
+                                                              decimalFormatter );
 
         this.ensembleWriter = EnsemblePairsWriter.of( outputPath, timeResolution, decimalFormatter );
     }

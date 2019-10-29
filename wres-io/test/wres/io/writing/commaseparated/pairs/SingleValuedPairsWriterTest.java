@@ -85,7 +85,7 @@ public final class SingleValuedPairsWriterTest
                                    DatasetIdentifier.of( Location.of( "PLUM" ), "RIFLE" ) );
 
         TimeSeries<Pair<Double, Double>> timeSeriesOne =
-                TimeSeries.of( basisTime, ReferenceTimeType.DEFAULT, setOfPairs );
+                TimeSeries.of( basisTime, ReferenceTimeType.UNKNOWN, setOfPairs );
 
         pairs = tsBuilder.addTimeSeries( timeSeriesOne ).setMetadata( meta ).build();
 
@@ -105,7 +105,7 @@ public final class SingleValuedPairsWriterTest
                                    DatasetIdentifier.of( Location.of( "ORANGE" ), "PISTOL" ) );
 
         TimeSeries<Pair<Double, Double>> timeSeriesTwo =
-                TimeSeries.of( basisTimeTwo, ReferenceTimeType.DEFAULT, setOfPairsTwo );
+                TimeSeries.of( basisTimeTwo, ReferenceTimeType.UNKNOWN, setOfPairsTwo );
 
         pairsTwo = tsBuilderTwo.addTimeSeries( timeSeriesTwo ).setMetadata( metaTwo ).build();
 
@@ -126,7 +126,7 @@ public final class SingleValuedPairsWriterTest
                                    DatasetIdentifier.of( Location.of( "BANANA" ), "GRENADE" ) );
 
         TimeSeries<Pair<Double, Double>> timeSeriesThree =
-                TimeSeries.of( basisTimeThree, ReferenceTimeType.DEFAULT, setOfPairsThree );
+                TimeSeries.of( basisTimeThree, ReferenceTimeType.UNKNOWN, setOfPairsThree );
 
         pairsThree = tsBuilderThree.addTimeSeries( timeSeriesThree ).setMetadata( metaThree ).build();
     }
@@ -144,7 +144,7 @@ public final class SingleValuedPairsWriterTest
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ), PairsWriter.DEFAULT_PAIRS_NAME );
 
         // Create the writer
-        try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS, true ) )
+        try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS ) )
         {
 
             PoolOfPairsBuilder<Double, Double> tsBuilder = new PoolOfPairsBuilder<>();
@@ -187,7 +187,7 @@ public final class SingleValuedPairsWriterTest
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ), PairsWriter.DEFAULT_PAIRS_NAME );
 
         // Create the writer
-        try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS, true ) )
+        try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS ) )
         {
 
             // Write the pairs
@@ -225,7 +225,7 @@ public final class SingleValuedPairsWriterTest
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ), PairsWriter.DEFAULT_PAIRS_NAME );
 
         // Create the writer
-        try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS, true ) )
+        try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS ) )
         {
 
             // Create the pairs with a time window
@@ -298,7 +298,7 @@ public final class SingleValuedPairsWriterTest
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ), PairsWriter.DEFAULT_PAIRS_NAME );
 
         // Create the writer
-        try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS, true ) )
+        try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS ) )
         {
 
             // Write the pairs
@@ -346,7 +346,7 @@ public final class SingleValuedPairsWriterTest
         DecimalFormat formatter = new DecimalFormat();
         formatter.applyPattern( "0.0" );
         try ( SingleValuedPairsWriter writer =
-                SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS, formatter, true ) )
+                SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS, formatter ) )
         {
 
             // Write the pairs async on the common FJP
@@ -397,7 +397,7 @@ public final class SingleValuedPairsWriterTest
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ), PairsWriter.DEFAULT_PAIRS_NAME );
 
         // Create the writer
-        try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS, false ) )
+        try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS ) )
         {
 
             // Write the pairs

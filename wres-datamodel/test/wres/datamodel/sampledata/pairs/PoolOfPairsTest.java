@@ -185,7 +185,7 @@ public final class PoolOfPairsTest
         }
 
         TimeSeries<Pair<Double, Double>> firstSeries =
-                new TimeSeriesBuilder<Pair<Double, Double>>().addReferenceTime( basisTime, ReferenceTimeType.DEFAULT )
+                new TimeSeriesBuilder<Pair<Double, Double>>().addReferenceTime( basisTime, ReferenceTimeType.UNKNOWN )
                                                              .addEvents( first )
                                                              .setTimeScale( TimeScale.of() )
                                                              .build();
@@ -193,7 +193,7 @@ public final class PoolOfPairsTest
 
         b.addTimeSeries( firstSeries ).setMetadata( meta );
 
-        String expected = "Reference times: {DEFAULT=1985-01-01T00:00:00Z}, "
+        String expected = "Reference times: {UNKNOWN=1985-01-01T00:00:00Z}, "
                           + "Events: ["
                           + "(1985-01-01T00:00:00Z,(1.0,1.0)), "
                           + "(1985-01-01T01:00:00Z,(1.0,1.0)), "
@@ -218,14 +218,14 @@ public final class PoolOfPairsTest
 
         TimeSeries<Pair<Double, Double>> secondSeries =
                 new TimeSeriesBuilder<Pair<Double, Double>>().addReferenceTime( nextBasisTime,
-                                                                                ReferenceTimeType.DEFAULT )
+                                                                                ReferenceTimeType.UNKNOWN )
                                                              .addEvents( second )
                                                              .setTimeScale( TimeScale.of() )
                                                              .build();
 
         b.addTimeSeries( secondSeries );
 
-        String expectedFirst = "Reference times: {DEFAULT=1985-01-01T00:00:00Z}, "
+        String expectedFirst = "Reference times: {UNKNOWN=1985-01-01T00:00:00Z}, "
                                + "Events: ["
                                + "(1985-01-01T00:00:00Z,(1.0,1.0)), "
                                + "(1985-01-01T01:00:00Z,(1.0,1.0)), "
@@ -235,7 +235,7 @@ public final class PoolOfPairsTest
                                + "], "
                                + "TimeScale: [INSTANTANEOUS]";
 
-        String expectedSecond = "Reference times: {DEFAULT=1985-01-02T00:00:00Z}, "
+        String expectedSecond = "Reference times: {UNKNOWN=1985-01-02T00:00:00Z}, "
                                 + "Events: ["
                                 + "(1985-01-02T00:00:00Z,(1.0,1.0)), "
                                 + "(1985-01-02T01:00:00Z,(1.0,1.0)), "
@@ -372,33 +372,6 @@ public final class PoolOfPairsTest
             j++;
         }
         assertEquals( 2, j, 0.0001 ); // All elements iterated
-
-        // Iterate by duration
-        double k = 1.0;
-
-        SortedSet<Duration> durations = new TreeSet<>();
-        durations.add( Duration.ofHours( 0 ) );
-        durations.add( Duration.ofHours( 1 ) );
-        durations.add( Duration.ofHours( 2 ) );
-        durations.add( Duration.ofHours( 3 ) );
-        durations.add( Duration.ofHours( 4 ) );
-        durations.add( Duration.ofHours( 5 ) );
-        durations.add( Duration.ofHours( 6 ) );
-        durations.add( Duration.ofHours( 7 ) );
-        durations.add( Duration.ofHours( 8 ) );
-
-        for ( Duration nextDuration : durations )
-        {
-            TimeSeries<Pair<Double, Double>> events =
-                    TimeSeriesSlicer.filter( ts.get().get( 0 ), TimeWindow.of( nextDuration, nextDuration ) );
-
-            for ( Event<Pair<Double, Double>> next : events.getEvents() )
-            {
-                assertEquals( next.getValue(), Pair.of( k, k ) );
-                k++;
-            }
-        }
-        assertEquals( 10, k, 0.0001 ); // All elements iterated
     }
 
     @Test

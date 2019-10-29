@@ -91,8 +91,6 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
                                                                      .addEvent( Event.of( fourth, 7.0 ) )
                                                                      .addEvent( Event.of( sixth, 11.0 ) )
                                                                      .setTimeScale( desiredTimeScale )
-                                                                     .addReferenceTime( first,
-                                                                                        ReferenceTimeType.DEFAULT )
                                                                      .build();
 
         assertEquals( expected, actual );
@@ -153,8 +151,6 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
                                                                      .addEvent( Event.of( sixth,
                                                                                           MissingValues.DOUBLE ) )
                                                                      .setTimeScale( desiredTimeScale )
-                                                                     .addReferenceTime( first,
-                                                                                        ReferenceTimeType.DEFAULT )
                                                                      .build();
 
         assertEquals( expected, actual );
@@ -214,7 +210,7 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
                                                                      .addEvent( ten )
                                                                      .addEvent( eleven )
                                                                      .addReferenceTime( referenceTime,
-                                                                                        ReferenceTimeType.DEFAULT )
+                                                                                        ReferenceTimeType.UNKNOWN )
                                                                      .setTimeScale( existingScale )
                                                                      .build();
 
@@ -246,7 +242,7 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
                                                                              .addEvent( Event.of( eleventh, 9.25 ) )
                                                                              .setTimeScale( desiredTimeScale )
                                                                              .addReferenceTime( referenceTime,
-                                                                                                ReferenceTimeType.DEFAULT )
+                                                                                                ReferenceTimeType.UNKNOWN )
                                                                              .build();
 
         assertEquals( expectedForecast, actualForecast );
@@ -265,7 +261,7 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
                                                              .addEvent( Event.of( eleventh, pairTwo ) )
                                                              .setTimeScale( desiredTimeScale )
                                                              .addReferenceTime( referenceTime,
-                                                                                ReferenceTimeType.DEFAULT )
+                                                                                ReferenceTimeType.UNKNOWN )
                                                              .build();
 
         assertEquals( expectedPairs, actualPairs );
@@ -345,7 +341,7 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
                                                                      .addEvent( seventeen )
                                                                      .addEvent( eighteen )
                                                                      .addReferenceTime( referenceTime,
-                                                                                        ReferenceTimeType.DEFAULT )
+                                                                                        ReferenceTimeType.UNKNOWN )
                                                                      .setTimeScale( existingScale )
                                                                      .build();
 
@@ -359,7 +355,7 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
                                                                      .addEvent( Event.of( eighteen.getTime(),
                                                                                           four.getValue() ) )
                                                                      .addReferenceTime( referenceTime,
-                                                                                        ReferenceTimeType.DEFAULT )
+                                                                                        ReferenceTimeType.UNKNOWN )
                                                                      .setTimeScale( desiredTimeScale )
                                                                      .build();
 

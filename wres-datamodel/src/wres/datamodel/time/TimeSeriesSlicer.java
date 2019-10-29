@@ -212,34 +212,48 @@ public final class TimeSeriesSlicer
         // Filter reference times
         Map<ReferenceTimeType, Instant> referenceTimes =
                 TimeSeriesSlicer.filterReferenceTimes( input.getReferenceTimes(), timeWindow );
-
+        
         TimeSeriesBuilder<T> builder = new TimeSeriesBuilder<>();
         builder.addReferenceTimes( referenceTimes )
                .setTimeScale( input.getTimeScale() );
+        
+        // Some reference times existed and none were within the filter bounds?
+        if( !input.getReferenceTimes().isEmpty() && referenceTimes.isEmpty() )
+        {
+            return builder.build();
+        }
 
         // Iterate through the events and include events within the window
         for ( Event<T> nextEvent : input.getEvents() )
         {
             Instant nextValidTime = nextEvent.getTime();
-
-            if ( TimeSeriesSlicer.isContained( nextValidTime,
-                                               timeWindow.getEarliestValidTime(),
-                                               timeWindow.getLatestValidTime() ) )
+            boolean isContained = TimeSeriesSlicer.isContained( nextValidTime,
+                                                                timeWindow.getEarliestValidTime(),
+                                                                timeWindow.getLatestValidTime() );
+            // Within valid time bounds
+            if ( isContained )
             {
-                // Add an event if the lead duration with respect to any reference time 
-                // falls within the time window
+                // Add an event if the lead duration with respect to all reference times
+                // falls within the time window or there are no reference times
                 for ( Instant nextReference : referenceTimes.values() )
                 {
                     Duration leadDuration = Duration.between( nextReference, nextValidTime );
 
                     // Inside the right-closed period?
-                    if ( leadDuration.equals( timeWindow.getLatestLeadDuration() )
-                         || ( leadDuration.compareTo( timeWindow.getEarliestLeadDuration() ) > 0
-                              && leadDuration.compareTo( timeWindow.getLatestLeadDuration() ) < 0 ) )
+                    if ( !TimeSeriesSlicer.isContained( leadDuration,
+                                                       timeWindow.getEarliestLeadDuration(),
+                                                       timeWindow.getLatestLeadDuration() ) )
                     {
-                        builder.addEvent( nextEvent );
-                    }
+                        isContained = false;
+                        break;
+                    }                   
                 }
+            }
+
+            // Contained?
+            if ( isContained )
+            {
+                builder.addEvent( nextEvent );
             }
         }
 
@@ -965,6 +979,27 @@ public final class TimeSeriesSlicer
         }
 
         return time.equals( upperInclusive ) || ( time.isAfter( lowerExclusive ) && time.isBefore( upperInclusive ) );
+    }
+
+    /**
+     * Returns true if the input duration is contained within the right-closed bounds provided.
+     * 
+     * @param duration the duration to test
+     * @param lowerExclusive the lower exclusive limit
+     * @param upperInclusive the upper inclusive limit
+     * @returns true if the duration is within (lowerExclusive, upperInclusive], otherwise false
+     */
+
+    private static boolean isContained( Duration duration, Duration lowerExclusive, Duration upperInclusive )
+    {
+        Objects.requireNonNull( duration );
+
+        Objects.requireNonNull( lowerExclusive );
+
+        Objects.requireNonNull( upperInclusive );
+
+        return duration.equals( upperInclusive ) ||
+               ( duration.compareTo( lowerExclusive ) > 0 && duration.compareTo( upperInclusive ) < 0 );
     }
 
     /**

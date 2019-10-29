@@ -103,7 +103,7 @@ public class TimeSeriesPairerByExactTimeTest
 
         // Created the expected time-series
         TimeSeries<Pair<String, String>> expectedPairs =
-                TimeSeries.of( T2039_01_12T06_00_00Z, new TreeSet<>() );
+                TimeSeries.of();
 
         assertEquals( 0, expectedPairs.getEvents().size() );
 
