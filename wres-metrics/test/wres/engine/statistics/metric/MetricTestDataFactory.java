@@ -572,10 +572,10 @@ public final class MetricTestDataFactory
 
         tsBuilder.setMetadata( metaData );
 
-        return tsBuilder.addTimeSeries( TimeSeries.of( basisTimeOne, ReferenceTimeType.DEFAULT, first ) )
-                        .addTimeSeries( TimeSeries.of( basisTimeTwo, ReferenceTimeType.DEFAULT, second ) )
-                        .addTimeSeries( TimeSeries.of( basisTimeThree, ReferenceTimeType.DEFAULT, third ) )
-                        .addTimeSeries( TimeSeries.of( basisTimeFour, ReferenceTimeType.DEFAULT, fourth ) )
+        return tsBuilder.addTimeSeries( TimeSeries.of( basisTimeOne, ReferenceTimeType.UNKNOWN, first ) )
+                        .addTimeSeries( TimeSeries.of( basisTimeTwo, ReferenceTimeType.UNKNOWN, second ) )
+                        .addTimeSeries( TimeSeries.of( basisTimeThree, ReferenceTimeType.UNKNOWN, third ) )
+                        .addTimeSeries( TimeSeries.of( basisTimeFour, ReferenceTimeType.UNKNOWN, fourth ) )
                         .build();
     }
 
@@ -1430,10 +1430,10 @@ public final class MetricTestDataFactory
                                                                    .build();
         // Build the time-series
         return builder.addTimeSeries( TimeSeries.of( firstId,
-                                                     ReferenceTimeType.DEFAULT,
+                                                     ReferenceTimeType.UNKNOWN,
                                                      firstValues ) )
                       .addTimeSeries( TimeSeries.of( secondId,
-                                                     ReferenceTimeType.DEFAULT,
+                                                     ReferenceTimeType.UNKNOWN,
                                                      secondValues ) )
                       .setMetadata( metaData )
                       .build();
@@ -1470,7 +1470,7 @@ public final class MetricTestDataFactory
                                                                    .build();
         // Build the time-series
         return builder.addTimeSeries( TimeSeries.of( firstId,
-                                                     ReferenceTimeType.DEFAULT,
+                                                     ReferenceTimeType.UNKNOWN,
                                                      firstValues ) )
                       .setMetadata( metaData )
                       .build();
@@ -1511,7 +1511,7 @@ public final class MetricTestDataFactory
                                                                    .build();
         // Build the time-series
         return builder.addTimeSeries( TimeSeries.of( secondId,
-                                                     ReferenceTimeType.DEFAULT,
+                                                     ReferenceTimeType.UNKNOWN,
                                                      secondValues ) )
                       .setMetadata( metaData )
                       .build();
@@ -1579,7 +1579,7 @@ public final class MetricTestDataFactory
                                                                    .build();
         // Build the time-series
         return builder.addTimeSeries( TimeSeries.of( secondId,
-                                                     ReferenceTimeType.DEFAULT,
+                                                     ReferenceTimeType.UNKNOWN,
                                                      secondValues ) )
                       .setMetadata( metaData )
                       .build();

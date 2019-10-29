@@ -310,7 +310,7 @@ public class PoolOfPairsSupplierTest
                                                .addEvent( Event.of( T2551_03_18T18_00_00Z, 113.0 ) )
                                                .addEvent( Event.of( T2551_03_18T21_00_00Z, 127.0 ) )
                                                .addReferenceTime( T2551_03_17T12_00_00Z,
-                                                                  ReferenceTimeType.DEFAULT )
+                                                                  ReferenceTimeType.UNKNOWN )
                                                .setTimeScale( existingTimeScale )
                                                .build();
 
@@ -328,7 +328,7 @@ public class PoolOfPairsSupplierTest
                                                .addEvent( Event.of( T2551_03_19T06_00_00Z, 179.0 ) )
                                                .addEvent( Event.of( T2551_03_19T09_00_00Z, 181.0 ) )
                                                .addReferenceTime( T2551_03_18T00_00_00Z,
-                                                                  ReferenceTimeType.DEFAULT )
+                                                                  ReferenceTimeType.UNKNOWN )
                                                .setTimeScale( existingTimeScale )
                                                .build();
 
@@ -346,7 +346,7 @@ public class PoolOfPairsSupplierTest
                                                .addEvent( Event.of( T2551_03_19T18_00_00Z, 239.0 ) )
                                                .addEvent( Event.of( T2551_03_19T21_00_00Z, 241.0 ) )
                                                .addReferenceTime( T2551_03_18T12_00_00Z,
-                                                                  ReferenceTimeType.DEFAULT )
+                                                                  ReferenceTimeType.UNKNOWN )
                                                .setTimeScale( existingTimeScale )
                                                .build();
 
@@ -364,7 +364,7 @@ public class PoolOfPairsSupplierTest
                                                .addEvent( Event.of( T2551_03_20T06_00_00Z, 307.0 ) )
                                                .addEvent( Event.of( T2551_03_20T09_00_00Z, 311.0 ) )
                                                .addReferenceTime( T2551_03_19T00_00_00Z,
-                                                                  ReferenceTimeType.DEFAULT )
+                                                                  ReferenceTimeType.UNKNOWN )
                                                .setTimeScale( existingTimeScale )
                                                .build();
 
@@ -442,7 +442,7 @@ public class PoolOfPairsSupplierTest
                                                                                   Pair.of( 517.6666666666666,
                                                                                            103.0 ) ) )
                                                              .addReferenceTime( T2551_03_17T12_00_00Z,
-                                                                                ReferenceTimeType.DEFAULT )
+                                                                                ReferenceTimeType.UNKNOWN )
                                                              .setTimeScale( this.desiredTimeScale )
                                                              .build();
 
@@ -514,7 +514,7 @@ public class PoolOfPairsSupplierTest
                                                                                   Pair.of( 670.3333333333334,
                                                                                            227.0 ) ) )
                                                              .addReferenceTime( T2551_03_18T12_00_00Z,
-                                                                                ReferenceTimeType.DEFAULT )
+                                                                                ReferenceTimeType.UNKNOWN )
                                                              .setTimeScale( this.desiredTimeScale )
                                                              .build();
 
@@ -540,7 +540,7 @@ public class PoolOfPairsSupplierTest
                                                                                   Pair.of( 756.3333333333334,
                                                                                            281.0 ) ) )
                                                              .addReferenceTime( T2551_03_19T00_00_00Z,
-                                                                                ReferenceTimeType.DEFAULT )
+                                                                                ReferenceTimeType.UNKNOWN )
                                                              .setTimeScale( this.desiredTimeScale )
                                                              .build();
 

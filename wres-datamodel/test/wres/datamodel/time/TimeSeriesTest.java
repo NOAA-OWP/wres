@@ -192,14 +192,14 @@ public class TimeSeriesTest
 
         TimeSeries<Ensemble> theseEventValues =
                 new TimeSeriesBuilder<Ensemble>().addReferenceTime( Instant.parse( "2023-04-01T00:00:00Z" ),
-                                                                    ReferenceTimeType.DEFAULT )
+                                                                    ReferenceTimeType.UNKNOWN )
                                                  .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ),
                                                                       Ensemble.of( 30.0, 65.0, 100.0 ) ) )
                                                  .build();
 
         TimeSeries<Ensemble> doNotEqualThese =
                 new TimeSeriesBuilder<Ensemble>().addReferenceTime( Instant.parse( "2023-04-01T00:00:00Z" ),
-                                                                    ReferenceTimeType.DEFAULT )
+                                                                    ReferenceTimeType.UNKNOWN )
                                                  .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ),
                                                                       Ensemble.of( 30.0, 65.0, 93.0 ) ) )
                                                  .build();

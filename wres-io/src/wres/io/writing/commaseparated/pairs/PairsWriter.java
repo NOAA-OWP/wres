@@ -105,13 +105,6 @@ public abstract class PairsWriter<L, R> implements Consumer<PoolOfPairs<L, R>>, 
     private final AtomicBoolean isHeaderRequired = new AtomicBoolean( true );
 
     /**
-     * Is <code>true</code> to treat the pairs as including a forecast type and hence to include a calculated lead
-     * duration, <code>false</code> to print the lead duration as zero.
-     */
-
-    private final boolean hasForecastType;
-
-    /**
      * Shared instance of a {@link BufferedWriter} to be closed on completion.
      */
 
@@ -265,14 +258,7 @@ public abstract class PairsWriter<L, R> implements Consumer<PoolOfPairs<L, R>>, 
                     // Iterate in time-series order
                     for ( TimeSeries<Pair<L, R>> nextSeries : pairs.get() )
                     {
-                        // There is always one reference datetime, and the pairs format can only support one
-                        // and does not yet qualify the type
-                        Map<ReferenceTimeType, Instant> referenceTimes = nextSeries.getReferenceTimes();
-
-                        // Choose one. TODO: include reference times, rather than lead durations, and
-                        // then print all reference times
-                        Instant referenceTime = referenceTimes.values().iterator().next();
-
+                        // Iterate the events
                         for ( Event<Pair<L, R>> nextPair : nextSeries.getEvents() )
                         {
 
@@ -301,6 +287,9 @@ public abstract class PairsWriter<L, R> implements Consumer<PoolOfPairs<L, R>>, 
                             // ISO8601 datetime string
                             joiner.add( nextPair.getTime().toString() );
 
+                            // Choose one. TODO: include reference times, rather than lead durations, and
+                            // then print all reference times
+                            Instant referenceTime = this.getFirstReferenceTime( nextSeries );
                             // Lead duration in standard units
                             Duration leadDuration = this.getLeadDuration( referenceTime, nextPair.getTime() ); 
                             joiner.add( Long.toString( TimeHelper.durationToLongUnits( leadDuration,
@@ -379,6 +368,27 @@ public abstract class PairsWriter<L, R> implements Consumer<PoolOfPairs<L, R>>, 
     }
     
     /**
+     * Returns the reference time from the next series, if any.
+     * 
+     * @return the reference time, if any
+     */
+    
+    private Instant getFirstReferenceTime( TimeSeries<?> timeSeries )
+    {
+        Objects.requireNonNull( timeSeries );
+        
+        Map<ReferenceTimeType, Instant> referenceTimes = timeSeries.getReferenceTimes();
+
+        Instant referenceTime = null;
+        if( ! referenceTimes.isEmpty() )
+        {
+            referenceTime = referenceTimes.values().iterator().next();
+        }
+        
+        return referenceTime;
+    }
+    
+    /**
      * Returns the lead duration associated with the input.
      * 
      * @param referenceTime the reference time
@@ -388,7 +398,7 @@ public abstract class PairsWriter<L, R> implements Consumer<PoolOfPairs<L, R>>, 
 
     private Duration getLeadDuration( Instant referenceTime, Instant validTime )
     {
-        if( this.hasForecastType )
+        if( Objects.nonNull( referenceTime ) )
         {
             return Duration.between( referenceTime, validTime );
         }
@@ -509,14 +519,12 @@ public abstract class PairsWriter<L, R> implements Consumer<PoolOfPairs<L, R>>, 
      * @param pathToPairs the required path to write
      * @param timeResolution the required time resolution at which to write datetime and duration information
      * @param formatter the required formatter for writing pairs
-     * @param hasForecastType is true to include calculated lead durations, false to declare them as zero
      * @throws NullPointerException if any of the expected inputs is null
      */
 
     PairsWriter( Path pathToPairs,
                  ChronoUnit timeResolution,
-                 Function<Pair<L, R>, String> formatter,
-                 boolean hasForecastType )
+                 Function<Pair<L, R>, String> formatter )
     {
         Objects.requireNonNull( pathToPairs, "Specify a non-null path to write." );
 
@@ -527,7 +535,6 @@ public abstract class PairsWriter<L, R> implements Consumer<PoolOfPairs<L, R>>, 
         this.pathToPairs = pathToPairs;
         this.timeResolution = timeResolution;
         this.pairFormatter = formatter;
-        this.hasForecastType = hasForecastType;
 
         this.writeLock = new ReentrantLock();
 

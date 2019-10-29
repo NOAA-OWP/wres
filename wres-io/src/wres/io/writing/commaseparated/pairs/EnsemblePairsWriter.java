@@ -86,7 +86,7 @@ public class EnsemblePairsWriter extends PairsWriter<Double, Ensemble>
 
     private EnsemblePairsWriter( Path pathToPairs, ChronoUnit timeResolution, DecimalFormat decimalFormatter )
     {
-        super( pathToPairs, timeResolution, EnsemblePairsWriter.getPairFormatter( decimalFormatter ), true );
+        super( pathToPairs, timeResolution, EnsemblePairsWriter.getPairFormatter( decimalFormatter ) );
     }
 
     /**

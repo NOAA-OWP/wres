@@ -182,7 +182,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                 if ( provider.hasColumn( "reference_time" ) )
                 {
                     Instant referenceTime = provider.getInstant( "reference_time" );
-                    builder.addReferenceTime( referenceTime, ReferenceTimeType.DEFAULT );
+                    builder.addReferenceTime( referenceTime, ReferenceTimeType.UNKNOWN );
                 }
 
                 // Add the event     

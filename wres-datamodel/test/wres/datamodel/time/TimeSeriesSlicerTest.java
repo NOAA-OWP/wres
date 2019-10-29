@@ -346,7 +346,7 @@ public final class TimeSeriesSlicerTest
                                                  .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ),
                                                                       Ensemble.of( 13, 14, 15, 16 ) ) )
                                                  .addReferenceTime( baseInstant,
-                                                                    ReferenceTimeType.DEFAULT )
+                                                                    ReferenceTimeType.UNKNOWN )
                                                  .build();
 
         List<TimeSeries<Double>> actual = TimeSeriesSlicer.decompose( ensemble );
@@ -360,7 +360,7 @@ public final class TimeSeriesSlicerTest
                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ), 9.0 ) )
                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ), 13.0 ) )
                                                .addReferenceTime( baseInstant,
-                                                                  ReferenceTimeType.DEFAULT )
+                                                                  ReferenceTimeType.UNKNOWN )
                                                .build();
 
         expected.add( one );
@@ -372,7 +372,7 @@ public final class TimeSeriesSlicerTest
                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ), 10.0 ) )
                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ), 14.0 ) )
                                                .addReferenceTime( baseInstant,
-                                                                  ReferenceTimeType.DEFAULT )
+                                                                  ReferenceTimeType.UNKNOWN )
                                                .build();
 
         expected.add( two );
@@ -384,7 +384,7 @@ public final class TimeSeriesSlicerTest
                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ), 11.0 ) )
                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ), 15.0 ) )
                                                .addReferenceTime( baseInstant,
-                                                                  ReferenceTimeType.DEFAULT )
+                                                                  ReferenceTimeType.UNKNOWN )
                                                .build();
 
         expected.add( three );
@@ -396,7 +396,7 @@ public final class TimeSeriesSlicerTest
                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ), 12.0 ) )
                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ), 16.0 ) )
                                                .addReferenceTime( baseInstant,
-                                                                  ReferenceTimeType.DEFAULT )
+                                                                  ReferenceTimeType.UNKNOWN )
                                                .build();
 
         expected.add( four );
@@ -427,7 +427,7 @@ public final class TimeSeriesSlicerTest
                                                                       Ensemble.of( new double[] { 13, 14, 15, 16 },
                                                                                    labels ) ) )
                                                  .addReferenceTime( baseInstant,
-                                                                    ReferenceTimeType.DEFAULT )
+                                                                    ReferenceTimeType.UNKNOWN )
                                                  .build();
 
         List<TimeSeries<Double>> actual = TimeSeriesSlicer.decompose( ensemble );
@@ -441,7 +441,7 @@ public final class TimeSeriesSlicerTest
                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ), 9.0 ) )
                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ), 13.0 ) )
                                                .addReferenceTime( baseInstant,
-                                                                  ReferenceTimeType.DEFAULT )
+                                                                  ReferenceTimeType.UNKNOWN )
                                                .build();
 
         expected.add( one );
@@ -453,7 +453,7 @@ public final class TimeSeriesSlicerTest
                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ), 10.0 ) )
                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ), 14.0 ) )
                                                .addReferenceTime( baseInstant,
-                                                                  ReferenceTimeType.DEFAULT )
+                                                                  ReferenceTimeType.UNKNOWN )
                                                .build();
 
         expected.add( two );
@@ -465,7 +465,7 @@ public final class TimeSeriesSlicerTest
                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ), 11.0 ) )
                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ), 15.0 ) )
                                                .addReferenceTime( baseInstant,
-                                                                  ReferenceTimeType.DEFAULT )
+                                                                  ReferenceTimeType.UNKNOWN )
                                                .build();
 
         expected.add( three );
@@ -477,7 +477,7 @@ public final class TimeSeriesSlicerTest
                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ), 12.0 ) )
                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ), 16.0 ) )
                                                .addReferenceTime( baseInstant,
-                                                                  ReferenceTimeType.DEFAULT )
+                                                                  ReferenceTimeType.UNKNOWN )
                                                .build();
 
         expected.add( four );
@@ -502,7 +502,7 @@ public final class TimeSeriesSlicerTest
                                                  .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ),
                                                                       Ensemble.of( 13, 15, 14, 16 ) ) )
                                                  .addReferenceTime( baseInstant,
-                                                                    ReferenceTimeType.DEFAULT )
+                                                                    ReferenceTimeType.UNKNOWN )
                                                  .build();
 
         TimeSeries<Ensemble> actual =
@@ -534,7 +534,7 @@ public final class TimeSeriesSlicerTest
                                                                       Ensemble.of( new double[] { 13, 14, 15, 16 },
                                                                                    labels ) ) )
                                                  .addReferenceTime( baseInstant,
-                                                                    ReferenceTimeType.DEFAULT )
+                                                                    ReferenceTimeType.UNKNOWN )
                                                  .build();
 
         SortedSet<String> labelSet = Arrays.stream( labels ).collect( Collectors.toCollection( TreeSet::new ) );

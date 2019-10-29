@@ -62,7 +62,7 @@ public class TimeSeriesOfEnsembleUpscalerTest
                                                                          .addEvent( three )
                                                                          .addEvent( four )
                                                                          .addReferenceTime( referenceTime,
-                                                                                            ReferenceTimeType.DEFAULT )
+                                                                                            ReferenceTimeType.UNKNOWN )
                                                                          .setTimeScale( existingScale )
                                                                          .build();
 
@@ -85,7 +85,7 @@ public class TimeSeriesOfEnsembleUpscalerTest
                                                  .addEvent( Event.of( fourth, expectedTwo ) )
                                                  .setTimeScale( desiredTimeScale )
                                                  .addReferenceTime( referenceTime,
-                                                                    ReferenceTimeType.DEFAULT )
+                                                                    ReferenceTimeType.UNKNOWN )
                                                  .build();
 
         assertEquals( expectedForecast, actualForecast );

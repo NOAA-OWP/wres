@@ -145,7 +145,7 @@ public class EnsembleForecastRetrieverTest
         // Create the expected series
         TimeSeriesBuilder<Ensemble> builder = new TimeSeriesBuilder<>();
         TimeSeries<Ensemble> expectedSeries =
-                builder.addReferenceTime( Instant.parse( "2023-04-01T00:00:00Z" ), ReferenceTimeType.DEFAULT )
+                builder.addReferenceTime( Instant.parse( "2023-04-01T00:00:00Z" ), ReferenceTimeType.UNKNOWN )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ),
                                             Ensemble.of( 30.0, 65.0, 100.0 ) ) )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T02:00:00Z" ),

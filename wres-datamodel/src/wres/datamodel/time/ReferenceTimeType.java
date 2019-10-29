@@ -10,10 +10,10 @@ public enum ReferenceTimeType
 {
 
         /**
-         * A default reference time type.
+         * An unknown reference time type.
          */
         
-        DEFAULT,
+        UNKNOWN,
         
         /**
          * A model initialization time or T0.

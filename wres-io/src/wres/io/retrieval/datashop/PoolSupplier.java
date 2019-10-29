@@ -720,6 +720,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         // Snip the left data to the right with a buffer on the lower bound, if required
         Duration period = this.getPeriodFromTimeScale( desiredTimeScale );
         TimeSeries<L> scaledLeft = TimeSeriesSlicer.snip( left, right, period, Duration.ZERO );
+
         TimeSeries<R> scaledRight = right;
         boolean upscaleLeft = Objects.nonNull( desiredTimeScale ) && !desiredTimeScale.equals( left.getTimeScale() );
         boolean upscaleRight = Objects.nonNull( desiredTimeScale ) && !desiredTimeScale.equals( right.getTimeScale() );
@@ -1313,7 +1314,8 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         {
             TimeSeries<P> filtered = TimeSeriesSlicer.filter( next, timeWindow );
             builder.addEvents( filtered.getEvents() );
-            builder.setTimeScale( next.getTimeScale() ).addReferenceTimes( next.getReferenceTimes() );
+            builder.setTimeScale( next.getTimeScale() )
+                   .addReferenceTimes( next.getReferenceTimes() );
         }
 
         return builder.build();

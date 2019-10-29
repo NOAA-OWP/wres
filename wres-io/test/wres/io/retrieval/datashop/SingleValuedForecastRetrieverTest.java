@@ -149,7 +149,7 @@ public class SingleValuedForecastRetrieverTest
         // Create the first expected series
         TimeSeriesBuilder<Double> builderOne = new TimeSeriesBuilder<>();
         TimeSeries<Double> expectedSeriesOne =
-                builderOne.addReferenceTime( Instant.parse( T2023_04_01T00_00_00Z ), ReferenceTimeType.DEFAULT )
+                builderOne.addReferenceTime( Instant.parse( T2023_04_01T00_00_00Z ), ReferenceTimeType.UNKNOWN )
                           .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ), 30.0 ) )
                           .addEvent( Event.of( Instant.parse( "2023-04-01T02:00:00Z" ), 37.0 ) )
                           .addEvent( Event.of( Instant.parse( "2023-04-01T03:00:00Z" ), 44.0 ) )
@@ -164,7 +164,7 @@ public class SingleValuedForecastRetrieverTest
         // Create the second expected series
         TimeSeriesBuilder<Double> builderTwo = new TimeSeriesBuilder<>();
         TimeSeries<Double> expectedSeriesTwo =
-                builderTwo.addReferenceTime( Instant.parse( T2023_04_01T17_00_00Z ), ReferenceTimeType.DEFAULT )
+                builderTwo.addReferenceTime( Instant.parse( T2023_04_01T17_00_00Z ), ReferenceTimeType.UNKNOWN )
                           .addEvent( Event.of( Instant.parse( "2023-04-01T18:00:00Z" ), 65.0 ) )
                           .addEvent( Event.of( Instant.parse( T2023_04_01T19_00_00Z ), 72.0 ) )
                           .addEvent( Event.of( Instant.parse( "2023-04-01T20:00:00Z" ), 79.0 ) )
@@ -216,7 +216,7 @@ public class SingleValuedForecastRetrieverTest
         // Create the first expected series
         TimeSeriesBuilder<Double> builderOne = new TimeSeriesBuilder<>();
         TimeSeries<Double> expectedSeriesOne =
-                builderOne.addReferenceTime( Instant.parse( T2023_04_01T00_00_00Z ), ReferenceTimeType.DEFAULT )
+                builderOne.addReferenceTime( Instant.parse( T2023_04_01T00_00_00Z ), ReferenceTimeType.UNKNOWN )
                           .addEvent( Event.of( Instant.parse( "2023-04-01T04:00:00Z" ), 51.0 ) )
                           .setTimeScale( TimeScale.of() )
                           .build();
@@ -227,7 +227,7 @@ public class SingleValuedForecastRetrieverTest
         // Create the second expected series
         TimeSeriesBuilder<Double> builderTwo = new TimeSeriesBuilder<>();
         TimeSeries<Double> expectedSeriesTwo =
-                builderTwo.addReferenceTime( Instant.parse( T2023_04_01T17_00_00Z ), ReferenceTimeType.DEFAULT )
+                builderTwo.addReferenceTime( Instant.parse( T2023_04_01T17_00_00Z ), ReferenceTimeType.UNKNOWN )
                           .addEvent( Event.of( Instant.parse( T2023_04_01T19_00_00Z ), 72.0 ) )
                           .setTimeScale( TimeScale.of() )
                           .build();
