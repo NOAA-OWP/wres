@@ -12,13 +12,19 @@ import wres.grid.reading.GriddedReader;
  */
 public class Fetcher
 {
+    /**
+     * Returns a single-valued time-series response from the request.
+     * 
+     * @param request the request
+     * @return the single-value response
+     * @throws IOException if the gridded values could not be read for any reason
+     */
 
-    public static Response getData( Request request ) throws IOException
+    public static SingleValuedTimeSeriesResponse getSingleValuedTimeSeries( Request request ) throws IOException
     {
-        GriddedReader griddedReader = new GriddedReader( request );
         try
         {
-            return griddedReader.getData();
+            return GriddedReader.getSingleValuedResponse( request );
         }
         catch ( IOException e )
         {
