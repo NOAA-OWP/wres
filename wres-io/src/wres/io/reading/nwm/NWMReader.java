@@ -304,7 +304,8 @@ public class NWMReader implements Callable<List<IngestResult>>
         datetimes.add( earliest );
         Instant additionalForecastDatetime = earliest.plus( modelRunStep );
 
-        while ( latest.isAfter( additionalForecastDatetime ) )
+        while ( additionalForecastDatetime.isBefore( latest )
+                || additionalForecastDatetime.equals( latest ) )
         {
             datetimes.add( additionalForecastDatetime );
             additionalForecastDatetime = additionalForecastDatetime.plus( modelRunStep );
