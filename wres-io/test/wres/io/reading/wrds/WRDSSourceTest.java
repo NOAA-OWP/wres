@@ -40,6 +40,7 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.Feature;
 import wres.config.generated.Format;
+import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.LeftOrRightOrBaseline;
@@ -3435,7 +3436,8 @@ public class WRDSSourceTest
         List<DataSourceConfig.Source> sourceList = new ArrayList<>( 1 );
         Format format = Format.WRDS;
         DataSourceConfig.Source confSource = new DataSourceConfig.Source( fakeAhpsUri,
-                                                                          format,
+                                                                          InterfaceShortHand.WRDS,
+                                                                          null,
                                                                           null,
                                                                           null,
                                                                           null,
@@ -3569,7 +3571,8 @@ public class WRDSSourceTest
         List<DataSourceConfig.Source> sourceList = new ArrayList<>( 1 );
         Format format = Format.WRDS;
         DataSourceConfig.Source confSource = new DataSourceConfig.Source( fakeAhpsUri,
-                                                                          format,
+                                                                          InterfaceShortHand.WRDS,
+                                                                          null,
                                                                           null,
                                                                           null,
                                                                           null,
@@ -3695,7 +3698,8 @@ public class WRDSSourceTest
         List<DataSourceConfig.Source> sourceList = new ArrayList<>( 1 );
         Format format = Format.WRDS;
         DataSourceConfig.Source confSource = new DataSourceConfig.Source( fakeAhpsUri,
-                                                                          format,
+                                                                          InterfaceShortHand.WRDS,
+                                                                          null,
                                                                           null,
                                                                           null,
                                                                           null,
@@ -3808,7 +3812,8 @@ public class WRDSSourceTest
         List<DataSourceConfig.Source> sourceList = new ArrayList<>( 1 );
         Format format = Format.WRDS;
         DataSourceConfig.Source confSource = new DataSourceConfig.Source( fakeAhpsUri,
-                                                                          format,
+                                                                          InterfaceShortHand.WRDS,
+                                                                          null,
                                                                           null,
                                                                           null,
                                                                           null,

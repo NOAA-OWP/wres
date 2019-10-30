@@ -143,6 +143,18 @@ class NWMProfile
                                                 + durationBetweenValidDatetimes );
         }
 
+        if ( durationBetweenReferenceDateTimes.isNegative() )
+        {
+            throw new IllegalArgumentException( "Must have positive timestep duration, not "
+                                                + durationBetweenReferenceDateTimes );
+        }
+
+        if ( durationBetweenReferenceDateTimes.isZero() )
+        {
+            throw new IllegalArgumentException( "Must have positive timestep duration, not "
+                                                + durationBetweenReferenceDateTimes );
+        }
+
         this.blobCount = blobCount;
         this.memberCount = memberCount;
         this.durationBetweenValidDatetimes = durationBetweenValidDatetimes;
@@ -223,5 +235,10 @@ class NWMProfile
     String getNwmLocationLabel()
     {
         return this.nwmLocationLabel;
+    }
+
+    Duration getDurationBetweenReferenceDatetimes()
+    {
+        return this.durationBetweenReferenceDatetimes;
     }
 }
