@@ -1,32 +1,35 @@
 package wres.grid.client;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
 
 import wres.config.FeaturePlus;
+import wres.datamodel.time.TimeSeries;
 
 /**
  * Prototype interface for receiving grid information
  */
-public interface Response extends Iterable<List<Response.Series>>
+public interface Response<T>
 {
-    interface Series extends Iterable<Entry>, Comparable<Series>
-    {
-        FeaturePlus getFeature();
-        Instant getIssuedDate();
-        Duration getLastLead();
-    }
+    /**
+     * Returns the time-series per feature.
+     * 
+     * @return a stream of time-series per feature
+     */
+    Map<FeaturePlus, Stream<TimeSeries<T>>> getTimeSeries();
 
-    interface Entry extends Comparable<Entry>, Iterable<Double>
-    {
-        Duration getLead();
-        Instant getValidDate();
-        Double[] getMeasurements();
-        String getMeasurementUnit();
-    }
+    /**
+     * The measurement units
+     * 
+     * @return the measurement units
+     */
+    String getMeasuremenUnits();
 
+    /**
+     * The variable name
+     * 
+     * @return the variable name
+     */
+    
     String getVariableName();
-    Integer getValueCount();
-    Duration getLastLead();
 }

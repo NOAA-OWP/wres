@@ -8,17 +8,23 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.FeaturePlus;
 import wres.config.generated.Feature;
+import wres.datamodel.time.Event;
+import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindow;
 import wres.grid.client.Fetcher;
 import wres.grid.client.Request;
-import wres.grid.client.Response;
+import wres.grid.client.SingleValuedTimeSeriesResponse;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.UnitConversions;
 import wres.io.project.Project;
@@ -74,60 +80,65 @@ class GridCache implements LeftHandCache
                                                          timeWindow, 
                                                          isForecast );
 
-        Response gridResponse = Fetcher.getData( griddedRequest );
+        SingleValuedTimeSeriesResponse gridResponse = Fetcher.getSingleValuedTimeSeries( griddedRequest );
 
-        for (List<Response.Series> seriesPerFeature : gridResponse)
+        Map<FeaturePlus,Stream<TimeSeries<Double>>> timeSeries = gridResponse.getTimeSeries();
+        
+        // Until we support many locations per retrieval, we don't need special handling for features        
+        for ( Stream<TimeSeries<Double>> series : timeSeries.values() )
         {
-            leftValues.addAll( this.addFeatureValues( seriesPerFeature ) );
+            leftValues.addAll( this.getFeatureValues( series, gridResponse.getMeasuremenUnits() ) );
         }
 
         return leftValues;
     }
 
-    private List<Double> addFeatureValues(List<Response.Series> featureSeries)
+    private List<Double> getFeatureValues(Stream<TimeSeries<Double>> featureSeries, String measurementUnits)
             throws IOException
     {
         List<Double> leftValues = new ArrayList<>();
-
-        for (Response.Series series : featureSeries )
+        List<TimeSeries<Double>> nextList = featureSeries.collect( Collectors.toList() );
+        
+        for ( TimeSeries<Double> series : nextList )
         {
-            leftValues.addAll( this.addTimeSeriesValues( series ) );
+            leftValues.addAll( this.addTimeSeriesValues( series, measurementUnits ) );
         }
 
         return leftValues;
     }
 
-    private List<Double> addTimeSeriesValues(Response.Series series)
+    private List<Double> addTimeSeriesValues( TimeSeries<Double> series, String measurementUnits )
             throws IOException
     {
         List<Double> leftValues = new ArrayList<>();
-        for (Response.Entry entry : series)
+        for ( Event<Double> entry : series.getEvents() )
         {
-            for (double value : entry)
+            try
             {
-                try
-                {
-                    leftValues.add(
-                            UnitConversions.convert(
-                                    value,
-                                    entry.getMeasurementUnit(),
-                                    this.project.getDesiredMeasurementUnit()
-                            )
-                    );
-                }
-                catch ( SQLException e )
-                {
-                    throw new IOException( "Could not convert control value '" +
-                                           String.valueOf( value ) +
-                                           "' because a valid conversion from '" +
-                                           entry.getMeasurementUnit() +
-                                           "' to '" +
-                                           this.project.getDesiredMeasurementUnit() +
-                                           "' could not be determined.",
-                                           e);
-                }
+                leftValues.add(
+                                UnitConversions.convert(
+                                                         entry.getValue(),
+                                                         measurementUnits,
+                                                         this.project.getDesiredMeasurementUnit() ) );
+            }
+            catch ( SQLException e )
+            {
+                throw new IOException( "Could not convert control value '" +
+                                       String.valueOf( entry.getValue() )
+                                       +
+                                       "' because a valid conversion from '"
+                                       +
+                                       measurementUnits
+                                       +
+                                       "' to '"
+                                       +
+                                       this.project.getDesiredMeasurementUnit()
+                                       +
+                                       "' could not be determined.",
+                                       e );
             }
         }
+
         return leftValues;
     }
 
