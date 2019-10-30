@@ -41,6 +41,21 @@
     </xs:simpleType>
 
     <xs:simpleType name="format">
+        <xs:annotation>
+            <xs:documentation>
+                The format describes the structure of a byte stream but from
+                2016 through at least 2019-10 a format has been used as a
+                filter in some cases and a short-hand in other cases.
+                An additional description of the interface to get data as
+                distinct from the protocol, hostname, and path (which can be
+                found in the URI) can be found in the "interface" type.
+                If WRES eventually auto-detects formats of data encountered on
+                filesystem directory trees while walking them, then this format
+                filter can be deprecated and removed. If any web service
+                interfaces or data access methods abstracted into "interface",
+                then this format filter can be deprecated and removed.
+            </xs:documentation>
+        </xs:annotation>
         <xs:restriction base="xs:string">
             <xs:enumeration value="PI-XML" />
             <xs:enumeration value="netCDF" />
@@ -55,6 +70,29 @@
             <xs:enumeration value="wrds" />
             <xs:enumeration value="csv" />
             <xs:enumeration value="waterml" />
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="interfaceShortHand">
+        <xs:annotation>
+            <xs:documentation>
+                The interface serves as a shorthand to tell WRES how to get a
+                dataset from a particular URI. It can mean the API structure of
+                a web service such as WRDS or NWIS, or it can mean the
+                path/resource  structure of an NWM dataset. Whatever structure
+                is on top of a URI that cannot be automatically discerned from
+                the URI or data within that URI is summarized by one of these
+                short-hands and must be specified.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="wrds" />
+            <xs:enumeration value="usgs" />
+            <xs:enumeration value="nwm_short_range_channel_rt_conus" />
+            <xs:enumeration value="nwm_medium_range_ensemble_channel_rt_conus" />
+            <xs:enumeration value="nwm_medium_range_deterministic_channel_rt_conus" />
+            <xs:enumeration value="nwm_analysis_assim_channel_rt_conus" />
+            <xs:enumeration value="nwm_long_range_channel_rt_conus" />
         </xs:restriction>
     </xs:simpleType>
 
@@ -171,6 +209,28 @@
                 <xs:complexType>
                     <xs:simpleContent>
                         <xs:extension base="xs:anyURI">
+
+                            <xs:attribute name="interface" type="interfaceShortHand">
+                                <xs:annotation>
+                                    <xs:documentation>
+                                        Specifies the interface short-hand.
+                                        See available interfaceLabel types. This
+                                        is required for sources that are not
+                                        simple, i.e. sources that do not enclose
+                                        each timeseries within a bytestream or
+                                        require some API or interface knowledge.
+                                        Example simple sources include PI-XML
+                                        or datacard datasets. Example sources
+                                        that require this short-hand include the
+                                        NWM sources, WRDS, and USGS NWIS. WRES
+                                        combines knowledge of the service or
+                                        layout with the date ranges specified in
+                                        the project declaration to automatically
+                                        read the data source.
+                                    </xs:documentation>
+                                </xs:annotation>
+                            </xs:attribute>
+
                             <xs:attribute name="format" type="format">
                                 <xs:annotation>
                                     <xs:documentation>Specifies the format; see available format

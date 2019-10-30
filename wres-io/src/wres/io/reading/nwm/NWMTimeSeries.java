@@ -29,6 +29,7 @@ import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
 
 import wres.datamodel.Ensemble;
+import wres.datamodel.MissingValues;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
@@ -316,6 +317,109 @@ class NWMTimeSeries implements Closeable
 
 
     /**
+     * Read the first value for a given variable name attribute from the netCDF
+     * files.
+     * @param variableName The NWM variable name.
+     * @param attributeName The attribute associated with the variable.
+     * @return The String representation of the value of attribute of variable.
+     */
+
+    String readAttributeAsString( String variableName, String attributeName )
+    {
+        for ( NetcdfFile netcdfFile : this.getNetcdfFiles() )
+        {
+            Variable variableVariable =  netcdfFile.findVariable( variableName );
+            return readAttributeAsString( variableVariable, attributeName );
+        }
+
+        throw new IllegalStateException( "No '" + attributeName
+                                         + "' attribute found for variable '"
+                                         + variableName + " in netCDF data." );
+    }
+
+
+
+    /**
+     * @param ncVariable The NWM variable.
+     * @param attributeName The attribute associated with the variable.
+     * @return The String representation of the value of attribute of variable.
+     */
+
+    private String readAttributeAsString( Variable ncVariable, String attributeName )
+    {
+        List<Attribute> variableAttributes = ncVariable.getAttributes();
+
+        for ( Attribute attribute : variableAttributes )
+        {
+            if ( attribute.getShortName()
+                          .toLowerCase()
+                          .equals( attributeName.toLowerCase() ) )
+            {
+                return attribute.getStringValue();
+            }
+        }
+
+        throw new IllegalStateException( "No '" + attributeName
+                                         + "' attribute found for variable '"
+                                         + ncVariable + " in netCDF data." );
+    }
+
+
+
+    /**
+     * @param ncVariable The NWM variable.
+     * @param attributeName The attribute associated with the variable.
+     * @return The String representation of the value of attribute of variable.
+     */
+
+    private double readAttributeAsDouble( Variable ncVariable, String attributeName )
+    {
+        List<Attribute> variableAttributes = ncVariable.getAttributes();
+
+        for ( Attribute attribute : variableAttributes )
+        {
+            if ( attribute.getShortName()
+                          .toLowerCase()
+                          .equals( attributeName.toLowerCase() ) )
+            {
+                return (double) attribute.getNumericValue();
+            }
+        }
+
+        throw new IllegalStateException( "No '" + attributeName
+                                         + "' attribute found for variable '"
+                                         + ncVariable + " in netCDF data." );
+    }
+
+
+    /**
+     * @param ncVariable The NWM variable.
+     * @param attributeName The attribute associated with the variable.
+     * @return The String representation of the value of attribute of variable.
+     */
+
+    private int readAttributeAsInt( Variable ncVariable, String attributeName )
+    {
+        List<Attribute> variableAttributes = ncVariable.getAttributes();
+
+        for ( Attribute attribute : variableAttributes )
+        {
+            if ( attribute.getShortName()
+                          .toLowerCase()
+                          .equals( attributeName.toLowerCase() ) )
+            {
+                return (int) attribute.getNumericValue();
+            }
+        }
+
+        throw new IllegalStateException( "No '" + attributeName
+                                         + "' attribute found for variable '"
+                                         + ncVariable + " in netCDF data." );
+    }
+
+
+
+    /**
      * Read a TimeSeries from across several netCDF single-validdatetime files.
      * @param featureId The NWM feature ID.
      * @param variableName The NWM variable name.
@@ -405,12 +509,12 @@ class NWMTimeSeries implements Closeable
         Variable variableVariable =  netcdfFile.findVariable( variableName );
         int[] origin = { indexOfFeature };
         int[] shape = { 1 };
-        double variableValue;
+        int rawVariableValue;
 
         try
         {
             Array array = variableVariable.read( origin, shape );
-            double[] values = (double[]) array.get1DJavaArray( DataType.DOUBLE );
+            int[] values = (int[]) array.get1DJavaArray( DataType.INT );
 
             if ( values.length != 1 )
             {
@@ -418,7 +522,7 @@ class NWMTimeSeries implements Closeable
                                               + values.length );
             }
 
-            variableValue = values[0];
+            rawVariableValue = values[0];
         }
         catch ( IOException | InvalidRangeException e )
         {
@@ -430,6 +534,25 @@ class NWMTimeSeries implements Closeable
                                           + Arrays.toString( shape )
                                           + " from netCDF file " + netcdfFile,
                                           e );
+        }
+
+        double variableValue;
+
+        int missingValue = readAttributeAsInt( variableVariable,
+                                               "missing_value" );
+        int fillValue = readAttributeAsInt( variableVariable,
+                                            "_FillValue");
+        double multiplier = readAttributeAsDouble( variableVariable,
+                                                   "scale_factor" );
+
+        if ( rawVariableValue == missingValue
+             || rawVariableValue == fillValue )
+        {
+            variableValue = MissingValues.DOUBLE;
+        }
+        else
+        {
+            variableValue = rawVariableValue * multiplier;
         }
 
         return Event.of( validDatetime, variableValue );

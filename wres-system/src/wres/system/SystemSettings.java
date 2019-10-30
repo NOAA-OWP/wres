@@ -63,6 +63,7 @@ public final class SystemSettings extends XMLReader
 	private String netcdfStorePath = "systests/data/";
 	private Integer maximumArchiveThreads = null;
 	private int maximumWebClientThreads = 3;
+	private int maximumNwmIngestThreads = 6;
 	private Path dataDirectory = Paths.get( System.getProperty( "user.dir" ) );
 
 	/**
@@ -112,6 +113,9 @@ public final class SystemSettings extends XMLReader
                         break;
                     case "maximum_web_client_threads":
                         this.setMaximumWebClientThreads( reader );
+                        break;
+                    case "maximum_nwm_ingest_threads":
+                        this.setMaximumNwmIngestThreads( reader );
                         break;
                     case "pool_object_lifespan":
                         this.setPoolObjectLifespan( reader );
@@ -250,6 +254,22 @@ public final class SystemSettings extends XMLReader
         }
     }
 
+    private void setMaximumNwmIngestThreads( XMLStreamReader reader )
+            throws XMLStreamException
+    {
+        String value = XMLHelper.getXMLText( reader );
+
+        if ( StringUtils.isNumeric( value ) )
+        {
+            this.maximumNwmIngestThreads = Integer.parseInt( value );
+        }
+        else
+        {
+            LOGGER.warn( "Unable to set maximum_nwm_ingest_threads to non-numeric value '{}'.",
+                         value );
+        }
+    }
+
     private void setPoolObjectLifespan(XMLStreamReader reader)
             throws XMLStreamException
     {
@@ -362,6 +382,11 @@ public final class SystemSettings extends XMLReader
     public static int getMaximumWebClientThreads()
     {
         return instance.maximumWebClientThreads;
+    }
+
+    public static int getMaxiumNwmIngestThreads()
+    {
+        return instance.maximumNwmIngestThreads;
     }
 
 	/**

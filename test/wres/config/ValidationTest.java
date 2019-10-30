@@ -52,6 +52,7 @@ public class ValidationTest
         DataSourceConfig.Source source =
                 new DataSourceConfig.Source(
                         null,
+                        null,
                         Format.PI_XML,
                         null,
                         "-0500",
