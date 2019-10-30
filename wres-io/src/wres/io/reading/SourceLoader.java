@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Format;
+import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.IngestSaver;
@@ -36,6 +37,7 @@ import wres.io.config.LeftOrRightOrBaseline;
 import wres.io.data.caching.DataSources;
 import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
+import wres.io.reading.nwm.NWMReader;
 import wres.io.removal.IncompleteIngest;
 import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
@@ -924,32 +926,47 @@ public class SourceLoader
      */
     
     private static Path evaluatePath( DataSourceConfig.Source source )
-    {       
+    {
+        LOGGER.trace( "Called evaluatePath with source {}", source );
+        URI uri = source.getValue();
+
         // Is there a source path to evaluate? Only if the source is file-like
-        if( source.getValue().toString().isEmpty() )
+        if( uri.toString().isEmpty() )
         {
+            LOGGER.debug( "The source value was empty from source {}", source );
             return null;           
         }
-        
-        Path rawSourcePath = Paths.get( source.getValue().getPath() );
-        
-        LOGGER.debug( "Found source path {} from source {}",
-                      rawSourcePath,
-                      source.getValue() );
 
-        // In the straightforward case, use the source path found.
-        Path sourcePath = rawSourcePath;
+        String scheme = uri.getScheme();
+
+        if ( scheme != null
+             && !scheme.toLowerCase()
+                       .equals( "file" ) )
+        {
+            LOGGER.debug( "Scheme '{}' indicates non-file.", scheme );
+            return null;
+        }
+
+        Path sourcePath;
 
         // Construct a path using the SystemSetting wres.dataDirectory when
         // the specified source is not absolute.
-        if ( !rawSourcePath.isAbsolute() )
+        if ( !uri.isAbsolute() )
         {
             sourcePath = SystemSettings.getDataDirectory()
-                                       .resolve( rawSourcePath );
+                                       .resolve( uri.getPath() );
+            LOGGER.debug( "Transformed relative URI {} to Path {}.",
+                          uri,
+                          sourcePath );
         }
-        
+        else
+        {
+            sourcePath = Paths.get( uri );
+        }
+
+        LOGGER.debug( "Returning source path {} from source {}",
+                      sourcePath, source.getValue() );
         return sourcePath;
-        
     }
  
     /**
