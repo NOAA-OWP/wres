@@ -13,11 +13,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.FeaturePlus;
 import wres.config.ProjectConfigs;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
@@ -37,6 +39,7 @@ import wres.datamodel.time.TimeWindow;
 import wres.grid.client.Fetcher;
 import wres.grid.client.Request;
 import wres.grid.client.Response;
+import wres.grid.client.SingleValuedTimeSeriesResponse;
 import wres.io.config.ConfigHelper;
 import wres.io.config.OrderedSampleMetadata;
 import wres.io.data.caching.DataSources;
@@ -322,19 +325,26 @@ class SampleDataRetriever extends Retriever
 
     private void createGriddedPairs( DataSourceConfig dataSourceConfig )
     {
-        Response response = this.getGriddedData( dataSourceConfig );
-
-        for (List<Response.Series> listOfSeries : response)
+        // #70446
+        if( dataSourceConfig.getType() == DatasourceType.ENSEMBLE_FORECASTS )
         {
-            // Until we support many locations per retrieval, we don't need special handling for features
-            for ( Response.Series series : listOfSeries)
-            {
-                this.addSeriesPairs( series, dataSourceConfig);
-            }
+            throw new IllegalArgumentException( "Gridded ensemble forecasts are not currently supported." );
+        }
+        
+        SingleValuedTimeSeriesResponse response = this.getGriddedData( dataSourceConfig );
+
+        Map<FeaturePlus,Stream<TimeSeries<Double>>> timeSeries = response.getTimeSeries();
+        
+        // Until we support many locations per retrieval, we don't need special handling for features        
+        for ( Stream<TimeSeries<Double>> series : timeSeries.values() )
+        {
+            series.forEach( next -> this.addSeriesPairs( next, dataSourceConfig, response.getMeasuremenUnits() ) );
         }
     }
 
-    private void addSeriesPairs( final Response.Series series, final DataSourceConfig dataSourceConfig)
+    private void addSeriesPairs( final TimeSeries<Double> series,
+                                 final DataSourceConfig dataSourceConfig,
+                                 String measurementUnits )
     {
         int minimumLead = TimeHelper.durationToLead(this.getSampleMetadata().getMinimumLead());
 
@@ -351,7 +361,7 @@ class SampleDataRetriever extends Retriever
                 frequency
         );
 
-        IngestedValueCollection ingestedValues = this.loadGriddedValues( series );
+        IngestedValueCollection ingestedValues = this.loadGriddedValues( series, measurementUnits );
 
         Integer aggregationStep;
         PivottedValues condensedValue;
@@ -397,7 +407,7 @@ class SampleDataRetriever extends Retriever
         }
     }
 
-    private Response getGriddedData(final DataSourceConfig dataSourceConfig)
+    private SingleValuedTimeSeriesResponse getGriddedData(final DataSourceConfig dataSourceConfig)
     {
         Request griddedRequest = null;
         try
@@ -422,10 +432,10 @@ class SampleDataRetriever extends Retriever
                                                 e );
         }
 
-        Response response;
+        SingleValuedTimeSeriesResponse response;
         try
         {
-            response = Fetcher.getData( griddedRequest );
+            response = Fetcher.getSingleValuedTimeSeries( griddedRequest );
         }
         catch ( IOException e )
         {
@@ -442,22 +452,28 @@ class SampleDataRetriever extends Retriever
         return response;
     }
 
-    private IngestedValueCollection loadGriddedValues(Response.Series series)
+    private IngestedValueCollection loadGriddedValues( TimeSeries<Double> series, String measurementUnits )
     {
         IngestedValueCollection ingestedValues = new IngestedValueCollection();
 
-        for ( Response.Entry entry : series)
+        for ( Event<Double> next : series.getEvents() )
         {
             IngestedValue value;
 
+            Instant referenceTime = next.getTime();
+            if( !series.getReferenceTimes().isEmpty() )
+            {
+                referenceTime = series.getReferenceTimes().values().iterator().next();
+            }
+            
             try
             {
                 value = new IngestedValue(
-                        entry.getValidDate(),
-                        entry.getMeasurements(),
-                        MeasurementUnits.getMeasurementUnitID( entry.getMeasurementUnit()),
-                        TimeHelper.durationToLead( entry.getLead()),
-                        series.getIssuedDate().getEpochSecond(),
+                        next.getTime(),
+                        new Double[] { next.getValue() },
+                        MeasurementUnits.getMeasurementUnitID( measurementUnits ),
+                        TimeHelper.durationToLead( Duration.between( referenceTime, next.getTime() ) ),
+                        referenceTime.getEpochSecond(),
                         this.getProjectDetails()
                 );
             }
