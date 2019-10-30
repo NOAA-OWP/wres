@@ -49,6 +49,7 @@ public class UriAdapter extends XmlAdapter<String,URI>
              && System.getProperty( "os.name" )
                       .toLowerCase()
                       .contains( "windows" )
+             && noBackslashes.length() > 2
              && noBackslashes.charAt( 1 ) == ':' )
         {
             LOGGER.debug( "Windows has been detected and possible URI {} probably starts with a drive letter.",
