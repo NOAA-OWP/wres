@@ -281,7 +281,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
     }
 
     @Override
-    boolean isForecastRetriever()
+    boolean isForecast()
     {
         return true;
     }
@@ -394,12 +394,12 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
      * Construct.
      * 
      * @param timeWindow the time window
-     * @throws NullPointerException if the filter is null
+     * @throws NullPointerException if any required input is null
      */
 
     private SingleValuedForecastRetriever( Builder builder )
     {
-        super( builder );
+        super( builder, "TS.initialization_date", "TSV.lead" );
     }
 
 

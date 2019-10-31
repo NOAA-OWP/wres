@@ -29,8 +29,7 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
      */
 
     private static final String NO_IDENTIFIER_ERROR = "Retrieval of observed time-series by identifier is not "
-                                                      + "currently possible because there is no identifier for "
-                                                      + "observed time-series in the WRES database.";    
+                                                      + "currently possible.";    
 
     /**
      * Log message.
@@ -151,7 +150,7 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
     }
 
     @Override
-    boolean isForecastRetriever()
+    boolean isForecast()
     {
         return false;
     }
@@ -212,12 +211,12 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
      * Construct.
      * 
      * @param timeWindow the time window
-     * @throws NullPointerException if the filter is null
+     * @throws NullPointerException if any required input is null
      */
 
     private ObservationRetriever( Builder builder )
     {
-        super( builder );
+        super( builder, "O.observation_time", "TSV.lead" );
     }
 
 

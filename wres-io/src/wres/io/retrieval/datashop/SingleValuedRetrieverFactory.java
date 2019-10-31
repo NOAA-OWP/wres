@@ -2,6 +2,7 @@ package wres.io.retrieval.datashop;
 
 import java.sql.SQLException;
 import java.time.MonthDay;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -133,28 +134,40 @@ class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Double>
                       this.featureString );
         try
         {
-            int leftVariableFeatureId = project.getLeftVariableFeatureId( this.feature );
+            TimeSeriesRetrieverBuilder<Double> builder = null;
+
+            // Gridded data?
+            if ( this.project.usesGriddedData( this.leftConfig ) )
+            {
+                builder = this.getGriddedRetrieverBuilder( this.leftConfig.getType() )
+                              .setVariableName( this.leftConfig.getVariable().getValue() )
+                              .setFeatures( List.of( this.feature ) );
+            }
+            else
+            {
+                int leftVariableFeatureId = project.getLeftVariableFeatureId( this.feature );
+                builder = this.getRetrieverBuilder( this.leftConfig.getType() )
+                              .setVariableFeatureId( leftVariableFeatureId );
+            }
 
             // TODO: reconsider how seasons are applied. For now, do not apply to
             // left-ish data because the current interpretation of right-ish data
             // with a forecast type is to use reference time, not valid time. See #40405
-            return this.getRetrieverBuilder( this.leftConfig.getType() )
-                       .setProjectId( this.project.getId() )
-                       .setVariableFeatureId( leftVariableFeatureId )
-                       .setLeftOrRightOrBaseline( LeftOrRightOrBaseline.LEFT )
-                       .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale( this.leftConfig ) )
-                       .setDesiredTimeScale( this.desiredTimeScale )
-                       //.setSeasonStart( this.seasonStart )
-                       //.setSeasonEnd( this.seasonEnd )
-                       .setUnitMapper( this.unitMapper )
-                       .build();
+            return builder.setProjectId( this.project.getId() )
+                          .setLeftOrRightOrBaseline( LeftOrRightOrBaseline.LEFT )
+                          .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale( this.leftConfig ) )
+                          .setDesiredTimeScale( this.desiredTimeScale )
+                          //.setSeasonStart( this.seasonStart )
+                          //.setSeasonEnd( this.seasonEnd )
+                          .setUnitMapper( this.unitMapper )
+                          .build();
         }
         catch ( SQLException e )
         {
             throw new DataAccessException( "While creating a retriever of left data for project "
                                            + this.project.getId()
                                            + " and feature "
-                                           + featureString
+                                           + this.featureString
                                            + ":",
                                            e );
         }
@@ -169,29 +182,41 @@ class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Double>
                       timeWindow );
         try
         {
-            int leftVariableFeatureId = project.getLeftVariableFeatureId( this.feature );
-            
+            TimeSeriesRetrieverBuilder<Double> builder = null;
+
+            // Gridded data?
+            if ( this.project.usesGriddedData( this.leftConfig ) )
+            {
+                builder = this.getGriddedRetrieverBuilder( this.leftConfig.getType() )
+                              .setVariableName( this.leftConfig.getVariable().getValue() )
+                              .setFeatures( List.of( this.feature ) );
+            }
+            else
+            {
+                int leftVariableFeatureId = project.getLeftVariableFeatureId( this.feature );
+                builder = this.getRetrieverBuilder( this.leftConfig.getType() )
+                              .setVariableFeatureId( leftVariableFeatureId );
+            }
+
             // TODO: reconsider how seasons are applied. For now, do not apply to
             // left-ish data because the current interpretation of right-ish data
             // with a forecast type is to use reference time, not valid time. See #40405
-            return this.getRetrieverBuilder( this.leftConfig.getType() )
-                       .setProjectId( this.project.getId() )
-                       .setVariableFeatureId( leftVariableFeatureId )
-                       .setLeftOrRightOrBaseline( LeftOrRightOrBaseline.LEFT )
-                       .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale( this.leftConfig ) )
-                       .setDesiredTimeScale( this.desiredTimeScale )
-                       //.setSeasonStart( this.seasonStart )
-                       //.setSeasonEnd( this.seasonEnd )
-                       .setUnitMapper( this.unitMapper )
-                       .setTimeWindow( timeWindow )
-                       .build();
+            return builder.setProjectId( this.project.getId() )
+                          .setLeftOrRightOrBaseline( LeftOrRightOrBaseline.LEFT )
+                          .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale( this.leftConfig ) )
+                          .setDesiredTimeScale( this.desiredTimeScale )
+                          //.setSeasonStart( this.seasonStart )
+                          //.setSeasonEnd( this.seasonEnd )
+                          .setUnitMapper( this.unitMapper )
+                          .setTimeWindow( timeWindow )
+                          .build();
         }
         catch ( SQLException e )
         {
             throw new DataAccessException( "While creating a retriever of left data for project "
                                            + this.project.getId()
                                            + FEATURE_MESSAGE
-                                           + featureString
+                                           + this.featureString
                                            + AND_TIME_WINDOW_MESSAGE
                                            + timeWindow
                                            + ":",
@@ -208,26 +233,42 @@ class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Double>
                       timeWindow );
         try
         {
-            int rightVariableFeatureId = project.getRightVariableFeatureId( feature );
+            TimeSeriesRetrieverBuilder<Double> builder = null;
 
-            return this.getRetrieverBuilder( this.rightConfig.getType() )
-                       .setProjectId( this.project.getId() )
-                       .setVariableFeatureId( rightVariableFeatureId )
-                       .setLeftOrRightOrBaseline( LeftOrRightOrBaseline.RIGHT )
-                       .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale( rightConfig ) )
-                       .setDesiredTimeScale( this.desiredTimeScale )
-                       .setUnitMapper( this.unitMapper )
-                       .setSeasonStart( this.seasonStart )
-                       .setSeasonEnd( this.seasonEnd )
-                       .setTimeWindow( timeWindow )
-                       .build();
+            // Gridded data?
+            if ( this.project.usesGriddedData( this.rightConfig ) )
+            {
+                builder = this.getGriddedRetrieverBuilder( this.rightConfig.getType() )
+                              .setVariableName( this.rightConfig.getVariable().getValue() )
+                              .setFeatures( List.of( this.feature ) );
+            }
+            else
+            {
+                int rightVariableFeatureId = project.getRightVariableFeatureId( this.feature );
+                builder = this.getRetrieverBuilder( this.rightConfig.getType() )
+                              .setVariableFeatureId( rightVariableFeatureId );
+            }
+
+            // TODO: reconsider how seasons are applied. For now, do not apply to
+            // left-ish data because the current interpretation of right-ish data
+            // with a forecast type is to use reference time, not valid time. See #40405
+            return builder.setProjectId( this.project.getId() )
+                          .setLeftOrRightOrBaseline( LeftOrRightOrBaseline.RIGHT )
+                          .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale( rightConfig ) )
+                          .setDesiredTimeScale( this.desiredTimeScale )
+                          .setUnitMapper( this.unitMapper )
+                          .setSeasonStart( this.seasonStart )
+                          .setSeasonEnd( this.seasonEnd )
+                          .setTimeWindow( timeWindow )
+                          .build();
+
         }
         catch ( SQLException e )
         {
             throw new DataAccessException( "While creating a retriever of right data for project "
                                            + this.project.getId()
                                            + FEATURE_MESSAGE
-                                           + featureString
+                                           + this.featureString
                                            + AND_TIME_WINDOW_MESSAGE
                                            + timeWindow
                                            + ":",
@@ -248,19 +289,35 @@ class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Double>
                           timeWindow );
             try
             {
-                int baselineVariableFeatureId = project.getBaselineVariableFeatureId( feature );
+                TimeSeriesRetrieverBuilder<Double> builder = null;
 
-                baseline = this.getRetrieverBuilder( this.baselineConfig.getType() )
-                               .setProjectId( this.project.getId() )
-                               .setVariableFeatureId( baselineVariableFeatureId )
-                               .setLeftOrRightOrBaseline( LeftOrRightOrBaseline.BASELINE )
-                               .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale( baselineConfig ) )
-                               .setDesiredTimeScale( this.desiredTimeScale )
-                               .setUnitMapper( this.unitMapper )
-                               .setSeasonStart( this.seasonStart )
-                               .setSeasonEnd( this.seasonEnd )
-                               .setTimeWindow( timeWindow )
-                               .build();
+                // Gridded data?
+                if ( this.project.usesGriddedData( this.baselineConfig ) )
+                {
+                    builder = this.getGriddedRetrieverBuilder( this.baselineConfig.getType() )
+                                  .setVariableName( this.baselineConfig.getVariable().getValue() )
+                                  .setFeatures( List.of( this.feature ) );
+                }
+                else
+                {
+                    int baselineVariableFeatureId = project.getBaselineVariableFeatureId( feature );
+                    builder = this.getRetrieverBuilder( this.baselineConfig.getType() )
+                                  .setVariableFeatureId( baselineVariableFeatureId );
+                }
+
+                // TODO: reconsider how seasons are applied. For now, do not apply to
+                // left-ish data because the current interpretation of right-ish data
+                // with a forecast type is to use reference time, not valid time. See #40405
+                return builder.setProjectId( this.project.getId() )
+                              .setLeftOrRightOrBaseline( LeftOrRightOrBaseline.BASELINE )
+                              .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale( baselineConfig ) )
+                              .setDesiredTimeScale( this.desiredTimeScale )
+                              .setUnitMapper( this.unitMapper )
+                              .setSeasonStart( this.seasonStart )
+                              .setSeasonEnd( this.seasonEnd )
+                              .setTimeWindow( timeWindow )
+                              .build();
+
             }
             catch ( SQLException e )
             {
@@ -350,6 +407,32 @@ class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Double>
                                                     + "'." );
         }
     }
+
+    /**
+     * Returns a builder for a gridded retriever.
+     * 
+     * @param dataType the retrieved data type
+     * @return the retriever
+     * @throws IllegalArgumentException if the data type is unrecognized in this context
+     */
+
+    private SingleValuedGriddedRetriever.Builder getGriddedRetrieverBuilder( DatasourceType dataType )
+    {
+        switch ( dataType )
+        {
+            case SINGLE_VALUED_FORECASTS:
+                return new SingleValuedGriddedRetriever.Builder().setIsForecast( true );
+            case OBSERVATIONS:
+            case SIMULATIONS:
+                return new SingleValuedGriddedRetriever.Builder();
+            default:
+                throw new IllegalArgumentException( "Unrecognized data type from which to create the single-valued "
+                                                    + "retriever: "
+                                                    + dataType
+                                                    + "'." );
+        }
+    }
+
 
     /**
      * Returns the declared existing time scale associated with a data source, if any.

@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -33,6 +34,7 @@ import wres.datamodel.sampledata.pairs.TimeSeriesOfEnsemblePairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfEnsemblePairs.TimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
+import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindow;
@@ -422,8 +424,13 @@ class SampleDataRetriever extends Retriever
             boolean isForecast = ConfigHelper.isForecast( dataSourceConfig );
             List<Feature> features = List.of( this.getFeature() );
             String variableName = dataSourceConfig.getVariable().getValue();
+            TimeScale timeScale = null;
+            if ( Objects.nonNull( dataSourceConfig.getExistingTimeScale() ) )
+            {
+                timeScale = TimeScale.of( dataSourceConfig.getExistingTimeScale() );
+            }
 
-            griddedRequest = Fetcher.prepareRequest( paths, features, variableName, timeWindow, isForecast );
+            griddedRequest = Fetcher.prepareRequest( paths, features, variableName, timeWindow, isForecast, timeScale );
         }
         catch ( SQLException e )
         {

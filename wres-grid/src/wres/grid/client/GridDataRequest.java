@@ -6,6 +6,7 @@ import java.util.Objects;
 import java.util.StringJoiner;
 
 import wres.config.generated.Feature;
+import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.TimeWindow;
 
 /**
@@ -43,6 +44,12 @@ class GridDataRequest implements Request
      */
 
     private final boolean isForecast;
+    
+    /**
+     * Optional time-scale information that can augment a source, but not override it.
+     */
+    
+    private final TimeScale declaredExistingTimeScale;
 
     /**
      * Returns an instance.
@@ -52,6 +59,7 @@ class GridDataRequest implements Request
      * @param variableName the variable to read
      * @param timeWindow the time window to consider
      * @param isForecast is true if the paths point to forecasts, otherwise false
+     * @param declaredExistingTimeScale optional time-scale information that can augment, but not override
      * @return an instance
      * @throws NullPointerException if any nullable input is null
      */
@@ -60,9 +68,10 @@ class GridDataRequest implements Request
                                List<Feature> features,
                                String variableName,
                                TimeWindow timeWindow,
-                               boolean isForecast )
+                               boolean isForecast,
+                               TimeScale declaredExistingTimeScale )
     {
-        return new GridDataRequest( paths, features, variableName, timeWindow, isForecast );
+        return new GridDataRequest( paths, features, variableName, timeWindow, isForecast, declaredExistingTimeScale );
     }
 
     /**
@@ -73,13 +82,15 @@ class GridDataRequest implements Request
      * @param variableName the variable to read
      * @param timeWindow the time window to consider
      * @param isForecast is true if the paths point to forecasts, otherwise false
+     * @param declaredExistingTimeScale optional time-scale information that can augment, but not override
      */
 
     private GridDataRequest( List<String> paths,
                              List<Feature> features,
                              String variableName,
                              TimeWindow timeWindow,
-                             boolean isForecast )
+                             boolean isForecast,
+                             TimeScale declaredExistingTimeScale )
     {
         Objects.requireNonNull( paths );
         Objects.requireNonNull( features );
@@ -91,6 +102,7 @@ class GridDataRequest implements Request
         this.variableName = variableName;
         this.timeWindow = timeWindow;
         this.isForecast = isForecast;
+        this.declaredExistingTimeScale = declaredExistingTimeScale;
     }
 
     @Override
@@ -122,6 +134,12 @@ class GridDataRequest implements Request
     {
         return this.timeWindow;
     }
+    
+    @Override
+    public TimeScale getTimeScale()
+    {
+        return this.declaredExistingTimeScale;
+    }
 
     @Override
     public String toString()
@@ -134,6 +152,7 @@ class GridDataRequest implements Request
         joiner.add( "    isForecast: " + this.isForecast() + "," );
         joiner.add( "    features: " + this.getFeatures() + "," );
         joiner.add( "    paths: " + this.getPaths() );
+        joiner.add( "    time scale: " + this.getTimeScale() );
         joiner.add( "}" );
 
         return joiner.toString();

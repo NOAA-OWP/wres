@@ -10,6 +10,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Objects;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -19,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.FeaturePlus;
 import wres.config.generated.Feature;
+import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindow;
@@ -63,6 +65,12 @@ class GridCache implements LeftHandCache
         List<Feature> features = List.of( feature );
         String variableName = this.project.getLeft().getVariable().getValue();
 
+        TimeScale timeScale = null;
+        if ( Objects.nonNull( this.project.getLeft().getExistingTimeScale() ) )
+        {
+            timeScale = TimeScale.of( this.project.getLeft().getExistingTimeScale() );
+        }
+
         Collection<String> paths = Collections.getValuesInRange( this.cachedSources, earliestTime, latestTime );
         if ( paths.size() == 0 )
         {
@@ -74,11 +82,12 @@ class GridCache implements LeftHandCache
             return leftValues;
         }
 
-        Request griddedRequest = Fetcher.prepareRequest( List.copyOf( paths ), 
-                                                         features, 
-                                                         variableName, 
-                                                         timeWindow, 
-                                                         isForecast );
+        Request griddedRequest = Fetcher.prepareRequest( List.copyOf( paths ),
+                                                         features,
+                                                         variableName,
+                                                         timeWindow,
+                                                         isForecast,
+                                                         timeScale );
 
         SingleValuedTimeSeriesResponse gridResponse = Fetcher.getSingleValuedTimeSeries( griddedRequest );
 

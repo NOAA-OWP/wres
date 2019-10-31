@@ -4,8 +4,11 @@ import thredds.client.catalog.ServiceType;
 import ucar.nc2.NetcdfFile;
 import wres.config.FeaturePlus;
 import wres.config.generated.Feature;
+import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.Event;
+import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 import wres.grid.client.Request;
 import wres.grid.client.SingleValuedTimeSeriesResponse;
 import wres.system.SystemSettings;
@@ -56,7 +59,7 @@ public class GriddedReader
     private static final Object READER_LOCK = new Object();
 
     private static final Map<String, GridFileReader> FILE_READERS = new ConcurrentHashMap<>();
-    
+
     private static final Logger LOGGER = LoggerFactory.getLogger( GriddedReader.class );
 
     private static GridFileReader getReader( final String filePath, final boolean isForecast )
@@ -92,11 +95,11 @@ public class GriddedReader
     {
         Objects.requireNonNull( request );
 
-        if( LOGGER.isInfoEnabled() )
+        if ( LOGGER.isInfoEnabled() )
         {
             LOGGER.info( "Processing the following request for gridded data {}.", request );
         }
-        
+
         GridValue griddedValue;
 
         Queue<String> paths = new LinkedList<>( request.getPaths() );
@@ -148,7 +151,8 @@ public class GriddedReader
         for ( Map.Entry<FeaturePlus, List<Pair<Instant, Event<Double>>>> nextPair : eventsPerFeature.entrySet() )
         {
             Stream<TimeSeries<Double>> timeSeries =
-                    GriddedReader.getTimeSeriesFromListOfEvents( nextPair.getValue() ).stream();
+                    GriddedReader.getTimeSeriesFromListOfEvents( nextPair.getValue(), request.getTimeScale() )
+                                 .stream();
             seriesPerFeature.put( nextPair.getKey(), timeSeries );
         }
 
@@ -166,11 +170,13 @@ public class GriddedReader
      *  
      * @param <T> the type of event
      * @param events the events
+     * @param timeScale optional time scale information
      * @return a best guess about the time-series composed by the events
      * @throws NullPointerException if the input is null
      */
 
-    static <T> List<TimeSeries<T>> getTimeSeriesFromListOfEvents( List<Pair<Instant, Event<T>>> events )
+    static <T> List<TimeSeries<T>> getTimeSeriesFromListOfEvents( List<Pair<Instant, Event<T>>> events,
+                                                                  TimeScale timeScale )
     {
         Objects.requireNonNull( events );
 
@@ -219,14 +225,19 @@ public class GriddedReader
         // Add the time-series
         for ( Map.Entry<Instant, SortedSet<Event<T>>> nextEntry : eventsByReferenceTime.entrySet() )
         {
-            returnMe.add( TimeSeries.of( nextEntry.getKey(), nextEntry.getValue() ) );
+            TimeSeriesBuilder<T> builder =
+                    new TimeSeriesBuilder<T>().setTimeScale( timeScale )
+                                              .addReferenceTime( nextEntry.getKey(), ReferenceTimeType.UNKNOWN )
+                                              .addEvents( nextEntry.getValue() );
+
+            returnMe.add( builder.build() );
         }
 
         // Add duplicates: this will be called recursively
         // until no duplicates are left
         if ( !duplicates.isEmpty() )
         {
-            returnMe.addAll( GriddedReader.getTimeSeriesFromListOfEvents( duplicates ) );
+            returnMe.addAll( GriddedReader.getTimeSeriesFromListOfEvents( duplicates, timeScale ) );
         }
 
         return Collections.unmodifiableList( returnMe );
@@ -358,12 +369,12 @@ public class GriddedReader
         private final ReentrantLock readLock;
         private final boolean isForecast;
     }
-    
+
     /**
      * Do not construct.
      */
-    
+
     private GriddedReader()
-    {        
+    {
     }
 }

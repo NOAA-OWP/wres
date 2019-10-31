@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.List;
 
 import wres.config.generated.Feature;
+import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.TimeWindow;
 import wres.grid.reading.GriddedReader;
 
@@ -40,6 +41,7 @@ public class Fetcher
      * @param variableName the variable to read
      * @param timeWindow the time window to consider
      * @param isForecast is true if the paths point to forecasts, otherwise false
+     * @param declaredExistingTimeScale optional time-scale information that can augment, but not override
      * @return an instance
      * @throws NullPointerException if any nullable input is null
      */
@@ -48,9 +50,10 @@ public class Fetcher
                                                   List<Feature> features,
                                                   String variableName,
                                                   TimeWindow timeWindow,
-                                                  boolean isForecast )
+                                                  boolean isForecast,
+                                                  TimeScale declaredExistingTimeScale )
     {
-        return GridDataRequest.of( paths, features, variableName, timeWindow, isForecast );
+        return GridDataRequest.of( paths, features, variableName, timeWindow, isForecast, declaredExistingTimeScale );
     }
 
     /**
