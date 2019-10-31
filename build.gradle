@@ -354,7 +354,8 @@ project(':wres-io')
     test
     {
         // Set the socket timeout for tests involving mockserver to 120s
-        systemProperties = [ "mockserver.maxSocketTimeout": 120000 ]
+        systemProperties = [ "mockserver.maxSocketTimeout": 120000,
+                             "ucar.unidata.io.http.maxHttpBufferSize": 200000 ]
     }
 }
 
@@ -606,7 +607,8 @@ project(':wres-worker')
 
     mainClassName = 'wres.worker.Worker'
     applicationDefaultJvmArgs = ['-Xms32m','-Xmx32m',
-                                 '-XX:+HeapDumpOnOutOfMemoryError']
+                                 '-XX:+HeapDumpOnOutOfMemoryError',
+                                 '-Ducar.unidata.io.http.maxHttpBufferSize=200000']
 
     // Add logging configuration to the classpath when running via script
     startScripts
