@@ -1777,7 +1777,7 @@ public class ConfigHelper
 
         //Path TODO: permit web thresholds. 
         // See #59422
-        Path commaSeparated = Paths.get( nextSource.getValue().toString() );
+        Path commaSeparated = Paths.get( nextSource.getValue() );
 
         // Condition: default to greater
         ThresholdConstants.Operator operator = ThresholdConstants.Operator.GREATER;

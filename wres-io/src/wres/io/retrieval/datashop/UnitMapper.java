@@ -41,6 +41,13 @@ class UnitMapper
     private final Map<Integer, DoubleUnaryOperator> conversions = new HashMap<>();
 
     /**
+     * A mapping between the names of existing measurement units and their corresponding 
+     * <code>measurementunit_id</code>
+     */
+
+    private final Map<String, Integer> namesToIdentifiers = new HashMap<>();
+
+    /**
      * Desired measurement units.
      */
 
@@ -54,12 +61,12 @@ class UnitMapper
      * @throws NullPointerException if the input is null
      * @throws DataAccessException if the data could not be accessed 
      */
-    
+
     static UnitMapper of( String desiredMeasurementUnit )
     {
         return new UnitMapper( desiredMeasurementUnit );
     }
-    
+
     /**
      * Returns a unit mapper for the existing <code>measurementunit_id</code> provided.
      * 
@@ -71,17 +78,42 @@ class UnitMapper
     {
         Objects.requireNonNull( measurementUnitId, "Specify a non-null measurement unit for conversion." );
 
-        if ( !conversions.containsKey( measurementUnitId ) )
+        if ( !this.conversions.containsKey( measurementUnitId ) )
         {
             throw new NoSuchUnitConversionException( "There is no such unit conversion function to "
                                                      + "'"
-                                                     + desiredMeasurementUnit
+                                                     + this.desiredMeasurementUnit
                                                      + "' for the measurementunit_id '"
                                                      + measurementUnitId
-                                                     + "'.");
+                                                     + "'." );
         }
 
-        return conversions.get( measurementUnitId );
+        return this.conversions.get( measurementUnitId );
+    }
+
+    /**
+     * Returns a unit mapper for the name of an existing measurement unit.
+     * 
+     * @param unitName the name of an existing measurement unit
+     * @throws NoSuchUnitConversionException if there is no conversion for the supplied unitName
+     */
+
+    DoubleUnaryOperator getUnitMapper( String unitName )
+    {
+        Objects.requireNonNull( unitName, "Specify a non-null measurement unit name for conversion." );
+
+        if ( !this.namesToIdentifiers.containsKey( unitName ) )
+        {
+            throw new NoSuchUnitConversionException( "There is no such unit conversion function to "
+                                                     + "'"
+                                                     + this.desiredMeasurementUnit
+                                                     + "' for the unit name '"
+                                                     + unitName
+                                                     + "'." );
+        }
+
+        Integer identifier = this.namesToIdentifiers.get( unitName );
+        return this.conversions.get( identifier );
     }
 
     /**
@@ -103,11 +135,17 @@ class UnitMapper
         // Create the retrieval script      
         ScriptBuilder scripter = new ScriptBuilder();
 
-        scripter.addLine( "SELECT UC.*, M.unit_name" );
-        scripter.addLine( "FROM wres.UnitConversion UC" );
-        scripter.addLine( "INNER JOIN wres.MeasurementUnit M" );
-        scripter.addTab().addLine( "ON M.measurementunit_id = UC.to_unit" );
-        scripter.addLine( "WHERE M.unit_name = '", desiredMeasurementUnit, "'" );
+        scripter.addLine( "WITH units AS (" );
+        scripter.addTab().addLine( "SELECT UC.*" );
+        scripter.addTab().addLine( "FROM wres.UnitConversion UC" );
+        scripter.addTab().addLine( "INNER JOIN wres.MeasurementUnit M" );
+        scripter.addTab( 2 ).addLine( "ON M.measurementunit_id = UC.to_unit" );
+        scripter.addTab().addLine( "WHERE M.unit_name = '", desiredMeasurementUnit, "'" );
+        scripter.addLine( ")" );
+        scripter.addLine( "SELECT M.unit_name AS from_unit_name, units.*" );
+        scripter.addLine( "FROM wres.MeasurementUnit M" );
+        scripter.addLine( "INNER JOIN units" );
+        scripter.addTab().addLine( "ON units.from_unit = M.measurementunit_id" );
 
         String script = scripter.toString();
 
@@ -120,7 +158,7 @@ class UnitMapper
         }
 
         DataScripter dataScripter = new DataScripter( script );
-        
+
         // Set high priority
         dataScripter.setHighPriority( true );
 
@@ -130,6 +168,7 @@ class UnitMapper
             while ( provider.next() )
             {
                 Integer measurementUnitId = provider.getInt( "from_unit" );
+                String fromUnitName = provider.getString( "from_unit_name" );
                 double initialOffset = provider.getDouble( "initial_offset" );
                 double finalOffset = provider.getDouble( "final_offset" );
                 double factor = provider.getDouble( "factor" );
@@ -140,6 +179,7 @@ class UnitMapper
                                                           : MissingValues.DOUBLE;
 
                 this.conversions.put( measurementUnitId, mapper );
+                this.namesToIdentifiers.put( fromUnitName, measurementUnitId );
             }
 
             LOGGER.debug( "Added {} unit conversions to the cache for the desired units of '{}'.",

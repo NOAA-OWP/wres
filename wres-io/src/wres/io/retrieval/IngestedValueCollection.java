@@ -391,6 +391,8 @@ class IngestedValueCollection
         }
         else
         {
+            // This should probably be an exception. General rule is either log or throw, and only
+            // log ERROR at the top level of the application. #70446-26
             LOGGER.error( "The value {} could not be added to the collection of values to evaluate.", value );
         }
     }

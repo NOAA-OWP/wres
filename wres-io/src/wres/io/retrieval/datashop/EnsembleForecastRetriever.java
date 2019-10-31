@@ -236,7 +236,7 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
     }
 
     @Override
-    boolean isForecastRetriever()
+    boolean isForecast()
     {
         return true;
     }
@@ -359,12 +359,12 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
      * Construct.
      * 
      * @param timeWindow the time window
-     * @throws NullPointerException if the filter is null
+     * @throws NullPointerException if any required input is null
      */
 
     private EnsembleForecastRetriever( Builder builder )
     {
-        super( builder );
+        super( builder, "TS.initialization_date", "TSV.lead" );
         this.ensembleIdsToInclude = builder.ensembleIdsToInclude;
         this.ensembleIdsToExclude = builder.ensembleIdsToExclude;
     }

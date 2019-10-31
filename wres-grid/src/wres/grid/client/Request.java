@@ -3,6 +3,7 @@ package wres.grid.client;
 import java.util.List;
 
 import wres.config.generated.Feature;
+import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.TimeWindow;
 
 /**
@@ -33,6 +34,12 @@ public interface Request
      */
     
     String getVariableName();
+    
+    /**
+     * @return the declared existing time scale, if any
+     */
+    
+    TimeScale getTimeScale();
     
     /**
      * @return true if the request involves forecasts, false otherwise
