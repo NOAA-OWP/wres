@@ -133,7 +133,7 @@ public class SingleValuedGriddedRetrieverTest
     }
 
     @Test
-    public void testRetrievalOfTwoForecastTimeSeriesEachWithFiveEvents() throws Exception
+    public void testGetFormsRequestForThreeOfFiveSources() throws Exception
     {
         // Desired units are the same as the existing units
         UnitMapper mapper = UnitMapper.of( UNITS );
