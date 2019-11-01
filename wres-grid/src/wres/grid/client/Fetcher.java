@@ -33,6 +33,11 @@ public class Fetcher
         }
     }
 
+    public static SingleValuedTimeSeriesResponse getSingleValuedTimeSeries() throws IOException
+    {
+        return null;
+    }
+    
     /**
      * Returns an instance.
      * 

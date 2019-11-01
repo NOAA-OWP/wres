@@ -1133,6 +1133,9 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         /**
          * Sets the <code>wres.VariableFeature.variablefeature_id</code>.
          * 
+         * TODO: replace this with a variable name and a list of features. Retrieval should support
+         * multiple features and separate them from variables.
+         * 
          * @param variableFeatureId the <code>wres.VariableFeature.variablefeature_id</code>
          * @return the builder
          */

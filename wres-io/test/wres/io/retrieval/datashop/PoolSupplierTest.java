@@ -41,7 +41,7 @@ import wres.io.retrieval.datashop.PoolSupplier.PoolOfPairsSupplierBuilder;
  */
 
 @RunWith( MockitoJUnitRunner.class )
-public class PoolOfPairsSupplierTest
+public class PoolSupplierTest
 {
 
     // Times used    
