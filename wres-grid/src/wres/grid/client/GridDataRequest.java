@@ -44,11 +44,11 @@ class GridDataRequest implements Request
      */
 
     private final boolean isForecast;
-    
+
     /**
      * Optional time-scale information that can augment a source, but not override it.
      */
-    
+
     private final TimeScale declaredExistingTimeScale;
 
     /**
@@ -134,7 +134,7 @@ class GridDataRequest implements Request
     {
         return this.timeWindow;
     }
-    
+
     @Override
     public TimeScale getTimeScale()
     {
@@ -157,5 +157,35 @@ class GridDataRequest implements Request
 
         return joiner.toString();
     }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( ! ( o instanceof GridDataRequest ) )
+        {
+            return false;
+        }
+
+        Request in = (Request) o;
+
+        return Objects.equals( in.getVariableName(), this.getVariableName() )
+               && Objects.equals( in.getPaths(), this.getPaths() )
+               && in.isForecast() == this.isForecast()
+               && Objects.equals( in.getFeatures(), this.getFeatures() )
+               && Objects.equals( in.getTimeWindow(), this.getTimeWindow() )
+               && Objects.equals( in.getTimeScale(), this.getTimeScale() );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( this.getVariableName(),
+                             this.getPaths(),
+                             this.isForecast(),
+                             this.getFeatures(),
+                             this.getTimeWindow(),
+                             this.getTimeScale() );
+    }
+
 
 }

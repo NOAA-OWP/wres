@@ -99,6 +99,12 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
      */
 
     private final Boolean isForecast;
+    
+    /**
+     * The request.
+     */
+    
+    private Request request = null;
 
     @Override
     boolean isForecast()
@@ -231,7 +237,32 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
     @Override
     public Stream<TimeSeries<Double>> get()
     {
-        // Get the paths
+        try
+        {           
+            // Build the request object
+            if( Objects.isNull( this.request ) )
+            {
+                this.request = this.getRequest();
+            }
+            
+            // Obtain the response
+            return this.getResponse( this.request );
+        }
+        catch ( IOException | SQLException e )
+        {
+            throw new DataAccessException( "Failed to access the time-series data.", e );
+        }
+    }
+    
+    /**
+     * Returns the request.
+     * 
+     * @return the request
+     * @throws SQLException if the request could not be formed
+     */
+
+    private Request getRequest() throws SQLException
+    {
         DataScripter scripter = new DataScripter( this.script );
 
         if ( LOGGER.isInfoEnabled() )
@@ -252,37 +283,48 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
             }
 
             // Build the request object
-            Request request = Fetcher.prepareRequest( paths,
-                                                      this.getFeatures(),
-                                                      this.getVariableName(),
-                                                      this.getTimeWindow(),
-                                                      this.isForecast(),
-                                                      this.getDeclaredExistingTimeScale() );
+            return Fetcher.prepareRequest( paths,
+                                           this.getFeatures(),
+                                           this.getVariableName(),
+                                           this.getTimeWindow(),
+                                           this.isForecast(),
+                                           this.getDeclaredExistingTimeScale() );
 
-            // Obtain the response
-            SingleValuedTimeSeriesResponse response = Fetcher.getSingleValuedTimeSeries( request );
-
-            // Get the unit mapper
-            DoubleUnaryOperator mapper = this.getMeasurementUnitMapper()
-                                             .getUnitMapper( response.getMeasuremenUnits() );
-
-            // Map the units, pooling all features, since this retriever does not provide a per-feature API
-            List<TimeSeries<Double>> toStream = new ArrayList<>();
-            for ( Stream<TimeSeries<Double>> next : response.getTimeSeries().values() )
-            {
-                List<TimeSeries<Double>> mapped =
-                        next.map( in -> TimeSeriesSlicer.transform( in, mapper::applyAsDouble ) )
-                            .collect( Collectors.toList() );
-
-                toStream.addAll( mapped );
-            }
-
-            return toStream.stream();
         }
-        catch ( IOException | SQLException e )
+    }    
+    
+    /**
+     * Returns the time-series response for a given request.
+     * 
+     * @param request the request
+     * @return the time-series
+     * @throws IOException if the response could not be obtained
+     */
+
+    private Stream<TimeSeries<Double>> getResponse( Request request ) throws IOException
+    {
+        Objects.requireNonNull( request );
+        
+        // Obtain the response
+        SingleValuedTimeSeriesResponse response = Fetcher.getSingleValuedTimeSeries( request );
+
+        // Get the unit mapper
+        UnitMapper mapper = this.getMeasurementUnitMapper();
+        String responseUnits = response.getMeasuremenUnits();
+        DoubleUnaryOperator unitOperator = mapper.getUnitMapper( responseUnits );
+
+        // Map the units, pooling all features, since this retriever does not provide a per-feature API
+        List<TimeSeries<Double>> toStream = new ArrayList<>();
+        for ( Stream<TimeSeries<Double>> next : response.getTimeSeries().values() )
         {
-            throw new DataAccessException( "Failed to access the time-series data.", e );
+            List<TimeSeries<Double>> mapped =
+                    next.map( in -> TimeSeriesSlicer.transform( in, unitOperator::applyAsDouble ) )
+                        .collect( Collectors.toList() );
+
+            toStream.addAll( mapped );
         }
+
+        return toStream.stream();
     }
 
     /**
@@ -318,7 +360,7 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
         ScriptBuilder scripter = new ScriptBuilder();
 
         scripter.addLine( "SELECT path" );
-        scripter.addLine( "FROM wres.Source S," );
+        scripter.addLine( "FROM wres.Source S" );
         scripter.addLine( "WHERE S.is_point_data = FALSE" );
 
         return scripter.toString();
