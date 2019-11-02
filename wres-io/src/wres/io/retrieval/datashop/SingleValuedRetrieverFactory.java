@@ -141,7 +141,8 @@ class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Double>
             {
                 builder = this.getGriddedRetrieverBuilder( this.leftConfig.getType() )
                               .setVariableName( this.leftConfig.getVariable().getValue() )
-                              .setFeatures( List.of( this.feature ) );
+                              .setFeatures( List.of( this.feature ) )
+                              .setIsForecast( ConfigHelper.isForecast( this.leftConfig ) );
             }
             else
             {
@@ -189,7 +190,8 @@ class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Double>
             {
                 builder = this.getGriddedRetrieverBuilder( this.leftConfig.getType() )
                               .setVariableName( this.leftConfig.getVariable().getValue() )
-                              .setFeatures( List.of( this.feature ) );
+                              .setFeatures( List.of( this.feature ) )
+                              .setIsForecast( ConfigHelper.isForecast( this.leftConfig ) );
             }
             else
             {
@@ -240,7 +242,8 @@ class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Double>
             {
                 builder = this.getGriddedRetrieverBuilder( this.rightConfig.getType() )
                               .setVariableName( this.rightConfig.getVariable().getValue() )
-                              .setFeatures( List.of( this.feature ) );
+                              .setFeatures( List.of( this.feature ) )
+                              .setIsForecast( ConfigHelper.isForecast( this.rightConfig ) );
             }
             else
             {
@@ -296,7 +299,8 @@ class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Double>
                 {
                     builder = this.getGriddedRetrieverBuilder( this.baselineConfig.getType() )
                                   .setVariableName( this.baselineConfig.getVariable().getValue() )
-                                  .setFeatures( List.of( this.feature ) );
+                                  .setFeatures( List.of( this.feature ) )
+                                  .setIsForecast( ConfigHelper.isForecast( this.baselineConfig ) );
                 }
                 else
                 {

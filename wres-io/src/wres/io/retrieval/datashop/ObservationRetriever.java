@@ -216,7 +216,7 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
 
     private ObservationRetriever( Builder builder )
     {
-        super( builder, "O.observation_time", "TSV.lead" );
+        super( builder, "O.observation_time", null );
     }
 
 

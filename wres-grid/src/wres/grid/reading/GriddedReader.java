@@ -95,9 +95,9 @@ public class GriddedReader
     {
         Objects.requireNonNull( request );
 
-        if ( LOGGER.isInfoEnabled() )
+        if ( LOGGER.isDebugEnabled() )
         {
-            LOGGER.info( "Processing the following request for gridded data {}.", request );
+            LOGGER.debug( "Processing the following request for gridded data {}.", request );
         }
 
         GridValue griddedValue;
@@ -107,7 +107,7 @@ public class GriddedReader
         // Events per feature, where each event is indexed by reference time in a pair
         Map<FeaturePlus, List<Pair<Instant, Event<Double>>>> eventsPerFeature = new HashMap<>();
 
-        String measurementUnit = null;
+        String measurementUnit = "UNKNOWN";
 
         while ( !paths.isEmpty() )
         {

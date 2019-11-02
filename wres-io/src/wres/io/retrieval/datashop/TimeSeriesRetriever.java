@@ -48,17 +48,17 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     private static final String WHILE_BUILDING_THE_RETRIEVER = "While building the retriever for project_id '{}' "
                                                                + "with variablefeature_id '{}' "
                                                                + "and data type {}, ";
-    
+
     /**
      * Script string used several times.
      */
-    
+
     private static final String INTERVAL_1_MINUTE = " + INTERVAL '1' MINUTE * ";
 
     /**
      * Operator used several times in scripts.
      */
-    
+
     private static final String LESS_EQUAL = " <= '";
 
     /**
@@ -126,7 +126,8 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     private final MonthDay seasonEnd;
 
     /**
-     * The time column name, including the table alias (e.g., O.observation_time).
+     * The time column name, including the table alias (e.g., O.observation_time). This may be a reference time or a
+     * valid time, depending on context. See {@link #timeColumnIsAReferenceTime()}.
      */
 
     private final String timeColumn;
@@ -236,137 +237,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     }
 
     /**
-     * Checks that the time-scale information is consistent with the last time scale. If not, throws an exception. If
-     * so, returns the valid time scale, which is obtained from the input period and function, possibly augmented by
-     * any declared time scale information attached to this instance on construction. In using an existing time scale 
-     * from the project declaration, the principle is to augment, but not override, because the source is canonical 
-     * on its own time scale. The only exception is the function {@link TimeScaleFunction.UNKNOWN}, which can be 
-     * overridden.
-     * 
-     * @param <S> the event value type
-     * @param lastScale the last scale information retrieved
-     * @param period the period of ther current time scale to be retrieved
-     * @param functionString the function string for the current time scale to be retrieved
-     * @param the event whose time scale is to be determined, which helps with messaging
-     * @return the current time scale
-     * @throws DataAccessException if the current time scale is inconsistent with the last time scale
-     */
-
-    private <S> TimeScale checkAndGetLatestScale( TimeScale lastScale,
-                                                  Duration period,
-                                                  String functionString,
-                                                  Event<S> event )
-    {
-
-        Duration periodToUse = null;
-        TimeScaleFunction functionToUse = null;
-
-        // Period available?
-        if ( Objects.nonNull( period ) )
-        {
-            periodToUse = period;
-        }
-
-        // Function available?
-        if ( Objects.nonNull( functionString ) )
-        {
-            functionToUse = TimeScale.TimeScaleFunction.valueOf( functionString.toUpperCase() );
-        }
-
-        // Otherwise, existing scale to help augment?
-        if ( Objects.nonNull( this.getDeclaredExistingTimeScale() ) )
-        {
-            TimeScale declared = this.getDeclaredExistingTimeScale();
-
-            if ( Objects.isNull( periodToUse ) )
-            {
-                periodToUse = declared.getPeriod();
-            }
-
-            // Can override null or TimeScaleFunction.UNKNOWN
-            if ( Objects.nonNull( declared.getFunction() )
-                 && ( Objects.isNull( functionToUse ) || functionToUse == TimeScaleFunction.UNKNOWN ) )
-            {
-                functionToUse = declared.getFunction();
-            }
-        }
-
-        TimeScale returnMe = null;
-
-        if ( Objects.nonNull( periodToUse ) && Objects.nonNull( functionToUse ) )
-        {
-            returnMe = TimeScale.of( periodToUse, functionToUse );
-        }
-
-        if ( Objects.nonNull( lastScale ) && !lastScale.equals( returnMe ) )
-        {
-            throw new DataAccessException( "The time scale information associated with event '" + event
-                                           + "' is '"
-                                           + returnMe
-                                           + "' but other events in the same series have a different time "
-                                           + "scale of '"
-                                           + lastScale
-                                           + "', which is not allowed." );
-        }
-
-        return returnMe;
-    }
-
-    /**
-     * Adds an event to a time-series and annotates any exception raised.
-     * 
-     * @param event the event
-     * @param builder the builder
-     * @throws DataAccessException if the event could not be added
-     */
-
-    private <S> void addEventToTimeSeries( Event<S> event, TimeSeriesBuilder<S> builder )
-    {
-        try
-        {
-            builder.addEvent( event );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            throw new DataAccessException( "While processing a time-series for project_id '"
-                                           + this.getProjectId()
-                                           + "' with variablefeature_id '"
-                                           + this.getVariableFeatureId()
-                                           + "' and data type '"
-                                           + this.getLeftOrRightOrBaseline()
-                                           + "', encountered an error: ",
-                                           e );
-        }
-    }
-
-    /**
-     * Returns a stream of time-series from the inputs. For each builder in the map of builders, create as many series 
-     * as indicated in the map of series counts.
-     * 
-     * @param <S> the event value type
-     * @param builders the builders
-     * @param seriesCounts the sreies counts
-     * @return a stream of time-series
-     */
-
-    private <S> Stream<TimeSeries<S>> composeWithDuplicates( Map<Integer, TimeSeriesBuilder<S>> builders,
-                                                             Map<Integer, Integer> seriesCounts )
-    {
-        List<TimeSeries<S>> streamMe = new ArrayList<>();
-
-        for ( Map.Entry<Integer, TimeSeriesBuilder<S>> nextSeries : builders.entrySet() )
-        {
-            int count = seriesCounts.get( nextSeries.getKey() );
-            for ( int i = 0; i < count; i++ )
-            {
-                streamMe.add( nextSeries.getValue().build() );
-            }
-        }
-
-        return streamMe.stream();
-    }
-
-    /**
      * Adds a {@link TimeWindow} constraint to the retrieval script, if available. All intervals are treated as 
      * right-closed.
      * 
@@ -389,11 +259,18 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             {
                 this.addLeadBoundsToScript( script, filter, tabsIn );
                 this.addReferenceTimeBoundsToScript( script, filter, tabsIn );
-                this.addValidTimeBoundsToForecastScript( script, filter, tabsIn );
+            }
+
+            // Is the time column a reference time?
+            // This is different from forecast vs. observation, because some nominally "observed"
+            // datasets, such as analyses, may have reference times and lead durations
+            if ( this.timeColumnIsAReferenceTime() )
+            {
+                this.addValidTimeBoundsToScriptUsingReferenceTimeAndLeadDuration( script, filter, tabsIn );
             }
             else
             {
-                this.addValidTimeBoundsToObservedScript( script, filter, tabsIn );
+                this.addValidTimeBoundsToScript( script, filter, tabsIn );
             }
         }
     }
@@ -714,6 +591,149 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     }
 
     /**
+     * Returns <code>true</code> if the time column represents a reference time, <code>false</code> if it represents a 
+     * valid time.
+     * 
+     * @return true if the time column is a reference time, false for a valid time
+     */
+
+    private boolean timeColumnIsAReferenceTime()
+    {
+        return Objects.nonNull( this.leadDurationColumn );
+    }
+
+    /**
+     * Checks that the time-scale information is consistent with the last time scale. If not, throws an exception. If
+     * so, returns the valid time scale, which is obtained from the input period and function, possibly augmented by
+     * any declared time scale information attached to this instance on construction. In using an existing time scale 
+     * from the project declaration, the principle is to augment, but not override, because the source is canonical 
+     * on its own time scale. The only exception is the function {@link TimeScaleFunction.UNKNOWN}, which can be 
+     * overridden.
+     * 
+     * @param <S> the event value type
+     * @param lastScale the last scale information retrieved
+     * @param period the period of ther current time scale to be retrieved
+     * @param functionString the function string for the current time scale to be retrieved
+     * @param the event whose time scale is to be determined, which helps with messaging
+     * @return the current time scale
+     * @throws DataAccessException if the current time scale is inconsistent with the last time scale
+     */
+
+    private <S> TimeScale checkAndGetLatestScale( TimeScale lastScale,
+                                                  Duration period,
+                                                  String functionString,
+                                                  Event<S> event )
+    {
+
+        Duration periodToUse = null;
+        TimeScaleFunction functionToUse = null;
+
+        // Period available?
+        if ( Objects.nonNull( period ) )
+        {
+            periodToUse = period;
+        }
+
+        // Function available?
+        if ( Objects.nonNull( functionString ) )
+        {
+            functionToUse = TimeScale.TimeScaleFunction.valueOf( functionString.toUpperCase() );
+        }
+
+        // Otherwise, existing scale to help augment?
+        if ( Objects.nonNull( this.getDeclaredExistingTimeScale() ) )
+        {
+            TimeScale declared = this.getDeclaredExistingTimeScale();
+
+            if ( Objects.isNull( periodToUse ) )
+            {
+                periodToUse = declared.getPeriod();
+            }
+
+            // Can override null or TimeScaleFunction.UNKNOWN
+            if ( Objects.nonNull( declared.getFunction() )
+                 && ( Objects.isNull( functionToUse ) || functionToUse == TimeScaleFunction.UNKNOWN ) )
+            {
+                functionToUse = declared.getFunction();
+            }
+        }
+
+        TimeScale returnMe = null;
+
+        if ( Objects.nonNull( periodToUse ) && Objects.nonNull( functionToUse ) )
+        {
+            returnMe = TimeScale.of( periodToUse, functionToUse );
+        }
+
+        if ( Objects.nonNull( lastScale ) && !lastScale.equals( returnMe ) )
+        {
+            throw new DataAccessException( "The time scale information associated with event '" + event
+                                           + "' is '"
+                                           + returnMe
+                                           + "' but other events in the same series have a different time "
+                                           + "scale of '"
+                                           + lastScale
+                                           + "', which is not allowed." );
+        }
+
+        return returnMe;
+    }
+
+    /**
+     * Adds an event to a time-series and annotates any exception raised.
+     * 
+     * @param event the event
+     * @param builder the builder
+     * @throws DataAccessException if the event could not be added
+     */
+
+    private <S> void addEventToTimeSeries( Event<S> event, TimeSeriesBuilder<S> builder )
+    {
+        try
+        {
+            builder.addEvent( event );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            throw new DataAccessException( "While processing a time-series for project_id '"
+                                           + this.getProjectId()
+                                           + "' with variablefeature_id '"
+                                           + this.getVariableFeatureId()
+                                           + "' and data type '"
+                                           + this.getLeftOrRightOrBaseline()
+                                           + "', encountered an error: ",
+                                           e );
+        }
+    }
+
+    /**
+     * Returns a stream of time-series from the inputs. For each builder in the map of builders, create as many series 
+     * as indicated in the map of series counts.
+     * 
+     * @param <S> the event value type
+     * @param builders the builders
+     * @param seriesCounts the sreies counts
+     * @return a stream of time-series
+     */
+
+    private <S> Stream<TimeSeries<S>> composeWithDuplicates( Map<Integer, TimeSeriesBuilder<S>> builders,
+                                                             Map<Integer, Integer> seriesCounts )
+    {
+        List<TimeSeries<S>> streamMe = new ArrayList<>();
+
+        for ( Map.Entry<Integer, TimeSeriesBuilder<S>> nextSeries : builders.entrySet() )
+        {
+            int count = seriesCounts.get( nextSeries.getKey() );
+            for ( int i = 0; i < count; i++ )
+            {
+                streamMe.add( nextSeries.getValue().build() );
+            }
+        }
+
+        return streamMe.stream();
+    }
+
+    /**
      * Adds the lead duration bounds (if any) to the script. The interval is left-closed.
      * 
      * @param script the script to augment
@@ -787,13 +807,18 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             }
             if ( Objects.nonNull( upperLead ) )
             {
-                this.addWhereOrAndClause( script, tabsIn, this.getLeadDurationColumnName() + LESS_EQUAL, upperLead, "'" );
+                this.addWhereOrAndClause( script,
+                                          tabsIn,
+                                          this.getLeadDurationColumnName() + LESS_EQUAL,
+                                          upperLead,
+                                          "'" );
             }
         }
     }
 
     /**
-     * Adds the valid time bounds (if any) to the script. The interval is right-closed.
+     * Adds the valid time bounds (if any) to the script by inspecting a reference time column and a lead duration 
+     * column. The interval is right-closed.
      * 
      * @param script the script to augment
      * @param filter the time window filter
@@ -801,7 +826,9 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * @throws NullPointerException if any input is null
      */
 
-    private void addValidTimeBoundsToForecastScript( ScriptBuilder script, TimeWindow filter, int tabsIn )
+    private void addValidTimeBoundsToScriptUsingReferenceTimeAndLeadDuration( ScriptBuilder script,
+                                                                              TimeWindow filter,
+                                                                              int tabsIn )
     {
         Objects.requireNonNull( script );
 
@@ -871,7 +898,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * @throws NullPointerException if any input is null
      */
 
-    private void addValidTimeBoundsToObservedScript( ScriptBuilder script, TimeWindow filter, int tabsIn )
+    private void addValidTimeBoundsToScript( ScriptBuilder script, TimeWindow filter, int tabsIn )
     {
         Objects.requireNonNull( script );
 
@@ -940,7 +967,8 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                     lowerValidTime = lowerValidTime.plus( timeWindow.getEarliestLeadDuration() );
 
                     //Adjust for the desired time scale
-                    if ( Objects.nonNull( this.getDesiredTimeScale() ) )
+                    if ( Objects.nonNull( this.getDesiredTimeScale() )
+                         && !this.getDesiredTimeScale().isInstantaneous() )
                     {
                         lowerValidTime = lowerValidTime.minus( this.getDesiredTimeScale().getPeriod() );
                     }
@@ -1018,7 +1046,11 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             if ( !filter.getLatestReferenceTime().equals( Instant.MAX ) )
             {
                 String upperReferenceTime = filter.getLatestReferenceTime().toString();
-                this.addWhereOrAndClause( script, tabsIn, this.getTimeColumnName() + LESS_EQUAL, upperReferenceTime, "'" );
+                this.addWhereOrAndClause( script,
+                                          tabsIn,
+                                          this.getTimeColumnName() + LESS_EQUAL,
+                                          upperReferenceTime,
+                                          "'" );
             }
         }
     }
@@ -1287,9 +1319,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         String validationStart = "Cannot build a time-series retriever without a ";
         Objects.requireNonNull( this.getTimeColumnName(), validationStart + "time column name." );
 
-        // Even observations can be constrained by forecast information
-        Objects.requireNonNull( this.getLeadDurationColumnName(), validationStart + "lead duration column name." );
-
         Objects.requireNonNull( this.getMeasurementUnitMapper(), validationStart + "measurement unit mapper." );
 
         if ( Objects.isNull( this.seasonStart ) != Objects.isNull( this.seasonEnd ) )
@@ -1336,6 +1365,16 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                               this.lrb,
                               this.timeWindow,
                               this.desiredTimeScale );
+            }
+
+            if ( Objects.isNull( this.leadDurationColumn ) )
+            {
+                LOGGER.debug( start,
+                              this.projectId,
+                              this.variableFeatureId,
+                              this.lrb,
+                              "the supplied lead duration column was null: the time column is assumed to be valid "
+                                        + "time." );
             }
         }
 
