@@ -102,6 +102,12 @@ class UnitMapper
     {
         Objects.requireNonNull( unitName, "Specify a non-null measurement unit name for conversion." );
 
+        // Identity
+        if( unitName.equals( this.desiredMeasurementUnit ) )
+        {
+            return in -> in;
+        }
+        
         if ( !this.namesToIdentifiers.containsKey( unitName ) )
         {
             throw new NoSuchUnitConversionException( "There is no such unit conversion function to "

@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.DoubleUnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
@@ -99,11 +98,11 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
      */
 
     private final Boolean isForecast;
-    
+
     /**
      * The request.
      */
-    
+
     private Request request = null;
 
     @Override
@@ -238,13 +237,13 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
     public Stream<TimeSeries<Double>> get()
     {
         try
-        {           
+        {
             // Build the request object
-            if( Objects.isNull( this.request ) )
+            if ( Objects.isNull( this.request ) )
             {
                 this.request = this.getRequest();
             }
-            
+
             // Obtain the response
             return this.getResponse( this.request );
         }
@@ -253,7 +252,7 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
             throw new DataAccessException( "Failed to access the time-series data.", e );
         }
     }
-    
+
     /**
      * Returns the request.
      * 
@@ -265,9 +264,9 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
     {
         DataScripter scripter = new DataScripter( this.script );
 
-        if ( LOGGER.isInfoEnabled() )
+        if ( LOGGER.isDebugEnabled() )
         {
-            LOGGER.info( LOG_SCRIPT,
+            LOGGER.debug( LOG_SCRIPT,
                           this,
                           System.lineSeparator(),
                           this.script );
@@ -291,8 +290,8 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
                                            this.getDeclaredExistingTimeScale() );
 
         }
-    }    
-    
+    }
+
     /**
      * Returns the time-series response for a given request.
      * 
@@ -304,21 +303,24 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
     private Stream<TimeSeries<Double>> getResponse( Request request ) throws IOException
     {
         Objects.requireNonNull( request );
-        
+
         // Obtain the response
         SingleValuedTimeSeriesResponse response = Fetcher.getSingleValuedTimeSeries( request );
 
         // Get the unit mapper
         UnitMapper mapper = this.getMeasurementUnitMapper();
         String responseUnits = response.getMeasuremenUnits();
-        DoubleUnaryOperator unitOperator = mapper.getUnitMapper( responseUnits );
 
         // Map the units, pooling all features, since this retriever does not provide a per-feature API
         List<TimeSeries<Double>> toStream = new ArrayList<>();
         for ( Stream<TimeSeries<Double>> next : response.getTimeSeries().values() )
         {
+            // Acquire the unit mapper only when encountering a time-series with one or more events, as all series 
+            // may be empty and the units unknown
             List<TimeSeries<Double>> mapped =
-                    next.map( in -> TimeSeriesSlicer.transform( in, unitOperator::applyAsDouble ) )
+                    next.filter( nextSeries -> !nextSeries.getEvents().isEmpty() )
+                        .map( in -> TimeSeriesSlicer.transform( in,
+                                                                mapper.getUnitMapper( responseUnits )::applyAsDouble ) )
                         .collect( Collectors.toList() );
 
             toStream.addAll( mapped );
@@ -348,7 +350,7 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
     {
         return this.features;
     }
-    
+
     /**
      * Returns the start of a script to acquire a time-series from the WRES database for all time-series.
      * 
@@ -439,7 +441,10 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
         this.addTimeWindowClause( scripter, 0 );
 
         // End of the script
-        String end = MessageFormat.format( GET_END_OF_SCRIPT, this.getProjectId(), this.getLeftOrRightOrBaseline() );
+        String end = MessageFormat.format( GET_END_OF_SCRIPT,
+                                           this.getProjectId(),
+                                           this.getLeftOrRightOrBaseline()
+                                               .value() );
         scripter.addLine( end );
 
         return scripter.toString();
