@@ -52,7 +52,13 @@ class UnitMapper
      */
 
     private final String desiredMeasurementUnit;
+    
+    /**
+     * The <code>measurementunit_id</code> for the {@link #desiredMeasurementUnit},
+     */
 
+    private final Integer desiredMeasurementUnitId;
+    
     /**
      * Returns an instance.
      * 
@@ -78,6 +84,12 @@ class UnitMapper
     {
         Objects.requireNonNull( measurementUnitId, "Specify a non-null measurement unit for conversion." );
 
+        // Identity
+        if( measurementUnitId.equals( this.desiredMeasurementUnitId ) )
+        {
+            return in -> in;
+        }
+        
         if ( !this.conversions.containsKey( measurementUnitId ) )
         {
             throw new NoSuchUnitConversionException( "There is no such unit conversion function to "
@@ -171,9 +183,11 @@ class UnitMapper
         // Retrieve the conversions
         try ( DataProvider provider = dataScripter.buffer() )
         {
+            Integer desiredMeasurementUnitId = null;
             while ( provider.next() )
             {
-                Integer measurementUnitId = provider.getInt( "from_unit" );
+                Integer fromUnitId = provider.getInt( "from_unit" );
+                desiredMeasurementUnitId = provider.getInt( "to_unit" );
                 String fromUnitName = provider.getString( "from_unit_name" );
                 double initialOffset = provider.getDouble( "initial_offset" );
                 double finalOffset = provider.getDouble( "final_offset" );
@@ -184,10 +198,12 @@ class UnitMapper
                         input -> Double.isFinite( input ) ? ( input + initialOffset ) * factor + finalOffset
                                                           : MissingValues.DOUBLE;
 
-                this.conversions.put( measurementUnitId, mapper );
-                this.namesToIdentifiers.put( fromUnitName, measurementUnitId );
+                this.conversions.put( fromUnitId, mapper );
+                this.namesToIdentifiers.put( fromUnitName, fromUnitId );
             }
 
+            this.desiredMeasurementUnitId = desiredMeasurementUnitId;
+            
             LOGGER.debug( "Added {} unit conversions to the cache for the desired units of '{}'.",
                           this.conversions.size(),
                           this.desiredMeasurementUnit );

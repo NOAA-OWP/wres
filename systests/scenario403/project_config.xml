@@ -19,6 +19,11 @@
             <type>observations</type>
             <source format="datacard" zoneOffset="CST" >data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard</source>
             <variable>QINE</variable>
+            <existingTimeScale>
+                <function>mean</function>
+                <period>1</period>
+                <unit>seconds</unit>
+            </existingTimeScale>
         </left>
         
         <!-- Forecasts are provided as PI-timeseries XML files contained beneath a directory.

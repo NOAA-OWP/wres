@@ -370,17 +370,6 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
                     leftValues,
                     commonScale.getFunction().value()
             );
-            
-
-            
-            if( endDate.toInstant( ZoneOffset.of( "Z" ) ).equals( Instant.parse( "2017-09-25T12:00:00Z" ) ))
-            {
-                LOGGER.info( "While upscaling a value that ends at {}, supplied this input {} and received this output {}.",
-                              Instant.parse( "2017-09-25T12:00:00Z" ),
-                              this.getControlValues( startDate, endDate ),
-                              leftAggregation);
-            }
-            
         }
         else
         {

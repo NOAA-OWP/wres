@@ -490,7 +490,7 @@ class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<L, R>>>
                 // climatology above, but bounded by any overall time bounds/window in the declaration
                 Supplier<Stream<TimeSeries<L>>> leftSupplier = climatologySupplier;
 
-                if ( !this.getProject().usesProbabilityThresholds() )
+                if ( Objects.isNull( leftSupplier ) )
                 {
                     leftSupplier = this.getRetrieverFactory().getLeftRetriever( nextWindow );
                 }
