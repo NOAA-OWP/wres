@@ -4,6 +4,7 @@ import static wres.config.generated.SourceTransformationType.PERSISTENCE;
 import static wres.io.project.Project.PairingMode.ROLLING;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -82,6 +83,7 @@ import wres.io.reading.commaseparated.CommaSeparatedReader;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.NoDataException;
 import wres.io.utilities.ScriptBuilder;
+import wres.system.SystemSettings;
 import wres.util.Strings;
 import wres.util.TimeHelper;
 
@@ -1777,7 +1779,23 @@ public class ConfigHelper
 
         //Path TODO: permit web thresholds. 
         // See #59422
-        Path commaSeparated = Paths.get( nextSource.getValue() );
+        // Construct a path using the SystemSetting wres.dataDirectory when
+        // the specified source is not absolute.
+        URI uri = nextSource.getValue();
+        Path commaSeparated;
+
+        if ( !uri.isAbsolute() )
+        {
+            commaSeparated = SystemSettings.getDataDirectory()
+                                           .resolve( uri.getPath() );
+            LOGGER.debug( "Transformed relative URI {} to Path {}.",
+                          uri,
+                          commaSeparated );
+        }
+        else
+        {
+            commaSeparated = Paths.get( uri );
+        }
 
         // Condition: default to greater
         ThresholdConstants.Operator operator = ThresholdConstants.Operator.GREATER;

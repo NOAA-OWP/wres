@@ -2,6 +2,7 @@ package wres.config;
 
 import java.io.File;
 import java.net.URI;
+import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -50,6 +51,7 @@ import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.datamodel.scale.TimeScale;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
 import wres.io.config.ConfigHelper;
+import wres.system.SystemSettings;
 import wres.util.Collections;
 import wres.util.Strings;
 
@@ -476,12 +478,22 @@ public class Validation
                     {
                         // TODO: permit web resource thresholds, not only files
                         // See #59422
-                        destinationPath = Paths.get( thresholdData );
+                        // Construct a path using the SystemSetting wres.dataDirectory when
+                        // the specified source is not absolute.
+                        if ( !thresholdData.isAbsolute() )
+                        {
+                            destinationPath = SystemSettings.getDataDirectory()
+                                                           .resolve( thresholdData.getPath() );
+                        }
+                        else
+                        {
+                            destinationPath = Paths.get( thresholdData );
+                        }
                     }
-                    catch ( InvalidPathException ipe )
+                    catch ( InvalidPathException | FileSystemNotFoundException | SecurityException e )
                     {
                         LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                     + " The path {} could not be found. "
+                                     + " The path {} could not be used. "
                                      + " {}",
                                      projectConfigPlus.getOrigin(),
                                      nextThreshold.sourceLocation().getLineNumber(),
