@@ -1284,9 +1284,9 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
                 String spacer = "    ";
                 warnEvents.stream().forEach( e -> message.add( spacer + e.toString() ) );
 
-                LOGGER.warn( "While rescaling a time-series with reference time {}, encountered {} validation "
+                LOGGER.warn( "While rescaling a time-series with reference times {}, encountered {} validation "
                              + "warnings, as follows: {}{}",
-                             context.getReferenceTimes().values().iterator().next(),
+                             context.getReferenceTimes(),
                              warnEvents.size(),
                              System.lineSeparator(),
                              message );

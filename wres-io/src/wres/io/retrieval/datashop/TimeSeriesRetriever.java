@@ -1373,8 +1373,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                               this.projectId,
                               this.variableFeatureId,
                               this.lrb,
-                              "the supplied lead duration column was null: the time column is assumed to be valid "
-                                        + "time." );
+                              "the supplied lead duration column was null." );
             }
         }
 

@@ -3,12 +3,14 @@ package wres.io.retrieval.datashop;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.TimeZone;
 import java.util.function.DoubleUnaryOperator;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 import liquibase.database.Database;
+import liquibase.exception.LiquibaseException;
+
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -37,59 +39,31 @@ import wres.system.SystemSettings;
 @PowerMockIgnore( { "javax.management.*", "java.io.*", "javax.xml.*", "com.sun.*", "org.xml.*" } )
 public class UnitMapperTest
 {
-    private static TestDatabase testDatabase;
-    private static ComboPooledDataSource dataSource;
+    private TestDatabase testDatabase;
+    private ComboPooledDataSource dataSource;
     private Connection rawConnection;
     private @Mock DatabaseConnectionSupplier mockConnectionSupplier;
 
     @BeforeClass
     public static void oneTimeSetup()
     {
-        // TODO: with HikariCP #54944, try to move this to @Before rather
-        // than having a static one-time db. The only reason we have the static
-        // variable instead of an instance variable is because c3p0 didn't work
-        // properly with the instance variable.
-        UnitMapperTest.testDatabase = new TestDatabase( "UnitMapperTest" );
-
-        // Even when pool is closed/nulled/re-instantiated for each test, the
-        // old c3p0 pool is somehow found by the 2nd and following test runs.
-        // Got around it by having a single pool for all the tests.
-        // Create our own test data source connecting to in-memory H2 database
-        UnitMapperTest.dataSource = UnitMapperTest.testDatabase.getNewComboPooledDataSource();
+        // Set the JVM timezone for use by H2. Needs to happen before anything else
+        TimeZone.setDefault( TimeZone.getTimeZone( "UTC" ) );
     }
 
     @Before
     public void setup() throws Exception
     {
-        // Also mock a plain datasource (which works per test unlike c3p0)
-        this.rawConnection = DriverManager.getConnection( UnitMapperTest.testDatabase.getJdbcString() );
-        Mockito.when( this.mockConnectionSupplier.get() ).thenReturn( this.rawConnection );
+        // Create the database and connection pool
+        this.testDatabase = new TestDatabase( "SingleValuedForecastRetrieverTest" );
+        this.dataSource = this.testDatabase.getNewComboPooledDataSource();
 
-        // Set up a bare bones database with only the schema
-        UnitMapperTest.testDatabase.createWresSchema( this.rawConnection );
+        // Create the connection and schema
+        this.createTheConnectionAndSchema();
 
-        // Substitute raw connection where needed:
-        PowerMockito.mockStatic( SystemSettings.class );
-        PowerMockito.when( SystemSettings.class, "getRawDatabaseConnection" )
-                    .thenReturn( this.rawConnection );
-
-        PowerMockito.whenNew( DatabaseConnectionSupplier.class )
-                    .withNoArguments()
-                    .thenReturn( this.mockConnectionSupplier );
-
-        // Substitute our H2 connection pool for both pools:
-        PowerMockito.when( SystemSettings.class, "getConnectionPool" )
-                    .thenReturn( UnitMapperTest.dataSource );
-        PowerMockito.when( SystemSettings.class, "getHighPriorityConnectionPool" )
-                    .thenReturn( UnitMapperTest.dataSource );
-
-        // Set up a liquibase database to run migrations against.       
-        Database liquibaseDatabase = UnitMapperTest.testDatabase.createNewLiquibaseDatabase( this.rawConnection );
-
-        // Create the wres.MeasurementUnit table and the wres.UnitConversion table
-        UnitMapperTest.testDatabase.createMeasurementUnitTable( liquibaseDatabase );
-        UnitMapperTest.testDatabase.createUnitConversionTable( liquibaseDatabase );
-    }
+        // Create the tables
+        this.addTheDatabaseAndTables();
+    }    
 
     @Test
     public void testConversionOfCFSToCMS() throws SQLException
@@ -108,21 +82,97 @@ public class UnitMapperTest
 
         // 1.0 CFS = 35.3147 CMS. Check with delta 5 d.p.
         assertEquals( 1.0, converter.applyAsDouble( 35.3147 ), 0.00001 );
+        
+        // Test via unit name
+        DoubleUnaryOperator namedConverter = mapper.getUnitMapper( units );
+        assertEquals( 1.0, namedConverter.applyAsDouble( 35.3147 ), 0.00001 );              
     }
 
+    @Test
+    public void testIdentityConversionOfCMSToCMS() throws SQLException
+    {
+        // Create the unit mapper for CMS
+        UnitMapper mapper = UnitMapper.of( "CMS" );
+
+        // Obtain the measurement units for CMS
+        MeasurementDetails measurement = new MeasurementDetails();
+        String units = "CMS";
+        measurement.setUnit( units );
+        measurement.save();
+        Integer measurementUnitId = measurement.getId();
+
+        DoubleUnaryOperator converter = mapper.getUnitMapper( measurementUnitId );
+        assertEquals( 1.0, converter.applyAsDouble( 1.0 ), 0.00001 );
+        
+        // Test via unit name
+        DoubleUnaryOperator namedConverter = mapper.getUnitMapper( units );
+        assertEquals( 1.0, namedConverter.applyAsDouble( 1.0 ), 0.00001 );              
+    }    
+    
     @After
     public void tearDown() throws SQLException
     {
-        UnitMapperTest.testDatabase.dropWresSchema( this.rawConnection );
+        this.dropTheTablesAndSchema();
         this.rawConnection.close();
         this.rawConnection = null;
+        this.testDatabase = null;
+        this.dataSource = null;
     }
 
-    @AfterClass
-    public static void tearDownAfterAllTests()
+    /**
+     * Does the basic set-up work to create a connection and schema.
+     * 
+     * @throws Exception if the set-up failed
+     */
+
+    private void createTheConnectionAndSchema() throws Exception
     {
-        UnitMapperTest.dataSource.close();
-        UnitMapperTest.dataSource = null;
-        UnitMapperTest.testDatabase = null;
+        // Also mock a plain datasource (which works per test unlike c3p0)
+        this.rawConnection = DriverManager.getConnection( this.testDatabase.getJdbcString() );
+        Mockito.when( this.mockConnectionSupplier.get() ).thenReturn( this.rawConnection );
+
+        // Set up a bare bones database with only the schema
+        this.testDatabase.createWresSchema( this.rawConnection );
+
+        // Substitute raw connection where needed:
+        PowerMockito.mockStatic( SystemSettings.class );
+        PowerMockito.when( SystemSettings.class, "getRawDatabaseConnection" )
+                    .thenReturn( this.rawConnection );
+
+        PowerMockito.whenNew( DatabaseConnectionSupplier.class )
+                    .withNoArguments()
+                    .thenReturn( this.mockConnectionSupplier );
+
+        // Substitute our H2 connection pool for both pools:
+        PowerMockito.when( SystemSettings.class, "getConnectionPool" )
+                    .thenReturn( this.dataSource );
+        PowerMockito.when( SystemSettings.class, "getHighPriorityConnectionPool" )
+                    .thenReturn( this.dataSource );
+    }
+
+    /**
+     * Adds the required tables for the tests presented here, which is a subset of all tables.
+     * @throws LiquibaseException if the tables could not be created
+     */
+
+    private void addTheDatabaseAndTables() throws LiquibaseException
+    {
+        // Create the required tables
+        Database liquibaseDatabase =
+                this.testDatabase.createNewLiquibaseDatabase( this.rawConnection );
+
+        this.testDatabase.createMeasurementUnitTable( liquibaseDatabase );
+        this.testDatabase.createUnitConversionTable( liquibaseDatabase );
+    }   
+    
+    /**
+     * Drops the schema, cascading to all tables.
+     * @throws SQLException if any tables or the schema failed to drop
+     */
+    
+    private void dropTheTablesAndSchema() throws SQLException
+    {
+        this.testDatabase.dropWresSchema( this.rawConnection );
+        this.testDatabase.dropLiquibaseChangeTables( this.rawConnection );
     }
 }
