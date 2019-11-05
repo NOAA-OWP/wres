@@ -370,6 +370,8 @@ class NWMTimeSeries implements Closeable
      * @param ncVariable The NWM variable.
      * @param attributeName The attribute associated with the variable.
      * @return The String representation of the value of attribute of variable.
+     * @throws IllegalArgumentException When the attribute does not exist.
+     * @throws IllegalArgumentException When the type is not float or double.
      */
 
     private double readAttributeAsDouble( Variable ncVariable, String attributeName )
@@ -382,13 +384,28 @@ class NWMTimeSeries implements Closeable
                           .toLowerCase()
                           .equals( attributeName.toLowerCase() ) )
             {
-                return (double) attribute.getNumericValue();
+                DataType type = attribute.getDataType();
+
+                if ( type.equals( DataType.FLOAT )
+                     || type.equals( DataType.DOUBLE ) )
+                {
+                    // No loss of precision when promoting float to double.
+                    return attribute.getNumericValue()
+                                    .doubleValue();
+                }
+                else
+                {
+                    throw new IllegalArgumentException( "Unable to convert attribute '"
+                                                        + attributeName
+                                                        + "' to double because it is type "
+                                                        + type );
+                }
             }
         }
 
-        throw new IllegalStateException( "No '" + attributeName
-                                         + "' attribute found for variable '"
-                                         + ncVariable + " in netCDF data." );
+        throw new IllegalArgumentException( "No '" + attributeName
+                                            + "' attribute found for variable '"
+                                            + ncVariable + " in netCDF data." );
     }
 
 
@@ -396,6 +413,8 @@ class NWMTimeSeries implements Closeable
      * @param ncVariable The NWM variable.
      * @param attributeName The attribute associated with the variable.
      * @return The String representation of the value of attribute of variable.
+     * @throws IllegalArgumentException When the attribute does not exist.
+     * @throws IllegalArgumentException When the type cast would cause loss.
      */
 
     private int readAttributeAsInt( Variable ncVariable, String attributeName )
@@ -408,13 +427,32 @@ class NWMTimeSeries implements Closeable
                           .toLowerCase()
                           .equals( attributeName.toLowerCase() ) )
             {
-                return (int) attribute.getNumericValue();
+                DataType type = attribute.getDataType();
+
+                if ( type.equals( DataType.BYTE )
+                     || type.equals( DataType.UBYTE )
+                     || type.equals( DataType.SHORT )
+                     || type.equals( DataType.USHORT )
+                     || type.equals( DataType.INT ) )
+                {
+                    // No loss of precision nor out of bounds possibility when
+                    // promoting byte, ubyte, short, ushort, int to int.
+                    return attribute.getNumericValue()
+                                    .intValue();
+                }
+                else
+                {
+                    throw new IllegalArgumentException( "Unable to convert attribute '"
+                                                        + attributeName
+                                                        + "' to integer because it is type "
+                                                        + type );
+                }
             }
         }
 
-        throw new IllegalStateException( "No '" + attributeName
-                                         + "' attribute found for variable '"
-                                         + ncVariable + " in netCDF data." );
+        throw new IllegalArgumentException( "No '" + attributeName
+                                            + "' attribute found for variable '"
+                                            + ncVariable + " in netCDF data." );
     }
 
 
@@ -537,13 +575,14 @@ class NWMTimeSeries implements Closeable
         }
 
         double variableValue;
-
         int missingValue = readAttributeAsInt( variableVariable,
                                                "missing_value" );
         int fillValue = readAttributeAsInt( variableVariable,
                                             "_FillValue");
         double multiplier = readAttributeAsDouble( variableVariable,
                                                    "scale_factor" );
+        double offsetToAdd = readAttributeAsDouble( variableVariable,
+                                                    "add_offset" );
 
         if ( rawVariableValue == missingValue
              || rawVariableValue == fillValue )
@@ -552,7 +591,8 @@ class NWMTimeSeries implements Closeable
         }
         else
         {
-            variableValue = rawVariableValue * multiplier;
+            // Unpack.
+            variableValue = rawVariableValue * multiplier + offsetToAdd;
         }
 
         return Event.of( validDatetime, variableValue );
