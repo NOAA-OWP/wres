@@ -145,7 +145,7 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
                           System.lineSeparator(),
                           script );
         }
-        
+
         return this.getTimeSeriesFromScript( script, this.getDataSupplier() );
     }
 

@@ -310,7 +310,7 @@ class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemble>
         }
         else
         {
-            throw new IllegalArgumentException( "Unrecognized data type from which to create the single-valued "
+            throw new IllegalArgumentException( "Unrecognized data type from which to create the ensemble "
                                                 + "retriever: "
                                                 + dataType
                                                 + "'." );

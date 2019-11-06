@@ -13,6 +13,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
@@ -81,6 +82,24 @@ public class EnsembleForecastRetrieverTest
      */
 
     private Integer variableFeatureId;
+
+    /**
+     * Identifier of the first ensemble member.
+     */
+
+    private Integer firstMemberId;
+
+    /**
+     * Identifier of the second ensemble member.
+     */
+
+    private Integer secondMemberId;
+
+    /**
+     * Identifier of the third ensemble member.
+     */
+
+    private Integer thirdMemberId;
 
     /**
      * A {@link LeftOrRightOrBaseline} for testing.
@@ -156,6 +175,54 @@ public class EnsembleForecastRetrieverTest
                                             Ensemble.of( 51.0, 86.0, 121.0 ) ) )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T05:00:00Z" ),
                                             Ensemble.of( 58.0, 93.0, 128.0 ) ) )
+                       .setTimeScale( TimeScale.of() )
+                       .build();
+
+        // Actual series equals expected series
+        assertEquals( expectedSeries, actualSeries );
+    }
+
+    @Test
+    public void testRetrievalOfOneTimeSeriesWithFiveEventsAndOneMemberUsingEnsembleConstraints()
+    {
+        // Desired units are the same as the existing units
+        UnitMapper mapper = UnitMapper.of( UNITS );
+
+        // Build the retriever with ensemble constraints
+        TimeSeriesRetriever<Ensemble> forecastRetriever =
+                new EnsembleForecastRetriever.Builder().setEnsembleIdsToInclude( Set.of( this.secondMemberId ) )
+                                                       .setEnsembleIdsToExclude( Set.of( this.firstMemberId,
+                                                                                         this.thirdMemberId ) )
+                                                       .setProjectId( PROJECT_ID )
+                                                       .setVariableFeatureId( this.variableFeatureId )
+                                                       .setUnitMapper( mapper )
+                                                       .setLeftOrRightOrBaseline( LRB )
+                                                       .build();
+
+        // Get the time-series
+        Stream<TimeSeries<Ensemble>> forecastSeries = forecastRetriever.get();
+
+        // Stream into a collection
+        List<TimeSeries<Ensemble>> actualCollection = forecastSeries.collect( Collectors.toList() );
+
+        // There is one time-series, so assert that
+        assertEquals( 1, actualCollection.size() );
+        TimeSeries<Ensemble> actualSeries = actualCollection.get( 0 );
+
+        // Create the expected series
+        TimeSeriesBuilder<Ensemble> builder = new TimeSeriesBuilder<>();
+        TimeSeries<Ensemble> expectedSeries =
+                builder.addReferenceTime( Instant.parse( "2023-04-01T00:00:00Z" ), ReferenceTimeType.UNKNOWN )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ),
+                                            Ensemble.of( 65.0 ) ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T02:00:00Z" ),
+                                            Ensemble.of( 72.0 ) ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T03:00:00Z" ),
+                                            Ensemble.of( 79.0 ) ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T04:00:00Z" ),
+                                            Ensemble.of( 86.0 ) ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T05:00:00Z" ),
+                                            Ensemble.of( 93.0 ) ) )
                        .setTimeScale( TimeScale.of() )
                        .build();
 
@@ -326,27 +393,27 @@ public class EnsembleForecastRetrieverTest
         members.setEnsembleName( ensembleName );
         members.setEnsembleMemberIndex( firstMemberLabel );
         members.save();
-        Integer firstMemberId = members.getId();
+        this.firstMemberId = members.getId();
 
-        assertNotNull( firstMemberId );
+        assertNotNull( this.firstMemberId );
 
         // Add second member
         int secondMemberLabel = 567;
         members.setEnsembleName( ensembleName );
         members.setEnsembleMemberIndex( secondMemberLabel );
         members.save();
-        Integer secondMemberId = members.getId();
+        this.secondMemberId = members.getId();
 
-        assertNotNull( secondMemberId );
+        assertNotNull( this.secondMemberId );
 
         // Add third member
         int thirdMemberLabel = 456;
         members.setEnsembleName( ensembleName );
         members.setEnsembleMemberIndex( thirdMemberLabel );
         members.save();
-        Integer thirdMemberId = members.getId();
+        this.thirdMemberId = members.getId();
 
-        assertNotNull( thirdMemberId );
+        assertNotNull( this.thirdMemberId );
 
         // Add each member in turn
         // There is an abstraction to help with this, namely wres.io.data.details.TimeSeries, but the resulting 
@@ -375,7 +442,7 @@ public class EnsembleForecastRetrieverTest
         DataScripter memberOneScript = new DataScripter( timeSeriesInsert );
 
         int rowAdded = memberOneScript.execute( this.variableFeatureId,
-                                                firstMemberId,
+                                                this.firstMemberId,
                                                 measurementUnitId,
                                                 referenceTime.toString(),
                                                 timeScale.getPeriod().toMinutesPart(),
@@ -409,7 +476,7 @@ public class EnsembleForecastRetrieverTest
         DataScripter memberTwoScript = new DataScripter( timeSeriesInsert );
 
         int rowAddedTwo = memberTwoScript.execute( this.variableFeatureId,
-                                                   secondMemberId,
+                                                   this.secondMemberId,
                                                    measurementUnitId,
                                                    referenceTime.toString(),
                                                    timeScale.getPeriod().toMinutesPart(),
@@ -438,7 +505,7 @@ public class EnsembleForecastRetrieverTest
         DataScripter memberThreeScript = new DataScripter( timeSeriesInsert );
 
         int rowAddedThree = memberThreeScript.execute( this.variableFeatureId,
-                                                       thirdMemberId,
+                                                       this.thirdMemberId,
                                                        measurementUnitId,
                                                        referenceTime.toString(),
                                                        timeScale.getPeriod().toMinutesPart(),

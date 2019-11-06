@@ -260,18 +260,18 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
             if ( Objects.nonNull( this.ensembleIdsToInclude )
                  && !this.ensembleIdsToInclude.isEmpty() )
             {
-                StringJoiner include = new StringJoiner( ",", "ANY( '{", "}'::integer[] )" );
-                this.ensembleIdsToInclude.forEach( next -> include.add( next.toString() ) );
-                script.addTab( tabsIn ).addLine( "AND ensemble_id = ", include.toString() );
+                StringJoiner include = new StringJoiner( ",", "IN(", ")" );
+                this.ensembleIdsToInclude.forEach( next -> include.add( "'" + next.toString() + "'" ) );
+                script.addTab( tabsIn ).addLine( "AND ensemble_id ", include.toString() );
             }
 
             // Ignore these
             if ( Objects.nonNull( this.ensembleIdsToExclude )
                  && !this.ensembleIdsToExclude.isEmpty() )
             {
-                StringJoiner exclude = new StringJoiner( ",", "ANY( '{", "}'::integer[] )" );
-                this.ensembleIdsToExclude.forEach( next -> exclude.add( next.toString() ) );
-                script.addTab( tabsIn ).addLine( "AND NOT ensemble_id = ", exclude.toString() );
+                StringJoiner exclude = new StringJoiner( ",", "IN(", ")" );
+                this.ensembleIdsToExclude.forEach( next -> exclude.add( "'" + next.toString() + "'" ) );
+                script.addTab( tabsIn ).addLine( "AND NOT ensemble_id ", exclude.toString() );
             }
         }
     }
