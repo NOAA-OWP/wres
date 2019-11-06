@@ -11,13 +11,12 @@ import java.sql.SQLException;
 import java.text.MessageFormat;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 import liquibase.database.Database;
@@ -36,7 +35,12 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 import wres.system.DatabaseConnectionSupplier;
+import wres.config.generated.DataSourceConfig;
+import wres.config.generated.DatasourceType;
+import wres.config.generated.Feature;
+import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
+import wres.config.generated.DataSourceConfig.Variable;
 import wres.datamodel.Ensemble;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.scale.TimeScale.TimeScaleFunction;
@@ -44,6 +48,8 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
+import wres.datamodel.time.TimeWindow;
+import wres.io.config.ConfigHelper;
 import wres.io.config.LeftOrRightOrBaseline;
 import wres.io.data.caching.Features;
 import wres.io.data.details.EnsembleDetails;
@@ -57,15 +63,16 @@ import wres.io.utilities.TestDatabase;
 import wres.system.SystemSettings;
 
 /**
- * Tests the {@link EnsembleForecastRetriever}.
+ * Tests the {@link EnsembleRetrieverFactory}.
  * @author james.brown@hydrosolved.com
  */
 
 @RunWith( PowerMockRunner.class )
-@PrepareForTest( { SystemSettings.class } )
+@PrepareForTest( { SystemSettings.class, ConfigHelper.class } )
 @PowerMockIgnore( { "javax.management.*", "java.io.*", "javax.xml.*", "com.sun.*", "org.xml.*" } )
-public class EnsembleForecastRetrieverTest
+public class EnsembleRetrieverFactoryTest
 {
+
     private TestDatabase testDatabase;
     private ComboPooledDataSource dataSource;
     private Connection rawConnection;
@@ -82,6 +89,24 @@ public class EnsembleForecastRetrieverTest
      */
 
     private Integer variableFeatureId;
+
+    /**
+     * The measurement units for testing.
+     */
+
+    private static final String CFS = "CFS";
+
+    /**
+     * The feature name.
+     */
+
+    private static final String FAKE_FEATURE = "FAKE";
+
+    /**
+     * The variable name.
+     */
+
+    private static final String STREAMFLOW = "streamflow";
 
     /**
      * Identifier of the first ensemble member.
@@ -101,30 +126,39 @@ public class EnsembleForecastRetrieverTest
 
     private Integer thirdMemberId;
 
+    // Times for re-use
+    private static final String T2023_04_01T00_00_00Z = "2023-04-01T00:00:00Z";
+    private static final String T2023_04_01T07_00_00Z = "2023-04-01T07:00:00Z";
+    private static final String T2023_04_01T04_00_00Z = "2023-04-01T04:00:00Z";
+    private static final String T2023_04_01T03_00_00Z = "2023-04-01T03:00:00Z";
+    private static final String T2023_04_01T02_00_00Z = "2023-04-01T02:00:00Z";
+    private static final String T2023_04_01T01_00_00Z = "2023-04-01T01:00:00Z";
+
     /**
-     * A {@link LeftOrRightOrBaseline} for testing.
+     * Insert statement for re-use.
      */
 
-    private static final LeftOrRightOrBaseline LRB = LeftOrRightOrBaseline.RIGHT;
+    private static final String INSERT_INTO_WRES_PROJECT_SOURCE = "INSERT INTO wres.ProjectSource (project_id, "
+                                                                  + "source_id, member) VALUES ({0},{1},''{2}'')";
 
     /**
-     * The measurement units for testing.
+     * The retriever factory to test.
      */
 
-    private static final String UNITS = "CFS";
+    private EnsembleRetrieverFactory factoryToTest;
 
     @BeforeClass
-    public static void oneTimeSetup()
+    public static void runOnceBeforeAllTests()
     {
         // Set the JVM timezone for use by H2. Needs to happen before anything else
         TimeZone.setDefault( TimeZone.getTimeZone( "UTC" ) );
     }
 
     @Before
-    public void setup() throws Exception
+    public void runBeforeEachTest() throws Exception
     {
         // Create the database and connection pool
-        this.testDatabase = new TestDatabase( "EnsembleForecastRetrieverTest" );
+        this.testDatabase = new TestDatabase( "EnsembleRetrieverFactoryTest" );
         this.dataSource = this.testDatabase.getNewComboPooledDataSource();
 
         // Create the connection and schema
@@ -134,47 +168,39 @@ public class EnsembleForecastRetrieverTest
         this.addTheDatabaseAndTables();
 
         // Add some data for testing
-        this.addOneForecastTimeSeriesWithFiveEventsAndThreeMembersToTheDatabase();
+        this.addTwoForecastTimeSeriesEachWithFiveEventsToTheDatabase();
+        this.addAnObservedTimeSeriesWithTenEventsToTheDatabase();
+
+        // Create the retriever factory to test
+        this.createEnsembleRetrieverFactory();
     }
 
     @Test
-    public void testRetrievalOfOneTimeSeriesWithFiveEventsAndThreeMembers()
+    public void testGetLeftRetrieverReturnsOneTimeSeriesWithTenEvents()
     {
-        // Desired units are the same as the existing units
-        UnitMapper mapper = UnitMapper.of( UNITS );
 
-        // Build the retriever
-        TimeSeriesRetriever<Ensemble> forecastRetriever =
-                new EnsembleForecastRetriever.Builder().setProjectId( PROJECT_ID )
-                                                       .setVariableFeatureId( this.variableFeatureId )
-                                                       .setUnitMapper( mapper )
-                                                       .setLeftOrRightOrBaseline( LRB )
-                                                       .build();
+        // Get the actual left series
+        List<TimeSeries<Double>> actualCollection = this.factoryToTest.getLeftRetriever()
+                                                                      .get()
+                                                                      .collect( Collectors.toList() );
 
-        // Get the time-series
-        Stream<TimeSeries<Ensemble>> forecastSeries = forecastRetriever.get();
-
-        // Stream into a collection
-        List<TimeSeries<Ensemble>> actualCollection = forecastSeries.collect( Collectors.toList() );
-
-        // There is one time-series, so assert that
+        // There is only one time-series, so assert that
         assertEquals( 1, actualCollection.size() );
-        TimeSeries<Ensemble> actualSeries = actualCollection.get( 0 );
+        TimeSeries<Double> actualSeries = actualCollection.get( 0 );
 
         // Create the expected series
-        TimeSeriesBuilder<Ensemble> builder = new TimeSeriesBuilder<>();
-        TimeSeries<Ensemble> expectedSeries =
-                builder.addReferenceTime( Instant.parse( "2023-04-01T00:00:00Z" ), ReferenceTimeType.UNKNOWN )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ),
-                                            Ensemble.of( 30.0, 65.0, 100.0 ) ) )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T02:00:00Z" ),
-                                            Ensemble.of( 37.0, 72.0, 107.0 ) ) )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T03:00:00Z" ),
-                                            Ensemble.of( 44.0, 79.0, 114.0 ) ) )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T04:00:00Z" ),
-                                            Ensemble.of( 51.0, 86.0, 121.0 ) ) )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T05:00:00Z" ),
-                                            Ensemble.of( 58.0, 93.0, 128.0 ) ) )
+        TimeSeriesBuilder<Double> builder = new TimeSeriesBuilder<>();
+        TimeSeries<Double> expectedSeries =
+                builder.addEvent( Event.of( Instant.parse( T2023_04_01T01_00_00Z ), 30.0 ) )
+                       .addEvent( Event.of( Instant.parse( T2023_04_01T02_00_00Z ), 37.0 ) )
+                       .addEvent( Event.of( Instant.parse( T2023_04_01T03_00_00Z ), 44.0 ) )
+                       .addEvent( Event.of( Instant.parse( T2023_04_01T04_00_00Z ), 51.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T05:00:00Z" ), 58.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T06:00:00Z" ), 65.0 ) )
+                       .addEvent( Event.of( Instant.parse( T2023_04_01T07_00_00Z ), 72.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T08:00:00Z" ), 79.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T09:00:00Z" ), 86.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T10:00:00Z" ), 93.0 ) )
                        .setTimeScale( TimeScale.of() )
                        .build();
 
@@ -183,46 +209,96 @@ public class EnsembleForecastRetrieverTest
     }
 
     @Test
-    public void testRetrievalOfOneTimeSeriesWithFiveEventsAndOneMemberUsingEnsembleConstraints()
+    public void testGetLeftRetrieverWithTimeWindowReturnsOneTimeSeriesWithFiveEvents()
     {
-        // Desired units are the same as the existing units
-        UnitMapper mapper = UnitMapper.of( UNITS );
 
-        // Build the retriever with ensemble constraints
-        TimeSeriesRetriever<Ensemble> forecastRetriever =
-                new EnsembleForecastRetriever.Builder().setEnsembleIdsToInclude( Set.of( this.secondMemberId ) )
-                                                       .setEnsembleIdsToExclude( Set.of( this.firstMemberId,
-                                                                                         this.thirdMemberId ) )
-                                                       .setProjectId( PROJECT_ID )
-                                                       .setVariableFeatureId( this.variableFeatureId )
-                                                       .setUnitMapper( mapper )
-                                                       .setLeftOrRightOrBaseline( LRB )
-                                                       .build();
+        // The time window to select events
+        TimeWindow timeWindow = TimeWindow.of( Instant.parse( T2023_04_01T02_00_00Z ),
+                                               Instant.parse( T2023_04_01T07_00_00Z ) );
 
-        // Get the time-series
-        Stream<TimeSeries<Ensemble>> forecastSeries = forecastRetriever.get();
+        // Get the actual left series
+        List<TimeSeries<Double>> actualCollection = this.factoryToTest.getLeftRetriever( timeWindow )
+                                                                      .get()
+                                                                      .collect( Collectors.toList() );
 
-        // Stream into a collection
-        List<TimeSeries<Ensemble>> actualCollection = forecastSeries.collect( Collectors.toList() );
+        // There is only one time-series, so assert that
+        assertEquals( 1, actualCollection.size() );
+        TimeSeries<Double> actualSeries = actualCollection.get( 0 );
 
-        // There is one time-series, so assert that
+        // Create the expected series
+        TimeSeriesBuilder<Double> builder = new TimeSeriesBuilder<>();
+        TimeSeries<Double> expectedSeries =
+                builder.addEvent( Event.of( Instant.parse( T2023_04_01T03_00_00Z ), 44.0 ) )
+                       .addEvent( Event.of( Instant.parse( T2023_04_01T04_00_00Z ), 51.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T05:00:00Z" ), 58.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T06:00:00Z" ), 65.0 ) )
+                       .addEvent( Event.of( Instant.parse( T2023_04_01T07_00_00Z ), 72.0 ) )
+                       .setTimeScale( TimeScale.of() )
+                       .build();
+
+        // Actual series equals expected series
+        assertEquals( expectedSeries, actualSeries );
+    }
+
+    @Test
+    public void testGetRightRetrieverWithTimeWindowReturnsOneTimeSeriesWithThreeEvents()
+    {
+
+        // The time window to select events
+        TimeWindow timeWindow = TimeWindow.of( Instant.parse( "2023-03-31T11:00:00Z" ),
+                                               Instant.parse( T2023_04_01T00_00_00Z ),
+                                               Instant.parse( T2023_04_01T01_00_00Z ),
+                                               Instant.parse( T2023_04_01T04_00_00Z ) );
+
+        // Get the actual left series
+        List<TimeSeries<Ensemble>> actualCollection = this.factoryToTest.getRightRetriever( timeWindow )
+                                                                        .get()
+                                                                        .collect( Collectors.toList() );
+
+        // There is only one time-series, so assert that
         assertEquals( 1, actualCollection.size() );
         TimeSeries<Ensemble> actualSeries = actualCollection.get( 0 );
 
         // Create the expected series
         TimeSeriesBuilder<Ensemble> builder = new TimeSeriesBuilder<>();
         TimeSeries<Ensemble> expectedSeries =
-                builder.addReferenceTime( Instant.parse( "2023-04-01T00:00:00Z" ), ReferenceTimeType.UNKNOWN )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ),
-                                            Ensemble.of( 65.0 ) ) )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T02:00:00Z" ),
-                                            Ensemble.of( 72.0 ) ) )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T03:00:00Z" ),
-                                            Ensemble.of( 79.0 ) ) )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T04:00:00Z" ),
-                                            Ensemble.of( 86.0 ) ) )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T05:00:00Z" ),
-                                            Ensemble.of( 93.0 ) ) )
+                builder.addEvent( Event.of( Instant.parse( T2023_04_01T02_00_00Z ), Ensemble.of( 37.0, 72.0, 107.0 ) ) )
+                       .addEvent( Event.of( Instant.parse( T2023_04_01T03_00_00Z ), Ensemble.of( 44.0, 79.0, 114.0 ) ) )
+                       .addEvent( Event.of( Instant.parse( T2023_04_01T04_00_00Z ), Ensemble.of( 51.0, 86.0, 121.0 ) ) )
+                       .addReferenceTime( Instant.parse( T2023_04_01T00_00_00Z ), ReferenceTimeType.UNKNOWN )
+                       .setTimeScale( TimeScale.of() )
+                       .build();
+
+        // Actual series equals expected series
+        assertEquals( expectedSeries, actualSeries );
+    }
+
+    @Test
+    public void testGetBaselineRetrieverWithTimeWindowReturnsOneTimeSeriesWithThreeEvents()
+    {
+
+        // The time window to select events
+        TimeWindow timeWindow = TimeWindow.of( Instant.parse( "2023-03-31T11:00:00Z" ),
+                                               Instant.parse( T2023_04_01T00_00_00Z ),
+                                               Instant.parse( T2023_04_01T01_00_00Z ),
+                                               Instant.parse( T2023_04_01T04_00_00Z ) );
+
+        // Get the actual left series
+        List<TimeSeries<Ensemble>> actualCollection = this.factoryToTest.getBaselineRetriever( timeWindow )
+                                                                        .get()
+                                                                        .collect( Collectors.toList() );
+
+        // There is only one time-series, so assert that
+        assertEquals( 1, actualCollection.size() );
+        TimeSeries<Ensemble> actualSeries = actualCollection.get( 0 );
+
+        // Create the expected series
+        TimeSeriesBuilder<Ensemble> builder = new TimeSeriesBuilder<>();
+        TimeSeries<Ensemble> expectedSeries =
+                builder.addEvent( Event.of( Instant.parse( T2023_04_01T02_00_00Z ), Ensemble.of( 37.0, 72.0, 107.0 ) ) )
+                       .addEvent( Event.of( Instant.parse( T2023_04_01T03_00_00Z ), Ensemble.of( 44.0, 79.0, 114.0 ) ) )
+                       .addEvent( Event.of( Instant.parse( T2023_04_01T04_00_00Z ), Ensemble.of( 51.0, 86.0, 121.0 ) ) )
+                       .addReferenceTime( Instant.parse( T2023_04_01T00_00_00Z ), ReferenceTimeType.UNKNOWN )
                        .setTimeScale( TimeScale.of() )
                        .build();
 
@@ -231,7 +307,7 @@ public class EnsembleForecastRetrieverTest
     }
 
     @After
-    public void tearDown() throws SQLException
+    public void runAfterEachTest() throws SQLException
     {
         this.dropTheTablesAndSchema();
         this.rawConnection.close();
@@ -308,13 +384,84 @@ public class EnsembleForecastRetrieverTest
     }
 
     /**
+     * Creates an instance of a {@link EnsembleRetrieverFactory} to test.
+     * @throws SQLException if the factory could not be created
+     */
+
+    private void createEnsembleRetrieverFactory() throws SQLException
+    {
+        // Mock the sufficient elements of the ProjectConfig
+        PairConfig pairsConfig = new PairConfig( CFS,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null );
+        List<DataSourceConfig.Source> sourceList = new ArrayList<>();
+
+        DataSourceConfig left = new DataSourceConfig( DatasourceType.fromValue( "observations" ),
+                                                      sourceList,
+                                                      new Variable( STREAMFLOW, null, null ),
+                                                      null,
+                                                      null,
+                                                      null,
+                                                      null,
+                                                      null,
+                                                      null );
+
+        // Same right and baseline
+        DataSourceConfig rightAndBaseline = new DataSourceConfig( DatasourceType.fromValue( "ensemble forecasts" ),
+                                                                  sourceList,
+                                                                  new Variable( STREAMFLOW, null, null ),
+                                                                  null,
+                                                                  null,
+                                                                  null,
+                                                                  null,
+                                                                  null,
+                                                                  null );
+
+        ProjectConfig.Inputs inputsConfig = new ProjectConfig.Inputs( left,
+                                                                      rightAndBaseline,
+                                                                      rightAndBaseline );
+
+        ProjectConfig projectConfig = new ProjectConfig( inputsConfig, pairsConfig, null, null, null, null );
+
+        TimeScale desiredTimeScale = TimeScale.of();
+
+        Feature feature =
+                new Feature( null, null, null, null, null, FAKE_FEATURE, null, null, null, null, null, null, null );
+
+        // Mock the sufficient elements of Project
+        Project project = Mockito.mock( Project.class );
+        Mockito.when( project.getProjectConfig() ).thenReturn( projectConfig );
+        Mockito.when( project.getId() ).thenReturn( PROJECT_ID );
+        Mockito.when( project.getDesiredTimeScale() ).thenReturn( desiredTimeScale );
+        Mockito.when( project.getLeftVariableFeatureId( feature ) ).thenReturn( this.variableFeatureId );
+        Mockito.when( project.getRightVariableFeatureId( feature ) ).thenReturn( this.variableFeatureId );
+        Mockito.when( project.getBaselineVariableFeatureId( feature ) ).thenReturn( this.variableFeatureId );
+        Mockito.when( project.hasBaseline() ).thenReturn( true );
+        Mockito.when( project.usesProbabilityThresholds() ).thenReturn( false );
+
+        // Create the factory instance
+        UnitMapper unitMapper = UnitMapper.of( CFS );
+        this.factoryToTest = EnsembleRetrieverFactory.of( project, feature, unitMapper );
+    }
+
+    /**
      * Performs the detailed set-up work to add one time-series to the database. Some assertions are made here, which
      * could fail, in order to clarify the source of a failure.
      * 
      * @throws SQLException if the detailed set-up fails
      */
 
-    private void addOneForecastTimeSeriesWithFiveEventsAndThreeMembersToTheDatabase() throws SQLException
+    private void addTwoForecastTimeSeriesEachWithFiveEventsToTheDatabase() throws SQLException
     {
         // Add a source
         SourceDetails.SourceKey sourceKey = SourceDetails.createKey( URI.create( "/this/is/just/a/test" ),
@@ -343,30 +490,42 @@ public class EnsembleForecastRetrieverTest
 
         // Add a project source
         // There is no wres abstraction to help with this
-        String projectSourceInsert =
-                "INSERT INTO wres.ProjectSource (project_id, source_id, member) VALUES ({0},{1},''{2}'')";
+        String projectSourceInsert = INSERT_INTO_WRES_PROJECT_SOURCE;
 
-        //Format 
+        // Project source for RIGHT
         projectSourceInsert = MessageFormat.format( projectSourceInsert,
                                                     PROJECT_ID,
                                                     sourceId,
-                                                    LRB.value() );
+                                                    LeftOrRightOrBaseline.RIGHT.value() );
 
         DataScripter script = new DataScripter( projectSourceInsert );
         int rows = script.execute();
 
         assertEquals( 1, rows );
 
+        // Project source for BASELINE - same source for simplicity
+        String projectSourceBaselineInsert = INSERT_INTO_WRES_PROJECT_SOURCE;
+
+        projectSourceBaselineInsert = MessageFormat.format( projectSourceBaselineInsert,
+                                                            PROJECT_ID,
+                                                            sourceId,
+                                                            LeftOrRightOrBaseline.BASELINE.value() );
+
+        DataScripter scriptBaseline = new DataScripter( projectSourceBaselineInsert );
+        int rowsBaseline = scriptBaseline.execute();
+
+        assertEquals( 1, rowsBaseline );
+
         // Add a feature
         FeatureDetails feature = new FeatureDetails();
-        feature.setLid( "FEAT" );
+        feature.setLid( FAKE_FEATURE );
         feature.save();
 
         assertNotNull( feature.getId() );
 
         // Add a variable
         VariableDetails variable = new VariableDetails();
-        variable.setVariableName( "VAR" );
+        variable.setVariableName( STREAMFLOW );
         variable.save();
 
         assertNotNull( variable.getId() );
@@ -380,7 +539,7 @@ public class EnsembleForecastRetrieverTest
         // Get the measurement units for CFS
         MeasurementDetails measurement = new MeasurementDetails();
 
-        measurement.setUnit( UNITS );
+        measurement.setUnit( CFS );
         measurement.save();
         Integer measurementUnitId = measurement.getId();
 
@@ -573,6 +732,101 @@ public class EnsembleForecastRetrieverTest
                 assertEquals( 1, row );
             }
         }
+    }
+
+    /**
+     * Performs the detailed set-up work to add one time-series to the database. Some assertions are made here, which
+     * could fail, in order to clarify the source of a failure.
+     * 
+     * @throws SQLException if the detailed set-up fails
+     */
+
+    private void addAnObservedTimeSeriesWithTenEventsToTheDatabase() throws SQLException
+    {
+        // Add a source
+        SourceDetails.SourceKey sourceKey = SourceDetails.createKey( URI.create( "/this/is/just/a/test" ),
+                                                                     "2017-06-16 11:13:00",
+                                                                     null,
+                                                                     "def456" );
+
+        SourceDetails sourceDetails = new SourceDetails( sourceKey );
+
+        sourceDetails.save();
+
+        assertTrue( sourceDetails.performedInsert() );
+
+        Integer sourceId = sourceDetails.getId();
+
+        assertNotNull( sourceId );
+
+        // Add a project source
+        // There is no wres abstraction to help with this
+        String projectSourceInsert = INSERT_INTO_WRES_PROJECT_SOURCE;
+
+        //Format 
+        projectSourceInsert = MessageFormat.format( projectSourceInsert,
+                                                    PROJECT_ID,
+                                                    sourceId,
+                                                    LeftOrRightOrBaseline.LEFT.value() );
+
+        DataScripter script = new DataScripter( projectSourceInsert );
+        int rows = script.execute();
+
+        assertEquals( 1, rows );
+
+        // Get the measurement units for CFS
+        MeasurementDetails measurement = new MeasurementDetails();
+
+        measurement.setUnit( CFS );
+        measurement.save();
+        Integer measurementUnitId = measurement.getId();
+
+        assertNotNull( measurementUnitId );
+
+        // Add some observations
+        // There is no wres abstraction to help with this      
+        int scalePeriod = 1;
+        String scaleFunction = TimeScaleFunction.UNKNOWN.name();
+
+        Instant seriesStart = Instant.parse( T2023_04_01T00_00_00Z );
+        Duration seriesIncrement = Duration.ofHours( 1 );
+        double valueStart = 23.0;
+        double valueIncrement = 7.0;
+
+        // Insert template
+        String observationInsert =
+                "INSERT INTO wres.Observation"
+                                   + "(variablefeature_id, observation_time, observed_value, measurementunit_id, "
+                                   + "source_id, scale_period, scale_function) "
+                                   + "VALUES ({0},''{1}'',{2},{3},{4},{5},''{6}'')";
+
+        // Insert 10 observed events into the db
+        Instant observationTime = seriesStart;
+        double observedValue = valueStart;
+        for ( int i = 0; i < 10; i++ )
+        {
+            // Increment the valid datetime and value
+            observationTime = observationTime.plus( seriesIncrement );
+            observedValue = observedValue + valueIncrement;
+
+            // Insert
+            String insert = MessageFormat.format( observationInsert,
+                                                  this.variableFeatureId,
+                                                  observationTime.toString(),
+                                                  observedValue,
+                                                  measurementUnitId,
+                                                  sourceId,
+                                                  scalePeriod,
+                                                  scaleFunction );
+
+            DataScripter observedScript = new DataScripter( insert );
+
+            int row = observedScript.execute();
+
+            // One row added
+            assertEquals( 1, row );
+        }
+
     }
 
 }

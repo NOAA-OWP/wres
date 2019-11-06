@@ -140,7 +140,7 @@ public class SingleValuedRetrieverFactoryTest
     public void runBeforeEachTest() throws Exception
     {
         // Create the database and connection pool
-        this.testDatabase = new TestDatabase( "SingleValuedForecastRetrieverTest" );
+        this.testDatabase = new TestDatabase( "SingleValuedRetrieverFactoryTest" );
         this.dataSource = this.testDatabase.getNewComboPooledDataSource();
 
         // Create the connection and schema
