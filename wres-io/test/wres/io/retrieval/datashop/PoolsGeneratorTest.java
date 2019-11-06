@@ -44,7 +44,7 @@ public class PoolsGeneratorTest
 {
 
     private static final String GET_VARIABLE_ID_FROM_PROJECT_CONFIG = "getVariableIdFromProjectConfig";
-    
+
     private static final String STREAMFLOW = "STREAMFLOW";
 
     /**
@@ -134,7 +134,8 @@ public class PoolsGeneratorTest
                     .thenReturn( STREAMFLOW );
 
         // Create the actual output
-        List<Supplier<PoolOfPairs<Double, Double>>> actual = PoolFactory.getSingleValuedPools( project, feature );
+        List<Supplier<PoolOfPairs<Double, Double>>> actual =
+                PoolFactory.getSingleValuedPools( project, feature, mapper );
 
         // Assert expected number of suppliers
         assertEquals( 18, actual.size() );
@@ -229,11 +230,11 @@ public class PoolsGeneratorTest
                     .thenReturn( STREAMFLOW );
 
         // Create the actual output
-        List<Supplier<PoolOfPairs<Double, Ensemble>>> actual = PoolFactory.getEnsemblePools( project, feature );
+        List<Supplier<PoolOfPairs<Double, Ensemble>>> actual = PoolFactory.getEnsemblePools( project, feature, mapper );
 
         // Assert expected number of suppliers
         assertEquals( 18, actual.size() );
     }
-    
+
 
 }

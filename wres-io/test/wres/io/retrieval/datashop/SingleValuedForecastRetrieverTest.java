@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
@@ -96,6 +97,12 @@ public class SingleValuedForecastRetrieverTest
      */
 
     private static final String UNITS = "CFS";
+    
+    /**
+     * The unit mapper.
+     */
+    
+    private UnitMapper unitMapper;
 
     @BeforeClass
     public static void oneTimeSetup()
@@ -119,19 +126,19 @@ public class SingleValuedForecastRetrieverTest
 
         // Add some data for testing
         this.addTwoForecastTimeSeriesEachWithFiveEventsToTheDatabase();
+
+        // Create the unit mapper
+        this.unitMapper = UnitMapper.of( UNITS );
     }
 
     @Test
     public void testRetrievalOfTwoForecastTimeSeriesEachWithFiveEvents()
     {
-        // Desired units are the same as the existing units
-        UnitMapper mapper = UnitMapper.of( UNITS );
-
         // Build the retriever
-        TimeSeriesRetriever<Double> forecastRetriever =
+        Retriever<TimeSeries<Double>> forecastRetriever =
                 new SingleValuedForecastRetriever.Builder().setProjectId( PROJECT_ID )
                                                            .setVariableFeatureId( this.variableFeatureId )
-                                                           .setUnitMapper( mapper )
+                                                           .setUnitMapper( this.unitMapper )
                                                            .setLeftOrRightOrBaseline( LRB )
                                                            .build();
 
@@ -175,14 +182,11 @@ public class SingleValuedForecastRetrieverTest
 
         // Actual series equals expected series
         assertEquals( expectedSeriesTwo, actualSeriesTwo );
-    }
+    }   
 
     @Test
     public void testRetrievalOfTwoForecastTimeSeriesWithinTimeWindow()
     {
-        // Desired units are the same as the existing units
-        UnitMapper mapper = UnitMapper.of( UNITS );
-
         // Set the time window filter, aka pool boundaries
         Instant referenceStart = Instant.parse( "2023-03-31T23:00:00Z" );
         Instant referenceEnd = Instant.parse( T2023_04_01T19_00_00Z );
@@ -194,10 +198,10 @@ public class SingleValuedForecastRetrieverTest
         TimeWindow timeWindow = TimeWindow.of( referenceStart, referenceEnd, validStart, validEnd, leadStart, leadEnd );
 
         // Build the retriever
-        TimeSeriesRetriever<Double> forecastRetriever =
+        Retriever<TimeSeries<Double>> forecastRetriever =
                 new SingleValuedForecastRetriever.Builder().setProjectId( PROJECT_ID )
                                                            .setVariableFeatureId( this.variableFeatureId )
-                                                           .setUnitMapper( mapper )
+                                                           .setUnitMapper( this.unitMapper )
                                                            .setTimeWindow( timeWindow )
                                                            .setLeftOrRightOrBaseline( LRB )
                                                            .build();
@@ -234,9 +238,44 @@ public class SingleValuedForecastRetrieverTest
 
         // Actual series equals expected series
         assertEquals( expectedSeriesTwo, actualSeriesTwo );
-
     }
 
+    @Test
+    public void testGetRetrievalOfTimeSeriesIdentifiersReturnsTwoIdentifiers()
+    {
+        // Build the retriever
+        Retriever<TimeSeries<Double>> forecastRetriever =
+                new SingleValuedForecastRetriever.Builder().setProjectId( PROJECT_ID )
+                                                           .setVariableFeatureId( this.variableFeatureId )
+                                                           .setUnitMapper( this.unitMapper )
+                                                           .setLeftOrRightOrBaseline( LRB )
+                                                           .build();
+
+        // Get the time-series
+        List<Long> identifiers = forecastRetriever.getAllIdentifiers().boxed().collect( Collectors.toList() );
+        
+        // Actual number of time-series equals expected number
+        assertEquals( 2, identifiers.size() );
+    }
+    
+    @Test
+    public void testGetRetrievalOfTimeSeriesByIdentifierReturnsTwoTimeSeries()
+    {
+        // Build the retriever
+        Retriever<TimeSeries<Double>> forecastRetriever =
+                new SingleValuedForecastRetriever.Builder().setProjectId( PROJECT_ID )
+                                                           .setVariableFeatureId( this.variableFeatureId )
+                                                           .setUnitMapper( this.unitMapper )
+                                                           .setLeftOrRightOrBaseline( LRB )
+                                                           .build();
+
+        // Get the time-series
+        LongStream identifiers = forecastRetriever.getAllIdentifiers();
+
+        // Actual number of time-series equals expected number
+        assertEquals( 2, forecastRetriever.get( identifiers ).count() );
+    }    
+    
     @After
     public void tearDown() throws SQLException
     {

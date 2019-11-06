@@ -179,7 +179,7 @@ class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemble>
             throw new DataAccessException( "While creating a retriever of right data for project "
                                            + this.project.getId()
                                            + FEATURE_MESSAGE
-                                           + featureString
+                                           + this.featureString
                                            + AND_TIME_WINDOW_MESSAGE
                                            + timeWindow
                                            + ":",
@@ -233,7 +233,7 @@ class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemble>
                 throw new DataAccessException( "While creating a retriever of right data for project "
                                                + this.project.getId()
                                                + FEATURE_MESSAGE
-                                               + featureString
+                                               + this.featureString
                                                + AND_TIME_WINDOW_MESSAGE
                                                + timeWindow
                                                + ":",

@@ -24,7 +24,7 @@ import wres.io.utilities.ScriptBuilder;
  * @author james.brown@hydrosolved.com
  */
 
-class UnitMapper
+public class UnitMapper
 {
     /**
      * Logger.
@@ -68,7 +68,7 @@ class UnitMapper
      * @throws DataAccessException if the data could not be accessed 
      */
 
-    static UnitMapper of( String desiredMeasurementUnit )
+    public static UnitMapper of( String desiredMeasurementUnit )
     {
         return new UnitMapper( desiredMeasurementUnit );
     }
@@ -183,11 +183,11 @@ class UnitMapper
         // Retrieve the conversions
         try ( DataProvider provider = dataScripter.buffer() )
         {
-            Integer desiredMeasurementUnitId = null;
+            Integer desiredUnitId = null;
             while ( provider.next() )
             {
                 Integer fromUnitId = provider.getInt( "from_unit" );
-                desiredMeasurementUnitId = provider.getInt( "to_unit" );
+                desiredUnitId = provider.getInt( "to_unit" );
                 String fromUnitName = provider.getString( "from_unit_name" );
                 double initialOffset = provider.getDouble( "initial_offset" );
                 double finalOffset = provider.getDouble( "final_offset" );
@@ -202,7 +202,7 @@ class UnitMapper
                 this.namesToIdentifiers.put( fromUnitName, fromUnitId );
             }
 
-            this.desiredMeasurementUnitId = desiredMeasurementUnitId;
+            this.desiredMeasurementUnitId = desiredUnitId;
             
             LOGGER.debug( "Added {} unit conversions to the cache for the desired units of '{}'.",
                           this.conversions.size(),
