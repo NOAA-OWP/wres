@@ -74,13 +74,16 @@ public class PoolFactory
      * 
      * @param project the project for which pools are required
      * @param feature the feature for which pools are required
+     * @param unitMapper the mapper to convert measurement units
      * @return a list of suppliers that supply pools of pairs
      * @throws NullPointerException if the input is null
      * @throws IllegalArgumentException if the project is not consistent with the generation of pools for single-valued
      *            data
      */
 
-    public static List<Supplier<PoolOfPairs<Double, Double>>> getSingleValuedPools( Project project, Feature feature )
+    public static List<Supplier<PoolOfPairs<Double, Double>>> getSingleValuedPools( Project project, 
+                                                                                    Feature feature, 
+                                                                                    UnitMapper unitMapper )
     {
         Objects.requireNonNull( project, "Cannot create pools from a null project." );
 
@@ -103,7 +106,6 @@ public class PoolFactory
 
         // Get a unit mapper for the declared measurement units
         String desiredMeasurementUnit = pairConfig.getUnit();
-        UnitMapper unitMapper = UnitMapper.of( desiredMeasurementUnit );
 
         // Get the times scale
         TimeScale desiredTimeScale = ConfigHelper.getDesiredTimeScale( pairConfig );
@@ -186,13 +188,16 @@ public class PoolFactory
      * 
      * @param project the project for which pools are required
      * @param feature the feature for which pools are required
+     * @param unitMapper the mapper to convert measurement units
      * @return a list of suppliers that supply pools of pairs
      * @throws NullPointerException if the input is null
      * @throws IllegalArgumentException if the project is not consistent with the generation of pools for single-valued
      *            data
      */
 
-    public static List<Supplier<PoolOfPairs<Double, Ensemble>>> getEnsemblePools( Project project, Feature feature )
+    public static List<Supplier<PoolOfPairs<Double, Ensemble>>> getEnsemblePools( Project project, 
+                                                                                  Feature feature, 
+                                                                                  UnitMapper unitMapper )
     {
         Objects.requireNonNull( project, "Cannot create pools from a null project." );
 
@@ -214,7 +219,6 @@ public class PoolFactory
 
         // Get a unit mapper for the declared measurement units
         String desiredMeasurementUnit = pairConfig.getUnit();
-        UnitMapper unitMapper = UnitMapper.of( desiredMeasurementUnit );
 
         // Get the times scale
         TimeScale desiredTimeScale = ConfigHelper.getDesiredTimeScale( pairConfig );

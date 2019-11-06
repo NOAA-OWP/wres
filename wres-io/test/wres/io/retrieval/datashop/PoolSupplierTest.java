@@ -15,6 +15,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
@@ -448,6 +449,96 @@ public class PoolSupplierTest
 
         PoolOfPairs<Double, Double> poolOneExpected =
                 new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolOneSeries )
+                                                        .setMetadata( poolOneMetadata )
+                                                        .build();
+
+        assertEquals( poolOneExpected, poolOneActual );
+    }
+
+    /**
+     * Tests the retrieval of expected pairs for the first of eighteen pools from system test scenario505 as of
+     * commit 725345a6e23df36d3ad2661a068f93563caa07a8 where the pairs are baseline pairs.
+     */
+
+    @Test
+    public void testGetReturnsPoolThatContainsSevenPairsInOneSeriesForBaselineAndIncludesClimatology()
+    {
+        // Mock one return of the observed stream, even though it is used for climatology,
+        // because we are adding to a CachingRetriever
+        Mockito.when( this.observationRetriever.get() ).thenReturn( Stream.of( this.observations ) );
+
+        Supplier<Stream<TimeSeries<Double>>> obsSupplier = CachingRetriever.of( this.observationRetriever );
+
+        // Using the same source for right and baseline, so allow the stream to be 
+        // operated on for each of right and baseline
+        Mockito.when( this.forecastRetriever.get() )
+               .thenReturn( Stream.of( this.forecastOne ) )
+               .thenReturn( Stream.of( this.forecastOne ) );
+
+        Supplier<Stream<TimeSeries<Double>>> forcSupplierOne = this.forecastRetriever;
+
+        TimeWindow poolOneWindow = TimeWindow.of( T2551_03_17T00_00_00Z, //2551-03-17T00:00:00Z
+                                                  T2551_03_17T13_00_00Z, //2551-03-17T13:00:00Z
+                                                  Duration.ofHours( 0 ),
+                                                  Duration.ofHours( 23 ) );
+
+        SampleMetadata poolOneMetadata = SampleMetadata.of( this.metadata,
+                                                            poolOneWindow,
+                                                            this.desiredTimeScale );
+
+        Supplier<PoolOfPairs<Double, Double>> poolOneSupplier =
+                new PoolOfPairsSupplierBuilder<Double, Double>().setLeft( obsSupplier )
+                                                                .setRight( forcSupplierOne )
+                                                                .setBaseline( forcSupplierOne )
+                                                                .setClimatology( obsSupplier, Double::doubleValue )
+                                                                .setLeftUpscaler( this.upscaler )
+                                                                .setPairer( this.pairer )
+                                                                .setDesiredTimeScale( this.desiredTimeScale )
+                                                                .setMetadata( poolOneMetadata )
+                                                                .setBaselineMetadata( poolOneMetadata )
+                                                                .build();
+
+        // Acquire the pools for the baseline
+        PoolOfPairs<Double, Double> poolOneActual = poolOneSupplier.get().getBaselineData();
+
+        // Pool One expected
+        TimeSeries<Pair<Double, Double>> poolOneSeries =
+                new TimeSeriesBuilder<Pair<Double, Double>>().addEvent( Event.of( T2551_03_17T15_00_00Z,
+                                                                                  Pair.of( 409.6666666666667,
+                                                                                           73.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_17T18_00_00Z,
+                                                                                  Pair.of( 428.3333333333333,
+                                                                                           79.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_17T21_00_00Z,
+                                                                                  Pair.of( 443.6666666666667,
+                                                                                           83.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T00_00_00Z,
+                                                                                  Pair.of( 460.3333333333333,
+                                                                                           89.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T03_00_00Z,
+                                                                                  Pair.of( 477.6666666666667,
+                                                                                           97.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T06_00_00Z,
+                                                                                  Pair.of( 497.6666666666667,
+                                                                                           101.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T09_00_00Z,
+                                                                                  Pair.of( 517.6666666666666,
+                                                                                           103.0 ) ) )
+                                                             .addReferenceTime( T2551_03_17T12_00_00Z,
+                                                                                ReferenceTimeType.UNKNOWN )
+                                                             .setTimeScale( this.desiredTimeScale )
+                                                             .build();
+
+        double[] climatologyArray = this.observations.getEvents()
+                                                .stream()
+                                                .mapToDouble( Event::getValue )
+                                                .toArray();
+        
+        VectorOfDoubles expectedClimatology = VectorOfDoubles.of( climatologyArray );
+
+        PoolOfPairs<Double, Double> poolOneExpected =
+                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolOneSeries )
+                                                        .setClimatology( expectedClimatology )
                                                         .setMetadata( poolOneMetadata )
                                                         .build();
 

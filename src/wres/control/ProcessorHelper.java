@@ -208,6 +208,11 @@ class ProcessorHelper
                                                         sharedSampleWriters,
                                                         sharedBaselineSampleWriters );
 
+        // Get a unit mapper for the declared measurement units
+        //PairConfig pairConfig = projectConfig.getPair();
+        //String desiredMeasurementUnit = pairConfig.getUnit();
+        //UnitMapper unitMapper = UnitMapper.of( desiredMeasurementUnit );
+        
         // Create one task per feature
         for ( FeaturePlus feature : decomposedFeatures )
         {

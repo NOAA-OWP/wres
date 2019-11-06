@@ -215,9 +215,9 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         this.addSeasonClause( scripter, 1 );
         
         // Add constraint on the timeseries_ids provided
-        StringJoiner joiner = new StringJoiner( ",", "{", "}" );
-        identifiers.forEach( next -> joiner.add( Long.toString( next ) ) );
-        scripter.addTab( 1 ).addLine( "AND TS.timeseries_id = ANY( '", joiner.toString(), "' )::integer[]" );
+        StringJoiner joiner = new StringJoiner( ",", "(", ")" );
+        identifiers.forEach( next -> joiner.add( "'" + Long.toString( next ) + "'" ) );
+        scripter.addTab( 1 ).addLine( "AND TS.timeseries_id IN ", joiner.toString() );
 
         // Add GROUP BY clause
         scripter.addLine( GROUP_BY_SERIES_ID_TSV_LEAD_TSV_SERIES_VALUE ); // #56214-272

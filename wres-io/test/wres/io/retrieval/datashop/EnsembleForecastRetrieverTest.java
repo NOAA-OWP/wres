@@ -2,6 +2,7 @@ package wres.io.retrieval.datashop;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.net.URI;
@@ -17,6 +18,7 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
@@ -113,6 +115,20 @@ public class EnsembleForecastRetrieverTest
 
     private static final String UNITS = "CFS";
 
+    /**
+     * Unit mapper.
+     */
+
+    private UnitMapper unitMapper;
+
+    /**
+     * Error message when attempting to retrieve by identifier.
+     */
+
+    private static final String NO_IDENTIFIER_ERROR = "Retrieval of ensemble time-series by identifier is not "
+                                                      + "currently possible because there is no identifier for "
+                                                      + "ensemble time-series in the WRES database.";
+    
     @BeforeClass
     public static void oneTimeSetup()
     {
@@ -135,19 +151,19 @@ public class EnsembleForecastRetrieverTest
 
         // Add some data for testing
         this.addOneForecastTimeSeriesWithFiveEventsAndThreeMembersToTheDatabase();
+
+        // Create the unit mapper
+        unitMapper = UnitMapper.of( UNITS );
     }
 
     @Test
     public void testRetrievalOfOneTimeSeriesWithFiveEventsAndThreeMembers()
     {
-        // Desired units are the same as the existing units
-        UnitMapper mapper = UnitMapper.of( UNITS );
-
         // Build the retriever
-        TimeSeriesRetriever<Ensemble> forecastRetriever =
+        Retriever<TimeSeries<Ensemble>> forecastRetriever =
                 new EnsembleForecastRetriever.Builder().setProjectId( PROJECT_ID )
                                                        .setVariableFeatureId( this.variableFeatureId )
-                                                       .setUnitMapper( mapper )
+                                                       .setUnitMapper( this.unitMapper )
                                                        .setLeftOrRightOrBaseline( LRB )
                                                        .build();
 
@@ -185,17 +201,14 @@ public class EnsembleForecastRetrieverTest
     @Test
     public void testRetrievalOfOneTimeSeriesWithFiveEventsAndOneMemberUsingEnsembleConstraints()
     {
-        // Desired units are the same as the existing units
-        UnitMapper mapper = UnitMapper.of( UNITS );
-
         // Build the retriever with ensemble constraints
-        TimeSeriesRetriever<Ensemble> forecastRetriever =
+        Retriever<TimeSeries<Ensemble>> forecastRetriever =
                 new EnsembleForecastRetriever.Builder().setEnsembleIdsToInclude( Set.of( this.secondMemberId ) )
                                                        .setEnsembleIdsToExclude( Set.of( this.firstMemberId,
                                                                                          this.thirdMemberId ) )
                                                        .setProjectId( PROJECT_ID )
                                                        .setVariableFeatureId( this.variableFeatureId )
-                                                       .setUnitMapper( mapper )
+                                                       .setUnitMapper( this.unitMapper )
                                                        .setLeftOrRightOrBaseline( LRB )
                                                        .build();
 
@@ -230,6 +243,57 @@ public class EnsembleForecastRetrieverTest
         assertEquals( expectedSeries, actualSeries );
     }
 
+    @Test
+    public void testGetAllIdentifiersThrowsExpectedException()
+    {
+        // Build the retriever
+        Retriever<TimeSeries<Ensemble>> forecastRetriever =
+                new EnsembleForecastRetriever.Builder().setProjectId( PROJECT_ID )
+                                                       .setVariableFeatureId( this.variableFeatureId )
+                                                       .setUnitMapper( this.unitMapper )
+                                                       .setLeftOrRightOrBaseline( LRB )
+                                                       .build();
+
+        UnsupportedOperationException expected = assertThrows( UnsupportedOperationException.class,
+                                                               () -> forecastRetriever.getAllIdentifiers() );
+
+        assertEquals( NO_IDENTIFIER_ERROR, expected.getMessage() );
+    }
+
+    @Test
+    public void testGetByIdentifierThrowsExpectedException()
+    {
+        // Build the retriever
+        Retriever<TimeSeries<Ensemble>> forecastRetriever =
+                new EnsembleForecastRetriever.Builder().setProjectId( PROJECT_ID )
+                                                       .setVariableFeatureId( this.variableFeatureId )
+                                                       .setUnitMapper( this.unitMapper )
+                                                       .setLeftOrRightOrBaseline( LRB )
+                                                       .build();
+
+        UnsupportedOperationException expected = assertThrows( UnsupportedOperationException.class,
+                                                               () -> forecastRetriever.get( 123 ) );
+
+        assertEquals( NO_IDENTIFIER_ERROR, expected.getMessage() );
+    }
+    
+    @Test
+    public void testGetByIdentifierStreamThrowsExpectedException()
+    {
+        // Build the retriever
+        Retriever<TimeSeries<Ensemble>> forecastRetriever =
+                new EnsembleForecastRetriever.Builder().setProjectId( PROJECT_ID )
+                                                       .setVariableFeatureId( this.variableFeatureId )
+                                                       .setUnitMapper( this.unitMapper )
+                                                       .setLeftOrRightOrBaseline( LRB )
+                                                       .build();
+
+        UnsupportedOperationException expected = assertThrows( UnsupportedOperationException.class,
+                                                               () -> forecastRetriever.get( LongStream.of() ) );
+
+        assertEquals( NO_IDENTIFIER_ERROR, expected.getMessage() );
+    }
+    
     @After
     public void tearDown() throws SQLException
     {

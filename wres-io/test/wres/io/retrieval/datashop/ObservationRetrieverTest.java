@@ -2,6 +2,7 @@ package wres.io.retrieval.datashop;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.net.URI;
@@ -14,6 +15,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
@@ -92,6 +94,19 @@ public class ObservationRetrieverTest
 
     private static final String UNITS = "CFS";
 
+    /**
+     * Unit mapper.
+     */
+
+    private UnitMapper unitMapper;
+
+    /**
+     * Error message when attempting to retrieve by identifier.
+     */
+
+    private static final String NO_IDENTIFIER_ERROR = "Retrieval of observed time-series by identifier is not "
+                                                      + "currently possible.";
+
     @BeforeClass
     public static void oneTimeSetup()
     {
@@ -105,28 +120,27 @@ public class ObservationRetrieverTest
         // Create the database and connection pool
         this.testDatabase = new TestDatabase( "ObservationRetrieverTest" );
         this.dataSource = this.testDatabase.getNewComboPooledDataSource();
-        
+
         // Create the connection and schema
         this.createTheConnectionAndSchema();
-        
+
         // Create the tables
         this.addTheDatabaseAndTables();
-        
+
         // Add some data for testing
         this.addAnObservedTimeSeriesWithTenEventsToTheDatabase();
+
+        this.unitMapper = UnitMapper.of( UNITS );
     }
 
     @Test
     public void testRetrievalOfObservedTimeSeriesWithTenEvents()
     {
-        // Desired units are the same as the existing units
-        UnitMapper mapper = UnitMapper.of( UNITS );
-
         // Build the retriever
-        TimeSeriesRetriever<Double> observedRetriever =
+        Retriever<TimeSeries<Double>> observedRetriever =
                 new ObservationRetriever.Builder().setProjectId( PROJECT_ID )
                                                   .setVariableFeatureId( this.variableFeatureId )
-                                                  .setUnitMapper( mapper )
+                                                  .setUnitMapper( this.unitMapper )
                                                   .setLeftOrRightOrBaseline( LRB )
                                                   .build();
 
@@ -159,22 +173,19 @@ public class ObservationRetrieverTest
         // Actual series equals expected series
         assertEquals( expectedSeries, actualSeries );
     }
-    
+
     @Test
     public void testRetrievalOfPoolShapedObservedTimeSeriesWithSevenEvents()
     {
-        // Desired units are the same as the existing units
-        UnitMapper mapper = UnitMapper.of( UNITS );
-
         // Build the pool boundaries
         TimeWindow poolBoundaries =
                 TimeWindow.of( Instant.parse( "2023-04-01T02:00:00Z" ), Instant.parse( SECOND_TIME ) );
-        
+
         // Build the retriever
-        TimeSeriesRetriever<Double> observedRetriever =
+        Retriever<TimeSeries<Double>> observedRetriever =
                 new ObservationRetriever.Builder().setProjectId( PROJECT_ID )
                                                   .setVariableFeatureId( this.variableFeatureId )
-                                                  .setUnitMapper( mapper )
+                                                  .setUnitMapper( this.unitMapper )
                                                   .setTimeWindow( poolBoundaries )
                                                   .setLeftOrRightOrBaseline( LRB )
                                                   .build();
@@ -191,7 +202,7 @@ public class ObservationRetrieverTest
 
         // Assert correct number of events
         assertEquals( 7, actualSeries.getEvents().size() );
-        
+
         // Create the expected series
         TimeSeriesBuilder<Double> builder = new TimeSeriesBuilder<>();
         TimeSeries<Double> expectedSeries =
@@ -207,7 +218,58 @@ public class ObservationRetrieverTest
 
         // Actual series equals expected series
         assertEquals( expectedSeries, actualSeries );
-    }    
+    }
+
+    @Test
+    public void testGetAllIdentifiersThrowsExpectedException()
+    {
+        // Build the retriever
+        Retriever<TimeSeries<Double>> forecastRetriever =
+                new ObservationRetriever.Builder().setProjectId( PROJECT_ID )
+                                                  .setVariableFeatureId( this.variableFeatureId )
+                                                  .setUnitMapper( this.unitMapper )
+                                                  .setLeftOrRightOrBaseline( LRB )
+                                                  .build();
+
+        UnsupportedOperationException expected = assertThrows( UnsupportedOperationException.class,
+                                                               () -> forecastRetriever.getAllIdentifiers() );
+
+        assertEquals( NO_IDENTIFIER_ERROR, expected.getMessage() );
+    }
+
+    @Test
+    public void testGetByIdentifierThrowsExpectedException()
+    {
+        // Build the retriever
+        Retriever<TimeSeries<Double>> forecastRetriever =
+                new ObservationRetriever.Builder().setProjectId( PROJECT_ID )
+                                                  .setVariableFeatureId( this.variableFeatureId )
+                                                  .setUnitMapper( this.unitMapper )
+                                                  .setLeftOrRightOrBaseline( LRB )
+                                                  .build();
+
+        UnsupportedOperationException expected = assertThrows( UnsupportedOperationException.class,
+                                                               () -> forecastRetriever.get( 123 ) );
+
+        assertEquals( NO_IDENTIFIER_ERROR, expected.getMessage() );
+    }
+
+    @Test
+    public void testGetByIdentifierStreamThrowsExpectedException()
+    {
+        // Build the retriever
+        Retriever<TimeSeries<Double>> forecastRetriever =
+                new ObservationRetriever.Builder().setProjectId( PROJECT_ID )
+                                                  .setVariableFeatureId( this.variableFeatureId )
+                                                  .setUnitMapper( this.unitMapper )
+                                                  .setLeftOrRightOrBaseline( LRB )
+                                                  .build();
+
+        UnsupportedOperationException expected = assertThrows( UnsupportedOperationException.class,
+                                                               () -> forecastRetriever.get( LongStream.of() ) );
+
+        assertEquals( NO_IDENTIFIER_ERROR, expected.getMessage() );
+    }
 
     @After
     public void tearDown() throws SQLException
@@ -218,7 +280,7 @@ public class ObservationRetrieverTest
         this.testDatabase = null;
         this.dataSource = null;
     }
-    
+
     /**
      * Does the basic set-up work to create a connection and schema.
      * 
@@ -279,9 +341,9 @@ public class ObservationRetrieverTest
     private void dropTheTablesAndSchema() throws SQLException
     {
         this.testDatabase.dropWresSchema( this.rawConnection );
-        this.testDatabase.dropLiquibaseChangeTables( this.rawConnection ); 
+        this.testDatabase.dropLiquibaseChangeTables( this.rawConnection );
     }
-    
+
     /**
      * Performs the detailed set-up work to add one time-series to the database. Some assertions are made here, which
      * could fail, in order to clarify the source of a failure.
@@ -405,6 +467,6 @@ public class ObservationRetrieverTest
             assertEquals( 1, row );
         }
 
-    }    
-    
+    }
+
 }
