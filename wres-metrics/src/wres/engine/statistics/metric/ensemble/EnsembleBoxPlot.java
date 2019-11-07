@@ -55,7 +55,7 @@ abstract class EnsembleBoxPlot extends Diagram<SampleData<Pair<Double, Ensemble>
      * @throws MetricCalculationException if the box cannot be constructed
      */
 
-    abstract BoxPlotStatistic getBox( Pair<Double,Ensemble> pair, StatisticMetadata metadata );
+    abstract BoxPlotStatistic getBox( Pair<Double, Ensemble> pair, StatisticMetadata metadata );
 
     @Override
     public BoxPlotStatistics apply( final SampleData<Pair<Double, Ensemble>> s )
@@ -74,11 +74,14 @@ abstract class EnsembleBoxPlot extends Diagram<SampleData<Pair<Double, Ensemble>
                                                          s.getRawData().size(),
                                                          null );
 
-        //Create each box
-        for ( Pair<Double,Ensemble> next : s.getRawData() )
+        // Create each box
+        for ( Pair<Double, Ensemble> next : s.getRawData() )
         {
             boxes.add( this.getBox( next, metOut ) );
         }
+
+        // Sort the boxes by value: #70986
+        boxes.sort( ( first, second ) -> Double.compare( first.getLinkedValue(), second.getLinkedValue() ) );
 
         return BoxPlotStatistics.of( boxes, metOut );
     }
