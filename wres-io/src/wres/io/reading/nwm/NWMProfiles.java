@@ -43,6 +43,11 @@ import wres.config.generated.InterfaceShortHand;
 
 class NWMProfiles
 {
+    private NWMProfiles()
+    {
+        // Static utility class, no construction allowed.
+    }
+
     static NWMProfile getProfileFromShortHand( InterfaceShortHand shortHand )
     {
         if ( shortHand.equals( InterfaceShortHand.NWM_SHORT_RANGE_CHANNEL_RT_CONUS ) )

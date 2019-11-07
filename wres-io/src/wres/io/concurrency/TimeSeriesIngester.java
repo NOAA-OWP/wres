@@ -268,16 +268,18 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
                                              + timeSeries.toString() );
         }
 
-        for ( Map.Entry<ReferenceTimeType,Instant> entry : timeSeries.getReferenceTimes()
-                                                                     .entrySet() )
+        // Use the first reference datetime found until the database allows
+        // storage of all the reference datetimes associated with a forecast.
+        Map.Entry<ReferenceTimeType,Instant> entry =
+                timeSeries.getReferenceTimes()
+                          .entrySet()
+                          .iterator()
+                          .next();
         {
             LOGGER.warn( "Using the first reference datetime type found: {}",
                           entry );
             return entry.getValue();
         }
-
-        throw new IllegalStateException( "There was no reference datetime found in "
-                                         + timeSeries );
     }
 
 
