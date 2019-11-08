@@ -35,6 +35,7 @@ import wres.config.FeaturePlus;
 import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationType;
+import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.SampleDataGroup;
@@ -43,6 +44,7 @@ import wres.engine.statistics.metric.config.MetricConfigHelper;
 import wres.io.Operations;
 import wres.io.config.ConfigHelper;
 import wres.io.project.Project;
+import wres.io.retrieval.datashop.UnitMapper;
 import wres.io.writing.SharedSampleDataWriters;
 import wres.io.writing.SharedStatisticsWriters;
 import wres.io.writing.SharedStatisticsWriters.SharedWritersBuilder;
@@ -209,18 +211,19 @@ class ProcessorHelper
                                                         sharedBaselineSampleWriters );
 
         // Get a unit mapper for the declared measurement units
-        //PairConfig pairConfig = projectConfig.getPair();
-        //String desiredMeasurementUnit = pairConfig.getUnit();
-        //UnitMapper unitMapper = UnitMapper.of( desiredMeasurementUnit );
+        PairConfig pairConfig = projectConfig.getPair();
+        String desiredMeasurementUnit = pairConfig.getUnit();
+        UnitMapper unitMapper = UnitMapper.of( desiredMeasurementUnit );
         
         // Create one task per feature
         for ( FeaturePlus feature : decomposedFeatures )
         {
-            Supplier<FeatureProcessingResult> featureProcessor = new FeatureProcessor( feature,
-                                                                                       resolvedProject,
-                                                                                       project,
-                                                                                       executors,
-                                                                                       sharedWriters );
+            Supplier<FeatureProcessingResult> featureProcessor = new FeatureProcessorTwo( feature,
+                                                                                          resolvedProject,
+                                                                                          project,
+                                                                                          unitMapper,
+                                                                                          executors,
+                                                                                          sharedWriters );
 
             CompletableFuture<Void> nextFeatureTask = CompletableFuture.supplyAsync( featureProcessor,
                                                                                      executors.getFeatureExecutor() )

@@ -1,6 +1,8 @@
 package wres.engine.statistics.metric.ensemble;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -41,6 +43,12 @@ abstract class EnsembleBoxPlot extends Diagram<SampleData<Pair<Double, Ensemble>
             VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 );
 
     /**
+     * Function that orders boxes.
+     */
+
+    private static final Comparator<? super BoxPlotStatistic> BOX_COMPARATOR = EnsembleBoxPlot.getBoxComparator();
+
+    /**
      * A vector of probabilities that define the quantiles to plot.
      */
 
@@ -55,7 +63,7 @@ abstract class EnsembleBoxPlot extends Diagram<SampleData<Pair<Double, Ensemble>
      * @throws MetricCalculationException if the box cannot be constructed
      */
 
-    abstract BoxPlotStatistic getBox( Pair<Double,Ensemble> pair, StatisticMetadata metadata );
+    abstract BoxPlotStatistic getBox( Pair<Double, Ensemble> pair, StatisticMetadata metadata );
 
     @Override
     public BoxPlotStatistics apply( final SampleData<Pair<Double, Ensemble>> s )
@@ -74,11 +82,14 @@ abstract class EnsembleBoxPlot extends Diagram<SampleData<Pair<Double, Ensemble>
                                                          s.getRawData().size(),
                                                          null );
 
-        //Create each box
-        for ( Pair<Double,Ensemble> next : s.getRawData() )
+        // Create each box
+        for ( Pair<Double, Ensemble> next : s.getRawData() )
         {
             boxes.add( this.getBox( next, metOut ) );
         }
+
+        // Sort the boxes by value: #70986
+        boxes.sort( BOX_COMPARATOR );
 
         return BoxPlotStatistics.of( boxes, metOut );
     }
@@ -141,4 +152,25 @@ abstract class EnsembleBoxPlot extends Diagram<SampleData<Pair<Double, Ensemble>
         this.probabilities = probabilities;
 
     }
+
+    /**
+     * Returns a function that orders boxes.
+     * 
+     * @return a function that orders boxes
+     */
+
+    private static Comparator<? super BoxPlotStatistic> getBoxComparator()
+    {
+        return ( first, second ) -> {
+            int returnMe = Double.compare( first.getLinkedValue(), second.getLinkedValue() );
+
+            if ( returnMe != 0 )
+            {
+                return returnMe;
+            }
+
+            return Arrays.compare( first.getData().getDoubles(), second.getData().getDoubles() );
+        };
+    }
+
 }

@@ -1,4 +1,4 @@
-FROM rabbitmq:3.8.0-management-alpine
+FROM rabbitmq:3.8.1-management-alpine
 
 # Wish we could do the following, but busybox does not support long gids:
 #RUN addgroup -g 1370800073 wres && adduser -D -u 498 -g 1370800073 wres_docker
