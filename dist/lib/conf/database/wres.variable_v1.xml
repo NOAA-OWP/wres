@@ -5,20 +5,21 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
         objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
-    <changeSet id="Variable v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+    <changeSet id="Variable v1.1" author="Christopher Tubbs">
         <preConditions onFail="MARK_RAN">
             <not>
                 <tableExists tableName="Variable" schemaName="wres" />
             </not>
         </preConditions>
         <createTable tableName="Variable" schemaName="wres">
-            <column name="variable_id" type="smallserial" autoIncrement="true">
+            <column name="variable_id" type="smallint">
                 <constraints primaryKey="true" primaryKeyName="variable_pk"/>
             </column>
-            <column name="variable_name" type="text" remarks="The name of the variable">
+            <column name="variable_name" type="varchar" remarks="The name of the variable">
                 <constraints nullable="false" deferrable="true" unique="true" />
             </column>
         </createTable>
+        <addAutoIncrement schemaName="wres" tableName="Variable" columnName="variable_id" columnDataType="smallint" />
         <sql>
             ALTER TABLE wres.Variable OWNER TO wres;
         </sql>

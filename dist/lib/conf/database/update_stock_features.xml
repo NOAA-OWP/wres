@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="Remove Invalid Features" author="Christopher Tubbs">
+        <comment>Remove locations that were deemed inadequete</comment>
+        <sqlFile path="20191106_Delete_Invalid_Locations.sql" relativeToChangelogFile="true" />
+    </changeSet>
+    <changeSet id="Insert New Features" author="Christopher Tubbs">
+        <comment>Insert recently discovered locations</comment>
+        <sqlFile path="20191106_Insert_New_Locations.sql" relativeToChangelogFile="true" />
+    </changeSet>
+    <changeSet id="Update New Features" author="Christopher Tubbs">
+        <comment>
+            If recently discovered locations were already loaded,
+            update their records to make sure that they are correctly populated
+        </comment>
+        <sqlFile path="20191106_Update_New_Locations.sql" relativeToChangelogFile="true" />
+    </changeSet>
+    <changeSet id="Insert Updated Features" author="Christopher Tubbs">
+        <comment>
+            Insert features that needed to be updated if they were missing for some reason
+        </comment>
+        <sqlFile path="20191106_Insert_Updated_Locations.sql" relativeToChangelogFile="true" />
+    </changeSet>
+    <changeSet id="Update Preexisting Features" author="Christopher Tubbs">
+        <comment>
+            Update features whose metadata saw improvements
+        </comment>
+        <sqlFile path="20191106_Update_Updated_Locations.sql" relativeToChangelogFile="true" />
+    </changeSet>
+    <changeSet id="Remove Placeholder COMIDs" author="Christopher Tubbs">
+        <comment>Remove -999 from features</comment>
+        <sql>
+            UPDATE wres.Feature
+                SET comid = NULL
+            WHERE comid = -999;
+        </sql>
+    </changeSet>
+</databaseChangeLog>

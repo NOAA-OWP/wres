@@ -30,7 +30,7 @@
         </addColumn>
         <comment>wres.NetcdfCoordinate - the y column has been added.</comment>
     </changeSet>
-    <changeSet id="NetcdfCoordinate v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+    <changeSet id="NetcdfCoordinate v1.0" author="Christopher Tubbs">
         <preConditions onFail="MARK_RAN">
             <not>
                 <tableExists tableName="NetcdfCoordinate" schemaName="wres" />

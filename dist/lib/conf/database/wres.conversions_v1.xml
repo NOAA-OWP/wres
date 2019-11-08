@@ -5,7 +5,7 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
         objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
-    <changeSet id="Conversions v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+    <changeSet id="Conversions v1.0" author="Christopher Tubbs">
         <createView viewName="Conversions" schemaName="wres" replaceIfExists="true">
             SELECT F.measurementunit_id AS from_unit_id,
                 T.measurementunit_id AS to_unit_id,

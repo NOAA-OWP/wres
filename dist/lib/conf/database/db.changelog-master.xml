@@ -57,5 +57,7 @@
     <include file="wres.TimeSeriesValue_generated_partitions_v2.xml" relativeToChangelogFile="true" />
     <include file="wres.VariableFeature_v2.xml" relativeToChangelogFile="true" />
     <include file="add_measurementunit_in_per_hour.xml" relativeToChangelogFile="true" />
+    <include file="add_daily_flow_measurementunits.xml" relativeToChangelogFile="true" />
+    <include file="update_stock_features.xml" relativeToChangelogFile="true" />
 </databaseChangeLog>
 

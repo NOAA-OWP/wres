@@ -5,17 +5,17 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
         objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
-    <changeSet id="Source1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+    <changeSet id="Source1.1" author="Christopher Tubbs" dbms="PostgreSQL">
         <preConditions onFail="MARK_RAN">
             <not>
                 <tableExists tableName="source" schemaName="wres" />
             </not>
         </preConditions>
         <createTable tableName="Source" schemaName="wres">
-            <column name="source_id" type="smallserial" autoIncrement="true">
+            <column name="source_id" type="smallint">
                 <constraints nullable="false" primaryKey="true" primaryKeyName="source_pk"/>
             </column>
-            <column name="path" type="text" remarks="Textual description of the original location of the data">
+            <column name="path" type="varchar" remarks="Textual description of the original location of the data">
                 <constraints nullable="false" unique="true"/>
             </column>
             <column name="output_time" type="timestamp without time zone" remarks="A release date for the data">
@@ -25,8 +25,9 @@
                     remarks="Whether or not the source pertains to point data" />
             <column name="lead" type="smallint"
                     remarks="When present, represents the relative amount of time between the output time and the values held within the source data" />
-            <column name="hash" type="text" remarks="A unique identifier for the data" />
+            <column name="hash" type="varchar" remarks="A unique identifier for the data" />
         </createTable>
+        <addAutoIncrement schemaName="wres" tableName="Source" columnName="source_id" />
         <sql>
             ALTER TABLE wres.Source OWNER TO wres;
         </sql>

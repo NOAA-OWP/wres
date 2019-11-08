@@ -91,7 +91,7 @@
             );
         </sql>
     </changeSet>
-    <changeSet id="wres.UnitConversion - in/hr to ft/sec" author="Christopher Tubbs" dbms="PostgreSQL">
+    <changeSet id="wres.UnitConversion - in/hr to ft/sec" author="Christopher Tubbs">
         <sql>
             INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
             SELECT FPS.measurementunit_id, M.measurementunit_id, 43200
@@ -140,7 +140,7 @@
         </sql>
         <comment>Added conversions between in/hr and ft/sec</comment>
     </changeSet>
-    <changeSet id="wres.UnitConversion - in/hr to m/sec" author="Christopher Tubbs" dbms="PostgreSQL">
+    <changeSet id="wres.UnitConversion - in/hr to m/sec" author="Christopher Tubbs">
         <sql>
             INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
             SELECT MPS.measurementunit_id, M.measurementunit_id, 141732
@@ -199,7 +199,7 @@
         </sql>
         <comment>Added conversions between in/hr and m/sec</comment>
     </changeSet>
-    <changeSet id="wres.UnitConversion - in/hr to MPH" author="Christopher Tubbs" dbms="PostgreSQL">
+    <changeSet id="wres.UnitConversion - in/hr to MPH" author="Christopher Tubbs">
         <sql>
             INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
             SELECT MPH.measurementunit_id, M.measurementunit_id, 63360
@@ -248,7 +248,7 @@
         </sql>
         <comment>Added conversions between in/hr and MPH</comment>
     </changeSet>
-    <changeSet id="wres.UnitConversion - in/hr to mm/s" author="Christopher Tubbs" dbms="PostgreSQL">
+    <changeSet id="wres.UnitConversion - in/hr to mm/s" author="Christopher Tubbs">
         <sql>
             INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
             SELECT MMPS.measurementunit_id, M.measurementunit_id, 141.732
@@ -307,7 +307,7 @@
         </sql>
         <comment>Added conversions between in/hr and mm/s</comment>
     </changeSet>
-    <changeSet id="wres.UnitConversion - in/hr to mm/h" author="Christopher Tubbs" dbms="PostgreSQL">
+    <changeSet id="wres.UnitConversion - in/hr to mm/h" author="Christopher Tubbs">
         <sql>
             INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
             SELECT MMPH.measurementunit_id, M.measurementunit_id, 0.0393701

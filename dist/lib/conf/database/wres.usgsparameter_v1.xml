@@ -5,23 +5,23 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
         objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
-    <changeSet id="USGSParameter 1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+    <changeSet id="USGSParameter 1.1" author="Christopher Tubbs">
         <preConditions onFail="MARK_RAN">
             <not>
                 <tableExists tableName="USGSParameter" schemaName="wres" />
             </not>
         </preConditions>
         <createTable tableName="USGSParameter" schemaName="wres">
-            <column name="name" type="text" remarks="Short name for the parameter">
+            <column name="name" type="varchar" remarks="Short name for the parameter">
                 <constraints nullable="false"/>
             </column>
-            <column name="description" type="text" remarks="Full description for the parameter" />
-            <column name="parameter_code" type="text" remarks="Numerical code for the parameter">
+            <column name="description" type="varchar" remarks="Full description for the parameter" />
+            <column name="parameter_code" type="varchar" remarks="Numerical code for the parameter">
                 <constraints nullable="false"/>
             </column>
-            <column name="measurement_unit" type="text" remarks="The unit of measurement used by USGS" />
+            <column name="measurement_unit" type="varchar" remarks="The unit of measurement used by USGS" />
             <column name="measurementunit_id" type="smallint" remarks="The id of the WRES unit that maps to the USGS unit" />
-            <column name="aggregation" type="text" remarks="A description of any sort of aggregation performed on the data by USGS" />
+            <column name="aggregation" type="varchar" remarks="A description of any sort of aggregation performed on the data by USGS" />
         </createTable>
         <sql>
             ALTER TABLE wres.USGSParameter OWNER TO wres;

@@ -13,7 +13,7 @@
         <renameColumn tableName="Observation" schemaName="wres"
                       oldColumnName="variableposition_id" newColumnName="variablefeature_id" />
     </changeSet>
-    <changeSet id="Observations v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+    <changeSet id="Observations v1.0" author="Christopher Tubbs">
         <preConditions onFail="MARK_RAN">
             <not>
                 <tableExists tableName="Observation" schemaName="wres" />
