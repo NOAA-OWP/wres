@@ -1,6 +1,8 @@
 package wres.engine.statistics.metric.ensemble;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -39,6 +41,12 @@ abstract class EnsembleBoxPlot extends Diagram<SampleData<Pair<Double, Ensemble>
 
     static final VectorOfDoubles DEFAULT_PROBABILITIES =
             VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 );
+
+    /**
+     * Function that orders boxes.
+     */
+
+    private static final Comparator<? super BoxPlotStatistic> BOX_COMPARATOR = EnsembleBoxPlot.getBoxComparator();
 
     /**
      * A vector of probabilities that define the quantiles to plot.
@@ -81,7 +89,7 @@ abstract class EnsembleBoxPlot extends Diagram<SampleData<Pair<Double, Ensemble>
         }
 
         // Sort the boxes by value: #70986
-        boxes.sort( ( first, second ) -> Double.compare( first.getLinkedValue(), second.getLinkedValue() ) );
+        boxes.sort( BOX_COMPARATOR );
 
         return BoxPlotStatistics.of( boxes, metOut );
     }
@@ -144,4 +152,25 @@ abstract class EnsembleBoxPlot extends Diagram<SampleData<Pair<Double, Ensemble>
         this.probabilities = probabilities;
 
     }
+
+    /**
+     * Returns a function that orders boxes.
+     * 
+     * @return a function that orders boxes
+     */
+
+    private static Comparator<? super BoxPlotStatistic> getBoxComparator()
+    {
+        return ( first, second ) -> {
+            int returnMe = Double.compare( first.getLinkedValue(), second.getLinkedValue() );
+
+            if ( returnMe != 0 )
+            {
+                return returnMe;
+            }
+
+            return Arrays.compare( first.getData().getDoubles(), second.getData().getDoubles() );
+        };
+    }
+
 }
