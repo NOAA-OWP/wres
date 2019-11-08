@@ -5,32 +5,33 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
         objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
-    <changeSet id="GridProjection 1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+    <changeSet id="GridProjection 1.1" author="Christopher Tubbs">
         <preConditions onFail="MARK_RAN">
             <not>
                 <tableExists tableName="GridProjection" schemaName="wres" />
             </not>
         </preConditions>
         <createTable tableName="GridProjection" schemaName="wres">
-            <column name="gridprojection_id" type="smallserial" autoIncrement="true">
+            <column name="gridprojection_id" type="smallint">
                 <constraints nullable="false" primaryKey="true" primaryKeyName="gridprojection_pk"/>
             </column>
-            <column name="proj4" type="text" remarks="The proj4 parameters used for the projection" >
+            <column name="proj4" type="varchar" remarks="The proj4 parameters used for the projection" >
                 <constraints nullable="false" />
             </column>
-            <column name="srtext" type="text" remarks="The text parameters used to describe the projection" />
-            <column name="projection_mapping" type="text" remarks="The type of mapping for used for the projection" />
+            <column name="srtext" type="varchar" remarks="The text parameters used to describe the projection" />
+            <column name="projection_mapping" type="varchar" remarks="The type of mapping for used for the projection" />
             <column name="x_resolution" type="double precision" remarks="The resolution of the x units" />
             <column name="y_resolution" type="double precision" remarks="The resolutions of the y units" />
-            <column name="x_unit" type="text" remarks="The unit of measurement used to describe the x units" />
-            <column name="y_unit" type="text" remarks="The unit of measurement used to describe the y units" />
-            <column name="x_type" type="text" remarks="The coordinate type used for the x units (such as GeoX)" />
-            <column name="y_type" type="text" remarks="The coordinate type used for the y units (such as GeoY)" />
+            <column name="x_unit" type="varchar" remarks="The unit of measurement used to describe the x units" />
+            <column name="y_unit" type="varchar" remarks="The unit of measurement used to describe the y units" />
+            <column name="x_type" type="varchar" remarks="The coordinate type used for the x units (such as GeoX)" />
+            <column name="y_type" type="varchar" remarks="The coordinate type used for the y units (such as GeoY)" />
             <column name="x_size" type="int" remarks="The size of the x coordinate axis" />
             <column name="y_size" type="int" remarks="The size of the y coordinate axis" />
             <column name="load_complete" type="boolean" defaultValueBoolean="false"
                     remarks="Whether or not all points for the projection have been saved." />
         </createTable>
+        <addAutoIncrement schemaName="wres" tableName="GridProjection" columnName="gridprojection_id" />
         <sql>
             ALTER TABLE wres.GridProjection OWNER TO wres;
         </sql>

@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="wres.MeasurementUnit - Add CFSD" author="Christopher Tubbs">
+        <sql>
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'CFSD'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'CFSD'
+            );
+        </sql>
+        <comment>Adding identity conversions</comment>
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit)
+            SELECT measurementunit_id, measurementunit_id
+            FROM wres.MeasurementUnit M
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.UnitConversion UC
+                WHERE UC.from_unit = M.measurementunit_id
+                    AND UC.to_unit = M.measurementunit_id
+            );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.MeasurementUnit - Add CMSD" author="Christopher Tubbs">
+        <sql>
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'CMSD'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'CMSD'
+            );
+        </sql>
+        <comment>Adding identity conversions</comment>
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit)
+            SELECT measurementunit_id, measurementunit_id
+            FROM wres.MeasurementUnit M
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.UnitConversion UC
+                WHERE UC.from_unit = M.measurementunit_id
+                    AND UC.to_unit = M.measurementunit_id
+            );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.MeasurementUnit - Add m3/s" author="Christopher Tubbs">
+        <sql>
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'm3/s'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'm3/s'
+            );
+        </sql>
+        <comment>Adding identity conversions</comment>
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit)
+            SELECT measurementunit_id, measurementunit_id
+            FROM wres.MeasurementUnit M
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.UnitConversion UC
+                WHERE UC.from_unit = M.measurementunit_id
+                    AND UC.to_unit = M.measurementunit_id
+            );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.UnitConversion - Update Flow Conversions" author="Christopher Tubbs">
+        <comment>Adding any possibly missing flow conversions</comment>
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor, initial_offset, final_offset)
+            SELECT FMU.measurementunit_id AS from_unit,
+                SMU.measurementunit_id AS to_unit,
+                1 AS factor,
+                0 AS initial_offset,
+                0 AS final_offset
+            FROM (
+                SELECT *
+                FROM wres.MeasurementUnit
+                WHERE unit_name IN ('CMSD', 'CMS', 'm3 s-1', 'm3/s', 'm3/sec')
+            ) AS FMU
+            CROSS JOIN (
+                SELECT *
+                FROM wres.MeasurementUnit
+                WHERE unit_name IN ('CMSD', 'CMS', 'm3 s-1', 'm3/s', 'm3/sec')
+            ) AS SMU
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.UnitConversion UC
+                WHERE UC.from_unit = FMU.measurementunit_id
+                    AND UC.to_unit = SMU.measurementunit_id
+            );
+        </sql>
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor, initial_offset, final_offset)
+            SELECT FMU.measurementunit_id AS from_unit,
+                SMU.measurementunit_id AS to_unit,
+                1 AS factor,
+                0 AS initial_offset,
+                0 AS final_offset
+            FROM (
+                SELECT *
+                FROM wres.MeasurementUnit
+                WHERE unit_name IN ('CFSD', 'CFS', 'ft3/s')
+            ) AS FMU
+                CROSS JOIN (
+                SELECT *
+                FROM wres.MeasurementUnit
+                WHERE unit_name IN ('CFSD', 'CFS', 'ft3/s')
+            ) AS SMU
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.UnitConversion UC
+                WHERE UC.from_unit = FMU.measurementunit_id
+                    AND UC.to_unit = SMU.measurementunit_id
+            );
+        </sql>
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor, initial_offset, final_offset)
+            SELECT FMU.measurementunit_id AS from_unit,
+                SMU.measurementunit_id AS to_unit,
+                35.3146662127 AS factor,
+                0 AS initial_offset,
+                0 AS final_offset
+            FROM (
+                SELECT *
+                FROM wres.MeasurementUnit
+                WHERE unit_name IN ('CFSD', 'CFS', 'ft3/s')
+            ) AS FMU
+            CROSS JOIN (
+                SELECT *
+                FROM wres.MeasurementUnit
+                WHERE unit_name IN ('CMSD', 'CMS', 'm3 s-1', 'm3/s', 'm3/sec')
+            ) AS SMU
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.UnitConversion UC
+                WHERE UC.from_unit = FMU.measurementunit_id
+                    AND UC.to_unit = SMU.measurementunit_id
+            );
+        </sql>
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor, initial_offset, final_offset)
+            SELECT FMU.measurementunit_id AS from_unit,
+                SMU.measurementunit_id AS to_unit,
+                1/35.3146662127 AS factor,
+                0 AS initial_offset,
+                0 AS final_offset
+            FROM (
+                SELECT *
+                FROM wres.MeasurementUnit
+                WHERE unit_name IN ('CMSD', 'CMS', 'm3 s-1', 'm3/s', 'm3/sec')
+            ) AS FMU
+            CROSS JOIN (
+                SELECT *
+                FROM wres.MeasurementUnit
+                WHERE unit_name IN ('CFSD', 'CFS', 'ft3/s')
+            ) AS SMU
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.UnitConversion UC
+                WHERE UC.from_unit = FMU.measurementunit_id
+                    AND UC.to_unit = SMU.measurementunit_id
+            );
+        </sql>
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor, initial_offset, final_offset)
+            SELECT FMU.measurementunit_id AS from_unit,
+                SMU.measurementunit_id AS to_unit,
+                1 / 1000.0 AS factor,
+                0 AS initial_offset,
+                0 AS final_offset
+            FROM (
+                SELECT *
+                FROM wres.MeasurementUnit
+                WHERE unit_name IN ('CFSD', 'CFS', 'ft3/s')
+            ) AS FMU
+            CROSS JOIN wres.MeasurementUnit SMU
+            WHERE SMU.unit_name = 'KCFS'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion UC
+                    WHERE UC.from_unit = FMU.measurementunit_id
+                        AND UC.to_unit = SMU.measurementunit_id
+                );
+        </sql>
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor, initial_offset, final_offset)
+            SELECT FMU.measurementunit_id AS from_unit,
+                SMU.measurementunit_id AS to_unit,
+                1 / 1000.0 AS factor,
+                0 AS initial_offset,
+                0 AS final_offset
+            FROM wres.MeasurementUnit FMU
+            CROSS JOIN (
+                SELECT *
+                FROM wres.MeasurementUnit
+                WHERE unit_name IN ('CFSD', 'CFS', 'ft3/s')
+            ) AS SMU
+            WHERE FMU.unit_name = 'KCFS'
+            AND NOT EXISTS (
+                SELECT 1
+                FROM wres.UnitConversion UC
+                WHERE UC.from_unit = FMU.measurementunit_id
+                    AND UC.to_unit = SMU.measurementunit_id
+            );
+        </sql>
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor, initial_offset, final_offset)
+            SELECT FMU.measurementunit_id AS from_unit,
+                SMU.measurementunit_id AS to_unit,
+                28.3168 AS factor,
+                0 AS initial_offset,
+                0 AS final_offset
+            FROM wres.MeasurementUnit FMU
+            CROSS JOIN (
+                SELECT *
+                FROM wres.MeasurementUnit
+                WHERE unit_name IN ('CMSD', 'CMS', 'm3 s-1', 'm3/s', 'm3/sec')
+            ) AS SMU
+            WHERE FMU.unit_name = 'KCFS'
+            AND NOT EXISTS (
+                SELECT 1
+                FROM wres.UnitConversion UC
+                WHERE UC.from_unit = FMU.measurementunit_id
+                    AND UC.to_unit = SMU.measurementunit_id
+            );
+        </sql>
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor, initial_offset, final_offset)
+            SELECT FMU.measurementunit_id AS from_unit,
+                SMU.measurementunit_id AS to_unit,
+                1 / 28.3168 AS factor,
+                0 AS initial_offset,
+                0 AS final_offset
+            FROM (
+                SELECT *
+                FROM wres.MeasurementUnit
+                WHERE unit_name IN ('CMSD', 'CMS', 'm3 s-1', 'm3/s', 'm3/sec')
+            ) AS FMU
+            CROSS JOIN wres.MeasurementUnit SMU
+            WHERE SMU.unit_name = 'KCFS'
+            AND NOT EXISTS (
+                SELECT 1
+                FROM wres.UnitConversion UC
+                WHERE UC.from_unit = FMU.measurementunit_id
+                    AND UC.to_unit = SMU.measurementunit_id
+            );
+        </sql>
+    </changeSet>
+</databaseChangeLog>

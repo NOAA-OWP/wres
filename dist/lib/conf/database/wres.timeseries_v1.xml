@@ -14,14 +14,14 @@
                       newColumnName="variablefeature_id" />
         <comment>TimeSeries - Renamed 'variableposition_id' 'variablefeature_id'</comment>
     </changeSet>
-    <changeSet id="TimeSeries v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+    <changeSet id="TimeSeries v1.1" author="Christopher Tubbs">
         <preConditions onFail="MARK_RAN">
             <not>
                 <tableExists tableName="TimeSeries" schemaName="wres" />
             </not>
         </preConditions>
         <createTable tableName="TimeSeries" schemaName="wres">
-            <column name="timeseries_id" type="serial" autoIncrement="true">
+            <column name="timeseries_id" type="int">
                 <constraints primaryKey="true" primaryKeyName="timeseries_pk"/>
             </column>
             <column name="variablefeature_id" type="int"
@@ -40,6 +40,7 @@
                 <constraints nullable="false" />
             </column>
         </createTable>
+        <addAutoIncrement schemaName="wres" tableName="TimeSeries" columnName="timeseries_id" />
         <sql>
             ALTER TABLE wres.TimeSeries OWNER TO wres;
         </sql>

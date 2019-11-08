@@ -5,20 +5,22 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
         objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
-    <changeSet id="MeasurementUnit1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+    <changeSet id="MeasurementUnit1.1" author="Christopher Tubbs">
         <preConditions onFail="MARK_RAN">
             <not>
                 <tableExists tableName="MeasurementUnit" schemaName="wres" />
             </not>
         </preConditions>
         <createTable tableName="MeasurementUnit" schemaName="wres">
-            <column name="measurementunit_id" type="smallserial" autoIncrement="true">
+            <column name="measurementunit_id" type="smallint">
                 <constraints nullable="false" primaryKey="true"/>
             </column>
-            <column name="unit_name" type="text" remarks="Name or abbreviation for a unit of measurement">
+            <column name="unit_name" type="varchar" remarks="Name or abbreviation for a unit of measurement">
                 <constraints nullable="false" unique="true"/>
             </column>
         </createTable>
+        <addAutoIncrement schemaName="wres" tableName="MeasurementUnit" columnName="measurementunit_id"
+                          columnDataType="smallint" />
         <comment>
             The wres.MeasurementUnit table has been created, along with all default entries.
         </comment>

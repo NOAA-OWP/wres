@@ -21,26 +21,27 @@
         <renameColumn tableName="Feature" schemaName="wres" oldColumnName="st" newColumnName="state" />
         <comment>Renamed 'Feature.st' to 'Feature.state'</comment>
     </changeSet>
-    <changeSet id="Feature v1.0" author="Christopher Tubbs" dbms="PostgreSQL" onValidationFail="MARK_RAN">
+    <changeSet id="Feature v1.1" author="Christopher Tubbs" onValidationFail="MARK_RAN">
         <preConditions onFail="MARK_RAN">
             <not>
                 <tableExists tableName="Feature" schemaName="wres" />
             </not>
         </preConditions>
         <createTable tableName="Feature" schemaName="wres">
-            <column name="feature_id" type="serial" autoIncrement="true">
+            <column name="feature_id" type="int">
                 <constraints nullable="false" primaryKeyName="feature_pk" primaryKey="true" />
             </column>
             <column name="comid" type="int" remarks="NHDPlus Common Identifier"/>
-            <column name="lid" type="text" remarks="Location ID" />
-            <column name="gage_id" type="text" remarks="Unique ID for a gage" />
-            <column name="region" type="text" remarks="The region that contains the feature" />
-            <column name="state" type="text" remarks="The state which contains the feature" />
-            <column name="huc" type="text" remarks="The Hydrologic Unit Code for the feature" />
-            <column name="feature_name" type="text" remarks="The long form name for the feature" />
+            <column name="lid" type="varchar" remarks="Location ID" />
+            <column name="gage_id" type="varchar" remarks="Unique ID for a gage" />
+            <column name="region" type="varchar" remarks="The region that contains the feature" />
+            <column name="state" type="varchar" remarks="The state which contains the feature" />
+            <column name="huc" type="varchar" remarks="The Hydrologic Unit Code for the feature" />
+            <column name="feature_name" type="varchar" remarks="The long form name for the feature" />
             <column name="latitude" type="real" remarks="The latitude of the feature" />
             <column name="longitude" type="real" remarks="The longitude of the feature" />
         </createTable>
+        <addAutoIncrement schemaName="wres" tableName="Feature" columnName="feature_id" />
         <sql>
             ALTER TABLE wres.Feature OWNER TO wres;
         </sql>
