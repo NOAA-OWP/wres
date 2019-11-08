@@ -182,15 +182,15 @@ public class EnsembleForecastRetrieverTest
         TimeSeries<Ensemble> expectedSeries =
                 builder.addReferenceTime( Instant.parse( "2023-04-01T00:00:00Z" ), ReferenceTimeType.UNKNOWN )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ),
-                                            Ensemble.of( 30.0, 65.0, 100.0 ) ) )
+                                            Ensemble.of( 30.0, 100.0, 65.0 ) ) )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T02:00:00Z" ),
-                                            Ensemble.of( 37.0, 72.0, 107.0 ) ) )
+                                            Ensemble.of( 37.0, 107.0, 72.0 ) ) )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T03:00:00Z" ),
-                                            Ensemble.of( 44.0, 79.0, 114.0 ) ) )
+                                            Ensemble.of( 44.0, 114.0, 79.0 ) ) )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T04:00:00Z" ),
-                                            Ensemble.of( 51.0, 86.0, 121.0 ) ) )
+                                            Ensemble.of( 51.0, 121.0, 86.0 ) ) )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T05:00:00Z" ),
-                                            Ensemble.of( 58.0, 93.0, 128.0 ) ) )
+                                            Ensemble.of( 58.0, 128.0, 93.0 ) ) )
                        .setTimeScale( TimeScale.of() )
                        .build();
 

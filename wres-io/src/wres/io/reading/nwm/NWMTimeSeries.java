@@ -88,6 +88,8 @@ class NWMTimeSeries implements Closeable
         Set<URI> netcdfUris = NWMTimeSeries.getNetcdfUris( profile,
                                                            referenceDatetime,
                                                            baseUri );
+        LOGGER.debug( "Attempting to open NWM TimeSeries with reference datetime {} and profile {} from baseUri {}.",
+                      referenceDatetime, profile, baseUri );
 
         // Open all the relevant files during construction, or fail.
         for ( URI netcdfUri : netcdfUris )
@@ -95,6 +97,8 @@ class NWMTimeSeries implements Closeable
             NetcdfFile netcdfFile = NWMTimeSeries.openFile( netcdfUri );
             this.netcdfFiles.add( netcdfFile );
         }
+        LOGGER.debug( "Successfully opened NWM TimeSeries with reference datetime {} and profile {} from baseUri {}.",
+                      referenceDatetime, profile, baseUri );
     }
 
 
@@ -326,15 +330,28 @@ class NWMTimeSeries implements Closeable
 
     String readAttributeAsString( String variableName, String attributeName )
     {
-        for ( NetcdfFile netcdfFile : this.getNetcdfFiles() )
+        if ( !this.getNetcdfFiles().isEmpty() )
         {
-            Variable variableVariable =  netcdfFile.findVariable( variableName );
+            // Use the very first netcdf file, assume homogeneity.
+            NetcdfFile netcdfFile = this.getNetcdfFiles()
+                                        .iterator()
+                                        .next();
+            Variable variableVariable = netcdfFile.findVariable( variableName );
+
+            if ( variableVariable == null )
+            {
+                throw new IllegalArgumentException( "No variable '"
+                                                    + variableName
+                                                    + "' found in netCDF data "
+                                                    + netcdfFile );
+            }
+
             return readAttributeAsString( variableVariable, attributeName );
         }
-
-        throw new IllegalStateException( "No '" + attributeName
-                                         + "' attribute found for variable '"
-                                         + variableName + " in netCDF data." );
+        else
+        {
+            throw new IllegalStateException( "No netCDF data available." );
+        }
     }
 
 

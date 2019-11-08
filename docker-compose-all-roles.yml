@@ -22,7 +22,7 @@ services:
         ports:
          - "5671:5671"
          - "15671:15671"
-        image: "${DOCKER_REGISTRY}/wres/wres-broker:20191031-439ca9b"
+        image: "${DOCKER_REGISTRY}/wres/wres-broker:20191106-dbc17e4"
         restart: always
         volumes:
          # For certificates and keys that correspond to them:

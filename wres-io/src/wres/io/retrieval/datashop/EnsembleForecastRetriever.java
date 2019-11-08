@@ -262,7 +262,7 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
             {
                 StringJoiner include = new StringJoiner( ",", "IN(", ")" );
                 this.ensembleIdsToInclude.forEach( next -> include.add( "'" + next.toString() + "'" ) );
-                script.addTab( tabsIn ).addLine( "AND ensemble_id ", include.toString() );
+                script.addTab( tabsIn ).addLine( "AND E.ensemble_id ", include.toString() );
             }
 
             // Ignore these
@@ -271,7 +271,7 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
             {
                 StringJoiner exclude = new StringJoiner( ",", "IN(", ")" );
                 this.ensembleIdsToExclude.forEach( next -> exclude.add( "'" + next.toString() + "'" ) );
-                script.addTab( tabsIn ).addLine( "AND NOT ensemble_id ", exclude.toString() );
+                script.addTab( tabsIn ).addLine( "AND NOT E.ensemble_id ", exclude.toString() );
             }
         }
     }
@@ -338,12 +338,14 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
         scripter.addTab().addLine( "TS.initialization_date + INTERVAL '1' MINUTE * TSV.lead AS valid_time," );
         scripter.addTab().addLine( "ARRAY_AGG(" );
         scripter.addTab( 2 ).addLine( "TSV.series_value" );
-        scripter.addTab( 2 ).addLine( "ORDER BY TS.ensemble_id" );
+        scripter.addTab( 2 ).addLine( "ORDER BY E.ensemblemember_id" );
         scripter.addTab().addLine( ") AS ensemble_members," );
         scripter.addTab().addLine( "TS.scale_period," );
         scripter.addTab().addLine( "TS.scale_function," );
         scripter.addTab().addLine( "TS.measurementunit_id" );
         scripter.addLine( FROM_WRES_TIME_SERIES_TS );
+        scripter.addTab().addLine( "INNER JOIN wres.Ensemble E" );
+        scripter.addTab( 2 ).addLine( "ON E.ensemble_id = TS.ensemble_id" );
         scripter.addTab().addLine( "INNER JOIN wres.TimeSeriesValue TSV" );
         scripter.addTab( 2 ).addLine( "ON TSV.timeseries_id = TS.timeseries_id" );
         scripter.addTab().addLine( "INNER JOIN wres.TimeSeriesSource TSS" );

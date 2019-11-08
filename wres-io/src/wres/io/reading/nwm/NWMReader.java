@@ -214,55 +214,58 @@ public class NWMReader implements Callable<List<IngestResult>>
             // For each reference datetime, get the dataset for all locations.
             for ( Instant referenceDatetime : referenceDatetimes )
             {
-                NWMTimeSeries nwmTimeSeries =
-                        new NWMTimeSeries( this.getNwmProfile(),
-                                           referenceDatetime,
-                                           this.getUri() );
-                for ( FeatureDetails feature : features )
+                try( NWMTimeSeries nwmTimeSeries =
+                             new NWMTimeSeries( this.getNwmProfile(),
+                                                referenceDatetime,
+                                               this.getUri() ) )
                 {
-                    String variableName = this.getDataSource()
-                                              .getVariable()
-                                              .getValue()
-                                              .strip();
-                    String unitName = nwmTimeSeries.readAttributeAsString( variableName,
-                                                                   "units" );
-                    TimeSeries<Double> values =
-                            nwmTimeSeries.readTimeSeries( feature.getComid(),
-                                                          variableName );
-                    // Create a uri that reflects the origin of the data
-                    URI uri = this.getUri()
-                                  .resolve( feature.toString()
-                                            + referenceDatetime.toString() );
-                    DataSource innerDataSource =
-                            DataSource.of( this.getDataSource()
-                                               .getSource(),
-                                           this.getDataSource()
-                                               .getContext(),
-                                           this.getDataSource()
-                                               .getLinks(),
-                                           uri );
-
-                    // While wres.source table is used, it is the reader level code
-                    // that must deal with the wres.source table. Use the identifier
-                    // of the timeseries data as if it were a wres.source.
-                    TimeSeriesIngester ingester =
-                            new TimeSeriesIngester( this.getProjectConfig(),
-                                                    innerDataSource,
-                                                    this.getLockManager(),
-                                                    values,
-                                                    feature.getLid(),
-                                                    variableName,
-                                                    unitName );
-                    Future<List<IngestResult>> future = this.getExecutor()
-                                                            .submit( ingester );
-                    this.ingests.add( future );
-                    this.startGettingResults.countDown();
-
-                    if ( this.startGettingResults.getCount() <= 0 )
+                    for ( FeatureDetails feature : features )
                     {
-                        List<IngestResult> ingested = this.ingests.take()
-                                                                  .get();
-                        ingestResults.addAll( ingested );
+                        String variableName = this.getDataSource()
+                                                  .getVariable()
+                                                  .getValue()
+                                                  .strip();
+                        String unitName = nwmTimeSeries.readAttributeAsString(
+                                variableName,
+                                "units" );
+                        TimeSeries<Double> values =
+                                nwmTimeSeries.readTimeSeries( feature.getComid(),
+                                                              variableName );
+                        // Create a uri that reflects the origin of the data
+                        URI uri = this.getUri()
+                                      .resolve( feature.toString()
+                                                + referenceDatetime.toString() );
+                        DataSource innerDataSource =
+                                DataSource.of( this.getDataSource()
+                                                   .getSource(),
+                                               this.getDataSource()
+                                                   .getContext(),
+                                               this.getDataSource()
+                                                   .getLinks(),
+                                               uri );
+
+                        // While wres.source table is used, it is the reader level code
+                        // that must deal with the wres.source table. Use the identifier
+                        // of the timeseries data as if it were a wres.source.
+                        TimeSeriesIngester ingester =
+                                new TimeSeriesIngester( this.getProjectConfig(),
+                                                        innerDataSource,
+                                                        this.getLockManager(),
+                                                        values,
+                                                        feature.getLid(),
+                                                        variableName,
+                                                        unitName );
+                        Future<List<IngestResult>> future =
+                                this.getExecutor().submit( ingester );
+                        this.ingests.add( future );
+                        this.startGettingResults.countDown();
+
+                        if ( this.startGettingResults.getCount() <= 0 )
+                        {
+                            List<IngestResult> ingested = this.ingests.take()
+                                                                      .get();
+                            ingestResults.addAll( ingested );
+                        }
                     }
                 }
             }

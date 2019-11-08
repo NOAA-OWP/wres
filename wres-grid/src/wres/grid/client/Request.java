@@ -6,12 +6,18 @@ import wres.config.generated.Feature;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.TimeWindow;
 
+import java.nio.file.Path;
+
 /**
  * Prototype Interface for requesting grid data
  */
+
 public interface Request
 {
     /**
+     * TODO: please return a list of {@link Path}. Would prefer that, but didn't try too hard at the time of writing
+     * because the SourceLoader was having issues translating URI to Path. Post #63470, this may be easier to achieve. 
+     * 
      * @return the paths to gridded data files
      */
     
