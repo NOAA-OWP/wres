@@ -339,7 +339,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         // If we are using both NetCDF and USGS data, we need both Gage IDs
         // and indexes for NetCDF files to be able to load any sort of
         // data for evaluation
-        else if ((usesNetCDF && feature.getComid() != -999) &&
+        else if ((usesNetCDF && feature.getComid() != null && feature.getComid() != -999) &&
                  (usesUSGS && Strings.hasValue( feature.getGageID() )))
         {
             // gage ids must have 8 or more characters
@@ -347,7 +347,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         }
         // If we are using NetCDF data, we need indexes to determine what
         // data to retrieve
-        else if (usesNetCDF && feature.getComid() != -999 && !usesUSGS)
+        else if (usesNetCDF && feature.getComid() != null && feature.getComid() != -999 && !usesUSGS)
         {
             return true;
         }
