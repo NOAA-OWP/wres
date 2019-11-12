@@ -1776,50 +1776,6 @@ public class Validation
     {
         boolean wrdsSourceValid = true;
 
-        // Require that a leadTimesPoolingWindow is declared: #63408
-        // This will be superseded by work connected to #56213, which will require 
-        // a leadTimesPoolingWindow in all cases. At that point, the validation below
-        // can be removed and will be replaced with earlier validation to require 
-        // a leadTimesPoolingWindow in all cases.
-        // TODO: re-examine when finalizing work connected to #56213
-        if ( Objects.isNull( projectConfigPlus.getProjectConfig().getPair().getLeadTimesPoolingWindow() ) )
-        {
-            // Line separator
-            String nL = System.lineSeparator();
-
-            // Example of the requried declaration
-            String leadTimesPoolingWindowExample = nL
-                                                   + "<leadHours minimum=\"0\" maximum=\"24\"/>"
-                                                   + nL
-                                                   + "<leadTimesPoolingWindow>"
-                                                   + nL
-                                                   + "        <period>6</period"
-                                                   + nL
-                                                   + "        <unit>hours</unit>"
-                                                   + nL
-                                                   + "</leadTimesPoolingWindow>";
-
-            // Composed warning
-            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE +
-                         " Attempting to evaluate data from a WRDS source without a leadTimesPoolingWindow in the "
-                         + "project declaration, which is not allowed. When evaluating forecasts from a WRDS source, "
-                         + "it is assumed that the forecasts are AHPS operational single-valued forecasts. Such "
-                         + "forecasts admit issued datetimes that do not correspond to synoptic times. "
-                         + "Separately, the default system behavior is to create a pool for each distinct "
-                         + "lead duration. This does not work well for AHPS forecasts, because the lead "
-                         + "durations are irregular. Instead, we require that the declaration includes a "
-                         + "leadTimesPoolingWindow when evaluating data from WRDS. Please add a "
-                         + "leadTimesPoolingWindow to declare the required pools, since you have declared "
-                         + "WRDS as a source. The following is an example of a leadTimesPoolingWindow in "
-                         + "the correct context: {}",
-                         projectConfigPlus,
-                         source.sourceLocation().getLineNumber(),
-                         source.sourceLocation().getColumnNumber(),
-                         leadTimesPoolingWindowExample );
-
-            wrdsSourceValid = false;
-        }
-
         if ( dataSourceConfig.equals( projectConfigPlus.getProjectConfig()
                                                        .getInputs()
                                                        .getLeft() ) )
