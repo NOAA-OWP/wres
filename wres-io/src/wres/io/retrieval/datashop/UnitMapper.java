@@ -114,23 +114,25 @@ public class UnitMapper
     {
         Objects.requireNonNull( unitName, "Specify a non-null measurement unit name for conversion." );
 
+        String upperCaseUnits = unitName.toUpperCase();
+        
         // Identity
-        if( unitName.equals( this.desiredMeasurementUnit ) )
+        if( upperCaseUnits.equalsIgnoreCase( this.desiredMeasurementUnit ) )
         {
             return in -> in;
         }
         
-        if ( !this.namesToIdentifiers.containsKey( unitName ) )
+        if ( !this.namesToIdentifiers.containsKey( upperCaseUnits ) )
         {
             throw new NoSuchUnitConversionException( "There is no such unit conversion function to "
                                                      + "'"
                                                      + this.desiredMeasurementUnit
                                                      + "' for the unit name '"
-                                                     + unitName
+                                                     + upperCaseUnits
                                                      + "'." );
         }
 
-        Integer identifier = this.namesToIdentifiers.get( unitName );
+        Integer identifier = this.namesToIdentifiers.get( upperCaseUnits );
         return this.conversions.get( identifier );
     }
 
@@ -148,7 +150,7 @@ public class UnitMapper
                                 "Specify a desired measurement unit to create unit "
                                                         + "conversions." );
 
-        this.desiredMeasurementUnit = desiredMeasurementUnit;
+        this.desiredMeasurementUnit = desiredMeasurementUnit.toUpperCase();
 
         // Create the retrieval script      
         ScriptBuilder scripter = new ScriptBuilder();
@@ -158,7 +160,13 @@ public class UnitMapper
         scripter.addTab().addLine( "FROM wres.UnitConversion UC" );
         scripter.addTab().addLine( "INNER JOIN wres.MeasurementUnit M" );
         scripter.addTab( 2 ).addLine( "ON M.measurementunit_id = UC.to_unit" );
-        scripter.addTab().addLine( "WHERE M.unit_name = '", desiredMeasurementUnit, "'" );
+        // Check for both upper and lower case unit names
+        scripter.addTab()
+                .addLine( "WHERE M.unit_name IN ('",
+                          this.desiredMeasurementUnit,
+                          "', '",
+                          this.desiredMeasurementUnit.toLowerCase(),
+                          "')" );
         scripter.addLine( ")" );
         scripter.addLine( "SELECT M.unit_name AS from_unit_name, units.*" );
         scripter.addLine( "FROM wres.MeasurementUnit M" );
@@ -199,7 +207,7 @@ public class UnitMapper
                                                           : MissingValues.DOUBLE;
 
                 this.conversions.put( fromUnitId, mapper );
-                this.namesToIdentifiers.put( fromUnitName, fromUnitId );
+                this.namesToIdentifiers.put( fromUnitName.toUpperCase(), fromUnitId );
             }
 
             this.desiredMeasurementUnitId = desiredUnitId;
