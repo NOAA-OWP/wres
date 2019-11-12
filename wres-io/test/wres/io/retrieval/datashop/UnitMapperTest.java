@@ -85,7 +85,11 @@ public class UnitMapperTest
         
         // Test via unit name
         DoubleUnaryOperator namedConverter = mapper.getUnitMapper( units );
-        assertEquals( 1.0, namedConverter.applyAsDouble( 35.3147 ), 0.00001 );              
+        assertEquals( 1.0, namedConverter.applyAsDouble( 35.3147 ), 0.00001 );
+        
+        // Test via unit name in different case
+        DoubleUnaryOperator namedConverterLowerCase = mapper.getUnitMapper( "cfs" );
+        assertEquals( 1.0, namedConverterLowerCase.applyAsDouble( 35.3147 ), 0.00001 );
     }
 
     @Test
