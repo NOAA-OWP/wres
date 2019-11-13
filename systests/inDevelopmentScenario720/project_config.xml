@@ -1,29 +1,39 @@
 <!--Needs to be refactored to match #60307, but that is blocked by #60330-->
 
 <?xml version="1.0" encoding="UTF-8"?>
-<project label="ExampleProject" name="AHPS">
+<project label="scenario720">
     <inputs>
         <left label="USGS">
             <type>simulations</type>
             <source format="usgs"></source>
             <variable>00060</variable>
+            <existingTimeScale>
+                <function>mean</function>
+                <period>1</period>
+                <unit>minutes</unit>
+            </existingTimeScale>
         </left>
         <right label="AHPS">
             <type>single valued forecasts</type>
-            <source format="wrds">smalldata/wrds_json/ahps/</source>
-            <variable>flow</variable>
+            <source format="wrds">smalldata/wrds_json/ahps/KCDM7_20180823T1435.json</source>
+            <source format="wrds">smalldata/wrds_json/ahps/KCDM7_20180823T1437.json</source>
+            <source format="wrds">smalldata/wrds_json/ahps/KCDM7_20180904.json</source>
+            <source format="wrds">smalldata/wrds_json/ahps/KCDM7_20180905.json</source>
+            <source format="wrds">smalldata/wrds_json/ahps/KCDM7_20180906.json</source>
+            <source format="wrds">smalldata/wrds_json/ahps/KCDM7_20180907.json</source>
+            <source format="wrds">smalldata/wrds_json/ahps/KCDM7_20180910.json</source>
+            <variable>QR</variable>
         </right>
     </inputs>
     <pair label="Pairs by location and lead time"> <!-- required for unit -->
         <unit>kcfs</unit>
         <feature locationId="KCDM7"/>
-        <!--byTimeSeries>true</byTimeSeries>-->
         <dates earliest="2018-08-16T12:00:00Z" latest="2018-08-28T12:00:00Z" />
-        <desiredTimeScale>
-            <function>mean</function>
+        <issuedDates earliest="2018-08-16T12:00:00Z" latest="2018-08-28T13:00:00Z" /> 
+        <leadTimesPoolingWindow>
             <period>6</period>
             <unit>hours</unit>
-        </desiredTimeScale>
+        </leadTimesPoolingWindow>
     </pair>
     <metrics>
         <metric> <name>mean error</name> </metric>
