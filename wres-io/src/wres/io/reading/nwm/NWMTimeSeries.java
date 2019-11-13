@@ -382,6 +382,46 @@ class NWMTimeSeries implements Closeable
     }
 
 
+    /**
+     * @param ncVariable The NWM variable.
+     * @param attributeName The attribute associated with the variable.
+     * @return The String representation of the value of attribute of variable.
+     * @throws IllegalArgumentException When the attribute does not exist.
+     * @throws IllegalArgumentException When the type is not float or double.
+     */
+
+    private float readAttributeAsFloat( Variable ncVariable, String attributeName )
+    {
+        List<Attribute> variableAttributes = ncVariable.getAttributes();
+
+        for ( Attribute attribute : variableAttributes )
+        {
+            if ( attribute.getShortName()
+                          .toLowerCase()
+                          .equals( attributeName.toLowerCase() ) )
+            {
+                DataType type = attribute.getDataType();
+
+                if ( type.equals( DataType.FLOAT ) )
+                {
+                    return attribute.getNumericValue()
+                                    .floatValue();
+                }
+                else
+                {
+                    throw new IllegalArgumentException( "Unable to convert attribute '"
+                                                        + attributeName
+                                                        + "' to float because it is type "
+                                                        + type );
+                }
+            }
+        }
+
+        throw new IllegalArgumentException( "No '" + attributeName
+                                            + "' attribute found for variable '"
+                                            + ncVariable + " in netCDF data." );
+    }
+
 
     /**
      * @param ncVariable The NWM variable.
@@ -403,8 +443,13 @@ class NWMTimeSeries implements Closeable
             {
                 DataType type = attribute.getDataType();
 
-                if ( type.equals( DataType.FLOAT )
-                     || type.equals( DataType.DOUBLE ) )
+                if ( type.equals( DataType.FLOAT ) )
+                {
+                    LOGGER.debug( "Promoting float to double for {}", attribute );
+                    return attribute.getNumericValue()
+                                    .doubleValue();
+                }
+                else if ( type.equals( DataType.DOUBLE ) )
                 {
                     // No loss of precision when promoting float to double.
                     return attribute.getNumericValue()
@@ -611,6 +656,9 @@ class NWMTimeSeries implements Closeable
             // Unpack.
             variableValue = rawVariableValue * multiplier + offsetToAdd;
         }
+
+        LOGGER.trace( "Read raw value {} for variable {} at {} returning as value {} from {}",
+                      rawVariableValue, variableName, validDatetime, variableValue, netcdfFile );
 
         return Event.of( validDatetime, variableValue );
     }

@@ -208,6 +208,8 @@ public class NWMReader implements Callable<List<IngestResult>>
         Set<Instant> referenceDatetimes = this.getReferenceDatetimes( this.earliest,
                                                                       this.latest,
                                                                       this.getNwmProfile() );
+        LOGGER.debug( "Reference datetimes used for NWMReader {}: {}",
+                      this, referenceDatetimes );
 
         try
         {
@@ -217,7 +219,7 @@ public class NWMReader implements Callable<List<IngestResult>>
                 try( NWMTimeSeries nwmTimeSeries =
                              new NWMTimeSeries( this.getNwmProfile(),
                                                 referenceDatetime,
-                                               this.getUri() ) )
+                                                this.getUri() ) )
                 {
                     for ( FeatureDetails feature : features )
                     {
@@ -228,9 +230,28 @@ public class NWMReader implements Callable<List<IngestResult>>
                         String unitName = nwmTimeSeries.readAttributeAsString(
                                 variableName,
                                 "units" );
-                        TimeSeries<Double> values =
-                                nwmTimeSeries.readTimeSeries( feature.getComid(),
-                                                              variableName );
+                        TimeSeries<?> values;
+
+                        if ( this.getNwmProfile()
+                                 .getMemberCount() == 1 )
+                        {
+                            values = nwmTimeSeries.readTimeSeries( feature.getComid(),
+                                                                   variableName );
+                        }
+                        else if ( this.getNwmProfile()
+                                      .getMemberCount() > 1 )
+                        {
+                            values = nwmTimeSeries.readEnsembleTimeSeries( feature.getComid(),
+                                                                           variableName );
+                        }
+                        else
+                        {
+                            throw new UnsupportedOperationException( "Cannot read a timeseries with "
+                                                                     + this.getNwmProfile()
+                                                                           .getMemberCount()
+                                                                     + " members." );
+                        }
+
                         // Create a uri that reflects the origin of the data
                         URI uri = this.getUri()
                                       .resolve( feature.toString()
