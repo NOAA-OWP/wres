@@ -377,28 +377,27 @@ public final class TimeSeriesSlicer
         return nextStartIndex;
     }
 
+
     /**
-     * <p>Returns a trace-view of an ensemble time-series. The input series is decomposed into one time-series for each
-     * ensemble trace. The order of the traces in the returned list is the natural order of the trace labels. This 
-     * order becomes important when decomposing ensemble time-series, operating on them, and then recomposing them with
-     * prescribed labels, because the labels are not preserved in the decomposed series. Also see 
-     * {@link #compose(List, SortedSet)}.
+     * <p>Returns a trace-view of an ensemble time-series. The input series is
+     * decomposed into one Set for each ensemble trace, with the label as a key.
      *
-     * @param timeSeries the time-series to decompose
-     * @return a trace view with as many time-series as ensemble traces in natural order of trace label
-     * @throws UnsupportedOperationException if the ensemble events contain a varying number of members and the 
-     *            ensemble labels have not been provided to distinguish between them
+     * Reference datetimes metadata are lost but ensemble labels are preserved.
+     *
+     * @param timeSeries The time-series to decompose
+     * @return A map with the trace label as key, sorted set of Events as value.
+     * @throws UnsupportedOperationException When the ensemble events contain a
+     * varying number of members and the ensemble labels have not been provided
+     * to distinguish between them.
      */
 
-    public static List<TimeSeries<Double>> decompose( TimeSeries<Ensemble> timeSeries )
+    public static Map<Object,SortedSet<Event<Double>>> decomposeWithLabels( TimeSeries<Ensemble> timeSeries )
     {
         Objects.requireNonNull( timeSeries );
 
         if ( timeSeries.getEvents().isEmpty() )
         {
-            return List.of( new TimeSeriesBuilder<Double>().addReferenceTimes( timeSeries.getReferenceTimes() )
-                                                           .setTimeScale( timeSeries.getTimeScale() )
-                                                           .build() );
+            return Collections.emptyMap();
         }
 
         Integer traceCount = null;
@@ -443,14 +442,43 @@ public final class TimeSeriesSlicer
             }
         }
 
+        return Collections.unmodifiableMap( membersByTime );
+    }
+
+
+    /**
+     * <p>Returns a trace-view of an ensemble time-series. The input series is decomposed into one time-series for each
+     * ensemble trace. The order of the traces in the returned list is the natural order of the trace labels. This
+     * order becomes important when decomposing ensemble time-series, operating on them, and then recomposing them with
+     * prescribed labels, because the labels are not preserved in the decomposed series. Also see
+     * {@link #compose(List, SortedSet)}.
+     *
+     * @param timeSeries the time-series to decompose
+     * @return a trace view with as many time-series as ensemble traces in natural order of trace label
+     * @throws UnsupportedOperationException if the ensemble events contain a varying number of members and the
+     *            ensemble labels have not been provided to distinguish between them
+     */
+
+    public static List<TimeSeries<Double>> decompose( TimeSeries<Ensemble> timeSeries )
+    {
+        Objects.requireNonNull( timeSeries );
+
+        if ( timeSeries.getEvents().isEmpty() )
+        {
+            return List.of( new TimeSeriesBuilder<Double>().addReferenceTimes( timeSeries.getReferenceTimes() )
+                                                           .setTimeScale( timeSeries.getTimeScale() )
+                                                           .build() );
+        }
+
+        Map<Object,SortedSet<Event<Double>>> withLabels = TimeSeriesSlicer.decomposeWithLabels( timeSeries );
         List<TimeSeries<Double>> returnMe = new ArrayList<>();
 
-        for ( SortedSet<Event<Double>> next : membersByTime.values() )
+        for ( Map.Entry<Object,SortedSet<Event<Double>>> next : withLabels.entrySet() )
         {
             TimeSeriesBuilder<Double> builder = new TimeSeriesBuilder<>();
             TimeSeries<Double> series = builder.addReferenceTimes( timeSeries.getReferenceTimes() )
                                                .setTimeScale( timeSeries.getTimeScale() )
-                                               .addEvents( next )
+                                               .addEvents( next.getValue() )
                                                .build();
             returnMe.add( series );
         }
