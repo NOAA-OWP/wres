@@ -4,7 +4,7 @@
         <left label="USGS">
             <type>simulations</type>
             <source format="usgs"></source>
-            <variable>00060</variable>
+            <variable label="streamflow">00060</variable>
             <existingTimeScale>
                 <function>mean</function>
                 <period>1</period>
