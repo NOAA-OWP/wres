@@ -1,5 +1,3 @@
-<!--Needs to be refactored to match #60307, but that is blocked by #60330-->
-
 <?xml version="1.0" encoding="UTF-8"?>
 <project label="scenario720">
     <inputs>
@@ -28,7 +26,8 @@
     <pair label="Pairs by location and lead time"> <!-- required for unit -->
         <unit>kcfs</unit>
         <feature locationId="KCDM7"/>
-        <dates earliest="2018-08-16T12:00:00Z" latest="2018-08-28T12:00:00Z" />
+        <leadHours minimum="0" maximum="120"/>
+        <dates earliest="2018-08-16T12:00:00Z" latest="2018-08-28T13:00:00Z" />
         <issuedDates earliest="2018-08-16T12:00:00Z" latest="2018-08-28T13:00:00Z" /> 
         <leadTimesPoolingWindow>
             <period>6</period>
