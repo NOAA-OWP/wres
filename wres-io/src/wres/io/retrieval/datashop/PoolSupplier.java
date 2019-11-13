@@ -810,7 +810,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         if ( PoolSupplier.REGULAR_PAIRS && upscaleLeft && upscaleRight )
         {
             pairs = this.filterUpscaledPairsByFrequency( pairs,
-                                                         this.getReferenceTime( pairs ),
+                                                         this.getFirstReferenceTimeOrFirstValidTimeAdjustedForTimeScale( pairs ),
                                                          desiredTimeScale.getPeriod(),
                                                          frequency );
         }
@@ -1130,12 +1130,13 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
     }
 
     /**
-     * Helper that returns the first available reference time from a time-series, otherwise <code>null</code>.
+     * Helper that returns the first available reference time from a time-series, otherwise the first valid time,
+     * adjusted for the <code>period</code> associated with the time scale, otherwise <code>null</code>.
      * 
      * @return the first available reference time
      */
 
-    private Instant getReferenceTime( TimeSeries<?> timeSeries )
+    private Instant getFirstReferenceTimeOrFirstValidTimeAdjustedForTimeScale( TimeSeries<?> timeSeries )
     {
         Collection<Instant> times = timeSeries.getReferenceTimes().values();
 
@@ -1144,6 +1145,17 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         if ( !times.isEmpty() )
         {
             returnMe = times.iterator().next();
+        }
+        
+        // Valid time instead?
+        if( Objects.isNull( returnMe ) && !timeSeries.getEvents().isEmpty() )
+        {
+            returnMe = timeSeries.getEvents().first().getTime();
+            
+            if( Objects.nonNull( timeSeries.getTimeScale() ) )
+            {
+                returnMe = returnMe.minus( timeSeries.getTimeScale().getPeriod() );
+            }
         }
 
         return returnMe;
@@ -1167,6 +1179,9 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
      * instead compute all pairs. For the same reason, the <code>frequency</code> associated with the 
      * <code>desiredTimeScale</code> should be eliminated. This method is an inevitable source of brittleness.
      * 
+     * <p>TODO: this is an implementation detail in the present context; instead, consider relocating this to the 
+     * {@link TimeSeriesSlicer}, increasing visibility to public and adding some unit tests.
+     * 
      * @param toFilter the time-series to inspect
      * @param referenceTime the reference time from which to count
      * @param period the period associated with the desired time scale
@@ -1181,7 +1196,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         Objects.requireNonNull( toFilter );
 
         Objects.requireNonNull( referenceTime );
-
+        
         Objects.requireNonNull( period );
 
         // More than one pair?
