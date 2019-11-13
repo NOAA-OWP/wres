@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 
@@ -23,9 +24,11 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.Ensemble;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesSlicer;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
@@ -159,11 +162,9 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
             }
 
             // Ready to ingest, source row was inserted and is (advisory) locked.
-            int timeSeriesId = this.insertTimeSeriesRow( this.getTimeSeries(),
-                                                         source.getId(),
-                                                         this.getMeasurementUnit() );
-            this.insertTimeSeriesValuesRows( timeSeriesId,
-                                             this.getTimeSeries() );
+            this.insertEverything( this.getTimeSeries(),
+                                   source.getId(),
+                                   this.getMeasurementUnit() );
 
             // Mark complete
             SourceCompleter completer = createSourceCompleter( source.getId(),
@@ -198,27 +199,138 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
         }
     }
 
-    private void insertTimeSeriesValuesRows( int timeSeriesId,
-                                             TimeSeries<?> timeSeries )
-            throws IngestException
+    private void insertEverything( TimeSeries<?> timeSeries,
+                                   int sourceId,
+                                   String measurementUnit )
+            throws IOException
     {
-        Instant referenceDatetime = this.getReferenceDatetime( timeSeries );
-        for ( Event<?> event : timeSeries.getEvents() )
+        SortedSet<? extends Event<?>> events = timeSeries.getEvents();
+
+        if ( timeSeries.getEvents()
+                       .isEmpty() )
         {
-            Instant validDatetime = event.getTime();
-            Duration leadDuration = Duration.between( referenceDatetime, validDatetime );
-            Pair<CountDownLatch, CountDownLatch> latchPair =
-                    IngestedValues.addTimeSeriesValue( timeSeriesId,
-                                                       (int) leadDuration.toMinutes(),
-                                                       (Double) event.getValue() );
-            this.latches.add( latchPair );
+            throw new IllegalArgumentException( "TimeSeries must not be empty." );
+        }
+
+        Event<?> event = events.iterator()
+                               .next();
+
+        if ( event.getValue() instanceof Ensemble )
+        {
+            LOGGER.debug( "Found a TimeSeries<Ensemble>" );
+            for ( Map.Entry<Object,SortedSet<Event<Double>>> trace :
+                    TimeSeriesSlicer.decomposeWithLabels( (TimeSeries<Ensemble>) timeSeries )
+                                    .entrySet() )
+            {
+                LOGGER.info( "TimeSeries trace: {}", trace );
+                Object ensembleName = trace.getKey();
+                int ensembleId = this.insertOrGetEnsembleId( ensembleName );
+                int timeSeriesId = this.insertTimeSeriesRowForEnsembleTrace(
+                        (TimeSeries<Ensemble>) timeSeries,
+                        ensembleId,
+                        sourceId,
+                        measurementUnit );
+                this.insertEnsembleTrace( (TimeSeries<Ensemble>) timeSeries,
+                                          timeSeriesId,
+                                          trace.getValue() );
+            }
+        }
+        else if ( event.getValue() instanceof Double )
+        {
+            int timeSeriesId = this.insertTimeSeriesRow( (TimeSeries<Double>) timeSeries,
+                                                         sourceId,
+                                                         measurementUnit );
+            this.insertTimeSeriesValuesRows( timeSeriesId,
+                                             (TimeSeries<Double>) timeSeries );
+        }
+        else
+        {
+            throw new UnsupportedOperationException( "Unable to ingest value "
+                                                     + event.getValue() );
         }
     }
 
-    private int insertTimeSeriesRow( TimeSeries<?> timeSeries,
+    /**
+     *
+     * @param ensembleName Name of the ensemble trace.
+     * @return Raw surrogate key from db
+     * @throws IngestException When any query involved fails.
+     */
+    private int insertOrGetEnsembleId( Object ensembleName )
+            throws IngestException
+    {
+        int id;
+
+        Integer ensembleNumber = null;
+
+        if ( ensembleName instanceof Integer )
+        {
+            ensembleNumber = (Integer) ensembleName;
+        }
+
+        try
+        {
+            id = Ensembles.getEnsembleID( ensembleName.toString(),
+                                          ensembleNumber,
+                                          ensembleName.toString() );
+        }
+        catch ( SQLException se )
+        {
+            throw new IngestException( "Failed to get Ensemble info for "
+                                       + ensembleName, se );
+        }
+
+        return id;
+    }
+
+    private void insertEnsembleTrace( TimeSeries<Ensemble> originalTimeSeries,
+                                      int timeSeriesIdForTrace,
+                                      SortedSet<Event<Double>> ensembleTrace )
+            throws IngestException
+    {
+        Instant referenceDatetime = this.getReferenceDatetime( originalTimeSeries );
+
+        for ( Event<Double> event : ensembleTrace )
+        {
+            this.insertTimeSeriesValuesRow( timeSeriesIdForTrace,
+                                            referenceDatetime,
+                                            event );
+        }
+    }
+
+    private void insertTimeSeriesValuesRows( int timeSeriesId,
+                                             TimeSeries<Double> timeSeries )
+            throws IngestException
+    {
+        Instant referenceDatetime = this.getReferenceDatetime( timeSeries );
+
+        for ( Event<Double> event : timeSeries.getEvents() )
+        {
+            this.insertTimeSeriesValuesRow( timeSeriesId,
+                                            referenceDatetime,
+                                            event );
+        }
+    }
+
+    private void insertTimeSeriesValuesRow( int timeSeriesId,
+                                            Instant referenceDatetime,
+                                            Event<Double> valueAndValidDateTime )
+            throws IngestException
+    {
+
+        Instant validDatetime = valueAndValidDateTime.getTime();
+        Duration leadDuration = Duration.between( referenceDatetime, validDatetime );
+        Pair<CountDownLatch, CountDownLatch> latchPair =
+                IngestedValues.addTimeSeriesValue( timeSeriesId,
+                                                   (int) leadDuration.toMinutes(),
+                                                   valueAndValidDateTime.getValue() );
+        this.latches.add( latchPair );
+    }
+
+    private int insertTimeSeriesRow( TimeSeries<Double> timeSeries,
                                      int sourceId,
                                      String measurementUnit )
-            throws IOException
+            throws IngestException
     {
 
         wres.io.data.details.TimeSeries databaseTimeSeries;
@@ -240,8 +352,56 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
         }
     }
 
+    private int insertTimeSeriesRowForEnsembleTrace( TimeSeries<Ensemble> timeSeries,
+                                                     int ensembleId,
+                                                     int sourceId,
+                                                     String measurementUnit )
+            throws IngestException
+    {
 
-    private wres.io.data.details.TimeSeries getDbTimeSeries( TimeSeries<?> timeSeries,
+        wres.io.data.details.TimeSeries databaseTimeSeries;
+        try
+        {
+            databaseTimeSeries = this.getDbTimeSeriesForEnsembleTrace( timeSeries,
+                                                                       ensembleId,
+                                                                       sourceId,
+                                                                       measurementUnit );
+            // The following indirectly calls save:
+            return databaseTimeSeries.getTimeSeriesID();
+        }
+        catch ( SQLException se )
+        {
+            throw new IngestException( "Failed to get TimeSeries info for "
+                                       + "timeSeries=" + timeSeries
+                                       + " source=" + sourceId
+                                       + " measurementUnit=" + measurementUnit,
+                                       se );
+        }
+    }
+
+
+    private wres.io.data.details.TimeSeries getDbTimeSeriesForEnsembleTrace(
+            TimeSeries<Ensemble> ensembleTimeSeries,
+            int ensembleId,
+            int sourceId,
+            String measurementUnit )
+            throws SQLException
+    {
+        Instant referenceDatetime = this.getReferenceDatetime( ensembleTimeSeries );
+        wres.io.data.details.TimeSeries databaseTimeSeries =
+                new wres.io.data.details.TimeSeries( sourceId,
+                                                     referenceDatetime.toString() );
+        databaseTimeSeries.setEnsembleID( ensembleId );
+        int measurementUnitId = this.getMeasurementUnitId( measurementUnit );
+        databaseTimeSeries.setMeasurementUnitID( measurementUnitId );
+        int variableFeatureId = this.getVariableFeatureId( this.getLocationName(),
+                                                           this.getVariableName() );
+        databaseTimeSeries.setVariableFeatureID( variableFeatureId );
+        databaseTimeSeries.setTimeScale( ensembleTimeSeries.getTimeScale() );
+        return databaseTimeSeries;
+    }
+
+    private wres.io.data.details.TimeSeries getDbTimeSeries( TimeSeries<Double> timeSeries,
                                                              int sourceId,
                                                              String measurementUnit )
             throws SQLException
