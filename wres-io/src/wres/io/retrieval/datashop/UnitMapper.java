@@ -52,13 +52,13 @@ public class UnitMapper
      */
 
     private final String desiredMeasurementUnit;
-    
+
     /**
      * The <code>measurementunit_id</code> for the {@link #desiredMeasurementUnit},
      */
 
     private final Integer desiredMeasurementUnitId;
-    
+
     /**
      * Returns an instance.
      * 
@@ -85,11 +85,11 @@ public class UnitMapper
         Objects.requireNonNull( measurementUnitId, "Specify a non-null measurement unit for conversion." );
 
         // Identity
-        if( measurementUnitId.equals( this.desiredMeasurementUnitId ) )
+        if ( measurementUnitId.equals( this.desiredMeasurementUnitId ) )
         {
             return in -> in;
         }
-        
+
         if ( !this.conversions.containsKey( measurementUnitId ) )
         {
             throw new NoSuchUnitConversionException( "There is no such unit conversion function to "
@@ -115,13 +115,13 @@ public class UnitMapper
         Objects.requireNonNull( unitName, "Specify a non-null measurement unit name for conversion." );
 
         String upperCaseUnits = unitName.toUpperCase();
-        
+
         // Identity
-        if( upperCaseUnits.equalsIgnoreCase( this.desiredMeasurementUnit ) )
+        if ( upperCaseUnits.equalsIgnoreCase( this.desiredMeasurementUnit ) )
         {
             return in -> in;
         }
-        
+
         if ( !this.namesToIdentifiers.containsKey( upperCaseUnits ) )
         {
             throw new NoSuchUnitConversionException( "There is no such unit conversion function to "
@@ -142,6 +142,7 @@ public class UnitMapper
      * @param desiredMeasurementUnit the desired units
      * @throws NullPointerException if the input is null
      * @throws DataAccessException if the data could not be accessed
+     * @throws NoSuchUnitConversionException if no unit conversions were available
      */
 
     private UnitMapper( String desiredMeasurementUnit )
@@ -149,6 +150,13 @@ public class UnitMapper
         Objects.requireNonNull( desiredMeasurementUnit,
                                 "Specify a desired measurement unit to create unit "
                                                         + "conversions." );
+
+        // #65972
+        if ( desiredMeasurementUnit.isBlank() )
+        {
+            throw new NoSuchUnitConversionException( "The desired measurement unit is blank. There are "
+                                                     + "no appropriate unit conversions for the blank unit." );
+        }
 
         this.desiredMeasurementUnit = desiredMeasurementUnit.toUpperCase();
 
@@ -211,7 +219,7 @@ public class UnitMapper
             }
 
             this.desiredMeasurementUnitId = desiredUnitId;
-            
+
             LOGGER.debug( "Added {} unit conversions to the cache for the desired units of '{}'.",
                           this.conversions.size(),
                           this.desiredMeasurementUnit );
