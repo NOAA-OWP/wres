@@ -23,6 +23,7 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 
 import wres.system.DatabaseConnectionSupplier;
 import wres.io.data.details.MeasurementDetails;
@@ -112,6 +113,14 @@ public class UnitMapperTest
         DoubleUnaryOperator namedConverter = mapper.getUnitMapper( units );
         assertEquals( 1.0, namedConverter.applyAsDouble( 1.0 ), 0.00001 );              
     }    
+    
+    @Test
+    public void constructWithBlankUnitThrowsExpectedException()
+    {
+        assertThrows( NoSuchUnitConversionException.class, () -> UnitMapper.of( "" ) );
+        
+        assertThrows( NoSuchUnitConversionException.class, () -> UnitMapper.of( "   " ) );
+    }
     
     @After
     public void tearDown() throws SQLException

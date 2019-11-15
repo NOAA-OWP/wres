@@ -23,13 +23,13 @@ import wres.io.utilities.ScriptBuilder;
 
 class ObservationRetriever extends TimeSeriesRetriever<Double>
 {
-    
+
     /**
      * Error message when attempting to retrieve by identifier. See #68334 and #56214-56.
      */
 
     private static final String NO_IDENTIFIER_ERROR = "Retrieval of observed time-series by identifier is not "
-                                                      + "currently possible.";    
+                                                      + "currently possible.";
 
     /**
      * Log message.
@@ -108,8 +108,8 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
     public Stream<TimeSeries<Double>> get( LongStream identifiers )
     {
         throw new UnsupportedOperationException( NO_IDENTIFIER_ERROR );
-    } 
-    
+    }
+
     /**
      * Overrides the default implementation to get all time-series in one pull, rather than one pull for each series.
      * 
@@ -129,7 +129,7 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
 
         // Add time window constraint at zero tabs
         this.addTimeWindowClause( scripter, 0 );
-        
+
         // Add season constraint at one tab
         this.addSeasonClause( scripter, 1 );
 
@@ -154,7 +154,7 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
     {
         return false;
     }
-    
+
     /**
      * Returns a function that obtains the measured value in the desired units from a {@link DataProvider}.
      * 
@@ -163,21 +163,22 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
 
     private Function<DataProvider, Double> getDataSupplier()
     {
-        return provider -> {           
+        return provider -> {
             // Raw value
             double unmapped = provider.getDouble( "observation" );
-            
-            if( !Double.isFinite( unmapped ) )
+
+            if ( !Double.isFinite( unmapped ) )
             {
                 return MissingValues.DOUBLE;
             }
-            
+
             // Existing units
             int measurementUnitId = provider.getInt( "measurementunit_id" );
-            
+
             // Units mapper
-            DoubleUnaryOperator mapper = this.getMeasurementUnitMapper().getUnitMapper( measurementUnitId );
-            
+            DoubleUnaryOperator mapper = this.getMeasurementUnitMapper()
+                                             .getUnitMapper( measurementUnitId );
+
             // Convert
             return mapper.applyAsDouble( unmapped );
         };
@@ -194,12 +195,12 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
         ScriptBuilder scripter = new ScriptBuilder();
 
         scripter.addLine( "SELECT " );
-        scripter.addTab().addLine( "1 AS series_id," );  // Facilitates a unary mapping across series types: #56214-56
+        scripter.addTab().addLine( "1 AS series_id," ); // Facilitates a unary mapping across series types: #56214-56
         scripter.addTab().addLine( "O.observation_time AS valid_time," );
         scripter.addTab().addLine( "O.observed_value AS observation," );
         scripter.addTab().addLine( "O.scale_period," );
         scripter.addTab().addLine( "O.scale_function," );
-        scripter.addTab().addLine( "O.measurementunit_id" );       
+        scripter.addTab().addLine( "O.measurementunit_id" );
         scripter.addLine( "FROM wres.Observation O" );
         scripter.addLine( "INNER JOIN wres.ProjectSource PS" );
         scripter.addTab().addLine( "ON PS.source_id = O.source_id" );
