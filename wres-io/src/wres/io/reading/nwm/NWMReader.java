@@ -254,7 +254,17 @@ public class NWMReader implements Callable<List<IngestResult>>
 
                         // Create a uri that reflects the origin of the data
                         URI uri = this.getUri()
-                                      .resolve( feature.toString()
+                                      .resolve( this.getDataSource()
+                                                    .getSource()
+                                                    .getInterface()
+                                                    .toString()
+                                                + "/"
+                                                + feature.getComid()
+                                                + "/"
+                                                + this.getDataSource()
+                                                      .getVariable()
+                                                      .getValue()
+                                                + "/"
                                                 + referenceDatetime.toString() );
                         DataSource innerDataSource =
                                 DataSource.of( this.getDataSource()
