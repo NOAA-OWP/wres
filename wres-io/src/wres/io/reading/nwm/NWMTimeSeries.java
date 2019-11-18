@@ -18,7 +18,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ucar.ma2.Array;
@@ -63,6 +62,10 @@ class NWMTimeSeries implements Closeable
     /** The base URI from where to find the members of this forecast */
     private final URI baseUri;
 
+    /**
+     * The netCDF resources managed by this instance, opened on construction
+     * and closed on close().
+     */
     private final Set<NetcdfFile> netcdfFiles = new HashSet<>();
 
     /**
@@ -283,7 +286,10 @@ class NWMTimeSeries implements Closeable
                                               + " is unexpectedly less than 1." );
             }
 
-            Event<Double> event = readDouble( netcdfFile, featureId, variableName );
+            Event<Double> event = readDouble( this.getProfile(),
+                                              netcdfFile,
+                                              featureId,
+                                              variableName );
             double[] ensembleRow = ensembleValues.get( event.getTime() );
 
             if ( Objects.isNull( ensembleRow ) )
@@ -362,7 +368,8 @@ class NWMTimeSeries implements Closeable
      * @return The String representation of the value of attribute of variable.
      */
 
-    private String readAttributeAsString( Variable ncVariable, String attributeName )
+    private static String readAttributeAsString( Variable ncVariable,
+                                                 String attributeName )
     {
         List<Attribute> variableAttributes = ncVariable.getAttributes();
 
@@ -390,7 +397,8 @@ class NWMTimeSeries implements Closeable
      * @throws IllegalArgumentException When the type is not float or double.
      */
 
-    private float readAttributeAsFloat( Variable ncVariable, String attributeName )
+    private static float readAttributeAsFloat( Variable ncVariable,
+                                               String attributeName )
     {
         List<Attribute> variableAttributes = ncVariable.getAttributes();
 
@@ -431,7 +439,8 @@ class NWMTimeSeries implements Closeable
      * @throws IllegalArgumentException When the type is not float or double.
      */
 
-    private double readAttributeAsDouble( Variable ncVariable, String attributeName )
+    private static double readAttributeAsDouble( Variable ncVariable,
+                                                 String attributeName )
     {
         List<Attribute> variableAttributes = ncVariable.getAttributes();
 
@@ -479,7 +488,8 @@ class NWMTimeSeries implements Closeable
      * @throws IllegalArgumentException When the type cast would cause loss.
      */
 
-    private int readAttributeAsInt( Variable ncVariable, String attributeName )
+    private static int readAttributeAsInt( Variable ncVariable,
+                                           String attributeName )
     {
         List<Attribute> variableAttributes = ncVariable.getAttributes();
 
@@ -532,7 +542,10 @@ class NWMTimeSeries implements Closeable
 
         for ( NetcdfFile netcdfFile : this.getNetcdfFiles() )
         {
-            Event<Double> event = readDouble( netcdfFile, featureId, variableName );
+            Event<Double> event = readDouble( this.getProfile(),
+                                              netcdfFile,
+                                              featureId,
+                                              variableName );
             events.add( event );
         }
 
@@ -542,19 +555,18 @@ class NWMTimeSeries implements Closeable
     }
 
 
-    Event<Double> readDouble( NetcdfFile netcdfFile, int featureId, String variableName )
+    private Event<Double> readDouble( NWMProfile profile,
+                                      NetcdfFile netcdfFile,
+                                      int featureId,
+                                      String variableName )
     {
-        final int NOT_FOUND = -1;
-
         // Get the valid datetime
-        String validDatetimeVariableName = this.getProfile().getValidDatetimeVariable();
-        Instant validDatetime = this.readMinutesFromEpoch( netcdfFile,
-                                                           validDatetimeVariableName );
+        Instant validDatetime = NWMTimeSeries.readValidDatetime( profile,
+                                                                 netcdfFile );
 
         // Get the reference datetime
-        String referenceDatetimeAttributeName = getProfile().getReferenceDatetimeVariable();
-        Instant ncReferenceDatetime = this.readMinutesFromEpoch( netcdfFile,
-                                                                 referenceDatetimeAttributeName );
+        Instant ncReferenceDatetime = NWMTimeSeries.readReferenceDatetime( profile,
+                                                                           netcdfFile );
 
         // Validate: this referenceDatetime should match what was set originally.
         // (This doesn't work for analysis_assim)
@@ -569,7 +581,65 @@ class NWMTimeSeries implements Closeable
         }
 
         // Get the value at the variable in question.
-        String featureVariableName = getProfile().getFeatureVariable();
+
+        int indexOfFeature = NWMTimeSeries.findFeatureIndex( profile,
+                                                             netcdfFile,
+                                                             featureId );
+
+        Variable variableVariable =  netcdfFile.findVariable( variableName );
+        int rawVariableValue;
+
+        // Preserve the context of which netCDF blob is read with try/catch.
+        // (The readRawScalarInt method does not need the netCDF blob.)
+        try
+        {
+            rawVariableValue = NWMTimeSeries.readRawScalarInt( variableVariable,
+                                                               indexOfFeature );
+        }
+        catch ( PreIngestException pie )
+        {
+            throw new PreIngestException( "While reading netCDF data at "
+                                          + netcdfFile.getLocation(), pie );
+        }
+
+        double variableValue;
+
+        VariableAttributes attributes = NWMTimeSeries.readVariableAttributes( variableVariable );
+
+        if ( rawVariableValue == attributes.getMissingValue()
+             || rawVariableValue == attributes.getFillValue() )
+        {
+            variableValue = MissingValues.DOUBLE;
+        }
+        else
+        {
+            // Unpack.
+            variableValue = NWMTimeSeries.unpack( rawVariableValue, attributes );
+        }
+
+        LOGGER.trace( "Read raw value {} for variable {} at {} returning as value {} from {}",
+                      rawVariableValue, variableName, validDatetime, variableValue, netcdfFile );
+
+        return Event.of( validDatetime, variableValue );
+    }
+
+
+    /**
+     * Find the given featureId index within the given netCDF blob using the
+     * given NWMProfile
+     * @param profile The profile to use (has name of feature variable).
+     * @param netcdfFile The netCDF blob to search.
+     * @param featureId The NWM feature id to search for.
+     * @return The index of the featureID within the feature variable.
+     */
+
+    private static int findFeatureIndex( NWMProfile profile,
+                                         NetcdfFile netcdfFile,
+                                         int featureId )
+    {
+        final int NOT_FOUND = -1;
+
+        String featureVariableName = profile.getFeatureVariable();
         Variable featureVariable = netcdfFile.findVariable( featureVariableName );
 
         int indexOfFeature = NOT_FOUND;
@@ -606,61 +676,83 @@ class NWMTimeSeries implements Closeable
                                           + netcdfFile );
         }
 
-        Variable variableVariable =  netcdfFile.findVariable( variableName );
-        int[] origin = { indexOfFeature };
-        int[] shape = { 1 };
-        int rawVariableValue;
+        return indexOfFeature;
+    }
 
+    private static Instant readValidDatetime( NWMProfile profile,
+                                              NetcdfFile netcdfFile )
+    {
+        String validDatetimeVariableName = profile.getValidDatetimeVariable();
+        return NWMTimeSeries.readMinutesFromEpoch( netcdfFile,
+                                                   validDatetimeVariableName );
+    }
+
+    private static Instant readReferenceDatetime( NWMProfile profile,
+                                                  NetcdfFile netcdfFile )
+    {
+        String referenceDatetimeAttributeName = profile.getReferenceDatetimeVariable();
+        return NWMTimeSeries.readMinutesFromEpoch( netcdfFile,
+                                                   referenceDatetimeAttributeName );
+    }
+
+    private static VariableAttributes readVariableAttributes( Variable variable )
+    {
+
+        int missingValue = readAttributeAsInt( variable,
+                                               "missing_value" );
+        int fillValue = readAttributeAsInt( variable,
+                                            "_FillValue");
+        double multiplier = readAttributeAsDouble( variable,
+                                                   "scale_factor" );
+        double offsetToAdd = readAttributeAsDouble( variable,
+                                                    "add_offset" );
+        return new VariableAttributes( missingValue,
+                                       fillValue,
+                                       multiplier,
+                                       offsetToAdd );
+    }
+
+    private static int readRawScalarInt( Variable variable, int index )
+    {
+        int[] origin = { index };
+        int[] shape = { 1 };
         try
         {
-            Array array = variableVariable.read( origin, shape );
-            int[] values = (int[]) array.get1DJavaArray( DataType.INT );
+            Array array = variable.read( origin, shape );
+            int[] values = ( int[] ) array.get1DJavaArray( DataType.INT );
 
             if ( values.length != 1 )
             {
-                throw new PreIngestException( "Expected to read exactly one value, instead got "
-                                              + values.length );
+                throw new PreIngestException(
+                        "Expected to read exactly one value, instead got "
+                        + values.length );
             }
 
-            rawVariableValue = values[0];
+            return values[0];
         }
         catch ( IOException | InvalidRangeException e )
         {
             throw new PreIngestException( "Failed to read variable "
-                                          + variableVariable
+                                          + variable
                                           + " at origin "
                                           + Arrays.toString( origin )
                                           + " and shape "
-                                          + Arrays.toString( shape )
-                                          + " from netCDF file " + netcdfFile,
+                                          + Arrays.toString( shape ),
                                           e );
         }
+    }
 
-        double variableValue;
-        int missingValue = readAttributeAsInt( variableVariable,
-                                               "missing_value" );
-        int fillValue = readAttributeAsInt( variableVariable,
-                                            "_FillValue");
-        double multiplier = readAttributeAsDouble( variableVariable,
-                                                   "scale_factor" );
-        double offsetToAdd = readAttributeAsDouble( variableVariable,
-                                                    "add_offset" );
 
-        if ( rawVariableValue == missingValue
-             || rawVariableValue == fillValue )
-        {
-            variableValue = MissingValues.DOUBLE;
-        }
-        else
-        {
-            // Unpack.
-            variableValue = rawVariableValue * multiplier + offsetToAdd;
-        }
-
-        LOGGER.trace( "Read raw value {} for variable {} at {} returning as value {} from {}",
-                      rawVariableValue, variableName, validDatetime, variableValue, netcdfFile );
-
-        return Event.of( validDatetime, variableValue );
+    /**
+     * Given an integer raw (packed) value, use the given attributes to unpack.
+     * @param rawValue The raw (packed) int value.
+     * @param attributes The attributes associated with the variable.
+     * @return The value unpacked into a double.
+     */
+    private static double unpack( int rawValue, VariableAttributes attributes )
+    {
+        return rawValue * attributes.getMultiplier()
+               + attributes.getOffsetToAdd();
     }
 
 
@@ -674,8 +766,8 @@ class NWMTimeSeries implements Closeable
      * @return the Instant representation of the value
      */
 
-    private Instant readMinutesFromEpoch( NetcdfFile netcdfFile,
-                                          String variableName )
+    private static Instant readMinutesFromEpoch( NetcdfFile netcdfFile,
+                                                 String variableName )
     {
         Variable ncVariable = netcdfFile.findVariable( variableName );
 
@@ -705,8 +797,57 @@ class NWMTimeSeries implements Closeable
             }
             catch ( IOException ioe )
             {
-                LOGGER.warn( "Could not close netCDF file {}", netcdfFile, ioe );
+                LOGGER.warn( "Could not close netCDF file {}",
+                             netcdfFile,
+                             ioe );
             }
         }
     }
+
+
+
+    /**
+     * Attributes that have been actually read from a netCDF Variable.
+     * The purpose of this class is to help avoid re-reading the same metadata.
+     */
+
+    private static final class VariableAttributes
+    {
+        private final int missingValue;
+        private final int fillValue;
+        private final double multiplier;
+        private final double offsetToAdd;
+
+        VariableAttributes( int missingValue,
+                            int fillValue,
+                            double multiplier,
+                            double offsetToAdd )
+        {
+            this.missingValue = missingValue;
+            this.fillValue = fillValue;
+            this.multiplier = multiplier;
+            this.offsetToAdd = offsetToAdd;
+        }
+
+        int getMissingValue()
+        {
+            return this.missingValue;
+        }
+
+        int getFillValue()
+        {
+            return this.fillValue;
+        }
+
+        double getMultiplier()
+        {
+            return this.multiplier;
+        }
+
+        double getOffsetToAdd()
+        {
+            return this.offsetToAdd;
+        }
+    }
+
 }
