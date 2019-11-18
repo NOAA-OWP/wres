@@ -227,7 +227,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                 .getData();
         assertTrue( rmse.get( 0 ).getData().equals( 41.01563032408479 ) );
         assertTrue( rmse.get( 1 ).getData().equals( 41.01563032408479 ) );
-        assertTrue( rmse.get( 2 ).getData().equals( 52.55361580348336 ) );
+        assertTrue( rmse.get( 2 ).getData().equals( 52.55361580348335 ) );
         assertTrue( rmse.get( 3 ).getData().equals( 54.82426155439095 ) );
         assertTrue( rmse.get( 4 ).getData().equals( 58.12352988180837 ) );
         assertTrue( rmse.get( 5 ).getData().equals( 61.12163959516186 ) );
@@ -347,9 +347,9 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         List<DoubleScoreStatistic> rmse = Slicer.filter( results, MetricConstants.ROOT_MEAN_SQUARE_ERROR ).getData();
         assertTrue( rmse.get( 0 ).getData().equals( 41.01563032408479 ) );
         assertTrue( rmse.get( 1 ).getData().equals( 41.01563032408479 ) );
-        assertTrue( rmse.get( 2 ).getData().equals( 52.55361580348336 ) );
+        assertTrue( rmse.get( 2 ).getData().equals( 52.55361580348335 ) );
         assertTrue( rmse.get( 3 ).getData().equals( 54.82426155439095 ) );
-        assertTrue( rmse.get( 4 ).getData().equals( 58.19124412599005 ) );
+        assertTrue( rmse.get( 4 ).getData().equals( 58.191244125990046 ) );
         assertTrue( rmse.get( 5 ).getData().equals( 61.12163959516186 ) );
     }
 
@@ -597,7 +597,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         List<DoubleScoreStatistic> rmse = Slicer.filter( results, MetricConstants.ROOT_MEAN_SQUARE_ERROR ).getData();
         assertTrue( rmse.get( 0 ).getData().equals( 41.01563032408479 ) );
         assertTrue( rmse.get( 1 ).getData().equals( 41.01563032408479 ) );
-        assertTrue( rmse.get( 2 ).getData().equals( 52.55361580348336 ) );
+        assertTrue( rmse.get( 2 ).getData().equals( 52.55361580348335 ) );
         assertTrue( rmse.get( 3 ).getData().equals( 54.82426155439095 ) );
         assertTrue( rmse.get( 4 ).getData().equals( 58.12352988180837 ) );
         assertTrue( rmse.get( 5 ).getData().equals( 61.12163959516186 ) );

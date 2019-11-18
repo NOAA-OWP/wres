@@ -74,7 +74,7 @@ public final class SumOfSquareErrorTest
                     + ".",
                     actual.equals( expected ) );
     }
-    
+
     @Test
     public void testApplyWithNoData()
     {

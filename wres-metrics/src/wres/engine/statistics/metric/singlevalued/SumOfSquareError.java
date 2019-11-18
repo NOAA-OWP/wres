@@ -21,8 +21,8 @@ import wres.engine.statistics.metric.MetricParameterException;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class SumOfSquareError extends DecomposableScore<SampleData<Pair<Double,Double>>>
-        implements Collectable<SampleData<Pair<Double,Double>>, DoubleScoreStatistic, DoubleScoreStatistic>
+public class SumOfSquareError extends DecomposableScore<SampleData<Pair<Double, Double>>>
+        implements Collectable<SampleData<Pair<Double, Double>>, DoubleScoreStatistic, DoubleScoreStatistic>
 {
 
     /**
@@ -37,7 +37,7 @@ public class SumOfSquareError extends DecomposableScore<SampleData<Pair<Double,D
     }
 
     @Override
-    public DoubleScoreStatistic apply( SampleData<Pair<Double,Double>> s )
+    public DoubleScoreStatistic apply( SampleData<Pair<Double, Double>> s )
     {
         return this.aggregate( this.getInputForAggregation( s ) );
     }
@@ -61,7 +61,7 @@ public class SumOfSquareError extends DecomposableScore<SampleData<Pair<Double,D
     }
 
     @Override
-    public DoubleScoreStatistic getInputForAggregation( SampleData<Pair<Double,Double>> input )
+    public DoubleScoreStatistic getInputForAggregation( SampleData<Pair<Double, Double>> input )
     {
         if ( Objects.isNull( input ) )
         {
@@ -73,7 +73,13 @@ public class SumOfSquareError extends DecomposableScore<SampleData<Pair<Double,D
         // Data available
         if ( !input.getRawData().isEmpty() )
         {
-            returnMe = input.getRawData().stream().mapToDouble( FunctionFactory.squareError() ).sum();
+            // Sort the stream, as this improves accuracy according to the API docs
+            // See #71343
+            returnMe = input.getRawData()
+                            .stream()
+                            .mapToDouble( FunctionFactory.squareError() )
+                            .sorted()
+                            .sum();
         }
 
         //Metadata
