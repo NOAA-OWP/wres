@@ -70,7 +70,7 @@ test
     // -PtestJvmSystemProperties="-Dwres.useSSL=false -Dwres.blah=true"
     // or like this:
     // -PtestJvmSystemProperties="wres.useSSL=false wres.blah=true"
-	jvmargs '-XX:+HeapDumpOnOutOfMemoryError'
+	jvmArgs '-XX:+HeapDumpOnOutOfMemoryError'
 	maxHeapSize = "64m"
     // No longer necesary to fork on every test: see #61206
     // forkEvery=1
