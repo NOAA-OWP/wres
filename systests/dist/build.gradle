@@ -71,7 +71,7 @@ test
     // or like this:
     // -PtestJvmSystemProperties="wres.useSSL=false wres.blah=true"
 	jvmArgs '-XX:+HeapDumpOnOutOfMemoryError'
-	maxHeapSize = "512m"
+	maxHeapSize = "2180m"
     // No longer necesary to fork on every test: see #61206
     // forkEvery=1
     def testJvmPropertiesRaw = project.properties['testJvmSystemProperties']
