@@ -365,7 +365,7 @@ class FeatureProcessorTwo implements Supplier<FeatureProcessingResult>
                                         sharedWriters.accept( sampleData );
                                     }
 
-                                    return Set.of( sharedWriters.get() );
+                                    return sharedWriters.get();
                                 },
                                                  this.executors.getProductExecutor() );
     }

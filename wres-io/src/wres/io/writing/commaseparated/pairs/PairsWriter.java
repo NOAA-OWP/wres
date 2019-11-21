@@ -10,8 +10,11 @@ import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
@@ -40,14 +43,14 @@ import wres.util.TimeHelper;
  * managed by this {@link PairsWriter}. The {@link PairsWriter} must be closed after all writing is complete.
  * 
  * <p>The {@link Path} is supplied on construction and no guarantee is made that anything is created at that 
- * {@link Path}. It is the responsibility of the caller to determine whether something was written, if that matters.
+ * {@link Path}. If nothing is created, then {@link #get()} will return the {@link Collections#emptySet()}.
  * 
  * @param <L> the type of left data in the pairing
  * @param <R> the type of right data in the pairing
  * @author james.brown@hydrosolved.com
  */
 
-public abstract class PairsWriter<L, R> implements Consumer<PoolOfPairs<L, R>>, Supplier<Path>, Closeable
+public abstract class PairsWriter<L, R> implements Consumer<PoolOfPairs<L, R>>, Supplier<Set<Path>>, Closeable
 {
 
     /**
@@ -178,15 +181,23 @@ public abstract class PairsWriter<L, R> implements Consumer<PoolOfPairs<L, R>>, 
     }
 
     /**
-     * Supplies the {@link Path} to which values were written.
+     * Supplies the {@link Path} to which values were written or the empty set if nothing was written.
      * 
      * @return the paths written
      */
 
     @Override
-    public Path get()
+    public Set<Path> get()
     {
-        return pathToPairs;
+        Set<Path> returnMe = new HashSet<>();
+        
+        // Path points to a file that exists?
+        if ( Files.exists( this.pathToPairs ) )
+        {
+            returnMe.add( this.pathToPairs );
+        }
+        
+        return Collections.unmodifiableSet( returnMe );
     }
 
     /**

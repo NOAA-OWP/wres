@@ -120,7 +120,7 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
         else
         {
             this.successfulFeatures.add( result.getFeature() );
-
+            
             this.pathsWrittenTo.addAll( result.getPathsWrittenTo() );
             
             LOGGER.info( "[{}/{}] Completed feature '{}'",

@@ -248,6 +248,7 @@ class ProcessorHelper
 
             // Find the paths written to by shared writers
             pathsWrittenTo.addAll( sharedStatisticsWriters.get() );
+
             if ( sharedWriters.hasSharedSampleWriters() )
             {
                 pathsWrittenTo.addAll( sharedWriters.getSampleDataWriters().get() );
