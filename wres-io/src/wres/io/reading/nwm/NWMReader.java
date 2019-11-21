@@ -223,6 +223,12 @@ public class NWMReader implements Callable<List<IngestResult>>
                 {
                     for ( FeatureDetails feature : features )
                     {
+                        if ( Objects.isNull( feature.getComid() ) )
+                        {
+                            // Skip features without an NWM feature id.
+                            continue;
+                        }
+
                         String variableName = this.getDataSource()
                                                   .getVariable()
                                                   .getValue()
