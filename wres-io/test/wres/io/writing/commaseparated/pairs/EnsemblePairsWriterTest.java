@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
@@ -451,10 +452,10 @@ public final class EnsemblePairsWriterTest
         {
 
             // Write the pairs
-            writer.accept( pairs );
+            writer.accept( EnsemblePairsWriterTest.pairs );
 
             // Assert the expected results
-            assertEquals( writer.get(), pathToFile );
+            assertEquals( writer.get(), Set.of( pathToFile ) );
 
             // If all succeeded, remove the file, otherwise leave to help debugging
             Files.deleteIfExists( pathToFile );
