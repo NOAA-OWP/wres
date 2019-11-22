@@ -22,6 +22,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -90,7 +91,7 @@ class NWMTimeSeries implements Closeable
      * To parallelize requests for data from netCDF resources.
      */
     private final ThreadPoolExecutor readExecutor;
-    private final BlockingQueue<Future<List<IngestResult>>> reads;
+    private final BlockingQueue<Future<Event<Double>>> reads;
     private final CountDownLatch startGettingResults;
 
     /**
@@ -587,6 +588,7 @@ class NWMTimeSeries implements Closeable
      */
 
     TimeSeries<Double> readTimeSeries( int featureId, String variableName )
+            throws InterruptedException, ExecutionException
     {
         SortedSet<Event<Double>> events = new TreeSet<>();
 
@@ -598,8 +600,25 @@ class NWMTimeSeries implements Closeable
                                                            variableName,
                                                            this.getReferenceDatetime(),
                                                            this.featureCache );
-            Event<Double> event = reader.call();
-            events.add( event );
+            Future<Event<Double>> future = this.readExecutor.submit( reader );
+            this.reads.add( future );
+
+            this.startGettingResults.countDown();
+
+            if ( this.startGettingResults.getCount() <= 0 )
+            {
+                Event<Double> read = this.reads.take()
+                                               .get();
+                events.add( read );
+            }
+
+        }
+
+        // Finish getting the remainder of events being read.
+        for ( Future<Event<Double>> reading : this.reads )
+        {
+            Event<Double> read = reading.get();
+            events.add( read );
         }
 
         return TimeSeries.of( this.getReferenceDatetime(),
