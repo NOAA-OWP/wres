@@ -18,10 +18,17 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ucar.ma2.Array;
@@ -36,7 +43,9 @@ import wres.datamodel.MissingValues;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
+import wres.io.reading.IngestResult;
 import wres.io.reading.PreIngestException;
+import wres.system.SystemSettings;
 
 /**
  * Goal: a variable/feature/timeseries combination in a Vector NWM dataset is
@@ -73,29 +82,16 @@ class NWMTimeSeries implements Closeable
     private final Set<NetcdfFile> netcdfFiles;
 
     /**
-     * The contents of the feature variable for a given netCDF resource.
-     *
-     * This is a performance optimization (avoid re-reading the features).
-     * GuardedBy featureCacheGuard
+     * The cache holding NWM feature ids for this whole set of NWM resources
      */
-    private int[] featureCache;
+    private final NWMFeatureCache featureCache;
 
     /**
-     * First Thread to set to true wins
-     * and gets to write to the featureCache. Everyone else reads.
+     * To parallelize requests for data from netCDF resources.
      */
-    private final AtomicBoolean
-            featureCacheRaceResolver = new AtomicBoolean( false );
-
-    /**
-     * Guards featureCache variable.
-     */
-    private final Object featureCacheGuard = new Object();
-
-    /**
-     * Tracks which netCDF files have had their features validated.
-     */
-    private final Map<NetcdfFile,AtomicBoolean> validatedFeatures;
+    private final ThreadPoolExecutor readExecutor;
+    private final BlockingQueue<Future<List<IngestResult>>> reads;
+    private final CountDownLatch startGettingResults;
 
     /**
      *
@@ -121,7 +117,6 @@ class NWMTimeSeries implements Closeable
                                                            referenceDatetime,
                                                            baseUri );
         this.netcdfFiles = new HashSet<>( netcdfUris.size() );
-        this.validatedFeatures = new HashMap<>( netcdfUris.size() );
         LOGGER.debug( "Attempting to open NWM TimeSeries with reference datetime {} and profile {} from baseUri {}.",
                       referenceDatetime, profile, baseUri );
 
@@ -130,12 +125,30 @@ class NWMTimeSeries implements Closeable
         {
             NetcdfFile netcdfFile = NWMTimeSeries.openFile( netcdfUri );
             this.netcdfFiles.add( netcdfFile );
-            AtomicBoolean notValidated = new AtomicBoolean( false );
-            this.validatedFeatures.put( netcdfFile, notValidated );
         }
 
+        this.featureCache = new NWMFeatureCache( this.netcdfFiles );
         LOGGER.debug( "Successfully opened NWM TimeSeries with reference datetime {} and profile {} from baseUri {}.",
                       referenceDatetime, profile, baseUri );
+
+        ThreadFactory nwmReaderThreadFactory = new BasicThreadFactory.Builder()
+                .namingPattern( "NWMTimeSeries Reader" )
+                .build();
+
+        // See comments in WebSource class regarding the setup of the executor,
+        // queue, and latch.
+        BlockingQueue<Runnable>
+                nwmReaderQueue = new ArrayBlockingQueue<>( SystemSettings.getMaximumWebClientThreads() );
+        this.readExecutor = new ThreadPoolExecutor( SystemSettings.getMaximumWebClientThreads(),
+                                                SystemSettings.getMaximumWebClientThreads(),
+                                                SystemSettings.poolObjectLifespan(),
+                                                TimeUnit.MILLISECONDS,
+                                                nwmReaderQueue,
+                                                nwmReaderThreadFactory );
+
+        this.readExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.AbortPolicy() );
+        this.reads = new ArrayBlockingQueue<>( SystemSettings.getMaximumWebClientThreads() );
+        this.startGettingResults = new CountDownLatch( SystemSettings.getMaximumWebClientThreads() );
     }
 
 
@@ -320,10 +333,13 @@ class NWMTimeSeries implements Closeable
                                               + " is unexpectedly less than 1." );
             }
 
-            Event<Double> event = readDouble( this.getProfile(),
-                                              netcdfFile,
-                                              featureId,
-                                              variableName );
+            NWMDoubleReader reader = new NWMDoubleReader( this.getProfile(),
+                                                          netcdfFile,
+                                                          featureId,
+                                                          variableName,
+                                                          this.getReferenceDatetime(),
+                                                          this.featureCache );
+            Event<Double> event = reader.call();
             double[] ensembleRow = ensembleValues.get( event.getTime() );
 
             if ( Objects.isNull( ensembleRow ) )
@@ -341,7 +357,7 @@ class NWMTimeSeries implements Closeable
                                           + validDatetimeCount
                                           + " different valid datetimes but only found "
                                           + ensembleValues.size()
-                                          + " in netCDF files "
+                                          + " in netCDF resources "
                                           + this.getNetcdfFiles() );
         }
 
@@ -576,10 +592,13 @@ class NWMTimeSeries implements Closeable
 
         for ( NetcdfFile netcdfFile : this.getNetcdfFiles() )
         {
-            Event<Double> event = readDouble( this.getProfile(),
-                                              netcdfFile,
-                                              featureId,
-                                              variableName );
+            NWMDoubleReader reader = new NWMDoubleReader(  this.getProfile(),
+                                                           netcdfFile,
+                                                           featureId,
+                                                           variableName,
+                                                           this.getReferenceDatetime(),
+                                                           this.featureCache );
+            Event<Double> event = reader.call();
             events.add( event );
         }
 
@@ -589,87 +608,21 @@ class NWMTimeSeries implements Closeable
     }
 
 
-    private Event<Double> readDouble( NWMProfile profile,
-                                      NetcdfFile netcdfFile,
-                                      int featureId,
-                                      String variableName )
-    {
-        // Get the valid datetime
-        Instant validDatetime = NWMTimeSeries.readValidDatetime( profile,
-                                                                 netcdfFile );
-
-        // Get the reference datetime
-        Instant ncReferenceDatetime = NWMTimeSeries.readReferenceDatetime( profile,
-                                                                           netcdfFile );
-
-        // Validate: this referenceDatetime should match what was set originally.
-        // (This doesn't work for analysis_assim)
-        if ( !ncReferenceDatetime.equals( this.getReferenceDatetime() ) )
-        {
-            throw new PreIngestException( "The reference datetime "
-                                          + ncReferenceDatetime
-                                          + " from netCDF file "
-                                          + netcdfFile
-                                          + " does not match expected value "
-                                          + this.getReferenceDatetime() );
-        }
-
-        // Get the value at the variable in question.
-
-        int indexOfFeature = this.findFeatureIndex( profile,
-                                                    netcdfFile,
-                                                    featureId );
-
-        Variable variableVariable =  netcdfFile.findVariable( variableName );
-        int rawVariableValue;
-
-        // Preserve the context of which netCDF blob is read with try/catch.
-        // (The readRawScalarInt method does not need the netCDF blob.)
-        try
-        {
-            rawVariableValue = NWMTimeSeries.readRawScalarInt( variableVariable,
-                                                               indexOfFeature );
-        }
-        catch ( PreIngestException pie )
-        {
-            throw new PreIngestException( "While reading netCDF data at "
-                                          + netcdfFile.getLocation(), pie );
-        }
-
-        double variableValue;
-
-        VariableAttributes attributes = NWMTimeSeries.readVariableAttributes( variableVariable );
-
-        if ( rawVariableValue == attributes.getMissingValue()
-             || rawVariableValue == attributes.getFillValue() )
-        {
-            variableValue = MissingValues.DOUBLE;
-        }
-        else
-        {
-            // Unpack.
-            variableValue = NWMTimeSeries.unpack( rawVariableValue, attributes );
-        }
-
-        LOGGER.trace( "Read raw value {} for variable {} at {} returning as value {} from {}",
-                      rawVariableValue, variableName, validDatetime, variableValue, netcdfFile );
-
-        return Event.of( validDatetime, variableValue );
-    }
-
 
     /**
      * Find the given featureId index within the given netCDF blob using the
-     * given NWMProfile
+     * given NWMProfile and feature cache.
      * @param profile The profile to use (has name of feature variable).
      * @param netcdfFile The netCDF blob to search.
      * @param featureId The NWM feature id to search for.
+     * @param featureCache the NWM feature cache to search
      * @return The index of the featureID within the feature variable.
      */
 
-    private int findFeatureIndex( NWMProfile profile,
-                                  NetcdfFile netcdfFile,
-                                  int featureId )
+    private static int findFeatureIndex( NWMProfile profile,
+                                         NetcdfFile netcdfFile,
+                                         int featureId,
+                                         NWMFeatureCache featureCache )
     {
         final int NOT_FOUND = -1;
 
@@ -680,8 +633,9 @@ class NWMTimeSeries implements Closeable
         // but I think it is an unsafe assumption that the values are sorted
         // and we are looking for the index of the feature id to use for
         // getting a value from the actual variable needed.
-        int[] rawFeatures = readFeaturesAndCacheOrGetFeaturesFromCache( profile,
-                                                                        netcdfFile );
+        int[] rawFeatures = featureCache.readFeaturesAndCacheOrGetFeaturesFromCache( profile,
+                                                                                     netcdfFile );
+
         for ( int i = 0; i < rawFeatures.length; i++ )
         {
             if ( rawFeatures[i] == featureId )
@@ -702,108 +656,6 @@ class NWMTimeSeries implements Closeable
     }
 
 
-    /**
-     * Read features and cache in instance or read from the cache. Allows us to
-     * avoid multiple reads of same data.
-     * @param profile
-     * @param netcdfFile
-     * @return the raw 1D integer array of features, in original positions.
-     */
-
-    private int[] readFeaturesAndCacheOrGetFeaturesFromCache( NWMProfile profile,
-                                                              NetcdfFile netcdfFile )
-    {
-        String netcdfFileName = netcdfFile.getLocation();
-
-        // Check to see if this netcdf file has features already read
-        AtomicBoolean validated = this.validatedFeatures.get( netcdfFile );
-
-        if ( validated.get() )
-        {
-            LOGGER.debug( "Already read netCDF resource {}, returning cached.",
-                          netcdfFileName );
-            synchronized ( this.featureCacheGuard )
-            {
-                return this.featureCache.clone();
-            }
-        }
-        else
-        {
-            LOGGER.debug( "Did not yet read netCDF resource {}",
-                          netcdfFileName );
-        }
-
-        String featureVariableName = profile.getFeatureVariable();
-        Variable featureVariable = netcdfFile.findVariable( featureVariableName );
-        // Must find the location of the variable.
-        // Might be nice to assume these are sorted to do a binary search,
-        // but I think it is an unsafe assumption that the values are sorted
-        // and we are looking for the index of the feature id to use for
-        // getting a value from the actual variable needed.
-        try
-        {
-            LOGGER.debug( "Reading features from {}", netcdfFileName );
-            Array allFeatures = featureVariable.read();
-            int[] unsafeFeatures = (int[]) allFeatures.get1DJavaArray( DataType.INT );
-
-            if ( unsafeFeatures == null )
-            {
-                throw new IllegalStateException( "netCDF library returned null array when looking for NWM features." );
-            }
-
-            // Clone because we may have a reference to internal nc library data
-            int[] features = unsafeFeatures.clone();
-
-            // Discover if this Thread is responsible for setting featureCache
-            boolean previouslySet = this.featureCacheRaceResolver.getAndSet( true );
-
-            if ( !previouslySet )
-            {
-                LOGGER.debug( "About to set the features cache using {}",
-                              netcdfFileName );
-                // In charge of setting the feature cache, do so.
-                synchronized ( this.featureCacheGuard )
-                {
-                    this.featureCache = features.clone();
-                }
-                LOGGER.debug( "Finished setting the features cache using {}",
-                              netcdfFileName );
-            }
-            else
-            {
-                LOGGER.debug( "About to reading the features cache to compare {}",
-                              netcdfFileName );
-                // Not in charge of setting the feature cache, do a read of it.
-                int[] existingFeatures;
-                synchronized ( this.featureCacheGuard )
-                {
-                    existingFeatures = this.featureCache.clone();
-                }
-
-                // Compare the existing features with those just read, throw an
-                // exception if they differ (by content).
-                if ( Arrays.compare( features, existingFeatures ) != 0 )
-                {
-                    throw new PreIngestException(
-                            "Non-homogenous NWM data found. The features from "
-                            + netcdfFile.getLocation()
-                            + " do not match those found in a previously read "
-                            + "netCDF resource in the same NWM timeseries." );
-                }
-                LOGGER.debug( "Finished comparing {} to the features cache",
-                              netcdfFileName );
-            }
-
-            validated.set( true );
-
-            return features;
-        }
-        catch ( IOException ioe )
-        {
-            throw new PreIngestException( "Failed to read features from "
-                                          + netcdfFileName, ioe );
-        }
-    }
 
     private static Instant readValidDatetime( NWMProfile profile,
                                               NetcdfFile netcdfFile )
@@ -976,4 +828,261 @@ class NWMTimeSeries implements Closeable
         }
     }
 
+    private static final class NWMDoubleReader implements Callable<Event<Double>>
+    {
+        private final NWMProfile profile;
+        private final NetcdfFile netcdfFile;
+        private final int featureId;
+        private final String variableName;
+        private final Instant originalReferenceDatetime;
+        private final NWMFeatureCache featureCache;
+
+        NWMDoubleReader( NWMProfile profile,
+                         NetcdfFile netcdfFile,
+                         int featureId,
+                         String variableName,
+                         Instant originalReferenceDatetime,
+                         NWMFeatureCache featureCache )
+        {
+            Objects.requireNonNull( profile );
+            Objects.requireNonNull( netcdfFile );
+            Objects.requireNonNull( variableName );
+            Objects.requireNonNull( originalReferenceDatetime );
+            Objects.requireNonNull( featureCache );
+            this.profile = profile;
+            this.netcdfFile = netcdfFile;
+            this.featureId = featureId;
+            this.variableName = variableName;
+            this.originalReferenceDatetime = originalReferenceDatetime;
+            this.featureCache = featureCache;
+        }
+
+        @Override
+        public Event<Double> call()
+        {
+            return this.readDouble( this.profile,
+                                    this.netcdfFile,
+                                    this.featureId,
+                                    this.variableName,
+                                    this.originalReferenceDatetime,
+                                    this.featureCache );
+        }
+
+
+        private Event<Double> readDouble( NWMProfile profile,
+                                          NetcdfFile netcdfFile,
+                                          int featureId,
+                                          String variableName,
+                                          Instant originalReferenceDatetime,
+                                          NWMFeatureCache featureCache )
+        {
+            // Get the valid datetime
+            Instant validDatetime = NWMTimeSeries.readValidDatetime( profile,
+                                                                     netcdfFile );
+
+            // Get the reference datetime
+            Instant ncReferenceDatetime = NWMTimeSeries.readReferenceDatetime( profile,
+                                                                               netcdfFile );
+
+            // Validate: this referenceDatetime should match what was set originally.
+            // (This doesn't work for analysis_assim)
+            if ( !ncReferenceDatetime.equals( originalReferenceDatetime ) )
+            {
+                throw new PreIngestException( "The reference datetime "
+                                              + ncReferenceDatetime
+                                              + " from netCDF file "
+                                              + netcdfFile
+                                              + " does not match expected value "
+                                              + originalReferenceDatetime );
+            }
+
+            // Get the value at the variable in question.
+
+            int indexOfFeature = NWMTimeSeries.findFeatureIndex( profile,
+                                                                 netcdfFile,
+                                                                 featureId,
+                                                                 featureCache );
+
+            Variable variableVariable =  netcdfFile.findVariable( variableName );
+            int rawVariableValue;
+
+            // Preserve the context of which netCDF blob is read with try/catch.
+            // (The readRawScalarInt method does not need the netCDF blob.)
+            try
+            {
+                rawVariableValue = NWMTimeSeries.readRawScalarInt( variableVariable,
+                                                                   indexOfFeature );
+            }
+            catch ( PreIngestException pie )
+            {
+                throw new PreIngestException( "While reading netCDF data at "
+                                              + netcdfFile.getLocation(), pie );
+            }
+
+            double variableValue;
+
+            VariableAttributes attributes = NWMTimeSeries.readVariableAttributes( variableVariable );
+
+            if ( rawVariableValue == attributes.getMissingValue()
+                 || rawVariableValue == attributes.getFillValue() )
+            {
+                variableValue = MissingValues.DOUBLE;
+            }
+            else
+            {
+                // Unpack.
+                variableValue = NWMTimeSeries.unpack( rawVariableValue, attributes );
+            }
+
+            LOGGER.trace( "Read raw value {} for variable {} at {} returning as value {} from {}",
+                          rawVariableValue, variableName, validDatetime, variableValue, netcdfFile );
+
+            return Event.of( validDatetime, variableValue );
+        }
+    }
+
+
+    private static final class NWMFeatureCache
+    {
+        /**
+         * The contents of the feature variable for a given netCDF resource.
+         *
+         * This is a performance optimization (avoid re-reading the features).
+         * GuardedBy featureCacheGuard
+         */
+        private int[] featureCache;
+
+        /**
+         * First Thread to set to true wins
+         * and gets to write to the featureCache. Everyone else reads.
+         */
+        private final AtomicBoolean
+                featureCacheRaceResolver = new AtomicBoolean( false );
+
+        /**
+         * Guards featureCache variable.
+         */
+        private final Object featureCacheGuard = new Object();
+
+        /**
+         * Tracks which netCDF resoruces have had their features validated.
+         */
+        private final Map<NetcdfFile,AtomicBoolean> validatedFeatures;
+
+
+        NWMFeatureCache( Set<NetcdfFile> netcdfUris )
+        {
+            this.validatedFeatures = new HashMap<>( netcdfUris.size() );
+
+            for ( NetcdfFile netcdfFile : netcdfUris )
+            {
+                AtomicBoolean notValidated = new AtomicBoolean( false );
+                this.validatedFeatures.put( netcdfFile, notValidated );
+            }
+        }
+
+
+        /**
+         * Read features and cache in instance or read from the cache. Allows us to
+         * avoid multiple reads of same data.
+         * @param profile
+         * @param netcdfFile
+         * @return the raw 1D integer array of features, in original positions.
+         */
+
+        private int[] readFeaturesAndCacheOrGetFeaturesFromCache( NWMProfile profile,
+                                                                  NetcdfFile netcdfFile )
+        {
+            String netcdfFileName = netcdfFile.getLocation();
+
+            // Check to see if this netcdf file has features already read
+            AtomicBoolean validated = this.validatedFeatures.get( netcdfFile );
+
+            if ( validated.get() )
+            {
+                LOGGER.debug( "Already read netCDF resource {}, returning cached.",
+                              netcdfFileName );
+                synchronized ( this.featureCacheGuard )
+                {
+                    return this.featureCache.clone();
+                }
+            }
+            else
+            {
+                LOGGER.debug( "Did not yet read netCDF resource {}",
+                              netcdfFileName );
+            }
+
+            String featureVariableName = profile.getFeatureVariable();
+            Variable featureVariable = netcdfFile.findVariable( featureVariableName );
+            // Must find the location of the variable.
+            // Might be nice to assume these are sorted to do a binary search,
+            // but I think it is an unsafe assumption that the values are sorted
+            // and we are looking for the index of the feature id to use for
+            // getting a value from the actual variable needed.
+            try
+            {
+                LOGGER.debug( "Reading features from {}", netcdfFileName );
+                Array allFeatures = featureVariable.read();
+                int[] unsafeFeatures = (int[]) allFeatures.get1DJavaArray( DataType.INT );
+
+                if ( unsafeFeatures == null )
+                {
+                    throw new IllegalStateException( "netCDF library returned null array when looking for NWM features." );
+                }
+
+                // Clone because we may have a reference to internal nc library data
+                int[] features = unsafeFeatures.clone();
+
+                // Discover if this Thread is responsible for setting featureCache
+                boolean previouslySet = this.featureCacheRaceResolver.getAndSet( true );
+
+                if ( !previouslySet )
+                {
+                    LOGGER.debug( "About to set the features cache using {}",
+                                  netcdfFileName );
+                    // In charge of setting the feature cache, do so.
+                    synchronized ( this.featureCacheGuard )
+                    {
+                        this.featureCache = features.clone();
+                    }
+                    LOGGER.debug( "Finished setting the features cache using {}",
+                                  netcdfFileName );
+                }
+                else
+                {
+                    LOGGER.debug( "About to reading the features cache to compare {}",
+                                  netcdfFileName );
+                    // Not in charge of setting the feature cache, do a read of it.
+                    int[] existingFeatures;
+                    synchronized ( this.featureCacheGuard )
+                    {
+                        existingFeatures = this.featureCache.clone();
+                    }
+
+                    // Compare the existing features with those just read, throw an
+                    // exception if they differ (by content).
+                    if ( !Arrays.equals( features, existingFeatures ) )
+                    {
+                        throw new PreIngestException(
+                                "Non-homogenous NWM data found. The features from "
+                                + netcdfFile.getLocation()
+                                + " do not match those found in a previously read "
+                                + "netCDF resource in the same NWM timeseries." );
+                    }
+                    LOGGER.debug( "Finished comparing {} to the features cache",
+                                  netcdfFileName );
+                }
+
+                validated.set( true );
+
+                return features;
+            }
+            catch ( IOException ioe )
+            {
+                throw new PreIngestException( "Failed to read features from "
+                                              + netcdfFileName, ioe );
+            }
+        }
+    }
 }
