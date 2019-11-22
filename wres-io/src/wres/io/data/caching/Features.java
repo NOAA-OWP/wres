@@ -204,8 +204,8 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
             Integer comid = dataProvider.getInt( "comid" );
             String gageId = dataProvider.getString( "gage_id" );
             String huc = dataProvider.getString( "huc" );
-            Float longitude = dataProvider.getFloat( "longitude" );
-            Float latitude = dataProvider.getFloat( "latitude" );
+            Double longitude = dataProvider.getDouble( "longitude" );
+            Double latitude = dataProvider.getDouble( "latitude" );
             return new FeatureDetails.FeatureKey( comid, lid, gageId, huc, longitude, latitude );
         }
     }
@@ -808,8 +808,10 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
             {
                 DataScripter script = new DataScripter(  );
                 script.setHighPriority( true );
-                script.retryOnSqlState( "40001" );
-                script.retryOnSqlState( "23505" );
+
+                script.retryOnSerializationFailure();
+                script.retryOnUniqueViolation();
+
                 script.setUseTransaction( true );
                 script.addTab().addLine("INSERT INTO wres.VariableFeature (variable_id, feature_id)");
                 script.addTab().addLine( "SELECT ?, ?" );
@@ -859,9 +861,12 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
             throws SQLException
     {
         DataScripter script = new DataScripter();
-        script.retryOnSqlState( "40001" );
-        script.retryOnSqlState( "23505" );
+
+        script.retryOnSerializationFailure();
+        script.retryOnUniqueViolation();
+
         script.setUseTransaction( true );
+
         script.addLine( "INSERT INTO wres.VariableFeature ( variable_id, feature_id )" );
         script.addLine( "SELECT ?, F.feature_id" );
         script.addArgument( variableId );

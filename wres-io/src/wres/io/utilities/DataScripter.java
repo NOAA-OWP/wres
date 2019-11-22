@@ -72,6 +72,26 @@ public class DataScripter extends ScriptBuilder
         this.sqlStatesToRetry.add( sqlState );
     }
 
+    public void retryOnSerializationFailure()
+    {
+        if ( this.sqlStatesToRetry.equals( Collections.emptySet() ) )
+        {
+            this.sqlStatesToRetry = new HashSet<>( 2 );
+        }
+
+        this.sqlStatesToRetry.add( "40001" );
+    }
+
+    public void retryOnUniqueViolation()
+    {
+        if ( this.sqlStatesToRetry.equals( Collections.emptySet() ) )
+        {
+            this.sqlStatesToRetry = new HashSet<>( 2 );
+        }
+
+        this.sqlStatesToRetry.add( "23505" );
+    }
+
     /**
      * Executes the built script with the given parameters
      * @param parameters The values to use as parameters to the built script

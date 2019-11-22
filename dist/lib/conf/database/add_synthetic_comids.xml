@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="Add Synthetic COMID Flag" author="Christopher Tubbs">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists schemaName="wres" tableName="Feature" columnName="has_synthetic_comid" />
+            </not>
+        </preConditions>
+        <addColumn schemaName="wres" tableName="Feature">
+            <column name="has_synthetic_comid" type="BOOLEAN" defaultValue="false"
+                    remarks="Indicates that the COMID bears no relation to any formal reach definition" />
+        </addColumn>
+    </changeSet>
+    <changeSet id="Add Synthetic COMIDs" author="Christopher Tubbs">
+        <sqlFile path="add_synthetic_comids.sql" relativeToChangelogFile="true" />
+    </changeSet>
+</databaseChangeLog>
