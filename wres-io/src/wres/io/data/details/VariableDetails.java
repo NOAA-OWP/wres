@@ -79,9 +79,12 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 	protected DataScripter getInsertSelect()
 	{
         DataScripter script = new DataScripter();
+
         script.setUseTransaction( true );
-        script.retryOnSqlState( "40001" );
-        script.retryOnSqlState( "23505" );
+
+		script.retryOnSerializationFailure();
+		script.retryOnUniqueViolation();
+
         script.setHighPriority( true );
 
         script.addLine( "INSERT INTO wres.Variable ( variable_name )" );

@@ -2941,8 +2941,10 @@ public class Project
     {
         DataScripter script = new DataScripter();
         script.setUseTransaction( true );
-        script.retryOnSqlState( "40001" );
-        script.retryOnSqlState( "23505" );
+
+        script.retryOnSerializationFailure();
+        script.retryOnUniqueViolation();
+
         script.setHighPriority( true );
 
         script.addLine( "INSERT INTO wres.Project (project_name, input_code)" );

@@ -197,9 +197,12 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 	protected DataScripter getInsertSelect()
 	{
         DataScripter script = new DataScripter();
+
         script.setUseTransaction( true );
-        script.retryOnSqlState( "40001" );
-        script.retryOnSqlState( "23505" );
+
+        script.retryOnSerializationFailure();
+        script.retryOnUniqueViolation();
+
         script.setHighPriority( true );
 
 		script.addTab().addLine("INSERT INTO wres.Ensemble(ensemble_name, qualifier_id, ensemblemember_id)");

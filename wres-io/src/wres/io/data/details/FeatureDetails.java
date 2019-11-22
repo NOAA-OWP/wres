@@ -35,8 +35,8 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
 	private String state = null;
 	private String huc = null;
 
-    private Float longitude = null;
-	private Float latitude = null;
+    private Double longitude = null;
+	private Double latitude = null;
 	private Integer nwmIndex = null;
 
 	private List<String> aliases = null;
@@ -79,8 +79,8 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
         if (this.longitude != null && this.latitude != null)
         {
             coordinateSelection = new CoordinateSelection(
-                    this.longitude,
-                    this.latitude,
+                    this.longitude.floatValue(),
+                    this.latitude.floatValue(),
                     0.0f );
         }
 
@@ -346,12 +346,12 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
         }
     }
 
-    public Float getLongitude()
+    public Double getLongitude()
     {
         return longitude;
     }
 
-    public void setLongitude(Float longitude)
+    public void setLongitude(Double longitude)
     {
         // Only set the value if you won't be erasing a value
         if (this.longitude == null || longitude != null)
@@ -360,12 +360,12 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
         }
     }
 
-    public Float getLatitude()
+    public Double getLatitude()
     {
         return latitude;
     }
 
-    public void setLatitude(Float latitude)
+    public void setLatitude(Double latitude)
     {
         // Only set the value if you won't be erasing a value
         if (this.latitude == null || latitude != null)
@@ -386,8 +386,10 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
         DataScripter script = new DataScripter();
         this.addInsert( script );
         script.setUseTransaction( true );
-        script.retryOnSqlState( "40001" );
-        script.retryOnSqlState( "23505" );
+
+        script.retryOnSerializationFailure();
+        script.retryOnUniqueViolation();
+
         script.setHighPriority( true );
         return script;
     }
@@ -910,10 +912,10 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
         private final String lid;
         private final String gageID;
         private final String huc;
-        private final Float longitude;
-        private final Float latitude;
+        private final Double longitude;
+        private final Double latitude;
 
-        public FeatureKey (Integer comid, String lid, String gageID, String huc, Float longitude, Float latitude)
+        public FeatureKey (Integer comid, String lid, String gageID, String huc, Double longitude, Double latitude)
         {
             this.comid = comid;
             this.lid = lid;

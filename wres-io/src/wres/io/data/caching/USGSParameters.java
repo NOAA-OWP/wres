@@ -1,7 +1,6 @@
 package wres.io.data.caching;
 
 import java.sql.SQLException;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -455,9 +454,11 @@ public class USGSParameters
                     MeasurementUnits.getMeasurementUnitID( measurementUnit );
 
             DataScripter script = new DataScripter();
-            script.retryOnSqlState( "40001" );
-            script.retryOnSqlState( "23505" );
+
+            script.retryOnSerializationFailure();
+            script.retryOnUniqueViolation();
             script.setUseTransaction( true );
+
             script.addLine( "INSERT INTO wres.USGSParameter(" );
             script.addTab().addLine( "measurementunit_id," );
             script.addTab().addLine( "aggregation," );
