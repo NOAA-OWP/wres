@@ -4,6 +4,7 @@ import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -185,6 +186,7 @@ public class NWMTimeSeriesTest
     // To try this against the real service, use a new date, remove @Ignore
     @Ignore
     public void readForecastFromNomads()
+            throws InterruptedException, ExecutionException
     {
         // To see it fail to find a file, change blobCount to 25
         NWMProfile nwmProfile = new NWMProfile( 2,
@@ -217,6 +219,7 @@ public class NWMTimeSeriesTest
     // If you want to try this against real service, set FQDN, remove @Ignore.
     @Ignore
     public void readNWM20ShortRangeForecastFromDstore()
+            throws InterruptedException, ExecutionException
     {
         // To see it fail to find a file, change blobCount to 25
         NWMProfile nwmProfile = new NWMProfile( 18,
@@ -248,6 +251,7 @@ public class NWMTimeSeriesTest
     // If you want to try this against real service, set FQDN, remove @Ignore.
     @Ignore
     public void readNWM12ShortRangeForecastFromDstore()
+            throws InterruptedException, ExecutionException
     {
         // To see it fail to find a file, change blobCount to 25
         NWMProfile nwmProfile = new NWMProfile( 18,
@@ -280,6 +284,7 @@ public class NWMTimeSeriesTest
     // If you want to try this against real service, set FQDN, remove @Ignore.
     @Ignore
     public void readNWM11ShortRangeForecastFromDstore()
+            throws InterruptedException, ExecutionException
     {
         // To see it fail to find a file, change blobCount to 25
         NWMProfile nwmProfile = new NWMProfile( 18,
@@ -311,6 +316,7 @@ public class NWMTimeSeriesTest
     @Ignore // If you want to try this against real service, remove @Ignore.
     // Fails because NWM 1.0 had .nc.gz extension.
     public void readNWM10ShortRangeForecastFromDstore()
+            throws InterruptedException, ExecutionException
     {
         // To see it fail to find a file, change blobCount to 25
         NWMProfile nwmProfile = new NWMProfile( 18,
@@ -340,6 +346,7 @@ public class NWMTimeSeriesTest
     @Test
     @Ignore // If you want to try this against real volume, remove @Ignore.
     public void readForecastFromFilesystem()
+            throws InterruptedException, ExecutionException
     {
         // To see it fail to find a file, change blobCount to 25
         NWMProfile nwmProfile = new NWMProfile( 18,
