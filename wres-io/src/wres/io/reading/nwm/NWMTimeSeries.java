@@ -732,23 +732,33 @@ class NWMTimeSeries implements Closeable
                                        offsetToAdd );
     }
 
-    private static int readRawScalarInt( Variable variable, int index )
+    private static int[] readRawInts( Variable variable, int[] indices )
     {
-        int[] origin = { index };
-        int[] shape = { 1 };
+        Objects.requireNonNull( variable );
+        Objects.requireNonNull( indices );
+
+        if ( indices.length < 1 )
+        {
+            throw new IllegalArgumentException( "Must pass at least one index." );
+        }
+
+        int[] origin = indices.clone();
+        int[] shape = { origin.length };
+
         try
         {
             Array array = variable.read( origin, shape );
             int[] values = ( int[] ) array.get1DJavaArray( DataType.INT );
 
-            if ( values.length != 1 )
+            if ( values.length != origin.length )
             {
                 throw new PreIngestException(
-                        "Expected to read exactly one value, instead got "
+                        "Expected to read exactly " + origin.length + ""
+                        + " values, instead got "
                         + values.length );
             }
 
-            return values[0];
+            return values;
         }
         catch ( IOException | InvalidRangeException e )
         {
@@ -1000,8 +1010,8 @@ class NWMTimeSeries implements Closeable
             // (The readRawScalarInt method does not need the netCDF blob.)
             try
             {
-                rawVariableValue = NWMTimeSeries.readRawScalarInt( variableVariable,
-                                                                   indexOfFeature );
+                rawVariableValue = NWMTimeSeries.readRawInts( variableVariable,
+                                                              new int[] { indexOfFeature } )[0];
             }
             catch ( PreIngestException pie )
             {
@@ -1058,7 +1068,7 @@ class NWMTimeSeries implements Closeable
         /**
          * Guards featureCache variable.
          */
-        private final Object featureCacheGuard = new Object();
+        private final CountDownLatch featureCacheGuard = new CountDownLatch( 1 );
 
         /**
          * Tracks which netCDF resoruces have had their features validated.
@@ -1098,10 +1108,17 @@ class NWMTimeSeries implements Closeable
             {
                 LOGGER.trace( "Already read netCDF resource {}, returning cached.",
                               netcdfFileName );
-                synchronized ( this.featureCacheGuard )
+                try
                 {
-                    return this.featureCache.clone();
+                    this.featureCacheGuard.await();
                 }
+                catch ( InterruptedException ie )
+                {
+                    LOGGER.warn( "Interrupted while waiting for feature cache to be written", ie );
+                    Thread.currentThread().interrupt();
+                }
+
+                return this.featureCache.clone();
             }
             else
             {
@@ -1137,11 +1154,12 @@ class NWMTimeSeries implements Closeable
                 {
                     LOGGER.debug( "About to set the features cache using {}",
                                   netcdfFileName );
+
                     // In charge of setting the feature cache, do so.
-                    synchronized ( this.featureCacheGuard )
-                    {
-                        this.featureCache = features.clone();
-                    }
+                    this.featureCache = features.clone();
+
+                    // Tell waiting Threads that featureCache hath been written.
+                    this.featureCacheGuard.countDown();
                     LOGGER.debug( "Finished setting the features cache using {}",
                                   netcdfFileName );
                 }
@@ -1151,17 +1169,24 @@ class NWMTimeSeries implements Closeable
                                   netcdfFileName );
                     // Not in charge of setting the feature cache, do a read of it.
                     int[] existingFeatures;
-                    synchronized ( this.featureCacheGuard )
+                    try
                     {
-                        existingFeatures = this.featureCache.clone();
+                        this.featureCacheGuard.await();
                     }
+                    catch ( InterruptedException ie )
+                    {
+                        LOGGER.warn( "Interrupted while waiting for feature cache to be written", ie );
+                        Thread.currentThread().interrupt();
+                    }
+
+                    existingFeatures = this.featureCache.clone();
 
                     // Compare the existing features with those just read, throw an
                     // exception if they differ (by content).
                     if ( !Arrays.equals( features, existingFeatures ) )
                     {
                         throw new PreIngestException(
-                                "Non-homogenous NWM data found. The features from "
+                                "Non-homogeneous NWM data found. The features from "
                                 + netcdfFile.getLocation()
                                 + " do not match those found in a previously read "
                                 + "netCDF resource in the same NWM timeseries." );
