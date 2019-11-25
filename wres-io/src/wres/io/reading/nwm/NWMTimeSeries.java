@@ -44,7 +44,6 @@ import wres.datamodel.MissingValues;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
-import wres.io.reading.IngestResult;
 import wres.io.reading.PreIngestException;
 import wres.system.SystemSettings;
 
@@ -91,8 +90,6 @@ class NWMTimeSeries implements Closeable
      * To parallelize requests for data from netCDF resources.
      */
     private final ThreadPoolExecutor readExecutor;
-    private final BlockingQueue<Future<Event<Double>>> reads;
-    private final CountDownLatch startGettingResults;
 
     /**
      *
@@ -148,8 +145,6 @@ class NWMTimeSeries implements Closeable
                                                 nwmReaderThreadFactory );
 
         this.readExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.AbortPolicy() );
-        this.reads = new ArrayBlockingQueue<>( SystemSettings.getMaximumWebClientThreads() );
-        this.startGettingResults = new CountDownLatch( SystemSettings.getMaximumWebClientThreads() );
     }
 
 
@@ -590,32 +585,34 @@ class NWMTimeSeries implements Closeable
     TimeSeries<Double> readTimeSeries( int featureId, String variableName )
             throws InterruptedException, ExecutionException
     {
+        BlockingQueue<Future<Event<Double>>> reads =
+                new ArrayBlockingQueue<>( SystemSettings.getMaximumWebClientThreads() );
+        CountDownLatch startGettingResults = new CountDownLatch( SystemSettings.getMaximumWebClientThreads() );
         SortedSet<Event<Double>> events = new TreeSet<>();
 
         for ( NetcdfFile netcdfFile : this.getNetcdfFiles() )
         {
-            NWMDoubleReader reader = new NWMDoubleReader(  this.getProfile(),
-                                                           netcdfFile,
-                                                           featureId,
-                                                           variableName,
-                                                           this.getReferenceDatetime(),
-                                                           this.featureCache );
+            NWMDoubleReader reader = new NWMDoubleReader( this.getProfile(),
+                                                          netcdfFile,
+                                                          featureId,
+                                                          variableName,
+                                                          this.getReferenceDatetime(),
+                                                          this.featureCache );
             Future<Event<Double>> future = this.readExecutor.submit( reader );
-            this.reads.add( future );
+            reads.add( future );
 
-            this.startGettingResults.countDown();
+            startGettingResults.countDown();
 
-            if ( this.startGettingResults.getCount() <= 0 )
+            if ( startGettingResults.getCount() <= 0 )
             {
-                Event<Double> read = this.reads.take()
-                                               .get();
+                Event<Double> read = reads.take()
+                                          .get();
                 events.add( read );
             }
-
         }
 
         // Finish getting the remainder of events being read.
-        for ( Future<Event<Double>> reading : this.reads )
+        for ( Future<Event<Double>> reading : reads )
         {
             Event<Double> read = reading.get();
             events.add( read );
@@ -799,9 +796,30 @@ class NWMTimeSeries implements Closeable
                              ioe );
             }
         }
+
+        this.readExecutor.shutdown();
+
+        try
+        {
+            this.readExecutor.awaitTermination( 100, TimeUnit.MILLISECONDS );
+        }
+        catch ( InterruptedException ie )
+        {
+            List<Runnable> abandoned = this.readExecutor.shutdownNow();
+            LOGGER.warn( "{} shutdown interrupted, abandoned tasks: {}",
+                         this.readExecutor,
+                         abandoned,
+                         ie );
+            Thread.currentThread().interrupt();
+        }
+
+        if ( !this.readExecutor.isShutdown() )
+        {
+            List<Runnable> abandoned = this.readExecutor.shutdownNow();
+            LOGGER.warn( "{} did not shut down quickly, abandoned tasks: {}",
+                         this.readExecutor, abandoned );
+        }
     }
-
-
 
     /**
      * Attributes that have been actually read from a netCDF Variable.
