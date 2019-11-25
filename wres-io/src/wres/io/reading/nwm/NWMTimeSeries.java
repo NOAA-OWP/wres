@@ -67,6 +67,8 @@ class NWMTimeSeries implements Closeable
     private static final DateTimeFormatter NWM_DATE_FORMATTER = DateTimeFormatter.ofPattern( "yyyyMMdd" );
     private static final DateTimeFormatter NWM_HOUR_FORMATTER = DateTimeFormatter.ofPattern( "HH" );
 
+    private static final int CONCURRENT_READS = 6;
+
     private final NWMProfile profile;
 
     /** The reference datetime of this NWM Forecast */
@@ -90,6 +92,7 @@ class NWMTimeSeries implements Closeable
      * To parallelize requests for data from netCDF resources.
      */
     private final ThreadPoolExecutor readExecutor;
+
 
     /**
      *
@@ -118,33 +121,67 @@ class NWMTimeSeries implements Closeable
         LOGGER.debug( "Attempting to open NWM TimeSeries with reference datetime {} and profile {} from baseUri {}.",
                       referenceDatetime, profile, baseUri );
 
-        // Open all the relevant files during construction, or fail.
-        for ( URI netcdfUri : netcdfUris )
-        {
-            NetcdfFile netcdfFile = NWMTimeSeries.openFile( netcdfUri );
-            this.netcdfFiles.add( netcdfFile );
-        }
-
-        this.featureCache = new NWMFeatureCache( this.netcdfFiles );
-        LOGGER.debug( "Successfully opened NWM TimeSeries with reference datetime {} and profile {} from baseUri {}.",
-                      referenceDatetime, profile, baseUri );
-
         ThreadFactory nwmReaderThreadFactory = new BasicThreadFactory.Builder()
                 .namingPattern( "NWMTimeSeries Reader" )
                 .build();
 
         // See comments in WebSource class regarding the setup of the executor,
         // queue, and latch.
-        BlockingQueue<Runnable>
-                nwmReaderQueue = new ArrayBlockingQueue<>( SystemSettings.getMaximumWebClientThreads() );
-        this.readExecutor = new ThreadPoolExecutor( SystemSettings.getMaximumWebClientThreads(),
-                                                SystemSettings.getMaximumWebClientThreads(),
-                                                SystemSettings.poolObjectLifespan(),
-                                                TimeUnit.MILLISECONDS,
-                                                nwmReaderQueue,
-                                                nwmReaderThreadFactory );
-
+        BlockingQueue<Runnable> nwmReaderQueue =
+                new ArrayBlockingQueue<>( CONCURRENT_READS );
+        this.readExecutor = new ThreadPoolExecutor( CONCURRENT_READS,
+                                                    CONCURRENT_READS,
+                                                    SystemSettings.poolObjectLifespan(),
+                                                    TimeUnit.MILLISECONDS,
+                                                    nwmReaderQueue,
+                                                    nwmReaderThreadFactory );
         this.readExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.AbortPolicy() );
+        BlockingQueue<Future<NetcdfFile>> openBlobQueue =
+                new ArrayBlockingQueue<>( CONCURRENT_READS );
+        CountDownLatch startGettingResults =
+                new CountDownLatch( CONCURRENT_READS );
+
+        try
+        {
+            // Open all the relevant files during construction, or fail.
+            for ( URI netcdfUri : netcdfUris )
+            {
+                NWMResourceOpener opener = new NWMResourceOpener( netcdfUri );
+                Future<NetcdfFile> futureBlob = this.readExecutor.submit( opener );
+                openBlobQueue.add( futureBlob );
+                startGettingResults.countDown();
+
+                if ( startGettingResults.getCount() <= 0 )
+                {
+                    NetcdfFile netcdfFile = openBlobQueue.take()
+                                                         .get();
+                    this.netcdfFiles.add( netcdfFile );
+                }
+            }
+
+            // Finish getting the remainder of netCDF resources being opened.
+            for ( Future<NetcdfFile> opening : openBlobQueue )
+            {
+                NetcdfFile netcdfFile = opening.get();
+                this.netcdfFiles.add( netcdfFile );
+            }
+        }
+        catch ( InterruptedException ie )
+        {
+            LOGGER.warn( "Interrupted while opening netCDF resources.", ie );
+            this.close();
+            Thread.currentThread().interrupt();
+        }
+        catch ( ExecutionException ee )
+        {
+            this.close();
+            throw new PreIngestException( "Failed to open netCDF resource.",
+                                          ee );
+        }
+
+        this.featureCache = new NWMFeatureCache( this.netcdfFiles );
+        LOGGER.debug( "Successfully opened NWM TimeSeries with reference datetime {} and profile {} from baseUri {}.",
+                      referenceDatetime, profile, baseUri );
     }
 
 
@@ -238,19 +275,6 @@ class NWMTimeSeries implements Closeable
         return Collections.unmodifiableSet( uris );
     }
 
-    private static NetcdfFile openFile( URI netcdfUri )
-    {
-        try
-        {
-            return NetcdfFile.open( netcdfUri.toString() );
-        }
-        catch ( IOException ioe )
-        {
-            throw new PreIngestException( "Failed to open netCDF file "
-                                          + netcdfUri, ioe );
-        }
-    }
-
     NWMProfile getProfile()
     {
         return this.profile;
@@ -298,7 +322,8 @@ class NWMTimeSeries implements Closeable
 
             for ( Attribute globalAttribute : globalAttributes )
             {
-                if ( globalAttribute.getShortName().equals( memberNumberAttributeName ) )
+                if ( globalAttribute.getShortName()
+                                    .equals( memberNumberAttributeName ) )
                 {
                     ncEnsembleNumber = globalAttribute.getNumericValue()
                                                       .intValue();
@@ -500,7 +525,7 @@ class NWMTimeSeries implements Closeable
 
                 if ( type.equals( DataType.FLOAT ) )
                 {
-                    LOGGER.debug( "Promoting float to double for {}", attribute );
+                    LOGGER.trace( "Promoting float to double for {}", attribute );
                     return attribute.getNumericValue()
                                     .doubleValue();
                 }
@@ -586,8 +611,9 @@ class NWMTimeSeries implements Closeable
             throws InterruptedException, ExecutionException
     {
         BlockingQueue<Future<Event<Double>>> reads =
-                new ArrayBlockingQueue<>( SystemSettings.getMaximumWebClientThreads() );
-        CountDownLatch startGettingResults = new CountDownLatch( SystemSettings.getMaximumWebClientThreads() );
+                new ArrayBlockingQueue<>( CONCURRENT_READS );
+        CountDownLatch startGettingResults = new CountDownLatch(
+                CONCURRENT_READS );
         SortedSet<Event<Double>> events = new TreeSet<>();
 
         for ( NetcdfFile netcdfFile : this.getNetcdfFiles() )
@@ -865,6 +891,33 @@ class NWMTimeSeries implements Closeable
         }
     }
 
+
+    /**
+     * Task that performs NetcdfFile.open on given URI.
+     */
+
+    private static final class NWMResourceOpener implements Callable<NetcdfFile>
+    {
+        private final URI uri;
+
+        NWMResourceOpener( URI uri )
+        {
+            Objects.requireNonNull( uri );
+            this.uri = uri;
+        }
+
+        @Override
+        public NetcdfFile call() throws IOException
+        {
+            return NetcdfFile.open( this.uri.toString() );
+        }
+    }
+
+
+    /**
+     * Task that reads a single event from given NWM profile, variables, etc.
+     */
+
     private static final class NWMDoubleReader implements Callable<Event<Double>>
     {
         private final NWMProfile profile;
@@ -979,6 +1032,12 @@ class NWMTimeSeries implements Closeable
     }
 
 
+    /**
+     * Cache that stores a single copy of a feature array for a Set of netCDFs.
+     * But also compares the feature array once for each netCDF resource to
+     * validate that it is in fact an exact copy.
+     */
+
     private static final class NWMFeatureCache
     {
         /**
@@ -1037,7 +1096,7 @@ class NWMTimeSeries implements Closeable
 
             if ( validated.get() )
             {
-                LOGGER.debug( "Already read netCDF resource {}, returning cached.",
+                LOGGER.trace( "Already read netCDF resource {}, returning cached.",
                               netcdfFileName );
                 synchronized ( this.featureCacheGuard )
                 {
@@ -1046,7 +1105,7 @@ class NWMTimeSeries implements Closeable
             }
             else
             {
-                LOGGER.debug( "Did not yet read netCDF resource {}",
+                LOGGER.trace( "Did not yet read netCDF resource {}",
                               netcdfFileName );
             }
 
@@ -1088,7 +1147,7 @@ class NWMTimeSeries implements Closeable
                 }
                 else
                 {
-                    LOGGER.debug( "About to reading the features cache to compare {}",
+                    LOGGER.debug( "About to read the features cache to compare {}",
                                   netcdfFileName );
                     // Not in charge of setting the feature cache, do a read of it.
                     int[] existingFeatures;
