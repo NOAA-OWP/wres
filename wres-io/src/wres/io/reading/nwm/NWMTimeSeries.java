@@ -8,6 +8,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -301,7 +302,9 @@ class NWMTimeSeries implements Closeable
     }
 
 
-    TimeSeries<Ensemble> readEnsembleTimeSeries( int featureId, String variableName )
+    /** Currently only compiling, not supported yet with multiple features */
+    Map<Integer,TimeSeries<?>> readEnsembleTimeSerieses( int[] featureIds,
+                                                         String variableName )
     {
         final int NOT_FOUND = Integer.MIN_VALUE;
 
@@ -356,20 +359,25 @@ class NWMTimeSeries implements Closeable
 
             NWMDoubleReader reader = new NWMDoubleReader( this.getProfile(),
                                                           netcdfFile,
-                                                          featureId,
+                                                          featureIds,
                                                           variableName,
                                                           this.getReferenceDatetime(),
                                                           this.featureCache );
-            Event<Double> event = reader.call();
-            double[] ensembleRow = ensembleValues.get( event.getTime() );
+            List<EventForNWMFeature<Double>> event = reader.call();
+            Instant eventDatetime = event.get( 0 )
+                                         .getEvent()
+                                         .getTime();
+            double[] ensembleRow = ensembleValues.get( eventDatetime );
 
             if ( Objects.isNull( ensembleRow ) )
             {
                 ensembleRow = new double[memberCount];
-                ensembleValues.put( event.getTime(), ensembleRow );
+                ensembleValues.put( eventDatetime, ensembleRow );
             }
 
-            ensembleRow[ncEnsembleNumber - 1] = event.getValue();
+            ensembleRow[ncEnsembleNumber - 1] = event.get( 0 )
+                                                     .getEvent()
+                                                     .getValue();
         }
 
         if ( ensembleValues.size() != validDatetimeCount )
@@ -391,8 +399,8 @@ class NWMTimeSeries implements Closeable
             sortedEvents.add( ensembleEvent );
         }
 
-        return TimeSeries.of( this.getReferenceDatetime(),
-                              sortedEvents );
+        return Map.of( featureIds[0], TimeSeries.of( this.getReferenceDatetime(),
+                                                    sortedEvents ) );
     }
 
 
@@ -601,52 +609,80 @@ class NWMTimeSeries implements Closeable
 
 
     /**
-     * Read a TimeSeries from across several netCDF single-validdatetime files.
-     * @param featureId The NWM feature ID.
+     * Read TimeSerieses from across several netCDF single-validdatetime files.
+     * @param featureIds The NWM feature IDs to read.
      * @param variableName The NWM variable name.
-     * @return a TimeSeries containing the events.
+     * @return a map of feature id to TimeSeries containing the events.
      */
 
-    TimeSeries<Double> readTimeSeries( int featureId, String variableName )
+    Map<Integer,TimeSeries<?>> readTimeSerieses( int[] featureIds,
+                                                 String variableName )
             throws InterruptedException, ExecutionException
     {
-        BlockingQueue<Future<Event<Double>>> reads =
+        BlockingQueue<Future<List<EventForNWMFeature<Double>>>> reads =
                 new ArrayBlockingQueue<>( CONCURRENT_READS );
         CountDownLatch startGettingResults = new CountDownLatch(
                 CONCURRENT_READS );
-        SortedSet<Event<Double>> events = new TreeSet<>();
+        Map<Integer,SortedSet<Event<Double>>> events = new HashMap<>( featureIds.length );
+
+        for ( int featureId : featureIds )
+        {
+            SortedSet<Event<Double>> emptyList = new TreeSet<>();
+            events.put( featureId, emptyList );
+        }
 
         for ( NetcdfFile netcdfFile : this.getNetcdfFiles() )
         {
             NWMDoubleReader reader = new NWMDoubleReader( this.getProfile(),
                                                           netcdfFile,
-                                                          featureId,
+                                                          featureIds.clone(),
                                                           variableName,
                                                           this.getReferenceDatetime(),
                                                           this.featureCache );
-            Future<Event<Double>> future = this.readExecutor.submit( reader );
+            Future<List<EventForNWMFeature<Double>>> future =
+                    this.readExecutor.submit( reader );
             reads.add( future );
 
             startGettingResults.countDown();
 
             if ( startGettingResults.getCount() <= 0 )
             {
-                Event<Double> read = reads.take()
-                                          .get();
-                events.add( read );
+                List<EventForNWMFeature<Double>> read = reads.take()
+                                                       .get();
+                for ( EventForNWMFeature<Double> event : read )
+                {
+                    // The reads are across features, we want data by feature.
+                    SortedSet<Event<Double>> sortedEvents = events.get( event.getFeatureId() );
+                    sortedEvents.add( event.getEvent() );
+                }
             }
         }
 
         // Finish getting the remainder of events being read.
-        for ( Future<Event<Double>> reading : reads )
+        for ( Future<List<EventForNWMFeature<Double>>> reading : reads )
         {
-            Event<Double> read = reading.get();
-            events.add( read );
+            List<EventForNWMFeature<Double>> read = reading.get();
+
+            for ( EventForNWMFeature<Double> event : read )
+            {
+                // The reads are across features, we want data by feature.
+                SortedSet<Event<Double>> sortedEvents = events.get( event.getFeatureId() );
+                sortedEvents.add( event.getEvent() );
+            }
         }
 
-        return TimeSeries.of( this.getReferenceDatetime(),
-                              ReferenceTimeType.T0,
-                              events );
+        Map<Integer,TimeSeries<Double>> allTimeSerieses = new HashMap<>( featureIds.length );
+
+        // Create each TimeSeries
+        for ( Map.Entry<Integer,SortedSet<Event<Double>>> series : events.entrySet() )
+        {
+            TimeSeries<Double> timeSeries = TimeSeries.of( this.getReferenceDatetime(),
+                                                           ReferenceTimeType.T0,
+                                                           series.getValue() );
+            allTimeSerieses.put( series.getKey(), timeSeries );
+        }
+
+        return Collections.unmodifiableMap( allTimeSerieses );
     }
 
 
@@ -923,23 +959,46 @@ class NWMTimeSeries implements Closeable
         }
     }
 
+    private static final class EventForNWMFeature<T>
+    {
+        private final int featureId;
+        private final Event<T> event;
+
+        EventForNWMFeature( int featureId, Event<T> event )
+        {
+            Objects.requireNonNull( event );
+            this.featureId = featureId;
+            this.event = event;
+        }
+
+        int getFeatureId()
+        {
+            return featureId;
+        }
+
+        Event<T> getEvent()
+        {
+            return this.event;
+        }
+    }
+
 
     /**
      * Task that reads a single event from given NWM profile, variables, etc.
      */
 
-    private static final class NWMDoubleReader implements Callable<Event<Double>>
+    private static final class NWMDoubleReader implements Callable<List<EventForNWMFeature<Double>>>
     {
         private final NWMProfile profile;
         private final NetcdfFile netcdfFile;
-        private final int featureId;
+        private final int[] featureIds;
         private final String variableName;
         private final Instant originalReferenceDatetime;
         private final NWMFeatureCache featureCache;
 
         NWMDoubleReader( NWMProfile profile,
                          NetcdfFile netcdfFile,
-                         int featureId,
+                         int[] featureIds,
                          String variableName,
                          Instant originalReferenceDatetime,
                          NWMFeatureCache featureCache )
@@ -951,30 +1010,29 @@ class NWMTimeSeries implements Closeable
             Objects.requireNonNull( featureCache );
             this.profile = profile;
             this.netcdfFile = netcdfFile;
-            this.featureId = featureId;
+            this.featureIds = featureIds;
             this.variableName = variableName;
             this.originalReferenceDatetime = originalReferenceDatetime;
             this.featureCache = featureCache;
         }
 
         @Override
-        public Event<Double> call()
+        public List<EventForNWMFeature<Double>> call()
         {
-            return this.readDouble( this.profile,
-                                    this.netcdfFile,
-                                    this.featureId,
-                                    this.variableName,
-                                    this.originalReferenceDatetime,
-                                    this.featureCache );
+            return this.readDoubles( this.profile,
+                                     this.netcdfFile,
+                                     this.featureIds,
+                                     this.variableName,
+                                     this.originalReferenceDatetime,
+                                     this.featureCache );
         }
 
-
-        private Event<Double> readDouble( NWMProfile profile,
-                                          NetcdfFile netcdfFile,
-                                          int featureId,
-                                          String variableName,
-                                          Instant originalReferenceDatetime,
-                                          NWMFeatureCache featureCache )
+        private List<EventForNWMFeature<Double>> readDoubles( NWMProfile profile,
+                                                              NetcdfFile netcdfFile,
+                                                              int[] featureIds,
+                                                              String variableName,
+                                                              Instant originalReferenceDatetime,
+                                                              NWMFeatureCache featureCache )
         {
             // Get the valid datetime
             Instant validDatetime = NWMTimeSeries.readValidDatetime( profile,
@@ -996,22 +1054,26 @@ class NWMTimeSeries implements Closeable
                                               + originalReferenceDatetime );
             }
 
-            // Get the value at the variable in question.
+            int[] indicesOfFeatures = new int[featureIds.length];
 
-            int indexOfFeature = NWMTimeSeries.findFeatureIndex( profile,
-                                                                 netcdfFile,
-                                                                 featureId,
-                                                                 featureCache );
+            for ( int i = 0; i < featureIds.length; i++ )
+            {
+                int indexOfFeature = NWMTimeSeries.findFeatureIndex( profile,
+                                                                     netcdfFile,
+                                                                     featureIds[i],
+                                                                     featureCache );
+                indicesOfFeatures[i] = indexOfFeature;
+            }
 
             Variable variableVariable =  netcdfFile.findVariable( variableName );
-            int rawVariableValue;
+            int[] rawVariableValues;
 
             // Preserve the context of which netCDF blob is read with try/catch.
-            // (The readRawScalarInt method does not need the netCDF blob.)
+            // (The readRawInts method does not need the netCDF blob.)
             try
             {
-                rawVariableValue = NWMTimeSeries.readRawInts( variableVariable,
-                                                              new int[] { indexOfFeature } )[0];
+                rawVariableValues = NWMTimeSeries.readRawInts( variableVariable,
+                                                               indicesOfFeatures );
             }
             catch ( PreIngestException pie )
             {
@@ -1019,25 +1081,36 @@ class NWMTimeSeries implements Closeable
                                               + netcdfFile.getLocation(), pie );
             }
 
-            double variableValue;
-
             VariableAttributes attributes = NWMTimeSeries.readVariableAttributes( variableVariable );
 
-            if ( rawVariableValue == attributes.getMissingValue()
-                 || rawVariableValue == attributes.getFillValue() )
+            List<EventForNWMFeature<Double>> list = new ArrayList<>( rawVariableValues.length );
+
+            for ( int i = 0; i < rawVariableValues.length; i++ )
             {
-                variableValue = MissingValues.DOUBLE;
-            }
-            else
-            {
-                // Unpack.
-                variableValue = NWMTimeSeries.unpack( rawVariableValue, attributes );
+                double variableValue;
+
+                if ( rawVariableValues[i] == attributes.getMissingValue()
+                     || rawVariableValues[i] == attributes.getFillValue() )
+                {
+                    variableValue = MissingValues.DOUBLE;
+                }
+                else
+                {
+                    // Unpack.
+                    variableValue = NWMTimeSeries.unpack( rawVariableValues[i],
+                                                          attributes );
+                }
+
+                Event<Double> event = Event.of( validDatetime, variableValue );
+                EventForNWMFeature<Double> eventWithFeatureId =
+                        new EventForNWMFeature<>( featureIds[i], event );
+                list.add( eventWithFeatureId );
             }
 
-            LOGGER.trace( "Read raw value {} for variable {} at {} returning as value {} from {}",
-                          rawVariableValue, variableName, validDatetime, variableValue, netcdfFile );
+            LOGGER.trace( "Read raw values {} for variable {} at {} returning as values {} from {}",
+                          rawVariableValues, variableName, validDatetime, list, netcdfFile );
 
-            return Event.of( validDatetime, variableValue );
+            return Collections.unmodifiableList( list );
         }
     }
 
