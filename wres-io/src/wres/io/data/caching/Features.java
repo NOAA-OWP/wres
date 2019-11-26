@@ -129,15 +129,31 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 
 	private static Integer getFeatureID( FeatureDetails.FeatureKey key) throws SQLException
     {
+        LOGGER.trace( "getFeatureID with FeatureKey arg {}", key );
+        Integer result;
+
         synchronized ( KEY_LOCK )
         {
             if ( !Features.getCache().hasID( key ) )
             {
-                Features.getCache().addElement( new FeatureDetails( key ) );
+                LOGGER.trace( "getFeatureID with FeatureKey arg {} NOT in cache",
+                              key );
+                FeatureDetails featureDetails = new FeatureDetails( key );
+                Features.getCache().addElement( featureDetails );
+                Integer fakeResultForLRUPurposes = Features.getCache().getID( key );
+                result = featureDetails.getId();
             }
-
-            return Features.getCache().getID( key );
+            else
+            {
+                LOGGER.trace( "getFeatureID with FeatureKey arg {} FOUND in cache",
+                              key );
+                result = Features.getCache().getID( key );
+            }
         }
+
+        LOGGER.trace( "getFeatureId with FeatureKey arg {} returning result {}",
+                      key, result );
+        return result;
     }
 
     private static Integer getFeatureID( Integer comid, String lid, String gageID, String huc)
