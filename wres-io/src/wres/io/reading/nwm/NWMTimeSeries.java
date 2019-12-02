@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.StringJoiner;
 import java.util.TreeSet;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -296,13 +297,24 @@ class NWMTimeSeries implements Closeable
         return this.netcdfFiles;
     }
 
+    private String getNetcdfResourceNames()
+    {
+        StringJoiner joiner = new StringJoiner( ", ", "( ", " )" );
+        for ( NetcdfFile netcdfFile : this.getNetcdfFiles() )
+        {
+            String netcdfResourceName = netcdfFile.getLocation();
+            joiner.add( netcdfResourceName );
+        }
+
+        return joiner.toString();
+    }
+
     int countOfNetcdfFiles()
     {
         return this.getNetcdfFiles().size();
     }
 
 
-    /** Currently only compiling, not supported yet with multiple features */
     Map<Integer,TimeSeries<?>> readEnsembleTimeSerieses( int[] featureIds,
                                                          String variableName )
     {
@@ -311,9 +323,8 @@ class NWMTimeSeries implements Closeable
         int memberCount = this.getProfile().getMemberCount();
         int validDatetimeCount = this.getProfile().getBlobCount();
 
-
-        // Map from ensemble number to map of instant to double[]
-        Map<Instant,double[]> ensembleValues = new HashMap<>( memberCount );
+        // Map of nwm feature id to a map of each timestep with member values.
+        Map<Integer,Map<Instant,double[]>> ensembleValues = new HashMap<>( featureIds.length );
 
         for ( NetcdfFile netcdfFile : this.getNetcdfFiles() )
         {
@@ -363,44 +374,76 @@ class NWMTimeSeries implements Closeable
                                                           variableName,
                                                           this.getReferenceDatetime(),
                                                           this.featureCache );
-            List<EventForNWMFeature<Double>> event = reader.call();
-            Instant eventDatetime = event.get( 0 )
-                                         .getEvent()
-                                         .getTime();
-            double[] ensembleRow = ensembleValues.get( eventDatetime );
+            List<EventForNWMFeature<Double>> events = reader.call();
 
-            if ( Objects.isNull( ensembleRow ) )
+            for ( EventForNWMFeature<Double> event : events )
             {
-                ensembleRow = new double[memberCount];
-                ensembleValues.put( eventDatetime, ensembleRow );
+                Instant eventDatetime = event.getEvent()
+                                             .getTime();
+                Integer featureId = event.getFeatureId();
+                Map<Instant,double[]> fullEnsemble = ensembleValues.get( featureId );
+
+                if ( Objects.isNull( fullEnsemble )  )
+                {
+                    fullEnsemble = new HashMap<>( validDatetimeCount );
+                    ensembleValues.put( featureId, fullEnsemble );
+                }
+
+                double[] ensembleRow = fullEnsemble.get( eventDatetime );
+
+                if ( Objects.isNull( ensembleRow ) )
+                {
+                    ensembleRow = new double[memberCount];
+                    fullEnsemble.put( eventDatetime, ensembleRow );
+                }
+
+                ensembleRow[ncEnsembleNumber - 1] = event.getEvent()
+                                                         .getValue();
+            }
+        }
+
+        for ( Map.Entry<Integer,Map<Instant,double[]>> oneEnsemble : ensembleValues.entrySet() )
+        {
+            Map<Instant,double[]> map = oneEnsemble.getValue();
+            if ( map.size() != validDatetimeCount )
+            {
+                throw new PreIngestException( "Expected "
+                                              + validDatetimeCount
+                                              + " different valid datetimes but found "
+                                              + map.size()
+                                              + " in netCDF resources "
+                                              + this.getNetcdfResourceNames()
+                                              + " for NWM feature id "
+                                              + oneEnsemble.getKey() );
+            }
+        }
+
+        Map<Integer,TimeSeries<?>> byFeatureId = new HashMap<>( featureIds.length );
+
+        // For each feature, create a TimeSeries.
+        for ( Map.Entry<Integer,Map<Instant,double[]>> entriesForOne : ensembleValues.entrySet() )
+        {
+            SortedSet<Event<Ensemble>> sortedEvents = new TreeSet<>();
+
+            // For each ensemble row within a feature, add values to SortedSet.
+            for ( Map.Entry<Instant, double[]> entry : entriesForOne.getValue()
+                                                                    .entrySet() )
+            {
+                Ensemble ensemble = Ensemble.of( entry.getValue() );
+                Event<Ensemble> ensembleEvent =
+                        Event.of( entry.getKey(), ensemble );
+                sortedEvents.add( ensembleEvent );
             }
 
-            ensembleRow[ncEnsembleNumber - 1] = event.get( 0 )
-                                                     .getEvent()
-                                                     .getValue();
+            // Create the TimeSeries for the current Feature
+            TimeSeries<?> timeSeries = TimeSeries.of( this.getReferenceDatetime(),
+                                                      sortedEvents );
+
+            // Store this TimeSeries in the collection to be returned.
+            byFeatureId.put( entriesForOne.getKey(), timeSeries );
         }
 
-        if ( ensembleValues.size() != validDatetimeCount )
-        {
-            throw new PreIngestException( "Expected "
-                                          + validDatetimeCount
-                                          + " different valid datetimes but only found "
-                                          + ensembleValues.size()
-                                          + " in netCDF resources "
-                                          + this.getNetcdfFiles() );
-        }
-
-        SortedSet<Event<Ensemble>> sortedEvents = new TreeSet<>();
-
-        for ( Map.Entry<Instant,double[]> entry : ensembleValues.entrySet() )
-        {
-            Ensemble ensemble = Ensemble.of( entry.getValue() );
-            Event<Ensemble> ensembleEvent = Event.of( entry.getKey(), ensemble );
-            sortedEvents.add( ensembleEvent );
-        }
-
-        return Map.of( featureIds[0], TimeSeries.of( this.getReferenceDatetime(),
-                                                    sortedEvents ) );
+        return Collections.unmodifiableMap( byFeatureId );
     }
 
 
