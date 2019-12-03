@@ -240,9 +240,6 @@ class ProcessorHelper
             // Complete the feature tasks
             ProcessorHelper.doAllOrException( featureTasks ).join();
 
-            // Report on the features
-            featureReport.report();
-
             // Find the paths written to by writers
             pathsWrittenTo.addAll( featureReport.getPathsWrittenTo() );
 
@@ -257,6 +254,9 @@ class ProcessorHelper
             {
                 pathsWrittenTo.addAll( sharedWriters.getBaselineSampleDataWriters().get() );
             }
+
+            // Report on the features
+            featureReport.report( pathsWrittenTo.isEmpty() );
         }
         catch ( CompletionException e )
         {

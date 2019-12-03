@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.ProjectConfigPlus;
+import wres.config.generated.DestinationType;
 import wres.config.generated.Feature;
 import wres.io.config.ConfigHelper;
 
@@ -22,7 +23,12 @@ import wres.io.config.ConfigHelper;
  * <p>A {@link Consumer} that records information about the completion state of a {@link Feature}. The 
  * {@link FeatureReporter} is mutable and is updated asynchronously as {@link FeatureProcessingResult} become available.
  * Some information is reported during execution, and additional information is reported on request (e.g. at the 
- * end of execution) by calling {@link #report()}.</p>
+ * end of execution) by calling {@link #report()}.
+ * 
+ * <p>See #71889. This reporting mechanism is flawed insofar as it inspects paths written per feature. Thus, it only 
+ * has sight of success or failure when formats are requested that are written per feature and not for those written
+ * across features, such as pairs or netCDF. A different reporting mechanism that does not rely on inspecting paths 
+ * written, rather numbers produced, is necessary to report on true success or failure per feature.
  * 
  * @author james.brown@hydrosolved.com
  */
@@ -61,6 +67,13 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
     private final ProjectConfigPlus projectConfigPlus;
 
     /**
+     * Is <code>true</code> if statistical outputs were requested as part of the declaration that are written per
+     * feature, <code>false</code> if no statistical outputs were requested in formats that are written per feature.
+     */
+
+    private final boolean statisticalOutputsRequestedPerFeature;
+
+    /**
      * The number of features processed so far.
      */
 
@@ -93,6 +106,16 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
         this.successfulFeatures = new ConcurrentLinkedQueue<>();
         this.processed = new AtomicInteger( 1 );
         this.pathsWrittenTo = new ConcurrentSkipListSet<>();
+
+        // Statistical outputs requested in a format that is written per feature? Anything that is not pairs is 
+        // statistics
+        this.statisticalOutputsRequestedPerFeature =
+                this.projectConfigPlus.getProjectConfig()
+                                      .getOutputs()
+                                      .getDestination()
+                                      .stream()
+                                      .anyMatch( next -> next.getType() != DestinationType.PAIRS
+                                                         && next.getType() != DestinationType.NETCDF );
     }
 
     /**
@@ -109,9 +132,9 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
         // Increment the feature count
         int currentFeature = this.processed.getAndIncrement();
 
-        if ( result.getPathsWrittenTo().isEmpty() )
+        if ( result.getPathsWrittenTo().isEmpty() && this.statisticalOutputsRequestedPerFeature )
         {
-            LOGGER.warn( "[{}/{}] Completed feature '{}', but no outputs were produced. "
+            LOGGER.warn( "[{}/{}] Completed feature '{}', but no statistics were produced. "
                          + "This probably occurred because no pools contained valid pairs.",
                          currentFeature,
                          this.totalFeatures,
@@ -120,9 +143,9 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
         else
         {
             this.successfulFeatures.add( result.getFeature() );
-            
+
             this.pathsWrittenTo.addAll( result.getPathsWrittenTo() );
-            
+
             LOGGER.info( "[{}/{}] Completed feature '{}'",
                          currentFeature,
                          this.totalFeatures,
@@ -131,12 +154,16 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
     }
 
     /**
-     * Reports by logging information about the status of features.
+     * Reports by logging information about the status of features. Optionally, an exception may be thrown when no
+     * outputs are produced for any features. This may not be desired when per-feature outputs were not requested,
+     * such as when pairs were requested and no statistics were requested.
      * 
+     * @param throwsExceptionIfNoOutputs is true if an exception should be thrown on encountering no outputs in this 
+     *            context, false to not throw an exception 
      * @throws WresProcessingException if no features were completed successfully
      */
 
-    void report()
+    void report( boolean throwsExceptionIfNoOutputs )
     {
         // Finalize results
         List<Feature> successfulFeaturesToReport =
@@ -144,17 +171,18 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
 
         // Detailed report
         if ( LOGGER.isInfoEnabled() &&
-             this.printDetailedReport &&
-             ! successfulFeaturesToReport.isEmpty() )
+             this.printDetailedReport
+             &&
+             !successfulFeaturesToReport.isEmpty() )
         {
-            LOGGER.info( "The following features succeeded: {}",
+            LOGGER.info( "The following features produced statistics: {}",
                          ConfigHelper.getFeaturesDescription( successfulFeaturesToReport ) );
         }
 
         // Exception after detailed report: in practice, this should be handled earlier
         // but this is another opportunity to signal that zero successful features is 
         // exceptional behavior
-        if ( successfulFeaturesToReport.isEmpty() )
+        if ( successfulFeaturesToReport.isEmpty() && throwsExceptionIfNoOutputs )
         {
             throw new WresProcessingException( "No features were successfully evaluated.", null );
         }
@@ -164,14 +192,13 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
         {
             if ( this.totalFeatures == successfulFeaturesToReport.size() )
             {
-                LOGGER.info( "All features in project {} were successfully "
-                             + "evaluated.",
+                LOGGER.info( "All features in project {} produced some statistics.",
                              projectConfigPlus );
             }
             else
             {
-                LOGGER.info( "{} out of {} features in project {} were successfully "
-                             + "evaluated, {} out of {} features were not evaluated.",
+                LOGGER.info( "{} out of {} features in project {} produced some statistics and "
+                             + "{} out of {} features produced no statistics.",
                              successfulFeaturesToReport.size(),
                              totalFeatures,
                              projectConfigPlus,
