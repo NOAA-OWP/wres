@@ -1114,14 +1114,17 @@ class NWMTimeSeries implements Closeable
             Instant ncReferenceDatetime = NWMTimeSeries.readReferenceDatetime( profile,
                                                                                netcdfFile );
 
-            // Validate: this referenceDatetime should match what was set originally.
-            // (This doesn't work for analysis_assim)
-            if ( !ncReferenceDatetime.equals( originalReferenceDatetime ) )
+            // Validate: this referenceDatetime should match what was set originally,
+            // except for analysis/assim data.
+            if ( !profile.getNwmConfiguration()
+                         .toLowerCase()
+                         .contains( "analysis" )
+                 && !ncReferenceDatetime.equals( originalReferenceDatetime ) )
             {
                 throw new PreIngestException( "The reference datetime "
                                               + ncReferenceDatetime
-                                              + " from netCDF file "
-                                              + netcdfFile
+                                              + " from netCDF resource "
+                                              + netcdfFile.getLocation()
                                               + " does not match expected value "
                                               + originalReferenceDatetime );
             }
