@@ -3,6 +3,7 @@ package wres.io.reading.nwm;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ConcurrentModificationException;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -389,6 +390,7 @@ public class NWMTimeSeriesTest
     // If you want to try this against real service, set FQDN, remove @Ignore.
     @Ignore
     public void readNWM20MediumRangeForecastFromDstore()
+            throws InterruptedException, ExecutionException
     {
         // To see it fail to find a file, change blobCount to 70
         // To see it run OutOfMemoryError, change blobCount to full 68
@@ -432,6 +434,7 @@ public class NWMTimeSeriesTest
     // To try this against real filesystem, download data, set URI, remove @Ignore.
     @Ignore
     public void readNWM20MediumRangeForecastFromFilesystem()
+            throws InterruptedException, ExecutionException
     {
         // To see it fail to find a file, change blobCount to 70
         // To see it run OutOfMemoryError, change blobCount to full 68

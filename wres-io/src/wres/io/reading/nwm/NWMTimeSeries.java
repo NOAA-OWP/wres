@@ -317,8 +317,8 @@ class NWMTimeSeries implements Closeable
 
     Map<Integer,TimeSeries<?>> readEnsembleTimeSerieses( int[] featureIds,
                                                          String variableName )
+            throws InterruptedException, ExecutionException
     {
-        final int NOT_FOUND = Integer.MIN_VALUE;
 
         int memberCount = this.getProfile().getMemberCount();
         int validDatetimeCount = this.getProfile().getBlobCount();
@@ -326,80 +326,45 @@ class NWMTimeSeries implements Closeable
         // Map of nwm feature id to a map of each timestep with member values.
         Map<Integer,Map<Instant,double[]>> ensembleValues = new HashMap<>( featureIds.length );
 
+        BlockingQueue<Future<List<EventForNWMFeature<Double>>>> reads =
+                new ArrayBlockingQueue<>( CONCURRENT_READS );
+        CountDownLatch startGettingResults = new CountDownLatch(
+                CONCURRENT_READS );
+
         for ( NetcdfFile netcdfFile : this.getNetcdfFiles() )
         {
-            // Get the ensemble_member_number
-            String memberNumberAttributeName = this.getProfile().getMemberAttribute();
-            List<Attribute> globalAttributes = netcdfFile.getGlobalAttributes();
-
-            int ncEnsembleNumber = NOT_FOUND;
-
-            for ( Attribute globalAttribute : globalAttributes )
-            {
-                if ( globalAttribute.getShortName()
-                                    .equals( memberNumberAttributeName ) )
-                {
-                    ncEnsembleNumber = globalAttribute.getNumericValue()
-                                                      .intValue();
-                    break;
-                }
-            }
-
-            if ( ncEnsembleNumber == NOT_FOUND )
-            {
-                throw new PreIngestException( "Could not find ensemble member attribute "
-                                              + memberNumberAttributeName +
-                                              " in netCDF file "
-                                              + netcdfFile );
-            }
-
-            if ( ncEnsembleNumber > memberCount )
-            {
-                throw new PreIngestException( "Ensemble number "
-                                              + ncEnsembleNumber
-                                              + " unexpectedly exceeds member count "
-                                              + memberCount );
-            }
-
-            if ( ncEnsembleNumber < 1 )
-            {
-                throw new PreIngestException( "Ensemble number "
-                                              + ncEnsembleNumber
-                                              + " is unexpectedly less than 1." );
-            }
-
             NWMDoubleReader reader = new NWMDoubleReader( this.getProfile(),
                                                           netcdfFile,
                                                           featureIds,
                                                           variableName,
                                                           this.getReferenceDatetime(),
-                                                          this.featureCache );
-            List<EventForNWMFeature<Double>> events = reader.call();
+                                                          this.featureCache,
+                                                          true );
+            Future<List<EventForNWMFeature<Double>>> future =
+                    this.readExecutor.submit( reader );
+            reads.add( future );
 
-            for ( EventForNWMFeature<Double> event : events )
+            startGettingResults.countDown();
+
+            if ( startGettingResults.getCount() <= 0 )
             {
-                Instant eventDatetime = event.getEvent()
-                                             .getTime();
-                Integer featureId = event.getFeatureId();
-                Map<Instant,double[]> fullEnsemble = ensembleValues.get( featureId );
-
-                if ( Objects.isNull( fullEnsemble )  )
-                {
-                    fullEnsemble = new HashMap<>( validDatetimeCount );
-                    ensembleValues.put( featureId, fullEnsemble );
-                }
-
-                double[] ensembleRow = fullEnsemble.get( eventDatetime );
-
-                if ( Objects.isNull( ensembleRow ) )
-                {
-                    ensembleRow = new double[memberCount];
-                    fullEnsemble.put( eventDatetime, ensembleRow );
-                }
-
-                ensembleRow[ncEnsembleNumber - 1] = event.getEvent()
-                                                         .getValue();
+                List<EventForNWMFeature<Double>> read = reads.take()
+                                                             .get();
+                this.putEnsembleDataInMap( read,
+                                           ensembleValues,
+                                           memberCount,
+                                           validDatetimeCount );
             }
+        }
+
+        // Finish getting the remainder of events being read.
+        for ( Future<List<EventForNWMFeature<Double>>> reading : reads )
+        {
+            List<EventForNWMFeature<Double>> read = reading.get();
+            this.putEnsembleDataInMap( read,
+                                       ensembleValues,
+                                       memberCount,
+                                       validDatetimeCount );
         }
 
         for ( Map.Entry<Integer,Map<Instant,double[]>> oneEnsemble : ensembleValues.entrySet() )
@@ -447,6 +412,45 @@ class NWMTimeSeries implements Closeable
     }
 
 
+    /**
+     * Read data into intermediate format more convenient for wres.datamodel.
+     * @param events Reads this data to put into ensembleValues.
+     * @param ensembleValues MUTATES this data using data found from events.
+     * @param memberCount The count of ensemble members.
+     * @param validDatetimeCount The count of validDatetimes.
+     */
+    private void putEnsembleDataInMap( List<EventForNWMFeature<Double>> events,
+                                       Map<Integer,Map<Instant,double[]>> ensembleValues,
+                                       int memberCount,
+                                       int validDatetimeCount )
+    {
+
+        for ( EventForNWMFeature<Double> event : events )
+        {
+            Instant eventDatetime = event.getEvent()
+                                         .getTime();
+            Integer featureId = event.getFeatureId();
+            Map<Instant,double[]> fullEnsemble = ensembleValues.get( featureId );
+
+            if ( Objects.isNull( fullEnsemble )  )
+            {
+                fullEnsemble = new HashMap<>( validDatetimeCount );
+                ensembleValues.put( featureId, fullEnsemble );
+            }
+
+            double[] ensembleRow = fullEnsemble.get( eventDatetime );
+
+            if ( Objects.isNull( ensembleRow ) )
+            {
+                ensembleRow = new double[memberCount];
+                fullEnsemble.put( eventDatetime, ensembleRow );
+            }
+
+            int ncEnsembleNumber = event.getEnsembleMemberNumber();
+            ensembleRow[ncEnsembleNumber - 1] = event.getEvent()
+                                                     .getValue();
+        }
+    }
 
     /**
      * Read the first value for a given variable name attribute from the netCDF
@@ -681,7 +685,8 @@ class NWMTimeSeries implements Closeable
                                                           featureIds.clone(),
                                                           variableName,
                                                           this.getReferenceDatetime(),
-                                                          this.featureCache );
+                                                          this.featureCache,
+                                                          false );
             Future<List<EventForNWMFeature<Double>>> future =
                     this.readExecutor.submit( reader );
             reads.add( future );
@@ -1004,14 +1009,22 @@ class NWMTimeSeries implements Closeable
 
     private static final class EventForNWMFeature<T>
     {
+        private static final int NO_MEMBER = Integer.MIN_VALUE;
         private final int featureId;
         private final Event<T> event;
+        private final int ensembleMemberNumber;
 
         EventForNWMFeature( int featureId, Event<T> event )
+        {
+            this( featureId, event, NO_MEMBER );
+        }
+
+        EventForNWMFeature( int featureId, Event<T> event, int ensembleMemberNumber )
         {
             Objects.requireNonNull( event );
             this.featureId = featureId;
             this.event = event;
+            this.ensembleMemberNumber = ensembleMemberNumber;
         }
 
         int getFeatureId()
@@ -1023,6 +1036,16 @@ class NWMTimeSeries implements Closeable
         {
             return this.event;
         }
+
+        int getEnsembleMemberNumber()
+        {
+            if ( this.ensembleMemberNumber == NO_MEMBER )
+            {
+                throw new IllegalStateException( "No member was set." );
+            }
+
+            return this.ensembleMemberNumber;
+        }
     }
 
 
@@ -1032,19 +1055,23 @@ class NWMTimeSeries implements Closeable
 
     private static final class NWMDoubleReader implements Callable<List<EventForNWMFeature<Double>>>
     {
+
+        private static final int NOT_FOUND = Integer.MIN_VALUE;
         private final NWMProfile profile;
         private final NetcdfFile netcdfFile;
         private final int[] featureIds;
         private final String variableName;
         private final Instant originalReferenceDatetime;
         private final NWMFeatureCache featureCache;
+        private final boolean isEnsemble;
 
         NWMDoubleReader( NWMProfile profile,
                          NetcdfFile netcdfFile,
                          int[] featureIds,
                          String variableName,
                          Instant originalReferenceDatetime,
-                         NWMFeatureCache featureCache )
+                         NWMFeatureCache featureCache,
+                         boolean isEnsemble )
         {
             Objects.requireNonNull( profile );
             Objects.requireNonNull( netcdfFile );
@@ -1057,6 +1084,7 @@ class NWMTimeSeries implements Closeable
             this.variableName = variableName;
             this.originalReferenceDatetime = originalReferenceDatetime;
             this.featureCache = featureCache;
+            this.isEnsemble = isEnsemble;
         }
 
         @Override
@@ -1067,7 +1095,23 @@ class NWMTimeSeries implements Closeable
                                      this.featureIds,
                                      this.variableName,
                                      this.originalReferenceDatetime,
-                                     this.featureCache );
+                                     this.featureCache,
+                                     this.isEnsemble );
+        }
+
+        NWMProfile getProfile()
+        {
+            return this.profile;
+        }
+
+        NetcdfFile getNetcdfFile()
+        {
+            return this.netcdfFile;
+        }
+
+        String getVariableName()
+        {
+            return this.variableName;
         }
 
         private List<EventForNWMFeature<Double>> readDoubles( NWMProfile profile,
@@ -1075,7 +1119,8 @@ class NWMTimeSeries implements Closeable
                                                               int[] featureIds,
                                                               String variableName,
                                                               Instant originalReferenceDatetime,
-                                                              NWMFeatureCache featureCache )
+                                                              NWMFeatureCache featureCache,
+                                                              boolean isEnsemble )
         {
             // Get the valid datetime
             Instant validDatetime = NWMTimeSeries.readValidDatetime( profile,
@@ -1095,6 +1140,13 @@ class NWMTimeSeries implements Closeable
                                               + netcdfFile
                                               + " does not match expected value "
                                               + originalReferenceDatetime );
+            }
+
+            int ncEnsembleMember = NOT_FOUND;
+
+            if ( isEnsemble )
+            {
+                ncEnsembleMember = this.readEnsembleNumber( profile, netcdfFile );
             }
 
             int[] indicesOfFeatures = new int[featureIds.length];
@@ -1145,15 +1197,90 @@ class NWMTimeSeries implements Closeable
                 }
 
                 Event<Double> event = Event.of( validDatetime, variableValue );
-                EventForNWMFeature<Double> eventWithFeatureId =
-                        new EventForNWMFeature<>( featureIds[i], event );
-                list.add( eventWithFeatureId );
+
+                if ( isEnsemble )
+                {
+                    EventForNWMFeature<Double> eventWithFeatureId =
+                            new EventForNWMFeature<>( featureIds[i],
+                                                      event,
+                                                      ncEnsembleMember );
+                    list.add( eventWithFeatureId );
+                }
+                else
+                {
+                    EventForNWMFeature<Double> eventWithFeatureId =
+                            new EventForNWMFeature<>( featureIds[i],
+                                                      event );
+                    list.add( eventWithFeatureId );
+                }
             }
 
             LOGGER.trace( "Read raw values {} for variable {} at {} returning as values {} from {}",
                           rawVariableValues, variableName, validDatetime, list, netcdfFile );
 
             return Collections.unmodifiableList( list );
+        }
+
+        /**
+         * Reads and validates the ensemble number from an NWM netCDF resource.
+         *
+         * Assumes that NWM netCDF resources only have one ensemble number in
+         * the global attributes.
+         *
+         * @param profile The profile describing the netCDF dataset.
+         * @param netcdfFile The individual netCDF resource to read.
+         * @return The member number from the global attributes.
+         * @throws PreIngestException When ensemble member attribute is missing.
+         * @throws PreIngestException When ensemble number exceeds count in profile.
+         * @throws PreIngestException When ensemble number is less than 1.
+         */
+        private int readEnsembleNumber( NWMProfile profile,
+                                        NetcdfFile netcdfFile )
+        {
+
+            int memberCount = profile.getMemberCount();
+
+            // Get the ensemble_member_number
+            String memberNumberAttributeName = profile.getMemberAttribute();
+            List<Attribute> globalAttributes = netcdfFile.getGlobalAttributes();
+
+            int ncEnsembleNumber = NOT_FOUND;
+
+            for ( Attribute globalAttribute : globalAttributes )
+            {
+                if ( globalAttribute.getShortName()
+                                    .equals( memberNumberAttributeName ) )
+                {
+                    ncEnsembleNumber = globalAttribute.getNumericValue()
+                                                      .intValue();
+                    break;
+                }
+            }
+
+            if ( ncEnsembleNumber == NOT_FOUND )
+            {
+                throw new PreIngestException( "Could not find ensemble member attribute "
+                                              + memberNumberAttributeName +
+                                              " in netCDF file "
+                                              + netcdfFile );
+            }
+
+            if ( ncEnsembleNumber > memberCount )
+            {
+                throw new PreIngestException( "Ensemble number "
+                                              + ncEnsembleNumber
+                                              + " unexpectedly exceeds member count "
+                                              + memberCount );
+            }
+
+            if ( ncEnsembleNumber < 1 )
+            {
+                throw new PreIngestException( "Ensemble number "
+                                              + ncEnsembleNumber
+                                              + " is unexpectedly less than 1." );
+            }
+
+            return ncEnsembleNumber;
         }
     }
 
