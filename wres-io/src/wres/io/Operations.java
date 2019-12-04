@@ -98,7 +98,16 @@ public final class Operations {
                                   + "gridded data or not.", e);
         }
 
-        if (isVector)
+        if ( isVector && ConfigHelper.isForecast( project.getLeft() ) )
+        {
+            leftValid = Executor.submit(
+                    () -> Variables.isForecastValid( project.getId(),
+                                                     Project.LEFT_MEMBER,
+                                                     project.getLeftVariableID()
+                    )
+            );
+        }
+        else if ( isVector )
         {
             leftValid = Executor.submit(
                     () -> Variables.isObservationValid( project.getId(),

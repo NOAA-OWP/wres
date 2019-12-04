@@ -571,16 +571,32 @@ final class ProjectScriptGenerator
 
         script.addTab(  2  ).addLine("AND EXISTS (");
         script.addTab(   3   ).addLine("SELECT 1");
-        script.addTab(   3   ).addLine("FROM wres.Observation O");
-        script.addTab(   3   ).addLine("INNER JOIN wres.ProjectSource PS");
-        script.addTab(    4    ).addLine("ON PS.source_id = O.source_id");
-        script.addTab(   3   ).addLine( "WHERE PS.project_id = ", project.getId());
-        script.addTab(    4    ).addLine("AND PS.member = 'left'");
-        script.addTab(    4    ).addLine("AND O.variablefeature_id = VF.variablefeature_id");
-        
-        // #65881
-        script.addTab(    4    ).addLine( "AND O.observed_value IS NOT NULL" );
-        
+
+        if ( ConfigHelper.isForecast( project.getLeft() ) )
+        {
+            script.addTab(   3   ).addLine( "FROM wres.TimeSeries TS" );
+            script.addTab(   3   ).addLine( "INNER JOIN wres.TimeSeriesSource TSS" );
+            script.addTab(    4    ).addLine( "ON TS.timeseries_id = TSS.timeseries_id" );
+            script.addTab(   3   ).addLine( "INNER JOIN wres.ProjectSource PS" );
+            script.addTab(    4    ).addLine( "ON PS.source_id = TSS.source_id" );
+            script.addTab(   3   ).addLine( "WHERE PS.project_id = ",
+                                            project.getId() );
+            script.addTab(    4    ).addLine( "AND PS.member = 'right'" );
+            script.addTab(    4    ).addLine( "AND TS.variablefeature_id = VF.variablefeature_id" );
+            // Do NOT additionally inspect wres.TimeSeriesValue. See #70130.
+        }
+        else
+        {
+            script.addTab(   3   ).addLine("FROM wres.Observation O");
+            script.addTab(   3   ).addLine("INNER JOIN wres.ProjectSource PS");
+            script.addTab(    4    ).addLine("ON PS.source_id = O.source_id");
+            script.addTab(   3   ).addLine( "WHERE PS.project_id = ", project.getId());
+            script.addTab(    4    ).addLine("AND PS.member = 'left'");
+            script.addTab(    4    ).addLine("AND O.variablefeature_id = VF.variablefeature_id");
+
+            // #65881
+            script.addTab(    4    ).addLine( "AND O.observed_value IS NOT NULL" );
+        }
         script.addTab(  2  ).addLine(")");
         script.addTab(  2  ).addLine( "GROUP BY VF.feature_id" );
         script.addLine(")");
