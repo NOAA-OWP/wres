@@ -3,7 +3,10 @@ package wres.io.reading.nwm;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ConcurrentModificationException;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -14,7 +17,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 
-import wres.datamodel.Ensemble;
 import wres.datamodel.time.TimeSeries;
 
 public class NWMTimeSeriesTest
@@ -185,6 +187,7 @@ public class NWMTimeSeriesTest
     // To try this against the real service, use a new date, remove @Ignore
     @Ignore
     public void readForecastFromNomads()
+            throws InterruptedException, ExecutionException
     {
         // To see it fail to find a file, change blobCount to 25
         NWMProfile nwmProfile = new NWMProfile( 2,
@@ -205,7 +208,9 @@ public class NWMTimeSeriesTest
                                                                URI.create( "https://nomads.ncep.***REMOVED***/pub/data/nccf/com/nwm/prod/" ) ) )
         {
             LOGGER.info( "Finished opening forecast files, now reading..." );
-            TimeSeries<Double> timeSeries = nwmTimeSeries.readTimeSeries( 18384141, "streamflow" );
+            int featureId = 18384141;
+            TimeSeries<?> timeSeries = nwmTimeSeries.readTimeSerieses( new int[] { featureId }, "streamflow" )
+                                                    .get( featureId );
             LOGGER.info( "Here is the timeseries: {}", timeSeries );
             assertNotNull( timeSeries );
             assertNotEquals( 0, timeSeries.getEvents().size() );
@@ -217,6 +222,7 @@ public class NWMTimeSeriesTest
     // If you want to try this against real service, set FQDN, remove @Ignore.
     @Ignore
     public void readNWM20ShortRangeForecastFromDstore()
+            throws InterruptedException, ExecutionException
     {
         // To see it fail to find a file, change blobCount to 25
         NWMProfile nwmProfile = new NWMProfile( 18,
@@ -237,7 +243,9 @@ public class NWMTimeSeriesTest
                                                                URI.create( "https://dstore-fqdn/nwm/2.0/" ) ) )
         {
             LOGGER.info( "Finished opening forecast files, now reading..." );
-            TimeSeries<Double> timeSeries = nwmTimeSeries.readTimeSeries( 18384141, "streamflow" );
+            int featureId = 18384141;
+            TimeSeries<?> timeSeries = nwmTimeSeries.readTimeSerieses( new int[] { featureId }, "streamflow" )
+                                                    .get( featureId );
             LOGGER.info( "Here is the timeseries: {}", timeSeries );
             assertNotNull( timeSeries );
             assertNotEquals( 0, timeSeries.getEvents().size() );
@@ -248,6 +256,7 @@ public class NWMTimeSeriesTest
     // If you want to try this against real service, set FQDN, remove @Ignore.
     @Ignore
     public void readNWM12ShortRangeForecastFromDstore()
+            throws InterruptedException, ExecutionException
     {
         // To see it fail to find a file, change blobCount to 25
         NWMProfile nwmProfile = new NWMProfile( 18,
@@ -268,7 +277,9 @@ public class NWMTimeSeriesTest
                                                                URI.create( "https://dstore-fqdn/nwm/1.2/" ) ) )
         {
             LOGGER.info( "Finished opening forecast files, now reading..." );
-            TimeSeries<Double> timeSeries = nwmTimeSeries.readTimeSeries( 18384141, "streamflow" );
+            int featureId = 18384141;
+            TimeSeries<?> timeSeries = nwmTimeSeries.readTimeSerieses( new int[] { featureId }, "streamflow" )
+                                                    .get( featureId );
             LOGGER.info( "Here is the timeseries: {}", timeSeries );
             assertNotNull( timeSeries );
             assertNotEquals( 0, timeSeries.getEvents().size() );
@@ -280,6 +291,7 @@ public class NWMTimeSeriesTest
     // If you want to try this against real service, set FQDN, remove @Ignore.
     @Ignore
     public void readNWM11ShortRangeForecastFromDstore()
+            throws InterruptedException, ExecutionException
     {
         // To see it fail to find a file, change blobCount to 25
         NWMProfile nwmProfile = new NWMProfile( 18,
@@ -299,8 +311,9 @@ public class NWMTimeSeriesTest
                                                                URI.create( "https://dstore-fqdn/nwm/1.1/" ) ) )
         {
             LOGGER.info( "Finished opening forecast files, now reading..." );
-            TimeSeries<Double> timeSeries = nwmTimeSeries.readTimeSeries( 18384141, "streamflow" );
-            LOGGER.info( "Here is the timeseries: {}", timeSeries );
+            int featureId = 18384141;
+            TimeSeries<?> timeSeries = nwmTimeSeries.readTimeSerieses( new int[] { featureId }, "streamflow" )
+                                                    .get( featureId );
             assertNotNull( timeSeries );
             assertNotEquals( 0, timeSeries.getEvents().size() );
         }
@@ -311,6 +324,7 @@ public class NWMTimeSeriesTest
     @Ignore // If you want to try this against real service, remove @Ignore.
     // Fails because NWM 1.0 had .nc.gz extension.
     public void readNWM10ShortRangeForecastFromDstore()
+            throws InterruptedException, ExecutionException
     {
         // To see it fail to find a file, change blobCount to 25
         NWMProfile nwmProfile = new NWMProfile( 18,
@@ -330,7 +344,9 @@ public class NWMTimeSeriesTest
                                                                URI.create( "https://dstore-fqdn/nwm/1.0/" ) ) )
         {
             LOGGER.info( "Finished opening forecast files, now reading..." );
-            TimeSeries<Double> timeSeries = nwmTimeSeries.readTimeSeries( 18384141, "streamflow" );
+            int featureId = 18384141;
+            TimeSeries<?> timeSeries = nwmTimeSeries.readTimeSerieses( new int[] { featureId }, "streamflow" )
+                                                    .get( featureId );
             LOGGER.info( "Here is the timeseries: {}", timeSeries );
             assertNotNull( timeSeries );
             assertNotEquals( 0, timeSeries.getEvents().size() );
@@ -340,6 +356,7 @@ public class NWMTimeSeriesTest
     @Test
     @Ignore // If you want to try this against real volume, remove @Ignore.
     public void readForecastFromFilesystem()
+            throws InterruptedException, ExecutionException
     {
         // To see it fail to find a file, change blobCount to 25
         NWMProfile nwmProfile = new NWMProfile( 18,
@@ -359,7 +376,9 @@ public class NWMTimeSeriesTest
                                                                URI.create( "H:/netcdf_data/" ) ) )
         {
             LOGGER.info( "Finished opening forecast files, now reading..." );
-            TimeSeries<Double> timeSeries = nwmTimeSeries.readTimeSeries( 18384141, "streamflow" );
+            int featureId = 18384141;
+            TimeSeries<?> timeSeries = nwmTimeSeries.readTimeSerieses( new int[] { featureId }, "streamflow" )
+                                                    .get( featureId );
             LOGGER.info( "Here is the timeseries: {}", timeSeries );
             assertNotNull( timeSeries );
             assertNotEquals( 0, timeSeries.getEvents().size() );
@@ -371,6 +390,7 @@ public class NWMTimeSeriesTest
     // If you want to try this against real service, set FQDN, remove @Ignore.
     @Ignore
     public void readNWM20MediumRangeForecastFromDstore()
+            throws InterruptedException, ExecutionException
     {
         // To see it fail to find a file, change blobCount to 70
         // To see it run OutOfMemoryError, change blobCount to full 68
@@ -392,16 +412,18 @@ public class NWMTimeSeriesTest
                                                                URI.create( "https://dstore-fqdn/nwm/2.0/" ) ) )
         {
             LOGGER.info( "Finished opening forecast files, now reading..." );
-            TimeSeries<Ensemble> timeSeries = nwmTimeSeries.readEnsembleTimeSeries( 18384141, "streamflow" );
-            LOGGER.info( "Here is the timeseries: {}", timeSeries );
-            TimeSeries<Ensemble> timeSeries2 = nwmTimeSeries.readEnsembleTimeSeries( 18696047, "streamflow" );
+            int[] featureIds = new int[] { 18384141, 18696047, 942030011 };
+            Map<Integer,TimeSeries<?>> timeSerieses = nwmTimeSeries.readEnsembleTimeSerieses( featureIds, "streamflow" );
+            TimeSeries<?> timeSeries1 = timeSerieses.get( featureIds[0] );
+            LOGGER.info( "Here is timeSeries 1: {}", timeSeries1 );
+            TimeSeries<?> timeSeries2 = timeSerieses.get( featureIds[1] );
             LOGGER.info( "Here is timeseries 2: {}", timeSeries2 );
-            TimeSeries<Ensemble> timeSeries3 = nwmTimeSeries.readEnsembleTimeSeries( 942030011, "streamflow" );
+            TimeSeries<?> timeSeries3 = timeSerieses.get( featureIds[3] );
             LOGGER.info( "Here is timeseries 3: {}", timeSeries3 );
-            assertNotNull( timeSeries );
+            assertNotNull( timeSeries1 );
             assertNotNull( timeSeries2 );
             assertNotNull( timeSeries3 );
-            assertNotEquals( 0, timeSeries.getEvents().size() );
+            assertNotEquals( 0, timeSeries1.getEvents().size() );
             assertNotEquals( 0, timeSeries2.getEvents().size() );
             assertNotEquals( 0, timeSeries3.getEvents().size() );
         }
@@ -412,6 +434,7 @@ public class NWMTimeSeriesTest
     // To try this against real filesystem, download data, set URI, remove @Ignore.
     @Ignore
     public void readNWM20MediumRangeForecastFromFilesystem()
+            throws InterruptedException, ExecutionException
     {
         // To see it fail to find a file, change blobCount to 70
         // To see it run OutOfMemoryError, change blobCount to full 68
@@ -433,16 +456,18 @@ public class NWMTimeSeriesTest
                                                                URI.create( "C:/nwm_data/" ) ) )
         {
             LOGGER.info( "Finished opening forecast files, now reading..." );
-            TimeSeries<Ensemble> timeSeries = nwmTimeSeries.readEnsembleTimeSeries( 18384141, "streamflow" );
-            LOGGER.info( "Here is the timeseries: {}", timeSeries );
-            TimeSeries<Ensemble> timeSeries2 = nwmTimeSeries.readEnsembleTimeSeries( 18696047, "streamflow" );
+            int[] featureIds = new int[] { 18384141, 18696047, 942030011 };
+            Map<Integer,TimeSeries<?>> timeSerieses = nwmTimeSeries.readEnsembleTimeSerieses( featureIds, "streamflow" );
+            TimeSeries<?> timeSeries1 = timeSerieses.get( featureIds[0] );
+            LOGGER.info( "Here is timeSeries 1: {}", timeSeries1 );
+            TimeSeries<?> timeSeries2 = timeSerieses.get( featureIds[1] );
             LOGGER.info( "Here is timeseries 2: {}", timeSeries2 );
-            TimeSeries<Ensemble> timeSeries3 = nwmTimeSeries.readEnsembleTimeSeries( 942030011, "streamflow" );
+            TimeSeries<?> timeSeries3 = timeSerieses.get( featureIds[3] );
             LOGGER.info( "Here is timeseries 3: {}", timeSeries3 );
-            assertNotNull( timeSeries );
+            assertNotNull( timeSeries1 );
             assertNotNull( timeSeries2 );
             assertNotNull( timeSeries3 );
-            assertNotEquals( 0, timeSeries.getEvents().size() );
+            assertNotEquals( 0, timeSeries1.getEvents().size() );
             assertNotEquals( 0, timeSeries2.getEvents().size() );
             assertNotEquals( 0, timeSeries3.getEvents().size() );
         }

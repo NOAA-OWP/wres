@@ -119,7 +119,10 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
         URI location = this.getLocation();
 
         Instant now = Instant.now();
-        byte[] rawHash = this.identifyTimeSeries( this.getTimeSeries() );
+        byte[] rawHash = this.identifyTimeSeries( this.getTimeSeries(),
+                                                  this.getLocationName()
+                                                  + this.getVariableName()
+                                                  + this.getMeasurementUnit() );
         String hash = Hex.encodeHexString( rawHash, false );
 
         SourceDetails.SourceKey sourceKey =
@@ -448,7 +451,8 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
         return MeasurementUnits.getMeasurementUnitID( measurementUnit );
     }
 
-    private byte[] identifyTimeSeries ( TimeSeries<?> timeSeries )
+    private byte[] identifyTimeSeries( TimeSeries<?> timeSeries,
+                                       String additionalIdentifiers )
     {
         MessageDigest md5Name;
 
@@ -465,7 +469,8 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
         DigestUtils digestUtils = new DigestUtils( md5Name );
 
         // Here assuming that the toString represents all state of a timeseries.
-        byte[] hash = digestUtils.digest( timeSeries.toString() );
+        byte[] hash = digestUtils.digest( timeSeries.toString()
+                                          + additionalIdentifiers );
 
         if ( hash.length < 16 )
         {

@@ -338,7 +338,8 @@ class FeatureProcessorTwo implements Supplier<FeatureProcessingResult>
     }
 
     /**
-     * Returns a task that writes pairs.
+     * Returns a task that writes pairs. Returns an empty set of paths, since pairs are not written per feature. Paths
+     * to pairs should be reported for all features, not per feature. See #71874.
      * 
      * @param <L> the left type of data
      * @param <R> the right type of data
@@ -364,8 +365,10 @@ class FeatureProcessorTwo implements Supplier<FeatureProcessingResult>
                                     {
                                         sharedWriters.accept( sampleData );
                                     }
-
-                                    return sharedWriters.get();
+                                    
+                                    // #71874: pairs are not written per feature so do not report on the 
+                                    // paths to pairs for each feature. Report on the pairs for all features.
+                                    return Collections.emptySet();
                                 },
                                                  this.executors.getProductExecutor() );
     }
