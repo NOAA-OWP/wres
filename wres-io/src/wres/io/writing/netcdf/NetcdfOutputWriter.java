@@ -21,7 +21,6 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -37,6 +36,7 @@ import ucar.ma2.Array;
 import ucar.ma2.DataType;
 import ucar.ma2.Index;
 import ucar.ma2.InvalidRangeException;
+import ucar.nc2.Dimension;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.NetcdfFileWriter;
 import ucar.nc2.Variable;
@@ -62,7 +62,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
 {   
     private static final Logger LOGGER = LoggerFactory.getLogger( NetcdfOutputWriter.class );
 
-    private static final String DEFAULT_VECTOR_TEMPLATE = "legend_and_nhdplusv2_template.nc";
+    private static final String DEFAULT_VECTOR_TEMPLATE = "vector_template.nc";
     private static final String DEFAULT_GRID_TEMPLATE = "lcc_grid_template.nc";
     private static final int VALUE_SAVE_LIMIT = 500;
 
@@ -378,6 +378,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
 
         NetcdfOutputWriter outputWriter;
         Path outputDirectory;
+        private boolean useLidForLocationIdentifier;
         private final Map<Object, Integer> vectorCoordinatesMap = new ConcurrentHashMap<>();
 
         TimeWindowWriter( NetcdfOutputWriter outputWriter,
@@ -408,7 +409,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                 // Figure out the location of all values and build the origin in each variable grid
                 Location location = score.getMetadata().getSampleMetadata().getIdentifier().getGeospatialID();
 
-                int[] origin = new int[0];
+                int[] origin;
 
                 try
                 {
@@ -614,9 +615,9 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
             {
                 // Only contains the vector id
                 Integer vectorIndex = this.getVectorCoordinate(
-                                                                location.getVectorIdentifier().intValue(),
-                                                                this.outputWriter.getNetcdfConfiguration()
-                                                                                 .getVectorVariable() );
+                        location,
+                        this.outputWriter.getNetcdfConfiguration().getVectorVariable()
+                );
 
                 if (vectorIndex == null)
                 {
@@ -634,32 +635,61 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
             return origin;
         }
 
-        private Integer getVectorCoordinate( Integer vectorIdentifier, String vectorVariableName )
-                throws IOException
+        private Integer getVectorCoordinate( Location location, String vectorVariableName) throws IOException
         {
             synchronized ( vectorCoordinatesMap )
             {
-                if ( vectorCoordinatesMap.size() == 0 )
+                if (vectorCoordinatesMap.size() == 0)
                 {
-                    try ( NetcdfFile outputFile = NetcdfFile.open( this.outputPath ) )
-                    {
-                        Variable coordinate = outputFile.findVariable( vectorVariableName );
-
+                    try( NetcdfFile outputFile = NetcdfFile.open(this.outputPath)) {
+                        Variable coordinate = outputFile.findVariable(vectorVariableName);
                         Array values = coordinate.read();
 
                         // It's probably not necessary to load in everything
                         // We're loading everything in at the moment because we
                         // don't really know what to expect
-                        for ( int index = 0; index < values.getSize(); ++index )
+                        if (coordinate.getDataType() == DataType.CHAR)
                         {
-                            vectorCoordinatesMap.put( values.getObject( index ), index );
+                            this.useLidForLocationIdentifier = true;
+
+                            List<Dimension> dimensions = coordinate.getDimensions();
+
+                            for (int wordIndex = 0; wordIndex < dimensions.get(0).getLength(); wordIndex++)
+                            {
+                                int[] origin = new int[]{wordIndex, 0};
+                                int[] shape = new int[]{1, dimensions.get(1).getLength()};
+
+                                char[] characters = (char[])coordinate.read(origin, shape).get1DJavaArray(DataType.CHAR);
+                                String word = String.valueOf(characters).trim();
+
+                                vectorCoordinatesMap.put(word, wordIndex);
+                            }
                         }
+                        else
+                        {
+                            this.useLidForLocationIdentifier = false;
+
+                            for ( int index = 0; index < values.getSize(); ++index )
+                            {
+                                vectorCoordinatesMap.put( values.getObject( index ), index );
+                            }
+                        }
+                    } catch (InvalidRangeException e) {
+                        throw new IOException("A coordinate could not be read.", e);
                     }
                 }
 
-                return vectorCoordinatesMap.get( vectorIdentifier );
+                if (this.useLidForLocationIdentifier)
+                {
+                    return vectorCoordinatesMap.get(location.getLocationName());
+                }
+                else
+                {
+                    return this.vectorCoordinatesMap.get(location.getVectorIdentifier().intValue());
+                }
             }
         }
+
 
         @Override
         public String toString()
