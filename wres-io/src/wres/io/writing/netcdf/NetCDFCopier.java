@@ -189,11 +189,12 @@ public class NetCDFCopier implements Closeable
             }
 
             Variable newVariable = this.getWriter()
-                                       .addVariable(
-                                               originalVariable.getShortName(),
-                                               originalVariable.getDataType(),
-                                               variableDimensions
-                                       );
+                    .addVariable(
+                            originalVariable.getShortName(),
+                            originalVariable.getDataType(),
+                            variableDimensions
+                    );
+
 
             for (Attribute originalAttribute : originalVariable.getAttributes())
             {
@@ -236,7 +237,7 @@ public class NetCDFCopier implements Closeable
             LOGGER.debug("Copying over all {} data from {} to {}", originalVariable.getShortName(), this.fromFileName, this.targetFileName);
             Array values = originalVariable.read();
 
-            this.getWriter().write( originalVariable.getShortName(), values );
+            this.getWriter().write(originalVariable.getShortName(), values);
         }
         LOGGER.debug( "Done copying all variable data from the template." );
     }
@@ -369,7 +370,8 @@ public class NetCDFCopier implements Closeable
         else
         {
             // TODO: find a way to make the vector dimension name programatic and not hard coded
-            dimensionList.add("feature_id");
+            //dimensionList.add("feature_id");
+            dimensionList.add("lid");
         }
 
         return dimensionList;

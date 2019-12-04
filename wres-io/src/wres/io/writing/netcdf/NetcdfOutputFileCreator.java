@@ -85,8 +85,7 @@ class NetcdfOutputFileCreator
                 }
                 catch ( InvalidRangeException e )
                 {
-                    throw new IOException(
-                            "The lead time could not be written to the output." );
+                    throw new IOException("The lead time could not be written to the output.", e );
                 }
 
                 ArrayInt.D1 analysisMinutes = new ArrayInt.D1( 1, false );
@@ -101,8 +100,7 @@ class NetcdfOutputFileCreator
                 }
                 catch ( InvalidRangeException e )
                 {
-                    throw new IOException(
-                            "The analysis time could not be written to the output." );
+                    throw new IOException("The analysis time could not be written to the output.", e );
                 }
 
                 writer.flush();
