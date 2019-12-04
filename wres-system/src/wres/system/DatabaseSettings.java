@@ -162,6 +162,7 @@ final class DatabaseSettings
 
             if ( migrate )
             {
+                LOGGER.info( "Beginning database migration. This takes time." );
                 ConnectionSupplier connectionSupplier =
                         new ConnectionSupplier( this.getDatabaseName() );
                 DatabaseLockManager lockManager =
@@ -180,6 +181,7 @@ final class DatabaseSettings
                 }
 
                 cleanPriorRuns();
+                LOGGER.info( "Finished database migration." );
             }
         }
 		catch ( XMLStreamException | SQLException | IOException e )

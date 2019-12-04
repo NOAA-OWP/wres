@@ -7,8 +7,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -204,6 +206,94 @@ public class NWMReader implements Callable<List<IngestResult>>
             throw new IngestException( "Failed to get features/locations.", se );
         }
 
+        // A list of featureIds that will be sorted in NWM id order to be used
+        // to create blocks of sequential NWM ids.
+        List<Integer> featureNwmIds = new ArrayList<>( features.size() );
+
+        // A map from featureId back to the database feature row to get names.
+        Map<Integer,FeatureDetails> featuresByNwmId = new HashMap<>( features.size() );
+
+        for ( FeatureDetails feature : features )
+        {
+            Integer id = feature.getComid();
+
+            // Skip features without a comid.
+            if ( !Objects.isNull( id ) )
+            {
+                featureNwmIds.add( id );
+                featuresByNwmId.put( id, feature );
+            }
+        }
+
+        featureNwmIds.sort( null );
+        LOGGER.debug( "Sorted featureNwmIds: {}", featureNwmIds );
+
+        // Chunk reads by FEATURE_READ_COUNT
+        final int FEATURE_READ_COUNT = 100;
+        int maxCountOfBlocks = ( featureNwmIds.size()
+                                 / FEATURE_READ_COUNT )
+                               + 1;
+        List<int[]> featureBlocks = new ArrayList<>( maxCountOfBlocks );
+
+        int j = 0;
+        int[] block;
+
+        // The last block is unlikely to be exactly FEATURE_READ_COUNT
+        int remaining = featureNwmIds.size();
+
+        if ( remaining < FEATURE_READ_COUNT )
+        {
+            block = new int[remaining];
+        }
+        else
+        {
+            block = new int[FEATURE_READ_COUNT];
+        }
+
+        for ( int i = 0; i < featureNwmIds.size(); i++ )
+        {
+            if ( i % FEATURE_READ_COUNT == 0 )
+            {
+                LOGGER.debug( "Found we are at a boundary. i={}, j={}", i, j );
+                // After the first block is written, add to list.
+                if ( i > 0 )
+                {
+                    featureBlocks.add( block );
+                }
+
+                // The last block is unlikely to be exactly FEATURE_READ_COUNT
+                remaining = featureNwmIds.size() - i;
+
+                if ( remaining < FEATURE_READ_COUNT )
+                {
+                    LOGGER.debug( "Creating last int[] of size {}", remaining );
+                    block = new int[remaining];
+                }
+                else
+                {
+                    LOGGER.debug( "Creating full sized int[] of size {}",
+                                  FEATURE_READ_COUNT );
+                    block = new int[FEATURE_READ_COUNT];
+                }
+
+                j = 0;
+            }
+
+            block[j] = featureNwmIds.get( i );
+            j++;
+        }
+
+        // Add the last feature block
+        featureBlocks.add( block );
+
+        if ( LOGGER.isDebugEnabled() )
+        {
+            for ( int[] someBlock : featureBlocks )
+            {
+                LOGGER.debug( "Feature block: {}", someBlock );
+            }
+        }
+
         // Find the reference datetimes for the datasets.
         Set<Instant> referenceDatetimes = this.getReferenceDatetimes( this.earliest,
                                                                       this.latest,
@@ -221,7 +311,7 @@ public class NWMReader implements Callable<List<IngestResult>>
                                                 referenceDatetime,
                                                 this.getUri() ) )
                 {
-                    for ( FeatureDetails feature : features )
+                    for ( int[] featureBlock : featureBlocks )
                     {
                         String variableName = this.getDataSource()
                                                   .getVariable()
@@ -230,19 +320,19 @@ public class NWMReader implements Callable<List<IngestResult>>
                         String unitName = nwmTimeSeries.readAttributeAsString(
                                 variableName,
                                 "units" );
-                        TimeSeries<?> values;
+                        Map<Integer,TimeSeries<?>> values;
 
                         if ( this.getNwmProfile()
                                  .getMemberCount() == 1 )
                         {
-                            values = nwmTimeSeries.readTimeSeries( feature.getComid(),
-                                                                   variableName );
+                            values = nwmTimeSeries.readTimeSerieses( featureBlock,
+                                                                     variableName );
                         }
                         else if ( this.getNwmProfile()
                                       .getMemberCount() > 1 )
                         {
-                            values = nwmTimeSeries.readEnsembleTimeSeries( feature.getComid(),
-                                                                           variableName );
+                            values = nwmTimeSeries.readEnsembleTimeSerieses( featureBlock,
+                                                                             variableName );
                         }
                         else
                         {
@@ -252,50 +342,58 @@ public class NWMReader implements Callable<List<IngestResult>>
                                                                      + " members." );
                         }
 
-                        // Create a uri that reflects the origin of the data
-                        URI uri = this.getUri()
-                                      .resolve( this.getDataSource()
-                                                    .getSource()
-                                                    .getInterface()
-                                                    .toString()
-                                                + "/"
-                                                + feature.getComid()
-                                                + "/"
-                                                + this.getDataSource()
-                                                      .getVariable()
-                                                      .getValue()
-                                                + "/"
-                                                + referenceDatetime.toString() );
-                        DataSource innerDataSource =
-                                DataSource.of( this.getDataSource()
-                                                   .getSource(),
-                                               this.getDataSource()
-                                                   .getContext(),
-                                               this.getDataSource()
-                                                   .getLinks(),
-                                               uri );
-
-                        // While wres.source table is used, it is the reader level code
-                        // that must deal with the wres.source table. Use the identifier
-                        // of the timeseries data as if it were a wres.source.
-                        TimeSeriesIngester ingester =
-                                new TimeSeriesIngester( this.getProjectConfig(),
-                                                        innerDataSource,
-                                                        this.getLockManager(),
-                                                        values,
-                                                        feature.getLid(),
-                                                        variableName,
-                                                        unitName );
-                        Future<List<IngestResult>> future =
-                                this.getExecutor().submit( ingester );
-                        this.ingests.add( future );
-                        this.startGettingResults.countDown();
-
-                        if ( this.startGettingResults.getCount() <= 0 )
+                        for ( Map.Entry<Integer,TimeSeries<?>> entry : values.entrySet() )
                         {
-                            List<IngestResult> ingested = this.ingests.take()
-                                                                      .get();
-                            ingestResults.addAll( ingested );
+                            // Create a uri that reflects the origin of the data
+                            URI uri = this.getUri()
+                                          .resolve( this.getDataSource()
+                                                        .getSource()
+                                                        .getInterface()
+                                                        .toString()
+                                                    + "/"
+                                                    + entry.getKey()
+                                                    + "/"
+                                                    + this.getDataSource()
+                                                          .getVariable()
+                                                          .getValue()
+                                                    + "/"
+                                                    + referenceDatetime.toString() );
+                            DataSource innerDataSource =
+                                    DataSource.of( this.getDataSource()
+                                                       .getSource(),
+                                                   this.getDataSource()
+                                                       .getContext(),
+                                                   this.getDataSource()
+                                                       .getLinks(),
+                                                   uri );
+
+                            // Find the feature name (use lid as substitute)
+                            String featureName = featuresByNwmId.get( entry.getKey() )
+                                                                .getLid();
+
+                            // While wres.source table is used, it is the reader level code
+                            // that must deal with the wres.source table. Use the identifier
+                            // of the timeseries data as if it were a wres.source.
+                            TimeSeriesIngester ingester =
+                                    new TimeSeriesIngester( this.getProjectConfig(),
+                                                            innerDataSource,
+                                                            this.getLockManager(),
+                                                            entry.getValue(),
+                                                            featureName,
+                                                            variableName,
+                                                            unitName );
+                            Future<List<IngestResult>> future =
+                                    this.getExecutor().submit( ingester );
+                            this.ingests.add( future );
+                            this.startGettingResults.countDown();
+
+                            if ( this.startGettingResults.getCount() <= 0 )
+                            {
+                                List<IngestResult> ingested =
+                                        this.ingests.take()
+                                                    .get();
+                                ingestResults.addAll( ingested );
+                            }
                         }
                     }
                 }
