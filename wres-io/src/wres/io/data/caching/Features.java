@@ -477,19 +477,8 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
     {
         DataScripter script = new DataScripter(  );
 
-//OLD CODE:
-//        script.addLine("SELECT geographic_coordinate[0]::real AS longitude,");
-//        script.addTab().addLine("geographic_coordinate[1]::real AS latitude,");
-//        script.addTab().addLine("row_number() OVER (ORDER BY x_position, y_position)::int AS feature_id,");
-//        script.addTab().addLine("*");
-//        script.addLine("FROM wres.NetcdfCoordinate");
-//        script.addLine("WHERE");
-
-//NEW CODE: Implemented to avoid potential collision between the ids assigned to gridded locales and those
-//assigned to vector locales.  See #68916. The padding is limited to 4 chars so that the combined number is
-//8 digits or less, allowing it to fit within an int. 
-        script.addLine("SELECT geographic_coordinate[0]::real AS longitude,");
-        script.addTab().addLine("geographic_coordinate[1]::real AS latitude,");
+        script.addLine("SELECT geographic_coordinate[0] AS longitude,");
+        script.addTab().addLine("geographic_coordinate[1] AS latitude,");
         script.addTab().addLine("(rpad(LEAST(x_position, 21473)::VARCHAR, 4, '1') || lpad(y_position::VARCHAR, 4, '0'))::INT AS feature_id,");
         script.addTab().addLine("*");
         script.addLine("FROM wres.NetcdfCoordinate");
