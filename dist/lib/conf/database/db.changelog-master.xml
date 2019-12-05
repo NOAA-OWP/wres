@@ -60,6 +60,5 @@
     <include file="add_daily_flow_measurementunits.xml" relativeToChangelogFile="true" />
     <include file="update_stock_features.xml" relativeToChangelogFile="true" />
     <include file="widen_feature_coordinates.xml" relativeToChangelogFile="true" />
-    <include file="add_synthetic_comids.xml" relativeToChangelogFile="true" />
 </databaseChangeLog>
 
