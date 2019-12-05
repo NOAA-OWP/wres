@@ -5,6 +5,8 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
         objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <!-- This is all in one changeset because it needs to be an atomic change;
+        we don't want to risk applying some of the changes but not all -->
     <changeSet id="Widen coordinates" author="Christopher Tubbs" dbms="PostgreSQL">
         <!-- In order to modify the type of the columns, the view must first be dropped -->
         <dropView schemaName="wres" viewName="VariableByFeature" />
@@ -12,26 +14,26 @@
         <modifyDataType schemaName="wres" tableName="Feature" columnName="latitude" newDataType="DOUBLE PRECISION" />
         <createView viewName="VariableByFeature" schemaName="wres" replaceIfExists="true">
             SELECT  VP.variablefeature_id,
-            F.feature_id,
-            variable_name,
-            comid,
-            lid,
-            gage_id,
-            region,
-            state,
-            huc,
-            feature_name,
-            latitude,
-            longitude,
-            V.variable_id
+                F.feature_id,
+                variable_name,
+                comid,
+                lid,
+                gage_id,
+                region,
+                state,
+                huc,
+                feature_name,
+                latitude,
+                longitude,
+                V.variable_id
             FROM wres.VariableFeature VP
             INNER JOIN wres.Variable V
-            ON V.variable_id = VP.variable_id
+                ON V.variable_id = VP.variable_id
             INNER JOIN wres.Feature F
-            ON F.feature_id = VP.feature_id;
+                ON F.feature_id = VP.feature_id;
         </createView>
         <sql>
-            ALTER TABLE wres.VariableByFeature OWNER TO wres;
+            ALTER VIEW wres.VariableByFeature OWNER TO wres;
         </sql>
     </changeSet>
 </databaseChangeLog>

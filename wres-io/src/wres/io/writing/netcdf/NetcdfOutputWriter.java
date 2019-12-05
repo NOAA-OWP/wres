@@ -198,7 +198,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                 Callable<Set<Path>> writerTask = new Callable<Set<Path>>()
                 {
                     @Override
-                    public Set<Path> call() throws IOException, InvalidRangeException
+                    public Set<Path> call() throws IOException, InvalidRangeException, CoordinateNotFoundException
                     {
                         Set<Path> pathsWrittenTo = new HashSet<>( 1 );
 
@@ -210,7 +210,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                             pathsWrittenTo.add( pathWritten );
                             return Collections.unmodifiableSet( pathsWrittenTo );
                         }
-                        catch ( IOException | InvalidRangeException e )
+                        catch ( IOException | InvalidRangeException | CoordinateNotFoundException e )
                         {
                             LOGGER.error( "Writing to output failed.", e );
                             throw e;
@@ -397,7 +397,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
         }
 
         void write( Collection<DoubleScoreStatistic> output )
-                throws IOException, InvalidRangeException
+                throws IOException, InvalidRangeException, CoordinateNotFoundException
         {
             //this now needs to somehow get all metadata for all metrics
             // Ensure that the output file exists
@@ -417,11 +417,10 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                 }
                 catch ( CoordinateNotFoundException e )
                 {
-                    LOGGER.error( e.getMessage() );
-                    LOGGER.warn( "There are no records for where to put results for " + location +
+                    LOGGER.error( "There are no records for where to put results for " + location +
                                  ". Netcdf output for " + location + " cannot be written. If outputs are not "
                                  + "written in other formats, you will not be able to view these results." );
-                    return;
+                    throw e;
                 }
 
                 Double actualValue = score.getData();
