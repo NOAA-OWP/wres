@@ -607,8 +607,7 @@ project(':wres-worker')
 
     mainClassName = 'wres.worker.Worker'
     applicationDefaultJvmArgs = ['-Xms32m','-Xmx32m',
-                                 '-XX:+HeapDumpOnOutOfMemoryError',
-                                 '-Ducar.unidata.io.http.maxHttpBufferSize=200000']
+                                 '-XX:+HeapDumpOnOutOfMemoryError']
 
     // Add logging configuration to the classpath when running via script
     startScripts
@@ -828,7 +827,8 @@ targetCompatibility = '11'
 
 applicationDefaultJvmArgs = ['-Xms2180m', '-Xmx2180m',
                              '-XX:+HeapDumpOnOutOfMemoryError',
-                             '-Djava.util.logging.config.class=wres.system.logging.JavaUtilLoggingRedirector']
+                             '-Djava.util.logging.config.class=wres.system.logging.JavaUtilLoggingRedirector',
+                             '-Ducar.unidata.io.http.maxHttpBufferSize=200000']
 
 // Get the commit and date from the TOP for this project, it is outermost.
 // The top level commit will also reflect changes to this build.gradle script.
