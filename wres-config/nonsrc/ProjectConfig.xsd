@@ -82,7 +82,9 @@
                 path/resource  structure of an NWM dataset. Whatever structure
                 is on top of a URI that cannot be automatically discerned from
                 the URI or data within that URI is summarized by one of these
-                short-hands and must be specified.
+                short-hands and must be specified. When an NWM forecast is
+                specified, issuedDates must also be specified. When an interface
+                serving observations is specified, dates must also be specified.
             </xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:string">
