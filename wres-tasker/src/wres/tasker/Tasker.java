@@ -98,7 +98,7 @@ public class Tasker
 
     private static SslContextFactory getSslContextFactory()
     {
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         String ourServerCertificateFilename = BrokerHelper.getSecretsDir()
                                               + "/***REMOVED***wres"
                                               + Environment.getEnvironmentSuffix()
