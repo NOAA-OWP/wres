@@ -2,9 +2,9 @@
 <project label="Short Ranged IOEP Example" name="scenario702">
     <inputs>
         <left label="USGS">
-            <type>simulations</type>
+            <type>observations</type>
             <source format="usgs"></source>
-            <variable unit="ft3/s">streamflow</variable>
+            <variable label="streamflow">00060</variable>
         </left>
         <right label="NWM Short Range">
             <type>single valued forecasts</type>
