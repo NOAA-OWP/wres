@@ -52,6 +52,7 @@ import org.junit.runners.Suite;
     Scenario501.class,
     Scenario502.class,
     Scenario507.class,
+    Scenario509.class,
     Scenario600.class,
     Scenario601.class,
     Scenario650.class,
