@@ -198,17 +198,4 @@ public class DataSource
 
         return joiner.toString();
     }
-
-    /**
-     * Return a copy of this except with a different DataSourceConfig
-     * @param dataSourceConfig the DataSourceConfig to use.
-     * @return a DataSource exactly the same as this, but with context from args
-     */
-    DataSource withContext( DataSourceConfig dataSourceConfig )
-    {
-        return DataSource.of( this.getSource(),
-                              dataSourceConfig,
-                              this.getLinks(),
-                              this.getUri() );
-    }
 }
