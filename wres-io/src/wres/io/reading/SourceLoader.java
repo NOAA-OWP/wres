@@ -302,9 +302,7 @@ public class SourceLoader
 
         LOGGER.debug( "ingestData() with hash known in advance: {}, {}",
                       source, hash );
-
         List<Future<List<IngestResult>>> tasks = new ArrayList<>();
-
         IngestSaver ingestSaver = IngestSaver.createTask()
                                              .withProject( projectConfig )
                                              .withDataSource( source )
@@ -312,30 +310,8 @@ public class SourceLoader
                                              .withProgressMonitoring()
                                              .withLockManager( lockManager )
                                              .build();
-
         Future<List<IngestResult>> task = Executor.submit( ingestSaver );
         tasks.add( task );
-
-        // Additional links required?
-        // If so, create a fake ingest result for each source type to link.
-        // The context is provided by the corresponding data source declaration.
-
-        // TODO (JBr): it smells that we do not mutate wres.Source and wres.ProjectSource
-        // atomically. Instead, we delegate the mutation of wres.ProjectSource to
-        // Operations, which we notify here with a fake Future. The SourceLoader needs
-        // to become responsible for both.
-        for ( LeftOrRightOrBaseline nextLink : source.getLinks() )
-        {
-            // Get the context for the link
-            DataSourceConfig dataSourceconfig = SourceLoader.getDataSourceConfig( projectConfig, nextLink );
-            DataSource anotherDataSource = source.withContext( dataSourceconfig );
-
-            // Fake a future, return result immediately.
-            tasks.add( IngestResult.fakeFutureSingleItemListFrom( projectConfig,
-                                                                  anotherDataSource,
-                                                                  hash ) );
-        }
-
         return Collections.unmodifiableList( tasks );
     }
 
@@ -425,23 +401,6 @@ public class SourceLoader
                     source,
                     checkIngest.getHash(),
                     !checkIngest.ingestMarkedComplete() ) );
-
-            // Additional links required? The source already exists, but the links may not
-            for ( LeftOrRightOrBaseline nextLink : source.getLinks() )
-            {
-                // Get the context for the link
-                DataSourceConfig dataSourceconfig =
-                        SourceLoader.getDataSourceConfig( projectConfig,
-                                                          nextLink );
-                DataSource anotherDataSource =
-                        source.withContext( dataSourceconfig );
-
-                // Fake a future, return result immediately.
-                tasks.add( IngestResult.fakeFutureSingleItemListFrom(
-                        projectConfig,
-                        anotherDataSource,
-                        checkIngest.getHash() ) );
-            }
         }
         else if ( sourceStatus.equals( SourceStatus.INVALID ) )
         {
