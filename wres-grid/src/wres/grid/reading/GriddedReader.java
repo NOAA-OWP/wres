@@ -151,7 +151,9 @@ public class GriddedReader
         for ( Map.Entry<FeaturePlus, List<Pair<Instant, Event<Double>>>> nextPair : eventsPerFeature.entrySet() )
         {
             Stream<TimeSeries<Double>> timeSeries =
-                    GriddedReader.getTimeSeriesFromListOfEvents( nextPair.getValue(), request.getTimeScale() )
+                    GriddedReader.getTimeSeriesFromListOfEvents( nextPair.getValue(), 
+                                                                 request.getTimeScale(),
+                                                                 request.isForecast() )
                                  .stream();
             seriesPerFeature.put( nextPair.getKey(), timeSeries );
         }
@@ -176,7 +178,8 @@ public class GriddedReader
      */
 
     static <T> List<TimeSeries<T>> getTimeSeriesFromListOfEvents( List<Pair<Instant, Event<T>>> events,
-                                                                  TimeScale timeScale )
+                                                                  TimeScale timeScale,
+                                                                  boolean isForecast )
     {
         Objects.requireNonNull( events );
 
@@ -227,8 +230,13 @@ public class GriddedReader
         {
             TimeSeriesBuilder<T> builder =
                     new TimeSeriesBuilder<T>().setTimeScale( timeScale )
-                                              .addReferenceTime( nextEntry.getKey(), ReferenceTimeType.UNKNOWN )
                                               .addEvents( nextEntry.getValue() );
+            
+            // Add the reference time for forecasts
+            if( isForecast )
+            {
+                builder.addReferenceTime( nextEntry.getKey(), ReferenceTimeType.UNKNOWN );               
+            }
 
             returnMe.add( builder.build() );
         }
@@ -237,7 +245,7 @@ public class GriddedReader
         // until no duplicates are left
         if ( !duplicates.isEmpty() )
         {
-            returnMe.addAll( GriddedReader.getTimeSeriesFromListOfEvents( duplicates, timeScale ) );
+            returnMe.addAll( GriddedReader.getTimeSeriesFromListOfEvents( duplicates, timeScale, isForecast ) );
         }
 
         return Collections.unmodifiableList( returnMe );

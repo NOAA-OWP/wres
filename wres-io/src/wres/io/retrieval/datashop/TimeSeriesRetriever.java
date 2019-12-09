@@ -842,7 +842,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             String clause = this.getTimeColumnName()
                             + INTERVAL_1_MINUTE
                             + this.getLeadDurationColumnName()
-                            + "= '";
+                            + " = '";
 
             this.addWhereOrAndClause( script,
                                       tabsIn,

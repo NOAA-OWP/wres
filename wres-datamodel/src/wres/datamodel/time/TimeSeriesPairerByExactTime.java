@@ -1,8 +1,12 @@
 package wres.datamodel.time;
 
 import java.time.Instant;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -17,11 +21,10 @@ import org.slf4j.LoggerFactory;
 import wres.datamodel.sampledata.pairs.PairingException;
 
 /**
- * <p>Implements pairing of two {@link TimeSeries} by valid time with exact matching. In other words, pairs are created
- * for each corresponding {@link Instant} in the left and right inputs. Additionally, when the left and right inputs 
- * both contain reference times, as shown by {@link TimeSeries#getReferenceTimes()}, then the reference times associated 
- * with the right input are preserved in the pairs and those associated with the left are discarded. Different behavior
- * should be implemented in different implementations of {@link TimeSeriesPairer}.
+ * <p>Implements pairing of two {@link TimeSeries} by matching valid times exactly. When pairing two time-series that 
+ * both contain reference times, pairs are only formed when one or more reference times intersect. When there are 
+ * matching reference times or one or both time-series do not contain reference times, then pairs are formed by valid 
+ * time only. Exact matching means that times must be actually equal.
  * 
  * <p>Can optionally add validation checks for admissible values on the left and right. If either the left or
  * right values are not admissible, no pair is added.
@@ -93,6 +96,16 @@ public class TimeSeriesPairerByExactTime<L, R> implements TimeSeriesPairer<L, R>
 
         this.validateTimeScalesForPairing( left, right );
 
+        // Any reference times on one side only or that intersect in both type and value?
+        Map<ReferenceTimeType, Instant> referenceTimes = this.getLeftOrRightOrIntersectingReferenceTimes( left, right );
+
+        // If both have reference times and none intersect, there are no pairs
+        if ( referenceTimes.isEmpty() && !left.getReferenceTimes().isEmpty() && !right.getReferenceTimes().isEmpty() )
+        {
+            return new TimeSeriesBuilder<Pair<L, R>>().setTimeScale( left.getTimeScale() )
+                                                      .build();
+        }
+
         Map<Instant, Event<L>> mapper = new TreeMap<>();
 
         // Add the left by valid time
@@ -133,19 +146,9 @@ public class TimeSeriesPairerByExactTime<L, R> implements TimeSeriesPairer<L, R>
         }
 
         // Log inadmissible cases
-        if ( LOGGER.isTraceEnabled() && ( leftInadmissible > 0 || rightInadmissible > 0 ) )
-        {
-            LOGGER.trace( "While pairing left time-series {} with right time-series {}, found {} of {} left values that"
-                          + " were inadmissible and {} of {} right values that were inadmissible.",
-                          left.hashCode(),
-                          right.hashCode(),
-                          leftInadmissible,
-                          left.getEvents().size(),
-                          rightInadmissible,
-                          right.getEvents().size() );
-        }
+        this.logInadmissibleCases( left, right, leftInadmissible, rightInadmissible );
 
-        return new TimeSeriesBuilder<Pair<L, R>>().addReferenceTimes( right.getReferenceTimes() )
+        return new TimeSeriesBuilder<Pair<L, R>>().addReferenceTimes( referenceTimes )
                                                   .addEvents( pairs )
                                                   .setTimeScale( left.getTimeScale() )
                                                   .build();
@@ -201,6 +204,82 @@ public class TimeSeriesPairerByExactTime<L, R> implements TimeSeriesPairer<L, R>
                           left.hashCode(),
                           right.hashCode(),
                           add );
+        }
+    }
+
+    /**
+     * Returns the reference times present in either the left or right time-series or the intersecting reference times
+     * if both time-series contain reference times.
+     * 
+     * @return the left or right or intersecting reference times
+     */
+
+    private Map<ReferenceTimeType, Instant> getLeftOrRightOrIntersectingReferenceTimes( TimeSeries<L> left,
+                                                                                        TimeSeries<R> right )
+    {
+        // One or both sides have no reference times
+        if ( left.getReferenceTimes().isEmpty() )
+        {
+            return right.getReferenceTimes();
+        }
+        else if ( right.getReferenceTimes().isEmpty() )
+        {
+            return left.getReferenceTimes();
+        }
+
+        // Find the intersecting types
+        Set<ReferenceTimeType> retained = new HashSet<>( left.getReferenceTimes().keySet() );
+        retained.retainAll( right.getReferenceTimes().keySet() );
+        if ( !retained.isEmpty() )
+        {
+
+            Map<ReferenceTimeType, Instant> returnMe = new EnumMap<>( ReferenceTimeType.class );
+
+            // Any match?
+            for ( ReferenceTimeType nextType : retained )
+            {
+                Instant leftRef = left.getReferenceTimes().get( nextType );
+                Instant rightRef = right.getReferenceTimes().get( nextType );
+
+                if ( leftRef.equals( rightRef ) )
+                {
+                    returnMe.put( nextType, leftRef );
+                }
+            }
+
+            return Collections.unmodifiableMap( returnMe );
+        }
+
+        return Collections.emptyMap();
+    }
+
+    /**
+     * Logs information about inadmissible pairs.
+     * 
+     * @param left the left time-series
+     * @param right the right time-series
+     * @param leftInadmissible the number of pairs that were inadmissible on left values
+     * @param rightInadmissible the number of pairs that were inadmissible on right values
+     * 
+     */
+
+    private void logInadmissibleCases( TimeSeries<L> left,
+                                       TimeSeries<R> right,
+                                       int leftInadmissible,
+                                       int rightInadmissible )
+    {
+
+        // Log inadmissible cases
+        if ( LOGGER.isTraceEnabled() && ( leftInadmissible > 0 || rightInadmissible > 0 ) )
+        {
+            LOGGER.trace( "While pairing left time-series {} with right time-series {}, found {} of {} left values that"
+                          + " were inadmissible and {} of {} right values that were inadmissible.",
+                          left.hashCode(),
+                          right.hashCode(),
+                          leftInadmissible,
+                          left.getEvents().size(),
+                          rightInadmissible,
+                          right.getEvents().size() );
         }
     }
 

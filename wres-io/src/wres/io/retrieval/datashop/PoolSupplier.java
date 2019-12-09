@@ -291,20 +291,27 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
             baselineData = this.baseline.get().collect( Collectors.toList() );
         }
 
-        // Obtained the desired time scale. If this is unavailable, use the Least Common Scale.
+        // Obtain the desired time scale. If this is unavailable, use the Least Common Scale.
         TimeScale desiredTimeScaleToUse = this.getDesiredTimeScale( leftData, rightData, baselineData, this.inputs );
 
         // Set the metadata, adjusted to include the desired time scale
         builder.setMetadata( SampleMetadata.of( this.metadata, desiredTimeScaleToUse ) );
 
-        // Consolidate and snip the left data to the right bounds of the pool
-        // This improves performance when the left data is large (e.g., climatology)
-        TimeSeries<L> snippedLeft = this.consolidateAndSnip( leftData, rightData );
+        // The left data is most likely to contain a large set of observations, such as climatology
+        // Snipping a large observation-like dataset helps with performance and does not affect accuracy
+        // For now, only apply to the left side, as this is most like to contain the observation-like data that extends
+        // far beyond the bounds of the right data
+        leftData = this.snip( leftData, rightData );
+
+        // Consolidate any observation-like time-series as these values can be shared/combined (w.g., when rescaling)
+        leftData = this.consolidateObservationLikeTimeSeries( leftData );
+        rightData = this.consolidateObservationLikeTimeSeries( rightData );
+        baselineData = this.consolidateObservationLikeTimeSeries( baselineData );
 
         // Get the paired frequency
         Duration pairedFrequency = this.getPairedFrequency();
 
-        List<TimeSeries<Pair<L, R>>> mainPairs = this.createPairs( snippedLeft,
+        List<TimeSeries<Pair<L, R>>> mainPairs = this.createPairs( leftData,
                                                                    rightData,
                                                                    desiredTimeScaleToUse,
                                                                    pairedFrequency );
@@ -336,7 +343,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
                 baselineData = this.createBaseline( this.baselineGenerator, mainPairs );
             }
 
-            List<TimeSeries<Pair<L, R>>> basePairs = this.createPairs( snippedLeft,
+            List<TimeSeries<Pair<L, R>>> basePairs = this.createPairs( leftData,
                                                                        baselineData,
                                                                        desiredTimeScaleToUse,
                                                                        pairedFrequency );
@@ -666,7 +673,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
      * @return the pairs
      */
 
-    private List<TimeSeries<Pair<L, R>>> createPairs( TimeSeries<L> left,
+    private List<TimeSeries<Pair<L, R>>> createPairs( List<TimeSeries<L>> left,
                                                       List<TimeSeries<R>> right,
                                                       TimeScale desiredTimeScale,
                                                       Duration frequency )
@@ -676,22 +683,27 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         Objects.requireNonNull( right );
 
         List<TimeSeries<Pair<L, R>>> returnMe = new ArrayList<>();
-        for ( TimeSeries<R> nextRight : right )
-        {
-            TimeSeries<Pair<L, R>> pairs = this.createSeriesPairs( left,
-                                                                   nextRight,
-                                                                   desiredTimeScale,
-                                                                   frequency );
 
-            if ( !pairs.getEvents().isEmpty() )
+        // Iterate through each combination of left/right series 
+        for ( TimeSeries<L> nextLeft : left )
+        {
+            for ( TimeSeries<R> nextRight : right )
             {
-                returnMe.add( pairs );
-            }
-            else if ( LOGGER.isTraceEnabled() )
-            {
-                LOGGER.trace( "Found zero pairs while intersecting time-series {} with time-series {}.",
-                              left.hashCode(),
-                              nextRight.hashCode() );
+                TimeSeries<Pair<L, R>> pairs = this.createSeriesPairs( nextLeft,
+                                                                       nextRight,
+                                                                       desiredTimeScale,
+                                                                       frequency );
+
+                if ( !pairs.getEvents().isEmpty() )
+                {
+                    returnMe.add( pairs );
+                }
+                else if ( LOGGER.isTraceEnabled() )
+                {
+                    LOGGER.trace( "Found zero pairs while intersecting time-series {} with time-series {}.",
+                                  left.hashCode(),
+                                  nextRight.hashCode() );
+                }
             }
         }
 
@@ -800,14 +812,15 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         TimeSeries<R> scaledAndTransformedRight = this.transform( scaledRight, this.rightTransformer );
 
         // Create the pairs, if any
-        TimeSeries<Pair<L, R>> pairs = this.getPairer().pair( scaledAndTransformedLeft, scaledAndTransformedRight );
+        TimeSeries<Pair<L, R>> pairs = this.getPairer()
+                                           .pair( scaledAndTransformedLeft, scaledAndTransformedRight );
 
         // When upscaling both sides, the superset of pairs may contain "unwanted" pairs.
         // Unwanted pairs are pairs that occur more frequently than the desired frequency.
         // By default, the desired frequency is the period associated with the desired time scale
         // aka, "back-to-back", but an explicit frequency otherwise
         // Filter any unwanted pairs from the superset
-        if ( PoolSupplier.REGULAR_PAIRS && upscaleLeft && upscaleRight )
+        if ( !pairs.getEvents().isEmpty() && PoolSupplier.REGULAR_PAIRS && upscaleLeft && upscaleRight )
         {
             pairs = this.filterUpscaledPairsByFrequency( pairs,
                                                          this.getFirstReferenceTimeOrFirstValidTimeAdjustedForTimeScale( pairs ),
@@ -1146,13 +1159,13 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         {
             returnMe = times.iterator().next();
         }
-        
+
         // Valid time instead?
-        if( Objects.isNull( returnMe ) && !timeSeries.getEvents().isEmpty() )
+        if ( Objects.isNull( returnMe ) && !timeSeries.getEvents().isEmpty() )
         {
             returnMe = timeSeries.getEvents().first().getTime();
-            
-            if( Objects.nonNull( timeSeries.getTimeScale() ) )
+
+            if ( Objects.nonNull( timeSeries.getTimeScale() ) )
             {
                 returnMe = returnMe.minus( timeSeries.getTimeScale().getPeriod() );
             }
@@ -1196,7 +1209,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         Objects.requireNonNull( toFilter );
 
         Objects.requireNonNull( referenceTime );
-        
+
         Objects.requireNonNull( period );
 
         // More than one pair?
@@ -1324,30 +1337,82 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
     }
 
     /**
-     * Consolidates and snips the input series to the prescribed time window.
+     * Snips the first list of time-series to the bounds of the second list. This is an optimization that works when 
+     * the time-series in the first list extend far beyond the bounds of the union of times in the second list. For 
+     * example, the first list may contains observations that are also used to form a climatological dataset, which is 
+     * shared across pools. This method does not affect accuracy.
      * 
-     * @param <P> the time-series event type for the data to be snipped
-     * @param <Q> the time-series event type for the data to use when snipping
-     * @param toSnip the time-series to consolidate and snip
-     * @param bounds the data whose bounds will be used for snipping
-     * @return the snipped data
+     * <S> the type of time-series values to snip
+     * <T> the type of time-series values to use when snipping
+     * @param toSnip the list of time-series to snip
+     * @param snipTo the list of time-series whose bounds will be used for snipping
+     * @return the snipped and possibly consolidated data
      */
 
-    private <P, Q> TimeSeries<P> consolidateAndSnip( List<TimeSeries<P>> toSnip, List<TimeSeries<Q>> bounds )
+    private <S, T> List<TimeSeries<S>> snip( List<TimeSeries<S>> toSnip,
+                                             List<TimeSeries<T>> snipTo )
     {
-        TimeSeriesBuilder<P> builder = new TimeSeriesBuilder<>();
+        TimeWindow timeWindow = this.getTimeWindowFromSeries( snipTo );
 
-        TimeWindow timeWindow = this.getTimeWindowFromSeries( bounds );
+        List<TimeSeries<S>> returnMe = new ArrayList<>();
 
-        for ( TimeSeries<P> next : toSnip )
+        for ( TimeSeries<S> next : toSnip )
         {
-            TimeSeries<P> filtered = TimeSeriesSlicer.filter( next, timeWindow );
-            builder.addEvents( filtered.getEvents() );
-            builder.setTimeScale( next.getTimeScale() )
-                   .addReferenceTimes( next.getReferenceTimes() );
+            TimeSeries<S> filtered = TimeSeriesSlicer.filter( next, timeWindow );
+
+            // Any events left?
+            if ( !filtered.getEvents().isEmpty() )
+            {
+                returnMe.add( filtered );
+            }
         }
 
-        return builder.build();
+        return Collections.unmodifiableList( returnMe );
+    }
+
+    /**
+     * Looks for time-series without reference times and consolidates them. Values within observation-like time-series
+     * may be combined when rescaling. Thus, it is convenient to place them into one time-series. Values within 
+     * forecast-like time-series cannot be combined across time-series.
+     * 
+     * @param <T> the type of event values
+     * @param timeSeries the time-series to consolidate, if possible
+     * @return any time-series that were consolidated plus any time -series that were not consolidated
+     */
+
+    private <T> List<TimeSeries<T>> consolidateObservationLikeTimeSeries( List<TimeSeries<T>> timeSeries )
+    {
+        List<TimeSeries<T>> returnMe = new ArrayList<>();
+
+        // Tolerate null input (e.g., for a baseline)
+        if ( Objects.nonNull( timeSeries ) )
+        {
+            TimeSeriesBuilder<T> consolidatedbuilder = new TimeSeriesBuilder<>();
+
+            for ( TimeSeries<T> next : timeSeries )
+            {
+                // No reference times? Then consolidate into one series
+                if ( next.getReferenceTimes().isEmpty() )
+                {
+                    consolidatedbuilder.addEvents( next.getEvents() )
+                                       .setTimeScale( next.getTimeScale() );
+                }
+                // Some reference times: do not consolidate these time-series
+                else
+                {
+                    returnMe.add( next );
+                }
+            }
+
+            // Consolidated series with some events?
+            TimeSeries<T> consolidated = consolidatedbuilder.build();
+            if ( !consolidated.getEvents().isEmpty() )
+            {
+                returnMe.add( consolidated );
+            }
+        }
+
+        return Collections.unmodifiableList( returnMe );
     }
 
     /**
@@ -1481,7 +1546,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         if ( !offsets.isEmpty() )
         {
             LOGGER.debug( WHILE_CONSTRUCTING_A_POOL_SUPPLIER_FOR
-                          + "discovered that these time offsets by data type {}.",
+                          + "discovered these time offsets by data type {}.",
                           this.metadata,
                           offsets );
         }
