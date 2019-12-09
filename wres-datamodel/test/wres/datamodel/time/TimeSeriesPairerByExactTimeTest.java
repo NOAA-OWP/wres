@@ -14,6 +14,7 @@ import org.junit.Test;
 
 import wres.datamodel.sampledata.pairs.PairingException;
 import wres.datamodel.scale.TimeScale;
+import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 
 /**
  * Tests the {@link TimeSeriesPairerByExactTime}
@@ -24,6 +25,22 @@ import wres.datamodel.scale.TimeScale;
 public class TimeSeriesPairerByExactTimeTest
 {
 
+    private static final Instant T2551_03_19T09_00_00Z = Instant.parse( "2551-03-19T09:00:00Z" );
+    private static final Instant T2551_03_19T06_00_00Z = Instant.parse( "2551-03-19T06:00:00Z" );
+    private static final Instant T2551_03_19T03_00_00Z = Instant.parse( "2551-03-19T03:00:00Z" );
+    private static final Instant T2551_03_19T00_00_00Z = Instant.parse( "2551-03-19T00:00:00Z" );
+    private static final Instant T2551_03_17T12_00_00Z = Instant.parse( "2551-03-17T12:00:00Z" );
+    private static final Instant T2551_03_18T21_00_00Z = Instant.parse( "2551-03-18T21:00:00Z" );
+    private static final Instant T2551_03_18T18_00_00Z = Instant.parse( "2551-03-18T18:00:00Z" );
+    private static final Instant T2551_03_18T15_00_00Z = Instant.parse( "2551-03-18T15:00:00Z" );
+    private static final Instant T2551_03_18T12_00_00Z = Instant.parse( "2551-03-18T12:00:00Z" );
+    private static final Instant T2551_03_18T09_00_00Z = Instant.parse( "2551-03-18T09:00:00Z" );
+    private static final Instant T2551_03_18T06_00_00Z = Instant.parse( "2551-03-18T06:00:00Z" );
+    private static final Instant T2551_03_18T03_00_00Z = Instant.parse( "2551-03-18T03:00:00Z" );
+    private static final Instant T2551_03_18T00_00_00Z = Instant.parse( "2551-03-18T00:00:00Z" );
+    private static final Instant T2551_03_17T21_00_00Z = Instant.parse( "2551-03-17T21:00:00Z" );
+    private static final Instant T2551_03_17T18_00_00Z = Instant.parse( "2551-03-17T18:00:00Z" );
+    private static final Instant T2551_03_17T15_00_00Z = Instant.parse( "2551-03-17T15:00:00Z" );
     private static final Instant T2039_01_12T19_00_00Z = Instant.parse( "2039-01-12T19:00:00Z" );
     private static final Instant T2039_01_12T18_00_00Z = Instant.parse( "2039-01-12T18:00:00Z" );
     private static final Instant T2039_01_12T07_00_00Z = Instant.parse( "2039-01-12T07:00:00Z" );
@@ -201,6 +218,124 @@ public class TimeSeriesPairerByExactTimeTest
         assertEquals( 1, expectedPairs.getEvents().size() );
 
         assertEquals( expectedPairs, actualPairs );
+    }
+
+    @Test
+    public void testPairSingleValuedForecastsAndSingleValuedForecastsCreatesTwentyTwoPairs()
+    {
+        // Case described in #72042-12, based on system test scenario504
+
+        // First time-series
+        SortedSet<Event<Double>> firstEvents = new TreeSet<>();
+        firstEvents.add( Event.of( T2551_03_17T15_00_00Z, 73.0 ) );
+        firstEvents.add( Event.of( T2551_03_17T18_00_00Z, 79.0 ) );
+        firstEvents.add( Event.of( T2551_03_17T21_00_00Z, 83.0 ) );
+        firstEvents.add( Event.of( T2551_03_18T00_00_00Z, 89.0 ) );
+        firstEvents.add( Event.of( T2551_03_18T03_00_00Z, 97.0 ) );
+        firstEvents.add( Event.of( T2551_03_18T06_00_00Z, 101.0 ) );
+        firstEvents.add( Event.of( T2551_03_18T09_00_00Z, 103.0 ) );
+        firstEvents.add( Event.of( T2551_03_18T12_00_00Z, 107.0 ) );
+        firstEvents.add( Event.of( T2551_03_18T15_00_00Z, 109.0 ) );
+        firstEvents.add( Event.of( T2551_03_18T18_00_00Z, 113.0 ) );
+        firstEvents.add( Event.of( T2551_03_18T21_00_00Z, 127.0 ) );
+
+        TimeSeries<Double> first = TimeSeries.of( T2551_03_17T12_00_00Z, firstEvents );
+
+        // Second time-series
+        SortedSet<Event<Double>> secondEvents = new TreeSet<>();
+        secondEvents.add( Event.of( T2551_03_18T03_00_00Z, 131.0 ) );
+        secondEvents.add( Event.of( T2551_03_18T06_00_00Z, 137.0 ) );
+        secondEvents.add( Event.of( T2551_03_18T09_00_00Z, 139.0 ) );
+        secondEvents.add( Event.of( T2551_03_18T12_00_00Z, 149.0 ) );
+        secondEvents.add( Event.of( T2551_03_18T15_00_00Z, 191.0 ) );
+        secondEvents.add( Event.of( T2551_03_18T18_00_00Z, 157.0 ) );
+        secondEvents.add( Event.of( T2551_03_18T21_00_00Z, 163.0 ) );
+        secondEvents.add( Event.of( T2551_03_19T00_00_00Z, 167.0 ) );
+        secondEvents.add( Event.of( T2551_03_19T03_00_00Z, 173.0 ) );
+        secondEvents.add( Event.of( T2551_03_19T06_00_00Z, 179.0 ) );
+        secondEvents.add( Event.of( T2551_03_19T09_00_00Z, 181.0 ) );
+
+        TimeSeries<Double> second = TimeSeries.of( T2551_03_18T00_00_00Z, secondEvents );
+
+        // Create the pairer
+        TimeSeriesPairer<Double, Double> pairer = TimeSeriesPairerByExactTime.of( Double::isFinite, Double::isFinite );
+
+        // Intersect the matching time-series combinations first, then the non-matching combinations
+        // First of four
+        TimeSeries<Pair<Double, Double>> firstActual = pairer.pair( first, first );
+
+        TimeSeries<Pair<Double, Double>> firstExpected =
+                new TimeSeriesBuilder<Pair<Double, Double>>().addEvent( Event.of( T2551_03_17T15_00_00Z,
+                                                                                  Pair.of( 73.0, 73.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_17T18_00_00Z,
+                                                                                  Pair.of( 79.0, 79.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_17T21_00_00Z,
+                                                                                  Pair.of( 83.0, 83.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T00_00_00Z,
+                                                                                  Pair.of( 89.0, 89.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T03_00_00Z,
+                                                                                  Pair.of( 97.0, 97.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T06_00_00Z,
+                                                                                  Pair.of( 101.0, 101.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T09_00_00Z,
+                                                                                  Pair.of( 103.0, 103.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T12_00_00Z,
+                                                                                  Pair.of( 107.0, 107.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T15_00_00Z,
+                                                                                  Pair.of( 109.0, 109.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T18_00_00Z,
+                                                                                  Pair.of( 113.0, 113.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T21_00_00Z,
+                                                                                  Pair.of( 127.0, 127.0 ) ) )
+                                                             .addReferenceTime( T2551_03_17T12_00_00Z,
+                                                                                ReferenceTimeType.UNKNOWN )
+                                                             .build();
+
+        assertEquals( firstExpected, firstActual );
+
+        // Second of four
+        TimeSeries<Pair<Double, Double>> secondActual = pairer.pair( second, second );
+
+        TimeSeries<Pair<Double, Double>> secondExpected =
+                new TimeSeriesBuilder<Pair<Double, Double>>().addEvent( Event.of( T2551_03_18T03_00_00Z,
+                                                                                  Pair.of( 131.0, 131.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T06_00_00Z,
+                                                                                  Pair.of( 137.0, 137.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T09_00_00Z,
+                                                                                  Pair.of( 139.0, 139.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T12_00_00Z,
+                                                                                  Pair.of( 149.0, 149.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T15_00_00Z,
+                                                                                  Pair.of( 191.0, 191.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T18_00_00Z,
+                                                                                  Pair.of( 157.0, 157.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_18T21_00_00Z,
+                                                                                  Pair.of( 163.0, 163.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T00_00_00Z,
+                                                                                  Pair.of( 167.0, 167.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T03_00_00Z,
+                                                                                  Pair.of( 173.0, 173.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T06_00_00Z,
+                                                                                  Pair.of( 179.0, 179.0 ) ) )
+                                                             .addEvent( Event.of( T2551_03_19T09_00_00Z,
+                                                                                  Pair.of( 181.0, 181.0 ) ) )
+                                                             .addReferenceTime( T2551_03_18T00_00_00Z,
+                                                                                ReferenceTimeType.UNKNOWN )
+                                                             .build();
+
+        assertEquals( secondExpected, secondActual );
+
+        // Third of four
+        TimeSeries<Pair<Double, Double>> thirdActual = pairer.pair( first, second );
+        TimeSeries<Pair<Double, Double>> thirdExpected = TimeSeries.of();
+
+        assertEquals( thirdActual, thirdExpected );
+
+        // Fourth of four
+        TimeSeries<Pair<Double, Double>> fourthActual = pairer.pair( first, second );
+        TimeSeries<Pair<Double, Double>> fourthExpected = TimeSeries.of();
+
+        assertEquals( fourthActual, fourthExpected );
     }
 
     @Test
