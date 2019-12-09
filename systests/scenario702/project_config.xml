@@ -3,7 +3,7 @@
     <inputs>
         <left label="USGS">
             <type>observations</type>
-            <source format="usgs"></source>
+            <source>https://nwis.waterservices.usgs.gov/nwis/iv</source>
             <variable label="streamflow">00060</variable>
         </left>
         <right label="NWM Short Range">
