@@ -1,6 +1,7 @@
 package wres.io.retrieval.datashop;
 
 import java.sql.SQLException;
+import java.time.Duration;
 import java.time.MonthDay;
 import java.util.List;
 import java.util.Objects;
@@ -404,6 +405,11 @@ class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Double>
             case OBSERVATIONS:
             case SIMULATIONS:
                 return new ObservationRetriever.Builder();
+            case ANALYSES:
+                Duration analysisHour = Duration.ofHours( this.project.getProjectConfig()
+                                                                      .getPair()
+                                                                      .getAnalysisHour() );
+                return new AnalysisRetriever.Builder().setAnalysisHour( analysisHour );
             default:
                 throw new IllegalArgumentException( "Unrecognized data type from which to create the single-valued "
                                                     + "retriever: "

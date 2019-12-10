@@ -486,12 +486,19 @@ public class ConfigHelper
         return hashBuilder.toString().hashCode();
     }
 
+    /**
+     * Returns whether the data belongs to the @wres.TimeSeries@ tables, not
+     * necessarily whether the data *is* a forecast.
+     * @param dataSourceConfig the configuration
+     * @return true when data may be found in @wres.TimeSeries@ et al. tables.
+     */
     public static boolean isForecast( DataSourceConfig dataSourceConfig )
     {
         Objects.requireNonNull( dataSourceConfig );
 
         return dataSourceConfig.getType() == DatasourceType.SINGLE_VALUED_FORECASTS
-               || dataSourceConfig.getType() == DatasourceType.ENSEMBLE_FORECASTS;
+               || dataSourceConfig.getType() == DatasourceType.ENSEMBLE_FORECASTS
+               || dataSourceConfig.getType() == DatasourceType.ANALYSES;
     }
 
     public static boolean isSimulation( DataSourceConfig dataSourceConfig )
