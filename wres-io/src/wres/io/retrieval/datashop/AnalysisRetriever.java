@@ -30,7 +30,7 @@ import wres.datamodel.time.TimeWindow;
  * from each analysis is picked out and a broader timeseries is created.
  */
 
-public class AnalysisRetriever extends TimeSeriesRetriever<Double>
+class AnalysisRetriever extends TimeSeriesRetriever<Double>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( AnalysisRetriever.class );
 
@@ -83,7 +83,7 @@ public class AnalysisRetriever extends TimeSeriesRetriever<Double>
     @Override
     public LongStream getAllIdentifiers()
     {
-        return null;
+        throw new UnsupportedOperationException( "There are no identifiers stored for analysis timeseries." );
     }
 
     static class Builder extends TimeSeriesRetrieverBuilder<Double>
@@ -100,6 +100,7 @@ public class AnalysisRetriever extends TimeSeriesRetriever<Double>
      * Get the analysis timeseries, at the moment only one allowed, which is
      * composed of the nth event from each analysis within the overall bounds
      * of the project declaration.
+     * @throws IllegalArgumentException When duplicate datetimes would be used.
      */
 
     @Override
@@ -157,7 +158,7 @@ public class AnalysisRetriever extends TimeSeriesRetriever<Double>
                  || analysisReference.equals( Instant.MIN )
                  || analysisReference.equals( Instant.MAX ) )
             {
-                throw new UnsupportedOperationException( "Unable to find a valid reference datetime for analysis dataset "
+                throw new UnsupportedOperationException( "Unable to find a reference datetime for analysis dataset "
                                                          + timeSeries );
             }
 
