@@ -29,6 +29,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
@@ -1338,6 +1339,7 @@ class NWMTimeSeries implements Closeable
          * Performs safe publication of an internal map, assumes internal
          * caller, assumes that internal caller will not publish the map,
          * assumes internal caller will only read from the map.
+         * @throws PreIngestException When timed out waiting on cache write.
          */
 
         private Map<Integer,Integer> readFeaturesAndCacheOrGetFeaturesFromCache( NWMProfile profile,
@@ -1354,7 +1356,19 @@ class NWMTimeSeries implements Closeable
                               netcdfFileName );
                 try
                 {
-                    this.featureCacheGuard.await();
+                    Duration timeout = Duration.ofMinutes( 10 );
+                    boolean timedOut = !this.featureCacheGuard.await( timeout.toSeconds(),
+                                                                      TimeUnit.SECONDS );
+                    if ( timedOut )
+                    {
+                        throw new PreIngestException(
+                                "While reading "
+                                + netcdfFileName,
+                                new TimeoutException(
+                                        "Timed out waiting for feature cache after "
+                                        + timeout )
+                        );
+                    }
                 }
                 catch ( InterruptedException ie )
                 {
@@ -1421,7 +1435,19 @@ class NWMTimeSeries implements Closeable
                     int[] existingFeatures;
                     try
                     {
-                        this.featureCacheGuard.await();
+                        Duration timeout = Duration.ofMinutes( 10 );
+                        boolean timedOut = !this.featureCacheGuard.await( timeout.toSeconds(),
+                                                                          TimeUnit.SECONDS );
+                        if ( timedOut )
+                        {
+                            throw new PreIngestException(
+                                    "While reading "
+                                    + netcdfFileName,
+                                    new TimeoutException(
+                                            "Timed out waiting for feature cache after "
+                                            + timeout )
+                            );
+                        }
                     }
                     catch ( InterruptedException ie )
                     {
