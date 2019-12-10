@@ -582,6 +582,7 @@ public class Chart2DTestOutput
                                                                                                    null,
                                                                                                    null,
                                                                                                    null,
+                                                                                                   null,
                                                                                                    new PoolingWindowConfig( 1,
                                                                                                                             1,
                                                                                                                             DurationUnit.HOURS ),
@@ -684,6 +685,7 @@ public class Chart2DTestOutput
         final Map<MetricConstants, ChartEngine> engine =
                 ChartEngineFactory.buildScoreOutputChartEngine( new ProjectConfig( null,
                                                                                    new PairConfig( null,
+                                                                                                   null,
                                                                                                    null,
                                                                                                    null,
                                                                                                    null,

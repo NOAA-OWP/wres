@@ -84,6 +84,7 @@ public final class TimeWindowGeneratorTest
                                                  null,
                                                  null,
                                                  null,
+                                                 null,
                                                  leadTimesPoolingWindowConfig,
                                                  null,
                                                  null );
@@ -153,6 +154,7 @@ public final class TimeWindowGeneratorTest
                                                  null,
                                                  null,
                                                  null,
+                                                 null,
                                                  leadTimesPoolingWindowConfig,
                                                  null,
                                                  null );
@@ -199,6 +201,7 @@ public final class TimeWindowGeneratorTest
                                                  null,
                                                  null,
                                                  leadBoundsConfig,
+                                                 null,
                                                  null,
                                                  issuedDatesConfig,
                                                  null,
@@ -316,6 +319,7 @@ public final class TimeWindowGeneratorTest
                                                  null,
                                                  null,
                                                  leadBoundsConfig,
+                                                 null,
                                                  datesConfig,
                                                  issuedDatesConfig,
                                                  null,
@@ -357,6 +361,7 @@ public final class TimeWindowGeneratorTest
     {
         // Mock the sufficient elements of the ProjectConfig
         PairConfig pairsConfig = new PairConfig( null,
+                                                 null,
                                                  null,
                                                  null,
                                                  null,
@@ -431,6 +436,7 @@ public final class TimeWindowGeneratorTest
                                                  null,
                                                  null,
                                                  leadBoundsConfig,
+                                                 null,
                                                  datesConfig,
                                                  issuedDatesConfig,
                                                  null,
@@ -599,6 +605,7 @@ public final class TimeWindowGeneratorTest
                                                        null,
                                                        null,
                                                        leadBoundsConfig,
+                                                       null,
                                                        datesConfig,
                                                        issuedDatesConfig,
                                                        null,
@@ -641,6 +648,7 @@ public final class TimeWindowGeneratorTest
                                                  null,
                                                  null,
                                                  leadBoundsConfig,
+                                                 null,
                                                  datesConfig,
                                                  issuedDatesConfig,
                                                  null,
@@ -695,6 +703,7 @@ public final class TimeWindowGeneratorTest
                                                  null,
                                                  null,
                                                  leadBoundsConfig,
+                                                 null,
                                                  null,
                                                  issuedDatesConfig,
                                                  null,
@@ -786,6 +795,7 @@ public final class TimeWindowGeneratorTest
                                                  null,
                                                  null,
                                                  null,
+                                                 null,
                                                  leadTimesPoolingWindowConfig,
                                                  null,
                                                  null );
@@ -830,6 +840,7 @@ public final class TimeWindowGeneratorTest
                                                  null,
                                                  null,
                                                  null,
+                                                 null,
                                                  leadTimesPoolingWindowConfig,
                                                  null,
                                                  null );
@@ -858,6 +869,7 @@ public final class TimeWindowGeneratorTest
                                                  null,
                                                  null,
                                                  leadBoundsConfig,
+                                                 null,
                                                  null,
                                                  null,
                                                  null,
@@ -898,6 +910,7 @@ public final class TimeWindowGeneratorTest
                                                  null,
                                                  null,
                                                  null,
+                                                 null,
                                                  leadTimesPoolingWindowConfig,
                                                  null,
                                                  null );
@@ -921,6 +934,7 @@ public final class TimeWindowGeneratorTest
                 new PoolingWindowConfig( 13, 7, DurationUnit.HOURS );
 
         PairConfig pairsConfig = new PairConfig( null,
+                                                 null,
                                                  null,
                                                  null,
                                                  null,
@@ -959,6 +973,7 @@ public final class TimeWindowGeneratorTest
                                                  null,
                                                  null,
                                                  null,
+                                                 null,
                                                  issuedDatesConfig,
                                                  null,
                                                  null,
@@ -989,6 +1004,7 @@ public final class TimeWindowGeneratorTest
         DateCondition issuedDatesConfig = new DateCondition( INSTANT_ONE, null );
 
         PairConfig pairsConfig = new PairConfig( null,
+                                                 null,
                                                  null,
                                                  null,
                                                  null,

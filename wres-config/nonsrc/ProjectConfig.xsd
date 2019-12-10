@@ -18,11 +18,24 @@
     </xs:complexType>
 
     <xs:simpleType name="datasourceType">
+        <xs:annotation>
+            <xs:documentation>
+                Originally, this type was used to direct ingest data to either
+                a set of "forecast" or "observation" tables in the database.
+                See discussion in #57301 for making it optional or removing it
+                altogether. It should become optional, but changes in #65216
+                can change the purpose of this declaration to be used to direct
+                treatment of the dataset after ingest, for example to treat AnA
+                (analyses) differently from forecasts on retrieval. That is the
+                reason for adding "analyses" here.
+            </xs:documentation>
+        </xs:annotation>
         <xs:restriction base="xs:string">
             <xs:enumeration value="ensemble forecasts" />
             <xs:enumeration value="single valued forecasts" />
             <xs:enumeration value="observations" />
             <xs:enumeration value="simulations" />
+            <xs:enumeration value="analyses" />
         </xs:restriction>
     </xs:simpleType>
 
@@ -782,6 +795,9 @@ time scale within a single class, rather than two classes.
             <xs:element name="feature" type="feature" minOccurs="0" maxOccurs="unbounded"/>
             <xs:element name="byTimeSeries" type="xs:boolean" default="false" minOccurs="0" />
             <xs:element name="leadHours" type="intBoundsType" minOccurs="0" />
+
+            <!-- analysisHour chooses which analysis step to evaluate #65216 -->
+            <xs:element name="analysisHour" type="xs:int" minOccurs="0" />
             <xs:element name="dates" type="dateCondition" minOccurs="0" />
             <xs:element name="issuedDates" type="dateCondition" minOccurs="0" />
 

@@ -37,12 +37,12 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
     private final TimeSeriesRetriever<Double> individualAnalysisRetriever;
     private final Duration analysisMember;
 
-    private AnalysisRetriever( TimeSeriesRetrieverBuilder<Double> builder )
+    private AnalysisRetriever( TimeSeriesRetrieverBuilder<Double> builder,
+                               Duration analysisMember )
     {
         super( builder, "TS.initialization_date", "TSV.lead" );
+        this.analysisMember = analysisMember;
 
-        // TODO: user-set, not zero.
-        this.analysisMember = Duration.ZERO;
         // Change the lead duration to the analysis step set by the user,
         // also set the reference datetime to an infinitely wide range so
         // that we do not restrict the analyses incorrectly.
@@ -88,10 +88,27 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
 
     static class Builder extends TimeSeriesRetrieverBuilder<Double>
     {
+        private Duration analysisHour = Duration.ZERO;
+
+        /**
+         * Set the analysis hour, or leave at default when passing null
+         * @param analysisHour duration or null
+         * @return A builder
+         */
+        public Builder setAnalysisHour( Duration analysisHour )
+        {
+            if ( Objects.nonNull( analysisHour ) )
+            {
+                this.analysisHour = analysisHour;
+            }
+
+            return this;
+        }
+
         @Override
         TimeSeriesRetriever<Double> build()
         {
-            return new AnalysisRetriever( this );
+            return new AnalysisRetriever( this, this.analysisHour );
         }
     }
 
