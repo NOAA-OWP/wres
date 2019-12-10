@@ -1619,15 +1619,17 @@ public class Validation
         DataSourceConfig right = projectConfig.getInputs().getRight();
         DataSourceConfig baseline = projectConfig.getInputs().getBaseline();
 
-        if ( left.getType() == DatasourceType.SINGLE_VALUED_FORECASTS ||
-             left.getType() == DatasourceType.ENSEMBLE_FORECASTS)
+        // #72042
+        if ( left.getType() == DatasourceType.ENSEMBLE_FORECASTS &&
+             right.getType() == DatasourceType.ENSEMBLE_FORECASTS)
         {
-            // The message is the same whether for period or duration
             LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                         + " The left data source cannot be any type of forecast.",
+                         + " Cannot evaluate ensemble forecasts against ensemble forecasts.",
                          projectConfigPlus,
                          left.sourceLocation().getLineNumber(),
                          left.sourceLocation().getColumnNumber() );
+            
+            result = false;
         }
 
         result = Validation.areDataSourcesValid( projectConfigPlus,
