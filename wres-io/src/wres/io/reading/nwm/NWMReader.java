@@ -43,10 +43,7 @@ import wres.system.SystemSettings;
 /**
  * Creates and ingests NWMTimeSeries for each NWM dataset declared in project.
  *
- * As of 2019-10-29, only supports vector non-ensemble data, and is not enabled
- * because it is not connected to the SourceLoader. When the SourceLoader takes
- * DataSourceConfig.Source interface shorthands into account and creates one of
- * these NWMReader instances, then it will be enabled.
+ * As of 2019-12-11, supports most NWM vector single-valued and ensemble data.
  *
  * Requires limits on Issued Dates aka Reference Datetimes in the declaration to
  * know where to begin looking and to limit which URIs to generate.
@@ -66,8 +63,17 @@ import wres.system.SystemSettings;
  * that contains the directories named like "nwm.20191015". The URI in the
  * source must contain everything up to that directory, including the slash, and
  * not include any directories like "nwm.20191015". The full URIs accessed
- * will be generated based on the profile specified. Assumes no missing blobs.
+ * will be generated based on the profile specified.
  *
+ * Considers non-dense forecasts (e.g. missing blobs) to be an error, although
+ * this probably can and should be relaxed to allow for one or more of:
+ * 1. Skipping an empty NWM dataset, e.g. zero blobs exist for a reference time.
+ * 2. Allowing a partial NWM timeseries if values for first N steps exist.
+ * 3. Allowing a partial NWM timeseries if more than half of the data exist.
+ *
+ * Another improvement would be to allow reading of NWM feature ids not present
+ * in the wres.Features table. The NWMTimeSeries class used to read the NWM data
+ * has no assumption of connection to the wres.Features table.
  */
 
 public class NWMReader implements Callable<List<IngestResult>>
