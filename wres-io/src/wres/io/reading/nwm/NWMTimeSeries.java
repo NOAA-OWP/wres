@@ -1,6 +1,7 @@
 package wres.io.reading.nwm;
 
 import java.io.Closeable;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
@@ -146,47 +147,98 @@ class NWMTimeSeries implements Closeable
         CountDownLatch startGettingResults =
                 new CountDownLatch( CONCURRENT_READS );
 
-        try
+        // Open all the relevant files during construction, or fail.
+        for ( URI netcdfUri : netcdfUris )
         {
-            // Open all the relevant files during construction, or fail.
-            for ( URI netcdfUri : netcdfUris )
-            {
-                NWMResourceOpener opener = new NWMResourceOpener( netcdfUri );
-                Future<NetcdfFile> futureBlob = this.readExecutor.submit( opener );
-                openBlobQueue.add( futureBlob );
-                startGettingResults.countDown();
+            NWMResourceOpener opener = new NWMResourceOpener( netcdfUri );
+            Future<NetcdfFile> futureBlob = this.readExecutor.submit( opener );
+            openBlobQueue.add( futureBlob );
+            startGettingResults.countDown();
 
-                if ( startGettingResults.getCount() <= 0 )
+            if ( startGettingResults.getCount() <= 0 )
+            {
+                try
                 {
                     NetcdfFile netcdfFile = openBlobQueue.take()
                                                          .get();
                     this.netcdfFiles.add( netcdfFile );
                 }
-            }
+                catch ( InterruptedException ie )
+                {
+                    LOGGER.warn( "Interrupted while opening netCDF resources.", ie );
+                    this.close();
+                    Thread.currentThread().interrupt();
+                }
+                catch ( ExecutionException ee )
+                {
+                    Throwable cause = ee.getCause();
 
-            // Finish getting the remainder of netCDF resources being opened.
-            for ( Future<NetcdfFile> opening : openBlobQueue )
+                    if ( Objects.nonNull( cause )
+                         && cause instanceof FileNotFoundException )
+                    {
+                        LOGGER.warn( "Skipping resource not found: {}",
+                                     cause.getMessage() );
+                    }
+                    else
+                    {
+                        this.close();
+                        throw new PreIngestException( "Failed to open netCDF resource.",
+                                                      ee );
+                    }
+                }
+            }
+        }
+
+        // Finish getting the remainder of netCDF resources being opened.
+        for ( Future<NetcdfFile> opening : openBlobQueue )
+        {
+            try
             {
                 NetcdfFile netcdfFile = opening.get();
                 this.netcdfFiles.add( netcdfFile );
             }
-        }
-        catch ( InterruptedException ie )
-        {
-            LOGGER.warn( "Interrupted while opening netCDF resources.", ie );
-            this.close();
-            Thread.currentThread().interrupt();
-        }
-        catch ( ExecutionException ee )
-        {
-            this.close();
-            throw new PreIngestException( "Failed to open netCDF resource.",
-                                          ee );
+            catch ( InterruptedException ie )
+            {
+                LOGGER.warn( "Interrupted while opening netCDF resources.", ie );
+                this.close();
+                Thread.currentThread().interrupt();
+            }
+            catch ( ExecutionException ee )
+            {
+                Throwable cause = ee.getCause();
+
+                if ( Objects.nonNull( cause )
+                     && cause instanceof FileNotFoundException )
+                {
+                    LOGGER.warn( "Skipping resource not found: {}",
+                                 cause.getMessage() );
+                }
+                else
+                {
+                    this.close();
+                    throw new PreIngestException( "Failed to open netCDF resource.",
+                                                  ee );
+                }
+            }
         }
 
         this.featureCache = new NWMFeatureCache( this.netcdfFiles );
-        LOGGER.debug( "Successfully opened NWM TimeSeries with reference datetime {} and profile {} from baseUri {}.",
-                      referenceDatetime, profile, baseUri );
+
+        if ( netcdfUris.size() == this.netcdfFiles.size() )
+        {
+            LOGGER.debug( "Successfully opened NWM TimeSeries with reference datetime {} and profile {} from baseUri {}.",
+                          referenceDatetime, profile, baseUri );
+        }
+        else if ( netcdfUris.size() == 0 )
+        {
+            LOGGER.warn( "Skipping NWM TimeSeries (not found) with reference datetime {} and profile {} from baseUri {}.",
+                         referenceDatetime, profile, baseUri );
+        }
+        else
+        {
+            LOGGER.warn( "Found a partial NWM TimeSeries with reference datetime {} and profile {} from baseUri {}.",
+                         referenceDatetime, profile, baseUri );
+        }
     }
 
 

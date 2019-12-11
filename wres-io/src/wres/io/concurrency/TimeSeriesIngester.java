@@ -439,7 +439,7 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
                           .iterator()
                           .next();
         {
-            LOGGER.warn( "Using the first reference datetime type found: {}",
+            LOGGER.debug( "Using the first reference datetime type found: {}",
                           entry );
             return entry.getValue();
         }
