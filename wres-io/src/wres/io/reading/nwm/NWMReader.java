@@ -24,6 +24,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,12 +81,17 @@ public class NWMReader implements Callable<List<IngestResult>>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( NWMReader.class );
     private static final String DATES_ERROR_MESSAGE =
-            "One must specify issued dates with both earliest and latest (e.g. "
-            + "<issuedDates earliest=\"2019-10-25T00:00:00Z\" "
-            + "latest=\"2019-11-25T00:00:00Z\" />) when using NWM data as a "
-            + "source, which will be interpreted as reference datetimes. The "
-            + "earliest datetime specified must be a valid reference time for "
-            + "the NWM data specified, or no data will be found.";
+            "One must specify issued datetimes with both earliest and latest "
+            + "(e.g. <issuedDates earliest=\"2019-10-25T00:00:00Z\" "
+            + "latest=\"2019-11-25T00:00:00Z\" />) when using NWM forecast data"
+            + " as a source, which will be interpreted as reference datetimes. "
+            + "The earliest datetime specified must be a valid reference time "
+            + "for the NWM data specified, or no data will be found. One must "
+            + "specify valid datetimes with both earliest and latest "
+            + "(e.g. <dates earliest=\"2019-12-11T00:00:00Z\" "
+            + "latest=\"2019-12-12T00:00:00Z\" />) when using NWM analysis data"
+            + " as a source, which will be used to find data falling within "
+            +"those valid datetimes.";
 
     private final ProjectConfig projectConfig;
     private final DataSource dataSource;
@@ -106,27 +112,77 @@ public class NWMReader implements Callable<List<IngestResult>>
         Objects.requireNonNull( lockManager );
         Objects.requireNonNull( dataSource.getSource() );
         Objects.requireNonNull( dataSource.getSource().getInterface() );
-        Objects.requireNonNull( projectConfig.getPair() );
-        Objects.requireNonNull( projectConfig.getPair()
-                                             .getIssuedDates(),
-                                DATES_ERROR_MESSAGE );
-        Objects.requireNonNull( projectConfig.getPair()
-                                             .getIssuedDates()
-                                             .getEarliest(),
-                                DATES_ERROR_MESSAGE );
-        Objects.requireNonNull( projectConfig.getPair()
-                                             .getIssuedDates()
-                                             .getLatest(),
-                                DATES_ERROR_MESSAGE );
-        this.earliest = Instant.parse( projectConfig.getPair()
-                                                       .getIssuedDates()
-                                                       .getEarliest() );
-        this.latest = Instant.parse( projectConfig.getPair()
-                                                  .getIssuedDates()
-                                                  .getLatest() );
-
         InterfaceShortHand interfaceShortHand = dataSource.getSource()
                                                           .getInterface();
+        this.nwmProfile = NWMProfiles.getProfileFromShortHand( interfaceShortHand );
+        Objects.requireNonNull( projectConfig.getPair() );
+
+        if ( this.nwmProfile.getTimeLabel()
+                            .equals( NWMProfile.TimeLabel.f ) )
+        {
+            Objects.requireNonNull( projectConfig.getPair()
+                                                 .getIssuedDates(),
+                                    DATES_ERROR_MESSAGE );
+            Objects.requireNonNull( projectConfig.getPair()
+                                                 .getIssuedDates()
+                                                 .getEarliest(),
+                                    DATES_ERROR_MESSAGE );
+            Objects.requireNonNull( projectConfig.getPair()
+                                                 .getIssuedDates()
+                                                 .getLatest(),
+                                    DATES_ERROR_MESSAGE );
+        }
+        else if ( this.nwmProfile.getTimeLabel()
+                                 .equals( NWMProfile.TimeLabel.tm ) )
+        {
+            Objects.requireNonNull( projectConfig.getPair()
+                                                 .getDates(),
+                                    DATES_ERROR_MESSAGE );
+            Objects.requireNonNull( projectConfig.getPair()
+                                                 .getDates()
+                                                 .getEarliest(),
+                                    DATES_ERROR_MESSAGE );
+            Objects.requireNonNull( projectConfig.getPair()
+                                                 .getDates()
+                                                 .getLatest(),
+                                    DATES_ERROR_MESSAGE );
+        }
+
+        // When we have analysis data, extend out the reference datetimes in
+        // order to include data by valid datetime, kind of like observations.
+        if ( this.nwmProfile.getTimeLabel()
+                            .equals( NWMProfile.TimeLabel.f ) )
+        {
+            this.earliest = Instant.parse( projectConfig.getPair()
+                                                        .getIssuedDates()
+                                                        .getEarliest() );
+            this.latest = Instant.parse( projectConfig.getPair()
+                                                      .getIssuedDates()
+                                                      .getLatest() );
+        }
+        else if ( this.nwmProfile.getTimeLabel()
+                                 .equals( NWMProfile.TimeLabel.tm ) )
+        {
+            Instant earliestValidDatetime =
+                    Instant.parse( projectConfig.getPair()
+                                                .getDates()
+                                                .getEarliest() );
+            Instant latestValidDatetime =
+                    Instant.parse( projectConfig.getPair()
+                                                .getDates()
+                                                .getLatest() );
+            Pair<Instant,Instant> referenceBounds =
+                    getReferenceBoundsByValidBounds( this.nwmProfile,
+                                                     earliestValidDatetime,
+                                                     latestValidDatetime );
+            this.earliest = referenceBounds.getLeft();
+            this.latest = referenceBounds.getRight();
+        }
+        else
+        {
+            throw new UnsupportedOperationException( "Unable to read NWM data with label "
+                                                     + this.nwmProfile.getTimeLabel() );
+        }
 
         if ( !interfaceShortHand.toString()
                                 .toLowerCase()
@@ -143,7 +199,6 @@ public class NWMReader implements Callable<List<IngestResult>>
         this.projectConfig = projectConfig;
         this.dataSource = dataSource;
         this.lockManager = lockManager;
-        this.nwmProfile = NWMProfiles.getProfileFromShortHand( interfaceShortHand );
 
         ThreadFactory nwmReaderThreadFactory = new BasicThreadFactory.Builder()
                 .namingPattern( "NWMReader Ingest" )
@@ -452,4 +507,54 @@ public class NWMReader implements Callable<List<IngestResult>>
         return Collections.unmodifiableSet( datetimes );
     }
 
+
+    /**
+     * Creates the values needed to call getReferenceDatetimes when wanting to
+     * ingest all the possible data with valid datetimes within given bounds.
+     *
+     * Useful for ingesting analysis data based on the valid datetimes rather
+     * than on reference datetime ranges.
+     *
+     * @param nwmProfile A profile to use to calculate the new ranges.
+     * @param earliestValidDatetime The earliest valid datetime to include.
+     * @param latestValidDatetime The latest valid datetime to include.
+     * @return The boundaries to be used to filter by reference datetimes.
+     */
+    private Pair<Instant,Instant> getReferenceBoundsByValidBounds( NWMProfile nwmProfile,
+                                                                   Instant earliestValidDatetime,
+                                                                   Instant latestValidDatetime )
+    {
+        Instant earliestReferenceDatetime = earliestValidDatetime;
+        Instant latestReferenceDatetime = latestValidDatetime;
+        Duration betweenBlobs = nwmProfile.getDurationBetweenValidDatetimes();
+        int maxBlobsAwayFromReference = nwmProfile.getBlobCount();
+
+        // Figure the furthest away from the reference datetime based on count.
+        Duration toExtend = betweenBlobs.multipliedBy( maxBlobsAwayFromReference );
+
+        // When the time label is "f", assume the blobs extend into future,
+        // therefore we need to include earlier reference datetimes to get
+        // all the valid datetimes.
+        if ( nwmProfile.getTimeLabel().equals( NWMProfile.TimeLabel.f ) )
+        {
+            earliestReferenceDatetime = earliestValidDatetime.minus( toExtend );
+        }
+        else if ( nwmProfile.getTimeLabel().equals( NWMProfile.TimeLabel.tm ) )
+        {
+            // When the time label is "tm", assume the blobs extend into past,
+            // therefore we need to include later reference datetimes to get
+            // all the valid datetimes.
+            latestReferenceDatetime = latestValidDatetime.plus( toExtend );
+        }
+        else
+        {
+            // In case another time label arrives, tolerate it by extending
+            // in both directions, past and future, ingesting more data but
+            // having a better chance of including all the desired data.
+            earliestReferenceDatetime = earliestValidDatetime.minus( toExtend );
+            latestReferenceDatetime = latestValidDatetime.plus( toExtend );
+        }
+
+        return Pair.of( earliestReferenceDatetime, latestReferenceDatetime );
+    }
 }
