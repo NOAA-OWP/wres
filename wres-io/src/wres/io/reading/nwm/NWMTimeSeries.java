@@ -54,7 +54,7 @@ import wres.system.SystemSettings;
  * Goal: a variable/feature/timeseries combination in a Vector NWM dataset is
  * considered a source.
  *
- * Only the variable and feature selected for an evaluation will be ingested
+ * Only the variable and NWM feature selected for an evaluation will be ingested
  * from a vector NWM dataset.
  *
  * All the NWM netCDF blobs for a given timeseries will first be found and
@@ -62,6 +62,8 @@ import wres.system.SystemSettings;
  * to ingest any rows of timeseries data.
  *
  * This class opens a set of NWM netCDF blobs as a timeseries, based on a profile.
+ *
+ * This class intentionally only deals with NWM feature ids (not WRES ids).
  */
 
 class NWMTimeSeries implements Closeable
@@ -513,48 +515,6 @@ class NWMTimeSeries implements Closeable
         throw new IllegalStateException( "No '" + attributeName
                                          + "' attribute found for variable '"
                                          + ncVariable + " in netCDF data." );
-    }
-
-
-    /**
-     * @param ncVariable The NWM variable.
-     * @param attributeName The attribute associated with the variable.
-     * @return The String representation of the value of attribute of variable.
-     * @throws IllegalArgumentException When the attribute does not exist.
-     * @throws IllegalArgumentException When the type is not float or double.
-     */
-
-    private static float readAttributeAsFloat( Variable ncVariable,
-                                               String attributeName )
-    {
-        List<Attribute> variableAttributes = ncVariable.getAttributes();
-
-        for ( Attribute attribute : variableAttributes )
-        {
-            if ( attribute.getShortName()
-                          .toLowerCase()
-                          .equals( attributeName.toLowerCase() ) )
-            {
-                DataType type = attribute.getDataType();
-
-                if ( type.equals( DataType.FLOAT ) )
-                {
-                    return attribute.getNumericValue()
-                                    .floatValue();
-                }
-                else
-                {
-                    throw new IllegalArgumentException( "Unable to convert attribute '"
-                                                        + attributeName
-                                                        + "' to float because it is type "
-                                                        + type );
-                }
-            }
-        }
-
-        throw new IllegalArgumentException( "No '" + attributeName
-                                            + "' attribute found for variable '"
-                                            + ncVariable + " in netCDF data." );
     }
 
 
@@ -1082,21 +1042,6 @@ class NWMTimeSeries implements Closeable
                                      this.originalReferenceDatetime,
                                      this.featureCache,
                                      this.isEnsemble );
-        }
-
-        NWMProfile getProfile()
-        {
-            return this.profile;
-        }
-
-        NetcdfFile getNetcdfFile()
-        {
-            return this.netcdfFile;
-        }
-
-        String getVariableName()
-        {
-            return this.variableName;
         }
 
         private List<EventForNWMFeature<Double>> readDoubles( NWMProfile profile,

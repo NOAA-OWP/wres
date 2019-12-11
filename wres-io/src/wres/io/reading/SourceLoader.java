@@ -197,7 +197,32 @@ public class SourceLoader
 
     private Future<List<IngestResult>> loadNonFileSource( DataSource source )
     {
-        // See #63493. This method of identification, which is tied to 
+        InterfaceShortHand interfaceShortHand = source.getSource()
+                                                      .getInterface();
+
+        if ( interfaceShortHand != null )
+        {
+            LOGGER.debug( "The data at '{}' will be re-composed because an interface short-hand was specified.",
+                          source );
+            if ( interfaceShortHand.equals( InterfaceShortHand.WRDS )
+                 || interfaceShortHand.equals( InterfaceShortHand.USGS ) )
+            {
+                WebSource webSource = WebSource.of( projectConfig,
+                                                    source,
+                                                    this.lockManager );
+                return Executor.submit( webSource );
+            }
+            else
+            {
+                // Must be NWM, right?
+                NWMReader nwmReader = new NWMReader( projectConfig,
+                                                     source,
+                                                     this.lockManager );
+                return Executor.submit( nwmReader );
+            }
+        }
+
+        // See #63493. This method of identification, which is tied to
         // source format, does not work well. The format should not designate
         // whether a source originates from a file or from a service. 
         // Also, there is an absence of consistency in whether a service-like
@@ -888,6 +913,13 @@ public class SourceLoader
     {
         LOGGER.trace( "Called evaluatePath with source {}", source );
         URI uri = source.getValue();
+
+        if ( source.getInterface() != null )
+        {
+            LOGGER.debug( "There is an interface specified: {}, therefore not going to walk a directory tree.",
+                          source.getInterface() );
+            return null;
+        }
 
         // Is there a source path to evaluate? Only if the source is file-like
         if( uri.toString().isEmpty() )
