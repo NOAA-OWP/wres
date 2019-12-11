@@ -372,6 +372,13 @@ public class NWMReader implements Callable<List<IngestResult>>
                                                 referenceDatetime,
                                                 this.getUri() ) )
                 {
+                    if ( nwmTimeSeries.countOfNetcdfFiles() <= 0 )
+                    {
+                        LOGGER.debug( "Found an empty TimeSeries, skipping {}",
+                                      nwmTimeSeries );
+                        continue;
+                    }
+
                     for ( int[] featureBlock : featureBlocks )
                     {
                         String variableName = this.getDataSource()
