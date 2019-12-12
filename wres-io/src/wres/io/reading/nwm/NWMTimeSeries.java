@@ -137,7 +137,7 @@ class NWMTimeSeries implements Closeable
                                                            this.baseUri );
         this.netcdfFiles = new HashSet<>( netcdfUris.size() );
         LOGGER.debug( "Attempting to open NWM TimeSeries with reference datetime {} and profile {} from baseUri {}.",
-                      referenceDatetime, profile, baseUri );
+                      referenceDatetime, profile, this.baseUri );
 
         ThreadFactory nwmReaderThreadFactory = new BasicThreadFactory.Builder()
                 .namingPattern( "NWMTimeSeries Reader" )
@@ -239,17 +239,17 @@ class NWMTimeSeries implements Closeable
         if ( netcdfUris.size() == this.netcdfFiles.size() )
         {
             LOGGER.debug( "Successfully opened NWM TimeSeries with reference datetime {} and profile {} from baseUri {}.",
-                          referenceDatetime, profile, baseUri );
+                          referenceDatetime, profile, this.baseUri );
         }
         else if ( netcdfUris.size() == 0 )
         {
             LOGGER.warn( "Skipping NWM TimeSeries (not found) with reference datetime {} and profile {} from baseUri {}.",
-                         referenceDatetime, profile, baseUri );
+                         referenceDatetime, profile, this.baseUri );
         }
         else
         {
             LOGGER.warn( "Found a partial NWM TimeSeries with reference datetime {} and profile {} from baseUri {}.",
-                         referenceDatetime, profile, baseUri );
+                         referenceDatetime, profile, this.baseUri );
         }
     }
 
