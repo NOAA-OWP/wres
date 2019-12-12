@@ -5,6 +5,7 @@ import java.net.URI;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -489,6 +490,16 @@ public class NWMReader implements Callable<List<IngestResult>>
 
     /**
      * Get the reference datetimes for the given boundaries and NWMProfile.
+     *
+     * As of 2019-12-12, all NWM data seen by WRES team has on-the-hour so this
+     * method rounds the "earliest" to the next hour. The reason for doing this
+     * is we use "earliest" exclusive throughout pooling and conditioning but
+     * "latest" inclusive through the same, and a user may want to specify
+     * earliest="2019-12-12T23:59:59Z" to get the "2019-12-13T00:00:00Z"
+     * reference datetime included in an evaluation and will not want additional
+     * forecasts ingested that will not be included in the evaluation when
+     * specifying earliest="2019-12-12T23:00:00Z".
+     *
      * @param earliest The earliest reference datetime.
      * @param latest The latest reference datetime.
      * @param nwmProfile The NWMProfile to use.
@@ -501,8 +512,12 @@ public class NWMReader implements Callable<List<IngestResult>>
     {
         Set<Instant> datetimes = new HashSet<>();
         Duration modelRunStep = nwmProfile.getDurationBetweenReferenceDatetimes();
-        datetimes.add( earliest );
-        Instant additionalForecastDatetime = earliest.plus( modelRunStep );
+        Instant earliestOnHour = earliest.plus( Duration.ofHours( 1 ) )
+                                         .truncatedTo( ChronoUnit.HOURS );
+        LOGGER.debug( "Rounded earliest {} to exact hour {}",
+                      earliest, earliestOnHour );
+        datetimes.add( earliestOnHour );
+        Instant additionalForecastDatetime = earliestOnHour.plus( modelRunStep );
 
         while ( additionalForecastDatetime.isBefore( latest )
                 || additionalForecastDatetime.equals( latest ) )
