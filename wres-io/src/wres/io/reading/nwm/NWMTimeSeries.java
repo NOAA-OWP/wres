@@ -1270,13 +1270,18 @@ class NWMTimeSeries implements Closeable
         private int[] originalFeatures;
 
         /**
-         * The feature variable index by feature id for a given netCDF resource.
+         * Whether the features stored is sorted. Allows binary search if true.
+         *
+         * Only one Thread should write this value after construction, the rest
+         * read it.
          *
          * This is a performance optimization (avoid linear search of features).
          *
+         * Not certain that this needs to be volatile, but just in case...
+         *
          * GuardedBy featureCacheGuard
          */
-        private Map<Integer,Integer> featureCache;
+        private volatile boolean isSorted = false;
 
         /**
          * First Thread to set to true wins
@@ -1321,19 +1326,29 @@ class NWMTimeSeries implements Closeable
                                       NetcdfFile netcdfFile,
                                       int featureId )
         {
-            Map<Integer,Integer> features = this.readFeaturesAndCacheOrGetFeaturesFromCache( profile,
-                                                                                             netcdfFile );
+            int[] features = this.readFeaturesAndCacheOrGetFeaturesFromCache( profile,
+                                                                              netcdfFile );
 
-            Integer indexOfFeature = features.get( featureId );
-
-            if ( Objects.isNull( indexOfFeature ) )
+            if ( this.isSorted )
             {
-                throw new PreIngestException( "Could not find feature id "
-                                              + featureId + " in netCDF file "
-                                              + netcdfFile );
+                return Arrays.binarySearch( features, featureId );
+            }
+            else
+            {
+                LOGGER.debug( "Doing linear search of NWM features cache." );
+
+                for ( int i = 0; i < features.length; i++ )
+                {
+                    if ( features[i] == featureId )
+                    {
+                        return i;
+                    }
+                }
             }
 
-            return indexOfFeature;
+            throw new PreIngestException( "Could not find feature id "
+                                          + featureId + " in netCDF file "
+                                          + netcdfFile );
         }
 
         /**
@@ -1348,8 +1363,8 @@ class NWMTimeSeries implements Closeable
          * @throws PreIngestException When timed out waiting on cache write.
          */
 
-        private Map<Integer,Integer> readFeaturesAndCacheOrGetFeaturesFromCache( NWMProfile profile,
-                                                                                 NetcdfFile netcdfFile )
+        private int[] readFeaturesAndCacheOrGetFeaturesFromCache( NWMProfile profile,
+                                                                  NetcdfFile netcdfFile )
         {
             String netcdfFileName = netcdfFile.getLocation();
 
@@ -1382,7 +1397,7 @@ class NWMTimeSeries implements Closeable
                     Thread.currentThread().interrupt();
                 }
 
-                return this.featureCache;
+                return this.originalFeatures;
             }
             else
             {
@@ -1421,11 +1436,13 @@ class NWMTimeSeries implements Closeable
 
                     // In charge of setting the feature cache, do so.
                     this.originalFeatures = features.clone();
-                    this.featureCache = new HashMap<>( this.originalFeatures.length );
 
-                    for ( int i = 0; i < this.originalFeatures.length; i++ )
+                    // Sort the local features, compare to see if identical
+                    Arrays.sort( features );
+
+                    if ( Arrays.equals( features, this.originalFeatures ) )
                     {
-                        this.featureCache.put( this.originalFeatures[i], i );
+                        this.isSorted = true;
                     }
 
                     // Tell waiting Threads that featureCache hath been written.
@@ -1480,7 +1497,7 @@ class NWMTimeSeries implements Closeable
                 validated.set( true );
 
                 // Assumes caller will only perform reads, will not publish.
-                return this.featureCache;
+                return this.originalFeatures;
             }
             catch ( IOException ioe )
             {
