@@ -760,36 +760,6 @@ class NWMTimeSeries implements Closeable
 
 
 
-    /**
-     * Find the given featureId index within the given netCDF blob using the
-     * given NWMProfile and feature cache.
-     * @param profile The profile to use (has name of feature variable).
-     * @param netcdfFile The netCDF blob to search.
-     * @param featureId The NWM feature id to search for.
-     * @param featureCache the NWM feature cache to search
-     * @return The index of the featureID within the feature variable.
-     */
-
-    private static int findFeatureIndex( NWMProfile profile,
-                                         NetcdfFile netcdfFile,
-                                         int featureId,
-                                         NWMFeatureCache featureCache )
-    {
-        Map<Integer,Integer> features = featureCache.readFeaturesAndCacheOrGetFeaturesFromCache( profile,
-                                                                                                 netcdfFile );
-
-        Integer indexOfFeature = features.get( featureId );
-
-        if ( Objects.isNull( indexOfFeature ) )
-        {
-            throw new PreIngestException( "Could not find feature id "
-                                          + featureId + " in netCDF file "
-                                          + netcdfFile );
-        }
-
-        return indexOfFeature;
-    }
-
 
 
     private static Instant readValidDatetime( NWMProfile profile,
@@ -1150,10 +1120,9 @@ class NWMTimeSeries implements Closeable
 
             for ( int i = 0; i < featureIds.length; i++ )
             {
-                int indexOfFeature = NWMTimeSeries.findFeatureIndex( profile,
-                                                                     netcdfFile,
-                                                                     featureIds[i],
-                                                                     featureCache );
+                int indexOfFeature = featureCache.findFeatureIndex( profile,
+                                                                    netcdfFile,
+                                                                    featureIds[i] );
                 indicesOfFeatures[i] = indexOfFeature;
             }
 
@@ -1338,6 +1307,34 @@ class NWMTimeSeries implements Closeable
             }
         }
 
+
+        /**
+         * Find the given featureId index within the given netCDF blob using the
+         * given NWMProfile and this feature cache.
+         * @param profile The profile to use (has name of feature variable).
+         * @param netcdfFile The netCDF blob to search.
+         * @param featureId The NWM feature id to search for.
+         * @return The index of the featureID within the feature variable.
+         */
+
+        private int findFeatureIndex( NWMProfile profile,
+                                      NetcdfFile netcdfFile,
+                                      int featureId )
+        {
+            Map<Integer,Integer> features = this.readFeaturesAndCacheOrGetFeaturesFromCache( profile,
+                                                                                             netcdfFile );
+
+            Integer indexOfFeature = features.get( featureId );
+
+            if ( Objects.isNull( indexOfFeature ) )
+            {
+                throw new PreIngestException( "Could not find feature id "
+                                              + featureId + " in netCDF file "
+                                              + netcdfFile );
+            }
+
+            return indexOfFeature;
+        }
 
         /**
          * Read features and cache in instance or read from the cache. Allows us to
