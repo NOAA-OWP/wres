@@ -1,22 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <project label="ExampleProject" name="scenario601">
     <inputs>
         <left label="NWM Analysis">
-            <type>simulations</type>
-            <source format="netCDF" >data/channel_rt/analysis_assim/</source>
+            <type>analyses</type>
+            <source interface="nwm_analysis_assim_channel_rt_conus">data/channel_rt/analysis_assim/</source>
             <variable>streamflow</variable>
         </left>
         <right label="NWM Short Range">
             <type>single valued forecasts</type>
-            <source format="netCDF">data/channel_rt/short_range/</source>
+            <source interface="nwm_short_range_channel_rt_conus">data/channel_rt/short_range/</source>
             <variable>streamflow</variable>
         </right>
     </inputs>
     <pair label="Pairs by location and lead time"> <!-- required for unit -->
         <unit>CMS</unit>
         <feature locationId="SMAF1" />
-        <leadHours minimum="1" maximum="18" />
+        <leadHours minimum="0" maximum="18" />
+        <analysisHour>0</analysisHour>
+        <dates earliest="2017-08-07T23:59:59Z" latest="2017-08-09T17:00:00Z" />
+        <issuedDates earliest="2017-08-07T23:59:59Z" latest="2017-08-08T23:00:00Z" />
         <leadTimesPoolingWindow>
             <period>0</period>
             <frequency>1</frequency>
