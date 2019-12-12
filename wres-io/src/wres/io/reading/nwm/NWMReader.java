@@ -103,6 +103,7 @@ public class NWMReader implements Callable<List<IngestResult>>
     private final ThreadPoolExecutor executor;
     private final BlockingQueue<Future<List<IngestResult>>> ingests;
     private final CountDownLatch startGettingResults;
+    private final URI baseUri;
 
     public NWMReader( ProjectConfig projectConfig,
                       DataSource dataSource,
@@ -113,6 +114,26 @@ public class NWMReader implements Callable<List<IngestResult>>
         Objects.requireNonNull( lockManager );
         Objects.requireNonNull( dataSource.getSource() );
         Objects.requireNonNull( dataSource.getSource().getInterface() );
+        Objects.requireNonNull( dataSource.getSource().getValue() );
+
+        URI literalUri = dataSource.getSource()
+                                   .getValue();
+
+        if ( literalUri.isAbsolute() )
+        {
+            this.baseUri = literalUri;
+        }
+        else
+        {
+            URI resolvedUri = SystemSettings.getDataDirectory()
+                                            .resolve( literalUri.getPath() )
+                                            .toUri();
+            LOGGER.debug( "Transformed relative URI {} to URI {}.",
+                          literalUri,
+                          resolvedUri );
+            this.baseUri = resolvedUri;
+        }
+
         InterfaceShortHand interfaceShortHand = dataSource.getSource()
                                                           .getInterface();
         this.nwmProfile = NWMProfiles.getProfileFromShortHand( interfaceShortHand );
@@ -238,8 +259,7 @@ public class NWMReader implements Callable<List<IngestResult>>
 
     private URI getUri()
     {
-        return this.getDataSource()
-                   .getUri();
+        return this.baseUri;
     }
 
     private NWMProfile getNwmProfile()

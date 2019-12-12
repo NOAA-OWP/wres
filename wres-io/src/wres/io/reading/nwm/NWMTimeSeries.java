@@ -107,7 +107,9 @@ class NWMTimeSeries implements Closeable
      * @param baseUri
      * @throws NullPointerException When any argument is null.
      * @throws PreIngestException When any netCDF blob could not be opened.
+     * @throws IllegalArgumentException When baseUri is not absolute.
      */
+
     NWMTimeSeries( NWMProfile profile,
                    Instant referenceDatetime,
                    URI baseUri )
@@ -117,12 +119,22 @@ class NWMTimeSeries implements Closeable
         Objects.requireNonNull( baseUri );
         this.profile = profile;
         this.referenceDatetime = referenceDatetime;
-        this.baseUri = baseUri;
+
+        // Require an absolute URI
+        if ( baseUri.isAbsolute() )
+        {
+            this.baseUri = baseUri;
+        }
+        else
+        {
+            throw new IllegalArgumentException( "baseUri must be absolute, not "
+                                                + baseUri );
+        }
 
         // Build the set of URIs based on the profile given.
         Set<URI> netcdfUris = NWMTimeSeries.getNetcdfUris( profile,
                                                            referenceDatetime,
-                                                           baseUri );
+                                                           this.baseUri );
         this.netcdfFiles = new HashSet<>( netcdfUris.size() );
         LOGGER.debug( "Attempting to open NWM TimeSeries with reference datetime {} and profile {} from baseUri {}.",
                       referenceDatetime, profile, baseUri );
