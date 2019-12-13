@@ -3,12 +3,12 @@
     <inputs>
         <left label="NWM Analysis">
             <type>analyses</type>
-            <source interface="nwm_analysis_assim_channel_rt_conus">data/channel_rt/analysis_assim/</source>
+            <source interface="nwm_analysis_assim_channel_rt_conus">data/nwmVector/</source>
             <variable>streamflow</variable>
         </left>
         <right label="NWM Short Range">
             <type>single valued forecasts</type>
-            <source interface="nwm_short_range_channel_rt_conus">data/channel_rt/short_range/</source>
+            <source interface="nwm_short_range_channel_rt_conus">data/nwmVector/</source>
             <variable>streamflow</variable>
         </right>
     </inputs>
