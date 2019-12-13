@@ -11,6 +11,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -90,18 +91,12 @@ public class ScenarioHelper
                       exitCode );
         return wresEvaluation;
     }
-    
-	protected void assertExecuteDatabase ( ScenarioInformation scenarioInfo )
+   
+	protected static void assertExecuteDatabase ( ScenarioInformation scenarioInfo ) throws SQLException
 	{
 		LOGGER.info( "Beginning clean database through JUnit for scenario: " + scenarioInfo.getName());
         //Path config = scenarioInfo.getScenarioDirectory().resolve( ScenarioHelper.USUAL_EVALUATION_FILE_NAME );
-		try {
-			Operations.cleanDatabase();
-		} catch (IOException e1) {
-			LOGGER.error(System.err.println("IOException: " + e1.getMessage()));
-		} catch (SQLException e2) {
-			LOGGER.error(System.err.println("SQLException: " + e2.getMessage()));
-		}
+		Operations.cleanDatabase();
 	}
 
     /**
