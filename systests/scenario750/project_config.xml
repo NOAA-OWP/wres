@@ -2,14 +2,13 @@
 <project label="IOEP Short Ranged Wide Area Example" name="scenario703">
     <inputs>
         <left label="USGS">
-            <type>simulations</type>
-            <source format="usgs"></source>
-            <variable unit="ft3/s">streamflow</variable>
+            <type>observations</type>
+            <source>https://nwis.waterservices.usgs.gov/nwis/iv</source>
+            <variable label="streamflow">00060</variable>
         </left>
         <right label="NWM v2.0 Medium Range Ensemble">
             <type>ensemble forecasts</type>
-            <source format="netCDF" pattern="**/*f00*">data/channel_rt/medium_range_ens_2.0/nwm.20180827</source>
-            <source format="netCDF" pattern="**/*f00*">data/channel_rt/medium_range_ens_2.0/nwm.20180828</source>
+            <source interface="nwm_medium_range_ensemble_channel_rt_conus">data/nwmVector/</source>
             <variable>streamflow</variable>
         </right>
     </inputs>
@@ -19,6 +18,7 @@
         <feature locationId="DRRC2" />
         <leadHours minimum="3" maximum="9" />
         <dates earliest="2018-08-26T00:00:00Z" latest="2018-09-04T00:00:00Z" />
+        <issuedDates earliest="2018-08-27T05:59:59Z" latest="2018-08-28T06:00:00Z" />
         <desiredTimeScale>
             <function>mean</function>
             <period>3</period>
