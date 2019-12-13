@@ -30,7 +30,7 @@ public class Scenario000
     }
 
     @Test
-    public void testScenario()
+    public void testScenario() throws SQLException
     {
 		ScenarioHelper.assertExecuteDatabase( scenarioInfo );
         //Control control = ScenarioHelper.assertExecuteScenario( scenarioInfo );
