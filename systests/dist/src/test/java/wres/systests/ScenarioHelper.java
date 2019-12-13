@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.control.Control;
+import wres.io.Operations;
 
 /**
  * A class to be used when setting up system test scenarios of the WRES for 
@@ -90,6 +91,18 @@ public class ScenarioHelper
         return wresEvaluation;
     }
     
+	protected void assertExecuteDatabase ( ScenarioInformation scenarioInfo )
+	{
+		LOGGER.info( "Beginning clean database through JUnit for scenario: " + scenarioInfo.getName());
+        //Path config = scenarioInfo.getScenarioDirectory().resolve( ScenarioHelper.USUAL_EVALUATION_FILE_NAME );
+		try {
+			Operations.cleanDatabase();
+		} catch (IOException e1) {
+			LOGGER.error(System.err.println("IOException: " + e1.getMessage()));
+		} catch (SQLException e2) {
+			LOGGER.error(System.err.println("SQLException: " + e2.getMessage()));
+		}
+	}
 
     /**
      * Checks for output validity from WRES and fails if not.  This is used in conjunction
