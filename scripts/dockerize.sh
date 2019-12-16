@@ -17,10 +17,13 @@
 # Attempt to auto-detect the versions needed.
 all_versions=$( scripts/versions.sh )
 
-overall_version=$( echo "$all_versions" | grep Main | cut -d' ' -f3 )
-worker_shim_version=$( echo "$all_versions" | grep wres-worker | cut -d' ' -f3 )
-tasker_version=$( echo "$all_versions" | grep wres-tasker | cut -d' ' -f3 )
-broker_version=$( echo "$all_versions" | grep wres-broker | cut -d' ' -f3 )
+overall_version=$( echo "$all_versions" | grep "^Main version" | cut -d' ' -f3 )
+tasker_version=$( echo "$all_versions" | grep "^wres-tasker version" | cut -d' ' -f3 )
+broker_version=$( echo "$all_versions" | grep "^wres-broker version" | cut -d' ' -f3 )
+
+wres_worker_shim_version=$( echo "$all_versions" | grep "^wres-worker version" | cut -d' ' -f3 )
+wres_core_version=$overall_version
+wres_tasker_version=$tasker_version
 
 # Sometimes auto-detection of versions does not work, because if no code changed
 # then gradle will not create a new zip file. So the caller must specify each
@@ -28,17 +31,17 @@ broker_version=$( echo "$all_versions" | grep wres-broker | cut -d' ' -f3 )
 
 if [[ "$1" != "" && "$1" != "auto" ]]
 then
-    overall_version=$1
+    wres_core_version=$1
 fi
 
 if [[ "$2" != "" && "$2" != "auto" ]]
 then
-    worker_shim_version=$2
+    wres_worker_shim_version=$2
 fi
 
 if [[ "$3" != "" && "$3" != "auto" ]]
 then
-    tasker_version=$3
+    wres_tasker_version=$3
 fi
 
 if [[ "$4" != "" && "$4" != "auto" ]]
@@ -46,15 +49,16 @@ then
     broker_version=$4
 fi
 
+echo "Core WRES binary zip version is $wres_core_version"
+echo "WRES Worker shim binary zip version is $wres_worker_shim_version"
+echo "WRES Tasker binary zip version is $wres_tasker_version"
+echo "Primary docker image version is $overall_version"
+echo "Tasker docker image version is $overall_version"
+echo "Broker docker image version is $broker_version"
 
-echo "overall_version is $overall_version"
-echo "worker_shim_version is $worker_shim_version"
-echo "tasker_version is $tasker_version"
-echo "broker_version is $broker_version"
-
-wres_core_file=wres-${overall_version}.zip
-worker_shim_file=wres-worker-${worker_shim_version}.zip
-tasker_file=wres-tasker-${tasker_version}.zip
+wres_core_file=wres-${wres_core_version}.zip
+worker_shim_file=wres-worker-${wres_worker_shim_version}.zip
+tasker_file=wres-tasker-${wres_tasker_version}.zip
 
 jenkins_workspace=https://***REMOVED***/jenkins/job/Verify_OWP_WRES/ws
 core_url=$jenkins_workspace/build/distributions/$wres_core_file
@@ -74,13 +78,13 @@ done
 # Build and tag the worker image which is composed of WRES core and worker shim.
 # Tag will be based on the later image version which is WRES core at git root.
 echo "Building and tagging worker image..."
-worker_image_id=$( docker build --build-arg version=$overall_version --build-arg worker_version=$worker_shim_version --quiet --tag wres/wres-worker:$overall_version . )
+worker_image_id=$( docker build --build-arg version=$wres_core_version --build-arg worker_version=$wres_worker_shim_version --quiet --tag wres/wres-worker:$overall_version . )
 echo "Built wres/wres-worker:$overall_version -- $worker_image_id"
 
 # Build and tag the tasker image which solely contains the tasker.
 echo "Building tasker image..."
 pushd wres-tasker
-tasker_image_id=$( docker build --build-arg version=$tasker_version --quiet --tag wres/wres-tasker:$tasker_version . )
+tasker_image_id=$( docker build --build-arg version=$wres_tasker_version --quiet --tag wres/wres-tasker:$tasker_version . )
 popd
 
 echo "Built wres/wres-tasker:$tasker_version -- $tasker_image_id"
@@ -112,15 +116,38 @@ then
         exit 2
     fi
 
-    echo "Tagging wres/wres-worker:$overall_version as $DOCKER_REGISTRY/wres/wres-worker/$overall_version"
-    docker tag wres/wres-worker:$overall_version $DOCKER_REGISTRY/wres/wres-worker:$overall_version
-    echo "Tagging wres/wres-tasker:$tasker_version as $DOCKER_REGISTRY/wres/wres-tasker/$tasker_version"
-    docker tag wres/wres-tasker:$tasker_version $DOCKER_REGISTRY/wres/wres-tasker:$tasker_version
-    echo "Tagging wres/wres-broker:$broker_version as $DOCKER_REGISTRY/wres/wres-broker/$broker_version"
-    docker tag wres/wres-broker:$broker_version $DOCKER_REGISTRY/wres/wres-broker:$broker_version
-    docker push $DOCKER_REGISTRY/wres/wres-worker:$overall_version
-    docker push $DOCKER_REGISTRY/wres/wres-tasker:$tasker_version
-    docker push $DOCKER_REGISTRY/wres/wres-broker:$broker_version
+    primary_image_dev_status=$( echo ${overall_version} | grep "dev" )
+
+    if [[ "$primary_image_dev_status" != "" ]]
+    then
+        echo "Refusing to tag and push primary docker image version ${overall_version} because its Dockerfile has not been committed to the repository yet."
+    else
+        echo "Tagging wres/wres-worker:$overall_version as $DOCKER_REGISTRY/wres/wres-worker/$overall_version"
+        docker tag wres/wres-worker:$overall_version $DOCKER_REGISTRY/wres/wres-worker:$overall_version
+	docker push $DOCKER_REGISTRY/wres/wres-worker:$overall_version
+    fi
+
+    tasker_image_dev_status=$( echo ${tasker_version} | grep "dev" )
+
+    if [[ "$tasker_image_dev_status" != "" ]]
+    then
+        echo "Refusing to tag and push tasker docker image version ${tasker_version} because its Dockerfile has not been committed to the repository yet."
+    else
+        echo "Tagging wres/wres-tasker:$tasker_version as $DOCKER_REGISTRY/wres/wres-tasker/$tasker_version"
+	docker tag wres/wres-tasker:$tasker_version $DOCKER_REGISTRY/wres/wres-tasker:$tasker_version
+        docker push $DOCKER_REGISTRY/wres/wres-tasker:$tasker_version
+    fi
+
+    broker_image_dev_status=$( echo ${broker_version} | grep "dev" )
+
+    if [[ "$broker_image_dev_status" != "" ]]
+    then
+        echo "Refusing to tag and push broker docker image version ${broker_version} because its Dockerfile has not been committed to the repository yet."
+    else
+        echo "Tagging wres/wres-broker:$broker_version as $DOCKER_REGISTRY/wres/wres-broker/$broker_version"
+        docker tag wres/wres-broker:$broker_version $DOCKER_REGISTRY/wres/wres-broker:$broker_version
+        docker push $DOCKER_REGISTRY/wres/wres-broker:$broker_version
+    fi
 else
     echo "No variable 'DOCKER_REGISTRY' found, not attempting to docker push."
     echo "If you want to automatically push, set DOCKER_REGISTRY to the FQDN of"
