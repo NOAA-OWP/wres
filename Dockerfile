@@ -23,8 +23,8 @@ RUN yum install -y \
     libsmartcols-2.23.2-61.el7_7.1 \
     libuuid-2.23.2-61.el7_7.1 \
     nss-3.44.0-7.el7_7 \
-    nss-softokn--3.44.0-8.el7_7 \
-    nss-softokn-freebl-3.44.0-8.el7_7 7 \
+    nss-softokn-3.44.0-8.el7_7 \
+    nss-softokn-freebl-3.44.0-8.el7_7 \
     nss-sysinit-3.44.0-7.el7_7 \
     nss-tools-3.44.0-7.el7_7 \
     nss-util-3.44.0-4.el7_7 \
