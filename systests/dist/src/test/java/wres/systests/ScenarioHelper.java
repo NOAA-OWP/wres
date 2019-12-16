@@ -11,7 +11,6 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.sql.SQLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -27,7 +26,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.control.Control;
-import wres.io.Operations;
 
 /**
  * A class to be used when setting up system test scenarios of the WRES for 
@@ -91,13 +89,7 @@ public class ScenarioHelper
                       exitCode );
         return wresEvaluation;
     }
-   
-	protected static void assertExecuteDatabase ( ScenarioInformation scenarioInfo ) throws SQLException
-	{
-		LOGGER.info( "Beginning clean database through JUnit for scenario: " + scenarioInfo.getName());
-        //Path config = scenarioInfo.getScenarioDirectory().resolve( ScenarioHelper.USUAL_EVALUATION_FILE_NAME );
-		Operations.cleanDatabase();
-	}
+    
 
     /**
      * Checks for output validity from WRES and fails if not.  This is used in conjunction
