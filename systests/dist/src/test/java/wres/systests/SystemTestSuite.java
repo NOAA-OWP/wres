@@ -3,10 +3,14 @@ package wres.systests;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.BeforeClass;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 import java.sql.SQLException;
+import java.time.Instant;
+import java.time.Duration;
+
 import wres.io.Operations;
-import java.lang.Integer;
 
 @RunWith( SystemTestsSuiteRunner.class )
 
@@ -87,9 +91,26 @@ import java.lang.Integer;
  */
 public class SystemTestSuite
 {
+	private static final Logger LOGGER = LoggerFactory.getLogger( SystemTestSuite.class );
+
+   /**
+    * Cleans once before all tests.
+    * 
+    * @throws SQLException if the test database could not be cleaned for any reason
+    */
 	@BeforeClass
 	public static void runBeforeAllTests() throws SQLException
 	{
+		String dbName = System.getProperty( "wres.databaseName" );
+		LOGGER.info( "Cleaning the test database instance {}...", dbName );
+		
+		Instant started = Instant.now();
     	Operations.cleanDatabase();
+		Instant stopped = Instant.now();
+		Duration duration = Duration.between( started, stopped );
+
+		LOGGER.info( "Finished cleaning the test database instance {}, which took {}.", 
+                     dbName,
+                     duration );
 	}
 }
