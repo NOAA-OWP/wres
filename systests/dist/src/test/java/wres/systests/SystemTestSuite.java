@@ -2,6 +2,11 @@ package wres.systests;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
+import org.junit.BeforeClass;
+
+import java.sql.SQLException;
+import wres.io.Operations;
+import java.lang.Integer;
 
 @RunWith( SystemTestsSuiteRunner.class )
 
@@ -82,4 +87,9 @@ import org.junit.runners.Suite;
  */
 public class SystemTestSuite
 {
+	@BeforeClass
+	public static void runBeforeAllTests() throws SQLException
+	{
+    	Operations.cleanDatabase();
+	}
 }

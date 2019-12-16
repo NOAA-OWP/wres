@@ -69,7 +69,6 @@ public class SystemTestsSuiteRunner extends Suite
         ArrayList<Runner> shuffledChildren = new ArrayList<>(); 
         shuffledChildren.addAll( children );
         Collections.shuffle(shuffledChildren, rand);
-        
         return shuffledChildren;
     }
 }
