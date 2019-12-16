@@ -4,13 +4,25 @@
 # directory like this: scripts/versions.sh
 
 
+# Accepts a single directory argument, e.g. of a module or the top-level.
+# Returns the WRES version auto-detected from git.
+# When the Dockerfile has uncommitted modifications, flag "-dev" (dirty).
 function get_ver
 {
     last_commit_hash=$( git log --format="%h" -n 1 -- $1 build.gradle )
     last_commit_date=$( git log --date=short --format="%cd" -n 1 -- $1 build.gradle )
     last_commit_date_short=$( echo ${last_commit_date} | sed 's/\-//g' - )
     potential_version=${last_commit_date_short}-${last_commit_hash}
-    echo ${potential_version}
+
+    # Look for the git status of the dockerfile for the directory passed
+    dockerfile_modified=$( git status --porcelain -- $1/Dockerfile | grep "^ M" )
+
+    if [ "$dockerfile_modified" != "" ]
+    then
+        echo ${potential_version}-dev
+    else
+	echo ${potential_version}
+    fi
 }
 
 echo Main version: $( get_ver . )
