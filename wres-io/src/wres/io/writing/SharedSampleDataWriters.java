@@ -9,15 +9,9 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import wres.datamodel.sampledata.SampleData;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfEnsemblePairs;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.io.writing.commaseparated.pairs.EnsemblePairsWriter;
 import wres.io.writing.commaseparated.pairs.SingleValuedPairsWriter;
 
@@ -33,14 +27,8 @@ import wres.io.writing.commaseparated.pairs.SingleValuedPairsWriter;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class SharedSampleDataWriters implements Consumer<SampleData<?>>, Supplier<Set<Path>>, Closeable
+public class SharedSampleDataWriters implements Supplier<Set<Path>>, Closeable
 {
-
-    /**
-     * Logger.
-     */
-
-    private static final Logger LOGGER = LoggerFactory.getLogger( SharedSampleDataWriters.class );
 
     /**
      * The shared writer for single-valued pairs.
@@ -79,40 +67,6 @@ public class SharedSampleDataWriters implements Consumer<SampleData<?>>, Supplie
         returnMe.addAll( this.ensembleWriter.get() );
         
         return Collections.unmodifiableSet( returnMe );
-    }
-
-    /**
-     * Writes the pairs.
-     * 
-     * @throws NullPointerException if the input is null or required metadata is null
-     * @throws IllegalArgumentException if the input is an unexpected type
-     * @deprecated
-     */
-
-    @Override
-    @Deprecated( since = "1.8", forRemoval = true )
-    public void accept( SampleData<?> sampleData )
-    {
-        Objects.requireNonNull( sampleData, "Cannot accept a null sample container for writing." );
-
-        if ( sampleData instanceof TimeSeriesOfSingleValuedPairs )
-        {
-            this.getSingleValuedWriter().accept( (TimeSeriesOfSingleValuedPairs) sampleData );
-        }
-        else if ( sampleData instanceof TimeSeriesOfEnsemblePairs )
-        {
-            this.getEnsembleWriter().accept( (TimeSeriesOfEnsemblePairs) sampleData );
-        }
-        else
-        {
-            throw new IllegalArgumentException( "Unsupported type of pairs for writing: "
-                                                + sampleData.getClass().getSimpleName() );
-        }
-
-        LOGGER.debug( "Completed writing pairs for feature '{}' and time window {} to {}.",
-                      sampleData.getMetadata().getIdentifier().getGeospatialID(),
-                      sampleData.getMetadata().getTimeWindow(),
-                      this.get() );
     }
 
     @Override
