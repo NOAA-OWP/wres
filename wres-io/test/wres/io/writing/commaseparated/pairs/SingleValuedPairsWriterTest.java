@@ -32,8 +32,6 @@ import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.scale.TimeScale.TimeScaleFunction;
 import wres.datamodel.time.Event;
@@ -91,7 +89,7 @@ public final class SingleValuedPairsWriterTest
         pairs = tsBuilder.addTimeSeries( timeSeriesOne ).setMetadata( meta ).build();
 
         // Create the second time-series of pairs
-        TimeSeriesOfSingleValuedPairsBuilder tsBuilderTwo = new TimeSeriesOfSingleValuedPairsBuilder();
+        PoolOfPairsBuilder<Double, Double> tsBuilderTwo = new PoolOfPairsBuilder<>();
         SortedSet<Event<Pair<Double, Double>>> setOfPairsTwo = new TreeSet<>();
         Instant basisTimeTwo = Instant.parse( "1985-01-01T00:00:00Z" );
         setOfPairsTwo.add( Event.of( Instant.parse( "1985-01-01T04:00:00Z" ),
@@ -112,7 +110,7 @@ public final class SingleValuedPairsWriterTest
 
 
         // Create the third time-series of pairs
-        TimeSeriesOfSingleValuedPairsBuilder tsBuilderThree = new TimeSeriesOfSingleValuedPairsBuilder();
+        PoolOfPairsBuilder<Double, Double> tsBuilderThree = new PoolOfPairsBuilder<>();
         SortedSet<Event<Pair<Double, Double>>> setOfPairsThree = new TreeSet<>();
         Instant basisTimeThree = Instant.parse( "1985-01-01T00:00:00Z" );
         setOfPairsThree.add( Event.of( Instant.parse( "1985-01-01T07:00:00Z" ),
@@ -230,7 +228,7 @@ public final class SingleValuedPairsWriterTest
         {
 
             // Create the pairs with a time window
-            TimeSeriesOfSingleValuedPairsBuilder tsBuilder = new TimeSeriesOfSingleValuedPairsBuilder();
+            PoolOfPairsBuilder<Double, Double> tsBuilder = new PoolOfPairsBuilder<>();
             tsBuilder.addTimeSeries( pairs );
             tsBuilder.setMetadata( SampleMetadata.of( pairs.getMetadata(),
                                                       TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
