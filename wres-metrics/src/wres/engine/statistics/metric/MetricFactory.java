@@ -48,7 +48,6 @@ import wres.engine.statistics.metric.processing.MetricProcessor;
 import wres.engine.statistics.metric.processing.MetricProcessorByTime;
 import wres.engine.statistics.metric.processing.MetricProcessorByTimeEnsemblePairs;
 import wres.engine.statistics.metric.processing.MetricProcessorByTimeSingleValuedPairs;
-import wres.engine.statistics.metric.processing.MetricProcessorForProject;
 import wres.engine.statistics.metric.singlevalued.BiasFraction;
 import wres.engine.statistics.metric.singlevalued.BoxPlotError;
 import wres.engine.statistics.metric.singlevalued.BoxPlotPercentageError;
@@ -82,30 +81,6 @@ public final class MetricFactory
      */
 
     private static final String UNRECOGNIZED_METRIC_ERROR = "Unrecognized metric for identifier.";
-
-    /**
-     * Returns a {@link MetricProcessorForProject} for the specified project configuration.
-     * 
-     * @param projectConfig the project configuration
-     * @param externalThresholds an optional set of external thresholds, may be null
-     * @param thresholdExecutor an executor service for processing thresholds
-     * @param metricExecutor an executor service for processing metrics
-     * @return a metric processor
-     * @throws MetricConfigException if the metrics are configured incorrectly
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     */
-
-    public static MetricProcessorForProject ofMetricProcessorForProject( final ProjectConfig projectConfig,
-                                                                         final ThresholdsByMetric externalThresholds,
-                                                                         final ExecutorService thresholdExecutor,
-                                                                         final ExecutorService metricExecutor )
-            throws MetricParameterException
-    {
-        return new MetricProcessorForProject( projectConfig,
-                                              externalThresholds,
-                                              thresholdExecutor,
-                                              metricExecutor );
-    }
 
     /**
      * <p>Returns an instance of a {@link MetricProcessor} for processing single-valued pairs. Optionally, retain 
