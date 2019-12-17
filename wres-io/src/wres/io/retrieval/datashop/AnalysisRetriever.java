@@ -95,7 +95,7 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
          * @param analysisHour duration or null
          * @return A builder
          */
-        public Builder setAnalysisHour( Duration analysisHour )
+        Builder setAnalysisHour( Duration analysisHour )
         {
             if ( Objects.nonNull( analysisHour ) )
             {

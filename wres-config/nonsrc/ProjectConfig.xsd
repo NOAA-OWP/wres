@@ -797,7 +797,7 @@ time scale within a single class, rather than two classes.
             <xs:element name="leadHours" type="intBoundsType" minOccurs="0" />
 
             <!-- analysisHour chooses which analysis step to evaluate #65216 -->
-            <xs:element name="analysisHour" type="xs:int" minOccurs="0" />
+            <xs:element name="analysisHour" type="xs:int" minOccurs="0" default="0" />
             <xs:element name="dates" type="dateCondition" minOccurs="0" />
             <xs:element name="issuedDates" type="dateCondition" minOccurs="0" />
 
