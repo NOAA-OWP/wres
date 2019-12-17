@@ -2,24 +2,16 @@ package wres.io.data.caching;
 
 import java.net.URI;
 import java.sql.SQLException;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.DataSourceConfig;
-import wres.datamodel.time.TimeWindow;
-import wres.io.config.ConfigHelper;
-import wres.io.config.OrderedSampleMetadata;
 import wres.io.data.details.SourceDetails;
 import wres.io.data.details.SourceDetails.SourceKey;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.util.Collections;
-import wres.util.TimeHelper;
 
 /**
  * Caches information about the source of forecast and observation data
@@ -269,138 +261,6 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
 
 	    return super.getID(key);
 	}
-
-	public static List<String> getSourcePaths( final OrderedSampleMetadata sampleMetadata,
-                                               final DataSourceConfig dataSourceConfig)
-            throws SQLException
-    {
-        List<String> paths = new ArrayList<>();
-
-        boolean isForecast = ConfigHelper.isForecast( dataSourceConfig );
-
-        DataScripter script = new DataScripter();
-        script.addLine( "SELECT path" );
-        script.addLine( "FROM wres.Source S" );
-        script.addLine( "WHERE S.is_point_data = FALSE" );
-
-        // Unwrap the time window for local use
-        TimeWindow window = sampleMetadata.getMetadata().getTimeWindow();
-
-        if ( sampleMetadata.getMinimumLead()
-                           .equals( window.getLatestLeadDuration() ) )
-        {
-            script.addTab()
-                  .addLine( "AND S.lead = ",
-                            TimeHelper.durationToLead( sampleMetadata.getMinimumLead() ) );
-        }
-        else
-        {
-            script.addTab().addLine( "AND S.lead > ", TimeHelper.durationToLead( sampleMetadata.getMinimumLead() ) );
-            script.addTab()
-                  .addLine( "AND S.lead <= ",
-                            TimeHelper.durationToLead( window.getLatestLeadDuration() ) );
-        }
-
-        // See #66485. JBr. This may or may not fix the problem. As of now, I have zero confidence in gridded
-        // evaluations because there is zero reliable test coverage at any level.
-//        if ( isForecast && sampleMetadata.getProject().getMinimumLead() > Integer.MIN_VALUE )
-//        {
-//            script.addTab().addLine( "AND S.lead >= ", sampleMetadata.getProject().getMinimumLead() );
-//        }
-//
-//        if ( isForecast && sampleMetadata.getProject().getMaximumLead() < Integer.MAX_VALUE )
-//        {
-//            script.addTab().addLine( "AND S.lead <= ", sampleMetadata.getProject().getMaximumLead() );
-//        }
-
-        if ( sampleMetadata.getProject().getEarliestDate() != null )
-        {
-            script.addTab().add( "AND S.output_time " );
-
-            if ( isForecast )
-            {
-                script.add( "+ INTERVAL '1 ", TimeHelper.LEAD_RESOLUTION, "' * S.lead " );
-            }
-
-            script.addLine( ">= '", sampleMetadata.getProject().getEarliestDate(), "'" );
-        }
-
-        if ( sampleMetadata.getProject().getLatestDate() != null )
-        {
-            script.addTab().add( "AND S.output_time " );
-
-            if ( isForecast )
-            {
-                script.add( "+ INTERVAL '1 ", TimeHelper.LEAD_RESOLUTION, "' * S.lead " );
-            }
-
-            script.addLine( "<= '", sampleMetadata.getProject().getLatestDate(), "'" );
-        }
-
-        String issueClause = null;
-        if ( !window.hasUnboundedReferenceTimes() )
-        {
-            if ( window.getEarliestReferenceTime()
-                       .equals( window.getLatestReferenceTime() ) )
-            {
-                issueClause = "S.output_time = '" + window.getEarliestReferenceTime()
-                              + "'::timestamp without time zone ";
-            }
-            else
-            {
-                if ( !window.getEarliestReferenceTime().equals( Instant.MIN ) )
-                {
-                    // TODO: Uncomment when it's time to go exclusive-inclusive
-                    //issueClause = "S.output_time > '" + timeWindow.getEarliestTime() + "'::timestamp without time zone ";
-                    issueClause = "AND S.output_time >= '" + window.getEarliestReferenceTime()
-                                  + "'::timestamp without time zone";
-                }
-
-                if ( !window.getLatestReferenceTime().equals( Instant.MAX ) )
-                {
-                    if ( issueClause == null )
-                    {
-                        issueClause = "";
-                    }
-                    else
-                    {
-                        issueClause += NEWLINE;
-                    }
-
-                    issueClause += "AND S.output_time <= '" + window.getLatestReferenceTime()
-                                   + "'::timestamp without time zone";
-                }
-            }
-        }
-
-        if (issueClause != null)
-        {
-            script.addTab().addLine(issueClause);
-        }
-
-        if (issueClause == null && isForecast && sampleMetadata.getProject().getEarliestIssueDate() != null)
-        {
-            script.addTab().addLine( "AND S.output_time >= '", sampleMetadata.getProject().getEarliestIssueDate(), "'");
-        }
-
-        if (issueClause == null && isForecast && sampleMetadata.getProject().getLatestIssueDate() != null)
-        {
-            script.addTab().addLine( "AND S.output_time <= '", sampleMetadata.getProject().getLatestIssueDate(), "'");
-        }
-
-        script.addTab().addLine("AND EXISTS (");
-        script.addTab(  2  ).addLine("SELECT 1");
-        script.addTab(  2  ).addLine("FROM wres.ProjectSource PS");
-        script.addTab(  2  ).addLine("WHERE PS.project_id = ", sampleMetadata.getProject().getId());
-        script.addTab(   3   ).addLine("AND PS.member = ", sampleMetadata.getProject().getInputName( dataSourceConfig ));
-        script.addTab(   3   ).addLine("AND PS.source_id = S.source_id");
-        script.addTab().addLine(");");
-
-        script.consume( pathRow -> paths.add( pathRow.getString( "path" ) ) );
-
-        return paths;
-    }
-
 
 	@Override
 	protected int getMaxDetails() {
