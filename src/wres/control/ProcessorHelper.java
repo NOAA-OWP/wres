@@ -218,12 +218,12 @@ class ProcessorHelper
         // Create one task per feature
         for ( FeaturePlus feature : decomposedFeatures )
         {
-            Supplier<FeatureProcessingResult> featureProcessor = new FeatureProcessorTwo( feature,
-                                                                                          resolvedProject,
-                                                                                          project,
-                                                                                          unitMapper,
-                                                                                          executors,
-                                                                                          sharedWriters );
+            Supplier<FeatureProcessingResult> featureProcessor = new FeatureProcessor( feature,
+                                                                                       resolvedProject,
+                                                                                       project,
+                                                                                       unitMapper,
+                                                                                       executors,
+                                                                                       sharedWriters );
 
             CompletableFuture<Void> nextFeatureTask = CompletableFuture.supplyAsync( featureProcessor,
                                                                                      executors.getFeatureExecutor() )

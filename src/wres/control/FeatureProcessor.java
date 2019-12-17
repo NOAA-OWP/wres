@@ -46,14 +46,14 @@ import wres.io.writing.commaseparated.pairs.PairsWriter;
  * @param the type of right data in the paired data
  */
 
-class FeatureProcessorTwo implements Supplier<FeatureProcessingResult>
+class FeatureProcessor implements Supplier<FeatureProcessingResult>
 {
 
     /**
      * Logger.
      */
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( FeatureProcessorTwo.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( FeatureProcessor.class );
 
     /**
      * The feature.
@@ -66,13 +66,13 @@ class FeatureProcessorTwo implements Supplier<FeatureProcessingResult>
      */
 
     private final Project project;
-    
+
     /**
      * The unit mapper.
      */
 
     private final UnitMapper unitMapper;
-    
+
     /**
      * The resolved project.
      */
@@ -109,12 +109,12 @@ class FeatureProcessorTwo implements Supplier<FeatureProcessingResult>
      * @throws NullPointerException if any required input is null
      */
 
-    FeatureProcessorTwo( FeaturePlus feature,
-                         ResolvedProject resolvedProject,
-                         Project project,
-                         UnitMapper unitMapper,
-                         ExecutorServices executors,
-                         SharedWriters sharedWriters )
+    FeatureProcessor( FeaturePlus feature,
+                      ResolvedProject resolvedProject,
+                      Project project,
+                      UnitMapper unitMapper,
+                      ExecutorServices executors,
+                      SharedWriters sharedWriters )
     {
 
         Objects.requireNonNull( feature );
@@ -365,7 +365,7 @@ class FeatureProcessorTwo implements Supplier<FeatureProcessingResult>
                                     {
                                         sharedWriters.accept( sampleData );
                                     }
-                                    
+
                                     // #71874: pairs are not written per feature so do not report on the 
                                     // paths to pairs for each feature. Report on the pairs for all features.
                                     return Collections.emptySet();
