@@ -9,8 +9,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.ForkJoinPool;
-
 import org.junit.Before;
 import org.junit.Test;
 
@@ -47,7 +45,6 @@ import wres.engine.statistics.metric.ensemble.ContinuousRankedProbabilitySkillSc
 import wres.engine.statistics.metric.ensemble.RankHistogram;
 import wres.engine.statistics.metric.processing.MetricProcessorByTimeEnsemblePairs;
 import wres.engine.statistics.metric.processing.MetricProcessorByTimeSingleValuedPairs;
-import wres.engine.statistics.metric.processing.MetricProcessorForProject;
 import wres.engine.statistics.metric.singlevalued.BiasFraction;
 import wres.engine.statistics.metric.singlevalued.CoefficientOfDetermination;
 import wres.engine.statistics.metric.singlevalued.CorrelationPearsons;
@@ -390,21 +387,6 @@ public final class MetricFactoryTest
         assertTrue( Objects.nonNull( MetricFactory.ofSummaryStatisticsForTimingErrorMetric( MetricConstants.TIME_TO_PEAK_ERROR ) ) );
         assertTrue( Objects.nonNull( MetricFactory.ofSummaryStatisticsForTimingErrorMetric( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR ) ) );
         assertTrue( Objects.isNull( MetricFactory.ofSummaryStatisticsForTimingErrorMetric( MetricConstants.MAIN ) ) );
-    }
-
-    /**
-     * Tests the {@link MetricFactory#ofMetricProcessorForProject(ProjectConfig,
-     * wres.datamodel.ThresholdsByMetric, java.util.concurrent.ExecutorService, java.util.concurrent.ExecutorService)}. 
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     */
-
-    @Test
-    public void testOfMetricProcessorByProject() throws MetricParameterException
-    {
-        assertTrue( MetricFactory.ofMetricProcessorForProject( mockSingleValued,
-                                                               null,
-                                                               ForkJoinPool.commonPool(),
-                                                               ForkJoinPool.commonPool() ) instanceof MetricProcessorForProject );
     }
 
     /**
