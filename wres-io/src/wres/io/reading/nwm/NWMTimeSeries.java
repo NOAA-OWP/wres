@@ -241,7 +241,7 @@ class NWMTimeSeries implements Closeable
             LOGGER.debug( "Successfully opened NWM TimeSeries with reference datetime {} and profile {} from baseUri {}.",
                           referenceDatetime, profile, this.baseUri );
         }
-        else if ( netcdfUris.size() == 0 )
+        else if ( this.netcdfFiles.size() == 0 )
         {
             LOGGER.warn( "Skipping NWM TimeSeries (not found) with reference datetime {} and profile {} from baseUri {}.",
                          referenceDatetime, profile, this.baseUri );
@@ -795,44 +795,94 @@ class NWMTimeSeries implements Closeable
                                        offsetToAdd );
     }
 
-    private static int[] readRawInts( Variable variable, int[] indices )
+
+    /**
+     * Actually read nc data from a variable, targeted to given indices.
+     *
+     * It is OK for indices to be unsorted, e.g. for minIndex to appear anywhere
+     * in indices and maxIndex to appear anywhere in indices.
+     *
+     * @param variable The variable to read data from.
+     * @param indices The indices to read.
+     * @param minIndex Caller-supplied minimum from indices (avoid searching 2x)
+     * @param maxIndex Caller-supplied maximum from indices (avoid searching 2x)
+     * @return An int[] with same cardinality and order as indices argument.
+     */
+    private static int[] readRawInts( Variable variable,
+                                      int[] indices,
+                                      int minIndex,
+                                      int maxIndex )
     {
         Objects.requireNonNull( variable );
         Objects.requireNonNull( indices );
+
+        String variableName = variable.getShortName();
 
         if ( indices.length < 1 )
         {
             throw new IllegalArgumentException( "Must pass at least one index." );
         }
 
-        int[] origin = indices.clone();
-        int[] shape = { origin.length };
+        if ( minIndex > maxIndex )
+        {
+            throw new IllegalArgumentException( "maxIndex must be >= minIndex." );
+        }
+
+        int[] result = new int[ indices.length ];
+        int countOfRawValuesToRead = maxIndex - minIndex + 1;
+        int[] rawValues;
+        int[] origin = { minIndex };
+        int[] shape = { countOfRawValuesToRead };
 
         try
         {
             Array array = variable.read( origin, shape );
-            int[] values = ( int[] ) array.get1DJavaArray( DataType.INT );
-
-            if ( values.length != origin.length )
-            {
-                throw new PreIngestException(
-                        "Expected to read exactly " + origin.length + ""
-                        + " values, instead got "
-                        + values.length );
-            }
-
-            return values;
+            int[] unsafeValues = ( int[] ) array.get1DJavaArray( DataType.INT );
+            rawValues = unsafeValues.clone();
         }
         catch ( IOException | InvalidRangeException e )
         {
             throw new PreIngestException( "Failed to read variable "
-                                          + variable
+                                          + variableName
                                           + " at origin "
                                           + Arrays.toString( origin )
                                           + " and shape "
                                           + Arrays.toString( shape ),
                                           e );
         }
+
+        if ( rawValues.length != countOfRawValuesToRead )
+        {
+            throw new PreIngestException(
+                    "Expected to read exactly " + countOfRawValuesToRead + ""
+                    + " values from variable "
+                    + variableName
+                    + " instead got "
+                    + rawValues.length );
+        }
+
+        // Write the values to the result array. Skip past unrequested values.
+        for ( int i = 0, lastRawIndex = -1; i < indices.length; i++ )
+        {
+            if ( i == 0 )
+            {
+                result[0] = rawValues[0];
+                lastRawIndex = 0;
+            }
+            else
+            {
+                // The distance between the indices passed implies the spot
+                // in the (superset) of rawValues array returned.
+                int rawIndexHop = indices[i] - indices[i-1];
+                int currentRawIndex = lastRawIndex + rawIndexHop;
+                result[i] = rawValues[currentRawIndex];
+                lastRawIndex = currentRawIndex;
+            }
+        }
+
+        LOGGER.debug( "Asked variable {} for range {} through {} to get values at indices {}, got raw count {}, distilled to {}",
+                      variableName, minIndex, maxIndex, indices, rawValues.length, result );
+        return result;
     }
 
 
@@ -1118,11 +1168,26 @@ class NWMTimeSeries implements Closeable
 
             int[] indicesOfFeatures = new int[featureIds.length];
 
+            // Discover the minimum and maximum indexes requested while getting
+            // them from the featureCache in order to know the nc range to read.
+            int minIndex = Integer.MAX_VALUE;
+            int maxIndex = Integer.MIN_VALUE;
+
             for ( int i = 0; i < featureIds.length; i++ )
             {
                 int indexOfFeature = featureCache.findFeatureIndex( profile,
                                                                     netcdfFile,
                                                                     featureIds[i] );
+                if ( indexOfFeature < minIndex )
+                {
+                    minIndex = indexOfFeature;
+                }
+
+                if ( indexOfFeature > maxIndex )
+                {
+                    maxIndex = indexOfFeature;
+                }
+
                 indicesOfFeatures[i] = indexOfFeature;
             }
 
@@ -1134,7 +1199,11 @@ class NWMTimeSeries implements Closeable
             try
             {
                 rawVariableValues = NWMTimeSeries.readRawInts( variableVariable,
-                                                               indicesOfFeatures );
+                                                               indicesOfFeatures,
+                                                               minIndex,
+                                                               maxIndex );
+                LOGGER.debug( "Read integer values {} corresponding to indices {} from {}",
+                              rawVariableValues, indicesOfFeatures, netcdfFile.getLocation() );
             }
             catch ( PreIngestException pie )
             {
@@ -1146,13 +1215,18 @@ class NWMTimeSeries implements Closeable
 
             List<EventForNWMFeature<Double>> list = new ArrayList<>( rawVariableValues.length );
 
+            int missingValue = attributes.getMissingValue();
+            int fillValue = attributes.getFillValue();
+
             for ( int i = 0; i < rawVariableValues.length; i++ )
             {
                 double variableValue;
 
-                if ( rawVariableValues[i] == attributes.getMissingValue()
-                     || rawVariableValues[i] == attributes.getFillValue() )
+                if ( rawVariableValues[i] == missingValue
+                     || rawVariableValues[i] == fillValue )
                 {
+                    LOGGER.debug( "Found missing value {} (one of {}, {}) at index {} for feature {} in variable {} of netCDF {}",
+                                  rawVariableValues[i], missingValue, fillValue, i, featureIds[i], variableName, netcdfFile.getLocation() );
                     variableValue = MissingValues.DOUBLE;
                 }
                 else
