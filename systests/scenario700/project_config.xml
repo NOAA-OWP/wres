@@ -2,13 +2,13 @@
 <project label="ExampleProject" name="scenario700">
     <inputs>
         <left label="USGS">
-            <type>simulations</type>
-            <source format="usgs"></source>
-            <variable unit="ft3/s">streamflow</variable>
+            <type>observations</type>
+            <source>https://nwis.waterservices.usgs.gov/nwis/iv</source>
+            <variable label="streamflow">00060</variable>
         </left>
         <right label="NWM Short Range">
             <type>single valued forecasts</type>
-            <source format="netCDF">data/channel_rt/short_range/</source>
+            <source interface="nwm_short_range_channel_rt_conus">data/nwmVector/</source>
             <variable>streamflow</variable>
         </right>
     </inputs>
@@ -16,7 +16,8 @@
         <unit>CMS</unit>
         <feature locationId="DRRC2" />
         <leadHours minimum="1" maximum="18" />
-        <dates earliest="2017-08-08T00:00:00Z" latest="2017-08-09T00:00:00Z" />
+        <dates earliest="2017-08-07T11:59:59Z" latest="2017-08-09T00:00:00Z" />
+        <issuedDates earliest="2017-08-07T11:59:59Z" latest="2017-08-09T12:00:00Z" />
         <leadTimesPoolingWindow>
             <period>0</period>
             <frequency>1</frequency>
