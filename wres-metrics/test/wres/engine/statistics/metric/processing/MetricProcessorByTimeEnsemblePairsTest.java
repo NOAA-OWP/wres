@@ -219,7 +219,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         assertTrue( me.get( 2 ).getData().equals( -2.1250409720950105 ) );
         assertTrue( me.get( 3 ).getData().equals( -2.4855770739425846 ) );
         assertTrue( me.get( 4 ).getData().equals( -3.4840043925326936 ) );
-        assertTrue( me.get( 5 ).getData().equals( -4.218543908073952 ) );
+        assertTrue( me.get( 5 ).getData().equals( -4.2185439080739515 ) );
         //Validate rmse
         List<DoubleScoreStatistic> rmse = Slicer.filter( processor.getCachedMetricOutput()
                                                                   .getDoubleScoreStatistics(),
@@ -342,7 +342,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         assertTrue( me.get( 2 ).getData().equals( -2.1250409720950105 ) );
         assertTrue( me.get( 3 ).getData().equals( -2.4855770739425846 ) );
         assertTrue( me.get( 4 ).getData().equals( -3.5134287820490364 ) );
-        assertTrue( me.get( 5 ).getData().equals( -4.218543908073952 ) );
+        assertTrue( me.get( 5 ).getData().equals( -4.2185439080739515 ) );
         //Validate rmse
         List<DoubleScoreStatistic> rmse = Slicer.filter( results, MetricConstants.ROOT_MEAN_SQUARE_ERROR ).getData();
         assertTrue( rmse.get( 0 ).getData().equals( 41.01563032408479 ) );
@@ -592,7 +592,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         assertTrue( me.get( 2 ).getData().equals( -2.1250409720950105 ) );
         assertTrue( me.get( 3 ).getData().equals( -2.4855770739425846 ) );
         assertTrue( me.get( 4 ).getData().equals( -3.4840043925326936 ) );
-        assertTrue( me.get( 5 ).getData().equals( -4.218543908073952 ) );
+        assertTrue( me.get( 5 ).getData().equals( -4.2185439080739515 ) );
         //Validate rmse
         List<DoubleScoreStatistic> rmse = Slicer.filter( results, MetricConstants.ROOT_MEAN_SQUARE_ERROR ).getData();
         assertTrue( rmse.get( 0 ).getData().equals( 41.01563032408479 ) );
