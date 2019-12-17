@@ -265,9 +265,7 @@ public final class TimeScale implements Comparable<TimeScale>
      * <p>When the input contains an instantaneous time scale (see {@link TimeScale#isInstantaneous()}), then this
      * method either returns the other time scale present or throws an exception if more than one additional time 
      * scale is present. However, there is no other validation of the proposed rescaling, such as the proposed 
-     * {@link TimeScale#getFunction()} associated with the rescaled quantity. 
-     * For that, and other validation see:
-     * {@link ScaleValidationHelper#validateScaleInformation(DataSourceConfig, TimeScale, TimeScale, Duration, String)}.
+     * {@link TimeScale#getFunction()} associated with the rescaled quantity.
      * 
      * @param timeScales the time scales from which to derive the LCS
      * @return the LCS for the input
