@@ -49,7 +49,6 @@ import wres.io.project.Project;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.reading.SourceLoader;
-import wres.io.retrieval.DataGenerator;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
@@ -605,17 +604,6 @@ public final class Operations {
         }
 
         return result;
-    }
-
-
-    // TODO: Why are we passing a feature and not a FeatureDetails object, which is custom made for all of this?
-    public static DataGenerator getInputs( Project project,
-                                           Feature feature,
-                                           Path outputDirectoryForPairs )
-    {
-        return new DataGenerator( feature,
-                                  project,
-                                  outputDirectoryForPairs );
     }
 
     /**
