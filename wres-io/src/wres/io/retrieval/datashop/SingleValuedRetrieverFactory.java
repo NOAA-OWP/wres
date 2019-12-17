@@ -398,6 +398,17 @@ class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Double>
 
     private TimeSeriesRetrieverBuilder<Double> getRetrieverBuilder( DatasourceType dataType )
     {
+        Integer analysisHour = this.project.getProjectConfig()
+                                           .getPair()
+                                           .getAnalysisHour();
+
+        if ( dataType.equals( DatasourceType.ANALYSES )
+             && Objects.isNull( analysisHour ) )
+        {
+            LOGGER.debug( "No <analysisHour> specified, defaulting to 0." );
+            analysisHour = 0;
+        }
+
         switch ( dataType )
         {
             case SINGLE_VALUED_FORECASTS:
@@ -406,10 +417,8 @@ class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Double>
             case SIMULATIONS:
                 return new ObservationRetriever.Builder();
             case ANALYSES:
-                Duration analysisHour = Duration.ofHours( this.project.getProjectConfig()
-                                                                      .getPair()
-                                                                      .getAnalysisHour() );
-                return new AnalysisRetriever.Builder().setAnalysisHour( analysisHour );
+                Duration analysisMember = Duration.ofHours( analysisHour );
+                return new AnalysisRetriever.Builder().setAnalysisHour( analysisMember );
             default:
                 throw new IllegalArgumentException( "Unrecognized data type from which to create the single-valued "
                                                     + "retriever: "
