@@ -117,15 +117,15 @@ public class FunctionFactory
     public static BiFunction<Double, Integer, Double> round()
     {
         return ( input, digits ) -> {
-            
+
             if ( Double.isFinite( input ) )
             {
                 BigDecimal bd = new BigDecimal( Double.toString( input ) ); //Always use String constructor
                 bd = bd.setScale( digits, RoundingMode.HALF_UP );
-                
+
                 return bd.doubleValue();
             }
-            
+
             return input;
         };
     }
@@ -154,7 +154,10 @@ public class FunctionFactory
 
     public static ToDoubleFunction<VectorOfDoubles> mean()
     {
-        return a -> Arrays.stream( a.getDoubles() ).average().getAsDouble();
+        return a -> Arrays.stream( a.getDoubles() )
+                          .sorted() // Sort for accuracy/consistency: #72568
+                          .average()
+                          .getAsDouble();
     }
 
     /**
@@ -180,7 +183,11 @@ public class FunctionFactory
 
     public static ToDoubleFunction<VectorOfDoubles> meanAbsolute()
     {
-        return a -> Arrays.stream( a.getDoubles() ).map( Math::abs ).average().getAsDouble();
+        return a -> Arrays.stream( a.getDoubles() )
+                          .map( Math::abs )
+                          .sorted() // Sort for accuracy/consistency: #72568
+                          .average()
+                          .getAsDouble();
     }
 
     /**
@@ -193,7 +200,9 @@ public class FunctionFactory
 
     public static ToDoubleFunction<VectorOfDoubles> minimum()
     {
-        return a -> Arrays.stream( a.getDoubles() ).min().getAsDouble();
+        return a -> Arrays.stream( a.getDoubles() )
+                          .min()
+                          .getAsDouble();
     }
 
     /**
@@ -206,7 +215,9 @@ public class FunctionFactory
 
     public static ToDoubleFunction<VectorOfDoubles> maximum()
     {
-        return a -> Arrays.stream( a.getDoubles() ).max().getAsDouble();
+        return a -> Arrays.stream( a.getDoubles() )
+                          .max()
+                          .getAsDouble();
     }
 
     /**
@@ -220,9 +231,10 @@ public class FunctionFactory
     public static ToDoubleFunction<VectorOfDoubles> standardDeviation()
     {
         return a -> {
-            double mean = mean().applyAsDouble( a );
+            double mean = FunctionFactory.mean().applyAsDouble( a );
             return Math.sqrt( Arrays.stream( a.getDoubles() )
                                     .map( d -> Math.pow( d - mean, 2 ) )
+                                    .sorted() // Sort for accuracy/consistency: #72568
                                     .sum()
                               / ( a.size() - 1.0 ) );
         };
@@ -261,7 +273,7 @@ public class FunctionFactory
                                                 + "' is not a recognized statistic "
                                                 + "in this context." );
         }
-        
+
         // Lazy build the map
         buildStatisticsMap();
 
@@ -283,7 +295,9 @@ public class FunctionFactory
      * No argument constructor.
      */
 
-    private FunctionFactory() {}
+    private FunctionFactory()
+    {
+    }
 
     /**
      * Builds the map of statistics.
@@ -291,13 +305,13 @@ public class FunctionFactory
 
     private static void buildStatisticsMap()
     {
-        STATISTICS.put( MetricConstants.MEAN, mean() );
-        STATISTICS.put( MetricConstants.MEDIAN, median() );
-        STATISTICS.put( MetricConstants.STANDARD_DEVIATION, standardDeviation() );
-        STATISTICS.put( MetricConstants.MINIMUM, minimum() );
-        STATISTICS.put( MetricConstants.MAXIMUM, maximum() );
-        STATISTICS.put( MetricConstants.MEAN_ABSOLUTE, meanAbsolute() );
-        STATISTICS.put( MetricConstants.SAMPLE_SIZE, sampleSize() );
+        STATISTICS.put( MetricConstants.MEAN, FunctionFactory.mean() );
+        STATISTICS.put( MetricConstants.MEDIAN, FunctionFactory.median() );
+        STATISTICS.put( MetricConstants.STANDARD_DEVIATION, FunctionFactory.standardDeviation() );
+        STATISTICS.put( MetricConstants.MINIMUM, FunctionFactory.minimum() );
+        STATISTICS.put( MetricConstants.MAXIMUM, FunctionFactory.maximum() );
+        STATISTICS.put( MetricConstants.MEAN_ABSOLUTE, FunctionFactory.meanAbsolute() );
+        STATISTICS.put( MetricConstants.SAMPLE_SIZE, FunctionFactory.sampleSize() );
     }
 
 }
