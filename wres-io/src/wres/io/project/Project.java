@@ -22,7 +22,6 @@ import wres.config.generated.MetricsConfig;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ThresholdType;
-import wres.datamodel.scale.TimeScale;
 import wres.io.config.ConfigHelper;
 import wres.io.config.LeftOrRightOrBaseline;
 import wres.io.data.caching.Ensembles;
@@ -38,9 +37,6 @@ import wres.util.CalculationException;
  * Encapsulates operations involved with interpreting unpredictable data within the
  * project configuration, storing the results of expensive calculations, and forming database
  * statements based solely on the configured specifications
- *
- * TODO: refactor this class and make it immutable, ideally, but otherwise thread-safe. It's also
- * far too large (JBr). See #49511.
  */
 public class Project
 {
@@ -101,19 +97,6 @@ public class Project
      */
     private final int inputCode;
 
-    /**
-     * The desired time scale. See {@link #getAndValidateDesiredTimeScale()}.
-     * 
-     * TODO: reconcile this with {@link #getScale()}, which currently mixes up 
-     * two different things: time scale and time-step. Ultimately, we want one pathway
-     * to obtain the desired time scale for data retrieval, validation and 
-     * metadata propagation. Currently, there are two pathways, which means that the
-     * the validation and metadata may not reflect the data retrieval reality. 
-     * See #58715 and #44539-45. 
-     */
-
-    private TimeScale desiredTimeScale;
-
     private Boolean leftUsesGriddedData = null;
     private Boolean rightUsesGriddedData = null;
     private Boolean baselineUsesGriddedData = null;
@@ -133,27 +116,6 @@ public class Project
     }
 
     /**
-     * Returns the name of the member that the DataSourceConfig belongs to
-     *
-     * <p>
-     * If the "this.getInputName(this.getRight())" is called, the result
-     * should be "ProjectDetails.RIGHT_MEMBER"
-     *</p>
-     * @param dataSourceConfig A DataSourceConfig from a project configuration
-     * @return The name for how the DataSourceConfig relates to the project
-     */
-    public String getInputName( DataSourceConfig dataSourceConfig )
-    {
-        // Use reference equality (rather than value) on purpose, see #67774.
-        return "'"
-               + ConfigHelper.getLeftOrRightOrBaseline( this.getProjectConfig(),
-                                                        dataSourceConfig )
-                             .value()
-                             .toLowerCase()
-               + "'";
-    }
-
-    /**
      * Performs operations that are needed for the project to run between ingest and evaluation.
      * 
      * @throws SQLException if retrieval of data from the database fails
@@ -161,7 +123,7 @@ public class Project
      * @throws CalculationException if required calculations could not be completed
      * @throws NoDataException if zero features have intersecting data
      */
-    public void prepareForExecutionNew() throws SQLException, IOException
+    public void prepareForExecution() throws SQLException, IOException
     {
         LOGGER.trace( "prepareForExecution() entered" );
 
@@ -239,20 +201,6 @@ public class Project
         }
 
         return Collections.unmodifiableSet( this.features );
-    }
-
-
-    /**
-     * Returns the desired time scale associated with the project, which 
-     * is either the user-declared time scale (canonically) or the Least 
-     * Common Scale determined from the source data.
-     * 
-     * @return the desired time scale or null
-     */
-
-    public TimeScale getDesiredTimeScale()
-    {
-        return this.desiredTimeScale;
     }
 
     /**
@@ -693,14 +641,26 @@ public class Project
         }
         return usesGriddedData;
     }
-
+    
     /**
-     * @return The desired unit of measurement for all values
+     * Returns the name of the member that the DataSourceConfig belongs to
+     *
+     * <p>
+     * If the "this.getInputName(this.getRight())" is called, the result
+     * should be "ProjectDetails.RIGHT_MEMBER"
+     *</p>
+     * @param dataSourceConfig A DataSourceConfig from a project configuration
+     * @return The name for how the DataSourceConfig relates to the project
      */
-    public String getDesiredMeasurementUnit()
+    private String getInputName( DataSourceConfig dataSourceConfig )
     {
-        return String.valueOf( this.projectConfig.getPair().getUnit() );
-    }
+        return "'"
+               + ConfigHelper.getLeftOrRightOrBaseline( this.getProjectConfig(),
+                                                        dataSourceConfig )
+                             .value()
+                             .toLowerCase()
+               + "'";
+    }    
 
     /**
      * @return A list of all configurations stating where to store pair output
