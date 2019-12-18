@@ -2,21 +2,22 @@
 <project label="ExampleProject" name="scenario701">
     <inputs>
         <left label="USGS">
-            <type>simulations</type>
-            <source format="usgs"></source>
-            <variable unit="ft3/s">streamflow</variable>
+            <type>observations</type>
+            <source>https://nwis.waterservices.usgs.gov/nwis/iv</source>
+            <variable label="streamflow">00060</variable>
         </left>
         <right label="NWM Short Range">
             <type>single valued forecasts</type>
-            <source format="netCDF">data/channel_rt/short_range/</source>
+            <source interface="nwm_short_range_channel_rt_conus">data/nwmVector</source>
             <variable>streamflow</variable>
         </right>
     </inputs>
     <pair label="Pairs by location and lead time"> <!-- required for unit -->
         <unit>CMS</unit>
         <feature rfc="abrfc" />
-        <leadHours minimum="1" maximum="18" />
+        <leadHours minimum="0" maximum="18" />
         <dates earliest="2017-08-07T00:00:00Z" latest="2017-08-10T00:00:00Z" />
+        <issuedDates earliest="2017-08-07T23:59:59Z" latest="2017-08-08T23:00:00Z" />
         <leadTimesPoolingWindow>
             <period>0</period>
             <frequency>1</frequency>
