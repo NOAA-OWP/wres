@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
+import wres.datamodel.MissingValues;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
@@ -323,10 +324,18 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
 
         Instant validDatetime = valueAndValidDateTime.getTime();
         Duration leadDuration = Duration.between( referenceDatetime, validDatetime );
+        Double valueToAdd = valueAndValidDateTime.getValue();
+
+        // When the Java-land value matches WRES Missing Value, use NULL in DB.
+        if ( valueToAdd.equals( MissingValues.DOUBLE ) )
+        {
+            valueToAdd = null;
+        }
+
         Pair<CountDownLatch, CountDownLatch> latchPair =
                 IngestedValues.addTimeSeriesValue( timeSeriesId,
                                                    (int) leadDuration.toMinutes(),
-                                                   valueAndValidDateTime.getValue() );
+                                                   valueToAdd );
         this.latches.add( latchPair );
     }
 
