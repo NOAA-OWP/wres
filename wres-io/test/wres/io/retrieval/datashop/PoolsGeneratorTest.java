@@ -2,7 +2,6 @@ package wres.io.retrieval.datashop;
 
 import static org.junit.Assert.assertEquals;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -27,8 +26,6 @@ import wres.config.generated.ProjectConfig;
 import wres.config.generated.DataSourceConfig.Variable;
 import wres.datamodel.Ensemble;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
-import wres.datamodel.scale.TimeScale;
-import wres.datamodel.scale.TimeScale.TimeScaleFunction;
 import wres.io.config.ConfigHelper;
 import wres.io.project.Project;
 
@@ -106,8 +103,6 @@ public class PoolsGeneratorTest
 
         ProjectConfig projectConfig = new ProjectConfig( inputsConfig, pairsConfig, null, null, null, null );
 
-        TimeScale desiredTimeScale = TimeScale.of( Duration.ofHours( 3 ), TimeScaleFunction.MEAN );
-
         Feature feature =
                 new Feature( null, null, null, null, null, "FAKE2", null, null, null, null, null, null, null );
 
@@ -115,7 +110,6 @@ public class PoolsGeneratorTest
         Project project = Mockito.mock( Project.class );
         Mockito.when( project.getProjectConfig() ).thenReturn( projectConfig );
         Mockito.when( project.getId() ).thenReturn( 12345 );
-        Mockito.when( project.getDesiredTimeScale() ).thenReturn( desiredTimeScale );
         Mockito.when( project.getLeftVariableFeatureId( feature ) ).thenReturn( 1 );
         Mockito.when( project.getRightVariableFeatureId( feature ) ).thenReturn( 2 );
         Mockito.when( project.getBaselineVariableFeatureId( feature ) ).thenReturn( 3 );
@@ -203,8 +197,6 @@ public class PoolsGeneratorTest
 
         ProjectConfig projectConfig = new ProjectConfig( inputsConfig, pairsConfig, null, null, null, null );
 
-        TimeScale desiredTimeScale = TimeScale.of( Duration.ofHours( 3 ), TimeScaleFunction.MEAN );
-
         Feature feature =
                 new Feature( null, null, null, null, null, "FAKE2", null, null, null, null, null, null, null );
 
@@ -212,7 +204,6 @@ public class PoolsGeneratorTest
         Project project = Mockito.mock( Project.class );
         Mockito.when( project.getProjectConfig() ).thenReturn( projectConfig );
         Mockito.when( project.getId() ).thenReturn( 12345 );
-        Mockito.when( project.getDesiredTimeScale() ).thenReturn( desiredTimeScale );
         Mockito.when( project.getLeftVariableFeatureId( feature ) ).thenReturn( 1 );
         Mockito.when( project.getRightVariableFeatureId( feature ) ).thenReturn( 2 );
         Mockito.when( project.getBaselineVariableFeatureId( feature ) ).thenReturn( 3 );

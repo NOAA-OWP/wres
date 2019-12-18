@@ -155,7 +155,7 @@ public final class Operations {
 
         try
         {
-            project.prepareForExecutionNew();
+            project.prepareForExecution();
         }
         catch (CalculationException | SQLException exception)
         {

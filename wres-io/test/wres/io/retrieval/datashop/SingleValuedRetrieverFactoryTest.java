@@ -416,8 +416,6 @@ public class SingleValuedRetrieverFactoryTest
 
         ProjectConfig projectConfig = new ProjectConfig( inputsConfig, pairsConfig, null, null, null, null );
 
-        TimeScale desiredTimeScale = TimeScale.of();
-
         Feature feature =
                 new Feature( null, null, null, null, null, FAKE_FEATURE, null, null, null, null, null, null, null );
 
@@ -425,7 +423,6 @@ public class SingleValuedRetrieverFactoryTest
         Project project = Mockito.mock( Project.class );
         Mockito.when( project.getProjectConfig() ).thenReturn( projectConfig );
         Mockito.when( project.getId() ).thenReturn( PROJECT_ID );
-        Mockito.when( project.getDesiredTimeScale() ).thenReturn( desiredTimeScale );
         Mockito.when( project.getLeftVariableFeatureId( feature ) ).thenReturn( this.variableFeatureId );
         Mockito.when( project.getRightVariableFeatureId( feature ) ).thenReturn( this.variableFeatureId );
         Mockito.when( project.getBaselineVariableFeatureId( feature ) ).thenReturn( this.variableFeatureId );
