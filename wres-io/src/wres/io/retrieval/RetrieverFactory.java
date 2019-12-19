@@ -1,4 +1,4 @@
-package wres.io.retrieval.datashop;
+package wres.io.retrieval;
 
 import java.util.function.Supplier;
 import java.util.stream.Stream;

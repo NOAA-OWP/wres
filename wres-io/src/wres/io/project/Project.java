@@ -41,6 +41,18 @@ import wres.util.CalculationException;
 public class Project
 {
 
+    private static final String WHERE_PS_PROJECT_ID = "WHERE PS.project_id = ";
+
+    private static final String SELECT_1 = "SELECT 1";
+
+    private static final String INNER_JOIN_WRES_VARIABLE_FEATURE_VF = "INNER JOIN wres.VariableFeature VF";
+
+    private static final String INNER_JOIN_WRES_PROJECT_SOURCE_PS = "INNER JOIN wres.ProjectSource PS";
+
+    private static final String AND_VF_FEATURE_ID_F_FEATURE_ID = "AND VF.feature_id = F.feature_id";
+
+    private static final String PROJECT_ID = "project_id";
+
     private static final Logger LOGGER = LoggerFactory.getLogger( Project.class );
 
     /**
@@ -293,44 +305,44 @@ public class Project
                 {
                     // There is at least one value pertaining to a forecasted value
                     // indicated by the left hand configuration
-                    script.addTab().addLine( "SELECT 1" );
+                    script.addTab().addLine( SELECT_1 );
                     script.addTab().addLine( "FROM wres.TimeSeries TS" );
-                    script.addTab().addLine( "INNER JOIN wres.VariableFeature VF" );
+                    script.addTab().addLine( INNER_JOIN_WRES_VARIABLE_FEATURE_VF );
                     script.addTab( 2 ).addLine( "ON VF.variablefeature_id = TS.variablefeature_id" );
                     script.addTab()
                           .addLine( "INNER JOIN wres.TimeSeriesSource TSS" );
                     script.addTab( 2 )
                           .addLine( "ON TSS.timeseries_id = TS.timeseries_id" );
                     script.addTab()
-                          .addLine( "INNER JOIN wres.ProjectSource PS" );
+                          .addLine( INNER_JOIN_WRES_PROJECT_SOURCE_PS );
                     script.addTab( 2 )
                           .addLine( "ON PS.source_id = TSS.source_id" );
                     script.addTab()
-                          .addLine( "WHERE PS.project_id = ", this.getId() );
+                          .addLine( WHERE_PS_PROJECT_ID, this.getId() );
                     script.addTab( 2 ).addLine( "AND PS.member = 'left'" );
                     script.addTab( 2 )
-                          .addLine( "AND VF.feature_id = F.feature_id" );
+                          .addLine( AND_VF_FEATURE_ID_F_FEATURE_ID );
                 }
                 else
                 {
                     // There is at least one observed value pertaining to the
                     // configuration for the left sided data
-                    script.addTab().addLine( "SELECT 1" );
+                    script.addTab().addLine( SELECT_1 );
                     script.addTab().addLine( "FROM wres.Observation O" );
                     script.addTab()
-                          .addLine( "INNER JOIN wres.VariableFeature VF" );
+                          .addLine( INNER_JOIN_WRES_VARIABLE_FEATURE_VF );
                     script.addTab( 2 )
                           .addLine(
                                     "ON VF.variablefeature_id = O.variablefeature_id" );
                     script.addTab()
-                          .addLine( "INNER JOIN wres.ProjectSource PS" );
+                          .addLine( INNER_JOIN_WRES_PROJECT_SOURCE_PS );
                     script.addTab( 2 )
                           .addLine( "ON PS.source_id = O.source_id" );
                     script.addTab()
-                          .addLine( "WHERE PS.project_id = ", this.getId() );
+                          .addLine( WHERE_PS_PROJECT_ID, this.getId() );
                     script.addTab( 2 ).addLine( "AND PS.member = 'left'" );
                     script.addTab( 2 )
-                          .addLine( "AND VF.feature_id = F.feature_id" );
+                          .addLine( AND_VF_FEATURE_ID_F_FEATURE_ID );
                 }
 
                 script.addTab().addLine( ")" );
@@ -342,10 +354,10 @@ public class Project
                 {
                     // There is at least one value pertaining to a forecasted value
                     // indicated by the right hand configuration
-                    script.addTab().addLine( "SELECT 1" );
+                    script.addTab().addLine( SELECT_1 );
                     script.addTab().addLine( "FROM wres.TimeSeries TS" );
                     script.addTab()
-                          .addLine( "INNER JOIN wres.VariableFeature VF" );
+                          .addLine( INNER_JOIN_WRES_VARIABLE_FEATURE_VF );
                     script.addTab( 2 )
                           .addLine(
                                     "ON VF.variablefeature_id = TS.variablefeature_id" );
@@ -354,35 +366,35 @@ public class Project
                     script.addTab( 2 )
                           .addLine( "ON TSS.timeseries_id = TS.timeseries_id" );
                     script.addTab()
-                          .addLine( "INNER JOIN wres.ProjectSource PS" );
+                          .addLine( INNER_JOIN_WRES_PROJECT_SOURCE_PS );
                     script.addTab( 2 )
                           .addLine( "ON PS.source_id = TSS.source_id" );
                     script.addTab()
-                          .addLine( "WHERE PS.project_id = ", this.getId() );
+                          .addLine( WHERE_PS_PROJECT_ID, this.getId() );
                     script.addTab( 2 ).addLine( "AND PS.member = 'right'" );
                     script.addTab( 2 )
-                          .addLine( "AND VF.feature_id = F.feature_id" );
+                          .addLine( AND_VF_FEATURE_ID_F_FEATURE_ID );
                 }
                 else
                 {
                     // There is at least one observed value pertaining to the
                     // configuration for the right sided data
-                    script.addTab().addLine( "SELECT 1" );
+                    script.addTab().addLine( SELECT_1 );
                     script.addTab().addLine( "FROM wres.Observation O" );
                     script.addTab()
-                          .addLine( "INNER JOIN wres.VariableFeature VF" );
+                          .addLine( INNER_JOIN_WRES_VARIABLE_FEATURE_VF );
                     script.addTab( 2 )
                           .addLine(
                                     "ON VF.variablefeature_id = O.variablefeature_id" );
                     script.addTab()
-                          .addLine( "INNER JOIN wres.ProjectSource PS" );
+                          .addLine( INNER_JOIN_WRES_PROJECT_SOURCE_PS );
                     script.addTab( 2 )
                           .addLine( "ON PS.source_id = O.source_id" );
                     script.addTab()
-                          .addLine( "WHERE PS.project_id = ", this.getId() );
+                          .addLine( WHERE_PS_PROJECT_ID, this.getId() );
                     script.addTab( 2 ).addLine( "AND PS.member = 'right'" );
                     script.addTab( 2 )
-                          .addLine( "AND VF.feature_id = F.feature_id" );
+                          .addLine( AND_VF_FEATURE_ID_F_FEATURE_ID );
                 }
 
                 script.addLine( ");" );
@@ -600,7 +612,9 @@ public class Project
     {
         Boolean usesGriddedData;
 
-        switch ( this.getInputName( dataSourceConfig ) )
+        String name = this.getInputName( dataSourceConfig );
+        
+        switch ( name )
         {
             case Project.LEFT_MEMBER:
                 usesGriddedData = this.leftUsesGriddedData;
@@ -608,26 +622,31 @@ public class Project
             case Project.RIGHT_MEMBER:
                 usesGriddedData = this.rightUsesGriddedData;
                 break;
-            default:
+            case Project.BASELINE_MEMBER:
                 usesGriddedData = this.baselineUsesGriddedData;
+                break;                  
+            default:
+                throw new IllegalArgumentException( "Unrecognized enumeration value in this context, '"
+                                                    + name
+                                                    + "'." );
         }
 
         if ( usesGriddedData == null )
         {
             DataScripter script = new DataScripter();
             script.addLine( "SELECT EXISTS (" );
-            script.addTab().addLine( "SELECT 1" );
+            script.addTab().addLine( SELECT_1 );
             script.addTab().addLine( "FROM wres.ProjectSource PS" );
             script.addTab().addLine( "INNER JOIN wres.Source S" );
             script.addTab( 2 ).addLine( "ON PS.source_id = S.source_id" );
-            script.addTab().addLine( "WHERE PS.project_id = ", this.getId() );
+            script.addTab().addLine( WHERE_PS_PROJECT_ID, this.getId() );
             script.addTab( 2 ).addLine( "AND PS.member = ", this.getInputName( dataSourceConfig ) );
             script.addTab( 2 ).addLine( "AND S.is_point_data = FALSE" );
             script.addLine( ") AS uses_gridded_data;" );
 
             usesGriddedData = script.retrieve( "uses_gridded_data" );
 
-            switch ( this.getInputName( dataSourceConfig ) )
+            switch ( name )
             {
                 case Project.LEFT_MEMBER:
                     this.leftUsesGriddedData = usesGriddedData;
@@ -635,10 +654,16 @@ public class Project
                 case Project.RIGHT_MEMBER:
                     this.rightUsesGriddedData = usesGriddedData;
                     break;
-                default:
+                case Project.BASELINE_MEMBER:
                     this.baselineUsesGriddedData = usesGriddedData;
+                    break;
+                default:
+                    throw new IllegalArgumentException( "Unrecognized enumeration value in this context, '"
+                                                        + name
+                                                        + "'." );
             }
         }
+        
         return usesGriddedData;
     }
     
@@ -697,16 +722,6 @@ public class Project
         return this.projectID;
     }
 
-    private String getIDName()
-    {
-        return "project_id";
-    }
-
-    protected void setID( Integer id )
-    {
-        this.projectID = id;
-    }
-
     private DataScripter getInsertSelectStatement()
     {
         DataScripter script = new DataScripter();
@@ -725,7 +740,7 @@ public class Project
 
         script.addTab().addLine( "WHERE NOT EXISTS" );
         script.addTab().addLine( "(" );
-        script.addTab( 2 ).addLine( "SELECT 1" );
+        script.addTab( 2 ).addLine( SELECT_1 );
         script.addTab( 2 ).addLine( "FROM wres.Project P" );
         script.addTab( 2 ).addLine( "WHERE P.input_code = ?" );
 
@@ -758,7 +773,7 @@ public class Project
 
             try ( DataProvider data = scriptWithId.getData() )
             {
-                this.projectID = data.getInt( this.getIDName() );
+                this.projectID = data.getInt( PROJECT_ID );
             }
         }
 

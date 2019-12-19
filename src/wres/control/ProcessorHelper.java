@@ -44,7 +44,7 @@ import wres.engine.statistics.metric.config.MetricConfigHelper;
 import wres.io.Operations;
 import wres.io.config.ConfigHelper;
 import wres.io.project.Project;
-import wres.io.retrieval.datashop.UnitMapper;
+import wres.io.retrieval.UnitMapper;
 import wres.io.writing.SharedSampleDataWriters;
 import wres.io.writing.SharedStatisticsWriters;
 import wres.io.writing.SharedStatisticsWriters.SharedWritersBuilder;
