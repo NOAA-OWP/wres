@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project name="scenario503">
+<project name="scenario505">
 
     <inputs>
         <left>
@@ -40,13 +40,13 @@
     </pair>
 
     <metrics>
-
         <metric><name>mean error</name></metric>
         <metric><name>sample size</name></metric>
     </metrics>
-    <outputs>
-        <destination type="pairs" decimalFormat="0.00" />
-        <destination type="numeric" decimalFormat="0.00" />
+
+    <outputs durationFormat = "hours">
+        <destination type="pairs" decimalFormat="0.000000" />
+        <destination type="numeric" decimalFormat="0.000000" />
     </outputs>
 
 </project>
