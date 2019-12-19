@@ -1,4 +1,4 @@
-package wres.io.retrieval;
+package wres.io.pooling;
 
 import static org.junit.Assert.assertEquals;
 
@@ -27,9 +27,9 @@ import wres.config.generated.DataSourceConfig.Variable;
 import wres.datamodel.Ensemble;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.io.config.ConfigHelper;
+import wres.io.pooling.PoolFactory;
+import wres.io.pooling.PoolsGenerator;
 import wres.io.project.Project;
-import wres.io.retrieval.PoolFactory;
-import wres.io.retrieval.PoolsGenerator;
 import wres.io.retrieval.UnitMapper;
 
 /**

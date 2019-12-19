@@ -5,6 +5,7 @@ import java.util.stream.Stream;
 
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindow;
+import wres.io.pooling.PoolsGenerator;
 
 /**
  * <p>An API for the creation of project-relevant retrievers. The API supplies retrievers for each side of a pairing and 
@@ -21,7 +22,7 @@ import wres.datamodel.time.TimeWindow;
  * @param <R> the type of right data
  */
 
-interface RetrieverFactory<L, R>
+public interface RetrieverFactory<L, R>
 {
 
     /**

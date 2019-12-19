@@ -1,4 +1,4 @@
-package wres.io.retrieval;
+package wres.io.pooling;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -46,7 +46,8 @@ import wres.datamodel.time.TimeSeriesUpscaler;
 import wres.datamodel.time.TimeWindow;
 import wres.io.config.ConfigHelper;
 import wres.io.config.LeftOrRightOrBaseline;
-
+import wres.io.retrieval.DataAccessException;
+import wres.io.retrieval.NoSuchUnitConversionException;
 import wres.config.generated.DesiredTimeScaleConfig;
 
 /**

@@ -1,4 +1,4 @@
-package wres.io.retrieval;
+package wres.io.pooling;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -32,8 +32,11 @@ import wres.datamodel.time.TimeWindow;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 import wres.datamodel.time.generators.TimeWindowGenerator;
 import wres.io.config.ConfigHelper;
+import wres.io.pooling.PoolSupplier.PoolOfPairsSupplierBuilder;
 import wres.io.project.Project;
-import wres.io.retrieval.PoolSupplier.PoolOfPairsSupplierBuilder;
+import wres.io.retrieval.CachingRetriever;
+import wres.io.retrieval.DataAccessException;
+import wres.io.retrieval.RetrieverFactory;
 
 /**
  * Generates a collection of {@link PoolSupplier} that contain the pools for a particular evaluation.
@@ -41,7 +44,7 @@ import wres.io.retrieval.PoolSupplier.PoolOfPairsSupplierBuilder;
  * @author james.brown@hydrosolved.com
  */
 
-class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<L, R>>>>
+public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<L, R>>>>
 {
 
     /**

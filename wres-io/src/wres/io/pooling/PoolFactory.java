@@ -1,4 +1,4 @@
-package wres.io.retrieval;
+package wres.io.pooling;
 
 import java.util.Arrays;
 import java.util.List;
@@ -40,6 +40,10 @@ import wres.datamodel.time.TimeSeriesUpscaler;
 import wres.datamodel.time.generators.PersistenceGenerator;
 import wres.io.config.ConfigHelper;
 import wres.io.project.Project;
+import wres.io.retrieval.EnsembleRetrieverFactory;
+import wres.io.retrieval.RetrieverFactory;
+import wres.io.retrieval.SingleValuedRetrieverFactory;
+import wres.io.retrieval.UnitMapper;
 
 /**
  * A factory class for generating the pools of pairs associated with an evaluation.
