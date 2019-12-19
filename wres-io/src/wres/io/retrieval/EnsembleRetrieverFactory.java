@@ -32,7 +32,7 @@ import wres.io.project.Project;
  * @author james.brown@hydrosolved.com
  */
 
-class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemble>
+public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemble>
 {
 
     /**
@@ -121,7 +121,7 @@ class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemble>
      * @throws NullPointerException if any input is null
      */
 
-    static EnsembleRetrieverFactory of( Project project, Feature feature, UnitMapper unitMapper )
+    public static EnsembleRetrieverFactory of( Project project, Feature feature, UnitMapper unitMapper )
     {
         return new EnsembleRetrieverFactory( project, feature, unitMapper );
     }

@@ -33,7 +33,7 @@ import wres.io.retrieval.TimeSeriesRetriever.TimeSeriesRetrieverBuilder;
  * @author james.brown@hydrosolved.com
  */
 
-class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Double>
+public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Double>
 {
 
     /**
@@ -122,7 +122,7 @@ class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Double>
      * @throws NullPointerException if any input is null
      */
 
-    static SingleValuedRetrieverFactory of( Project project, Feature feature, UnitMapper unitMapper )
+    public static SingleValuedRetrieverFactory of( Project project, Feature feature, UnitMapper unitMapper )
     {
         return new SingleValuedRetrieverFactory( project, feature, unitMapper );
     }
