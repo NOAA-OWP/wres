@@ -8,7 +8,7 @@
         </left>
         <right label="NWM Short Range">
             <type>single valued forecasts</type>
-            <source format="netCDF">data/channel_rt/short_range/</source>
+            <source interface="nwm_short_range_channel_rt_conus">data/nwmVector/</source>
             <variable>streamflow</variable>
         </right>
     </inputs>
@@ -16,11 +16,10 @@
         <unit>CMS</unit>
         <feature rfc="ABRFC" />
         <leadHours minimum="0" maximum="18" />
-        <dates earliest="2017-08-08T00:00:00Z" latest="2017-08-09T17:00:00Z" />
-        <issuedDates earliest="2017-08-08T00:00:00Z" latest="2017-08-08T23:00:00Z" />
+        <dates earliest="2017-08-07T23:00:00Z" latest="2017-08-09T17:00:00Z" />
+        <issuedDates earliest="2017-08-07T23:00:00Z" latest="2017-08-08T23:00:00Z" />
         <issuedDatesPoolingWindow>
-            <period>0</period>
-            <frequency>1</frequency>
+            <period>1</period>
             <unit>hours</unit>
         </issuedDatesPoolingWindow>
         <leadTimesPoolingWindow>
