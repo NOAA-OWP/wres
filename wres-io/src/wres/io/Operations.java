@@ -39,7 +39,6 @@ import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.USGSParameters;
-import wres.io.data.caching.UnitConversions;
 import wres.io.data.caching.Variables;
 import wres.io.data.details.FeatureDetails;
 import wres.io.data.details.TimeSeries;
@@ -77,7 +76,6 @@ public final class Operations {
     public static void prepareForExecution( Project project ) throws IOException
     {
         LOGGER.info("Loading preliminary metadata...");
-        Future unitConversionLoad = Executor.execute( UnitConversions::initialize );
 
         final String INTERRUPTED_VARIABLE_VALIDATION_MESSAGE =
                 "The process for determining if '{}' is a valid variable was interrupted.";
@@ -161,23 +159,6 @@ public final class Operations {
         {
             throw new IOException("This project could not be prepared for "
                                   + "execution.", exception);
-        }
-
-        try
-        {
-            unitConversionLoad.get();
-        }
-        catch ( InterruptedException e )
-        {
-            LOGGER.warn( "The process for pre-loading unit conversions was interrupted.",
-                         e );
-            Thread.currentThread().interrupt();
-        }
-        catch ( ExecutionException e )
-        {
-            // If loading failed, it will attempt to try again later.
-            LOGGER.warn( "The process for pre-loading unit conversions failed.",
-                         e );
         }
 
         // If we're performing gridded evaluation, we can't check if our
@@ -704,7 +685,6 @@ public final class Operations {
         Ensembles.invalidateGlobalCache();
         Features.invalidateGlobalCache();
         MeasurementUnits.invalidateGlobalCache();
-        UnitConversions.invalidateGlobalCache();
         USGSParameters.invalidateGlobalCache();
         Variables.invalidateGlobalCache();
         
