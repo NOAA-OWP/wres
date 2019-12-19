@@ -1,4 +1,4 @@
-package wres.io.retrieval.datashop;
+package wres.io.retrieval;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -33,7 +33,7 @@ import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 import wres.datamodel.time.generators.TimeWindowGenerator;
 import wres.io.config.ConfigHelper;
 import wres.io.project.Project;
-import wres.io.retrieval.datashop.PoolSupplier.PoolOfPairsSupplierBuilder;
+import wres.io.retrieval.PoolSupplier.PoolOfPairsSupplierBuilder;
 
 /**
  * Generates a collection of {@link PoolSupplier} that contain the pools for a particular evaluation.

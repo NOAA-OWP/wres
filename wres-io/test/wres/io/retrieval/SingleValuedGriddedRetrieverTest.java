@@ -1,4 +1,4 @@
-package wres.io.retrieval.datashop;
+package wres.io.retrieval;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -46,6 +46,9 @@ import wres.grid.reading.GriddedReader;
 import wres.io.config.LeftOrRightOrBaseline;
 import wres.io.data.details.SourceDetails;
 import wres.io.project.Project;
+import wres.io.retrieval.Retriever;
+import wres.io.retrieval.SingleValuedGriddedRetriever;
+import wres.io.retrieval.UnitMapper;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.TestDatabase;
 import wres.system.SystemSettings;

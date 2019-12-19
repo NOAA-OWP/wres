@@ -1,4 +1,4 @@
-package wres.io.retrieval.datashop;
+package wres.io.retrieval;
 
 /**
  * Runtime exception associated with pool creation.

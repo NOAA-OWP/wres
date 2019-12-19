@@ -1,4 +1,4 @@
-package wres.io.retrieval.datashop;
+package wres.io.retrieval;
 
 import java.util.Arrays;
 import java.util.Objects;

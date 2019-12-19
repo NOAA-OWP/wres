@@ -1,4 +1,4 @@
-package wres.io.retrieval.datashop;
+package wres.io.retrieval;
 
 import java.sql.SQLException;
 import java.time.Duration;
@@ -23,7 +23,7 @@ import wres.datamodel.time.TimeWindow;
 import wres.io.config.ConfigHelper;
 import wres.io.config.LeftOrRightOrBaseline;
 import wres.io.project.Project;
-import wres.io.retrieval.datashop.TimeSeriesRetriever.TimeSeriesRetrieverBuilder;
+import wres.io.retrieval.TimeSeriesRetriever.TimeSeriesRetrieverBuilder;
 
 /**
  * <p>A factory class that creates retrievers for the single-valued left and right datasets associated with one 

@@ -1,4 +1,4 @@
-package wres.io.retrieval.datashop;
+package wres.io.retrieval;
 
 import static org.junit.Assert.assertEquals;
 
@@ -28,12 +28,14 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
+import wres.io.retrieval.CachingRetriever;
+import wres.io.retrieval.PoolSupplier;
+import wres.io.retrieval.PoolSupplier.PoolOfPairsSupplierBuilder;
 import wres.datamodel.time.TimeSeriesOfDoubleBasicUpscaler;
 import wres.datamodel.time.TimeSeriesPairer;
 import wres.datamodel.time.TimeSeriesPairerByExactTime;
 import wres.datamodel.time.TimeSeriesUpscaler;
 import wres.datamodel.time.TimeWindow;
-import wres.io.retrieval.datashop.PoolSupplier.PoolOfPairsSupplierBuilder;
 
 /**
  * Tests the {@link PoolSupplier}.

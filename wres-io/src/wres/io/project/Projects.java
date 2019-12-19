@@ -55,7 +55,7 @@ public class Projects
                                        inputCode );
         details.save();
         boolean thisCallCausedInsert = details.performedInsert();
-        LOGGER.debug( "Did the ProjectDetails created by this Thread insert into the database first? {}",
+        LOGGER.debug( "Did the Project created by this Thread insert into the database first? {}",
                       thisCallCausedInsert );
 
         return Pair.of( details, thisCallCausedInsert );

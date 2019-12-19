@@ -33,8 +33,8 @@ import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.processing.MetricProcessor;
 import wres.io.config.ConfigHelper;
 import wres.io.project.Project;
-import wres.io.retrieval.datashop.PoolFactory;
-import wres.io.retrieval.datashop.UnitMapper;
+import wres.io.retrieval.PoolFactory;
+import wres.io.retrieval.UnitMapper;
 import wres.util.IterationFailedException;
 import wres.io.writing.commaseparated.pairs.PairsWriter;
 

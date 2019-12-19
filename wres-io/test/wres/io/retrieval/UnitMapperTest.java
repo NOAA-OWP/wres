@@ -1,4 +1,4 @@
-package wres.io.retrieval.datashop;
+package wres.io.retrieval;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -27,6 +27,8 @@ import static org.junit.Assert.assertThrows;
 
 import wres.system.DatabaseConnectionSupplier;
 import wres.io.data.details.MeasurementDetails;
+import wres.io.retrieval.NoSuchUnitConversionException;
+import wres.io.retrieval.UnitMapper;
 import wres.io.utilities.TestDatabase;
 import wres.system.SystemSettings;
 

@@ -1,4 +1,4 @@
-package wres.io.retrieval.datashop;
+package wres.io.retrieval;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -57,6 +57,8 @@ import wres.io.data.details.MeasurementDetails;
 import wres.io.data.details.SourceDetails;
 import wres.io.data.details.VariableDetails;
 import wres.io.project.Project;
+import wres.io.retrieval.SingleValuedRetrieverFactory;
+import wres.io.retrieval.UnitMapper;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.TestDatabase;
 import wres.system.SystemSettings;

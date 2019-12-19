@@ -1,4 +1,4 @@
-package wres.io.retrieval.datashop;
+package wres.io.retrieval;
 
 import java.util.List;
 import java.util.function.Supplier;
@@ -8,7 +8,7 @@ import java.util.stream.Stream;
 /**
  * <p>Adds a wrapper to a {@link Supplier} that supplies a {@link Stream} of retrieved data. This allow the retrieved 
  * data to be cached locally for re-use. On the second and further calls, the cached data is returned. Use this
- * wrapper whenever a data source is re-used between pools.
+ * wrapper to re-use data across pools.
  * 
  * <p><b>Implementation notes:</b>
  * 
