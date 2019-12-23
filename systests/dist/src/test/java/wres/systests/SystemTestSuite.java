@@ -61,6 +61,7 @@ import wres.io.Operations;
     Scenario501.class,
     Scenario502.class,
     Scenario504.class,
+    Scenario505.class,
     Scenario506.class,
     Scenario507.class,
     Scenario508.class,
