@@ -259,10 +259,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         //Check for the expected number of metrics
         int expected = SampleDataGroup.SINGLE_VALUED.getMetrics().size()
-                     + SampleDataGroup.DICHOTOMOUS.getMetrics().size()
-                     -2;  //RMSEN and MSESSN
-        int actual =
-                processor.metrics.size();
+                     + SampleDataGroup.DICHOTOMOUS.getMetrics().size();
+        int actual = processor.metrics.size();
 
         assertEquals( expected, actual );
     }
