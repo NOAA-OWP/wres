@@ -214,6 +214,13 @@ public enum MetricConstants
     ROOT_MEAN_SQUARE_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticGroup.DOUBLE_SCORE ),
 
     /**
+     * Identifier for a Root Mean Square Error normalized by the standard deviation of
+     * the left values.
+     */
+
+    ROOT_MEAN_SQUARE_ERROR_NORMALIZED( SampleDataGroup.SINGLE_VALUED, StatisticGroup.DOUBLE_SCORE ),    
+    
+    /**
      * Identifier for the sample size.
      */
 

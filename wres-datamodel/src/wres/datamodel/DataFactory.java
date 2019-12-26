@@ -583,7 +583,10 @@ public final class DataFactory
                 returnMe.addAll( SampleDataGroup.DICHOTOMOUS.getMetrics() );
             }
         }
-
+        
+        // Disallowed temporarily: #69567
+        returnMe.remove( MetricConstants.ROOT_MEAN_SQUARE_ERROR_NORMALIZED );
+        
         return removeMetricsDisallowedByOtherConfig( projectConfig, returnMe );
     }
 
@@ -609,7 +612,7 @@ public final class DataFactory
             returnMe.addAll( SampleDataGroup.SINGLE_VALUED_TIME_SERIES.getMetrics() );
         }
 
-        return removeMetricsDisallowedByOtherConfig( projectConfig, returnMe );
+        return DataFactory.removeMetricsDisallowedByOtherConfig( projectConfig, returnMe );
     }
 
     /**

@@ -38,7 +38,7 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<SampleData<Pair
     }
 
     /**
-     * Instance if {@link SumOfSquareError}.
+     * Instance of {@link SumOfSquareError}.
      */
 
     private final SumOfSquareError sse;

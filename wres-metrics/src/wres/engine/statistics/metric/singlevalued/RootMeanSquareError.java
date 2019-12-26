@@ -24,6 +24,12 @@ public class RootMeanSquareError extends DoubleErrorScore<SampleData<Pair<Double
 {
 
     /**
+     * Instance of {@link SumOfSquareError}.
+     */
+
+    private final SumOfSquareError sse;
+
+    /**
      * Returns an instance.
      * 
      * @return an instance
@@ -33,13 +39,7 @@ public class RootMeanSquareError extends DoubleErrorScore<SampleData<Pair<Double
     {
         return new RootMeanSquareError();
     }
-
-    /**
-     * Instance if {@link SumOfSquareError}.
-     */
-
-    private final SumOfSquareError sse;
-
+    
     @Override
     public DoubleScoreStatistic apply( final SampleData<Pair<Double, Double>> t )
     {
@@ -85,6 +85,7 @@ public class RootMeanSquareError extends DoubleErrorScore<SampleData<Pair<Double
         {
             throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
+        
         return sse.apply( input );
     }
 
@@ -95,10 +96,10 @@ public class RootMeanSquareError extends DoubleErrorScore<SampleData<Pair<Double
     }
 
     /**
-     * Hidden constructor.
+     * Constructor.
      */
 
-    private RootMeanSquareError()
+    RootMeanSquareError()
     {
         super( FunctionFactory.squareError() );
 
