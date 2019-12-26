@@ -59,6 +59,7 @@ import wres.engine.statistics.metric.singlevalued.MeanAbsoluteError;
 import wres.engine.statistics.metric.singlevalued.MeanError;
 import wres.engine.statistics.metric.singlevalued.MeanSquareError;
 import wres.engine.statistics.metric.singlevalued.MeanSquareErrorSkillScore;
+import wres.engine.statistics.metric.singlevalued.MeanSquareErrorSkillScoreNormalized;
 import wres.engine.statistics.metric.singlevalued.MedianError;
 import wres.engine.statistics.metric.singlevalued.QuantileQuantileDiagram;
 import wres.engine.statistics.metric.singlevalued.RootMeanSquareError;
@@ -839,6 +840,8 @@ public final class MetricFactory
                 return VolumetricEfficiency.of();
             case MEAN_SQUARE_ERROR_SKILL_SCORE:
                 return MeanSquareErrorSkillScore.of();
+            case MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED:
+                return MeanSquareErrorSkillScoreNormalized.of();
             case COEFFICIENT_OF_DETERMINATION:
                 return CoefficientOfDetermination.of();
             case PEARSON_CORRELATION_COEFFICIENT:
@@ -878,7 +881,11 @@ public final class MetricFactory
             case MEAN_SQUARE_ERROR:
                 return MeanSquareError.of();
             case ROOT_MEAN_SQUARE_ERROR:
-                return RootMeanSquareError.of();              
+                return RootMeanSquareError.of();
+            case MEAN_SQUARE_ERROR_SKILL_SCORE:
+                return MeanSquareErrorSkillScore.of();
+            case MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED:
+                return MeanSquareErrorSkillScoreNormalized.of();   
             default:
                 throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         }

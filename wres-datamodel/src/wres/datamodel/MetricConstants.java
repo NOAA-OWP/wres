@@ -153,6 +153,12 @@ public enum MetricConstants
     MEAN_SQUARE_ERROR_SKILL_SCORE( SampleDataGroup.SINGLE_VALUED, StatisticGroup.DOUBLE_SCORE ),
 
     /**
+     * Identifier for a Mean Square Error Skill Score, normalized.
+     */
+
+    MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED( SampleDataGroup.SINGLE_VALUED, StatisticGroup.DOUBLE_SCORE ),
+    
+    /**
      * Identifier for a Median Error.
      */
 

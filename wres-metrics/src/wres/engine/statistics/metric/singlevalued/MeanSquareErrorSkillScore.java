@@ -13,6 +13,7 @@ import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
+import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.DecomposableScore;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCalculationException;
@@ -24,6 +25,7 @@ import wres.engine.statistics.metric.MetricCalculationException;
  * @author james.brown@hydrosolved.com
  */
 public class MeanSquareErrorSkillScore extends DecomposableScore<SampleData<Pair<Double, Double>>>
+        implements Collectable<SampleData<Pair<Double, Double>>, DoubleScoreStatistic, DoubleScoreStatistic>
 {
 
     /**
@@ -116,11 +118,34 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<SampleData<Pair
         return false;
     }
 
+    @Override
+    public DoubleScoreStatistic aggregate( DoubleScoreStatistic output )
+    {
+        if ( Objects.isNull( output ) )
+        {
+            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
+        }
+        
+        return output;
+    }
+
+    @Override
+    public DoubleScoreStatistic getInputForAggregation( SampleData<Pair<Double, Double>> input )
+    {
+        return this.apply( input );
+    }
+
+    @Override
+    public MetricConstants getCollectionOf()
+    {
+        return MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE;
+    }    
+    
     /**
      * Hidden constructor.
      */
 
-    private MeanSquareErrorSkillScore()
+    MeanSquareErrorSkillScore()
     {
         super();
         sse = SumOfSquareError.of();

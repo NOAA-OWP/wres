@@ -55,7 +55,7 @@ public final class RootMeanSquareErrorNormalizedTest
                                                      MetricConstants.ROOT_MEAN_SQUARE_ERROR_NORMALIZED,
                                                      MetricConstants.MAIN );
         //Check the results
-        DoubleScoreStatistic actual = rmsen.apply( input );
+        DoubleScoreStatistic actual = this.rmsen.apply( input );
         DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.05719926297814069, m1 );
         assertEquals( expected, actual );
     }
@@ -67,7 +67,7 @@ public final class RootMeanSquareErrorNormalizedTest
         SampleDataBasic<Pair<Double, Double>> input =
                 SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
-        DoubleScoreStatistic actual = rmsen.apply( input );
+        DoubleScoreStatistic actual = this.rmsen.apply( input );
 
         assertTrue( actual.getData().isNaN() );
     }
@@ -75,37 +75,37 @@ public final class RootMeanSquareErrorNormalizedTest
     @Test
     public void testGetName()
     {
-        assertEquals( MetricConstants.ROOT_MEAN_SQUARE_ERROR_NORMALIZED.toString(), rmsen.getName() );
+        assertEquals( MetricConstants.ROOT_MEAN_SQUARE_ERROR_NORMALIZED.toString(), this.rmsen.getName() );
     }
 
     @Test
     public void testIsDecomposable()
     {
-        assertFalse( rmsen.isDecomposable() );
+        assertFalse( this.rmsen.isDecomposable() );
     }
 
     @Test
     public void testIsSkillScore()
     {
-        assertFalse( rmsen.isSkillScore() );
+        assertFalse( this.rmsen.isSkillScore() );
     }
 
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( rmsen.getScoreOutputGroup() == ScoreGroup.NONE );
+        assertTrue( this.rmsen.getScoreOutputGroup() == ScoreGroup.NONE );
     }
 
     @Test
     public void testHasRealUnits()
     {
-        assertFalse( rmsen.hasRealUnits() );
+        assertFalse( this.rmsen.hasRealUnits() );
     }
 
     @Test
     public void testApplyExceptionOnNullInput()
     {
-        SampleDataException expected = assertThrows( SampleDataException.class, () -> rmsen.apply( null ) );
+        SampleDataException expected = assertThrows( SampleDataException.class, () -> this.rmsen.apply( null ) );
 
         assertEquals( "Specify non-null input to the 'ROOT MEAN SQUARE ERROR NORMALIZED'.", expected.getMessage() );
     }
