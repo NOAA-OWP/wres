@@ -112,13 +112,14 @@ public class CorrelationPearsons extends OrdinaryScore<SampleData<Pair<Double, D
         {
             throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
+        
         return output;
     }
 
     @Override
     public DoubleScoreStatistic getInputForAggregation( SampleData<Pair<Double, Double>> input )
     {
-        return apply( input );
+        return this.apply( input );
     }
 
     @Override

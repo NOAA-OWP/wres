@@ -30,23 +30,23 @@ import wres.datamodel.time.TimeWindow;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
 /**
- * Tests the {@link MeanSquareErrorSkillScoreSkillScore}.
+ * Tests the {@link MeanSquareErrorSkillScoreSkillScoreNormalized}.
  * 
  * @author james.brown@hydrosolved.com
  */
-public final class MeanSquareErrorSkillScoreTest
+public final class MeanSquareErrorSkillScoreNormalizedTest
 {
-    
+
     /**
-     * Default instance of a {@link MeanSquareErrorSkillScore}.
+     * Default instance of a {@link MeanSquareErrorSkillScoreNormalized}.
      */
 
-    private MeanSquareErrorSkillScore msess;
+    private MeanSquareErrorSkillScoreNormalized msessn;
 
     @Before
     public void setupBeforeEachTest()
     {
-        this.msess = MeanSquareErrorSkillScore.of();
+        this.msessn = MeanSquareErrorSkillScoreNormalized.of();
     }
 
     @Test
@@ -63,12 +63,12 @@ public final class MeanSquareErrorSkillScoreTest
                                                                                                     "ESP" ) ),
                                                            input.getRawData().size(),
                                                            MeasurementUnit.of(),
-                                                           MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
+                                                           MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED,
                                                            MetricConstants.MAIN );
 
         //Check the results
-        final DoubleScoreStatistic actual = msess.apply( input );
-        final DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.8007025335093799, m1 );
+        final DoubleScoreStatistic actual = this.msessn.apply( input );
+        final DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.8338214896144127, m1 );
         assertEquals( expected, actual );
     }
 
@@ -93,17 +93,13 @@ public final class MeanSquareErrorSkillScoreTest
                                                                  .build(),
                                       input.getRawData().size(),
                                       MeasurementUnit.of(),
-                                      MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
+                                      MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED,
                                       MetricConstants.MAIN );
 
         //Check the results
-        DoubleScoreStatistic actual = msess.apply( input );
-        DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.7832791707526114, m1 );
-        assertTrue( "Actual: " + actual.getData()
-                    + ". Expected: "
-                    + expected.getData()
-                    + ".",
-                    actual.equals( expected ) );
+        DoubleScoreStatistic actual = this.msessn.apply( input );
+        DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.82188122037703356, m1 );
+        assertEquals( expected, actual );
     }
 
     @Test
@@ -116,17 +112,13 @@ public final class MeanSquareErrorSkillScoreTest
         StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
                                                      input.getRawData().size(),
                                                      MeasurementUnit.of(),
-                                                     MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
+                                                     MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED,
                                                      MetricConstants.MAIN );
 
         //Check the results
-        DoubleScoreStatistic actual = msess.apply( input );
-        DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.9963647159052861, m1 );
-        assertTrue( "Actual: " + actual.getData()
-                    + ". Expected: "
-                    + expected.getData()
-                    + ".",
-                    actual.equals( expected ) );
+        DoubleScoreStatistic actual = this.msessn.apply( input );
+        DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.9963778833284114, m1 );
+        assertEquals( expected, actual );
     }
 
     @Test
@@ -136,7 +128,7 @@ public final class MeanSquareErrorSkillScoreTest
         SampleDataBasic<Pair<Double, Double>> input =
                 SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
-        DoubleScoreStatistic actual = msess.apply( input );
+        DoubleScoreStatistic actual = this.msessn.apply( input );
 
         assertTrue( actual.getData().isNaN() );
     }
@@ -144,39 +136,40 @@ public final class MeanSquareErrorSkillScoreTest
     @Test
     public void testGetName()
     {
-        assertTrue( msess.getName().equals( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE.toString() ) );
+        assertEquals( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED.toString(), this.msessn.getName() );
     }
 
     @Test
     public void testIsDecomposable()
     {
-        assertTrue( msess.isDecomposable() );
+        assertTrue( this.msessn.isDecomposable() );
     }
 
     @Test
     public void testIsSkillScore()
     {
-        assertTrue( msess.isSkillScore() );
+        assertTrue( msessn.isSkillScore() );
     }
-    
+
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( msess.getScoreOutputGroup() == ScoreGroup.NONE );
+        assertTrue( msessn.getScoreOutputGroup() == ScoreGroup.NONE );
     }
-    
+
     @Test
     public void testGetCollectionOf()
     {
-        assertEquals( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE, this.msess.getCollectionOf() );
+        assertEquals( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE, this.msessn.getCollectionOf() );
     }
 
     @Test
     public void testApplyExceptionOnNullInput()
     {
-        SampleDataException expected = assertThrows( SampleDataException.class, () -> this.msess.apply( null ) );
+        SampleDataException expected = assertThrows( SampleDataException.class, () -> this.msessn.apply( null ) );
 
-        assertEquals( "Specify non-null input to the 'MEAN SQUARE ERROR SKILL SCORE'.", expected.getMessage() );
+        assertEquals( "Specify non-null input to the 'MEAN SQUARE ERROR SKILL SCORE NORMALIZED'.",
+                      expected.getMessage() );
     }
 
 }

@@ -466,6 +466,7 @@
             <xs:enumeration value="mean error" />
             <xs:enumeration value="mean square error" />
             <xs:enumeration value="mean square error skill score" />
+            <xs:enumeration value="mean square error skill score normalized" />
             <xs:enumeration value="median error" />
             <xs:enumeration value="peirce skill score" />
             <xs:enumeration value="probability of detection" />

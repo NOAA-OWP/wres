@@ -586,6 +586,7 @@ public final class DataFactory
         
         // Disallowed temporarily: #69567
         returnMe.remove( MetricConstants.ROOT_MEAN_SQUARE_ERROR_NORMALIZED );
+        returnMe.remove( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED );
         
         return removeMetricsDisallowedByOtherConfig( projectConfig, returnMe );
     }
