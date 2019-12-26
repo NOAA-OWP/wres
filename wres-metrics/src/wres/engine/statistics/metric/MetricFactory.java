@@ -62,6 +62,7 @@ import wres.engine.statistics.metric.singlevalued.MeanSquareErrorSkillScore;
 import wres.engine.statistics.metric.singlevalued.MedianError;
 import wres.engine.statistics.metric.singlevalued.QuantileQuantileDiagram;
 import wres.engine.statistics.metric.singlevalued.RootMeanSquareError;
+import wres.engine.statistics.metric.singlevalued.RootMeanSquareErrorNormalized;
 import wres.engine.statistics.metric.singlevalued.SumOfSquareError;
 import wres.engine.statistics.metric.singlevalued.VolumetricEfficiency;
 import wres.engine.statistics.metric.timeseries.TimeToPeakError;
@@ -846,6 +847,8 @@ public final class MetricFactory
                 return MeanSquareError.of();
             case ROOT_MEAN_SQUARE_ERROR:
                 return RootMeanSquareError.of();
+            case ROOT_MEAN_SQUARE_ERROR_NORMALIZED:
+                return RootMeanSquareErrorNormalized.of();                
             case SUM_OF_SQUARE_ERROR:
                 return SumOfSquareError.of();
             default:
@@ -875,7 +878,7 @@ public final class MetricFactory
             case MEAN_SQUARE_ERROR:
                 return MeanSquareError.of();
             case ROOT_MEAN_SQUARE_ERROR:
-                return RootMeanSquareError.of();
+                return RootMeanSquareError.of();              
             default:
                 throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         }
