@@ -229,7 +229,7 @@ project(':wres-system')
 
         // to use native postgres copy, need this on compile, otherwise runtime
         compile 'org.postgresql:postgresql:42.2.8'
-        compile group: 'org.liquibase', name: 'liquibase-core', version: '3.8.0'
+        compile group: 'org.liquibase', name: 'liquibase-core', version: '3.8.4'
 
         // connection pooling:
         compile 'com.mchange:c3p0:0.9.5.4'
@@ -303,7 +303,7 @@ project(':wres-io')
 
         compile group: 'org.apache.commons', name: 'commons-compress', version: '1.19'
 
-        compile group: 'org.liquibase', name: 'liquibase-core', version: '3.8.0'
+        compile group: 'org.liquibase', name: 'liquibase-core', version: '3.8.4'
 
         compile( group: 'com.amazonaws', name: 'aws-java-sdk-s3', version: '1.11.641' )
         {
