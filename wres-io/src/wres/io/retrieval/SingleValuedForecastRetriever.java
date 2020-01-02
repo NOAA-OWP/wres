@@ -361,11 +361,8 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         scripter.addLine( FROM_WRES_TIME_SERIES_TS );
         scripter.addTab().addLine( "INNER JOIN wres.TimeSeriesValue TSV" );
         scripter.addTab( 2 ).addLine( "ON TSV.timeseries_id = TS.timeseries_id" );
-        scripter.addTab().addLine( "INNER JOIN wres.TimeSeriesSource TSS" );
-        scripter.addTab( 2 ).addLine( "ON TSS.timeseries_id = TS.timeseries_id" );
-        scripter.addTab( 3 ).addLine( "AND (TSS.lead IS NULL OR TSS.lead = TSV.lead)" );
         scripter.addTab().addLine( "INNER JOIN wres.ProjectSource PS" );
-        scripter.addTab( 2 ).addLine( "ON PS.source_id = TSS.source_id" );
+        scripter.addTab( 2 ).addLine( "ON PS.source_id = TS.source_id" );
 
         return scripter.toString();
     }  
@@ -382,10 +379,8 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
 
         scripter.addLine( "SELECT TS.timeseries_id" );
         scripter.addLine( FROM_WRES_TIME_SERIES_TS );
-        scripter.addLine( "INNER JOIN wres.TimeSeriesSource TSS" );
-        scripter.addTab().addLine( "ON TS.timeseries_id = TSS.timeseries_id" );
         scripter.addLine( "INNER JOIN wres.ProjectSource PS" );
-        scripter.addTab().addLine( "ON TSS.source_id = PS.source_id" );
+        scripter.addTab().addLine( "ON TS.source_id = PS.source_id" );
 
         return scripter.toString();
     }

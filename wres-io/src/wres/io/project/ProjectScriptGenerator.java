@@ -244,10 +244,8 @@ final class ProjectScriptGenerator
         if ( ConfigHelper.isForecast( project.getRight() ) )
         {
             script.addTab(   3   ).addLine( "FROM wres.TimeSeries TS" );
-            script.addTab(   3   ).addLine( "INNER JOIN wres.TimeSeriesSource TSS" );
-            script.addTab(    4    ).addLine( "ON TS.timeseries_id = TSS.timeseries_id" );
             script.addTab(   3   ).addLine( "INNER JOIN wres.ProjectSource PS" );
-            script.addTab(    4    ).addLine( "ON PS.source_id = TSS.source_id" );
+            script.addTab(    4    ).addLine( "ON PS.source_id = TS.source_id" );
             script.addTab(   3   ).addLine( "WHERE PS.project_id = ",
                                             project.getId() );
             script.addTab(    4    ).addLine( "AND PS.member = 'right'" );
@@ -470,10 +468,8 @@ final class ProjectScriptGenerator
         if ( ConfigHelper.isForecast( project.getLeft() ) )
         {
             script.addTab(   3   ).addLine( "FROM wres.TimeSeries TS" );
-            script.addTab(   3   ).addLine( "INNER JOIN wres.TimeSeriesSource TSS" );
-            script.addTab(    4    ).addLine( "ON TS.timeseries_id = TSS.timeseries_id" );
             script.addTab(   3   ).addLine( "INNER JOIN wres.ProjectSource PS" );
-            script.addTab(    4    ).addLine( "ON PS.source_id = TSS.source_id" );
+            script.addTab(    4    ).addLine( "ON PS.source_id = TS.source_id" );
             script.addTab(   3   ).addLine( "WHERE PS.project_id = ",
                                             project.getId() );
             script.addTab(    4    ).addLine( "AND PS.member = 'right'" );

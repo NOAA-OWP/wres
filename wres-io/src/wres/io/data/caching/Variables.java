@@ -124,11 +124,9 @@ public final class Variables extends Cache<VariableDetails, String>
         script.addTab(    4    ).addLine("AND EXISTS (");
         script.addTab(     5     ).addLine("SELECT 1");
         script.addTab(     5     ).addLine("FROM wres.ProjectSource PS");
-        script.addTab(     5     ).addLine("INNER JOIN wres.TimeSeriesSource TSS");
-        script.addTab(      6      ).addLine("ON TSS.source_id = PS.source_id");
         script.addTab(     5     ).addLine("WHERE PS.project_id = ", projectID);
         script.addTab(      6      ).addLine("AND PS.member = ", member);
-        script.addTab(      6      ).addLine("AND TSS.timeseries_id = TS.timeseries_id");
+        script.addTab(      6      ).addLine("AND TS.source_id = PS.source_id");
         script.addTab(    4    ).addLine(") AND EXISTS (");
         script.addTab(     5     ).addLine("SELECT 1");
         script.addTab(     5     ).addLine("FROM wres.TimeSeriesValue TSV");
@@ -229,10 +227,8 @@ public final class Variables extends Cache<VariableDetails, String>
 		script.addTab(    4    ).addLine("FROM wres.ProjectSource PS");
 		script.addTab(    4    ).addLine("WHERE PS.project_id = ", projectID);
 		script.addTab(     5     ).addLine("AND PS.member = ", member);
+		script.addTab(     5     ).addLine("AND PS.source_id = TS.source_id");
 		script.addTab(   3   ).addLine(") AS PS");
-		script.addTab(   3   ).addLine("INNER JOIN wres.TimeSeriesSource TSS");
-		script.addTab(    4    ).addLine("ON TSS.source_id = PS.source_id");
-		script.addTab(   3   ).addLine("WHERE TSS.timeseries_id = TS.timeseries_id");
 		script.addTab(  2  ).addLine(") AND EXISTS (");
 		script.addTab(   3   ).addLine("SELECT 1");
 		script.addTab(   3   ).addLine("FROM wres.VariableFeature VF");

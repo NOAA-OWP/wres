@@ -21,7 +21,6 @@
     <include file="wres.timeseriesvalue_v1.xml" relativeToChangelogFile="true" />
     <include file="wres.gridprojection_v1.xml" relativeToChangelogFile="true" />
     <include file="wres.netcdfcoordinate_v1.xml" relativeToChangelogFile="true" />
-    <include file="wres.timeseriessource_v1.xml" relativeToChangelogFile="true" />
     <include file="wres.usgsparameter_v1.xml" relativeToChangelogFile="true" />
     <include file="wres.forecasts_v1.xml" relativeToChangelogFile="true" />
     <include file="wres.variablebyfeature_v1.xml" relativeToChangelogFile="true" />
@@ -62,5 +61,5 @@
     <include file="widen_feature_coordinates.xml" relativeToChangelogFile="true" />
     <include file="wres.project_v2.xml" relativeToChangelogFile="true" />
     <include file="update_lsno2_and_hdga4.xml" relativeToChangelogFile="true" />
+    <include file="wres.TimeSeries_v5.xml" relativeToChangelogFile="true" />
 </databaseChangeLog>
-

@@ -507,44 +507,7 @@ public class TestDatabase
             statement.execute( "DROP TABLE wres.Ensemble" );
         }
     }
-    
-    /**
-     * Create the WRES timeseriessource table using given liquibase database.
-     * Expected to be called within a test requiring the timeseriessource table. 
-     * If you call createTimeSeriesSourceTable at the beginning of a test, you 
-     * must call dropTimeSeriesSourceTable at the end of the test. You must also 
-     * call dropLiquibaseChangeTables at the end of the test.
-     * @param liquibaseDatabase the Liquibase Database instance to use
-     * @throws LiquibaseException when liquibase migration fails
-     */
 
-    public void createTimeSeriesSourceTable( Database liquibaseDatabase )
-            throws LiquibaseException
-    {
-        Liquibase liquibase = new Liquibase( "database/wres.TimeSeriesSource_v2.xml",
-                                             new ClassLoaderResourceAccessor(),
-                                             liquibaseDatabase );
-        liquibase.update( new Contexts() );
-    }
-
-
-    /**
-     * Drop the WRES timeseriessource table using given connection.
-     * Expected to be called at the same level as createTimeSeriesSourceTable, 
-     * namely within a test that requires the timeseriessource table, at the end 
-     * of the test.
-     * @param connection the connection to use
-     * @throws SQLException when drop fails
-     */
-
-    public void dropTimeSeriesSourceTable( Connection connection ) throws SQLException
-    {
-        try ( Statement statement = connection.createStatement() )
-        {
-            statement.execute( "DROP TABLE wres.TimeSeriesSource" );
-        }
-    }    
-    
     
     /**
      * Create the WRES timeseries table using given liquibase database.

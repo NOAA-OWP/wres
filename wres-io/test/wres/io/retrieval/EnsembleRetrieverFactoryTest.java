@@ -371,7 +371,6 @@ public class EnsembleRetrieverFactoryTest
         this.testDatabase.createObservationTable( liquibaseDatabase );
         this.testDatabase.createEnsembleTable( liquibaseDatabase );
         this.testDatabase.createTimeSeriesTable( liquibaseDatabase );
-        this.testDatabase.createTimeSeriesSourceTable( liquibaseDatabase );
         this.testDatabase.createTimeSeriesValueTable( liquibaseDatabase );
     }
 
@@ -589,13 +588,15 @@ public class EnsembleRetrieverFactoryTest
                                   + "measurementunit_id,"
                                   + "initialization_date,"
                                   + "scale_period,"
-                                  + "scale_function) "
+                                  + "scale_function,"
+                                  + "source_id ) "
                                   + "VALUES (?,"
                                   + "?,"
                                   + "?,"
                                   + "(?)::timestamp without time zone,"
                                   + "?,"
-                                  + "(?)::scale_function )";
+                                  + "(?)::scale_function,"
+                                  + "? )";
 
         // First member
         DataScripter memberOneScript = new DataScripter( timeSeriesInsert );
@@ -605,7 +606,8 @@ public class EnsembleRetrieverFactoryTest
                                                 measurementUnitId,
                                                 referenceTime.toString(),
                                                 timeScale.getPeriod().toMinutesPart(),
-                                                timeScale.getFunction().name() );
+                                                timeScale.getFunction().name(),
+                                                sourceId );
 
         // One row added
         assertEquals( 1, rowAdded );
@@ -615,22 +617,6 @@ public class EnsembleRetrieverFactoryTest
 
         Integer firstSeriesId = memberOneScript.getInsertedIds().get( 0 ).intValue();
 
-        // See above and #56214-102. This statement fails in wres.io.data.details.TimeSeries as a prepared statement
-        // via DataScripter
-        String timeSeriesSourceInsert = "INSERT INTO wres.TimeSeriesSource (timeseries_id,source_id)"
-                                        + "VALUES ({0},{1})";
-
-        String memberOneSource = MessageFormat.format( timeSeriesSourceInsert,
-                                                       firstSeriesId,
-                                                       sourceId );
-
-        DataScripter memberOneSourceScript = new DataScripter( memberOneSource );
-
-        int anotherRowAdded = memberOneSourceScript.execute();
-
-        // One row added
-        assertEquals( 1, anotherRowAdded );
-
         // Second member
         DataScripter memberTwoScript = new DataScripter( timeSeriesInsert );
 
@@ -639,7 +625,8 @@ public class EnsembleRetrieverFactoryTest
                                                    measurementUnitId,
                                                    referenceTime.toString(),
                                                    timeScale.getPeriod().toMinutesPart(),
-                                                   timeScale.getFunction().name() );
+                                                   timeScale.getFunction().name(),
+                                                   sourceId );
 
         // One row added
         assertEquals( 1, rowAddedTwo );
@@ -649,17 +636,6 @@ public class EnsembleRetrieverFactoryTest
 
         Integer secondSeriesId = memberTwoScript.getInsertedIds().get( 0 ).intValue();
 
-        String memberTwoSource = MessageFormat.format( timeSeriesSourceInsert,
-                                                       secondSeriesId,
-                                                       sourceId );
-
-        DataScripter memberTwoSourceScript = new DataScripter( memberTwoSource );
-
-        int anotherRowAddedTwo = memberTwoSourceScript.execute();
-
-        // One row added
-        assertEquals( 1, anotherRowAddedTwo );
-
         // Third member
         DataScripter memberThreeScript = new DataScripter( timeSeriesInsert );
 
@@ -668,7 +644,8 @@ public class EnsembleRetrieverFactoryTest
                                                        measurementUnitId,
                                                        referenceTime.toString(),
                                                        timeScale.getPeriod().toMinutesPart(),
-                                                       timeScale.getFunction().name() );
+                                                       timeScale.getFunction().name(),
+                                                       sourceId );
 
         // One row added
         assertEquals( 1, rowAddedThree );
@@ -677,17 +654,6 @@ public class EnsembleRetrieverFactoryTest
         assertEquals( 1, memberThreeScript.getInsertedIds().size() );
 
         Integer thirdSeriesId = memberThreeScript.getInsertedIds().get( 0 ).intValue();
-
-        String memberThreeSource = MessageFormat.format( timeSeriesSourceInsert,
-                                                         thirdSeriesId,
-                                                         sourceId );
-
-        DataScripter memberThreeSourceScript = new DataScripter( memberThreeSource );
-
-        int anotherRowAddedThree = memberThreeSourceScript.execute();
-
-        // One row added
-        assertEquals( 1, anotherRowAddedThree );
 
         // Add the time-series values to wres.TimeSeriesValue       
         Duration seriesIncrement = Duration.ofHours( 1 );

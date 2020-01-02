@@ -44,6 +44,9 @@
             <column name="scale_function" type="scale_function"
                     remarks="The function used to describe the scale of the collected data"
                     value="UNKNOWN" />
+            <column name="source_id" type="int">
+                <constraints nullable="false" />
+            </column>
         </createTable>
         <addForeignKeyConstraint baseTableName="TimeSeries" baseTableSchemaName="wres"
                                  baseColumnNames="variablefeature_id"
@@ -55,8 +58,21 @@
                                  referencedTableName="MeasurementUnit" referencedTableSchemaName="wres"
                                  referencedColumnNames="measurementunit_id"
                                  onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseColumnNames="source_id"
+                                 baseTableName="TimeSeries"
+                                 baseTableSchemaName="wres"
+                                 referencedColumnNames="source_id"
+                                 referencedTableName="Source"
+                                 referencedTableSchemaName="wres"
+                                 constraintName="timeseries_source_fk"
+                                 onDelete="CASCADE"/>
         <createIndex tableName="TimeSeries" schemaName="wres" indexName="timeseries_variablefeature_ix">
             <column name="variablefeature_id" />
+        </createIndex>
+        <createIndex tableName="TimeSeries"
+                     schemaName="wres"
+                     indexName="timeseries_source_idx">
+            <column name="source_id" />
         </createIndex>
         <comment>
             The wres.TimeSeries table has been added to the database.

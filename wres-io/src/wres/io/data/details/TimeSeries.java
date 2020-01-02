@@ -211,15 +211,17 @@ public class TimeSeries
         script.addTab(  2  ).addLine("measurementunit_id,");
         script.addTab(  2  ).addLine("initialization_date,");
         script.addTab(  2  ).addLine("scale_period,");
-        script.addTab(  2  ).addLine("scale_function");
+        script.addTab(  2  ).addLine("scale_function,");
+        script.addTab(  2  ).addLine("source_id");
         script.addTab().addLine(")");
-        script.addTab().addLine( "VALUES ( ?, ?, ?, (?)::timestamp without time zone, ?, (?)::scale_function );" );
+        script.addTab().addLine( "VALUES ( ?, ?, ?, (?)::timestamp without time zone, ?, (?)::scale_function, ? );" );
         script.addArgument( this.variableFeatureID );
         script.addArgument( this.ensembleID );
         script.addArgument( this.measurementUnitID );
         script.addArgument( this.initializationDate );
         script.addArgument( scalePeriod );
         script.addArgument( scaleFunction.name() );
+        script.addArgument( this.sourceID );
 
         int rowsModified = script.execute();
         int insertedId = script.getInsertedIds()
@@ -239,14 +241,6 @@ public class TimeSeries
         }
 
         this.timeSeriesID = insertedId;
-
-        DataScripter scriptTwo = new DataScripter();
-        scriptTwo.addLine( "INSERT INTO wres.TimeSeriesSource ( timeseries_id, source_id )" );
-        scriptTwo.addTab( 1 ).addLine( "VALUES ( ?, ? );" );
-        //scriptTwo.addTab( 1 ).addLine( "VALUES ( "+this.timeSeriesID+", "+this.sourceID+" );" );
-        scriptTwo.addArgument( this.timeSeriesID );
-        scriptTwo.addArgument( this.sourceID );
-        scriptTwo.execute();
     }
 
     /**

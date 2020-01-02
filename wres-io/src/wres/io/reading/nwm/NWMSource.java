@@ -147,10 +147,7 @@ public class NWMSource extends BasicSource
             }
 			else
             {
-                saver = new VectorNWMValueSaver( this.getProjectConfig(),
-                                                 this.getDataSource(),
-                                                 this.getHash(),
-                                                 this.getLockManager() );
+                throw new UnsupportedOperationException( "Vector netCDF ingest now uses a different declaration. Please use source declaration like '<source interface=\"nwm_short_range_channel_rt_conus\">data/nwmVector/</source>' instead" );
             }
 
 			saver.setOnRun(ProgressMonitor.onThreadStartHandler());
