@@ -5,10 +5,22 @@
     xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.6.xsd"
     objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
     <changeSet id="Change LSNO2 and HDGA4 locations." author="Jesse Bickel">
+        <preConditions onFail="MARK_RAN">
+            <!-- Find tables used in the sql because tables can die. -->
+            <tableExists tableName="TimeSeriesSource" schemaName="wres" />
+            <tableExists tableName="ProjectSource" schemaName="wres" />
+            <tableExists tableName="Source" schemaName="wres" />
+            <tableExists tableName="VariableFeature" schemaName="wres" />
+            <tableExists tableName="Feature" schemaName="wres" />
+            <tableExists tableName="TimeSeries" schemaName="wres" />
+            <tableExists tableName="Project" schemaName="wres" />
+            <tableExists tableName="Observation" schemaName="wres" />
+            <tableExists tableName="TimeSeriesValue" schemaName="wres" />
+        </preConditions>
         <comment>See issue #72786</comment>
-        <sqlFile path="20191223_Change_LSNO2_and_HDGA4.sql"
-		 splitStatements="false"
-		 stripComments="true"
-		 relativeToChangelogFile="true" />
+        <sqlFile path="20200102_Change_LSNO2_and_HDGA4.sql"
+                 splitStatements="false"
+                 stripComments="true"
+                 relativeToChangelogFile="true" />
     </changeSet>
 </databaseChangeLog>
