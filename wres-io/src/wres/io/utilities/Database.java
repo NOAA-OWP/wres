@@ -552,7 +552,6 @@ public final class Database {
         // TODO: We should probably just analyze/optional vacuum everything in the WRES schema rather than picking and choosing
         sql.add(optionalVacuum + "ANALYZE wres.Observation;");
         sql.add(optionalVacuum + "ANALYZE wres.TimeSeries;");
-        sql.add(optionalVacuum + "ANALYZE wres.TimeSeriesSource;");
         sql.add(optionalVacuum + "ANALYZE wres.ProjectSource;");
         sql.add(optionalVacuum + "ANALYZE wres.Source;");
         sql.add(optionalVacuum + "ANALYZE wres.Ensemble;");
@@ -862,7 +861,6 @@ public final class Database {
 				   .append( NEWLINE );
         }
 
-		builder.append("TRUNCATE wres.TimeSeriesSource;").append(NEWLINE);
 		builder.append("TRUNCATE wres.TimeSeriesValue CASCADE;").append(NEWLINE);
 		builder.append("TRUNCATE wres.Observation;").append(NEWLINE);
 		builder.append("TRUNCATE wres.Source RESTART IDENTITY CASCADE;").append(NEWLINE);

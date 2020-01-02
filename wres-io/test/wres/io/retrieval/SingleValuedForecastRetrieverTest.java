@@ -342,7 +342,6 @@ public class SingleValuedForecastRetrieverTest
         this.testDatabase.createObservationTable( liquibaseDatabase );
         this.testDatabase.createEnsembleTable( liquibaseDatabase );
         this.testDatabase.createTimeSeriesTable( liquibaseDatabase );
-        this.testDatabase.createTimeSeriesSourceTable( liquibaseDatabase );
         this.testDatabase.createTimeSeriesValueTable( liquibaseDatabase );
     }
 
@@ -459,13 +458,15 @@ public class SingleValuedForecastRetrieverTest
                                   + "measurementunit_id,"
                                   + "initialization_date,"
                                   + "scale_period,"
-                                  + "scale_function) "
+                                  + "scale_function,"
+                                  + "source_id ) "
                                   + "VALUES (?,"
                                   + "?,"
                                   + "?,"
                                   + "(?)::timestamp without time zone,"
                                   + "?,"
-                                  + "(?)::scale_function )";
+                                  + "(?)::scale_function,"
+                                  + "? )";
 
         DataScripter seriesOneScript = new DataScripter( timeSeriesInsert );
 
@@ -474,7 +475,8 @@ public class SingleValuedForecastRetrieverTest
                                                 measurementUnitId,
                                                 firstReference.toString(),
                                                 timeScale.getPeriod().toMinutesPart(),
-                                                timeScale.getFunction().name() );
+                                                timeScale.getFunction().name(),
+                                                sourceId );
 
         // One row added
         assertEquals( 1, rowAdded );
@@ -484,22 +486,6 @@ public class SingleValuedForecastRetrieverTest
 
         Integer firstSeriesId = seriesOneScript.getInsertedIds().get( 0 ).intValue();
 
-        // See above and #56214-102. This statement fails in wres.io.data.details.TimeSeries as a prepared statement
-        // via DataScripter
-        String timeSeriesSourceInsert = "INSERT INTO wres.TimeSeriesSource (timeseries_id,source_id)"
-                                        + "VALUES ({0},{1})";
-
-        String seriesOneSource = MessageFormat.format( timeSeriesSourceInsert,
-                                                       firstSeriesId,
-                                                       sourceId );
-
-        DataScripter seriesOneSourceScript = new DataScripter( seriesOneSource );
-
-        int anotherRowAdded = seriesOneSourceScript.execute();
-
-        // One row added
-        assertEquals( 1, anotherRowAdded );
-
         // Add the second series
         DataScripter seriesTwoScript = new DataScripter( timeSeriesInsert );
 
@@ -508,7 +494,8 @@ public class SingleValuedForecastRetrieverTest
                                                    measurementUnitId,
                                                    secondReference.toString(),
                                                    timeScale.getPeriod().toMinutesPart(),
-                                                   timeScale.getFunction().name() );
+                                                   timeScale.getFunction().name(),
+                                                   sourceId );
 
         // One row added
         assertEquals( 1, rowAddedTwo );
@@ -517,17 +504,6 @@ public class SingleValuedForecastRetrieverTest
         assertEquals( 1, seriesTwoScript.getInsertedIds().size() );
 
         Integer secondSeriesId = seriesTwoScript.getInsertedIds().get( 0 ).intValue();
-
-        String seriesTwoSource = MessageFormat.format( timeSeriesSourceInsert,
-                                                       secondSeriesId,
-                                                       sourceId );
-
-        DataScripter seriesTwoSourceScript = new DataScripter( seriesTwoSource );
-
-        int anotherRowAddedTwo = seriesTwoSourceScript.execute();
-
-        // One row added
-        assertEquals( 1, anotherRowAddedTwo );
 
         // Add the time-series values to wres.TimeSeriesValue       
         Duration seriesIncrement = Duration.ofHours( 1 );

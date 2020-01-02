@@ -98,9 +98,8 @@ public class IncompleteIngest
         timeSeriesValueScript.addLine( "WHERE timeseries_id IN" );
         timeSeriesValueScript.addLine( "(" );
         timeSeriesValueScript.addTab().addLine( "SELECT timeseries_id" );
-        timeSeriesValueScript.addTab().addLine( "FROM wres.TimeSeriesSource" );
-        timeSeriesValueScript.addTab().addLine( "WHERE lead IS NULL" );
-        timeSeriesValueScript.addTab().addLine( "AND source_id = ?" );
+        timeSeriesValueScript.addTab().addLine( "FROM wres.TimeSeries" );
+        timeSeriesValueScript.addTab().addLine( "WHERE source_id = ?" );
         timeSeriesValueScript.addArgument( sourceId );
         timeSeriesValueScript.addLine( ")" );
 
@@ -109,9 +108,8 @@ public class IncompleteIngest
         timeSeriesScript.addLine( "WHERE timeseries_id IN" );
         timeSeriesScript.addLine( "(" );
         timeSeriesScript.addTab().addLine( "SELECT timeseries_id" );
-        timeSeriesScript.addTab().addLine( "FROM wres.TimeSeriesSource" );
-        timeSeriesScript.addTab().addLine( "WHERE lead IS NULL" );
-        timeSeriesScript.addTab().addLine( "AND source_id = ?" );
+        timeSeriesScript.addTab().addLine( "FROM wres.TimeSeries" );
+        timeSeriesScript.addTab().addLine( "WHERE source_id = ?" );
         timeSeriesScript.addArgument( sourceId );
         timeSeriesScript.addLine( ")" );
 
@@ -277,11 +275,10 @@ public class IncompleteIngest
                 valueRemover.addLine( "DELETE FROM ", partition, " P" );
                 valueRemover.addLine( "WHERE NOT EXISTS (");
                 valueRemover.addTab().addLine( "SELECT 1");
-                valueRemover.addTab().addLine( "FROM wres.TimeSeriesSource TSS");
+                valueRemover.addTab().addLine( "FROM wres.TimeSeries TS");
                 valueRemover.addTab().addLine( "INNER JOIN wres.ProjectSource PS");
-                valueRemover.addTab(  2  ).addLine( "ON PS.source_id = TSS.source_id");
-                valueRemover.addTab().addLine( "WHERE TSS.timeseries_id = P.timeseries_id");
-                valueRemover.addTab(  2  ).addLine( "AND (TSS.lead IS NULL OR TSS.lead = P.lead)");
+                valueRemover.addTab(  2  ).addLine( "ON PS.source_id = TS.source_id");
+                valueRemover.addTab().addLine( "WHERE TS.timeseries_id = P.timeseries_id");
                 valueRemover.addLine( ");" );
 
                 Future timeSeriesValueRemoval = valueRemover.issue();
@@ -313,26 +310,14 @@ public class IncompleteIngest
                 throw new SQLException( "Orphaned observed and forecasted values could not be removed.", e );
             }
 
-            DataScripter removeTimeSeriesSource = new DataScripter();
-            removeTimeSeriesSource.addLine( "DELETE FROM wres.TimeSeriesSource TSS" );
-            removeTimeSeriesSource.addLine( "WHERE NOT EXISTS (" );
-            removeTimeSeriesSource.addTab().addLine( "SELECT 1" );
-            removeTimeSeriesSource.addTab().addLine( "FROM wres.ProjectSource PS" );
-            removeTimeSeriesSource.addTab().addLine( "WHERE PS.source_id = TSS.source_id" );
-            removeTimeSeriesSource.add( ");" );
-
-            LOGGER.debug( "Removing orphaned TimeSeriesSource Links...");
-            removeTimeSeriesSource.execute();
-
-            LOGGER.debug( "Removed orphaned TimeSeriesSource Links");
 
             DataScripter removeTimeSeries = new DataScripter();
 
             removeTimeSeries.addLine( "DELETE FROM wres.TimeSeries TS" );
             removeTimeSeries.addLine( "WHERE NOT EXISTS (" );
             removeTimeSeries.addTab().addLine( "SELECT 1" );
-            removeTimeSeries.addTab().addLine( "FROM wres.TimeSeriesSource TSS" );
-            removeTimeSeries.addTab().addLine( "WHERE TS.timeseries_id = TS.timeseries_id" );
+            removeTimeSeries.addTab().addLine( "FROM wres.Source S" );
+            removeTimeSeries.addTab().addLine( "WHERE S.source_id = TS.source_id" );
             removeTimeSeries.add( ");" );
 
             Future timeSeriesRemoval = removeTimeSeries.issue();

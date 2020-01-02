@@ -202,7 +202,7 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
         // Add ensemble member constraints at one tab
         this.addEnsembleMemberClauses( scripter, 1 );
 
-        String groupBySource = ", TSS.source_id";
+        String groupBySource = ", TS.source_id";
 
         // Group by source? 
         // TODO: please remove me when ingest is time-series-shaped.
@@ -348,11 +348,8 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
         scripter.addTab( 2 ).addLine( "ON E.ensemble_id = TS.ensemble_id" );
         scripter.addTab().addLine( "INNER JOIN wres.TimeSeriesValue TSV" );
         scripter.addTab( 2 ).addLine( "ON TSV.timeseries_id = TS.timeseries_id" );
-        scripter.addTab().addLine( "INNER JOIN wres.TimeSeriesSource TSS" );
-        scripter.addTab( 2 ).addLine( "ON TSS.timeseries_id = TS.timeseries_id" );
-        scripter.addTab( 3 ).addLine( "AND (TSS.lead IS NULL OR TSS.lead = TSV.lead)" );
         scripter.addTab().addLine( "INNER JOIN wres.ProjectSource PS" );
-        scripter.addTab( 2 ).addLine( "ON PS.source_id = TSS.source_id" );
+        scripter.addTab( 2 ).addLine( "ON PS.source_id = TS.source_id" );
 
         return scripter.toString();
     }

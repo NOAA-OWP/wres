@@ -310,16 +310,13 @@ public class Project
                     script.addTab().addLine( INNER_JOIN_WRES_VARIABLE_FEATURE_VF );
                     script.addTab( 2 ).addLine( "ON VF.variablefeature_id = TS.variablefeature_id" );
                     script.addTab()
-                          .addLine( "INNER JOIN wres.TimeSeriesSource TSS" );
-                    script.addTab( 2 )
-                          .addLine( "ON TSS.timeseries_id = TS.timeseries_id" );
-                    script.addTab()
                           .addLine( INNER_JOIN_WRES_PROJECT_SOURCE_PS );
                     script.addTab( 2 )
-                          .addLine( "ON PS.source_id = TSS.source_id" );
+                          .addLine( "ON PS.source_id = TS.source_id" );
                     script.addTab()
                           .addLine( WHERE_PS_PROJECT_ID, this.getId() );
                     script.addTab( 2 ).addLine( "AND PS.member = 'left'" );
+                    script.addTab( 2 ).addLine( "AND PS.source_id = TS.source_id" );
                     script.addTab( 2 )
                           .addLine( AND_VF_FEATURE_ID_F_FEATURE_ID );
                 }
@@ -362,16 +359,13 @@ public class Project
                           .addLine(
                                     "ON VF.variablefeature_id = TS.variablefeature_id" );
                     script.addTab()
-                          .addLine( "INNER JOIN wres.TimeSeriesSource TSS" );
-                    script.addTab( 2 )
-                          .addLine( "ON TSS.timeseries_id = TS.timeseries_id" );
-                    script.addTab()
                           .addLine( INNER_JOIN_WRES_PROJECT_SOURCE_PS );
                     script.addTab( 2 )
-                          .addLine( "ON PS.source_id = TSS.source_id" );
+                          .addLine( "ON PS.source_id = TS.source_id" );
                     script.addTab()
                           .addLine( WHERE_PS_PROJECT_ID, this.getId() );
                     script.addTab( 2 ).addLine( "AND PS.member = 'right'" );
+                    script.addTab( 2 ).addLine( "AND PS.source_id = TS.source_id" );
                     script.addTab( 2 )
                           .addLine( AND_VF_FEATURE_ID_F_FEATURE_ID );
                 }

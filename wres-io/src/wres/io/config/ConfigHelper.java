@@ -361,12 +361,11 @@ public class ConfigHelper
             script.addLine( "WHERE ", variableFeatureClause );
             script.addTab().addLine( "AND EXISTS (" );
             script.addTab(  2  ).addLine( "SELECT 1" );
-            script.addTab(  2  ).addLine( "FROM wres.TimeSeriesSource TSS" );
-            script.addTab(  2  ).addLine( "INNER JOIN wres.ProjectSource PS" );
-            script.addTab(   3   ).addLine( "ON TSS.source_id = PS.source_id" );
+            script.addTab(  2  ).addLine( "FROM wres.ProjectSource PS" );
             script.addTab(  2  ).addLine( "WHERE PS.project_id = ", project.getId() );
             script.addTab(   3   ).addLine( "AND PS.member = ", member );
-            script.addTab(   3   ).addLine( "AND TSS.timeseries_id = TS.timeseries_id" );
+            script.addTab(   3   ).addLine( "AND PS.timeseries_id = TS.timeseries_id" );
+            script.addTab(   3   ).addLine( "AND PS.source_id = TS.source_id" );
             script.addTab(  2  ).addLine( ");" );
         }
         else
