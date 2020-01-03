@@ -119,6 +119,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
      * @param project the project
      * @param feature a feature to evaluate
      * @param unitMapper the unit mapper
+     * @return a factory instance
      * @throws NullPointerException if any input is null
      */
 

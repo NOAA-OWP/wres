@@ -75,7 +75,7 @@ public class CSVSource extends BasicSource
     {
         try
         {
-            sourceDetails = DataSources.get( this.getFilename(), Instant.now().toString(), null, this.getHash());
+            this.sourceDetails = this.getSourceDetailsAndCacheThemIfAbsent();
         }
         catch ( SQLException e )
         {
@@ -153,7 +153,7 @@ public class CSVSource extends BasicSource
 
         try
         {
-            sourceDetails = DataSources.get( this.getFilename(), Instant.now().toString(), null, this.getHash());
+            this.sourceDetails = this.getSourceDetailsAndCacheThemIfAbsent();
         }
         catch ( SQLException e )
         {
@@ -516,7 +516,56 @@ public class CSVSource extends BasicSource
         return timeSeries;
     }
 
+    /**
+     * Attempts to return the source details and adds them to the centralized application cache if they are absent.
+     * 
+     * @return the source details
+     * @throws SQLException if the source details could not be created
+     */
 
+    private SourceDetails getSourceDetailsAndCacheThemIfAbsent() throws SQLException
+    {
+        // See: #72718 
+        // Create a source key to check
+        Instant sourceTime = Instant.now();
+        SourceDetails.SourceKey sourceKey = new SourceDetails.SourceKey( this.getFilename(),
+                                                                         sourceTime.toString(),
+                                                                         null,
+                                                                         this.getHash() );
+
+        // Is it in the application cache?
+        boolean isInCache = DataSources.isCached( sourceKey );
+
+        SourceDetails returnMe = null;
+
+        // No, not in the cache, so create and add to the application cache
+        if ( !isInCache )
+        {
+            returnMe = new SourceDetails( sourceKey );
+
+            // Attempt to save the source details to the database
+            returnMe.save();
+
+            // If we saved, then we should update the application cache
+            if ( returnMe.performedInsert() )
+            {
+                LOGGER.trace( "Could not find CSV source '{}' in the cache. Adding...", returnMe );
+
+                // Cache
+                DataSources.put( returnMe );
+
+                LOGGER.trace( "Added CSV source '{}' to the cache.", returnMe );
+            }
+        }
+        // Yes, it's in the application cache, so return from there
+        else
+        {
+            returnMe = DataSources.get( this.getFilename(), sourceTime.toString(), null, this.getHash() );
+        }
+
+        return returnMe;
+    }
+    
     /**
      * Discover whether the source was completely ingested
      * @param sourceDetails the source to query

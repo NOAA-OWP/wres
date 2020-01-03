@@ -118,6 +118,7 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
      * @param project the project
      * @param feature a feature to evaluate
      * @param unitMapper the unit mapper
+     * @return a factory instance
      * @throws NullPointerException if any input is null
      */
 
