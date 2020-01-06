@@ -10,7 +10,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,8 +23,6 @@ public class Scenario102
     private static final Logger LOGGER = LoggerFactory.getLogger( Scenario102.class );
     private static final String NEWLINE = System.lineSeparator();
 
-    private ScenarioInformation scenarioInfo;
-    
     /**
      * Expected paths as file names.
      */
@@ -55,7 +56,23 @@ public class Scenario102
                     Path.of( "LGNN5_QME_ESP_SAMPLE_SIZE.csv" ),
                     Path.of( "LGNN5_QME_ESP_SUM_OF_SQUARE_ERROR.csv" ),
                     Path.of( "LGNN5_QME_ESP_VOLUMETRIC_EFFICIENCY.csv" ),
-                    Path.of( "pairs.csv" ) ); 
+                    Path.of( "pairs.csv" ) );
+    
+    private ScenarioInformation scenarioInfo;
+    
+    /**
+     * Watch for any failed assertions and log them.
+     */
+
+    @Rule
+    public TestWatcher watcher = new TestWatcher()
+    {
+        @Override
+        protected void failed( Throwable e, Description description )
+        {
+            LOGGER.error( description.toString(), e );
+        }
+    };      
 
     @Before
     public void beforeIndividualTest() throws IOException, SQLException

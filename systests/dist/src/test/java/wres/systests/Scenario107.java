@@ -10,7 +10,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,8 +22,6 @@ public class Scenario107
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( Scenario107.class );
     private static final String NEWLINE = System.lineSeparator();
-
-    private ScenarioInformation scenarioInfo;
 
     /**
      * Expected paths as file names.
@@ -44,6 +45,22 @@ public class Scenario107
                     Path.of( "LGNN5_STREAMFLOW_HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM_GTE_4.0932_CMS_Pr_EQ_0.95.png" ),
                     Path.of( "pairs.csv" ) );
 
+    private ScenarioInformation scenarioInfo;
+    
+    /**
+     * Watch for any failed assertions and log them.
+     */
+
+    @Rule
+    public TestWatcher watcher = new TestWatcher()
+    {
+        @Override
+        protected void failed( Throwable e, Description description )
+        {
+            LOGGER.error( description.toString(), e );
+        }
+    };  
+    
     @Before
     public void beforeIndividualTest() throws IOException, SQLException
     {
