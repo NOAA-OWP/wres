@@ -10,7 +10,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,8 +22,6 @@ public class Scenario019
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( Scenario019.class );
     private static final String NEWLINE = System.lineSeparator();
-
-    private ScenarioInformation scenarioInfo;
     
     /**
      * Expected paths as file names.
@@ -30,7 +31,23 @@ public class Scenario019
             Set.of( Path.of( "DRRC2_QINE_HEFS_BRIER_SCORE.csv" ),
                     Path.of( "DRRC2_QINE_HEFS_MEAN_ERROR.csv" ),
                     Path.of( "DRRC2_QINE_HEFS_SAMPLE_SIZE.csv" ),
-                    Path.of( "pairs.csv" ) );        
+                    Path.of( "pairs.csv" ) );       
+    
+    private ScenarioInformation scenarioInfo;
+    
+    /**
+     * Watch for any failed assertions and log them.
+     */
+
+    @Rule
+    public TestWatcher watcher = new TestWatcher()
+    {
+        @Override
+        protected void failed( Throwable e, Description description )
+        {
+            LOGGER.error( description.toString(), e );
+        }
+    };      
 
     @Before
     public void beforeIndividualTest() throws IOException, SQLException

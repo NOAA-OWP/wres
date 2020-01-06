@@ -10,7 +10,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,8 +23,6 @@ public class Scenario016
     private static final Logger LOGGER = LoggerFactory.getLogger( Scenario016.class );
     private static final String NEWLINE = System.lineSeparator();
 
-    private ScenarioInformation scenarioInfo;
-    
     /**
      * Expected paths as file names.
      */
@@ -31,7 +32,23 @@ public class Scenario016
                     Path.of( "DRRC2_QINE_HEFS_MEAN_ERROR.csv" ),
                     Path.of( "DRRC2_QINE_HEFS_RELIABILITY_DIAGRAM_172800_SECONDS.csv" ),
                     Path.of( "DRRC2_QINE_HEFS_RELIABILITY_DIAGRAM_86400_SECONDS.csv" ),
-                    Path.of( "pairs.csv" ) );        
+                    Path.of( "pairs.csv" ) ); 
+    
+    private ScenarioInformation scenarioInfo;
+    
+    /**
+     * Watch for any failed assertions and log them.
+     */
+
+    @Rule
+    public TestWatcher watcher = new TestWatcher()
+    {
+        @Override
+        protected void failed( Throwable e, Description description )
+        {
+            LOGGER.error( description.toString(), e );
+        }
+    };      
 
     @Before
     public void beforeIndividualTest() throws IOException, SQLException
