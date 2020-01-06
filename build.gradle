@@ -357,6 +357,33 @@ project(':wres-io')
         systemProperties = [ "mockserver.maxSocketTimeout": 120000,
                              "ucar.unidata.io.http.maxHttpBufferSize": 200000 ]
     }
+
+
+    // The liquibase changesets are in the root project(!?), give wres-io access
+    // to those changesets on the test time classpath.
+    sourceSets
+    {
+        test
+        {
+            resources
+            {
+                // Flatten the contents of both testNonsrc (that every
+                // subproject aka module has) and root's dist/lib/conf
+                // (including database dir) onto the classpath.
+                // The reason to do this is that newer liquibase scripts can
+                // start their existence at test-time, but both those new and
+                // existing in production are accessible at test time.
+                // The reason for awkward phrasing here is that we want the
+                // classpath path to be exactly 'database/[changeset].xml', not
+                // flattened out to '[changeset].xml'.
+                srcDirs += '../dist/lib/conf'
+
+                // Avoid inclusion of wresconfig.xml because the db settings
+                // from that config would be (unsuccessfully) used at test time.
+                excludes += 'wresconfig.xml'
+            }
+        }
+    }
 }
 
 project(':wres-metrics')
@@ -910,7 +937,6 @@ sourceSets
         {
             srcDirs = ['testNonsrc']
         }
-   
     }
 }
 

@@ -15,7 +15,7 @@
     <include file="wres.feature_v1.xml" relativeToChangelogFile="true" />
     <include file="wres.variablefeature_v1.xml" relativeToChangelogFile="true" />
     <include file="wres.ensemble_v1.xml" relativeToChangelogFile="true" />
-    <include file="wres.timeseries_v1.xml" relativeToChangelogFile="true" />
+    <include file="wres.TimeSeries_v4.xml" relativeToChangelogFile="true" />
     <include file="wres.observation_v1.xml" relativeToChangelogFile="true" />
     <include file="wres.unitconversion_v1.xml" relativeToChangelogFile="true" />
     <include file="wres.timeseriesvalue_v1.xml" relativeToChangelogFile="true" />
@@ -33,7 +33,6 @@
     <include file="keys_v1.0.xml" relativeToChangelogFile="true" />
     <include file="add_measurementunit_kcfs.xml" relativeToChangelogFile="true" />
     <include file="wres.source_v2.xml" relativeToChangelogFile="true" />
-    <include file="wres.timeseries_v2.xml" relativeToChangelogFile="true" />
     <include file="wres.forecasts_v2.xml" relativeToChangelogFile="true" />
     <include file="variablefeature_pk_set.xml" relativeToChangelogFile="true" />
     <include file="add_identity_conversions.xml" relativeToChangelogFile="true" />
@@ -47,7 +46,6 @@
     <include file="wres.Source_v3.xml" relativeToChangelogFile="true" />
     <include file="wres.projectsource_v2.xml" relativeToChangelogFile="true" />
     <include file="wres.Source_v4.xml" relativeToChangelogFile="true" />
-    <include file="wres.timeseries_v3.xml" relativeToChangelogFile="true" />
     <include file="wres.observation_v3.xml" relativeToChangelogFile="true" />
     <include file="wres.SourceCompleted_v1.xml" relativeToChangelogFile="true" />
     <include file="wres.SourceCompleted_v2.xml" relativeToChangelogFile="true" />

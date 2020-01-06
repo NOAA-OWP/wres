@@ -214,7 +214,7 @@ public class TimeSeries
         script.addTab(  2  ).addLine("scale_function,");
         script.addTab(  2  ).addLine("source_id");
         script.addTab().addLine(")");
-        script.addTab().addLine( "VALUES ( ?, ?, ?, (?)::timestamp without time zone, ?, (?)::scale_function, ? );" );
+        script.addTab().addLine( "VALUES ( ?, ?, ?, (?)::timestamp without time zone, ?, ?, ? );" );
         script.addArgument( this.variableFeatureID );
         script.addArgument( this.ensembleID );
         script.addArgument( this.measurementUnitID );
