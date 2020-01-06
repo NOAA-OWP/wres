@@ -100,7 +100,6 @@ public class Scenario001
     public void testScenario()
     {
         Control control = ScenarioHelper.assertExecuteScenario( scenarioInfo );
-        ScenarioHelper.assertOutputsMatchBenchmarks( scenarioInfo, control );
 
         // Collect the file names actually written and that exist
         Set<Path> pathsWritten = control.get();
@@ -118,6 +117,8 @@ public class Scenario001
                       actualFileNamesThatExist );
         
         LOGGER.info( "Finished checking file names. The actual file names match the expected file names." );
+        
+        ScenarioHelper.assertOutputsMatchBenchmarks( scenarioInfo, control );
 
         LOGGER.info( "########################################################## COMPLETED "
                      + this.getClass().getSimpleName().toLowerCase()
