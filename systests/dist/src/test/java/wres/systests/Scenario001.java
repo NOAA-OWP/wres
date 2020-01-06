@@ -2,6 +2,7 @@ package wres.systests;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Files;
 import java.sql.SQLException;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -100,20 +101,27 @@ public class Scenario001
     {
         Control control = ScenarioHelper.assertExecuteScenario( scenarioInfo );
         ScenarioHelper.assertOutputsMatchBenchmarks( scenarioInfo, control );
-        
-        // Collect the file names actually written
+
+        // Collect the file names actually written and that exist
         Set<Path> pathsWritten = control.get();
-        Set<Path> actualFileNames = pathsWritten.stream()
-                                          .map( Path::getFileName )
-                                          .collect( Collectors.toSet() );
+        Set<Path> actualFileNamesThatExist = pathsWritten.stream()
+                                                         .filter( Files::exists )
+                                                         .map( Path::getFileName )
+                                                         .collect( Collectors.toSet() );
 
         // Expected file-name paths equals actual
-        LOGGER.info( "Checking expected file names against actual file names for {} files...",
+        LOGGER.info( "Checking expected file names against actual file names that exist for {} files...",
                      EXPECTED_FILE_NAMES.size() );
-        assertEquals( EXPECTED_FILE_NAMES, actualFileNames );
-        LOGGER.info( "Expected and actual file names match." );
+
+        assertEquals( "The actual set of file names does not match the expected set of file names.",
+                      EXPECTED_FILE_NAMES,
+                      actualFileNamesThatExist );
         
+        LOGGER.info( "Finished checking file names. The actual file names match the expected file names." );
+
         LOGGER.info( "########################################################## COMPLETED "
-                + this.getClass().getSimpleName().toLowerCase() + NEWLINE);
+                     + this.getClass().getSimpleName().toLowerCase()
+                     + NEWLINE );
     }
+    
 }
