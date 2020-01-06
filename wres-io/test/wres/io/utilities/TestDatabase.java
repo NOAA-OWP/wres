@@ -149,7 +149,7 @@ public class TestDatabase
     public void createProjectTable( Database liquibaseDatabase )
             throws LiquibaseException
     {
-        Liquibase liquibase = new Liquibase( "database/wres.Project_v2.xml",
+        Liquibase liquibase = new Liquibase( "database/wres.Project_v3.xml",
                                              new ClassLoaderResourceAccessor(),
                                              liquibaseDatabase );
         liquibase.update( new Contexts() );

@@ -503,7 +503,7 @@ public class EnsembleForecastRetrieverTest
                                   + "?,"
                                   + "(?)::timestamp without time zone,"
                                   + "?,"
-                                  + "(?)::scale_function,"
+                                  + "?,"
                                   + "? )";
 
         // First member

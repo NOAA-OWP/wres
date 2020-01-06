@@ -557,7 +557,7 @@ public class SingleValuedRetrieverFactoryTest
                                   + "?,"
                                   + "(?)::timestamp without time zone,"
                                   + "?,"
-                                  + "(?)::scale_function,"
+                                  + "?,"
                                   + "? )";
 
         DataScripter seriesOneScript = new DataScripter( timeSeriesInsert );

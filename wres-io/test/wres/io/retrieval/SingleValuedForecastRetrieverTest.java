@@ -465,7 +465,7 @@ public class SingleValuedForecastRetrieverTest
                                   + "?,"
                                   + "(?)::timestamp without time zone,"
                                   + "?,"
-                                  + "(?)::scale_function,"
+                                  + "?,"
                                   + "? )";
 
         DataScripter seriesOneScript = new DataScripter( timeSeriesInsert );
