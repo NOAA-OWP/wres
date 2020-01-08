@@ -295,83 +295,16 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
     private static Set<FeatureDetails> getSpecifiedDetails( ProjectConfig projectConfig ) throws SQLException
     {
         Set<FeatureDetails> features = new HashSet<>();
-        boolean hasNetCDF = ConfigHelper.usesNetCDFData( projectConfig );
-        boolean hasUSGS = ConfigHelper.usesUSGSData( projectConfig );
 
-        for (Feature feature : projectConfig.getPair().getFeature())
+        for ( Feature feature : projectConfig.getPair().getFeature() )
         {
-            for (FeatureDetails details : Features.getAllDetails( feature))
+            for ( FeatureDetails details : Features.getAllDetails( feature ) )
             {
-                if (shouldAddFeature( details, hasUSGS, hasNetCDF ))
-                {
-                    features.add( details );
-                }
-                else
-                {
-                    String message = "";
-                    if ((hasNetCDF && details.getNwmIndex() == null) &&
-                        (hasUSGS && !Strings.hasValue( details.getGageID() )))
-                    {
-                        message = "Since this project uses both USGS and NetCDF " +
-                                  "data, the location {} can't be used for " +
-                                  "evaluation because there is not enough " +
-                                  "information available to connect it to both " +
-                                  "USGS and NetCDF sources.";
-                    }
-                    else if (hasNetCDF && details.getNwmIndex() == null)
-                    {
-                        message = "Since this project uses NetCDF data, the " +
-                                  "location {} cannot be used for " +
-                                  "evaluation because there is not enough " +
-                                  "information available to link it to a NetCDF " +
-                                  "source file.";
-                    }
-                    else if (hasUSGS &&
-                             !(Strings.hasValue( details.getGageID() ) || details.getGageID().length() < 8))
-                    {
-                        message = "Since this project uses USGS data, the " +
-                                  "location {} cannot be used for " +
-                                  "evaluation because there is not enough " +
-                                  "information available to link it to a valid " +
-                                  "USGS location.";
-                    }
-
-                    LOGGER.debug(message, details.toString());
-                }
+                features.add( details );
             }
         }
 
         return features;
-    }
-
-    private static boolean shouldAddFeature(FeatureDetails feature, boolean usesUSGS, boolean usesNetCDF)
-    {
-        // If we aren't using NetCDF or USGS data, we don't need to worry
-        // about identifiers on the locations
-        if (!(usesNetCDF || usesUSGS))
-        {
-            return true;
-        }
-        // If we are using both NetCDF and USGS data, we need both Gage IDs
-        // and indexes for NetCDF files to be able to load any sort of
-        // data for evaluation
-        else if ((usesNetCDF && feature.getComid() != null && feature.getComid() != -999) &&
-                 (usesUSGS && Strings.hasValue( feature.getGageID() )))
-        {
-            // gage ids must have 8 or more characters
-            return feature.getGageID().length() >= 8;
-        }
-        // If we are using NetCDF data, we need indexes to determine what
-        // data to retrieve
-        else if (usesNetCDF && feature.getComid() != null && feature.getComid() != -999 && !usesUSGS)
-        {
-            return true;
-        }
-
-        // If we are using USGS data, we need a gageID or we won't be
-        // able to retrieve data. Gages must have at least 8 digits
-        return usesUSGS && Strings.hasValue( feature.getGageID() ) &&
-               feature.getGageID().length() >= 8 && !usesNetCDF;
     }
 
     private static Set<FeatureDetails> getAllDetails(Feature feature)
