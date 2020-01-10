@@ -96,8 +96,6 @@ public class Scenario700
                       actualFileNamesThatExist );
         
         LOGGER.info( "Finished checking file names. The actual file names match the expected file names." );
-        
-        ScenarioHelper.assertOutputsMatchBenchmarks( scenarioInfo, control );
         LOGGER.info( "########################################################## COMPLETED "
                 + this.getClass().getSimpleName().toLowerCase() + NEWLINE);
     }
