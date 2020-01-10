@@ -28,15 +28,10 @@ distributions
             from('.')
             {
                 include '*.sh'
-                include 'scenario*/after.sh'
-                include 'scenario*/before.sh'
                 include 'scenario*/*.xml'
                 include 'scenario*/*.csv'
-                include 'scenario*/CLEAN'
-                include 'scenario*/FAILS'
                 include 'scenario*/benchmarks/**'
                 include 'smalldata/**'
-                include 'scripts/*'
 				include 'smalldata_test/**'
 				include 'template/**'
 				include 'thresholds/**'

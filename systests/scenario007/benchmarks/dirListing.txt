@@ -1,5 +1,0 @@
-DRRC2_discharge1_HEFS_MEAN_ERROR.csv
-DRRC2_discharge1_HEFS_MEAN_ERROR.png
-DRRC2_discharge1_HEFS_SAMPLE_SIZE.csv
-DRRC2_discharge1_HEFS_SAMPLE_SIZE.png
-pairs.csv
