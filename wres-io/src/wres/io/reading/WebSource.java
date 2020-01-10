@@ -8,6 +8,8 @@ import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -46,6 +48,7 @@ import static java.time.temporal.TemporalAdjusters.previousOrSame;
 import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DateCondition;
+import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.IngestSaver;
 import wres.io.config.ConfigHelper;
@@ -117,11 +120,23 @@ class WebSource implements Callable<List<IngestResult>>
                 .namingPattern( "WebSource Ingest" )
                 .build();
 
+        int concurrentCount = SystemSettings.getMaximumWebClientThreads();
+
+        // In the case of the WRDS NWM service, we have been asked to take it
+        // easy on the service by not doing concurrent requests.
+        InterfaceShortHand interfaceShortHand = dataSource.getSource()
+                                                          .getInterface();
+        if ( Objects.nonNull( interfaceShortHand )
+             && interfaceShortHand.equals( InterfaceShortHand.WRDS_NWM ) )
+        {
+            concurrentCount = 1;
+        }
+
         // Because we use a latch and queue below, no need to make this queue
         // any larger than that queue and latch.
-        BlockingQueue<Runnable> webClientQueue = new ArrayBlockingQueue<>( SystemSettings.getMaximumWebClientThreads() );
-        this.ingestSaverExecutor = new ThreadPoolExecutor( SystemSettings.getMaximumWebClientThreads(),
-                                                           SystemSettings.getMaximumWebClientThreads(),
+        BlockingQueue<Runnable> webClientQueue = new ArrayBlockingQueue<>( concurrentCount );
+        this.ingestSaverExecutor = new ThreadPoolExecutor( concurrentCount,
+                                                           concurrentCount,
                                                            SystemSettings.poolObjectLifespan(),
                                                            TimeUnit.MILLISECONDS,
                                                            webClientQueue,
@@ -133,9 +148,9 @@ class WebSource implements Callable<List<IngestResult>>
         // client threads so that we can 1. get quick feedback on exception
         // (which requires a small queue) and 2. allow some requests to go out
         // prior to get-one-response-per-submission-of-one-ingest-task
-        this.ingests = new ArrayBlockingQueue<>( SystemSettings.getMaximumWebClientThreads() );
+        this.ingests = new ArrayBlockingQueue<>( concurrentCount );
         // The size of this latch is for reason (2) above
-        this.startGettingResults = new CountDownLatch( SystemSettings.getMaximumWebClientThreads() );
+        this.startGettingResults = new CountDownLatch( concurrentCount );
         this.now = now;
     }
 
@@ -222,6 +237,7 @@ class WebSource implements Callable<List<IngestResult>>
                     }
 
                     URI uri = createUri( this.getBaseUri(),
+                                         this.getDataSource(),
                                          range,
                                          featureDetails,
                                          allKnownUsgsGageIds );
@@ -440,15 +456,19 @@ class WebSource implements Callable<List<IngestResult>>
     }
 
     private URI createUri( URI baseUri,
+                           DataSource dataSource,
                            Pair<Instant,Instant> range,
                            FeatureDetails featureDetails,
                            SortedSet<String> allKnownUsgsGageIds )
     {
         if ( baseUri.getHost()
                     .toLowerCase()
-                    .contains( "usgs.gov" ) )
+                    .contains( "usgs.gov" )
+             || baseUri.getPath()
+                       .toLowerCase()
+                       .contains( "nwis" ) )
         {
-            return this.createUsgsUri( baseUri, range, featureDetails, allKnownUsgsGageIds );
+            return this.createUsgsNwisUri( baseUri, range, featureDetails, allKnownUsgsGageIds );
         }
         else if ( baseUri.getPath()
                          .toLowerCase()
@@ -457,11 +477,17 @@ class WebSource implements Callable<List<IngestResult>>
                          .toLowerCase()
                          .endsWith( "ahps/" ) )
         {
-            return this.createWrdsUri( baseUri, range, featureDetails );
+            return this.createWrdsAhpsUri( baseUri, range, featureDetails );
+        }
+        else if ( baseUri.getPath()
+                         .toLowerCase()
+                         .contains( "nwm" ) )
+        {
+            return this.createWrdsNwmUri( baseUri, dataSource, range, featureDetails );
         }
         else
         {
-            throw new ProjectConfigException( this.dataSource.getContext(),
+            throw new ProjectConfigException( dataSource.getContext(),
                                               "Unrecognized URI base "
                                               + baseUri );
         }
@@ -478,10 +504,10 @@ class WebSource implements Callable<List<IngestResult>>
      * @return a URI suitable to get the data from WRDS API
      */
 
-    private URI createUsgsUri( URI baseUri,
-                               Pair<Instant,Instant> range,
-                               FeatureDetails featureDetails,
-                               SortedSet<String> allKnownUsgsGageIds )
+    private URI createUsgsNwisUri( URI baseUri,
+                                   Pair<Instant,Instant> range,
+                                   FeatureDetails featureDetails,
+                                   SortedSet<String> allKnownUsgsGageIds )
     {
         Objects.requireNonNull( baseUri );
         Objects.requireNonNull( range );
@@ -515,7 +541,7 @@ class WebSource implements Callable<List<IngestResult>>
 
 
     /**
-     * Specific to WRDS API, get a URI for a given issued date range and feature
+     * Specific to WRDS AHPS API, get URI for given issued date range and feature
      *
      * <p>Expecting a wrds URI like this:
      * http://***REMOVED***.***REMOVED***.***REMOVED***/api/v1/forecasts/streamflow/ahps</p>
@@ -524,9 +550,9 @@ class WebSource implements Callable<List<IngestResult>>
      * @return a URI suitable to get the data from WRDS API
      */
 
-    private URI createWrdsUri( URI baseUri,
-                               Pair<Instant,Instant> issuedRange,
-                               FeatureDetails featureDetails )
+    private URI createWrdsAhpsUri( URI baseUri,
+                                   Pair<Instant,Instant> issuedRange,
+                                   FeatureDetails featureDetails )
     {
         if ( !baseUri.getPath()
                      .toLowerCase()
@@ -548,9 +574,71 @@ class WebSource implements Callable<List<IngestResult>>
             basePath = basePath + "/";
         }
 
-        Map<String, String> wrdsParameters = createWrdsUrlParameters( issuedRange );
+        Map<String, String> wrdsParameters = createWrdsAhpsUrlParameters( issuedRange );
         String pathWithLocation = basePath + "nwsLocations/"
                                   + featureDetails.getLid();
+        URIBuilder uriBuilder = new URIBuilder( this.getBaseUri() );
+        uriBuilder.setPath( pathWithLocation );
+
+        URI uriWithLocation;
+        try
+        {
+            uriWithLocation = uriBuilder.build();
+        }
+        catch ( URISyntaxException use )
+        {
+            throw new IllegalArgumentException( "Could not create URI from "
+                                                + this.getBaseUri().toString()
+                                                + " and "
+                                                + pathWithLocation, use );
+        }
+
+        return getURIWithParameters( uriWithLocation,
+                                     wrdsParameters );
+    }
+
+
+    /**
+     * Specific to WRDS NWM API, create a URI for nwm forecasts with given range
+     * @param baseUri Base URI, a URI with missing parameters to be added.
+     * @param dataSource The data source information, because variable needed.
+     * @param issuedRange The datetime range of nwm reference datetimes to set.
+     * @param featureDetails The WRES features used in this evaluation.
+     * @return A URI with full path and parameters to get NWM from WRDS NWM API.
+     */
+
+    private URI createWrdsNwmUri( URI baseUri,
+                                  DataSource dataSource,
+                                  Pair<Instant, Instant> issuedRange,
+                                  FeatureDetails featureDetails )
+    {
+        Objects.requireNonNull( baseUri );
+        Objects.requireNonNull( issuedRange );
+        Objects.requireNonNull( featureDetails );
+
+        if ( !baseUri.getPath()
+                     .toLowerCase()
+                     .contains( "nwm" ) )
+        {
+            throw new IllegalArgumentException( "Expected URI like '" +
+                                                "http://***REMOVED***.***REMOVED***.***REMOVED***/api/v1/nwm/ops'"
+                                                + " but instead got " + baseUri.toString() );
+        }
+
+        String variableName = dataSource.getVariable()
+                                        .getValue();
+
+        String basePath = baseUri.getPath();
+
+        // Tolerate either a slash at end or not.
+        if ( !basePath.endsWith( "/" ) )
+        {
+            basePath = basePath + "/";
+        }
+
+        Map<String, String> wrdsParameters = createWrdsAhpsNwmParameters( issuedRange );
+        String pathWithLocation = basePath + variableName + "/nwm_feature_id/"
+                                  + featureDetails.getComid() + "/";
         URIBuilder uriBuilder = new URIBuilder( this.getBaseUri() );
         uriBuilder.setPath( pathWithLocation );
 
@@ -625,7 +713,7 @@ class WebSource implements Callable<List<IngestResult>>
      * @return the key/value parameters
      */
 
-    private Map<String,String> createWrdsUrlParameters( Pair<Instant,Instant> issuedRange )
+    private Map<String,String> createWrdsAhpsUrlParameters( Pair<Instant,Instant> issuedRange )
     {
         Map<String,String> urlParameters = new HashMap<>();
         urlParameters.put( "issuedTime", "[" + issuedRange.getLeft().toString()
@@ -635,6 +723,38 @@ class WebSource implements Callable<List<IngestResult>>
         return Collections.unmodifiableMap( urlParameters );
     }
 
+
+    /**
+     * Specific to WRDS API, get date range url parameters
+     * @param issuedRange the date range to set parameters for
+     * @return the key/value parameters
+     */
+
+    private Map<String,String> createWrdsAhpsNwmParameters( Pair<Instant,Instant> issuedRange )
+    {
+        Map<String,String> urlParameters = new HashMap<>();
+        String leftWrdsFormattedDate = iso8601TruncatedToHourFromInstant( issuedRange.getLeft() );
+        String rightWrdsFormattedDate = iso8601TruncatedToHourFromInstant( issuedRange.getRight() );
+        urlParameters.put( "reference_time", "(" + leftWrdsFormattedDate
+                                         + "," + rightWrdsFormattedDate
+                                         + "]" );
+        urlParameters.put( "validTime", "all" );
+        return Collections.unmodifiableMap( urlParameters );
+    }
+
+
+    /**
+     * WRDS NWM API uses an ISO-8601
+     * @param instant
+     * @return
+     */
+    private String iso8601TruncatedToHourFromInstant( Instant instant )
+    {
+        String dateFormat = "uuuuMMdd'T'HHX";
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern( dateFormat )
+                                                       .withZone( ZoneId.of( "UTC" ) );
+        return formatter.format( instant );
+    }
 
     /**
      * Get a URI based on given URI but with urlParameters set.
