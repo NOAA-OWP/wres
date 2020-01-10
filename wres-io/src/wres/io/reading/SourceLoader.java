@@ -204,8 +204,9 @@ public class SourceLoader
         {
             LOGGER.debug( "The data at '{}' will be re-composed because an interface short-hand was specified.",
                           source );
-            if ( interfaceShortHand.equals( InterfaceShortHand.WRDS )
-                 || interfaceShortHand.equals( InterfaceShortHand.USGS ) )
+            if ( interfaceShortHand.equals( InterfaceShortHand.WRDS_AHPS )
+                 || interfaceShortHand.equals( InterfaceShortHand.USGS_NWIS )
+                 || interfaceShortHand.equals( InterfaceShortHand.WRDS_NWM ) )
             {
                 WebSource webSource = WebSource.of( projectConfig,
                                                     source,
