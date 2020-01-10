@@ -1,3 +1,0 @@
-GLOO2_QINE_Operational_Single-Valued_Forecasts_TIME_TO_PEAK_ERROR.csv
-GLOO2_QINE_Operational_Single-Valued_Forecasts_TIME_TO_PEAK_ERROR.png
-pairs.csv
