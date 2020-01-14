@@ -289,14 +289,20 @@ project(':wres-io')
 
         compile 'org.slf4j:slf4j-api:1.8.0-beta4'
         compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
+
+        // Glassfish deps may be able to be removed with USGSRegionSaver.
         compile 'org.glassfish.jersey.core:jersey-common:2.29.1'
         compile 'org.glassfish.jersey.core:jersey-client:2.29.1'
         compile 'org.glassfish.jersey.inject:jersey-hk2:2.29.1'
         compile 'org.glassfish.jersey.media:jersey-media-json-jackson:2.29.1'
 
-        // jackson-databind is a transitive dependency, but 2.9.9 has several CVEs.
-        compile 'com.fasterxml.jackson.core:jackson-databind:2.9.10.2'
+        // JSON deserialization uses jackson directly. Specify recent version.
+        compile 'com.fasterxml.jackson.core:jackson-databind:2.10.2'
+        compile 'com.fasterxml.jackson.core:jackson-annotations:2.10.2'
+        compile 'com.fasterxml.jackson.core:jackson-core:2.10.2'
 
+        // For Java 8 java.time support
+        compile 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.10.2'
 
         compile('edu.ucar:cdm-core:5.2.0')
         {
@@ -330,8 +336,6 @@ project(':wres-io')
         // Easier MD5
         compile 'commons-codec:commons-codec:1.13'
 
-        // For Java 8 java.time support
-        compile 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.10.2'
 
         // Because org.postgresql:postgresql uses JUL logging, bridge at runtime
         runtime 'org.slf4j:jul-to-slf4j:1.8.0-beta4'
@@ -481,7 +485,7 @@ project(':wres-config')
         jaxb 'org.jvnet.jaxb2_commons:jaxb2-basics-annotate:1.1.0'
 
         // commons-beanutils is transitive dependency of jaxb2-basics, has CVEs
-	jaxb 'commons-beanutils:commons-beanutils:1.9.4'
+        jaxb 'commons-beanutils:commons-beanutils:1.9.4'
 
         // jaxb-xjc transitively includes bind-api and jaxb-core
         jaxb 'org.glassfish.jaxb:jaxb-xjc:2.3.2'

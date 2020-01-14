@@ -30,6 +30,7 @@ import wres.system.DatabaseLockManager;
 import wres.system.ProgressMonitor;
 import wres.util.TimeHelper;
 
+@Deprecated( since = "1.16" )
 public class USGSReader extends BasicSource
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( USGSReader.class );

@@ -60,6 +60,7 @@ import wres.util.FormattedStopwatch;
 import wres.util.Strings;
 import wres.util.TimeHelper;
 
+@Deprecated( since = "1.16" )
 public class USGSRegionSaver extends WRESCallable<IngestResult>
 {
     
