@@ -744,7 +744,7 @@ class WebSource implements Callable<List<IngestResult>>
 
 
     /**
-     * WRDS NWM API uses an ISO-8601
+     * WRDS NWM API uses a concise ISO-8601 format rather than RFC3339 instant.
      * @param instant
      * @return
      */

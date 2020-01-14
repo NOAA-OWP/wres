@@ -295,7 +295,8 @@ project(':wres-io')
         compile 'org.glassfish.jersey.media:jersey-media-json-jackson:2.29.1'
 
         // jackson-databind is a transitive dependency, but 2.9.9 has several CVEs.
-	compile 'com.fasterxml.jackson.core:jackson-databind:2.9.10.2'
+        compile 'com.fasterxml.jackson.core:jackson-databind:2.9.10.2'
+
 
         compile('edu.ucar:cdm-core:5.2.0')
         {
@@ -328,6 +329,9 @@ project(':wres-io')
 
         // Easier MD5
         compile 'commons-codec:commons-codec:1.13'
+
+        // For Java 8 java.time support
+        compile 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.10.2'
 
         // Because org.postgresql:postgresql uses JUL logging, bridge at runtime
         runtime 'org.slf4j:jul-to-slf4j:1.8.0-beta4'

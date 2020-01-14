@@ -2,16 +2,19 @@ package wres.io.reading.wrds;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
 import wres.io.reading.BasicSource;
 import wres.io.reading.DataSource;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
+import wres.io.reading.WrdsNwmReader;
 import wres.system.DatabaseLockManager;
 
 /**
@@ -49,10 +52,25 @@ public class WRDSSource extends BasicSource
             return this.saveObservation();
         }
 
-        ReadValueManager reader = createReadValueManager( this.getProjectConfig(),
-                                                          this.getDataSource(),
-                                                          this.lockManager );
-        return reader.save();
+        InterfaceShortHand interfaceShortHand = this.getDataSource()
+                                                    .getSource()
+                                                    .getInterface();
+        if ( Objects.nonNull( interfaceShortHand )
+             && interfaceShortHand.equals( InterfaceShortHand.WRDS_NWM ) )
+        {
+            WrdsNwmReader reader = new WrdsNwmReader( this.getProjectConfig(),
+                                                      this.getDataSource(),
+                                                      this.lockManager );
+            return reader.call();
+        }
+        else
+        {
+            ReadValueManager reader =
+                    createReadValueManager( this.getProjectConfig(),
+                                            this.getDataSource(),
+                                            this.lockManager );
+            return reader.save();
+        }
     }
 
     @Override
