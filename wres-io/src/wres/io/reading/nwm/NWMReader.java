@@ -431,6 +431,15 @@ public class NWMReader implements Callable<List<IngestResult>>
                                                                      + " members." );
                         }
 
+                        // Skip ingest steps when resulting timeseries is empty.
+                        if ( values.isEmpty() )
+                        {
+                            LOGGER.debug( "Found an empty TimeSeries for NWM features {}, skipping {}",
+                                          featureBlock,
+                                          nwmTimeSeries );
+                            continue;
+                        }
+
                         for ( Map.Entry<Integer,TimeSeries<?>> entry : values.entrySet() )
                         {
                             // Create a uri that reflects the origin of the data
