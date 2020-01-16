@@ -19,4 +19,14 @@ public class NwmLocation
         this.nwmLocationNames = nwmLocationNames;
         this.nwmMembers = nwmMembers;
     }
+
+    public NwmLocationNames getNwmLocationNames()
+    {
+        return this.nwmLocationNames;
+    }
+
+    public NwmMember[] getNwmMembers()
+    {
+        return this.nwmMembers;
+    }
 }
