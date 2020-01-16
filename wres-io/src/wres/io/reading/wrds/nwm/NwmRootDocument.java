@@ -1,5 +1,6 @@
 package wres.io.reading.wrds.nwm;
 
+import java.util.Map;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -55,17 +56,26 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 public class NwmRootDocument
 {
     private final NwmForecast[] forecasts;
+    private final Map<String,String> variable;
 
     @JsonCreator( mode = JsonCreator.Mode.PROPERTIES )
     public NwmRootDocument( @JsonProperty( "forecasts" )
-                            NwmForecast[] forecasts )
+                            NwmForecast[] forecasts,
+                            @JsonProperty( "variable" )
+                            Map<String,String> variable )
     {
         this.forecasts = forecasts;
+        this.variable = variable;
     }
 
-    private NwmForecast[] getForecasts()
+    public NwmForecast[] getForecasts()
     {
         return this.forecasts;
+    }
+
+    public Map<String,String> getVariable()
+    {
+        return this.variable;
     }
 
     @Override

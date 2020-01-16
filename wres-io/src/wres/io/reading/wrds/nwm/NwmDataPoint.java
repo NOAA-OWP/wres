@@ -26,6 +26,16 @@ public class NwmDataPoint
         this.value = value;
     }
 
+    public Instant getTime()
+    {
+        return this.time;
+    }
+
+    public double getValue()
+    {
+        return this.value;
+    }
+
     @Override
     public String toString()
     {
