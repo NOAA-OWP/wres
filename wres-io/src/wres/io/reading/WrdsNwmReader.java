@@ -19,12 +19,14 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.generated.DatasourceType;
 import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.io.concurrency.TimeSeriesIngester;
+import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Features;
 import wres.io.data.details.FeatureDetails;
 import wres.io.reading.wrds.nwm.NwmDataPoint;
@@ -61,6 +63,50 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
         this.lockManager = lockManager;
         this.jsonObjectMapper = new ObjectMapper()
                 .registerModule( new JavaTimeModule() );
+
+        DatasourceType type = dataSource.getContext()
+                                        .getType();
+
+        // Yucky brittle check, remove when the type declaration is removed.
+        if ( this.getUri()
+                 .getPath()
+                 .toLowerCase()
+                 .contains( "short_range" ) )
+        {
+            if ( !type.equals( DatasourceType.SINGLE_VALUED_FORECASTS )
+                 && !type.equals( DatasourceType.ANALYSES )
+                 && !type.equals( DatasourceType.SIMULATIONS )
+                 && !type.equals( DatasourceType.OBSERVATIONS ) )
+            {
+                throw new UnsupportedOperationException(
+                        ConfigHelper.getLeftOrRightOrBaseline( this.getProjectConfig(),
+                                                               this.getDataSource()
+                                                                   .getContext() )
+                        + " source specified type '"
+                        + type.value()
+                        + "' but the word 'short_range' appeared in the URI. "
+                        + "You probably want 'single valued forecasts' type or "
+                        + "to change the source URI to point to medium_range." );
+            }
+        }
+        else if ( this.getUri()
+                      .getPath()
+                      .toLowerCase()
+                      .contains( "medium_range" ) )
+        {
+            if ( !type.equals( DatasourceType.ENSEMBLE_FORECASTS ) )
+            {
+                throw new UnsupportedOperationException(
+                        ConfigHelper.getLeftOrRightOrBaseline( this.getProjectConfig(),
+                                                               this.getDataSource()
+                                                                   .getContext() )
+                        + " source specified type '"
+                        + type.value()
+                        + "' but the word 'medium_range' appeared in the URI. "
+                        + "You probably want 'ensemble forecasts' type or to "
+                        + "change the source URI to point to short_range." );
+            }
+        }
     }
 
     private ProjectConfig getProjectConfig()
