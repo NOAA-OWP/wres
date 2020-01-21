@@ -47,6 +47,7 @@ import static java.time.temporal.TemporalAdjusters.previousOrSame;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
+import wres.config.generated.DatasourceType;
 import wres.config.generated.DateCondition;
 import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.ProjectConfig;
@@ -636,7 +637,12 @@ class WebSource implements Callable<List<IngestResult>>
             basePath = basePath + "/";
         }
 
-        Map<String, String> wrdsParameters = createWrdsAhpsNwmParameters( issuedRange );
+        boolean isEnsemble = dataSource.getContext()
+                                       .getType()
+                                       .equals( DatasourceType.ENSEMBLE_FORECASTS );
+
+        Map<String, String> wrdsParameters = createWrdsAhpsNwmParameters( issuedRange,
+                                                                          isEnsemble );
         String pathWithLocation = basePath + variableName + "/nwm_feature_id/"
                                   + featureDetails.getComid() + "/";
         URIBuilder uriBuilder = new URIBuilder( this.getBaseUri() );
@@ -730,7 +736,8 @@ class WebSource implements Callable<List<IngestResult>>
      * @return the key/value parameters
      */
 
-    private Map<String,String> createWrdsAhpsNwmParameters( Pair<Instant,Instant> issuedRange )
+    private Map<String,String> createWrdsAhpsNwmParameters( Pair<Instant,Instant> issuedRange,
+                                                            boolean isEnsemble )
     {
         Map<String,String> urlParameters = new HashMap<>();
         String leftWrdsFormattedDate = iso8601TruncatedToHourFromInstant( issuedRange.getLeft() );
@@ -739,6 +746,16 @@ class WebSource implements Callable<List<IngestResult>>
                                          + "," + rightWrdsFormattedDate
                                          + "]" );
         urlParameters.put( "validTime", "all" );
+
+        if ( isEnsemble )
+        {
+            urlParameters.put( "forecast_type", "ensemble" );
+        }
+        else
+        {
+            urlParameters.put( "forecast_type", "deterministic" );
+        }
+
         return Collections.unmodifiableMap( urlParameters );
     }
 
