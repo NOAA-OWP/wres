@@ -226,7 +226,7 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
                     TimeSeriesSlicer.decomposeWithLabels( (TimeSeries<Ensemble>) timeSeries )
                                     .entrySet() )
             {
-                LOGGER.info( "TimeSeries trace: {}", trace );
+                LOGGER.debug( "TimeSeries trace: {}", trace );
                 Object ensembleName = trace.getKey();
                 int ensembleId = this.insertOrGetEnsembleId( ensembleName );
                 int timeSeriesId = this.insertTimeSeriesRowForEnsembleTrace(
