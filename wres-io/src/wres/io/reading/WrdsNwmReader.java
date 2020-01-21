@@ -8,8 +8,11 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.SortedMap;
 import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
 
@@ -22,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.Ensemble;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
@@ -94,7 +98,8 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                       .toLowerCase()
                       .contains( "medium_range" ) )
         {
-            if ( !type.equals( DatasourceType.ENSEMBLE_FORECASTS ) )
+            if ( !type.equals( DatasourceType.ENSEMBLE_FORECASTS )
+                 && !type.equals( DatasourceType.SINGLE_VALUED_FORECASTS ) )
             {
                 throw new UnsupportedOperationException(
                         ConfigHelper.getLeftOrRightOrBaseline( this.getProjectConfig(),
@@ -104,7 +109,16 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                         + type.value()
                         + "' but the word 'medium_range' appeared in the URI. "
                         + "You probably want 'ensemble forecasts' type or to "
-                        + "change the source URI to point to short_range." );
+                        + "change the source URI to point to another type." );
+            }
+
+            if ( type.equals( DatasourceType.SINGLE_VALUED_FORECASTS ) )
+            {
+                LOGGER.warn( "{}{}{}{}",
+                             "Evaluating only the deterministic medium range ",
+                             "forecast because 'single valued forecasts' was ",
+                             "declared. To evaluate the ensemble forecast, ",
+                             "declare 'ensemble forecasts'." );
             }
         }
     }
@@ -266,13 +280,78 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
 
             timeSeries = TimeSeries.of( referenceDatetime,
                                         ReferenceTimeType.T0,
-                                        events );
+                                        Collections.unmodifiableSortedSet( events ) );
         }
         else if ( members.length > 1 )
         {
             // Infer that this is ensemble data.
-            // TODO transform ensemble data
-            throw new UnsupportedOperationException( "Need to implement ensemble data reading" );
+            SortedMap<Instant,double[]> primitiveData = new TreeMap<>();
+
+            if ( members[0] == null
+                 || members[0].getDataPoints() == null
+                 || members[0].getDataPoints().length == 0 )
+            {
+                throw new PreIngestException( "While reading data at "
+                                              + this.getUri()
+                                              + " more than one member found "
+                                              + " but no data was in the first "
+                                              + "member." );
+            }
+
+
+            for ( int i = 0; i < members.length; i++ )
+            {
+                int valueCountInTrace = members[i].getDataPoints().length;
+
+                for ( NwmDataPoint dataPoint : members[i].getDataPoints() )
+                {
+                    Instant validDatetime = dataPoint.getTime();
+
+                    if ( !primitiveData.containsKey( validDatetime ) )
+                    {
+                        double[] rawEnsemble = new double[members.length];
+                        primitiveData.put( validDatetime, rawEnsemble );
+                    }
+
+                    double[] rawEnsemble = primitiveData.get( validDatetime );
+                    rawEnsemble[i] = dataPoint.getValue();
+                }
+
+                if ( primitiveData.keySet().size() != valueCountInTrace )
+                {
+                    throw new PreIngestException( "Data from "
+                                                  + this.getUri()
+                                                  + " in forecast member "
+                                                  + members[i].getIdentifier()
+                                                  + " had value count "
+                                                  + valueCountInTrace
+                                                  + " but the cumulative count "
+                                                  + "of datetimes so far was "
+                                                  + primitiveData.keySet().size()
+                                                  + ". Therefore one member is "
+                                                  + "of different length than"
+                                                  + "another, different valid "
+                                                  + "datetimes were found, or "
+                                                  + "duplicate datetimes were "
+                                                  + "found. Any of these cases "
+                                                  + "means an invalid ensemble "
+                                                  + "was found." );
+                }
+            }
+
+            // Re-shape the data to match the WRES metrics/datamodel expectation
+            SortedSet<Event<Ensemble>> data = new TreeSet<>();
+
+            for ( Map.Entry<Instant,double[]> row : primitiveData.entrySet() )
+            {
+                Ensemble ensemble = Ensemble.of( row.getValue() );
+                Event<Ensemble> ensembleEvent = Event.of( row.getKey(), ensemble );
+                data.add( ensembleEvent );
+            }
+
+            timeSeries = TimeSeries.of( referenceDatetime,
+                                        ReferenceTimeType.T0,
+                                        data );
         }
         else
         {
