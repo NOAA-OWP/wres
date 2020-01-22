@@ -162,7 +162,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
             document = this.getJsonObjectMapper()
                            .readValue( dataStream,
                                        NwmRootDocument.class );
-            LOGGER.info( "Parsed this document: {}", document );
+            LOGGER.debug( "Parsed this document: {}", document );
         }
         catch ( IOException ioe )
         {
@@ -194,13 +194,13 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
 
                 // TODO: ingest wres timeseries concurrently
                 TimeSeriesIngester timeSeriesIngester =
-                        new TimeSeriesIngester( this.getProjectConfig(),
-                                                this.getDataSource(),
-                                                this.getLockManager(),
-                                                timeSeries,
-                                                locationName,
-                                                variableName,
-                                                measurementUnit );
+                        this.createTimeSeriesIngester( this.getProjectConfig(),
+                                                       this.getDataSource(),
+                                                       this.getLockManager(),
+                                                       timeSeries,
+                                                       locationName,
+                                                       variableName,
+                                                       measurementUnit );
 
                 try
                 {
@@ -220,7 +220,6 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
         return Collections.unmodifiableList( ingested );
     }
 
-
     /**
      * Transform deserialized JSON document (now a POJO tree) to TimeSeries.
      * @param feature The POJO with a TimeSeries in it.
@@ -237,32 +236,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
         int rawLocationId = feature.getLocation()
                                    .getNwmLocationNames()
                                    .getNwmFeatureId();
-        FeatureDetails featureDetailsFromKey;
-        Feature featureWithComid =  new Feature( null,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 ( long ) rawLocationId,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null );
-        try
-        {
-            featureDetailsFromKey = Features.getDetails( featureWithComid );
-        }
-        catch ( SQLException se )
-        {
-            throw new PreIngestException( "Unable to transform raw NWM feature id"
-                                          + rawLocationId
-                                          + " into WRES Feature:", se );
-        }
-
-        String wresGenericFeatureName = featureDetailsFromKey.getLid();
+        String wresGenericFeatureName = this.getWresFeatureNameFromNwmFeatureId( rawLocationId );
         NwmMember[] members = feature.getMembers();
         TimeSeries<?> timeSeries;
 
@@ -361,5 +335,58 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
 
         return Pair.of( wresGenericFeatureName,
                         timeSeries );
+    }
+
+    String getWresFeatureNameFromNwmFeatureId( int rawLocationId )
+    {
+        FeatureDetails featureDetailsFromKey;
+        Feature featureWithComid =  new Feature( null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 ( long ) rawLocationId,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null );
+        try
+        {
+            featureDetailsFromKey = Features.getDetails( featureWithComid );
+        }
+        catch ( SQLException se )
+        {
+            throw new PreIngestException( "Unable to transform raw NWM feature "
+                                          + " id " + rawLocationId
+                                          + " into WRES Feature:", se );
+        }
+
+        return featureDetailsFromKey.getLid();
+    }
+
+    /**
+     * This method facilitates testing, Pattern 1 at
+     * https://github.com/mockito/mockito/wiki/Mocking-Object-Creation
+     * @return a TimeSeriesIngester
+     */
+
+    TimeSeriesIngester createTimeSeriesIngester( ProjectConfig projectConfig,
+                                                 DataSource dataSource,
+                                                 DatabaseLockManager lockManager,
+                                                 TimeSeries<?> timeSeries,
+                                                 String locationName,
+                                                 String variableName,
+                                                 String measurementUnit )
+    {
+        return new TimeSeriesIngester( projectConfig,
+                                       dataSource,
+                                       lockManager,
+                                       timeSeries,
+                                       locationName,
+                                       variableName,
+                                       measurementUnit );
     }
 }
