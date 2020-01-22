@@ -208,11 +208,11 @@ project(':wres-util')
         testCompile 'junit:junit:4.13-beta-3'
 
         // Mocking help
-        testCompile 'org.mockito:mockito-core:2.28.2'
+        testCompile 'org.mockito:mockito-core:3.2.4'
 
         // super-duper mocking help (mocking static, private methods)
-        testCompile 'org.powermock:powermock-api-mockito2:2.0.2'
-        testCompile 'org.powermock:powermock-module-junit4:2.0.2'
+        testCompile 'org.powermock:powermock-api-mockito2:2.0.4'
+        testCompile 'org.powermock:powermock-module-junit4:2.0.4'
 
         testCompile files('../libs/external/EVS.jar')
     }
@@ -244,11 +244,11 @@ project(':wres-system')
         testCompile 'junit:junit:4.13-beta-3'
 
         // Mocking help
-        testCompile 'org.mockito:mockito-core:2.28.2'
+        testCompile 'org.mockito:mockito-core:3.2.4'
 
         // super-duper mocking help (mocking static, private methods)
-        testCompile 'org.powermock:powermock-api-mockito2:2.0.2'
-        testCompile 'org.powermock:powermock-module-junit4:2.0.2'
+        testCompile 'org.powermock:powermock-api-mockito2:2.0.4'
+        testCompile 'org.powermock:powermock-module-junit4:2.0.4'
 
         // Use mockserver to test certificate utilities
         testCompile 'org.mock-server:mockserver-netty:5.6.1'
@@ -349,11 +349,11 @@ project(':wres-io')
         testCompile 'junit:junit:4.13-beta-3'
 
         // Mocking help
-        testCompile 'org.mockito:mockito-core:2.28.2'
+        testCompile 'org.mockito:mockito-core:3.2.4'
 
         // super-duper mocking help (mocking static, private methods)
-        testCompile 'org.powermock:powermock-api-mockito2:2.0.2'
-        testCompile 'org.powermock:powermock-module-junit4:2.0.2'
+        testCompile 'org.powermock:powermock-api-mockito2:2.0.4'
+        testCompile 'org.powermock:powermock-module-junit4:2.0.4'
 
         // Use mockserver as a mock server for mock API responses
         testCompile 'org.mock-server:mockserver-netty:5.6.1'
@@ -408,7 +408,7 @@ project(':wres-metrics')
 
         testCompile project (':wres-datamodel')
         testCompile 'junit:junit:4.13-beta-3'
-        testCompile 'org.mockito:mockito-core:2.28.2'
+        testCompile 'org.mockito:mockito-core:3.2.4'
     }
 }
 
@@ -921,7 +921,7 @@ dependencies
     testCompile group: 'com.google.guava', name: 'guava-testlib', version: '28.1-jre'
     testCompile group: 'com.google.guava', name: 'guava', version: '28.1-jre'
     testCompile 'junit:junit:4.13-beta-3'
-    testCompile 'org.mockito:mockito-core:2.28.2'
+    testCompile 'org.mockito:mockito-core:3.2.4'
 }
 
 sourceSets
