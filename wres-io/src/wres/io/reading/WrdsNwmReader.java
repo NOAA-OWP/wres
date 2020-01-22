@@ -252,8 +252,25 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                 events.add( event );
             }
 
+            ReferenceTimeType referenceTimeType = ReferenceTimeType.T0;
+
+            // Special rule: when analysis data is found, reference time not T0.
+            if ( this.getUri()
+                     .getPath()
+                     .toLowerCase()
+                     .contains( "analysis" ) )
+            {
+                referenceTimeType = ReferenceTimeType.UNKNOWN;
+
+                if ( LOGGER.isDebugEnabled() )
+                {
+                    LOGGER.debug( "Analysis data found labeled in URI {}",
+                                  this.getUri() );
+                }
+            }
+
             timeSeries = TimeSeries.of( referenceDatetime,
-                                        ReferenceTimeType.T0,
+                                        referenceTimeType,
                                         Collections.unmodifiableSortedSet( events ) );
         }
         else if ( members.length > 1 )

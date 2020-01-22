@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -35,6 +36,7 @@ import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.time.Event;
+import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.io.concurrency.TimeSeriesIngester;
 import wres.io.config.LeftOrRightOrBaseline;
@@ -288,6 +290,14 @@ public class WrdsNwmReaderTest
         // Verify that only three events exist.
         assertEquals( 3, data.getEvents()
                              .size());
+
+        // Verify that there is no T0 in analysis data
+        for ( ReferenceTimeType time : data.getReferenceTimes()
+                                           .keySet() )
+        {
+            assertNotEquals( ReferenceTimeType.T0, time );
+        }
+
         // Cleanup
         WrdsNwmReaderTest.mockServer.reset();
     }
