@@ -14,10 +14,19 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +48,7 @@ import wres.io.reading.wrds.nwm.NwmForecast;
 import wres.io.reading.wrds.nwm.NwmMember;
 import wres.io.reading.wrds.nwm.NwmRootDocument;
 import wres.system.DatabaseLockManager;
+import wres.system.SystemSettings;
 
 /**
  * Reads and ingests NWM data from WRDS NWM API.
@@ -57,6 +67,10 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
     private final ProjectConfig projectConfig;
     private final DataSource dataSource;
     private final DatabaseLockManager lockManager;
+
+    private final ThreadPoolExecutor ingestSaverExecutor;
+    private final BlockingQueue<Future<List<IngestResult>>> ingests;
+    private final CountDownLatch startGettingIngestResults;
 
     public WrdsNwmReader(  ProjectConfig projectConfig,
                            DataSource dataSource,
@@ -121,6 +135,24 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                              "declare 'ensemble forecasts'." );
             }
         }
+
+        // See comments in wres.io.reading.WebSource for info on below approach.
+        ThreadFactory wrdsNwmReaderIngest = new BasicThreadFactory.Builder()
+                .namingPattern( "WrdsNwmReader Ingest" )
+                .build();
+
+        // As of 2.1, the SystemSetting is used in two different NWM readers:
+        int concurrentCount = SystemSettings.getMaxiumNwmIngestThreads();
+        BlockingQueue<Runnable> webClientQueue = new ArrayBlockingQueue<>( concurrentCount );
+        this.ingestSaverExecutor = new ThreadPoolExecutor( concurrentCount,
+                                                           concurrentCount,
+                                                           SystemSettings.poolObjectLifespan(),
+                                                           TimeUnit.MILLISECONDS,
+                                                           webClientQueue,
+                                                           wrdsNwmReaderIngest );
+        this.ingestSaverExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.AbortPolicy() );
+        this.ingests = new ArrayBlockingQueue<>( concurrentCount );
+        this.startGettingIngestResults = new CountDownLatch( concurrentCount );
     }
 
     private ProjectConfig getProjectConfig()
@@ -182,39 +214,59 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
             measurementUnit = "m3/s";
         }
 
-        for ( NwmForecast forecast : document.getForecasts() )
+        try
         {
-            for ( NwmFeature nwmFeature : forecast.getFeatures() )
+            for ( NwmForecast forecast : document.getForecasts() )
             {
-                Pair<String, TimeSeries<?>> transformed =
-                        this.transform( forecast.getReferenceDatetime(),
-                                        nwmFeature );
-                String locationName = transformed.getKey();
-                TimeSeries<?> timeSeries = transformed.getValue();
-
-                // TODO: ingest wres timeseries concurrently
-                TimeSeriesIngester timeSeriesIngester =
-                        this.createTimeSeriesIngester( this.getProjectConfig(),
-                                                       this.getDataSource(),
-                                                       this.getLockManager(),
-                                                       timeSeries,
-                                                       locationName,
-                                                       variableName,
-                                                       measurementUnit );
-
-                try
+                for ( NwmFeature nwmFeature : forecast.getFeatures() )
                 {
-                    List<IngestResult> ingestResults = timeSeriesIngester.call();
-                    ingested.addAll( ingestResults );
-                }
-                catch ( IOException ioe )
-                {
-                    throw new IngestException( "Failed to ingest data from "
-                                               + this.getUri()
-                                               + " with location  "
-                                               + locationName, ioe );
+                    Pair<String, TimeSeries<?>> transformed =
+                            this.transform( forecast.getReferenceDatetime(),
+                                            nwmFeature );
+                    String locationName = transformed.getKey();
+                    TimeSeries<?> timeSeries = transformed.getValue();
+
+                    TimeSeriesIngester timeSeriesIngester =
+                            this.createTimeSeriesIngester( this.getProjectConfig(),
+                                                           this.getDataSource(),
+                                                           this.getLockManager(),
+                                                           timeSeries,
+                                                           locationName,
+                                                           variableName,
+                                                           measurementUnit );
+
+                    Future<List<IngestResult>> futureIngestResult =
+                            this.ingestSaverExecutor.submit( timeSeriesIngester );
+                    this.ingests.add( futureIngestResult );
+                    this.startGettingIngestResults.countDown();
+
+                    // See WebSource for comments on this approach.
+                    if ( this.startGettingIngestResults.getCount() <= 0 )
+                    {
+                        Future<List<IngestResult>> future = this.ingests.take();
+                        List<IngestResult> ingestResults = future.get();
+                        ingested.addAll( ingestResults );
+                    }
                 }
             }
+
+            // Finish getting the remainder of ingest results.
+            for ( Future<List<IngestResult>> future : this.ingests )
+            {
+                List<IngestResult> ingestResults = future.get();
+                ingested.addAll( ingestResults );
+            }
+        }
+        catch ( InterruptedException ie )
+        {
+            LOGGER.warn( "Interrupted while ingesting NWM data from "
+                         + this.getUri(), ie );
+            Thread.currentThread().interrupt();
+        }
+        catch ( ExecutionException ee )
+        {
+            throw new IngestException( "Failed to ingest NWM data from "
+                                       + this.getUri(), ee );
         }
 
         return Collections.unmodifiableList( ingested );
