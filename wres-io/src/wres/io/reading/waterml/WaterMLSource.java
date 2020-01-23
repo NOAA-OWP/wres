@@ -35,12 +35,12 @@ import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.reading.IngestedValues;
 import wres.io.reading.SourceCompleter;
+import wres.io.reading.waterml.timeseries.Method;
 import wres.io.reading.waterml.timeseries.SiteCode;
 import wres.io.reading.waterml.timeseries.TimeSeries;
 import wres.io.reading.waterml.timeseries.TimeSeriesValue;
 import wres.io.reading.waterml.timeseries.TimeSeriesValues;
 import wres.system.DatabaseLockManager;
-import wres.util.functional.ExceptionalConsumer;
 
 /**
  * Saves WaterML Response objects to the database
@@ -54,8 +54,6 @@ public class WaterMLSource
     private final String hash;
     private final SortedMap<Pair<String,String>, Integer> variableFeatureIDs = new TreeMap<>();
     private final Map<String,Integer> measurementIds = new HashMap<>( 1 );
-    private ExceptionalConsumer<TimeSeries, IOException> invalidSeriesHandler;
-    private ExceptionalConsumer<TimeSeries, IOException> seriesReadCompleteHandler;
 
     private final ProjectConfig projectConfig;
     private final DataSource dataSource;
@@ -88,32 +86,6 @@ public class WaterMLSource
         this.hash = hash;
     }
 
-    public void setInvalidSeriesHandler(ExceptionalConsumer<TimeSeries, IOException> handler)
-    {
-        this.invalidSeriesHandler = handler;
-    }
-
-    public void setSeriesReadCompleteHandler(ExceptionalConsumer<TimeSeries, IOException> handler)
-    {
-        this.seriesReadCompleteHandler = handler;
-    }
-
-    private void handleInvalidSeries(TimeSeries invalidSeries)
-            throws IOException
-    {
-        if (this.invalidSeriesHandler != null)
-        {
-            this.invalidSeriesHandler.accept( invalidSeries );
-        }
-    }
-
-    private void handleReadComplete(TimeSeries series) throws IOException
-    {
-        if (this.seriesReadCompleteHandler != null)
-        {
-            this.seriesReadCompleteHandler.accept( series );
-        }
-    }
 
     IngestResult ingestObservationResponse() throws IOException
     {
@@ -192,7 +164,6 @@ public class WaterMLSource
     {
         if (!series.isPopulated())
         {
-            this.handleInvalidSeries( series );
             return false;
         }
 
@@ -204,7 +175,6 @@ public class WaterMLSource
         {
             LOGGER.debug( "No variable found for timeseries {} in source {}",
                           series, this );
-            this.handleInvalidSeries( series );
             return false;
         }
 
@@ -278,11 +248,32 @@ public class WaterMLSource
             period = Duration.ofMinutes( 1 );
         }
 
+        int countOfTracesFound = series.getValues().length;
+
+        if ( countOfTracesFound > 1 && LOGGER.isWarnEnabled() )
+        {
+            LOGGER.warn( "Skipping site {} because multiple timeseries for variable {} from USGS NWIS URI {}",
+                         usgsSiteCode, variableName, this.dataSource.getUri() );
+            return false;
+        }
+
         for (TimeSeriesValues valueSet : series.getValues())
         {
             if (valueSet.getValue().length == 0)
             {
                 continue;
+            }
+
+            Method[] methods = valueSet.getMethod();
+
+            if ( Objects.nonNull( methods ) && methods.length > 0 )
+            {
+                for ( Method method : methods )
+                {
+                    LOGGER.debug( "Found method id={} description='{}'",
+                                  method.getMethodID(),
+                                  method.getMethodDescription() );
+                }
             }
 
             for (TimeSeriesValue value : valueSet.getValue())
@@ -315,7 +306,6 @@ public class WaterMLSource
         LOGGER.info( "A USGS time series has been parsed for site number {}",
                      usgsSiteCode );
 
-        this.handleReadComplete( series );
         return true;
     }
 
