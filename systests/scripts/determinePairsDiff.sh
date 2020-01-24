@@ -42,7 +42,7 @@ if [ -f ${outputDirPrefix}*/dirListing.txt -a -f ${benchmarkDir}/dirListing.txt 
 then
     echo "$echoPrefix Comparing listing with benchmark expected contents: diff -q ${outputDirPrefix}*/dirListing.txt ${benchmarkDir}/dirListing.txt"
     # Avoid pipe to "tee" because it hides the exit code of "diff"
-    diff -q ${outputDirPrefix}*/dirListing.txt ${benchmarkDir}/dirListing.txt
+    diff -w -q ${outputDirPrefix}*/dirListing.txt ${benchmarkDir}/dirListing.txt
     diffResult=$?
     if [ ${diffResult} -ne 0 ]
     then
@@ -93,7 +93,7 @@ do
         	then
             # both files exist, do the comparison
             # Avoid pipe to "tee" because it hides the exit code
-            	diff --brief $directory/sorted_$pairsFileBaseName ${benchmarkDir}/sorted_$pairsFileBaseName
+                diff -w --brief $directory/sorted_$pairsFileBaseName ${benchmarkDir}/sorted_$pairsFileBaseName
             	pairsDiffResult=$?
 
             	if [ ${pairsDiffResult} -ne 0 ]
@@ -125,7 +125,7 @@ do
     if [ -f ${outputDirPrefix}*/$csvFile -a -f ${benchmarkDir}/$csvFile ]
     then
         # Avoid pipe to "tee" because it hides the exit code
-        diff -q ${outputDirPrefix}*/$csvFile ${benchmarkDir}/$csvFile
+        diff -w -q ${outputDirPrefix}*/$csvFile ${benchmarkDir}/$csvFile
         csvDiffResult=$?
 
         if [ ${csvDiffResult} -ne 0 \
