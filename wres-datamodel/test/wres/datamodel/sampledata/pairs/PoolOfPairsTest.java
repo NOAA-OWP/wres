@@ -193,17 +193,23 @@ public final class PoolOfPairsTest
 
         b.addTimeSeries( firstSeries ).setMetadata( meta );
 
-        String expected = "Reference times: {UNKNOWN=1985-01-01T00:00:00Z}, "
-                          + "Events: ["
-                          + "(1985-01-01T00:00:00Z,(1.0,1.0)), "
-                          + "(1985-01-01T01:00:00Z,(1.0,1.0)), "
-                          + "(1985-01-01T02:00:00Z,(1.0,1.0)), "
-                          + "(1985-01-01T03:00:00Z,(1.0,1.0)), "
-                          + "(1985-01-01T04:00:00Z,(1.0,1.0))"
-                          + "], "
-                          + "TimeScale: [INSTANTANEOUS]";
+        String expectedOne = "UNKNOWN=1985-01-01T00:00:00Z";
+        String expectedTwo = "(1985-01-01T00:00:00Z,(1.0,1.0))";
+        String expectedThree = "(1985-01-01T01:00:00Z,(1.0,1.0))";
+        String expectedFour = "(1985-01-01T02:00:00Z,(1.0,1.0))";
+        String expectedFive = "(1985-01-01T03:00:00Z,(1.0,1.0))";
+        String expectedSix = "(1985-01-01T04:00:00Z,(1.0,1.0))";
+        String expectedSeven = "INSTANTANEOUS";
 
-        assertTrue( b.build().toString().contains( expected ) );
+        String bToString = b.build()
+                            .toString();
+        assertTrue( ( bToString ).contains( expectedOne ) );
+        assertTrue( ( bToString ).contains( expectedTwo) );
+        assertTrue( ( bToString ).contains( expectedThree ) );
+        assertTrue( ( bToString ).contains( expectedFour ) );
+        assertTrue( ( bToString ).contains( expectedFive ) );
+        assertTrue( ( bToString ).contains( expectedSix ) );
+        assertTrue( ( bToString ).contains( expectedSeven ) );
 
         //Add another time-series
         Instant nextBasisTime = Instant.parse( FIFTH_TIME );
@@ -225,29 +231,19 @@ public final class PoolOfPairsTest
 
         b.addTimeSeries( secondSeries );
 
-        String expectedFirst = "Reference times: {UNKNOWN=1985-01-01T00:00:00Z}, "
-                               + "Events: ["
-                               + "(1985-01-01T00:00:00Z,(1.0,1.0)), "
-                               + "(1985-01-01T01:00:00Z,(1.0,1.0)), "
-                               + "(1985-01-01T02:00:00Z,(1.0,1.0)), "
-                               + "(1985-01-01T03:00:00Z,(1.0,1.0)), "
-                               + "(1985-01-01T04:00:00Z,(1.0,1.0))"
-                               + "], "
-                               + "TimeScale: [INSTANTANEOUS]";
+        String expectedFirstOne = "UNKNOWN=1985-01-01T00:00:00Z";
+        String expectedFirstTwo = "(1985-01-01T00:00:00Z,(1.0,1.0))";
 
-        String expectedSecond = "Reference times: {UNKNOWN=1985-01-02T00:00:00Z}, "
-                                + "Events: ["
-                                + "(1985-01-02T00:00:00Z,(1.0,1.0)), "
-                                + "(1985-01-02T01:00:00Z,(1.0,1.0)), "
-                                + "(1985-01-02T02:00:00Z,(1.0,1.0)), "
-                                + "(1985-01-02T03:00:00Z,(1.0,1.0)), "
-                                + "(1985-01-02T04:00:00Z,(1.0,1.0))"
-                                + "], "
-                                + "TimeScale: [INSTANTANEOUS]";
+        String expectedSecondOne = "UNKNOWN=1985-01-02T00:00:00Z";
+        String expectedSecondTwo = "(1985-01-02T00:00:00Z,(1.0,1.0)";
 
-        assertTrue( b.build().toString().contains( expectedFirst ) );
+        String bToStringAgain = b.build()
+                                 .toString();
+        assertTrue( bToStringAgain.contains( expectedFirstOne ) );
+        assertTrue( bToStringAgain.contains( expectedFirstTwo ) );
 
-        assertTrue( b.build().toString().contains( expectedSecond ) );
+        assertTrue( bToStringAgain.contains( expectedSecondOne ) );
+        assertTrue( bToStringAgain.contains( expectedSecondTwo ) );
     }
 
     @Test

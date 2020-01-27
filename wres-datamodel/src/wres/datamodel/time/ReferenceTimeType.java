@@ -25,5 +25,10 @@ public enum ReferenceTimeType
          * The time at which a time-series was published or "issued".
          */
         
-        ISSUED_TIME;
+        ISSUED_TIME,
+
+        /**
+         * The time at which the latest observed value was included/assimilated.
+         */
+        LATEST_OBSERVATION;
 }
