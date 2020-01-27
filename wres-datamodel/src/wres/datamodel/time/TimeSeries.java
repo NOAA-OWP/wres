@@ -7,9 +7,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
-import java.util.StringJoiner;
 import java.util.TreeSet;
 
+import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,6 +25,7 @@ import wres.datamodel.scale.TimeScale;
  * 
  * @param <T> the type of time-series data
  * @author james.brown@hydrosolved.com
+ * @author Jesse Bickel
  */
 
 public class TimeSeries<T>
@@ -37,10 +38,11 @@ public class TimeSeries<T>
     private static final Logger LOGGER = LoggerFactory.getLogger( TimeSeries.class );
 
     /**
-     * The zero or more reference datetimes associated with the time-series.
+     * Any non-event-related metadata that apply to the time-series as a whole.
      */
 
-    private final Map<ReferenceTimeType, Instant> referenceTimes;
+    private final TimeSeriesMetadata metadata;
+
 
     /**
      * The events.
@@ -48,11 +50,6 @@ public class TimeSeries<T>
 
     private final SortedSet<Event<T>> events;
 
-    /**
-     * The {@link TimeScale} associated with the events in the time-series.
-     */
-
-    private final TimeScale timeScale;
 
     /**
      * Returns an empty {@link TimeSeries}.
@@ -139,6 +136,25 @@ public class TimeSeries<T>
         return builder.build();
     }
 
+    public static <T> TimeSeries<T> of ( TimeSeriesMetadata timeSeriesMetadata,
+                                         SortedSet<Event<T>> events )
+    {
+        Objects.requireNonNull( timeSeriesMetadata );
+        Objects.requireNonNull( events );
+
+        // Admittedly awkward, probably should make the builder delegate all
+        // this stuff to a TimeSeriesMetadataBuilder or something.
+        TimeSeriesBuilder<T> builder = new TimeSeriesBuilder<>();
+        events.forEach( builder::addEvent );
+        timeSeriesMetadata.getReferenceTimes()
+                          .forEach( ( type, time ) -> builder.addReferenceTime( time, type ) );
+        builder.setFeatureName( timeSeriesMetadata.getFeatureName() );
+        builder.setTimeScale( timeSeriesMetadata.getTimeScale() );
+        builder.setUnit( timeSeriesMetadata.getUnit() );
+        builder.setVariableName( timeSeriesMetadata.getVariableName() );
+        return builder.build();
+    }
+
     /**
      * Returns the underlying events in the time-series.
      * 
@@ -150,6 +166,11 @@ public class TimeSeries<T>
         return this.events; // Rendered immutable on construction
     }
 
+    public TimeSeriesMetadata getMetadata()
+    {
+        return this.metadata;
+    }
+
     /**
      * Returns the {@link TimeScale} associated with the events or <code>null</code> if {@link #hasTimeScale()} returns
      * <code>false</code>.
@@ -159,7 +180,8 @@ public class TimeSeries<T>
 
     public TimeScale getTimeScale()
     {
-        return this.timeScale;
+        return this.getMetadata()
+                   .getTimeScale();
     }
     
     /**
@@ -170,7 +192,9 @@ public class TimeSeries<T>
 
     public boolean hasTimeScale()
     {
-        return Objects.nonNull( this.timeScale );
+        return Objects.nonNull( this.getMetadata() )
+                      && Objects.nonNull( this.getMetadata()
+                                              .getTimeScale() );
     }
     
     /**
@@ -181,41 +205,41 @@ public class TimeSeries<T>
 
     public Map<ReferenceTimeType, Instant> getReferenceTimes()
     {
-        return this.referenceTimes; //Rendered immutable on construction
+        return this.getMetadata()
+                   .getReferenceTimes(); //Rendered immutable on construction
     }
 
     @Override
     public boolean equals( Object o )
     {
-        if ( ! ( o instanceof TimeSeries<?> ) )
+        if ( this == o )
+        {
+            return true;
+        }
+
+        if ( o == null || getClass() != o.getClass() )
         {
             return false;
         }
 
-        TimeSeries<?> input = (TimeSeries<?>) o;
-
-        return Objects.equals( this.getReferenceTimes(), input.getReferenceTimes() )
-               && Objects.equals( this.getEvents(), input.getEvents() )
-               && Objects.equals( this.getTimeScale(), input.getTimeScale() );
+        TimeSeries<?> that = ( TimeSeries<?> ) o;
+        return metadata.equals( that.metadata ) &&
+               events.equals( that.events );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( this.getReferenceTimes(), this.getEvents(), this.getTimeScale() );
+        return Objects.hash( metadata, events );
     }
 
     @Override
     public String toString()
     {
-        StringJoiner joiner = new StringJoiner( ", ", "[", "]" );
-
-        joiner.add( "TimeSeries@" + this.hashCode() );
-        joiner.add( "Reference times: " + this.getReferenceTimes().toString() );
-        joiner.add( "Events: " + this.getEvents() );
-        joiner.add( "TimeScale: " + this.timeScale );
-
-        return joiner.toString();
+        return new ToStringBuilder( this )
+                .append( "metadata", metadata )
+                .append( "events", events )
+                .toString();
     }
 
     /**
@@ -236,19 +260,25 @@ public class TimeSeries<T>
         Map<ReferenceTimeType, Instant> localMap = new EnumMap<>( ReferenceTimeType.class );
         localMap.putAll( builder.referenceTimes );
 
-        this.referenceTimes = Collections.unmodifiableMap( localMap );
+        TimeScale localTimeScale = null;
 
         if ( Objects.isNull( builder.timeScale ) )
         {
-            this.timeScale = null;
-            
-            LOGGER.trace( "No time-scale information was provided for time-series {}.",
-                          this.hashCode() );
+            LOGGER.trace( "No time-scale information was provided in builder {} for time-series {}.",
+                          builder, this );
         }
         else
         {
-            this.timeScale = builder.timeScale;
+            localTimeScale = builder.timeScale;
         }
+
+        localMap = Collections.unmodifiableMap( localMap );
+
+        this.metadata = TimeSeriesMetadata.of( localMap,
+                                               localTimeScale,
+                                               builder.variableName,
+                                               builder.featureName,
+                                               builder.unit );
 
         // All reference datetimes and types must be non-null
         for ( Map.Entry<ReferenceTimeType, Instant> nextEntry : this.getReferenceTimes().entrySet() )
@@ -289,6 +319,11 @@ public class TimeSeries<T>
          */
 
         private TimeScale timeScale;
+
+
+        private String variableName;
+        private String featureName;
+        private String unit;
 
         /**
          * Adds a reference time.
@@ -372,6 +407,24 @@ public class TimeSeries<T>
         {
             this.timeScale = timeScale;
 
+            return this;
+        }
+
+        public TimeSeriesBuilder<T> setVariableName( String variableName )
+        {
+            this.variableName = variableName;
+            return this;
+        }
+
+        public TimeSeriesBuilder<T> setFeatureName( String featureName )
+        {
+            this.featureName = featureName;
+            return this;
+        }
+
+        public TimeSeriesBuilder<T> setUnit( String unit )
+        {
+            this.unit = unit;
             return this;
         }
 

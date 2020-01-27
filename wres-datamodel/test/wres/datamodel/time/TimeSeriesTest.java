@@ -246,15 +246,16 @@ public class TimeSeriesTest
     {
         String actual = this.testSeries.toString();
 
-        String expected = "["
-                          + "TimeSeries@"
-                          + this.testSeries.hashCode()
-                          + ", "
-                          + "Reference times: {T0=2123-12-01T00:00:00Z}, "
-                          + "Events: [(2123-12-01T06:00:00Z,1.0), (2123-12-01T12:00:00Z,2.0), (2123-12-01T18:00:00Z,3.0)], "
-                          + "TimeScale: [INSTANTANEOUS]]";
+        String expectedOne = "T0=2123-12-01T00:00:00Z";
+        String expectedTwo = "(2123-12-01T06:00:00Z,1.0)";
+        String expectedThree = "(2123-12-01T12:00:00Z,2.0)";
+        String expectedFour = "(2123-12-01T18:00:00Z,3.0)";
+        String expectedFive = "INSTANTANEOUS";
 
-        assertEquals( expected, actual );
+        assertTrue( actual.contains( expectedOne ) );
+        assertTrue( actual.contains( expectedTwo ) );
+        assertTrue( actual.contains( expectedThree ) );
+        assertTrue( actual.contains( expectedFour ) );
+        assertTrue( actual.contains( expectedFive ) );
     }
-
 }
