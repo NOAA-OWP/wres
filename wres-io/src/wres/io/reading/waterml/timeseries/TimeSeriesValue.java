@@ -2,50 +2,55 @@ package wres.io.reading.waterml.timeseries;
 
 import java.io.Serializable;
 import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+
+@JsonIgnoreProperties( ignoreUnknown = true )
 public class TimeSeriesValue implements Serializable
 {
-    Double value;
+    private final double value;
+    private final String[] qualifiers;
+    private final Instant dateTime;
 
-    public Double getValue()
-    {
-        return value;
-    }
-
-    public void setValue( Double value )
+    public TimeSeriesValue( @JsonProperty( "value" )
+                            double value,
+                            @JsonProperty( "qualifiers" )
+                            String[] qualifiers,
+                            @JsonProperty( "dateTime" )
+                            @JsonFormat( shape = JsonFormat.Shape.STRING,
+                                         pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSXXX" )
+                            Instant dateTime )
     {
         this.value = value;
+        this.qualifiers = qualifiers;
+        this.dateTime = dateTime;
+    }
+
+    public double getValue()
+    {
+        return this.value;
     }
 
     public String[] getQualifiers()
     {
-        return qualifiers;
-    }
-
-    public void setQualifiers( String[] qualifiers )
-    {
-        this.qualifiers = qualifiers;
+        return this.qualifiers;
     }
 
     public Instant getDateTime()
     {
-        if (this.dateTime != null)
-        {
-            return OffsetDateTime.parse( this.dateTime)
-                                 .withOffsetSameInstant( ZoneOffset.UTC )
-                                 .toInstant();
-        }
-
-        return null;
+        return this.dateTime;
     }
 
-    public void setDateTime( String dateTime )
+    @Override
+    public String toString()
     {
-        this.dateTime = dateTime;
+        return new ToStringBuilder( this )
+                .append( "value", value )
+                .append( "qualifiers", qualifiers )
+                .append( "dateTime", dateTime )
+                .toString();
     }
-
-    String[] qualifiers;
-    String dateTime;
 }
