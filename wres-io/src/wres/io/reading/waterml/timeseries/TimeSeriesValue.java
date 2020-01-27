@@ -2,55 +2,50 @@ package wres.io.reading.waterml.timeseries;
 
 import java.io.Serializable;
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-
-@JsonIgnoreProperties( ignoreUnknown = true )
 public class TimeSeriesValue implements Serializable
 {
-    private final double value;
-    private final String[] qualifiers;
-    private final Instant dateTime;
+    Double value;
 
-    public TimeSeriesValue( @JsonProperty( "value" )
-                            double value,
-                            @JsonProperty( "qualifiers" )
-                            String[] qualifiers,
-                            @JsonProperty( "dateTime" )
-                            @JsonFormat( shape = JsonFormat.Shape.STRING,
-                                         pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSXXX" )
-                            Instant dateTime )
+    public Double getValue()
     {
-        this.value = value;
-        this.qualifiers = qualifiers;
-        this.dateTime = dateTime;
+        return value;
     }
 
-    public double getValue()
+    public void setValue( Double value )
     {
-        return this.value;
+        this.value = value;
     }
 
     public String[] getQualifiers()
     {
-        return this.qualifiers;
+        return qualifiers;
+    }
+
+    public void setQualifiers( String[] qualifiers )
+    {
+        this.qualifiers = qualifiers;
     }
 
     public Instant getDateTime()
     {
-        return this.dateTime;
+        if (this.dateTime != null)
+        {
+            return OffsetDateTime.parse( this.dateTime)
+                                 .withOffsetSameInstant( ZoneOffset.UTC )
+                                 .toInstant();
+        }
+
+        return null;
     }
 
-    @Override
-    public String toString()
+    public void setDateTime( String dateTime )
     {
-        return new ToStringBuilder( this )
-                .append( "value", value )
-                .append( "qualifiers", qualifiers )
-                .append( "dateTime", dateTime )
-                .toString();
+        this.dateTime = dateTime;
     }
+
+    String[] qualifiers;
+    String dateTime;
 }
