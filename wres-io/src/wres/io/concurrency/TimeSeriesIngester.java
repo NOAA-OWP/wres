@@ -88,6 +88,32 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
     private final TimeSeries<?> timeSeries;
     private final Set<Pair<CountDownLatch, CountDownLatch>> latches = new HashSet<>();
 
+    public static TimeSeriesIngester of( ProjectConfig projectConfig,
+                                         DataSource dataSource,
+                                         DatabaseLockManager databaseLockManager,
+                                         TimeSeries<?> timeSeries )
+    {
+        Objects.requireNonNull( timeSeries );
+        Objects.requireNonNull( timeSeries.getMetadata() );
+        Objects.requireNonNull( timeSeries.getMetadata()
+                                          .getFeatureName() );
+        Objects.requireNonNull( timeSeries.getMetadata()
+                                          .getVariableName() );
+        Objects.requireNonNull( timeSeries.getMetadata()
+                                          .getUnit() );
+
+        return new TimeSeriesIngester( projectConfig,
+                                       dataSource,
+                                       databaseLockManager,
+                                       timeSeries,
+                                       timeSeries.getMetadata()
+                                                 .getFeatureName(),
+                                       timeSeries.getMetadata()
+                                                 .getVariableName(),
+                                       timeSeries.getMetadata()
+                                                 .getUnit() );
+    }
+
     public TimeSeriesIngester( ProjectConfig projectConfig,
                                DataSource dataSource,
                                DatabaseLockManager lockManager,
