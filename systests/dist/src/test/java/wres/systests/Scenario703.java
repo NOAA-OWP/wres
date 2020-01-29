@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.control.Control;
+
 public class Scenario703
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( Scenario703.class );
@@ -492,6 +493,14 @@ public class Scenario703
                     Path.of( "CCBA4_streamflow_NWM_Short_Range_PEARSON_CORRELATION_COEFFICIENT.csv" ),
                     Path.of( "CCBA4_streamflow_NWM_Short_Range_ROOT_MEAN_SQUARE_ERROR.csv" ),
                     Path.of( "CCBA4_streamflow_NWM_Short_Range_SAMPLE_SIZE.csv" ),
+                    Path.of( "CCCA4_streamflow_NWM_Short_Range_BIAS_FRACTION.csv" ),
+                    Path.of( "CCCA4_streamflow_NWM_Short_Range_COEFFICIENT_OF_DETERMINATION.csv" ),
+                    Path.of( "CCCA4_streamflow_NWM_Short_Range_MEAN_ABSOLUTE_ERROR.csv" ),
+                    Path.of( "CCCA4_streamflow_NWM_Short_Range_MEAN_ERROR.csv" ),
+                    Path.of( "CCCA4_streamflow_NWM_Short_Range_MEAN_SQUARE_ERROR.csv" ),
+                    Path.of( "CCCA4_streamflow_NWM_Short_Range_PEARSON_CORRELATION_COEFFICIENT.csv" ),
+                    Path.of( "CCCA4_streamflow_NWM_Short_Range_ROOT_MEAN_SQUARE_ERROR.csv" ),
+                    Path.of( "CCCA4_streamflow_NWM_Short_Range_SAMPLE_SIZE.csv" ),
                     Path.of( "CCDO2_streamflow_NWM_Short_Range_BIAS_FRACTION.csv" ),
                     Path.of( "CCDO2_streamflow_NWM_Short_Range_COEFFICIENT_OF_DETERMINATION.csv" ),
                     Path.of( "CCDO2_streamflow_NWM_Short_Range_MEAN_ABSOLUTE_ERROR.csv" ),
@@ -2949,22 +2958,15 @@ public class Scenario703
                     Path.of( "ZENK1_streamflow_NWM_Short_Range_PEARSON_CORRELATION_COEFFICIENT.csv" ),
                     Path.of( "ZENK1_streamflow_NWM_Short_Range_ROOT_MEAN_SQUARE_ERROR.csv" ),
                     Path.of( "ZENK1_streamflow_NWM_Short_Range_SAMPLE_SIZE.csv" ) );
-    
+
     private ScenarioInformation scenarioInfo;
-    
+
     /**
      * Watch for any failed assertions and log them.
      */
 
     @Rule
-    public TestWatcher watcher = new TestWatcher()
-    {
-        @Override
-        protected void failed( Throwable e, Description description )
-        {
-            LOGGER.error( description.toString(), e );
-        }
-    };
+    public TestWatcher watcher=new TestWatcher(){@Override protected void failed(Throwable e,Description description){LOGGER.error(description.toString(),e);}};
 
     @Before
     public void beforeIndividualTest() throws IOException, SQLException
@@ -2973,9 +2975,9 @@ public class Scenario703
                      + this.getClass().getSimpleName().toLowerCase()
                      + NEWLINE );
         this.scenarioInfo = new ScenarioInformation( this.getClass()
-                                              .getSimpleName()
-                                              .toLowerCase(),
-                                              ScenarioHelper.getBaseDirectory() );
+                                                         .getSimpleName()
+                                                         .toLowerCase(),
+                                                     ScenarioHelper.getBaseDirectory() );
         ScenarioHelper.logUsedSystemProperties( scenarioInfo );
     }
 
@@ -2983,7 +2985,7 @@ public class Scenario703
     public void testScenario()
     {
         Control control = ScenarioHelper.assertExecuteScenario( scenarioInfo );
-        
+
         // Collect the file names actually written and that exist
         Set<Path> pathsWritten = control.get();
         Set<Path> actualFileNamesThatExist = pathsWritten.stream()
@@ -2998,10 +3000,11 @@ public class Scenario703
         assertEquals( "The actual set of file names does not match the expected set of file names.",
                       EXPECTED_FILE_NAMES,
                       actualFileNamesThatExist );
-        
+
         LOGGER.info( "Finished checking file names. The actual file names match the expected file names." );
         LOGGER.info( "########################################################## COMPLETED "
-                + this.getClass().getSimpleName().toLowerCase() + NEWLINE);
+                     + this.getClass().getSimpleName().toLowerCase()
+                     + NEWLINE );
     }
 }
 
