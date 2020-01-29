@@ -23,6 +23,7 @@ import wres.config.generated.DestinationConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
+import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
@@ -152,12 +153,17 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedStatisticsWr
         SortedSet<MetricConstants> metrics = Slicer.discover( output, next -> next.getMetadata().getMetricID() );
         for ( MetricConstants m : metrics )
         {
-            StringJoiner headerRow =
-                    CommaSeparatedUtilities.getPartialTimeWindowHeaderFromSampleMetadata( output.getData()
-                                                                                                .get( 0 )
-                                                                                                .getMetadata()
-                                                                                                .getSampleMetadata(),
-                                                                                          durationUnits );
+            StringJoiner headerRow = new StringJoiner( "," );
+
+            headerRow.add( "FEATURE DESCRIPTION" );
+
+            StringJoiner timeWindowHeader =
+                    CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( output.getData()
+                                                                                         .get( 0 )
+                                                                                         .getMetadata()
+                                                                                         .getSampleMetadata(),
+                                                                                   durationUnits );
+            headerRow.merge( timeWindowHeader );
 
             ListOfStatistics<PairedStatistic<S, T>> nextOutput = Slicer.filter( output, m );
 
@@ -216,6 +222,8 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedStatisticsWr
         SortedSet<OneOrTwoThresholds> thresholds =
                 Slicer.discover( output, meta -> meta.getMetadata().getSampleMetadata().getThresholds() );
 
+        SampleMetadata metadata = CommaSeparatedStatisticsWriter.getSampleMetadataFromListOfStatistics( output );
+
         // Add the rows
         // Loop across the thresholds
         for ( OneOrTwoThresholds t : thresholds )
@@ -237,9 +245,10 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedStatisticsWr
                 for ( Pair<S, T> nextPair : next )
                 {
                     CommaSeparatedStatisticsWriter.addRowToInput( returnMe,
-                                                                  next.getMetadata()
-                                                                      .getSampleMetadata()
-                                                                      .getTimeWindow(),
+                                                                  SampleMetadata.of( metadata,
+                                                                                     next.getMetadata()
+                                                                                         .getSampleMetadata()
+                                                                                         .getTimeWindow() ),
                                                                   Arrays.asList( nextPair.getLeft(),
                                                                                  nextPair.getRight() ),
                                                                   formatter,

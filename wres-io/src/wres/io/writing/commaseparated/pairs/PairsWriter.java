@@ -26,7 +26,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.Event;
@@ -229,23 +228,7 @@ public abstract class PairsWriter<L, R> implements Consumer<PoolOfPairs<L, R>>, 
                 this.writeHeaderIfRequired( pairs );
 
                 // Feature to write, which is fixed across all pairs
-
-                // TODO: need a more consistent representation of a geographic feature throughout the application
-                // See #55231-131
-                // For now, use the location name OR the coordinates, preferentially
-                Location location = pairs.getMetadata().getIdentifier().getGeospatialID();
-                String featureName = location.toString();
-
-                if ( location.hasLocationName() )
-                {
-                    featureName = location.getLocationName();
-                }
-                else if ( location.hasCoordinates() )
-                {
-                    featureName = Float.toString( location.getLongitude() ) +
-                                  " "
-                                  + Float.toString( location.getLatitude() );
-                }
+                String featureName = CommaSeparatedUtilities.getFeatureNameFromMetadata( pairs.getMetadata() );
 
                 // Time window to write, which is fixed across all pairs
                 TimeWindow timeWindow = pairs.getMetadata().getTimeWindow();

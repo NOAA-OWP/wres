@@ -6,7 +6,6 @@ import java.text.Format;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +24,7 @@ import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.statistics.ListOfStatistics;
@@ -62,7 +62,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
 
     public static CommaSeparatedDiagramWriter of( ProjectConfig projectConfig,
                                                   ChronoUnit durationUnits,
-                                                  Path outputDirectory)
+                                                  Path outputDirectory )
     {
         return new CommaSeparatedDiagramWriter( projectConfig, durationUnits, outputDirectory );
     }
@@ -110,7 +110,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
         }
 
     }
-    
+
     /**
      * Return a snapshot of the paths written to (so far)
      * 
@@ -121,7 +121,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
     public Set<Path> get()
     {
         return this.getPathsWrittenTo();
-    }    
+    }
 
     /**
      * Writes all output for one diagram type.
@@ -152,11 +152,12 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
         SortedSet<MetricConstants> metrics = Slicer.discover( output, next -> next.getMetadata().getMetricID() );
         for ( MetricConstants m : metrics )
         {
-            StringJoiner headerRow = CommaSeparatedUtilities.getPartialTimeWindowHeaderFromSampleMetadata( output.getData()
-                                                                                                          .get( 0 )
-                                                                                                          .getMetadata()
-                                                                                                          .getSampleMetadata(),
-                                                                                                    durationUnits );
+            StringJoiner headerRow =
+                    CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( output.getData()
+                                                                                         .get( 0 )
+                                                                                         .getMetadata()
+                                                                                         .getSampleMetadata(),
+                                                                                   durationUnits );
 
             Set<Path> innerPathsWrittenTo = Collections.emptySet();
 
@@ -327,6 +328,9 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
                 Slicer.discover( output, meta -> meta.getMetadata().getSampleMetadata().getThresholds() );
         SortedSet<TimeWindow> timeWindows =
                 Slicer.discover( output, meta -> meta.getMetadata().getSampleMetadata().getTimeWindow() );
+
+        SampleMetadata metadata = CommaSeparatedStatisticsWriter.getSampleMetadataFromListOfStatistics( output );
+
         // Loop across time windows
         for ( TimeWindow timeWindow : timeWindows )
         {
@@ -336,25 +340,25 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
             {
                 // One output per time window and threshold
                 DiagramStatistic nextOutput = Slicer.filter( output,
-                                                                 data -> data.getSampleMetadata()
-                                                                             .getThresholds()
-                                                                             .equals( threshold )
-                                                                         && data.getSampleMetadata()
-                                                                                .getTimeWindow()
-                                                                                .equals( timeWindow ) )
-                                                        .getData()
-                                                        .get( 0 );
+                                                             data -> data.getSampleMetadata()
+                                                                         .getThresholds()
+                                                                         .equals( threshold )
+                                                                     && data.getSampleMetadata()
+                                                                            .getTimeWindow()
+                                                                            .equals( timeWindow ) )
+                                                    .getData()
+                                                    .get( 0 );
                 CommaSeparatedDiagramWriter.addRowsForOneDiagramAtOneTimeWindowAndThreshold( nextOutput, merge );
             }
             // Add the merged rows
             for ( List<Double> next : merge.values() )
             {
                 CommaSeparatedStatisticsWriter.addRowToInput( returnMe,
-                                                    timeWindow,
-                                                    next,
-                                                    formatter,
-                                                    false,
-                                                    durationUnits );
+                                                              SampleMetadata.of( metadata, timeWindow ),
+                                                              next,
+                                                              formatter,
+                                                              false,
+                                                              durationUnits );
             }
         }
 
@@ -383,9 +387,9 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
             int maxRows = output.getData()
                                 .values()
                                 .stream()
-                                .max( Comparator.comparingInt( VectorOfDoubles::size ) )
-                                .get()
-                                .size();
+                                .mapToInt( VectorOfDoubles::size )
+                                .max()
+                                .orElse( 0 );
 
             // Loop until the maximum row 
             for ( int rowIndex = 0; rowIndex < maxRows; rowIndex++ )
@@ -441,6 +445,9 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
     {
         // Append to header
         StringJoiner returnMe = new StringJoiner( "," );
+        
+        returnMe.add( "FEATURE DESCRIPTION" );
+        
         returnMe.merge( headerRow );
         // Discover first item to help
         DiagramStatistic data = output.getData().get( 0 );
@@ -486,9 +493,9 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
      * @throws ProjectConfigException if the project configuration is not valid for writing 
      */
 
-    private CommaSeparatedDiagramWriter(ProjectConfig projectConfig,
-                                        ChronoUnit durationUnits,
-                                        Path outputDirectory )
+    private CommaSeparatedDiagramWriter( ProjectConfig projectConfig,
+                                         ChronoUnit durationUnits,
+                                         Path outputDirectory )
     {
         super( projectConfig, durationUnits, outputDirectory );
     }

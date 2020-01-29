@@ -22,6 +22,7 @@ import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
+import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.MatrixStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
@@ -116,7 +117,7 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedStatisticsWriter
     {
         return this.getPathsWrittenTo();
     }
-    
+
     /**
      * Writes all output for one matrix type.
      *
@@ -147,11 +148,12 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedStatisticsWriter
         for ( MetricConstants m : metrics )
         {
 
-            StringJoiner headerRow = CommaSeparatedUtilities.getPartialTimeWindowHeaderFromSampleMetadata( output.getData()
-                                                                                                          .get( 0 )
-                                                                                                          .getMetadata()
-                                                                                                          .getSampleMetadata(),
-                                                                                                    durationUnits );
+            StringJoiner headerRow =
+                    CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( output.getData()
+                                                                                         .get( 0 )
+                                                                                         .getMetadata()
+                                                                                         .getSampleMetadata(),
+                                                                                   durationUnits );
 
             Set<Path> innerPathsWrittenTo = Collections.emptySet();
 
@@ -312,6 +314,9 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedStatisticsWriter
     {
         // Append to header
         StringJoiner returnMe = new StringJoiner( "," );
+        
+        returnMe.add( "FEATURE DESCRIPTION" );
+        
         returnMe.merge( headerRow );
         MatrixStatistic data = output.getData().get( 0 );
         String metricName = data.getMetadata().getMetricID().toString();
@@ -372,6 +377,9 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedStatisticsWriter
                 Slicer.discover( output, meta -> meta.getMetadata().getSampleMetadata().getThresholds() );
         SortedSet<TimeWindow> timeWindows =
                 Slicer.discover( output, meta -> meta.getMetadata().getSampleMetadata().getTimeWindow() );
+
+        SampleMetadata metadata = CommaSeparatedStatisticsWriter.getSampleMetadataFromListOfStatistics( output );
+
         for ( TimeWindow timeWindow : timeWindows )
         {
             // Loop across the thresholds, merging results when multiple thresholds occur
@@ -394,11 +402,11 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedStatisticsWriter
             }
             // Add the merged row
             CommaSeparatedStatisticsWriter.addRowToInput( returnMe,
-                                                timeWindow,
-                                                merge,
-                                                formatter,
-                                                false,
-                                                durationUnits );
+                                                          SampleMetadata.of( metadata, timeWindow ),
+                                                          merge,
+                                                          formatter,
+                                                          false,
+                                                          durationUnits );
         }
 
         return returnMe;

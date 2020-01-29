@@ -22,6 +22,7 @@ import wres.config.generated.DestinationConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.StatisticGroup;
+import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.statistics.BoxPlotStatistic;
@@ -77,7 +78,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
     @Override
     public void accept( final ListOfStatistics<BoxPlotStatistics> output )
     {
-        Set<Path> pathsWrittenTo = new HashSet<>( 1 );
+        Set<Path> pathsWrittenLocal = new HashSet<>( 1 );
 
         Objects.requireNonNull( output, "Specify non-null input data when writing box plot outputs." );
 
@@ -101,7 +102,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
                                                                                output,
                                                                                formatter,
                                                                                super.getDurationUnits() );
-                pathsWrittenTo.addAll( innerPathsWrittenTo );
+                pathsWrittenLocal.addAll( innerPathsWrittenTo );
             }
             catch ( IOException e )
             {
@@ -109,7 +110,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
             }
         }
 
-        this.pathsWrittenTo.addAll( pathsWrittenTo );
+        this.pathsWrittenTo.addAll( pathsWrittenLocal );
     }
 
     /**
@@ -216,8 +217,8 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
             StatisticMetadata meta = next.getData().get( 0 ).getMetadata();
 
             StringJoiner headerRow =
-                    CommaSeparatedUtilities.getPartialTimeWindowHeaderFromSampleMetadata( meta.getSampleMetadata(),
-                                                                                          durationUnits );
+                    CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( meta.getSampleMetadata(),
+                                                                                   durationUnits );
             List<RowCompareByLeft> rows =
                     CommaSeparatedBoxPlotWriter.getRowsForOneBoxPlot( next, formatter, durationUnits );
 
@@ -261,13 +262,13 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
     {
         Set<Path> pathsWrittenTo = new HashSet<>( 1 );
 
-        if( !output.getData().isEmpty() )
+        if ( !output.getData().isEmpty() )
         {
             StatisticMetadata meta = output.getData().get( 0 ).getMetadata();
 
             StringJoiner headerRow =
-                    CommaSeparatedUtilities.getPartialTimeWindowHeaderFromSampleMetadata( meta.getSampleMetadata(),
-                                                                                          durationUnits );
+                    CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( meta.getSampleMetadata(),
+                                                                                   durationUnits );
             List<RowCompareByLeft> rows =
                     CommaSeparatedBoxPlotWriter.getRowsForOneBoxPlot( output, formatter, durationUnits );
 
@@ -284,7 +285,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
             // it succeeded in writing to the file, track outputs now.
             pathsWrittenTo.add( outputPath );
         }
-        
+
         return Collections.unmodifiableSet( pathsWrittenTo );
     }
 
@@ -309,6 +310,9 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
                 Slicer.discover( output, meta -> meta.getMetadata().getSampleMetadata().getThresholds() );
         SortedSet<TimeWindow> timeWindows =
                 Slicer.discover( output, meta -> meta.getMetadata().getSampleMetadata().getTimeWindow() );
+
+        SampleMetadata metadata = CommaSeparatedStatisticsWriter.getSampleMetadataFromListOfStatistics( output );
+
         // Loop across the thresholds
         for ( OneOrTwoThresholds t : thresholds )
         {
@@ -328,18 +332,18 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
                 for ( BoxPlotStatistic nextBox : nextValues )
                 {
                     List<Double> data = new ArrayList<>();
-                    
+
                     // Add linked value if available
-                    if( nextBox.hasLinkedValue() )
+                    if ( nextBox.hasLinkedValue() )
                     {
                         data.add( nextBox.getLinkedValue() );
                     }
-                    
+
                     data.addAll( Arrays.stream( nextBox.getData().getDoubles() )
                                        .boxed()
                                        .collect( Collectors.toList() ) );
                     CommaSeparatedStatisticsWriter.addRowToInput( returnMe,
-                                                                  timeWindow,
+                                                                  SampleMetadata.of( metadata, timeWindow ),
                                                                   data,
                                                                   formatter,
                                                                   false,
@@ -364,6 +368,9 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
     {
         // Append to header
         StringJoiner returnMe = new StringJoiner( "," );
+        
+        returnMe.add( "FEATURE DESCRIPTION" );
+        
         returnMe.merge( headerRow );
 
         // Discover the first item and use this to help

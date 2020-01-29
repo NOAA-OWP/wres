@@ -24,6 +24,7 @@ import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.StatisticGroup;
+import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.Slicer;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.ScoreStatistic;
@@ -130,7 +131,7 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
     {
         return this.getPathsWrittenTo();
     }
-    
+
     /**
      * Writes all output for one score type.
      *
@@ -186,12 +187,19 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
             // Process each output
             for ( ListOfStatistics<T> nextOutput : allOutputs )
             {
-                StringJoiner headerRow =
-                        CommaSeparatedUtilities.getPartialTimeWindowHeaderFromSampleMetadata( nextOutput.getData()
-                                                                                                 .get( 0 )
-                                                                                                 .getMetadata()
-                                                                                                 .getSampleMetadata(),
+                StringJoiner headerRow = new StringJoiner( "," );
+
+                headerRow.add( "FEATURE DESCRIPTION" );
+
+                StringJoiner timeWindowHeader =
+                        CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( output.getData()
+                                                                                             .get( 0 )
+                                                                                             .getMetadata()
+                                                                                             .getSampleMetadata(),
                                                                                        durationUnits );
+
+                headerRow.merge( timeWindowHeader );
+                
                 List<RowCompareByLeft> rows =
                         CommaSeparatedScoreWriter.getRowsForOneScore( m,
                                                                       nextOutput,
@@ -300,6 +308,8 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
         SortedSet<TimeWindow> timeWindows =
                 Slicer.discover( component, meta -> meta.getMetadata().getSampleMetadata().getTimeWindow() );
 
+        SampleMetadata metadata = CommaSeparatedStatisticsWriter.getSampleMetadataFromListOfStatistics( component );
+
         // Loop across the thresholds
         for ( OneOrTwoThresholds t : thresholds )
         {
@@ -319,21 +329,26 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
                 if ( !nextScore.getData().isEmpty() )
                 {
                     CommaSeparatedStatisticsWriter.addRowToInput( rows,
-                                                        timeWindow,
-                                                        Arrays.asList( nextScore.getData().get( 0 ).getData() ),
-                                                        formatter,
-                                                        true,
-                                                        durationUnits );
+                                                                  nextScore.getData()
+                                                                           .get( 0 )
+                                                                           .getMetadata()
+                                                                           .getSampleMetadata(),
+                                                                  Arrays.asList( nextScore.getData()
+                                                                                          .get( 0 )
+                                                                                          .getData() ),
+                                                                  formatter,
+                                                                  true,
+                                                                  durationUnits );
                 }
                 // Write no data in place: see #48387
                 else
                 {
                     CommaSeparatedStatisticsWriter.addRowToInput( rows,
-                                                        timeWindow,
-                                                        Arrays.asList( (Object) null ),
-                                                        formatter,
-                                                        true,
-                                                        durationUnits );
+                                                                  SampleMetadata.of( metadata, timeWindow ),
+                                                                  Arrays.asList( (Object) null ),
+                                                                  formatter,
+                                                                  true,
+                                                                  durationUnits );
                 }
             }
         }

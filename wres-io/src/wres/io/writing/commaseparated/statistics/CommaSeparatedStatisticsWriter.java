@@ -18,7 +18,10 @@ import java.util.StringJoiner;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.sampledata.SampleMetadata;
+import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.time.TimeWindow;
+import wres.io.writing.commaseparated.CommaSeparatedUtilities;
 import wres.util.TimeHelper;
 
 /**
@@ -136,7 +139,7 @@ abstract class CommaSeparatedStatisticsWriter
      *
      * @param <T> the type of values to add
      * @param rows the map of rows to mutate
-     * @param timeWindow the time window
+     * @param sampleMetadata the pool metadata
      * @param values the values to add, one for each column
      * @param formatter an optional formatter
      * @param append is true to add the values to an existing row with the same time window, false otherwise
@@ -146,7 +149,7 @@ abstract class CommaSeparatedStatisticsWriter
      */
 
     static <T> void addRowToInput( List<RowCompareByLeft> rows,
-                                   TimeWindow timeWindow,
+                                   SampleMetadata sampleMetadata,
                                    List<T> values,
                                    Format formatter,
                                    boolean append,
@@ -155,7 +158,11 @@ abstract class CommaSeparatedStatisticsWriter
     {
         Objects.requireNonNull( rows, "Specify one or more rows to mutate." );
 
-        Objects.requireNonNull( timeWindow, "Specify a time window." );
+        Objects.requireNonNull( sampleMetadata, "Specify the sample metadata." );
+
+        TimeWindow timeWindow = sampleMetadata.getTimeWindow();
+
+        Objects.requireNonNull( timeWindow, "The sample metadata must have a time window." );
 
         Objects.requireNonNull( values, "Specify one or more values to add." );
 
@@ -172,25 +179,23 @@ abstract class CommaSeparatedStatisticsWriter
         else
         {
             row = new StringJoiner( "," );
-            
-            // Until #57932 is addressed, use the reference datetimes by default, but the 
-            // valid datetimes when they are bounded and the issued times are unbounded. Fixes #58112
-            if ( timeWindow.hasUnboundedReferenceTimes() && !timeWindow.hasUnboundedValidTimes() )
-            {
-                row.add( timeWindow.getEarliestValidTime().toString() );
-                row.add( timeWindow.getLatestValidTime().toString() );
-            }
-            // Reference times are bounded
-            else
-            {
-                row.add( timeWindow.getEarliestReferenceTime().toString() );
-                row.add( timeWindow.getLatestReferenceTime().toString() );
-            }
 
-            row.add( Long.toString( TimeHelper.durationToLongUnits( timeWindow.getEarliestLeadDuration(),
-                                                                    durationUnits ) ) );
-            row.add( Long.toString( TimeHelper.durationToLongUnits( timeWindow.getLatestLeadDuration(),
-                                                                    durationUnits ) ) );
+            // #57932
+            String featureName = CommaSeparatedUtilities.getFeatureNameFromMetadata( sampleMetadata );
+            String earliestLeadDuration =
+                    Long.toString( TimeHelper.durationToLongUnits( timeWindow.getEarliestLeadDuration(),
+                                                                   durationUnits ) );
+            String latestLeadDuration =
+                    Long.toString( TimeHelper.durationToLongUnits( timeWindow.getLatestLeadDuration(),
+                                                                   durationUnits ) );
+            // Add the space/time metadata
+            row.add( featureName )
+               .add( timeWindow.getEarliestReferenceTime().toString() )
+               .add( timeWindow.getLatestReferenceTime().toString() )
+               .add( timeWindow.getEarliestValidTime().toString() )
+               .add( timeWindow.getLatestValidTime().toString() )
+               .add( earliestLeadDuration )
+               .add( latestLeadDuration );
             rows.add( RowCompareByLeft.of( timeWindow, row, additionalComparators ) );
         }
 
@@ -213,6 +218,31 @@ abstract class CommaSeparatedStatisticsWriter
             }
             row.add( toWrite );
         }
+    }
+
+    /**
+     * Returns the first instance of {@link SampleMetadata} discovered in the input or <code>null</code>.
+     * 
+     * @param statistic the list of statistics
+     * @return the first sample metadata or null
+     * @throws NullPointerException if the input is null
+     */
+
+    static SampleMetadata getSampleMetadataFromListOfStatistics( ListOfStatistics<?> statistic )
+    {
+        Objects.requireNonNull( statistic );
+
+        SampleMetadata returnMe = null;
+
+        if ( !statistic.getData().isEmpty() )
+        {
+            returnMe = statistic.getData()
+                                .get( 0 )
+                                .getMetadata()
+                                .getSampleMetadata();
+        }
+
+        return returnMe;
     }
 
     /**
