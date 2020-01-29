@@ -825,6 +825,8 @@ class NWMTimeSeries implements Closeable
      * It is OK for indices to be unsorted, e.g. for minIndex to appear anywhere
      * in indices and maxIndex to appear anywhere in indices.
      *
+     * No value in indices passed may be negative.
+     *
      * @param variable The variable to read data from.
      * @param indices The indices to read.
      * @param minIndex Caller-supplied minimum from indices (avoid searching 2x)
@@ -844,6 +846,16 @@ class NWMTimeSeries implements Closeable
         if ( indices.length < 1 )
         {
             throw new IllegalArgumentException( "Must pass at least one index." );
+        }
+
+        if ( minIndex < 0 )
+        {
+            throw new IllegalArgumentException( "minIndex must be positive." );
+        }
+
+        if ( maxIndex < 0 )
+        {
+            throw new IllegalArgumentException( "maxIndex must be positive." );
         }
 
         if ( minIndex > maxIndex )
@@ -1233,7 +1245,7 @@ class NWMTimeSeries implements Closeable
                 ncEnsembleMember = this.readEnsembleNumber( profile, netcdfFile );
             }
 
-            int[] indicesOfFeatures = new int[featureIds.length];
+            List<FeatureIdWithItsIndex> features = new ArrayList<>( featureIds.length );
 
             // Discover the minimum and maximum indexes requested while getting
             // them from the featureCache in order to know the nc range to read.
@@ -1243,29 +1255,30 @@ class NWMTimeSeries implements Closeable
             int minIndex = Integer.MAX_VALUE;
             int maxIndex = Integer.MIN_VALUE;
 
-            for ( int i = 0; i < featureIds.length; i++ )
+            for ( int featureId : featureIds )
             {
+                FeatureIdWithItsIndex feature;
                 int indexOfFeature = featureCache.findFeatureIndex( profile,
                                                                     netcdfFile,
-                                                                    featureIds[i] );
+                                                                    featureId );
+                feature = new FeatureIdWithItsIndex( featureId, indexOfFeature );
+                features.add( feature );
 
-                if ( indexOfFeature < 0 )
+                if ( !feature.found() )
                 {
-                    this.featuresNotFound.add( featureIds[i] );
+                    this.featuresNotFound.add( feature.getFeatureId() );
                     continue;
                 }
 
-                if ( indexOfFeature < minIndex )
+                if ( feature.getIndex() < minIndex )
                 {
-                    minIndex = indexOfFeature;
+                    minIndex = feature.getIndex();
                 }
 
-                if ( indexOfFeature > maxIndex )
+                if ( feature.getIndex() > maxIndex )
                 {
-                    maxIndex = indexOfFeature;
+                    maxIndex = feature.getIndex();
                 }
-
-                indicesOfFeatures[i] = indexOfFeature;
             }
 
             if ( minIndex == Integer.MAX_VALUE
@@ -1283,8 +1296,19 @@ class NWMTimeSeries implements Closeable
                                                  this.featuresNotFound );
             }
 
+            // Filtered for non-existent feature ids:
+            int[] indicesOfFeatures = features.stream()
+                                              .filter( FeatureIdWithItsIndex::found )
+                                              .mapToInt( FeatureIdWithItsIndex::getIndex )
+                                              .toArray();
+            int[] companionFeatures = features.stream()
+                                              .filter( FeatureIdWithItsIndex::found )
+                                              .mapToInt( FeatureIdWithItsIndex::getFeatureId )
+                                              .toArray();
+
             Variable variableVariable =  netcdfFile.findVariable( variableName );
             int[] rawVariableValues;
+
 
             // Preserve the context of which netCDF blob is read with try/catch.
             // (The readRawInts method does not need the netCDF blob.)
@@ -1294,8 +1318,8 @@ class NWMTimeSeries implements Closeable
                                                                indicesOfFeatures,
                                                                minIndex,
                                                                maxIndex );
-                LOGGER.debug( "Read integer values {} corresponding to indices {} from {}",
-                              rawVariableValues, indicesOfFeatures, netcdfFile.getLocation() );
+                LOGGER.debug( "Read integer values {} corresponding to feature ids {} at indices {} from {}",
+                              rawVariableValues, companionFeatures, indicesOfFeatures, netcdfFile.getLocation() );
             }
             catch ( PreIngestException pie )
             {
@@ -1318,7 +1342,7 @@ class NWMTimeSeries implements Closeable
                      || rawVariableValues[i] == fillValue )
                 {
                     LOGGER.debug( "Found missing value {} (one of {}, {}) at index {} for feature {} in variable {} of netCDF {}",
-                                  rawVariableValues[i], missingValue, fillValue, i, featureIds[i], variableName, netcdfFile.getLocation() );
+                                  rawVariableValues[i], missingValue, fillValue, i, companionFeatures[i], variableName, netcdfFile.getLocation() );
                     variableValue = MissingValues.DOUBLE;
                 }
                 else
@@ -1333,7 +1357,7 @@ class NWMTimeSeries implements Closeable
                 if ( isEnsemble )
                 {
                     EventForNWMFeature<Double> eventWithFeatureId =
-                            new EventForNWMFeature<>( featureIds[i],
+                            new EventForNWMFeature<>( companionFeatures[i],
                                                       event,
                                                       ncEnsembleMember );
                     list.add( eventWithFeatureId );
@@ -1341,7 +1365,7 @@ class NWMTimeSeries implements Closeable
                 else
                 {
                     EventForNWMFeature<Double> eventWithFeatureId =
-                            new EventForNWMFeature<>( featureIds[i],
+                            new EventForNWMFeature<>( companionFeatures[i],
                                                       event );
                     list.add( eventWithFeatureId );
                 }
@@ -1676,6 +1700,38 @@ class NWMTimeSeries implements Closeable
                 throw new PreIngestException( "Failed to read features from "
                                               + netcdfFileName, ioe );
             }
+        }
+    }
+
+
+    /**
+     * An NWM feature id with its index (position) in this NWMTimeSeries.
+     */
+
+    private static final class FeatureIdWithItsIndex
+    {
+        private final int featureId;
+        private final int index;
+
+        FeatureIdWithItsIndex( int featureId, int index )
+        {
+            this.featureId = featureId;
+            this.index = index;
+        }
+
+        int getFeatureId()
+        {
+            return this.featureId;
+        }
+
+        int getIndex()
+        {
+            return this.index;
+        }
+
+        boolean found()
+        {
+            return this.index >= 0;
         }
     }
 }
