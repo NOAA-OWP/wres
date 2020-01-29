@@ -325,7 +325,6 @@ public class PoolFactory
                                          latitude,
                                          feature.getGageId() );
 
-
         DatasetIdentifier identifier = DatasetIdentifier.of( location, variableId, scenarioId );
 
         MeasurementUnit measurementUnit = MeasurementUnit.of( measurementUnitString );

@@ -4,6 +4,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import java.util.StringJoiner;
 
+import wres.datamodel.sampledata.DatasetIdentifier;
+import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.scale.TimeScale;
 import wres.util.TimeHelper;
@@ -22,49 +24,6 @@ public class CommaSeparatedUtilities
 
     static final String HEADER_DELIMITER = " ";
 
-    /**
-     * Returns a default header from the {@link SampleMetadata} to which additional information may be appended. Does
-     * not include the valid time information and is therefore deprecated for removal once #57932 is complete, to
-     * be replaced with {@link #getTimeWindowHeaderFromSampleMetadata(SampleMetadata, ChronoUnit)} in all circumstances,
-     * including for pairs and statistics.
-     *
-     * @param sampleMetadata the sample metadata
-     * @param durationUnits the duration units for lead times
-     * @return default header information
-     * @throws NullPointerException if either input is null
-     */
-
-    @Deprecated
-    public static StringJoiner getPartialTimeWindowHeaderFromSampleMetadata( SampleMetadata sampleMetadata,
-                                                                             ChronoUnit durationUnits )
-    {
-        StringJoiner fullWindow =
-                CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( sampleMetadata, durationUnits );
-        
-        String adaptedWindow = fullWindow.toString();
-               
-        // If valid times are explicitly set and the reference times are not set, then use the valid times
-        // because there is only one pair of times until #57932. Fixes #58112
-        // Again, *only* use valid times if the reference times are unbounded and the valid times not.
-        if ( sampleMetadata.getTimeWindow().hasUnboundedReferenceTimes()
-             && !sampleMetadata.getTimeWindow().hasUnboundedValidTimes() )
-        {
-            adaptedWindow = adaptedWindow.replace( "EARLIEST ISSUE TIME,", "" );
-            adaptedWindow = adaptedWindow.replace( "LATEST ISSUE TIME,", "" );    
-        }
-        // Reference times are bounded
-        else 
-        {
-            adaptedWindow = adaptedWindow.replace( "EARLIEST VALID TIME,", "" );
-            adaptedWindow = adaptedWindow.replace( "LATEST VALID TIME,", "" );        
-        }
-
-        StringJoiner joiner = new StringJoiner( "," );
-        joiner.add( adaptedWindow );
-        
-        return joiner;
-    }
-    
     /**
      * Returns a default header from the {@link SampleMetadata} to which additional information may be appended.
      *
@@ -90,9 +49,9 @@ public class CommaSeparatedUtilities
         {
             TimeScale s = sampleMetadata.getTimeScale();
 
-            if( s.isInstantaneous() )
+            if ( s.isInstantaneous() )
             {
-                timeScale = HEADER_DELIMITER+ s.toString();
+                timeScale = HEADER_DELIMITER + s.toString();
             }
             else
             {
@@ -136,6 +95,46 @@ public class CommaSeparatedUtilities
                     + timeScale );
 
         return joiner;
-    }    
+    }
+
+    /**
+     * Returns the name of a geographic feature from an instance of {@link SampleMetadata}.
+     * 
+     * @param metadata the metadata
+     * @return name the feature name
+     * @throws NullPointerException if the input is null
+     */
+
+    public static String getFeatureNameFromMetadata( SampleMetadata metadata )
+    {
+
+        // TODO: need a more consistent representation of a geographic feature throughout the application
+        // See #55231-131
+        // For now, use the location name OR the coordinates, preferentially
+
+        String featureName = "UNKNOWN";
+
+        DatasetIdentifier identifier = metadata.getIdentifier();
+        if ( Objects.nonNull( identifier ) && Objects.nonNull( identifier.getGeospatialID() ) )
+        {
+            Location location = identifier.getGeospatialID();
+
+            // Full string representation unless a sensible short one is available
+            featureName = location.toString();
+
+            if ( location.hasLocationName() )
+            {
+                featureName = location.getLocationName();
+            }
+            else if ( location.hasCoordinates() )
+            {
+                featureName = Float.toString( location.getLongitude() ) +
+                              " "
+                              + Float.toString( location.getLatitude() );
+            }
+        }
+
+        return featureName;
+    }
 
 }

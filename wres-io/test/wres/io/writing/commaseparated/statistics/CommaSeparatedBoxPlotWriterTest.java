@@ -53,7 +53,7 @@ public class CommaSeparatedBoxPlotWriterTest
                                                                              ChronoUnit.SECONDS,
                                                                              this.outputDirectory );
 
-        writer.accept( WriterTestHelper.getBoxPlotPerPairForOnePool());
+        writer.accept( WriterTestHelper.getBoxPlotPerPairForOnePool() );
 
         // Determine the paths written
         Set<Path> pathsToFile = writer.get();
@@ -75,13 +75,16 @@ public class CommaSeparatedBoxPlotWriterTest
         assertEquals( 4, result.size() );
 
         assertTrue( result.get( 1 )
-                          .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,86400,86400,"
+                          .equals( "JUNP1,-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
+                                   + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,86400,86400,"
                                    + "1.0,2.0,3.0,4.0,5.0,6.0" ) );
         assertTrue( result.get( 2 )
-                          .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,86400,86400,"
+                          .equals( "JUNP1,-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
+                                   + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,86400,86400,"
                                    + "3.0,7.0,9.0,11.0,13.0,15.0" ) );
         assertTrue( result.get( 3 )
-                          .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,86400,86400,"
+                          .equals( "JUNP1,-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
+                                   + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,86400,86400,"
                                    + "5.0,21.0,24.0,27.0,30.0,33.0" ) );
         // If all succeeded, remove the file, otherwise leave to help debugging.
         Files.deleteIfExists( pathToFile );
@@ -130,11 +133,13 @@ public class CommaSeparatedBoxPlotWriterTest
         assertTrue( result.get( 0 ).contains( "," ) );
         assertTrue( result.get( 0 ).contains( "FORECAST ERROR" ) );
 
-        assertEquals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,86400,86400,"
+        assertEquals( "JUNP1,-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
+                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,86400,86400,"
                       + "1.0,3.0,5.0,7.0,9.0",
                       result.get( 1 ) );
 
-        assertEquals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,172800,172800,"
+        assertEquals( "JUNP1,-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
+                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,172800,172800,"
                       + "11.0,33.0,55.0,77.0,99.0",
                       result.get( 2 ) );
 

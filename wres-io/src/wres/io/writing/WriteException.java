@@ -1,14 +1,12 @@
 package wres.io.writing;
 
-import wres.datamodel.DataException;
-
 /**
  * A runtime exception associated with writing metric outputs.
  * 
  * @author james.brown@hydrosolved.com
  */
 
-public class WriteException extends DataException
+public class WriteException extends RuntimeException
 {
 
     /**

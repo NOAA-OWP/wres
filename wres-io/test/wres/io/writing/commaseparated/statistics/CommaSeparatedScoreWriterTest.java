@@ -76,7 +76,8 @@ public class CommaSeparatedScoreWriterTest
         assertTrue( firstResult.get( 0 ).contains( "," ) );
         assertTrue( firstResult.get( 0 ).contains( "ERROR" ) );
         assertTrue( firstResult.get( 1 )
-                               .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,3600,3600,"
+                               .equals( "DRRC2,-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
+                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,3600,3600,"
                                         + "3.0" ) );
 
         Optional<Path> pathToSecondFile =
@@ -92,7 +93,8 @@ public class CommaSeparatedScoreWriterTest
         assertTrue( secondResult.get( 0 ).contains( "," ) );
         assertTrue( secondResult.get( 0 ).contains( "ERROR" ) );
         assertTrue( secondResult.get( 1 )
-                                .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,3600,3600,"
+                                .equals( "DRRC2,-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
+                                         + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,3600,3600,"
                                          + "2.0" ) );
 
         Optional<Path> pathToThirdFile =
@@ -108,7 +110,8 @@ public class CommaSeparatedScoreWriterTest
         assertTrue( thirdResult.get( 0 ).contains( "," ) );
         assertTrue( thirdResult.get( 0 ).contains( "ERROR" ) );
         assertTrue( thirdResult.get( 1 )
-                               .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,3600,3600,"
+                               .equals( "DRRC2,-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
+                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,3600,3600,"
                                         + "1.0" ) );
 
         // If all succeeded, remove the file, otherwise leave to help debugging.
@@ -160,7 +163,8 @@ public class CommaSeparatedScoreWriterTest
         assertTrue( result.get( 0 ).contains( "," ) );
         assertTrue( result.get( 0 ).contains( "ERROR" ) );
         assertTrue( result.get( 1 )
-                          .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,3600,64800,"
+                          .equals( "DOLC2,-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
+                                   + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,3600,64800,"
                                    + "PT1H,PT2H,PT3H" ) );
         // If all succeeded, remove the file, otherwise leave to help debugging.
         Files.deleteIfExists( pathToFile );
@@ -208,14 +212,17 @@ public class CommaSeparatedScoreWriterTest
         List<String> firstResult = Files.readAllLines( pathToFile );
 
         assertTrue( firstResult.get( 0 )
-                               .equals( "EARLIEST ISSUE TIME,LATEST ISSUE TIME,EARLIEST LEAD TIME IN SECONDS,"
+                               .equals( "FEATURE DESCRIPTION,EARLIEST ISSUE TIME,LATEST ISSUE TIME,"
+                                        + "EARLIEST VALID TIME,LATEST VALID TIME,EARLIEST LEAD TIME IN SECONDS,"
                                         + "LATEST LEAD TIME IN SECONDS,MEAN SQUARE ERROR All data,"
                                         + "MEAN SQUARE ERROR > 23.0" ) );
         assertTrue( firstResult.get( 1 )
-                               .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
+                               .equals( "FTSC1,-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
+                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                         + "3600,3600,1.0,1.0" ) );
         assertTrue( firstResult.get( 2 )
-                               .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,7200,"
+                               .equals( "FTSC1,-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
+                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,7200,"
                                         + "7200,1.0,NA" ) );
 
         // If all succeeded, remove the file, otherwise leave to help debugging.
