@@ -539,15 +539,27 @@ public class NWMReader implements Callable<List<IngestResult>>
                                                 Instant latest,
                                                 NWMProfile nwmProfile )
     {
+        
         Set<Instant> datetimes = new HashSet<>();
         Duration modelRunStep = nwmProfile.getDurationBetweenReferenceDatetimes();
-        Instant earliestOnHour = earliest.plus( Duration.ofHours( 1 ) )
-                                         .truncatedTo( ChronoUnit.HOURS );
+        
+        //This assumes every type of NWM forecast generates forecasts at 0Z for 
+        //every day.  So, if I simply truncate earliest to be at time 0 for that
+        //day, that should be a good starting point for finding the first 
+        //NWM forecast reference strictly after the provided earliest Instant.
+        Instant earliestOnHour = earliest.truncatedTo( ChronoUnit.DAYS );
+        while ( !earliestOnHour.isAfter( earliest ) )
+        {
+            earliestOnHour = earliestOnHour.plus( nwmProfile.getDurationBetweenReferenceDatetimes() )
+                                           .truncatedTo( ChronoUnit.HOURS );
+        }
+
         LOGGER.debug( "Rounded earliest {} to exact hour {}",
                       earliest, earliestOnHour );
         datetimes.add( earliestOnHour );
         Instant additionalForecastDatetime = earliestOnHour.plus( modelRunStep );
 
+        //Why not use !additionalForecastDatetime.isAfter(latest)?  Less readable?
         while ( additionalForecastDatetime.isBefore( latest )
                 || additionalForecastDatetime.equals( latest ) )
         {
