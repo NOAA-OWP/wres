@@ -92,6 +92,14 @@ class NWMProfile
      */
     private final String nwmLocationLabel;
 
+    /**
+     * Whether the URLs for the forecast uses ensemble-like names.
+     *
+     * This is needed to extract member 1 of the medium range ensemble as if
+     * it were a single-valued forecast due to the API for medium range data.
+     */
+    private final boolean isEnsembleLike;
+
 
     /**
      * The duration between each NWM timeseries dataset reference datetime.
@@ -109,7 +117,8 @@ class NWMProfile
                 TimeLabel timeLabel,
                 String nwmSubdirectoryPrefix,
                 String nwmLocationLabel,
-                Duration durationBetweenReferenceDateTimes )
+                Duration durationBetweenReferenceDateTimes,
+                boolean isEnsembleLike )
     {
         Objects.requireNonNull( durationBetweenValidDatetimes );
         Objects.requireNonNull( nwmConfiguration );
@@ -129,6 +138,14 @@ class NWMProfile
         {
             throw new IllegalArgumentException( "Must have one or more members, not "
                                                 + memberCount );
+        }
+
+        if ( memberCount > 1 && !isEnsembleLike )
+        {
+            throw new IllegalArgumentException( "When there is more than one member, ("
+                                                + memberCount
+                                                + "), then the data must be "
+                                                + "ensemble-like." );
         }
 
         if ( durationBetweenValidDatetimes.isNegative() )
@@ -165,6 +182,7 @@ class NWMProfile
         this.nwmSubdirectoryPrefix = nwmSubdirectoryPrefix;
         this.nwmLocationLabel = nwmLocationLabel;
         this.durationBetweenReferenceDatetimes = durationBetweenReferenceDateTimes;
+        this.isEnsembleLike = isEnsembleLike;
     }
 
     int getBlobCount()
@@ -240,5 +258,10 @@ class NWMProfile
     Duration getDurationBetweenReferenceDatetimes()
     {
         return this.durationBetweenReferenceDatetimes;
+    }
+
+    boolean isEnsembleLike()
+    {
+        return this.isEnsembleLike;
     }
 }

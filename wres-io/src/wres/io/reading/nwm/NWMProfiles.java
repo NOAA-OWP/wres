@@ -88,7 +88,8 @@ class NWMProfiles
                                NWMProfile.TimeLabel.f,
                                "short_range",
                                "conus",
-                               Duration.ofHours( 1 ) );
+                               Duration.ofHours( 1 ),
+                               false );
     }
 
 
@@ -103,7 +104,8 @@ class NWMProfiles
                                NWMProfile.TimeLabel.f,
                                "medium_range",
                                "conus",
-                               Duration.ofHours( 6 ) );
+                               Duration.ofHours( 6 ),
+                               true );
     }
 
     private static NWMProfile getMediumRangeDeterministicChannelRtConus()
@@ -117,7 +119,8 @@ class NWMProfiles
                                NWMProfile.TimeLabel.f,
                                "medium_range",
                                "conus",
-                               Duration.ofHours( 6 ) );
+                               Duration.ofHours( 6 ),
+                               true );
     }
 
     private static NWMProfile getAnalysisAssimChannelRtConus()
@@ -131,7 +134,8 @@ class NWMProfiles
                                NWMProfile.TimeLabel.tm,
                                "analysis_assim",
                                "conus",
-                               Duration.ofHours( 1 ) );
+                               Duration.ofHours( 1 ),
+                               false );
     }
 
     private static NWMProfile getLongRangeChannelRtConus()
@@ -145,7 +149,8 @@ class NWMProfiles
                                NWMProfile.TimeLabel.f,
                                "long_range",
                                "conus",
-                               Duration.ofHours( 6 ) );
+                               Duration.ofHours( 6 ),
+                               true );
     }
 
 }

@@ -296,7 +296,7 @@ class NWMTimeSeries implements Closeable
 
             String directoryName = profile.getNwmSubdirectoryPrefix();
 
-            if ( profile.getMemberCount() > 1 )
+            if ( profile.isEnsembleLike() )
             {
                 directoryName += "_mem" + i ;
             }
@@ -311,7 +311,7 @@ class NWMTimeSeries implements Closeable
                                        + "." + profile.getNwmOutputType();
 
                 // Ensemble number appended if greater than one member present.
-                if ( profile.getMemberCount() > 1 )
+                if ( profile.isEnsembleLike() )
                 {
                     ncFilePartOne += "_" + i;
                 }
