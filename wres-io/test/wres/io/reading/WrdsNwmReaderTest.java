@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -16,6 +17,9 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockserver.integration.ClientAndServer;
+import org.mockserver.matchers.Times;
+import org.mockserver.model.HttpError;
+import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -135,8 +139,9 @@ public class WrdsNwmReaderTest
     @Test
     public void readAndSaveValidWrdsNwmTimeSeries() throws IOException
     {
-        WrdsNwmReaderTest.mockServer.when( request().withPath( ANALYSIS_PATH )
-                                                    .withMethod( "GET" ) )
+        WrdsNwmReaderTest.mockServer.when( HttpRequest.request()
+                                                      .withPath( ANALYSIS_PATH )
+                                                      .withMethod( "GET" ) )
                                     .respond( org.mockserver.model.HttpResponse.response( ANALYSIS_VALID_RESPONSE ) );
         URI fakeWrdsUri = URI.create( "http://localhost:"
                                       + WrdsNwmReaderTest.mockServer.getLocalPort()
@@ -297,9 +302,192 @@ public class WrdsNwmReaderTest
         {
             assertNotEquals( ReferenceTimeType.T0, time );
         }
-
-        // Cleanup
-        WrdsNwmReaderTest.mockServer.reset();
     }
 
+
+    @Test
+    public void readAndSaveValidWrdsTimeSeriesAfterTwoDroppedConnectionsFirst() throws IOException
+    {
+        WrdsNwmReaderTest.mockServer.when( HttpRequest.request()
+                                                      .withPath( ANALYSIS_PATH )
+                                                      .withMethod( "GET" ),
+                                           Times.exactly( 2 ) )
+                                    .error( HttpError.error()
+                                                     .withDropConnection( true ) );
+
+        // On the third time, return the body successfully.
+        WrdsNwmReaderTest.mockServer.when( HttpRequest.request()
+                                                      .withPath( ANALYSIS_PATH )
+                                                      .withMethod( "GET" ),
+                                           Times.once() )
+                                    .respond( org.mockserver.model.HttpResponse.response(
+                                            ANALYSIS_VALID_RESPONSE ) );
+
+
+        URI fakeWrdsUri = URI.create( "http://localhost:"
+                                      + WrdsNwmReaderTest.mockServer.getLocalPort()
+                                      + ANALYSIS_PATH
+                                      + ANALYSIS_PARAMS );
+
+        List<DataSourceConfig.Source> sourceList = new ArrayList<>( 1 );
+        DataSourceConfig.Source confSource =
+                new DataSourceConfig.Source( fakeWrdsUri,
+                                             InterfaceShortHand.WRDS_NWM,
+                                             null,
+                                             null,
+                                             null,
+                                             null,
+                                             null,
+                                             null,
+                                             null );
+        sourceList.add( confSource );
+
+        DataSourceConfig.Variable configVariable =
+                new DataSourceConfig.Variable( "streamflow", null, null );
+        DataSourceConfig config = new DataSourceConfig( DatasourceType.ANALYSES,
+                                                        sourceList,
+                                                        configVariable,
+                                                        null,
+                                                        null,
+                                                        null,
+                                                        null,
+                                                        null,
+                                                        null );
+
+        ProjectConfig.Inputs inputs = new ProjectConfig.Inputs( null,
+                                                                config,
+                                                                null );
+
+        Feature featureConfig = new Feature( null,
+                                             null,
+                                             null,
+                                             null,
+                                             null,
+                                             "HDGA4",
+                                             null,
+                                             null,
+                                             null,
+                                             null,
+                                             null,
+                                             null,
+                                             null );
+
+        List<Feature> features = new ArrayList<>( 1 );
+        features.add( featureConfig );
+        PairConfig pairConfig = new PairConfig( "CMS",
+                                                features,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null );
+
+        ProjectConfig projectConfig = new ProjectConfig( inputs,
+                                                         pairConfig,
+                                                         null,
+                                                         null,
+                                                         null,
+                                                         null );
+
+        DataSource dataSource = DataSource.of( confSource,
+                                               config,
+                                               Set.of( LeftOrRightOrBaseline.LEFT,
+                                                       LeftOrRightOrBaseline.RIGHT ),
+                                               fakeWrdsUri );
+
+        WrdsNwmReader reader = Mockito.spy( new WrdsNwmReader( projectConfig,
+                                                               dataSource,
+                                                               this.fakeLockManager ) );
+
+        Mockito.doReturn( this.fakeTimeSeriesIngester )
+               .when( reader )
+               .createTimeSeriesIngester( any( ProjectConfig.class ),
+                                          any( DataSource.class ),
+                                          any( DatabaseLockManager.class ),
+                                          any( TimeSeries.class ),
+                                          anyString(),
+                                          anyString(),
+                                          anyString() );
+
+
+        // Fake the database-dependent WRES feature name getter
+        Mockito.doReturn( "HDGA4" )
+               .when( reader )
+               .getWresFeatureNameFromNwmFeatureId( NWM_FEATURE_ID );
+
+
+        // Exercise the reader by executing call method.
+        // This is the actual test. Everything up to this point is setup.
+        reader.call();
+
+
+        // Assertions, verify.
+
+        // Capture the argument to TimeSeriesIngester.
+        // Probably should refactor WrdsNwmReader to avoid having to do this.
+        Mockito.verify( reader )
+               .createTimeSeriesIngester( any( ProjectConfig.class ),
+                                          any( DataSource.class ),
+                                          any( DatabaseLockManager.class ),
+                                          this.timeSeries.capture(),
+                                          anyString(),
+                                          anyString(),
+                                          anyString() );
+
+        // Verify that the reader requested thrice (2 times failed).
+        WrdsNwmReaderTest.mockServer.verify( request().withMethod( "GET" )
+                                                      .withPath( ANALYSIS_PATH ),
+                                             VerificationTimes.exactly( 3 ) );
+
+        // Verify that a TimeSeries was created and given to the Ingester.
+        TimeSeries<Double> data = this.timeSeries.getValue();
+        assertNotNull( data );
+
+        LOGGER.info( "Created this timeseries: {}", data );
+
+        // Verify that the TimeSeries content matched what was in the body.
+        // See around lines 92 through 101 above (or last values in ANALYSIS_VALID_RESPONSE)
+
+        Event<Double> expectedEventOne =
+                Event.of( Instant.parse( "2020-01-12T03:00:00Z" ),
+                          270.9899939429015 );
+        Event<Double> expectedEventTwo =
+                Event.of( Instant.parse( "2020-01-12T02:00:00Z" ),
+                          334.139992531389 );
+        Event<Double> expectedEventThree =
+                Event.of( Instant.parse( "2020-01-12T01:00:00Z" ),
+                          382.27999145537615 );
+
+        assertTrue( data.getEvents()
+                        .contains( expectedEventOne ) );
+        assertTrue( data.getEvents()
+                        .contains( expectedEventTwo ) );
+        assertTrue( data.getEvents()
+                        .contains( expectedEventThree ) );
+
+        // Verify that only three events exist.
+        assertEquals( 3, data.getEvents()
+                             .size() );
+
+        // Verify that there is no T0 in analysis data
+        for ( ReferenceTimeType time : data.getReferenceTimes()
+                                           .keySet() )
+        {
+            assertNotEquals( ReferenceTimeType.T0, time );
+        }
+    }
+
+
+    @After
+    public void tearDown()
+    {
+        WrdsNwmReaderTest.mockServer.reset();
+    }
 }
