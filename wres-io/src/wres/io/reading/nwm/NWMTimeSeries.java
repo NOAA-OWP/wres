@@ -163,6 +163,8 @@ class NWMTimeSeries implements Closeable
         CountDownLatch startGettingResults =
                 new CountDownLatch( CONCURRENT_READS );
 
+        this.featuresNotFound = new HashSet<>( 1 );
+
         // Open all the relevant files during construction, or fail.
         for ( URI netcdfUri : netcdfUris )
         {
@@ -255,8 +257,6 @@ class NWMTimeSeries implements Closeable
             LOGGER.warn( "Found a partial NWM TimeSeries with reference datetime {} and profile {} from baseUri {}.",
                          referenceDatetime, profile, this.baseUri );
         }
-
-        this.featuresNotFound = new HashSet<>( 1 );
     }
 
 
