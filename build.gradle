@@ -251,7 +251,7 @@ project(':wres-system')
         testCompile 'org.powermock:powermock-module-junit4:2.0.4'
 
         // Use mockserver to test certificate utilities
-        testCompile 'org.mock-server:mockserver-netty:5.6.1'
+        testCompile 'org.mock-server:mockserver-netty:5.8.1'
     }
 
     test
@@ -356,7 +356,7 @@ project(':wres-io')
         testCompile 'org.powermock:powermock-module-junit4:2.0.4'
 
         // Use mockserver as a mock server for mock API responses
-        testCompile 'org.mock-server:mockserver-netty:5.6.1'
+        testCompile 'org.mock-server:mockserver-netty:5.8.1'
 
         // Use H2 for truly embedded SQL db
         testCompile 'com.h2database:h2:1.4.199'

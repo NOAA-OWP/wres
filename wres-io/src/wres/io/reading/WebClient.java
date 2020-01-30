@@ -1,11 +1,15 @@
 package wres.io.reading;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.ConnectException;
+import java.net.SocketException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -27,7 +31,14 @@ import org.slf4j.LoggerFactory;
 public class WebClient
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( WebClient.class );
-    private static final Duration MAX_RETRY_DURATION = Duration.ofSeconds( 30 );
+    private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds( 10 );
+    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds( 20 );
+
+    // Maybe retry should be hard-coded to something, but it seems like at least
+    // one connection timeout and one request timeout should be tolerated, thus
+    // the need to add the two timeouts.
+    private static final Duration MAX_RETRY_DURATION = CONNECT_TIMEOUT.plus( REQUEST_TIMEOUT )
+                                                                      .multipliedBy( 2 );
     private static final List<Integer> DEFAULT_RETRY_STATI = List.of( 500,
                                                                       502,
                                                                       503,
@@ -42,6 +53,7 @@ public class WebClient
         this.httpClient = HttpClient.newBuilder()
                                     .version( HttpClient.Version.HTTP_1_1 )
                                     .followRedirects( HttpClient.Redirect.NORMAL )
+                                    .connectTimeout( CONNECT_TIMEOUT )
                                     .build();
     }
 
@@ -51,6 +63,7 @@ public class WebClient
         this.httpClient = HttpClient.newBuilder()
                                     .version( HttpClient.Version.HTTP_1_1 )
                                     .followRedirects( HttpClient.Redirect.NORMAL )
+                                    .connectTimeout( CONNECT_TIMEOUT )
                                     .sslContext( sslContext )
                                     .build();
     }
@@ -109,21 +122,9 @@ public class WebClient
             HttpRequest request = HttpRequest.newBuilder()
                                              .uri( uri )
                                              .header( "Accept-Encoding", "gzip" )
+                                             .timeout( REQUEST_TIMEOUT )
                                              .build();
-            HttpResponse<InputStream> httpResponse =
-                    this.getHttpClient()
-                        .send( request,
-                               HttpResponse.BodyHandlers.ofInputStream() );
-
-            if ( LOGGER.isDebugEnabled() )
-            {
-                LOGGER.debug( "For {}, request headers are {} response headers are {}",
-                              uri,
-                              request.headers(),
-                              httpResponse.headers() );
-            }
-
-            int httpStatus = httpResponse.statusCode();
+            HttpResponse<InputStream> httpResponse = tryRequest( request );
 
             boolean retry = true;
             Instant start = Instant.now();
@@ -131,15 +132,20 @@ public class WebClient
 
             while ( retry )
             {
-                if ( retryOn.contains( httpStatus ) )
+                // When a tolerable exception happened (httpResponse is null)
+                // or the status is something we need to retry:
+                if ( Objects.isNull( httpResponse )
+                     || retryOn.contains( httpResponse.statusCode() ) )
                 {
-                    LOGGER.warn( "Retrying {} in a bit due to http status {}.",
-                                 uri, httpStatus );
+                    if ( Objects.nonNull( httpResponse ) )
+                    {
+                        LOGGER.warn( "Retrying {} in a bit due to HTTP status {}.",
+                                     uri,
+                                     httpResponse.statusCode() );
+                    }
+
                     Thread.sleep( sleepMillis );
-                    httpResponse = this.getHttpClient()
-                                       .send( request,
-                                              HttpResponse.BodyHandlers.ofInputStream() );
-                    httpStatus = httpResponse.statusCode();
+                    httpResponse = tryRequest( request );
                     Instant now = Instant.now();
                     retry = start.plus( MAX_RETRY_DURATION )
                                  .isAfter( now );
@@ -156,26 +162,41 @@ public class WebClient
             Instant end = Instant.now();
             Duration duration = Duration.between( start, end );
 
-            if ( httpStatus >= 200 && httpStatus < 300 )
+            if ( Objects.nonNull( httpResponse ) )
             {
-                LOGGER.debug( "Successfully got InputStream from {} in {}", uri,
-                              duration );
-                InputStream decodedStream = WebClient.getDecodedInputStream( httpResponse );
-                return Pair.of( httpStatus, decodedStream );
-            }
-            else if ( httpStatus >= 400 && httpStatus < 500 )
-            {
-                LOGGER.debug( "Got empty/not-found data from {} in {}", uri,
-                              duration );
-                return Pair.of( httpStatus, InputStream.nullInputStream() );
+                int httpStatus = httpResponse.statusCode();
+
+                if ( httpStatus >= 200 && httpStatus < 300 )
+                {
+                    LOGGER.debug( "Successfully got InputStream from {} in {}",
+                                  uri,
+                                  duration );
+                    InputStream decodedStream =
+                            WebClient.getDecodedInputStream( httpResponse );
+                    return Pair.of( httpStatus, decodedStream );
+                }
+                else if ( httpStatus >= 400 && httpStatus < 500 )
+                {
+                    LOGGER.debug( "Got empty/not-found data from {} in {}", uri,
+                                  duration );
+                    return Pair.of( httpStatus, InputStream.nullInputStream() );
+                }
+                else
+                {
+                    throw new IngestException( "Failed to get data from "
+                                               + uri
+                                               + " due to status code "
+                                               + httpStatus
+                                               + " after " + duration );
+                }
             }
             else
             {
                 throw new IngestException( "Failed to get data from "
                                            + uri
-                                           + " due to status code "
-                                           + httpStatus
-                                           + " after " + duration );
+                                           + " due to repeated failures (see "
+                                           + "WARN messages above) after "
+                                           + duration );
             }
         }
         catch ( InterruptedException ie )
@@ -186,6 +207,59 @@ public class WebClient
         }
     }
 
+
+    /**
+     *
+     * @param request The request to attempt
+     * @return The response if successful, null if retriable.
+     * @throws IOException When non-retriable exception occurs.
+     */
+
+    private HttpResponse<InputStream> tryRequest( HttpRequest request )
+            throws IOException
+    {
+        LOGGER.debug( "Called tryRequest with {}", request );
+        URI uri = request.uri();
+        HttpResponse<InputStream> httpResponse = null;
+
+        try
+        {
+            httpResponse = this.getHttpClient()
+                               .send( request,
+                                      HttpResponse.BodyHandlers.ofInputStream() );
+            if ( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( "For {}, request headers are {} response headers are {}",
+                              uri,
+                              request.headers(),
+                              httpResponse.headers() );
+            }
+        }
+        catch ( IOException ioe )
+        {
+            LOGGER.debug( "Full exception trace: ", ioe );
+            // Examine the exception chain to see if it is recoverable.
+            if ( WebClient.shouldRetryWithChain( ioe ) )
+            {
+                LOGGER.warn( "Retrying {} in a bit due to {}.", uri, ioe.toString() );
+            }
+            else
+            {
+                // Unrecoverable. If truly recoverable, add code to the method
+                // called shouldRetryIndividualException().
+                throw new IngestException( "Unrecoverable exception when getting data from "
+                                           + uri, ioe );
+            }
+        }
+        catch ( InterruptedException ie )
+        {
+            LOGGER.warn( "Interrupted while sending request {}", request, ie );
+            Thread.currentThread().interrupt();
+            return null;
+        }
+
+        return httpResponse;
+    }
 
     /**
      * Decode an HttpResponse<InputStream> based on encoding in the header.
@@ -221,4 +295,75 @@ public class WebClient
                                                      + encoding );
         }
     }
+
+
+    /**
+     * Given an IOException, test if this one or its causes should be retried.
+     * @param ioe The exception to examine
+     * @return True when it can be retried, false otherwise.
+     */
+    private static boolean shouldRetryWithChain( IOException ioe )
+    {
+        if ( WebClient.shouldRetryIndividualException( ioe ) )
+        {
+            return true;
+        }
+
+        Throwable cause = ioe.getCause();
+
+        while ( !Objects.isNull( cause ) )
+        {
+            if ( WebClient.shouldRetryIndividualException( cause ) )
+            {
+                return true;
+            }
+
+            cause = cause.getCause();
+        }
+
+        return false;
+    }
+
+    /**
+     * Look at an individual exception, return true if it ought to be retried.
+     * @param t The Exception (Throwable to avoid casting mess)
+     * @return true when the exception can be safely retried, false otherwise.
+     */
+    private static boolean shouldRetryIndividualException( Throwable t )
+    {
+        if ( t instanceof HttpTimeoutException )
+        {
+            return true;
+        }
+
+        if ( t instanceof ConnectException )
+        {
+            return true;
+        }
+
+        if ( t instanceof SocketException )
+        {
+            return true;
+        }
+
+        if ( t instanceof EOFException )
+        {
+            return true;
+        }
+
+        if ( t instanceof IOException
+             && Objects.nonNull( t.getMessage() )
+             && t.getMessage()
+                 .toLowerCase()
+                 .contains( "connection reset" ) )
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+
+
+
 }
