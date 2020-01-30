@@ -3,7 +3,6 @@ package wres.io.reading.nwm;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ConcurrentModificationException;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -35,7 +34,8 @@ public class NWMTimeSeriesTest
                                                 NWMProfile.TimeLabel.f,
                                                 "fake_dir_prefix",
                                                 "fake_location_label",
-                                                Duration.ofHours( 9001 ) );
+                                                Duration.ofHours( 9001 ),
+                                                false );
         Set<URI> actual = NWMTimeSeries.getNetcdfUris( nwmProfile,
                                                        Instant.parse( "2019-10-06T08:00:00Z" ),
                                                        URI.create( "https://test/" ) );
@@ -60,7 +60,8 @@ public class NWMTimeSeriesTest
                                                 NWMProfile.TimeLabel.f,
                                                 "short_range",
                                                 "conus",
-                                                Duration.ofHours( 1 ) );
+                                                Duration.ofHours( 1 ),
+                                                false );
         Set<URI> actual = NWMTimeSeries.getNetcdfUris( nwmProfile,
                                                        Instant.parse( "2019-10-06T08:00:00Z" ),
                                                        URI.create( "https://test/" ) );
@@ -99,7 +100,8 @@ public class NWMTimeSeriesTest
                                                 NWMProfile.TimeLabel.f,
                                                 "medium_range",
                                                 "conus",
-                                                Duration.ofHours( 6 ) );
+                                                Duration.ofHours( 6 ),
+                                                true );
         Set<URI> actual = NWMTimeSeries.getNetcdfUris( nwmProfile,
                                                        Instant.parse( "2019-10-06T18:00:00Z" ),
                                                        URI.create( "file:///test/" ) );
@@ -141,7 +143,8 @@ public class NWMTimeSeriesTest
                                                 NWMProfile.TimeLabel.tm,
                                                 "analysis_assim_hawaii",
                                                 "hawaii",
-                                                Duration.ofHours( 1 ) );
+                                                Duration.ofHours( 1 ),
+                                                false );
         Set<URI> actual = NWMTimeSeries.getNetcdfUris( nwmProfile,
                                                        Instant.parse(
                                                              "2019-10-06T02:00:00Z" ),
@@ -171,7 +174,8 @@ public class NWMTimeSeriesTest
                                                 NWMProfile.TimeLabel.tm,
                                                 "analysis_assim",
                                                 "conus",
-                                                Duration.ofHours( 1 ) );
+                                                Duration.ofHours( 1 ),
+                                                false );
 
         try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
                                                                Instant.parse( "2019-10-23T02:00:00Z" ),
@@ -199,7 +203,8 @@ public class NWMTimeSeriesTest
                                                 NWMProfile.TimeLabel.f,
                                                 "short_range",
                                                 "conus",
-                                                Duration.ofHours( 1 ) );
+                                                Duration.ofHours( 1 ),
+                                                false );
 
         LOGGER.info( "Opening a forecast based on {}", nwmProfile );
 
@@ -234,7 +239,8 @@ public class NWMTimeSeriesTest
                                                 NWMProfile.TimeLabel.f,
                                                 "short_range",
                                                 "conus",
-                                                Duration.ofHours( 1 ) );
+                                                Duration.ofHours( 1 ),
+                                                false );
 
         LOGGER.info( "Opening a forecast based on {}", nwmProfile );
 
@@ -268,7 +274,8 @@ public class NWMTimeSeriesTest
                                                 NWMProfile.TimeLabel.f,
                                                 "short_range",
                                                 "conus",
-                                                Duration.ofHours( 1 ) );
+                                                Duration.ofHours( 1 ),
+                                                false );
 
         LOGGER.info( "Opening a forecast based on {}", nwmProfile );
 
@@ -303,7 +310,8 @@ public class NWMTimeSeriesTest
                                                 NWMProfile.TimeLabel.f,
                                                 "short_range",
                                                 "conus",
-                                                Duration.ofHours( 1 ) );
+                                                Duration.ofHours( 1 ),
+                                                false );
 
         LOGGER.info( "Opening a forecast based on {}", nwmProfile );
         try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
@@ -336,7 +344,8 @@ public class NWMTimeSeriesTest
                                                 NWMProfile.TimeLabel.f,
                                                 "short_range",
                                                 "conus",
-                                                Duration.ofHours( 1 ) );
+                                                Duration.ofHours( 1 ),
+                                                false );
         LOGGER.info( "Opening a forecast based on {}", nwmProfile );
 
         try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
@@ -368,7 +377,8 @@ public class NWMTimeSeriesTest
                                                 NWMProfile.TimeLabel.f,
                                                 "short_range",
                                                 "conus",
-                                                Duration.ofHours( 1 ) );
+                                                Duration.ofHours( 1 ),
+                                                false );
 
         LOGGER.info( "Opening a forecast based on {}", nwmProfile );
         try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
@@ -403,7 +413,8 @@ public class NWMTimeSeriesTest
                                                 NWMProfile.TimeLabel.f,
                                                 "medium_range",
                                                 "conus",
-                                                Duration.ofHours( 6 ) );
+                                                Duration.ofHours( 6 ),
+                                                true );
 
         LOGGER.info( "Opening a forecast based on {}", nwmProfile );
 
@@ -447,7 +458,8 @@ public class NWMTimeSeriesTest
                                                 NWMProfile.TimeLabel.f,
                                                 "medium_range",
                                                 "conus",
-                                                Duration.ofHours( 6 ) );
+                                                Duration.ofHours( 6 ),
+                                                true );
 
         LOGGER.info( "Opening a forecast based on {}", nwmProfile );
 
