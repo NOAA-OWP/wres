@@ -521,6 +521,10 @@ class NWMTimeSeries implements Closeable
             if ( Objects.isNull( ensembleRow ) )
             {
                 ensembleRow = new double[memberCount];
+
+                // Fill new row with no-data-values to tolerate missing data.
+                // There may be a better way. See #73944
+                Arrays.fill( ensembleRow, MissingValues.DOUBLE );
                 fullEnsemble.put( eventDatetime, ensembleRow );
             }
 
