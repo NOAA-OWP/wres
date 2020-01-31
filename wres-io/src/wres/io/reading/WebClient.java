@@ -32,7 +32,7 @@ public class WebClient
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( WebClient.class );
     private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds( 10 );
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds( 20 );
+    private static final Duration REQUEST_TIMEOUT = Duration.ofMinutes( 10 );
 
     // Maybe retry should be hard-coded to something, but it seems like at least
     // one connection timeout and one request timeout should be tolerated, thus
