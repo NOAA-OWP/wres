@@ -21,7 +21,7 @@ import wres.system.DatabaseLockManager;
 public class SourceCompleter
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( SourceCompleter.class );
-    private static final Duration PATIENCE_LEVEL = Duration.ofSeconds( 30 );
+    private static final Duration PATIENCE_LEVEL = Duration.ofMinutes( 30 );
     private final int sourceId;
     private final DatabaseLockManager lockManager;
 
