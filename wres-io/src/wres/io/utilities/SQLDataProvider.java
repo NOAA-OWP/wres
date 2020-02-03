@@ -522,6 +522,7 @@ public class SQLDataProvider implements DataProvider
     public Double[] getDoubleArray( String columnName )
     {
         Array outer = null;
+        Double[] rawResult;
 
         try
         {
@@ -532,13 +533,12 @@ public class SQLDataProvider implements DataProvider
 
             if ( inner instanceof Double[] )
             {
-                return (Double[]) inner;
+                rawResult = (Double[]) inner;
             }
             else if ( inner instanceof Object[] )
             {
                 Object[] toTransform = (Object[]) inner;
-
-                return Arrays.copyOf( toTransform, toTransform.length, Double[].class );
+                rawResult = Arrays.copyOf( toTransform, toTransform.length, Double[].class );
             }
             else
             {
@@ -569,6 +569,11 @@ public class SQLDataProvider implements DataProvider
                 }
             }
         }
+
+        // Translate NULL in wres DB to missing value in wres Java
+        return Arrays.stream( rawResult )
+                     .map( d -> Objects.isNull( d ) ? MissingValues.DOUBLE : d )
+                     .toArray( Double[]::new );
     }
 
     @Override
