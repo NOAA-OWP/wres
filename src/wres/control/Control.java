@@ -109,6 +109,8 @@ public class Control implements Function<String[], Integer>,
             }
         }
 
+        // Display the raw configuration in logs. Issue #56900.
+        LOGGER.info( "{}", projectConfigPlus.getRawConfig() );
         LOGGER.info( "Successfully unmarshalled project configuration from {}"
                      + ", validating further...",
                      projectConfigPlus );
