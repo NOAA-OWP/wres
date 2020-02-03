@@ -10,6 +10,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -520,22 +521,24 @@ public class SQLDataProvider implements DataProvider
     @Override
     public Double[] getDoubleArray( String columnName )
     {
+        Array outer = null;
+
         try
         {
             // Probe the inner type of array before casting
             // See #56214-139-140
-            Array outer = this.resultSet.getArray( columnName );
-            Object inner = this.resultSet.getArray( columnName ).getArray();
+            outer = this.resultSet.getArray( columnName );
+            Object inner = outer.getArray();
 
-            if ( inner instanceof Object[] )
+            if ( inner instanceof Double[] )
+            {
+                return (Double[]) inner;
+            }
+            else if ( inner instanceof Object[] )
             {
                 Object[] toTransform = (Object[]) inner;
 
                 return Arrays.copyOf( toTransform, toTransform.length, Double[].class );
-            }
-            else if ( inner instanceof Double[] )
-            {
-                return (Double[]) inner;
             }
             else
             {
@@ -549,6 +552,22 @@ public class SQLDataProvider implements DataProvider
         catch ( SQLException e )
         {
             throw new IllegalStateException( THE_DATA_IS_NOT_ACCESSIBLE, e );
+        }
+        finally
+        {
+            // Unfortunately, Closeable was not used in JDBC
+            if ( Objects.nonNull( outer ) )
+            {
+                try
+                {
+                    outer.free();
+                }
+                catch ( SQLException se )
+                {
+                    LOGGER.warn( "Could not release resources for column {} in {}",
+                                 columnName, this.resultSet );
+                }
+            }
         }
     }
 
