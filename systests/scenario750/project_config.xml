@@ -16,6 +16,9 @@
         <unit>CMS</unit>
         <!--<feature rfc="ABRFC" />-->
         <feature locationId="DRRC2" />
+
+        <!-- This location has no data -->
+        <feature locationId="ALRA1" />
         <leadHours minimum="3" maximum="9" />
         <dates earliest="2018-08-26T00:00:00Z" latest="2018-09-04T00:00:00Z" />
         <issuedDates earliest="2018-08-27T05:59:59Z" latest="2018-08-28T06:00:00Z" />
