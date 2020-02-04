@@ -565,6 +565,22 @@ public class Project
         return returnMe;
     }
 
+
+    /**
+     * Get the variableFeatureId, also facilitates testing.
+     * @param variableName The name of the variable.
+     * @param feature The feature.
+     * @return The integer id from the wres database, null if not found?
+     */
+
+    public Integer getVariableFeatureId( String variableName, Feature feature )
+            throws SQLException
+    {
+        int variableId = Variables.getVariableID( variableName );
+        return Features.getVariableFeatureID( feature,
+                                              variableId );
+    }
+
     /**
      * @return The earliest possible day in a season. NULL unless specified in
      * the configuration

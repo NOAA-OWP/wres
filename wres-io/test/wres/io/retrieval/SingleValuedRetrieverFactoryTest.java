@@ -57,8 +57,6 @@ import wres.io.data.details.MeasurementDetails;
 import wres.io.data.details.SourceDetails;
 import wres.io.data.details.VariableDetails;
 import wres.io.project.Project;
-import wres.io.retrieval.SingleValuedRetrieverFactory;
-import wres.io.retrieval.UnitMapper;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.TestDatabase;
 import wres.system.SystemSettings;
@@ -424,6 +422,8 @@ public class SingleValuedRetrieverFactoryTest
         Project project = Mockito.mock( Project.class );
         Mockito.when( project.getProjectConfig() ).thenReturn( projectConfig );
         Mockito.when( project.getId() ).thenReturn( PROJECT_ID );
+        Mockito.when( project.getVariableFeatureId( STREAMFLOW, feature ) )
+               .thenReturn( this.variableFeatureId );
         Mockito.when( project.getLeftVariableFeatureId( feature ) ).thenReturn( this.variableFeatureId );
         Mockito.when( project.getRightVariableFeatureId( feature ) ).thenReturn( this.variableFeatureId );
         Mockito.when( project.getBaselineVariableFeatureId( feature ) ).thenReturn( this.variableFeatureId );

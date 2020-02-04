@@ -10,17 +10,25 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.commons.compress.utils.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static wres.io.concurrency.TimeSeriesIngester.GEO_ID_TYPE.GAGE_ID;
+
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.time.TimeSeries;
+import wres.io.concurrency.TimeSeriesIngester;
 import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
 import wres.io.reading.BasicSource;
@@ -40,6 +48,9 @@ public class WaterMLBasicSource extends BasicSource
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( WaterMLBasicSource.class );
     private static final WebClient WEB_CLIENT = new WebClient();
+    private static final ObjectMapper OBJECT_MAPPER =
+            new ObjectMapper().registerModule( new JavaTimeModule() )
+                              .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true );
 
     private static final String MD5SUM_OF_EMPTY_STRING = "68b329da9893e34099c7d8ad5cb9c940";
     private final DatabaseLockManager lockManager;
@@ -157,18 +168,28 @@ public class WaterMLBasicSource extends BasicSource
         try
         {
             byte[] rawForecast = IOUtils.toByteArray( data );
-            ObjectMapper mapper = new ObjectMapper();
-            Response response = mapper.readValue( rawForecast,
-                                                  Response.class );
+            Response response = OBJECT_MAPPER.readValue( rawForecast,
+                                                         Response.class );
             String hash = this.identifyUsgsData( response );
             WaterMLSource waterMLSource =
-                    new WaterMLSource( this.projectConfig,
-                                       this.dataSource,
-                                       this.lockManager,
+                    new WaterMLSource( this.dataSource,
                                        response,
                                        hash );
-            IngestResult result = waterMLSource.ingestObservationResponse();
-            return List.of( result );
+            List<TimeSeries<Double>> transformed = waterMLSource.call();
+            List<IngestResult> ingestResults = new ArrayList<>( transformed.size() );
+
+            for ( TimeSeries<Double> timeSeries : transformed )
+            {
+                TimeSeriesIngester ingester = TimeSeriesIngester.of( this.projectConfig,
+                                                                     this.dataSource,
+                                                                     this.lockManager,
+                                                                     timeSeries,
+                                                                     GAGE_ID );
+                List<IngestResult> result = ingester.call();
+                ingestResults.addAll( result );
+            }
+
+            return Collections.unmodifiableList( ingestResults );
         }
         catch ( JsonMappingException jme )
         {

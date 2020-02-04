@@ -31,6 +31,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static wres.io.concurrency.TimeSeriesIngester.GEO_ID_TYPE.LID;
+
 import wres.config.generated.DatasourceType;
 import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
@@ -455,6 +457,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                                        lockManager,
                                        timeSeries,
                                        locationName,
+                                       LID,
                                        variableName,
                                        measurementUnit );
     }

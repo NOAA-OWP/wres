@@ -1,170 +1,98 @@
 package wres.io.reading.waterml;
 
-import java.io.IOException;
-import java.sql.SQLException;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
-import java.util.concurrent.CountDownLatch;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.concurrent.Callable;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.commons.math3.util.Precision.EPSILON;
 
-import wres.config.generated.ProjectConfig;
+import wres.datamodel.MissingValues;
 import wres.datamodel.scale.TimeScale;
-import wres.io.data.caching.Features;
-import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.Variables;
-import wres.io.data.details.FeatureDetails;
-import wres.io.data.details.SourceCompletedDetails;
-import wres.io.data.details.SourceDetails;
+import wres.datamodel.time.Event;
+import wres.datamodel.time.ReferenceTimeType;
+import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.reading.DataSource;
-import wres.io.reading.IngestException;
-import wres.io.reading.IngestResult;
-import wres.io.reading.IngestedValues;
-import wres.io.reading.SourceCompleter;
 import wres.io.reading.waterml.timeseries.Method;
 import wres.io.reading.waterml.timeseries.SiteCode;
-import wres.io.reading.waterml.timeseries.TimeSeries;
 import wres.io.reading.waterml.timeseries.TimeSeriesValue;
 import wres.io.reading.waterml.timeseries.TimeSeriesValues;
-import wres.system.DatabaseLockManager;
 
 /**
- * Saves WaterML Response objects to the database
+ * Tranforms parsed WaterML data into WRES TimeSeries data.
  */
-public class WaterMLSource
+class WaterMLSource implements Callable<List<TimeSeries<Double>>>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(
             WaterMLSource.class);
 
     private final Response waterML;
-    private final String hash;
-    private final SortedMap<Pair<String,String>, Integer> variableFeatureIDs = new TreeMap<>();
-    private final Map<String,Integer> measurementIds = new HashMap<>( 1 );
-
-    private final ProjectConfig projectConfig;
     private final DataSource dataSource;
-    private final DatabaseLockManager lockManager;
-    private final Set<Pair<CountDownLatch,CountDownLatch>> latches = new HashSet<>();
+    private final String hashOfSuperSet;
 
     /**
-     * @param projectConfig the project declaration
-     * @param dataSource the data source information
-     * @param lockManager the lock manager to use
-     * @param waterML the deserialized waterML object
-     * @param hash the identifier of the waterML object
+     * Create a WaterMLSource, call transformWaterML to transform to TimeSeries.
+     *
+     * More consideration required for how to best use hashOfSuperSet to avoid
+     * repeated ingest of the same data. It may or may not make sense to have it
+     * here at this level combined with a fully deserialized waterML object,
+     * because by the time deserialization has happened, the opportunity for
+     * performance improvement is over. In any case, leaving here because it
+     * is still available from the caller as of 2020-01-27.
+     * @param dataSource The data source information
+     * @param waterML The deserialized waterML object
+     * @param hash The identifier of the waterML object, superset of timeseries
      */
 
-    public WaterMLSource( ProjectConfig projectConfig,
-                          DataSource dataSource,
-                          DatabaseLockManager lockManager,
+    public WaterMLSource( DataSource dataSource,
                           Response waterML,
                           String hash )
     {
-        Objects.requireNonNull( projectConfig );
         Objects.requireNonNull( dataSource );
-        Objects.requireNonNull( lockManager );
         Objects.requireNonNull( waterML );
         Objects.requireNonNull( hash );
-        this.projectConfig = projectConfig;
         this.dataSource = dataSource;
-        this.lockManager = lockManager;
         this.waterML = waterML;
-        this.hash = hash;
+        this.hashOfSuperSet = hash;
     }
 
-
-    IngestResult ingestObservationResponse() throws IOException
+    @Override
+    public List<TimeSeries<Double>> call()
     {
-        int readSeriesCount = 0;
+        List<wres.datamodel.time.TimeSeries<Double>> allTimeSeries =
+                new ArrayList<>();
 
-        SourceDetails.SourceKey sourceKey =
-                new SourceDetails.SourceKey( this.dataSource.getUri(),
-                                             Instant.now().toString(),
-                                             null,
-                                             this.hash );
-
-        SourceDetails sourceDetails = this.createSourceDetails( sourceKey );
-
-        try
+        if ( this.waterML.getValue().getNumberOfPopulatedTimeSeries() > 0 )
         {
-            sourceDetails.save();
-        }
-        catch ( SQLException se )
-        {
-            throw new IngestException( "Failed to ingest data source "
-                                       + sourceKey.getSourcePath(),
-                                       se );
-        }
-
-        SourceCompleter sourceCompleter =
-                this.createSourceCompleter( sourceDetails.getId(),
-                                            this.lockManager );
-        boolean sourceCompleted;
-
-        if ( sourceDetails.performedInsert() )
-        {
-            try
+            for ( wres.io.reading.waterml.timeseries.TimeSeries series :
+                    this.waterML.getValue()
+                                .getTimeSeries() )
             {
-                lockManager.lockSource( sourceDetails.getId() );
+                List<wres.datamodel.time.TimeSeries<Double>> doubleTimeSerieses
+                        = this.readObservationSeries( series );
+                allTimeSeries.addAll( doubleTimeSerieses );
             }
-            catch ( SQLException se )
-            {
-                throw new IngestException( "Unable to lock to ingest source id "
-                                           + sourceDetails.getId() + " named "
-                                           + this.dataSource.getUri(), se );
-            }
-
-            if ( this.waterML.getValue().getNumberOfPopulatedTimeSeries() > 0 )
-            {
-                for ( TimeSeries series : this.waterML.getValue()
-                                                      .getTimeSeries() )
-                {
-                    boolean validSeries = this.readObservationSeries( series,
-                                                                      sourceDetails );
-
-                    if ( validSeries )
-                    {
-                        readSeriesCount++;
-                    }
-                }
-            }
-
-            sourceCompleter.complete( this.latches );
-            sourceCompleted = true;
-        }
-        else
-        {
-            sourceCompleted = this.wasCompleted( sourceDetails );
         }
 
-        return IngestResult.from( this.projectConfig,
-                                  this.dataSource,
-                                  this.hash,
-                                  !sourceDetails.performedInsert(),
-                                  !sourceCompleted );
+        return Collections.unmodifiableList( allTimeSeries );
     }
 
-    private boolean readObservationSeries( TimeSeries series,
-                                           SourceDetails sourceDetails )
-            throws IOException
+
+    private List<TimeSeries<Double>> readObservationSeries( wres.io.reading.waterml.timeseries.TimeSeries series )
     {
         if (!series.isPopulated())
         {
-            return false;
+            return Collections.emptyList();
         }
 
         // Get the first variable name from the series in the actual data.
@@ -175,7 +103,7 @@ public class WaterMLSource
         {
             LOGGER.debug( "No variable found for timeseries {} in source {}",
                           series, this );
-            return false;
+            return Collections.emptyList();
         }
 
         String variableName = series.getVariable()
@@ -189,7 +117,7 @@ public class WaterMLSource
         {
             LOGGER.warn( "No unit found for timeseries {} in source {}",
                           series, this );
-            return false;
+            return Collections.emptyList();
         }
 
         String unitCode = series.getVariable()
@@ -202,7 +130,7 @@ public class WaterMLSource
         {
             LOGGER.debug( "No unit code found for timeseries {} in source {}",
                           series, this );
-            return false;
+            return Collections.emptyList();
         }
 
         List<String> usgsSiteCodesFound = new ArrayList<>( 1 );
@@ -228,13 +156,14 @@ public class WaterMLSource
                               series,
                               this );
             }
-            return false;
+
+            return Collections.emptyList();
         }
 
+        List<wres.datamodel.time.TimeSeries<Double>> timeSerieses =
+                new ArrayList<>();
         String usgsSiteCode = usgsSiteCodesFound.get( 0 );
-        Pair<String,String> gageAndVariable = Pair.of( usgsSiteCode, variableName );
-        TimeScale.TimeScaleFunction function = TimeScale.TimeScaleFunction.UNKNOWN;
-        Duration period = null;
+        TimeScale period = null;
 
         // Assume that USGS "IV" service implies "instantaneous" values, which
         // we model as having a period of 1 minute due to 1 minute being the
@@ -245,7 +174,8 @@ public class WaterMLSource
                        .toString()
                        .contains( "usgs.gov/nwis/iv" ) )
         {
-            period = Duration.ofMinutes( 1 );
+            // Short-hand for declaring "instantaneous scale used by WRES"
+            period = TimeScale.of();
         }
 
         int countOfTracesFound = series.getValues().length;
@@ -254,11 +184,14 @@ public class WaterMLSource
         {
             LOGGER.warn( "Skipping site {} because multiple timeseries for variable {} from USGS NWIS URI {}",
                          usgsSiteCode, variableName, this.dataSource.getUri() );
-            return false;
+            return Collections.emptyList();
         }
 
         for (TimeSeriesValues valueSet : series.getValues())
         {
+            Instant latestObservation = Instant.MIN;
+            SortedSet<Event<Double>> rawTimeSeries = new TreeSet<>();
+
             if (valueSet.getValue().length == 0)
             {
                 continue;
@@ -276,151 +209,44 @@ public class WaterMLSource
                 }
             }
 
-            for (TimeSeriesValue value : valueSet.getValue())
+            for ( TimeSeriesValue value : valueSet.getValue() )
             {
-                try
+                double readValue = value.getValue();
+                Double noDataValue = series.getVariable()
+                                           .getNoDataValue();
+
+                if ( Objects.nonNull( noDataValue )
+                     && Precision.equals( readValue, noDataValue, EPSILON) )
                 {
-                    Double readValue = value.getValue();
-
-                    if (series.getVariable().getNoDataValue() != null &&
-                        Precision.equals( readValue, series.getVariable().getNoDataValue(), EPSILON))
-                    {
-                        readValue = null;
-                    }
-
-                    this.addObservationValue( gageAndVariable,
-                                              value.getDateTime(),
-                                              readValue,
-                                              sourceDetails,
-                                              unitCode,
-                                              function,
-                                              period );
+                    readValue = MissingValues.DOUBLE;
                 }
-                catch ( SQLException e )
+
+                Instant dateTime = value.getDateTime();
+                Event<Double> event = Event.of( dateTime, readValue );
+                rawTimeSeries.add( event );
+
+                if ( dateTime.isAfter( latestObservation ) )
                 {
-                    throw new IOException( e );
+                    latestObservation = dateTime;
                 }
             }
+
+            Map<ReferenceTimeType,Instant> referenceTimes = Map.of( ReferenceTimeType.LATEST_OBSERVATION,
+                                                                    latestObservation );
+            TimeSeriesMetadata metadata = TimeSeriesMetadata.of( referenceTimes,
+                                                                 period,
+                                                                 variableName,
+                                                                 usgsSiteCode,
+                                                                 unitCode );
+            wres.datamodel.time.TimeSeries<Double> timeSeries =
+                    wres.datamodel.time.TimeSeries.of( metadata,
+                                                       rawTimeSeries );
+            timeSerieses.add( timeSeries );
         }
 
         LOGGER.info( "A USGS time series has been parsed for site number {}",
                      usgsSiteCode );
 
-        return true;
-    }
-
-    private void addObservationValue( Pair<String,String> gageAndVariable,
-                                      Instant observationTime,
-                                      Double value,
-                                      SourceDetails sourceDetails,
-                                      String unitCode,
-                                      TimeScale.TimeScaleFunction scaleFunction,
-                                      Duration scalePeriod )
-            throws SQLException, IngestException
-    {
-        int variableFeatureId = this.getVariableFeatureID( gageAndVariable );
-        int measurementUnitId = this.getMeasurementUnitId( unitCode );
-        Pair<CountDownLatch, CountDownLatch> synchronizer =
-                IngestedValues.observed( value )
-                              .measuredIn( measurementUnitId )
-                              .at( observationTime )
-                              .forVariableAndFeatureID( variableFeatureId )
-                              .inSource( sourceDetails.getId() )
-                              .scaledBy( scaleFunction )
-                              .scaleOf( scalePeriod )
-                              .add();
-        this.latches.add( synchronizer );
-    }
-
-
-    private int getVariableFeatureID( Pair<String,String> gageAndVariable )
-            throws SQLException
-    {
-
-        if ( !this.variableFeatureIDs.containsKey( gageAndVariable ) )
-        {
-            FeatureDetails feature = Features.getDetailsByGageID( gageAndVariable.getLeft() );
-            int variableId = Variables.getVariableID( gageAndVariable.getRight() );
-            this.variableFeatureIDs.put(
-                    gageAndVariable,
-                    Features.getVariableFeatureByFeature( feature, variableId )
-            );
-        }
-        return this.variableFeatureIDs.get( gageAndVariable );
-    }
-
-
-    private int getMeasurementUnitId( String unitCode )
-            throws SQLException
-    {
-        if ( !this.measurementIds.containsKey( unitCode ) )
-        {
-            Integer measurementId = MeasurementUnits.getMeasurementUnitID( unitCode );
-            this.measurementIds.put( unitCode, measurementId );
-        }
-
-        return this.measurementIds.get( unitCode );
-    }
-
-
-    /**
-     * Discover whether the source was completely ingested
-     * @param sourceDetails the source to query
-     * @throws IngestException when discovery fails due to SQLException
-     * @return true if the source has been marked as completed, false otherwise
-     */
-
-    private boolean wasCompleted( SourceDetails sourceDetails )
-            throws IngestException
-    {
-        SourceCompletedDetails completed =
-                this.createSourceCompletedDetails( sourceDetails );
-
-        try
-        {
-            return completed.wasCompleted();
-        }
-        catch ( SQLException se )
-        {
-            throw new IngestException( "Failed discover whether source "
-                                       + sourceDetails + " was completed.",
-                                       se );
-        }
-    }
-
-    /**
-     * This method facilitates testing, Pattern 1 at
-     * https://github.com/mockito/mockito/wiki/Mocking-Object-Creation
-     * @param sourceKey the first arg to SourceDetails
-     * @return a SourceDetails
-     */
-
-    SourceDetails createSourceDetails( SourceDetails.SourceKey sourceKey )
-    {
-        return new SourceDetails( sourceKey );
-    }
-
-    /**
-     * This method facilitates testing, Pattern 1 at
-     * https://github.com/mockito/mockito/wiki/Mocking-Object-Creation
-     * @param sourceId the first arg to SourceCompleter
-     * @param lockManager the second arg to SourceCompleter
-     * @return a SourceCompleter
-     */
-    SourceCompleter createSourceCompleter( int sourceId,
-                                           DatabaseLockManager lockManager )
-    {
-        return new SourceCompleter( sourceId, lockManager );
-    }
-
-    /**
-     * This method facilitates testing, Pattern 1 at
-     * https://github.com/mockito/mockito/wiki/Mocking-Object-Creation
-     * @param sourceDetails the first arg to SourceCompletedDetails
-     * @return a SourceCompleter
-     */
-    SourceCompletedDetails createSourceCompletedDetails( SourceDetails sourceDetails )
-    {
-        return new SourceCompletedDetails( sourceDetails );
+        return Collections.unmodifiableList( timeSerieses );
     }
 }

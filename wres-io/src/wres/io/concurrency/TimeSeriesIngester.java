@@ -79,6 +79,14 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
     private static final Logger LOGGER =
             LoggerFactory.getLogger( TimeSeriesIngester.class );
 
+    public enum GEO_ID_TYPE
+    {
+        LID,
+        GAGE_ID,
+        COMID,
+        HUC
+    }
+
     private final ProjectConfig projectConfig;
     private final DataSource dataSource;
     private final DatabaseLockManager lockManager;
@@ -87,11 +95,13 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
     private final String measurementUnit;
     private final TimeSeries<?> timeSeries;
     private final Set<Pair<CountDownLatch, CountDownLatch>> latches = new HashSet<>();
+    private final GEO_ID_TYPE locationType;
 
     public static TimeSeriesIngester of( ProjectConfig projectConfig,
                                          DataSource dataSource,
                                          DatabaseLockManager databaseLockManager,
-                                         TimeSeries<?> timeSeries )
+                                         TimeSeries<?> timeSeries,
+                                         GEO_ID_TYPE locationType )
     {
         Objects.requireNonNull( timeSeries );
         Objects.requireNonNull( timeSeries.getMetadata() );
@@ -101,6 +111,7 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
                                           .getVariableName() );
         Objects.requireNonNull( timeSeries.getMetadata()
                                           .getUnit() );
+        Objects.requireNonNull( locationType );
 
         return new TimeSeriesIngester( projectConfig,
                                        dataSource,
@@ -108,6 +119,7 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
                                        timeSeries,
                                        timeSeries.getMetadata()
                                                  .getFeatureName(),
+                                       locationType,
                                        timeSeries.getMetadata()
                                                  .getVariableName(),
                                        timeSeries.getMetadata()
@@ -119,6 +131,7 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
                                DatabaseLockManager lockManager,
                                TimeSeries<?> timeSeries,
                                String locationName,
+                               GEO_ID_TYPE locationType,
                                String variableName,
                                String measurementUnit )
     {
@@ -127,6 +140,7 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
         Objects.requireNonNull( lockManager );
         Objects.requireNonNull( timeSeries );
         Objects.requireNonNull( locationName );
+        Objects.requireNonNull( locationType );
         Objects.requireNonNull( variableName );
         Objects.requireNonNull( measurementUnit );
 
@@ -135,6 +149,7 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
         this.lockManager = lockManager;
         this.timeSeries = timeSeries;
         this.locationName = locationName;
+        this.locationType = locationType;
         this.variableName = variableName;
         this.measurementUnit = measurementUnit;
     }
@@ -520,19 +535,78 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
     private int getVariableFeatureId( String featureName, String variableName )
             throws SQLException
     {
-        Feature feature = new Feature( null,
-                                       null,
-                                       null,
-                                       null,
-                                       null,
-                                       featureName,
-                                       null,
-                                       null,
-                                       null,
-                                       null,
-                                       null,
-                                       null,
-                                       null );
+        Feature feature;
+
+        if ( this.locationType.equals( GEO_ID_TYPE.LID ) )
+        {
+            feature = new Feature( null,
+                                   null,
+                                   null,
+                                   null,
+                                   null,
+                                   featureName,
+                                   null,
+                                   null,
+                                   null,
+                                   null,
+                                   null,
+                                   null,
+                                   null );
+        }
+        else if ( this.locationType.equals( GEO_ID_TYPE.GAGE_ID ) )
+        {
+            feature = new Feature( null,
+                                   null,
+                                   null,
+                                   null,
+                                   null,
+                                   null,
+                                   null,
+                                   featureName,
+                                   null,
+                                   null,
+                                   null,
+                                   null,
+                                   null );
+        }
+        else if ( this.locationType.equals( GEO_ID_TYPE.COMID ) )
+        {
+            feature = new Feature( null,
+                                   null,
+                                   null,
+                                   null,
+                                   null,
+                                   null,
+                                   Long.parseLong( featureName ),
+                                   null,
+                                   null,
+                                   null,
+                                   null,
+                                   null,
+                                   null );
+        }
+        else if ( this.locationType.equals( GEO_ID_TYPE.HUC ) )
+        {
+            feature = new Feature( null,
+                                   null,
+                                   null,
+                                   null,
+                                   null,
+                                   null,
+                                   null,
+                                   null,
+                                   featureName,
+                                   null,
+                                   null,
+                                   null,
+                                   null );
+        }
+        else
+        {
+            throw new UnsupportedOperationException( "Unable to find a geo id of type "
+                                                     + this.locationType );
+        }
+
         FeatureDetails details = Features.getDetails( feature );
         int variableId = Variables.getVariableID( variableName );
         return Features.getVariableFeatureByFeature( details, variableId );
