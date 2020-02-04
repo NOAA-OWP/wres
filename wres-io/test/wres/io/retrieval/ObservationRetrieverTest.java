@@ -335,6 +335,8 @@ public class ObservationRetrieverTest
         this.testDatabase.createObservationTable( liquibaseDatabase );
         this.testDatabase.createMeasurementUnitTable( liquibaseDatabase );
         this.testDatabase.createUnitConversionTable( liquibaseDatabase );
+        this.testDatabase.createTimeSeriesTable( liquibaseDatabase );
+        this.testDatabase.createTimeSeriesValueTable( liquibaseDatabase );
     }
 
     /**

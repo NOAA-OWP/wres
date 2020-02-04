@@ -130,7 +130,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * valid time, depending on context. See {@link #timeColumnIsAReferenceTime()}.
      */
 
-    private final String timeColumn;
+    protected String timeColumn;
 
     /**
      * The lead duration column name, including the table alias (e.g., TSV.lead).
@@ -356,10 +356,11 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * {@link #getVariableFeatureId()} and {@ #getLeftOrRightOrBaseline()}.
      * 
      * @param script the script to augment
+     * @param tsTable True if using the wres.TimeSeries table, false if wres.Observations
      * @param tabsIn the number of tabs in for the outermost clause
      */
 
-    void addProjectVariableAndMemberConstraints( ScriptBuilder script, int tabsIn )
+    void addProjectVariableAndMemberConstraints( ScriptBuilder script, int tabsIn, boolean tsTable )
     {
         // project_id
         if ( Objects.nonNull( this.getProjectId() ) )
@@ -369,7 +370,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         // variablefeature_id
         if ( Objects.nonNull( this.getVariableFeatureId() ) )
         {
-            if ( this.isForecast() )
+            if ( tsTable )
             {
                 this.addWhereOrAndClause( script,
                                           tabsIn,

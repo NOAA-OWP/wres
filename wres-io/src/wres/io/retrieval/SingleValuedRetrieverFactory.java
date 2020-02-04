@@ -131,146 +131,87 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     @Override
     public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever()
     {
-        LOGGER.debug( "Creating a left retriever for project '{}' and feature '{}'.",
-                      this.project.getId(),
-                      this.featureString );
-        try
-        {
-            TimeSeriesRetrieverBuilder<Double> builder = null;
-
-            // Gridded data?
-            if ( this.project.usesGriddedData( this.leftConfig ) )
-            {
-                builder = this.getGriddedRetrieverBuilder( this.leftConfig.getType() )
-                              .setVariableName( this.leftConfig.getVariable().getValue() )
-                              .setFeatures( List.of( this.feature ) )
-                              .setIsForecast( ConfigHelper.isForecast( this.leftConfig ) );
-            }
-            else
-            {
-                int leftVariableFeatureId = project.getLeftVariableFeatureId( this.feature );
-                builder = this.getRetrieverBuilder( this.leftConfig.getType() )
-                              .setVariableFeatureId( leftVariableFeatureId );
-            }
-
-            // TODO: reconsider how seasons are applied. For now, do not apply to
-            // left-ish data because the current interpretation of right-ish data
-            // with a forecast type is to use reference time, not valid time. See #40405
-            return builder.setProjectId( this.project.getId() )
-                          .setLeftOrRightOrBaseline( LeftOrRightOrBaseline.LEFT )
-                          .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale( this.leftConfig ) )
-                          .setDesiredTimeScale( this.desiredTimeScale )
-                          //.setSeasonStart( this.seasonStart )
-                          //.setSeasonEnd( this.seasonEnd )
-                          .setUnitMapper( this.unitMapper )
-                          .build();
-        }
-        catch ( SQLException e )
-        {
-            throw new DataAccessException( "While creating a retriever of left data for project "
-                                           + this.project.getId()
-                                           + " and feature "
-                                           + this.featureString
-                                           + ":",
-                                           e );
-        }
+        return this.get( this.project.getProjectConfig(),
+                         this.leftConfig,
+                         null,
+                         this.featureString );
     }
 
     @Override
     public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( TimeWindow timeWindow )
     {
-        LOGGER.debug( "Creating a left retriever for project '{}', feature '{}' and time window {}.",
-                      this.project.getId(),
-                      this.featureString,
-                      timeWindow );
-        try
-        {
-            TimeSeriesRetrieverBuilder<Double> builder = null;
-
-            // Gridded data?
-            if ( this.project.usesGriddedData( this.leftConfig ) )
-            {
-                builder = this.getGriddedRetrieverBuilder( this.leftConfig.getType() )
-                              .setVariableName( this.leftConfig.getVariable().getValue() )
-                              .setFeatures( List.of( this.feature ) )
-                              .setIsForecast( ConfigHelper.isForecast( this.leftConfig ) );
-            }
-            else
-            {
-                int leftVariableFeatureId = project.getLeftVariableFeatureId( this.feature );
-                builder = this.getRetrieverBuilder( this.leftConfig.getType() )
-                              .setVariableFeatureId( leftVariableFeatureId );
-            }
-
-            // TODO: reconsider how seasons are applied. For now, do not apply to
-            // left-ish data because the current interpretation of right-ish data
-            // with a forecast type is to use reference time, not valid time. See #40405
-            return builder.setProjectId( this.project.getId() )
-                          .setLeftOrRightOrBaseline( LeftOrRightOrBaseline.LEFT )
-                          .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale( this.leftConfig ) )
-                          .setDesiredTimeScale( this.desiredTimeScale )
-                          //.setSeasonStart( this.seasonStart )
-                          //.setSeasonEnd( this.seasonEnd )
-                          .setUnitMapper( this.unitMapper )
-                          .setTimeWindow( timeWindow )
-                          .build();
-        }
-        catch ( SQLException e )
-        {
-            throw new DataAccessException( "While creating a retriever of left data for project "
-                                           + this.project.getId()
-                                           + FEATURE_MESSAGE
-                                           + this.featureString
-                                           + AND_TIME_WINDOW_MESSAGE
-                                           + timeWindow
-                                           + ":",
-                                           e );
-        }
+        return this.get( this.project.getProjectConfig(),
+                         this.leftConfig,
+                         timeWindow,
+                         this.featureString );
     }
 
     @Override
     public Supplier<Stream<TimeSeries<Double>>> getRightRetriever( TimeWindow timeWindow )
     {
-        LOGGER.debug( "Creating a right retriever for project '{}', feature '{}' and time window {}.",
+        return get( this.project.getProjectConfig(),
+                    this.rightConfig,
+                    timeWindow,
+                    this.featureString );
+    }
+
+    @Override
+    public Supplier<Stream<TimeSeries<Double>>> getBaselineRetriever( TimeWindow timeWindow )
+    {
+        return get( this.project.getProjectConfig(),
+                    this.baselineConfig,
+                    timeWindow,
+                    this.featureString );
+    }
+
+
+    private Supplier<Stream<TimeSeries<Double>>> get( ProjectConfig projectConfig,
+                                                      DataSourceConfig dataSourceConfig,
+                                                      TimeWindow timeWindow,
+                                                      String featureName )
+    {
+        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( dataSourceConfig );
+        LeftOrRightOrBaseline leftOrRightOrBaseline =
+                ConfigHelper.getLeftOrRightOrBaseline( projectConfig,
+                                                       dataSourceConfig );
+        LOGGER.debug( "Creating a {} retriever for project '{}', feature '{}' and time window {}.",
+                      leftOrRightOrBaseline,
                       this.project.getId(),
-                      this.featureString,
+                      featureName,
                       timeWindow );
+        TimeSeriesRetrieverBuilder<Double> builder;
+
+        boolean isConfiguredAsForecast = ConfigHelper.isForecast( dataSourceConfig );
+        String variableName = dataSourceConfig.getVariable()
+                                              .getValue();
+        TimeScale declaredExistingTimeScale =
+                this.getDeclaredExistingTimeScale( dataSourceConfig );
+
         try
         {
-            TimeSeriesRetrieverBuilder<Double> builder = null;
-
             // Gridded data?
-            if ( this.project.usesGriddedData( this.rightConfig ) )
+            if ( this.project.usesGriddedData( dataSourceConfig ) )
             {
-                builder = this.getGriddedRetrieverBuilder( this.rightConfig.getType() )
-                              .setVariableName( this.rightConfig.getVariable().getValue() )
+                builder = this.getGriddedRetrieverBuilder( dataSourceConfig.getType() )
+                              .setVariableName( dataSourceConfig.getVariable().getValue() )
                               .setFeatures( List.of( this.feature ) )
-                              .setIsForecast( ConfigHelper.isForecast( this.rightConfig ) );
+                              .setIsForecast( isConfiguredAsForecast );
             }
             else
             {
-                int rightVariableFeatureId = project.getRightVariableFeatureId( this.feature );
-                builder = this.getRetrieverBuilder( this.rightConfig.getType() )
-                              .setVariableFeatureId( rightVariableFeatureId );
+                Integer variableFeatureId =
+                        this.project.getVariableFeatureId( variableName,
+                                                           this.feature );
+                builder = this.getRetrieverBuilder( dataSourceConfig.getType() )
+                              .setVariableFeatureId( variableFeatureId );
             }
-
-            // TODO: reconsider how seasons are applied. For now, do not apply to
-            // left-ish data because the current interpretation of right-ish data
-            // with a forecast type is to use reference time, not valid time. See #40405
-            return builder.setProjectId( this.project.getId() )
-                          .setLeftOrRightOrBaseline( LeftOrRightOrBaseline.RIGHT )
-                          .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale( rightConfig ) )
-                          .setDesiredTimeScale( this.desiredTimeScale )
-                          .setUnitMapper( this.unitMapper )
-                          .setSeasonStart( this.seasonStart )
-                          .setSeasonEnd( this.seasonEnd )
-                          .setTimeWindow( timeWindow )
-                          .build();
-
         }
         catch ( SQLException e )
         {
-            throw new DataAccessException( "While creating a retriever of right data for project "
+            throw new DataAccessException( "While creating a retriever of "
+                                           + leftOrRightOrBaseline
+                                           + " data for project "
                                            + this.project.getId()
                                            + FEATURE_MESSAGE
                                            + this.featureString
@@ -279,66 +220,29 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
                                            + ":",
                                            e );
         }
-    }
 
-    @Override
-    public Supplier<Stream<TimeSeries<Double>>> getBaselineRetriever( TimeWindow timeWindow )
-    {
-        Supplier<Stream<TimeSeries<Double>>> baseline = null;
+        builder.setProjectId( this.project.getId() )
+               .setLeftOrRightOrBaseline( leftOrRightOrBaseline )
+               .setDeclaredExistingTimeScale( declaredExistingTimeScale )
+               .setDesiredTimeScale( this.desiredTimeScale )
+               .setUnitMapper( this.unitMapper );
 
-        if ( this.hasBaseline() )
+        if ( Objects.nonNull( timeWindow ) )
         {
-            LOGGER.debug( "Creating a baseline retriever for project '{}', feature '{}' and time window {}.",
-                          this.project.getId(),
-                          this.featureString,
-                          timeWindow );
-            try
-            {
-                TimeSeriesRetrieverBuilder<Double> builder = null;
-
-                // Gridded data?
-                if ( this.project.usesGriddedData( this.baselineConfig ) )
-                {
-                    builder = this.getGriddedRetrieverBuilder( this.baselineConfig.getType() )
-                                  .setVariableName( this.baselineConfig.getVariable().getValue() )
-                                  .setFeatures( List.of( this.feature ) )
-                                  .setIsForecast( ConfigHelper.isForecast( this.baselineConfig ) );
-                }
-                else
-                {
-                    int baselineVariableFeatureId = project.getBaselineVariableFeatureId( feature );
-                    builder = this.getRetrieverBuilder( this.baselineConfig.getType() )
-                                  .setVariableFeatureId( baselineVariableFeatureId );
-                }
-
-                // TODO: reconsider how seasons are applied. For now, do not apply to
-                // left-ish data because the current interpretation of right-ish data
-                // with a forecast type is to use reference time, not valid time. See #40405
-                return builder.setProjectId( this.project.getId() )
-                              .setLeftOrRightOrBaseline( LeftOrRightOrBaseline.BASELINE )
-                              .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale( baselineConfig ) )
-                              .setDesiredTimeScale( this.desiredTimeScale )
-                              .setUnitMapper( this.unitMapper )
-                              .setSeasonStart( this.seasonStart )
-                              .setSeasonEnd( this.seasonEnd )
-                              .setTimeWindow( timeWindow )
-                              .build();
-
-            }
-            catch ( SQLException e )
-            {
-                throw new DataAccessException( "While creating a retriever of right data for project "
-                                               + this.project.getId()
-                                               + FEATURE_MESSAGE
-                                               + this.featureString
-                                               + AND_TIME_WINDOW_MESSAGE
-                                               + timeWindow
-                                               + ":",
-                                               e );
-            }
+            builder.setTimeWindow( timeWindow );
         }
 
-        return baseline;
+        // TODO: reconsider how seasons are applied. For now, do not apply to
+        // left-ish data because the current interpretation of right-ish data
+        // with a forecast type is to use reference time, not valid time. See #40405
+
+        if ( !leftOrRightOrBaseline.equals( LeftOrRightOrBaseline.LEFT ) )
+        {
+            builder.setSeasonStart( this.seasonStart )
+                   .setSeasonEnd( this.seasonEnd );
+        }
+
+        return builder.build();
     }
 
     /**
@@ -473,5 +377,4 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
 
         return declaredExistingTimeScale;
     }
-
 }

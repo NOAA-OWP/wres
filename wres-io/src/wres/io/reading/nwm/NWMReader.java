@@ -29,6 +29,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static wres.io.concurrency.TimeSeriesIngester.GEO_ID_TYPE.LID;
+
 import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.time.TimeSeries;
@@ -478,6 +480,7 @@ public class NWMReader implements Callable<List<IngestResult>>
                                                             this.getLockManager(),
                                                             entry.getValue(),
                                                             featureName,
+                                                            LID,
                                                             variableName,
                                                             unitName );
                             Future<List<IngestResult>> future =

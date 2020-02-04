@@ -5,7 +5,6 @@ import java.util.StringJoiner;
 
 import wres.config.generated.Feature;
 import wres.config.generated.Polygon;
-import wres.io.config.ConfigHelper;
 import wres.io.utilities.DataScripter;
 import wres.util.Strings;
 
@@ -37,7 +36,7 @@ final class ProjectScriptGenerator
         //    - Metadata about the shared feature that may be used for identification
         DataScripter script = new DataScripter();
 
-        script.addLine( "WITH forecast_features AS" );
+        script.addLine( "WITH right_features AS" );
         script.addLine( "(");
         script.addTab().addLine( "SELECT VF.feature_id" );
         script.addTab().addLine("FROM wres.VariableFeature VF");
@@ -238,37 +237,35 @@ final class ProjectScriptGenerator
             script.addTab( 2 ).addLine( ")" );
         }
 
-        script.addTab(  2  ).addLine("AND EXISTS (");
-        script.addTab(   3   ).addLine("SELECT 1");
+        script.addTab(  2  ).addLine("AND EXISTS ");
+        script.addTab(  2  ).addLine( "(" );
 
-        if ( ConfigHelper.isForecast( project.getRight() ) )
-        {
-            script.addTab(   3   ).addLine( "FROM wres.TimeSeries TS" );
-            script.addTab(   3   ).addLine( "INNER JOIN wres.ProjectSource PS" );
-            script.addTab(    4    ).addLine( "ON PS.source_id = TS.source_id" );
-            script.addTab(   3   ).addLine( "WHERE PS.project_id = ",
-                                            project.getId() );
-            script.addTab(    4    ).addLine( "AND PS.member = 'right'" );
-            script.addTab(    4    ).addLine( "AND TS.variablefeature_id = VF.variablefeature_id" );
-            // Do NOT additionally inspect wres.TimeSeriesValue. See #70130.
-        }
-        else
-        {
-            script.addTab(   3   ).addLine( "FROM wres.Observation O" );
-            script.addTab(   3   ).addLine( "INNER JOIN wres.ProjectSource PS" );
-            script.addTab(    4    ).addLine( "ON PS.source_id = O.source_id" );
-            script.addTab(   3   ).addLine( "WHERE PS.project_id = ",
-                                            project.getId() );
-            script.addTab(    4    ).addLine( "AND PS.member = 'right'" );
-            script.addTab(    4    ).addLine( "AND O.variablefeature_id = VF.variablefeature_id" );
-        }
+        script.addTab(   3   ).addLine( "SELECT 1" );
+        script.addTab(   3   ).addLine( "FROM wres.TimeSeries TS" );
+        script.addTab(   3   ).addLine( "INNER JOIN wres.ProjectSource PS" );
+        script.addTab(    4    ).addLine( "ON PS.source_id = TS.source_id" );
+        script.addTab(   3   ).addLine( "WHERE PS.project_id = ",
+                                          project.getId() );
+        script.addTab(    4    ).addLine( "AND PS.member = 'right'" );
+        script.addTab(    4    ).addLine( "AND TS.variablefeature_id = VF.variablefeature_id" );
+        // Do NOT additionally inspect wres.TimeSeriesValue. See #70130.
+
+        script.addTab(   3   ).addLine( "UNION ALL" );
+        script.addTab(   3   ).addLine( "SELECT 1" );
+        script.addTab(   3   ).addLine( "FROM wres.Observation O" );
+        script.addTab(   3   ).addLine( "INNER JOIN wres.ProjectSource PS" );
+        script.addTab(    4    ).addLine( "ON PS.source_id = O.source_id" );
+        script.addTab(   3   ).addLine( "WHERE PS.project_id = ",
+                                          project.getId() );
+        script.addTab(    4    ).addLine( "AND PS.member = 'right'" );
+        script.addTab(    4    ).addLine( "AND O.variablefeature_id = VF.variablefeature_id" );
 
         script.addTab(   3   ).addLine(")");
         script.addTab().addLine( "GROUP BY VF.feature_id" );
         script.add(")");
 
         script.addLine( "," );
-        script.addLine( "observation_features AS " );
+        script.addLine( "left_features AS " );
         script.addLine( "(" );
         script.addTab().addLine( "SELECT VF.feature_id" );
         script.addTab().addLine("FROM wres.VariableFeature VF");
@@ -463,39 +460,36 @@ final class ProjectScriptGenerator
         }
 
         script.addTab(  2  ).addLine("AND EXISTS (");
+
         script.addTab(   3   ).addLine("SELECT 1");
+        script.addTab(   3   ).addLine( "FROM wres.TimeSeries TS" );
+        script.addTab(   3   ).addLine( "INNER JOIN wres.ProjectSource PS" );
+        script.addTab(    4    ).addLine( "ON PS.source_id = TS.source_id" );
+        script.addTab(   3   ).addLine( "WHERE PS.project_id = ",
+                                        project.getId() );
+        script.addTab(    4    ).addLine( "AND PS.member = 'left'" );
+        script.addTab(    4    ).addLine( "AND TS.variablefeature_id = VF.variablefeature_id" );
+        // Do NOT additionally inspect wres.TimeSeriesValue. See #70130.
 
-        if ( ConfigHelper.isForecast( project.getLeft() ) )
-        {
-            script.addTab(   3   ).addLine( "FROM wres.TimeSeries TS" );
-            script.addTab(   3   ).addLine( "INNER JOIN wres.ProjectSource PS" );
-            script.addTab(    4    ).addLine( "ON PS.source_id = TS.source_id" );
-            script.addTab(   3   ).addLine( "WHERE PS.project_id = ",
-                                            project.getId() );
-            script.addTab(    4    ).addLine( "AND PS.member = 'right'" );
-            script.addTab(    4    ).addLine( "AND TS.variablefeature_id = VF.variablefeature_id" );
-            // Do NOT additionally inspect wres.TimeSeriesValue. See #70130.
-        }
-        else
-        {
-            script.addTab(   3   ).addLine("FROM wres.Observation O");
-            script.addTab(   3   ).addLine("INNER JOIN wres.ProjectSource PS");
-            script.addTab(    4    ).addLine("ON PS.source_id = O.source_id");
-            script.addTab(   3   ).addLine( "WHERE PS.project_id = ", project.getId());
-            script.addTab(    4    ).addLine("AND PS.member = 'left'");
-            script.addTab(    4    ).addLine("AND O.variablefeature_id = VF.variablefeature_id");
+        script.addTab(   3   ).addLine( "UNION ALL" );
+        script.addTab(   3   ).addLine("SELECT 1");
+        script.addTab(   3   ).addLine("FROM wres.Observation O");
+        script.addTab(   3   ).addLine("INNER JOIN wres.ProjectSource PS");
+        script.addTab(    4    ).addLine("ON PS.source_id = O.source_id");
+        script.addTab(   3   ).addLine( "WHERE PS.project_id = ", project.getId());
+        script.addTab(    4    ).addLine("AND PS.member = 'left'");
+        script.addTab(    4    ).addLine("AND O.variablefeature_id = VF.variablefeature_id");
 
-            // #65881
-            script.addTab(    4    ).addLine( "AND O.observed_value IS NOT NULL" );
-        }
+        // #65881
+        script.addTab(    4    ).addLine( "AND O.observed_value IS NOT NULL" );
         script.addTab(  2  ).addLine(")");
         script.addTab(  2  ).addLine( "GROUP BY VF.feature_id" );
         script.addLine(")");
 
-        script.addLine( "SELECT FP.feature_id" );
-        script.addLine("FROM forecast_features FP");
-        script.addLine("INNER JOIN observation_features O");
-        script.addTab().addLine("ON O.feature_id = FP.feature_id");
+        script.addLine( "SELECT RF.feature_id" );
+        script.addLine("FROM right_features RF");
+        script.addLine("INNER JOIN left_features LF");
+        script.addTab().addLine("ON LF.feature_id = RF.feature_id");
 
         return script;
     }

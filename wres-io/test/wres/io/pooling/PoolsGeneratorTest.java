@@ -27,8 +27,6 @@ import wres.config.generated.DataSourceConfig.Variable;
 import wres.datamodel.Ensemble;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.io.config.ConfigHelper;
-import wres.io.pooling.PoolFactory;
-import wres.io.pooling.PoolsGenerator;
 import wres.io.project.Project;
 import wres.io.retrieval.UnitMapper;
 
@@ -113,6 +111,10 @@ public class PoolsGeneratorTest
         Project project = Mockito.mock( Project.class );
         Mockito.when( project.getProjectConfig() ).thenReturn( projectConfig );
         Mockito.when( project.getId() ).thenReturn( 12345 );
+        Mockito.when( project.getVariableFeatureId( "DISCHARGE", feature ) )
+               .thenReturn( 1 );
+        Mockito.when( project.getVariableFeatureId( STREAMFLOW, feature ) )
+               .thenReturn( 2 );
         Mockito.when( project.getLeftVariableFeatureId( feature ) ).thenReturn( 1 );
         Mockito.when( project.getRightVariableFeatureId( feature ) ).thenReturn( 2 );
         Mockito.when( project.getBaselineVariableFeatureId( feature ) ).thenReturn( 3 );
@@ -124,12 +126,6 @@ public class PoolsGeneratorTest
         PowerMockito.mockStatic( UnitMapper.class );
         PowerMockito.when( UnitMapper.class, "of", "CFS" )
                     .thenReturn( mapper );
-
-        PowerMockito.mockStatic( ConfigHelper.class );
-        PowerMockito.when( ConfigHelper.class, GET_VARIABLE_ID_FROM_PROJECT_CONFIG, projectConfig, false )
-                    .thenReturn( STREAMFLOW );
-        PowerMockito.when( ConfigHelper.class, GET_VARIABLE_ID_FROM_PROJECT_CONFIG, projectConfig, true )
-                    .thenReturn( STREAMFLOW );
 
         // Create the actual output
         List<Supplier<PoolOfPairs<Double, Double>>> actual =
@@ -207,6 +203,10 @@ public class PoolsGeneratorTest
         Project project = Mockito.mock( Project.class );
         Mockito.when( project.getProjectConfig() ).thenReturn( projectConfig );
         Mockito.when( project.getId() ).thenReturn( 12345 );
+        Mockito.when( project.getVariableFeatureId( "DISCHARGE", feature ) )
+               .thenReturn( 1 );
+        Mockito.when( project.getVariableFeatureId( STREAMFLOW, feature ) )
+               .thenReturn( 2 );
         Mockito.when( project.getLeftVariableFeatureId( feature ) ).thenReturn( 1 );
         Mockito.when( project.getRightVariableFeatureId( feature ) ).thenReturn( 2 );
         Mockito.when( project.getBaselineVariableFeatureId( feature ) ).thenReturn( 3 );
@@ -219,12 +219,9 @@ public class PoolsGeneratorTest
         PowerMockito.when( UnitMapper.class, "of", "CFS" )
                     .thenReturn( mapper );
 
-        PowerMockito.mockStatic( ConfigHelper.class );
+        PowerMockito.spy( ConfigHelper.class );
         PowerMockito.when( ConfigHelper.class, GET_VARIABLE_ID_FROM_PROJECT_CONFIG, projectConfig, false )
                     .thenReturn( STREAMFLOW );
-        PowerMockito.when( ConfigHelper.class, GET_VARIABLE_ID_FROM_PROJECT_CONFIG, projectConfig, true )
-                    .thenReturn( STREAMFLOW );
-
         // Create the actual output
         List<Supplier<PoolOfPairs<Double, Ensemble>>> actual = PoolFactory.getEnsemblePools( project, feature, mapper );
 

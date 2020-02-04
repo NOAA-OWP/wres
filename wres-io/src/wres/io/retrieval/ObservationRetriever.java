@@ -41,8 +41,8 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
      * Template script for the {@link #getAll()}.
      */
 
-    private static final String GET_ALL_TIME_SERIES_SCRIPT =
-            ObservationRetriever.getScriptForGetAllTimeSeries();
+    private static final String GET_ALL_DATA_FROM_OBSERVATIONS_TABLE_SCRIPT =
+            ObservationRetriever.getScriptForGetAllDataFromObservationsTable();
 
     /**
      * Logger.
@@ -122,10 +122,11 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
     {
         this.validateForMultiSeriesRetrieval();
 
-        ScriptBuilder scripter = new ScriptBuilder( GET_ALL_TIME_SERIES_SCRIPT );
+        ScriptBuilder scripter = new ScriptBuilder(
+                GET_ALL_DATA_FROM_OBSERVATIONS_TABLE_SCRIPT );
 
         // Add basic constraints
-        this.addProjectVariableAndMemberConstraints( scripter, 0 );
+        this.addProjectVariableAndMemberConstraints( scripter, 0, false );
 
         // Add time window constraint at zero tabs
         this.addTimeWindowClause( scripter, 0 );
@@ -133,8 +134,21 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
         // Add season constraint at one tab
         this.addSeasonClause( scripter, 1 );
 
+        // Add UNION ALL to bring in observations from wres.TimeSeries table
+        scripter.addLine( "UNION ALL" );
+
+        // Ugly hack while we are stuck in two tables, mutate timeColumn.
+        this.timeColumn = "TS.initialization_date + INTERVAL '1' MINUTE * TSV.lead";
+        String timeSeriesTableScript = getStartOfScriptForGetAllTimeSeries();
+        scripter.add( timeSeriesTableScript );
+        this.addTimeWindowClause( scripter, 0 );
+        this.addSeasonClause( scripter, 1 );
+        this.addProjectVariableAndMemberConstraints( scripter, 0, true );
+
+        scripter.addLine( "GROUP BY TS.timeseries_id, TSV.lead, TSV.series_value" );
+
         // Add ORDER BY clause
-        scripter.addLine( "ORDER BY O.observation_time;" );
+        scripter.addLine( "ORDER BY series_id, valid_time;" );
 
         String script = scripter.toString();
 
@@ -190,7 +204,7 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
      * @return the start of a script for the time-series
      */
 
-    private static String getScriptForGetAllTimeSeries()
+    private static String getScriptForGetAllDataFromObservationsTable()
     {
         ScriptBuilder scripter = new ScriptBuilder();
 
@@ -198,9 +212,11 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
         scripter.addTab().addLine( "1 AS series_id," ); // Facilitates a unary mapping across series types: #56214-56
         scripter.addTab().addLine( "O.observation_time AS valid_time," );
         scripter.addTab().addLine( "O.observed_value AS observation," );
+        scripter.addTab().addLine( "O.measurementunit_id," );
         scripter.addTab().addLine( "O.scale_period," );
-        scripter.addTab().addLine( "O.scale_function," );
-        scripter.addTab().addLine( "O.measurementunit_id" );
+        scripter.addTab().addLine( "CAST( O.scale_function AS VARCHAR ) AS scale_function," );
+        // To match below columns
+        scripter.addTab().addLine( "1 as occurrences");
         scripter.addLine( "FROM wres.Observation O" );
         scripter.addLine( "INNER JOIN wres.ProjectSource PS" );
         scripter.addTab().addLine( "ON PS.source_id = O.source_id" );
@@ -208,10 +224,39 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
         return scripter.toString();
     }
 
+
+    /**
+     * Returns the start of a script to acquire a time-series from the WRES database for all time-series.
+     *
+     * @return the start of a script for the time-series
+     */
+
+    private static String getStartOfScriptForGetAllTimeSeries()
+    {
+        ScriptBuilder scripter = new ScriptBuilder();
+
+        scripter.addLine( "SELECT " );
+        scripter.addTab().addLine( "TS.timeseries_id AS series_id," );
+        scripter.addTab().addLine( "TS.initialization_date + INTERVAL '1' MINUTE * TSV.lead AS valid_time," );
+        scripter.addTab().addLine( "TSV.series_value AS observation," );
+        scripter.addTab().addLine( "TS.measurementunit_id," );
+        scripter.addTab().addLine( "TS.scale_period," );
+        scripter.addTab().addLine( "TS.scale_function," );
+        // See #56214-272. Add the count to allow re-duplication of duplicate series
+        scripter.addTab().addLine( "COUNT(*) AS occurrences" );
+        scripter.addLine( "FROM wres.TimeSeries TS" );
+        scripter.addTab().addLine( "INNER JOIN wres.TimeSeriesValue TSV" );
+        scripter.addTab( 2 ).addLine( "ON TSV.timeseries_id = TS.timeseries_id" );
+        scripter.addTab().addLine( "INNER JOIN wres.ProjectSource PS" );
+        scripter.addTab( 2 ).addLine( "ON PS.source_id = TS.source_id" );
+
+        return scripter.toString();
+    }
+
+
     /**
      * Construct.
-     * 
-     * @param timeWindow the time window
+     *
      * @throws NullPointerException if any required input is null
      */
 
