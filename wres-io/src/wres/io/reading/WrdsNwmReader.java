@@ -188,11 +188,22 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
     {
         List<IngestResult> ingested = new ArrayList<>();
         NwmRootDocument document;
+        URI uri = this.getUri();
 
         try
         {
-            InputStream dataStream = WEB_CLIENT.getFromWeb( this.getUri() )
-                                               .getRight();
+            Pair<Integer,InputStream> response = WEB_CLIENT.getFromWeb( uri );
+            int responseStatus = response.getLeft();
+
+            if ( responseStatus >= 400 && responseStatus < 500 )
+            {
+                LOGGER.warn( "Treating HTTP response code {} as no data found from URI {}",
+                             responseStatus,
+                             uri );
+                return Collections.emptyList();
+            }
+
+            InputStream dataStream = response.getRight();
             document = this.getJsonObjectMapper()
                            .readValue( dataStream,
                                        NwmRootDocument.class );
@@ -201,7 +212,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
         catch ( IOException ioe )
         {
             throw new PreIngestException( "Failed to read NWM data from "
-                                          + this.getUri(),
+                                          + uri,
                                           ioe );
         }
 
@@ -262,13 +273,13 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
         catch ( InterruptedException ie )
         {
             LOGGER.warn( "Interrupted while ingesting NWM data from "
-                         + this.getUri(), ie );
+                         + uri, ie );
             Thread.currentThread().interrupt();
         }
         catch ( ExecutionException ee )
         {
             throw new IngestException( "Failed to ingest NWM data from "
-                                       + this.getUri(), ee );
+                                       + uri, ee );
         }
 
         return Collections.unmodifiableList( ingested );
