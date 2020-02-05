@@ -443,13 +443,29 @@ class WebSource implements Callable<List<IngestResult>>
         Objects.requireNonNull( baseUri );
         Objects.requireNonNull( range );
         Objects.requireNonNull( featureDetails );
+        InterfaceShortHand interfaceShortHand = this.getDataSource()
+                                                    .getSource()
+                                                    .getInterface();
 
-        if ( baseUri.getHost()
-                    .toLowerCase()
-                    .contains( "usgs.gov" )
+        if ( ( baseUri.getHost()
+                      .toLowerCase()
+                      .contains( "usgs.gov" )
+               || ( Objects.nonNull( interfaceShortHand )
+                    && interfaceShortHand.equals( InterfaceShortHand.USGS_NWIS ) )
+             )
             && ( Objects.isNull( featureDetails.getGageID() )
                  || featureDetails.getGageID().isBlank() ) )
         {
+            LOGGER.debug( "Avoiding null or blank usgs site code for feature {} when looking for USGS data: {}",
+                          featureDetails, this );
+            return false;
+        }
+        else if ( Objects.nonNull( interfaceShortHand )
+                  && interfaceShortHand.equals( InterfaceShortHand.WRDS_NWM )
+                  && ( Objects.isNull( featureDetails.getComid() ) ) )
+        {
+            LOGGER.debug( "Avoiding null NWM feature id for feature {} when looking for WRDS NWM data: {}",
+                          featureDetails, this );
             return false;
         }
 
