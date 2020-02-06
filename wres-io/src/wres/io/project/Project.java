@@ -45,12 +45,6 @@ public class Project
 
     private static final String SELECT_1 = "SELECT 1";
 
-    private static final String INNER_JOIN_WRES_VARIABLE_FEATURE_VF = "INNER JOIN wres.VariableFeature VF";
-
-    private static final String INNER_JOIN_WRES_PROJECT_SOURCE_PS = "INNER JOIN wres.ProjectSource PS";
-
-    private static final String AND_VF_FEATURE_ID_F_FEATURE_ID = "AND VF.feature_id = F.feature_id";
-
     private static final String PROJECT_ID = "project_id";
 
     private static final Logger LOGGER = LoggerFactory.getLogger( Project.class );
@@ -139,25 +133,21 @@ public class Project
     {
         LOGGER.trace( "prepareForExecution() entered" );
 
-        // Gridded data will not be present in the database.
-        if ( !this.usesGriddedData( this.getRight() ) )
+        // Check for features that potentially have intersecting values.
+        // The query in getIntersectingFeatures checks that there is some
+        // data for each feature on each side, but does not guarantee pairs.
+        synchronized ( this.featureLock )
         {
-            // Check for features that potentially have intersecting values.
-            // The query in getIntersectingFeatures checks that there is some
-            // data for each feature on each side, but does not guarantee pairs.
-            synchronized ( this.featureLock )
-            {
-                LOGGER.debug( "Features so far: {}", this.features );
-                this.features = this.getIntersectingFeatures();
-                LOGGER.debug( "Features after getting intersecting features: {}",
-                              this.features );
-            }
+            LOGGER.debug( "Features so far: {}", this.features );
+            this.features = this.getIntersectingFeatures();
+            LOGGER.debug( "Features after getting intersecting features: {}",
+                          this.features );
+        }
 
-            if ( this.features.isEmpty() )
-            {
-                throw new NoDataException( "No features had data on both the left and the right for the variables "
-                                           + "specified." );
-            }
+        if ( this.features.isEmpty() )
+        {
+            throw new NoDataException( "No features had data on both the left and the right for the variables "
+                                       + "specified." );
         }
     }
 
@@ -170,24 +160,38 @@ public class Project
 
     private Set<FeatureDetails> getIntersectingFeatures() throws SQLException
     {
-        Set<FeatureDetails> intersectingFeatures = new HashSet<>();
-        DataScripter script = ProjectScriptGenerator.createIntersectingFeaturesScript( this );
+        Set<FeatureDetails> intersectingFeatures;
 
-        LOGGER.debug( "getIntersectingFeatures will run: {}", script );
-
-        try ( DataProvider dataProvider = script.buffer() )
+        // Gridded features? #74266
+        // Yes
+        if ( this.usesGriddedData( this.getRight() ) )
         {
-            while ( dataProvider.next() )
-            {
-                int featureId = dataProvider.getInt( "feature_id" );
-                FeatureDetails.FeatureKey key =
-                        Features.getFeatureKey( featureId );
-                FeatureDetails featureDetail = new FeatureDetails( key );
-                intersectingFeatures.add( featureDetail );
-            }
-        }
+            LOGGER.debug( "Getting details of intersecting features for gridded data." );
 
-        LOGGER.debug( "getIntersectingFeatures finished run: {}", script );
+            intersectingFeatures = Features.getGriddedDetails( this );
+        }
+        // No
+        else
+        {
+            intersectingFeatures = new HashSet<>();
+            DataScripter script = ProjectScriptGenerator.createIntersectingFeaturesScript( this );
+
+            LOGGER.debug( "getIntersectingFeatures will run: {}", script );
+
+            try ( DataProvider dataProvider = script.buffer() )
+            {
+                while ( dataProvider.next() )
+                {
+                    int featureId = dataProvider.getInt( "feature_id" );
+                    FeatureDetails.FeatureKey key =
+                            Features.getFeatureKey( featureId );
+                    FeatureDetails featureDetail = new FeatureDetails( key );
+                    intersectingFeatures.add( featureDetail );
+                }
+            }
+
+            LOGGER.debug( "getIntersectingFeatures finished run: {}", script );
+        }
 
         return Collections.unmodifiableSet( intersectingFeatures );
     }
@@ -208,7 +212,7 @@ public class Project
             if ( this.features == null )
             {
                 LOGGER.debug( "getFeatures(): no features found, populating." );
-                this.populateFeatures();
+                this.features = this.getIntersectingFeatures();
             }
         }
 
@@ -265,154 +269,6 @@ public class Project
         }
 
         return Collections.unmodifiableSet( returnMe );
-    }
-
-    /**
-     * Loads metadata about all features that the project needs to use
-     * @throws SQLException Thrown if metadata about the features could not be loaded from the database
-     */
-    private void populateFeatures() throws SQLException
-    {
-        LOGGER.trace( "populateFeatures entered for {}", this );
-        synchronized ( this.featureLock )
-        {
-            if ( this.usesGriddedData( this.getRight() ) )
-            {
-                this.features = Features.getGriddedDetails( this );
-            }
-            // If there is no indication whatsoever of what to look for, we
-            // want to query the database specifically for all locations
-            // that have data ingested pertaining to the project.
-            //
-            // The similar function in wres.io.data.caching.Features cannot be
-            // used because it doesn't restrict data based on what lies in the
-            // database.
-            else if ( this.getProjectConfig().getPair().getFeature() == null ||
-                      this.projectConfig.getPair().getFeature().isEmpty() )
-            {
-                this.features = new HashSet<>();
-
-                DataScripter script = new DataScripter();
-
-                // TODO: it is most likely safe to assume the left will be observations
-
-                // Select all features where...
-                script.addLine( "SELECT *" );
-                script.addLine( "FROM wres.Feature F" );
-                script.addLine( "WHERE EXISTS (" );
-
-                if ( ConfigHelper.isForecast( this.getLeft() ) )
-                {
-                    // There is at least one value pertaining to a forecasted value
-                    // indicated by the left hand configuration
-                    script.addTab().addLine( SELECT_1 );
-                    script.addTab().addLine( "FROM wres.TimeSeries TS" );
-                    script.addTab().addLine( INNER_JOIN_WRES_VARIABLE_FEATURE_VF );
-                    script.addTab( 2 ).addLine( "ON VF.variablefeature_id = TS.variablefeature_id" );
-                    script.addTab()
-                          .addLine( INNER_JOIN_WRES_PROJECT_SOURCE_PS );
-                    script.addTab( 2 )
-                          .addLine( "ON PS.source_id = TS.source_id" );
-                    script.addTab()
-                          .addLine( WHERE_PS_PROJECT_ID, this.getId() );
-                    script.addTab( 2 ).addLine( "AND PS.member = 'left'" );
-                    script.addTab( 2 ).addLine( "AND PS.source_id = TS.source_id" );
-                    script.addTab( 2 )
-                          .addLine( AND_VF_FEATURE_ID_F_FEATURE_ID );
-                }
-                else
-                {
-                    // There is at least one observed value pertaining to the
-                    // configuration for the left sided data
-                    script.addTab().addLine( SELECT_1 );
-                    script.addTab().addLine( "FROM wres.Observation O" );
-                    script.addTab()
-                          .addLine( INNER_JOIN_WRES_VARIABLE_FEATURE_VF );
-                    script.addTab( 2 )
-                          .addLine(
-                                    "ON VF.variablefeature_id = O.variablefeature_id" );
-                    script.addTab()
-                          .addLine( INNER_JOIN_WRES_PROJECT_SOURCE_PS );
-                    script.addTab( 2 )
-                          .addLine( "ON PS.source_id = O.source_id" );
-                    script.addTab()
-                          .addLine( WHERE_PS_PROJECT_ID, this.getId() );
-                    script.addTab( 2 ).addLine( "AND PS.member = 'left'" );
-                    script.addTab( 2 )
-                          .addLine( AND_VF_FEATURE_ID_F_FEATURE_ID );
-                }
-
-                script.addTab().addLine( ")" );
-
-                // And...
-                script.addTab().addLine( "AND EXISTS (" );
-
-                if ( ConfigHelper.isForecast( this.getRight() ) )
-                {
-                    // There is at least one value pertaining to a forecasted value
-                    // indicated by the right hand configuration
-                    script.addTab().addLine( SELECT_1 );
-                    script.addTab().addLine( "FROM wres.TimeSeries TS" );
-                    script.addTab()
-                          .addLine( INNER_JOIN_WRES_VARIABLE_FEATURE_VF );
-                    script.addTab( 2 )
-                          .addLine(
-                                    "ON VF.variablefeature_id = TS.variablefeature_id" );
-                    script.addTab()
-                          .addLine( INNER_JOIN_WRES_PROJECT_SOURCE_PS );
-                    script.addTab( 2 )
-                          .addLine( "ON PS.source_id = TS.source_id" );
-                    script.addTab()
-                          .addLine( WHERE_PS_PROJECT_ID, this.getId() );
-                    script.addTab( 2 ).addLine( "AND PS.member = 'right'" );
-                    script.addTab( 2 ).addLine( "AND PS.source_id = TS.source_id" );
-                    script.addTab( 2 )
-                          .addLine( AND_VF_FEATURE_ID_F_FEATURE_ID );
-                }
-                else
-                {
-                    // There is at least one observed value pertaining to the
-                    // configuration for the right sided data
-                    script.addTab().addLine( SELECT_1 );
-                    script.addTab().addLine( "FROM wres.Observation O" );
-                    script.addTab()
-                          .addLine( INNER_JOIN_WRES_VARIABLE_FEATURE_VF );
-                    script.addTab( 2 )
-                          .addLine(
-                                    "ON VF.variablefeature_id = O.variablefeature_id" );
-                    script.addTab()
-                          .addLine( INNER_JOIN_WRES_PROJECT_SOURCE_PS );
-                    script.addTab( 2 )
-                          .addLine( "ON PS.source_id = O.source_id" );
-                    script.addTab()
-                          .addLine( WHERE_PS_PROJECT_ID, this.getId() );
-                    script.addTab( 2 ).addLine( "AND PS.member = 'right'" );
-                    script.addTab( 2 )
-                          .addLine( AND_VF_FEATURE_ID_F_FEATURE_ID );
-                }
-
-                script.addLine( ");" );
-
-                try
-                {
-                    script.consume( feature -> this.features.add( new FeatureDetails(
-                                                                                      feature ) ) );
-                }
-                catch ( SQLException e )
-                {
-                    throw new SQLException(
-                                            "The features for this project could "
-                                            + "not be retrieved from the database.",
-                                            e );
-                }
-            }
-            else
-            {
-                // Get all features that correspond to the feature configuration
-                this.features =
-                        Features.getAllDetails( this.getProjectConfig() );
-            }
-        }
     }
 
     /**
@@ -623,7 +479,7 @@ public class Project
         Boolean usesGriddedData;
 
         String name = this.getInputName( dataSourceConfig );
-        
+
         switch ( name )
         {
             case Project.LEFT_MEMBER:
@@ -634,7 +490,7 @@ public class Project
                 break;
             case Project.BASELINE_MEMBER:
                 usesGriddedData = this.baselineUsesGriddedData;
-                break;                  
+                break;
             default:
                 throw new IllegalArgumentException( "Unrecognized enumeration value in this context, '"
                                                     + name
@@ -673,10 +529,10 @@ public class Project
                                                         + "'." );
             }
         }
-        
+
         return usesGriddedData;
     }
-    
+
     /**
      * Returns the name of the member that the DataSourceConfig belongs to
      *
@@ -695,7 +551,7 @@ public class Project
                              .value()
                              .toLowerCase()
                + "'";
-    }    
+    }
 
     /**
      * @return A list of all configurations stating where to store pair output
