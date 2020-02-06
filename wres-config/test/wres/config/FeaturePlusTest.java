@@ -1,6 +1,7 @@
 package wres.config;
 
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.math.BigInteger;
@@ -1410,5 +1411,46 @@ public class FeaturePlusTest
                     second.toString().equals( "{null,null,null,null,null,null,null,null,null,null,null,null,[]}" ) );
         
     }
+    
+    @Test
+    public void testCompareByLocationIdWhenOneLocationIdIsNull()
+    {
+        Feature one =
+                new Feature( null,
+                             null,
+                             null,
+                             null,
+                             null,
+                             null,
+                             null,
+                             null,
+                             null,
+                             null,
+                             null,
+                             null,
+                             null );
+
+        FeaturePlus first = FeaturePlus.of( one );
+
+        Feature two =
+                new Feature( null,
+                             null,
+                             null,
+                             null,
+                             null,
+                             "A",
+                             null,
+                             null,
+                             null,
+                             null,
+                             null,
+                             null,
+                             null );
+
+        FeaturePlus second = FeaturePlus.of( two );
+
+        assertNotEquals( 0, FeaturePlus.compareByLocationId( first, second ) );
+    }    
+    
 
 }
