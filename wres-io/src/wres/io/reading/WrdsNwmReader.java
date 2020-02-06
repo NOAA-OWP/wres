@@ -24,6 +24,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
@@ -58,14 +59,19 @@ import wres.system.SystemSettings;
  * One per NWM URI to ingest. Creates and submits multiple TimeSeriesIngester
  * instances.
  *
- * Work in progress as of 2020-01-14.
+ * One-time use:
+ * On construction, creates internal executors.
+ * On first call, shuts down its internal executor.
  */
 
 public class WrdsNwmReader implements Callable<List<IngestResult>>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( WrdsNwmReader.class );
     private static final WebClient WEB_CLIENT = new WebClient();
-    private final ObjectMapper jsonObjectMapper;
+    private static final ObjectMapper JSON_OBJECT_MAPPER =
+            new ObjectMapper().registerModule( new JavaTimeModule() )
+                              .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true );
+
     private final ProjectConfig projectConfig;
     private final DataSource dataSource;
     private final DatabaseLockManager lockManager;
@@ -81,8 +87,6 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
         this.projectConfig = projectConfig;
         this.dataSource = dataSource;
         this.lockManager = lockManager;
-        this.jsonObjectMapper = new ObjectMapper()
-                .registerModule( new JavaTimeModule() );
 
         DatasourceType type = dataSource.getContext()
                                         .getType();
@@ -155,6 +159,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
         this.ingestSaverExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.AbortPolicy() );
         this.ingests = new ArrayBlockingQueue<>( concurrentCount );
         this.startGettingIngestResults = new CountDownLatch( concurrentCount );
+        LOGGER.debug( "Created WrdsNwmReader for {}", this.dataSource );
     }
 
     private ProjectConfig getProjectConfig()
@@ -174,7 +179,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
 
     private ObjectMapper getJsonObjectMapper()
     {
-        return this.jsonObjectMapper;
+        return WrdsNwmReader.JSON_OBJECT_MAPPER;
     }
 
     private URI getUri()
@@ -189,6 +194,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
         List<IngestResult> ingested = new ArrayList<>();
         NwmRootDocument document;
         URI uri = this.getUri();
+        InputStream dataStream = null;
 
         try
         {
@@ -203,7 +209,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                 return Collections.emptyList();
             }
 
-            InputStream dataStream = response.getRight();
+            dataStream = response.getRight();
             document = this.getJsonObjectMapper()
                            .readValue( dataStream,
                                        NwmRootDocument.class );
@@ -211,9 +217,25 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
         }
         catch ( IOException ioe )
         {
+            this.shutdownNow();
             throw new PreIngestException( "Failed to read NWM data from "
                                           + uri,
                                           ioe );
+        }
+        finally
+        {
+            if ( Objects.nonNull( dataStream) )
+            {
+                try
+                {
+                    dataStream.close();
+                }
+                catch ( IOException ioe )
+                {
+                    LOGGER.warn( "Could not close a data stream from {}",
+                                 uri, ioe );
+                }
+            }
         }
 
         String variableName = document.getVariable()
@@ -280,6 +302,10 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
         {
             throw new IngestException( "Failed to ingest NWM data from "
                                        + uri, ee );
+        }
+        finally
+        {
+            this.shutdownNow();
         }
 
         return Collections.unmodifiableList( ingested );
@@ -471,5 +497,16 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                                        LID,
                                        variableName,
                                        measurementUnit );
+    }
+
+    private void shutdownNow()
+    {
+        List<Runnable> abandoned = this.ingestSaverExecutor.shutdownNow();
+
+        if ( !abandoned.isEmpty() && LOGGER.isWarnEnabled() )
+        {
+            LOGGER.warn( "Abandoned {} ingest tasks for reader of URI {}",
+                         abandoned.size(), this.getUri() );
+        }
     }
 }

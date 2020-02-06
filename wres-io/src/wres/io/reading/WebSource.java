@@ -64,6 +64,10 @@ import wres.system.SystemSettings;
  * Takes a single web source and splits it into week-long chunks, creates an
  * ingest task for each chunk, GETs chunks of data several at a time, ingests
  * them, and returns the results.
+ *
+ * One-time use:
+ * On construction, creates internal executors.
+ * On first call, shuts down its internal executor.
  */
 class WebSource implements Callable<List<IngestResult>>
 {
@@ -153,6 +157,7 @@ class WebSource implements Callable<List<IngestResult>>
         // The size of this latch is for reason (2) above
         this.startGettingResults = new CountDownLatch( concurrentCount );
         this.now = now;
+        LOGGER.debug( "Created WebSource for {}", this.dataSource );
     }
 
     private ProjectConfig getProjectConfig()
@@ -208,6 +213,7 @@ class WebSource implements Callable<List<IngestResult>>
         }
         catch ( SQLException se )
         {
+            this.shutdownNow();
             throw new IngestException( "Failed to get features/locations.", se );
         }
 
@@ -308,6 +314,10 @@ class WebSource implements Callable<List<IngestResult>>
         catch ( ExecutionException ee )
         {
             throw new IngestException( "Failed to get web ingest results.", ee );
+        }
+        finally
+        {
+            this.shutdownNow();
         }
 
         return Collections.unmodifiableList( ingestResults );
@@ -875,7 +885,7 @@ class WebSource implements Callable<List<IngestResult>>
                                           + " was shorter than expected." );
         }
 
-        LOGGER.debug( "Hash of gageId {} is {}", gageId, hash );
+        LOGGER.trace( "Hash of gageId {} is {}", gageId, hash );
 
         // This only happens to work because we have around 10,000 gages known.
         // This means we'll have around 30-50 gages per leading 256 bits.
@@ -891,7 +901,7 @@ class WebSource implements Callable<List<IngestResult>>
             DigestUtils someGageDigest = new DigestUtils( md5Name );
             byte[] someGageIdHash = someGageDigest.digest( someGageId );
 
-            LOGGER.debug( "Hash of someGageId {} is {}", someGageId,
+            LOGGER.trace( "Hash of someGageId {} is {}", someGageId,
                           someGageIdHash );
 
             if ( someGageIdHash[0] == hash[0] )
@@ -957,5 +967,16 @@ class WebSource implements Callable<List<IngestResult>>
         }
 
         return Collections.unmodifiableSortedSet( gageIds );
+    }
+
+    private void shutdownNow()
+    {
+        List<Runnable> abandoned = this.ingestSaverExecutor.shutdownNow();
+
+        if ( !abandoned.isEmpty() && LOGGER.isWarnEnabled() )
+        {
+            LOGGER.warn( "Abandoned ingest of {} URIs associated with source {}",
+                         abandoned.size(), this.getDataSource() );
+        }
     }
 }
