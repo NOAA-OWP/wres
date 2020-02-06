@@ -56,7 +56,10 @@ public class FeaturePlus implements Comparable<FeaturePlus>
 
         Objects.requireNonNull( right, "Specify non-null right feature for comparison." );
 
-        return left.getFeature().getLocationId().compareTo( right.getFeature().getLocationId() );
+        // #74566
+        Comparator<String> nullFriendly = Comparator.nullsFirst( Comparator.naturalOrder() );
+        
+        return nullFriendly.compare( left.getFeature().getLocationId(), right.getFeature().getLocationId() );
     }
 
     /**
