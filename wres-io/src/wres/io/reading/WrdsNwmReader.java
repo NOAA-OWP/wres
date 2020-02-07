@@ -243,10 +243,10 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
         String measurementUnit = document.getVariable()
                                          .get( "unit" );
 
-        // Is this a hack or not? Translate "meter^3 / sec" to "m3/s"
+        // Is this a hack or not? Translate "meter^3 / sec" to "CMS"
         if ( measurementUnit.equals( "meter^3 / sec") )
         {
-            measurementUnit = "m3/s";
+            measurementUnit = "CMS";
         }
 
         try
