@@ -12,6 +12,8 @@ import java.net.http.HttpResponse;
 import java.net.http.HttpTimeoutException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.zip.GZIPInputStream;
@@ -47,17 +49,20 @@ public class WebClient
                                                                       524 );
 
     private final HttpClient httpClient;
+    private final boolean trackTimings;
+    private final List<TimingInformation> timingInformation = new ArrayList<>( 1 );
 
-    public WebClient()
+    public WebClient( boolean trackTimings )
     {
         this.httpClient = HttpClient.newBuilder()
                                     .version( HttpClient.Version.HTTP_1_1 )
                                     .followRedirects( HttpClient.Redirect.NORMAL )
                                     .connectTimeout( CONNECT_TIMEOUT )
                                     .build();
+        this.trackTimings = trackTimings;
     }
 
-    public WebClient( SSLContext sslContext )
+    public WebClient( SSLContext sslContext, boolean trackTimings )
     {
         Objects.requireNonNull( sslContext );
         this.httpClient = HttpClient.newBuilder()
@@ -66,6 +71,17 @@ public class WebClient
                                     .connectTimeout( CONNECT_TIMEOUT )
                                     .sslContext( sslContext )
                                     .build();
+        this.trackTimings = trackTimings;
+    }
+
+    public WebClient()
+    {
+        this( false );
+    }
+
+    public WebClient( SSLContext sslContext )
+    {
+        this( sslContext, false );
     }
 
     private HttpClient getHttpClient()
@@ -220,6 +236,7 @@ public class WebClient
     {
         LOGGER.debug( "Called tryRequest with {}", request );
         URI uri = request.uri();
+        TimingInformation timing = new TimingInformation( uri );
         HttpResponse<InputStream> httpResponse = null;
 
         try
@@ -256,6 +273,15 @@ public class WebClient
             LOGGER.warn( "Interrupted while sending request {}", request, ie );
             Thread.currentThread().interrupt();
             return null;
+        }
+        finally
+        {
+            timing.stop();
+        }
+
+        if ( this.trackTimings )
+        {
+            this.timingInformation.add( timing );
         }
 
         return httpResponse;
@@ -364,6 +390,102 @@ public class WebClient
     }
 
 
+    private static final class TimingInformation
+    {
+        private final URI uri;
+        private final long startNanos;
+        private long endNanos = Long.MAX_VALUE;
 
+        /**
+         * Construction starts the timer.
+         * @param uri The URI being timed.
+         */
+        TimingInformation( URI uri )
+        {
+            this.uri = uri;
+            this.startNanos = System.nanoTime();
+        }
 
+        void stop()
+        {
+            this.endNanos = System.nanoTime();
+        }
+
+        long getFullDurationNanos()
+        {
+            return this.endNanos - this.startNanos;
+        }
+
+        URI getUri()
+        {
+            return this.uri;
+        }
+
+    }
+
+    /**
+     * Return timing data collected thusfar.
+     * @return The list of timings.
+     */
+    public String getTimingInformation()
+    {
+        if ( !this.trackTimings )
+        {
+            throw new IllegalStateException( "Cannot get timing information when timing was not requested." );
+        }
+
+        long[] timings = new long[ this.timingInformation.size() ];
+
+        long min = Long.MAX_VALUE;
+        TimingInformation quickest = null;
+        long max = Long.MIN_VALUE;
+        TimingInformation slowest = null;
+
+        for ( int i = 0; i < this.timingInformation.size(); i++ )
+        {
+            TimingInformation information = this.timingInformation.get( i );
+            long duration = information.getFullDurationNanos();
+            timings[i] = duration;
+
+            if ( duration < min )
+            {
+                min = duration;
+                quickest = information;
+            }
+
+            if ( duration > max )
+            {
+                max = duration;
+                slowest = information;
+            }
+        }
+
+        Arrays.sort( timings );
+
+        // Integer division on purpose.
+        int medianIndex = timings.length / 2;
+        long medianTiming = timings[medianIndex];
+
+        String slowestMessage = "slowest response was " + Duration.ofNanos( max );
+
+        if ( Objects.nonNull( slowest ) )
+        {
+            slowestMessage += " from " + slowest.getUri();
+        }
+
+        String quickestMessage = "quickest response was " + Duration.ofNanos( min );
+
+        if ( Objects.nonNull( quickest ) )
+        {
+            quickestMessage += " from " + quickest.getUri();
+        }
+
+        int countOfResponses = timings.length;
+
+        return "Out of request/response count " + countOfResponses
+               + ", median response was "
+               + Duration.ofNanos( medianTiming ) + ", "
+               + quickestMessage + " and "
+               + slowestMessage;
+    }
 }

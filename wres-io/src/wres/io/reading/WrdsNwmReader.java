@@ -67,7 +67,7 @@ import wres.system.SystemSettings;
 public class WrdsNwmReader implements Callable<List<IngestResult>>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( WrdsNwmReader.class );
-    private static final WebClient WEB_CLIENT = new WebClient();
+    private static final WebClient WEB_CLIENT = new WebClient( true );
     private static final ObjectMapper JSON_OBJECT_MAPPER =
             new ObjectMapper().registerModule( new JavaTimeModule() )
                               .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true );
@@ -519,6 +519,9 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                                        measurementUnit );
     }
 
+    /**
+     * Shuts down executors, logs timing information if present.
+     */
     private void shutdownNow()
     {
         List<Runnable> abandoned = this.ingestSaverExecutor.shutdownNow();
@@ -527,6 +530,11 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
         {
             LOGGER.warn( "Abandoned {} ingest tasks for reader of URI {}",
                          abandoned.size(), this.getUri() );
+        }
+
+        if ( LOGGER.isInfoEnabled() )
+        {
+            LOGGER.info( "{}", WEB_CLIENT.getTimingInformation() );
         }
     }
 }
