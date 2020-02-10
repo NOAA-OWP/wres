@@ -55,13 +55,16 @@ class NetcdfOutputFileCreator
                 Files.deleteIfExists( targetPath );
             }
 
-            LOGGER.debug("Opening a copier to create a new file at {} based off of {}.", targetPath, templatePath);
+            LOGGER.debug( "Opening a copier to create a new file at {} based off of {}. The file will contain {} "
+                          + "variables.",
+                          targetPath,
+                          templatePath,
+                          metricVariables.size() );
 
             String location;
 
             try ( NetCDFCopier copier = new NetCDFCopier( templatePath, targetPath.toString(), analysisTime) )
             {
-
                 for ( MetricVariable metricVariable : metricVariables )
                 {
                     copier.addVariable( metricVariable.getName(),
