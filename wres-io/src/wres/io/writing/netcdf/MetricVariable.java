@@ -8,8 +8,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
+import wres.datamodel.MetricConstants;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -18,6 +21,44 @@ import wres.util.TimeHelper;
 
 class MetricVariable
 {
+
+    private static final String NONE = "NONE";
+
+    private final ChronoUnit durationUnits;
+    
+    private final String name;
+    private final String longName;
+
+    private final String measurementUnit;
+
+    private final String firstCondition;
+    private final String firstDataType;
+    private final String eventThresholdName;
+
+    private final String secondCondition;
+    private final String secondDataType;
+
+    private final String earliestReferenceTime;
+    private final String latestReferenceTime;
+
+    private final String earliestValidTime;
+    private final String latestValidTime;
+    
+    private final String timeScalePeriod;
+    private final String timeScaleFunction;
+    
+    private final MetricConstants metricName;
+    
+    private final MetricConstants metricComponentName;
+
+    private final OneOrTwoThresholds thresholds;
+    
+    // TODO: make these longs
+    // Chris Tubbs: We can only write Netcdf-3, and Netcdf-3 doesn't support longs. Keeping them
+    // as 'int's here helps us avoid potential value conversion issues down the line
+    private final int earliestLead;
+    private final int latestLead;
+    
     /**
      * Returns a {@link MetricVariable} for each metric result in the input, with times formatted according to the
      * specified time units.
@@ -27,7 +68,8 @@ class MetricVariable
      * @throws NullPointerException if either input is null
      */
     
-    static Collection<MetricVariable> getAll( Iterable<DoubleScoreStatistic> metricResults, ChronoUnit durationUnits )
+    static Collection<MetricVariable> getAll( Iterable<DoubleScoreStatistic> metricResults, 
+                                              ChronoUnit durationUnits )
     {
         Objects.requireNonNull( metricResults, "Specify non-null metric results." );
         
@@ -35,71 +77,96 @@ class MetricVariable
         
         List<MetricVariable> variables = new ArrayList<>();
 
+        Map<OneOrTwoThresholds,String> variableNamesByThreshold = MetricVariable.getVariableNamesByThreshold( metricResults );
+
         for (DoubleScoreStatistic output : metricResults)
         {
-            variables.add( new MetricVariable( output, durationUnits ) );
+            // Create a unique name for the metric and threshold
+            StatisticMetadata meta = output.getMetadata();
+            
+            OneOrTwoThresholds thresholds = meta.getSampleMetadata()
+                                                .getThresholds();
+            
+            String name = variableNamesByThreshold.get( thresholds );
+
+            variables.add( new MetricVariable( name, output, durationUnits ) );
         }
 
         return Collections.unmodifiableCollection( variables );
     }
 
-    private MetricVariable (final DoubleScoreStatistic output, ChronoUnit durationUnits )
+    private MetricVariable (String name, DoubleScoreStatistic output, ChronoUnit durationUnits )
     {
+
         this.durationUnits = durationUnits;
         
         StatisticMetadata metadata = output.getMetadata();
         String metric = metadata.getMetricID().toString();
-        OneOrTwoThresholds thresholds = metadata.getSampleMetadata().getThresholds();
+        
+        if ( metadata.hasMetricComponentID()
+             && metadata.getMetricComponentID() != MetricConstants.MAIN )
+        {
+            metric += " " + metadata.getMetricComponentID();
+        }
+        
+        this.thresholds = metadata.getSampleMetadata().getThresholds();
         TimeWindow timeWindow = metadata.getSampleMetadata().getTimeWindow();
 
-        this.name = MetricVariable.getName( output );
-        this.longName = metric + " " + thresholds;
+        this.name = name;
+        
+        String fullName = metric + " " + this.getThreshold();
+        fullName = fullName.replaceAll("\\d+","#" );
+        
+        this.longName = fullName;
 
         this.measurementUnit = metadata.getMeasurementUnit().getUnit();
-        this.sampleSize = metadata.getSampleSize();
 
-        this.firstCondition = thresholds.first().getCondition().name();
-        this.firstBound = thresholds.first().getValues().first();
-        this.firstDataType = thresholds.first().getDataType().name();
+        this.firstCondition = this.getThreshold().first().getCondition().name();
+        this.firstDataType = this.getThreshold().first().getDataType().name();
 
-        // Two thresholds available
-        if (thresholds.hasTwo())
+        if ( this.thresholds.first().hasLabel() )
         {
-            this.secondCondition = thresholds.second().getCondition().name();
-            this.secondBound = thresholds.second().getValues().first();
-            this.secondDataType = thresholds.second().getDataType().name();
+            this.eventThresholdName = this.getThreshold().first().getLabel();
         }
         else
         {
-            this.secondCondition = "None";
-            this.secondBound = null;
-            this.secondDataType = "None";
+            this.eventThresholdName = NONE;
+        }
+
+        // Two thresholds available
+        if ( thresholds.hasTwo() )
+        {
+            this.secondCondition = this.getThreshold().second().getCondition().name();
+            this.secondDataType = this.getThreshold().second().getDataType().name();
+        }
+        else
+        {
+            this.secondCondition = NONE;
+            this.secondDataType = NONE;
         }
 
         // We only add timing information until we get a lead variable in
-        // Use the default duration units 
-        this.earliestLead = (int) TimeHelper.durationToLongUnits( timeWindow.getEarliestLeadDuration(),
-                                                                  this.getDurationUnits() );
-        this.latestLead = (int) TimeHelper.durationToLongUnits( timeWindow.getLatestLeadDuration(),
-                                                                this.getDurationUnits() );
+        // Use the default duration units
+        int leadLow = Integer.MIN_VALUE;
+        int leadHigh = Integer.MAX_VALUE;
+        
+        if( !timeWindow.getEarliestLeadDuration().equals( TimeWindow.DURATION_MIN ) )
+        {
+            leadLow = (int) TimeHelper.durationToLongUnits( timeWindow.getEarliestLeadDuration(),
+                                                            this.getDurationUnits() );
+        }
+        if( !timeWindow.getLatestLeadDuration().equals( TimeWindow.DURATION_MAX ) )
+        {
+            leadHigh = (int) TimeHelper.durationToLongUnits( timeWindow.getLatestLeadDuration(),
+                                                            this.getDurationUnits() );
+        }
+        this.earliestLead = leadLow;
+        this.latestLead = leadHigh;
 
-        if (!timeWindow.getEarliestReferenceTime().equals( Instant.MIN ))
-        {
-            this.earliestTime = timeWindow.getEarliestReferenceTime().toString();
-        }
-        else
-        {
-            this.earliestTime = "ALL";
-        }
-
-        if (!timeWindow.getLatestReferenceTime().equals( Instant.MAX ))
-        {
-            this.latestTime = timeWindow.getLatestReferenceTime().toString();
-        }
-        else
-        {
-            this.latestTime = "ALL";
-        }
+        this.earliestReferenceTime = this.getInstantString( timeWindow.getEarliestReferenceTime() );
+        this.latestReferenceTime = this.getInstantString( timeWindow.getLatestReferenceTime() );
+        this.earliestValidTime = this.getInstantString( timeWindow.getEarliestValidTime() );
+        this.latestValidTime = this.getInstantString( timeWindow.getLatestValidTime() );
         
         // Add the time scale information if available
         if( metadata.getSampleMetadata().hasTimeScale() )
@@ -117,43 +184,51 @@ class MetricVariable
             this.timeScalePeriod = "UNKNOWN";
             this.timeScaleFunction = "UNKNOWN";
         }
+
+        this.metricName = metadata.getMetricID();
+        this.metricComponentName = metadata.getMetricComponentID();
         
     }
     
     /**
-     * Returns the duration units for writing lead durations.
+     * Looks for a metric-threshold variable name within the input collection that corresponds to the statistic 
+     * provided. Checks for the metric name, metric component name and thresholds.
      * 
-     * @return the duration units
+     * @param variables the metric variables
+     * @param output the score
+     * @return the metric-threshold variable name corresponding to the score
+     * @throws IllegalArgumentException if the name could not be found
+     * @throws NullPointerException if any input is null
      */
     
-    private ChronoUnit getDurationUnits()
+    static String getName(Collection<MetricVariable> variables, DoubleScoreStatistic output)
     {
-        return this.durationUnits;
-    }    
+        Objects.requireNonNull( variables );
 
-    static String getName(final DoubleScoreStatistic output)
-    {
-        StatisticMetadata metadata = output.getMetadata();
-        // We start with the raw name of the metric
-        String name = metadata.getMetricID().toString().replace(" ", "_");
+        Objects.requireNonNull( output );
 
-        // If the calling metric is associated with a threshold, combine
-        // threshold information with it
-        if ( metadata.getSampleMetadata().getThresholds() != null &&
-             metadata.getSampleMetadata().getThresholds().first() != null &&
-             metadata.getSampleMetadata().getThresholds().first().hasProbabilities())
+        StatisticMetadata meta = output.getMetadata();
+        
+        Set<OneOrTwoThresholds> thresholdsFound = new TreeSet<>();
+        
+        for ( MetricVariable next : variables )
         {
-            // We first get the probability in raw percentage, i.e., 0.95 becomes 95
-            Double probability =
-                    metadata.getSampleMetadata().getThresholds().first().getProbabilities().first() * 100.0;
-
-            // We now want to indicate that it is a probability and attach
-            // the integer representation. If the probability ended up
-            // being 37.25, we want the name "_Pr_3725" not "_Pr_37.25"
-            name += "_Pr_" + probability.toString().replaceAll( "\\.", "" );
+            thresholdsFound.add( next.getThreshold() );
+            
+            if ( next.getMetricName() == meta.getMetricID()
+                 && next.getMetricComponentName() == meta.getMetricComponentID()
+                 && next.getThreshold().equals( meta.getSampleMetadata().getThresholds() ) )
+            {
+                return next.getName();
+            }
         }
-
-        return name;
+        
+        OneOrTwoThresholds threshold = output.getMetadata().getSampleMetadata().getThresholds();
+        
+        throw new IllegalArgumentException( "Unable to find the metric-threshold variable name for the threshold "
+                                            + threshold 
+                                            + "among the thresholds "
+                                            + thresholdsFound );
     }
 
     public String getName()
@@ -166,59 +241,146 @@ class MetricVariable
 
         Map<String, Object> attributes = new TreeMap<>(  );
 
-        attributes.put( "latest_time", this.latestTime );
-        attributes.put( "earliest_time", this.earliestTime );
+        attributes.put( "earliest_reference_time", this.earliestReferenceTime );
+        attributes.put( "latest_reference_time", this.latestReferenceTime );
+        attributes.put( "earliest_valid_time", this.earliestValidTime );
+        attributes.put( "latest_valid_time", this.latestValidTime );
+        
         // Add the default duration units to qualify
         attributes.put( "earliest_lead_" + this.getDurationUnits().name().toLowerCase(),
                         this.earliestLead );
         attributes.put( "latest_lead_" + this.getDurationUnits().name().toLowerCase(),
                         this.latestLead );
-        attributes.put( "first_data_type", this.firstDataType );
-        attributes.put( "second_data_type", this.secondDataType );
-        attributes.put( "first_bound", this.firstBound );
-        attributes.put( "second_bound", this.secondBound );
-        attributes.put( "unit", this.measurementUnit );
+        attributes.put( "event_threshold_data_type", this.firstDataType );
+        attributes.put( "decision_threshold_data_type", this.secondDataType );
+        attributes.put( "event_threshold_name", this.eventThresholdName );
+        attributes.put( "measurement_unit", this.measurementUnit );
         attributes.put( "long_name", this.longName );
-        attributes.put("first_condition", this.firstCondition);
-        attributes.put("second_condition", this.secondCondition);
-        attributes.put("sample_size", this.sampleSize);
+        attributes.put( "event_threshold_condition", this.firstCondition );
+        attributes.put( "decision_threshold_condition", this.secondCondition );
+
         // Add the default duration units to qualify
         attributes.put( "time_scale_period_" + this.getDurationUnits().name().toLowerCase(),
                         this.timeScalePeriod );
-        attributes.put("time_scale_function", this.timeScaleFunction);
+        attributes.put( "time_scale_function", this.timeScaleFunction );
 
         return attributes;
     }
-
+    
     /**
-     * The time units for lead durations.
+     * Returns a map of thresholds and corresponding, normalized, variable names. The variable names comprise the
+     * metric name, followed by the metric component name (where applicable), followed by a normalized threshold name.
+     * 
+     * @param statistics the statistics
+     * @return the map of thresholds and normalized names
      */
     
-    private final ChronoUnit durationUnits;
+    private static Map<OneOrTwoThresholds, String> getVariableNamesByThreshold( Iterable<DoubleScoreStatistic> statistics )
+    {
+
+        // Build a map of thresholds by dataset identifier
+        // The thresholds can vary by dataset
+        Map<String, Map<OneOrTwoThresholds, String>> thresholdsByDataset = new TreeMap<>();
+        for ( DoubleScoreStatistic output : statistics )
+        {
+            StatisticMetadata meta = output.getMetadata();
+
+            // Dataset id
+            String id = meta.getSampleMetadata()
+                            .getIdentifier()
+                            .toString();
+            
+            OneOrTwoThresholds thresholds = meta.getSampleMetadata()
+                                                .getThresholds();
+
+            // Name begins with metric name(s)
+            String label = MetricVariable.getMetricName( meta );
+
+            if ( thresholdsByDataset.containsKey( id ) )
+            {
+                thresholdsByDataset.get( id )
+                                   .put( thresholds, label );
+            }
+            else
+            {
+                Map<OneOrTwoThresholds, String> set = new TreeMap<>();
+                set.put( thresholds, label );
+                thresholdsByDataset.put( id, set );
+            }
+        }
+
+        Map<OneOrTwoThresholds, String> returnMe = new TreeMap<>();
+        
+        // Add the normalized threshold name
+        for ( Map.Entry<String, Map<OneOrTwoThresholds, String>> outer : thresholdsByDataset.entrySet() )
+        {
+
+            Map<OneOrTwoThresholds, String> outerMap = outer.getValue();
+
+            int i = 1;
+            for ( Map.Entry<OneOrTwoThresholds, String> inner : outerMap.entrySet() )
+            {
+                String start = inner.getValue();
+                String end = "_THRESHOLD_" + i;
+
+                returnMe.put( inner.getKey(), start + end );
+                i++;
+            }
+
+        }
+
+        return Collections.unmodifiableMap( returnMe );
+
+    }
+
+    /**
+     * Returns the metric name from the input.
+     * @param meta the metadata
+     * @return the metric name
+     */
     
-    private final String name;
-    private final String longName;
+    private static String getMetricName( StatisticMetadata meta )
+    {
+        String label = meta.getMetricID()
+                           .name();
 
-    private final String measurementUnit;
+        if ( meta.hasMetricComponentID()
+             && meta.getMetricComponentID() != MetricConstants.MAIN )
+        {
+            label += "_" + meta.getMetricComponentID();
+        }
+        
+        return label;
+    }
 
-    private final String firstCondition;
-    private final Double firstBound;
-    private final String firstDataType;
+    private ChronoUnit getDurationUnits()
+    {
+        return this.durationUnits;
+    }    
 
-    private final String secondCondition;
-    private final Double secondBound;
-    private final String secondDataType;
-
-    private final String earliestTime;
-    private final String latestTime;
+    private OneOrTwoThresholds getThreshold()
+    {
+        return this.thresholds;
+    } 
     
-    private final String timeScalePeriod;
-    private final String timeScaleFunction;
-
-    // TODO: make these longs
-    // Chris Tubbs: We can only write Netcdf-3, and Netcdf-3 doesn't support longs. Keeping them
-    // as 'int's here helps us avoid potential value conversion issues down the line
-    private final int earliestLead;
-    private final int latestLead;
-    private final int sampleSize;
+    private MetricConstants getMetricName()
+    {
+        return this.metricName;
+    } 
+    
+    private MetricConstants getMetricComponentName()
+    {
+        return this.metricComponentName;
+    } 
+    
+    private String getInstantString( Instant instant )
+    {
+        if( Instant.MIN.equals( instant ) || Instant.MAX.equals( instant ) )
+        {
+            return "ALL";
+        }
+        
+        return instant.toString();
+    }
+    
 }
