@@ -45,7 +45,7 @@
           <!-- %exception{short}: just the first line for each exception -->
           <!-- %exception{full}: full stacktrace for each exception -->
           <!-- %logger{0}: show only rightmost part of logger name (class) -->
-          <pattern>%level %logger{0} %msg%n%exception{full}</pattern>
+          <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSSZ} %level %logger{0} %msg%n%exception{full}</pattern>
         </encoder>
     </appender>
 
