@@ -67,7 +67,7 @@ import wres.system.SystemSettings;
 public class WrdsNwmReader implements Callable<List<IngestResult>>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( WrdsNwmReader.class );
-    private static final WebClient WEB_CLIENT = new WebClient();
+    private static final WebClient WEB_CLIENT = new WebClient( true );
     private static final ObjectMapper JSON_OBJECT_MAPPER =
             new ObjectMapper().registerModule( new JavaTimeModule() )
                               .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true );
@@ -251,6 +251,8 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
 
         try
         {
+            int emptyTimeseriesCount = 0;
+
             for ( NwmForecast forecast : document.getForecasts() )
             {
                 for ( NwmFeature nwmFeature : forecast.getFeatures() )
@@ -261,28 +263,46 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                     String locationName = transformed.getKey();
                     TimeSeries<?> timeSeries = transformed.getValue();
 
-                    TimeSeriesIngester timeSeriesIngester =
-                            this.createTimeSeriesIngester( this.getProjectConfig(),
-                                                           this.getDataSource(),
-                                                           this.getLockManager(),
-                                                           timeSeries,
-                                                           locationName,
-                                                           variableName,
-                                                           measurementUnit );
-
-                    Future<List<IngestResult>> futureIngestResult =
-                            this.ingestSaverExecutor.submit( timeSeriesIngester );
-                    this.ingests.add( futureIngestResult );
-                    this.startGettingIngestResults.countDown();
-
-                    // See WebSource for comments on this approach.
-                    if ( this.startGettingIngestResults.getCount() <= 0 )
+                    if ( !timeSeries.getEvents()
+                                    .isEmpty() )
                     {
-                        Future<List<IngestResult>> future = this.ingests.take();
-                        List<IngestResult> ingestResults = future.get();
-                        ingested.addAll( ingestResults );
+                        TimeSeriesIngester timeSeriesIngester =
+                                this.createTimeSeriesIngester( this.getProjectConfig(),
+                                                               this.getDataSource(),
+                                                               this.getLockManager(),
+                                                               timeSeries,
+                                                               locationName,
+                                                               variableName,
+                                                               measurementUnit );
+
+                        Future<List<IngestResult>> futureIngestResult =
+                                this.ingestSaverExecutor.submit(
+                                        timeSeriesIngester );
+                        this.ingests.add( futureIngestResult );
+                        this.startGettingIngestResults.countDown();
+
+                        // See WebSource for comments on this approach.
+                        if ( this.startGettingIngestResults.getCount() <= 0 )
+                        {
+                            Future<List<IngestResult>> future =
+                                    this.ingests.take();
+                            List<IngestResult> ingestResults = future.get();
+                            ingested.addAll( ingestResults );
+                        }
+                    }
+                    else
+                    {
+                        // Keep track of how many empty timeseries there were
+                        // to avoid spamming the log.
+                        emptyTimeseriesCount++;
                     }
                 }
+            }
+
+            if ( emptyTimeseriesCount > 0 )
+            {
+                LOGGER.warn( "Skipped {} empty timeseries from {}",
+                             emptyTimeseriesCount, uri );
             }
 
             // Finish getting the remainder of ingest results.
@@ -499,6 +519,9 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                                        measurementUnit );
     }
 
+    /**
+     * Shuts down executors, logs timing information if present.
+     */
     private void shutdownNow()
     {
         List<Runnable> abandoned = this.ingestSaverExecutor.shutdownNow();
@@ -507,6 +530,11 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
         {
             LOGGER.warn( "Abandoned {} ingest tasks for reader of URI {}",
                          abandoned.size(), this.getUri() );
+        }
+
+        if ( LOGGER.isInfoEnabled() )
+        {
+            LOGGER.info( "{}", WEB_CLIENT.getTimingInformation() );
         }
     }
 }

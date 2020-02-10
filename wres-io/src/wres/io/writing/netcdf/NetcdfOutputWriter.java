@@ -184,17 +184,17 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
 
             synchronized ( this.WINDOW_LOCK )
             {
+                Collection<MetricVariable> variables = MetricVariable.getAll( scores, this.getDurationUnits() );
+                
                 if ( !this.writersMap.containsKey( window ) )
                 {
-                    Collection<MetricVariable> variables = MetricVariable.getAll( scores, this.getDurationUnits() );
                     this.writersMap.put( window,
                                       new TimeWindowWriter( this,
                                                             this.getOutputDirectory(),
                                                             window,
-                                                            variables,
                                                             this.getDurationUnits() ) );
                 }
-
+                
                 Callable<Set<Path>> writerTask = new Callable<Set<Path>>()
                 {
                     @Override
@@ -205,7 +205,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                         try
                         {
                             NetcdfOutputWriter.TimeWindowWriter writer = writersMap.get( this.window );
-                            writer.write( this.output );
+                            writer.write( variables, this.output );
                             Path pathWritten = Paths.get( writer.outputPath );
                             pathsWrittenTo.add( pathWritten );
                             return Collections.unmodifiableSet( pathsWrittenTo );
@@ -369,7 +369,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
     
     private static class TimeWindowWriter implements Closeable
     {
-        private final ZonedDateTime ANALYSIS_TIME = ZonedDateTime.now( ZoneId.of( "UTC" ) );
+        private static final ZonedDateTime ANALYSIS_TIME = ZonedDateTime.now( ZoneId.of( "UTC" ) );
         
         /**
          * The time units for lead durations.
@@ -384,28 +384,25 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
         TimeWindowWriter( NetcdfOutputWriter outputWriter,
                           Path outputDirectory,
                           final TimeWindow timeWindow,
-                          final Collection<MetricVariable> metricVariables,
                           final ChronoUnit durationUnits )
         {
             this.durationUnits = durationUnits;
             this.outputWriter = outputWriter;
             this.outputDirectory = outputDirectory;
             this.timeWindow = timeWindow;
-            this.metricVariables = metricVariables;
             this.creationLock = new ReentrantLock();
             this.writeLock = new ReentrantLock();
         }
 
-        void write( Collection<DoubleScoreStatistic> output )
+        void write( Collection<MetricVariable> variables, Collection<DoubleScoreStatistic> output )
                 throws IOException, InvalidRangeException, CoordinateNotFoundException
         {
             //this now needs to somehow get all metadata for all metrics
             // Ensure that the output file exists
-            this.buildWriter( output, this.metricVariables );
-
+            this.buildWriter( output, variables );
             for (DoubleScoreStatistic score : output)
             {
-                String name = MetricVariable.getName( score );
+                String name = MetricVariable.getName( variables, score );
                 // Figure out the location of all values and build the origin in each variable grid
                 Location location = score.getMetadata().getSampleMetadata().getIdentifier().getGeospatialID();
 
@@ -442,7 +439,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                                                                       this.outputDirectory,
                                                                       this.outputWriter.getDestinationConfig(),
                                                                       this.timeWindow,
-                                                                      this.ANALYSIS_TIME,
+                                                                      ANALYSIS_TIME,
                                                                       variables,
                                                                       output,
                                                                       this.durationUnits );
@@ -514,25 +511,34 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                     ima = netcdfValue.getIndex();
                     netcdfValue.setFloat( ima, (float) key.getValue() );
 
+                    String exceptionMessage = "While attempting to write data value "
+                                              + key.getValue()
+                                              + " with variable name "
+                                              + key.getVariableName()
+                                              + " to index "
+                                              + Arrays.toString( key.getOrigin() )
+                                              + " within file "
+                                              + this.outputPath
+                                              + ": ";
+                    
                     try
                     {
+//                        LOGGER.trace( "Writing data value {} with variable name {} to index {} within file {}",
+//                                      key.getValue(),
+//                                      key.getVariableName(),
+//                                      Arrays.toString( key.getOrigin() ),
+//                                      this.outputPath );
                         writer.write( key.getVariableName(), key.getOrigin(), netcdfValue );
                     }
-                    catch ( IOException | InvalidRangeException e )
+                    catch ( NullPointerException | IOException | InvalidRangeException e )
                     {
-                        LOGGER.trace( "Error encountered while writing Netcdf data" );
-                        throw e;
+                        throw new IOException( exceptionMessage, e );
                     }
                 }
 
                 writer.flush();
 
                 this.valuesToSave.clear();
-            }
-            catch ( IOException | InvalidRangeException e )
-            {
-                LOGGER.error( "Error Occurred when writing directly to the Netcdf output", e );
-                throw e;
             }
             finally
             {
@@ -711,7 +717,6 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
 
         private String outputPath = null;
         private final TimeWindow timeWindow;
-        private final Collection<MetricVariable> metricVariables;
         private final ReentrantLock creationLock;
         private final ReentrantLock writeLock;
 
