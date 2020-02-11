@@ -4,6 +4,8 @@ RUN yum install -y \
     java-11-openjdk-headless-11.0.6.10-1.el7_7 \
     unzip-6.0-20.el7 \
     which-2.20-7.el7 \
+    # Use ss to view socket states. See #69947
+    iproute-4.11.0-25.el7_7.2 \
     # The following aren't direct dependencies of WRES, are updates post-7.7.1908
     binutils-2.27-41.base.el7_7.1 \
     ca-certificates-2019.2.32-76.el7_7 \
