@@ -95,12 +95,18 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 	 */
 	Integer getID( T detail ) throws SQLException
 	{
-		U key = detail.getKey();
-		if (!hasID(key)) {
-			addElement(detail);
-		}
-		
-		return getID(key);
+        U key = detail.getKey();
+
+        // See #73876 for why this may need synchronization
+        synchronized ( getKeyLock() )
+        {
+            if ( !hasID( key ) )
+            {
+                addElement( detail );
+            }
+
+            return getID( key );
+        }
 	}
 
     /**
