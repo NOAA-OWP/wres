@@ -9,6 +9,8 @@ RUN yum install -y \
     dejavu-sans-mono-fonts-2.33-6.el7 \
     dejavu-sans-fonts-2.33-6.el7 \
     dejavu-serif-fonts-2.33-6.el7 \
+    # Use ss to view socket states. See #69947
+    iproute-4.11.0-25.el7_7.2 \
     # The following aren't direct dependencies of WRES, are updates post-7.7.1908
     binutils-2.27-41.base.el7_7.1 \
     ca-certificates-2019.2.32-76.el7_7 \
