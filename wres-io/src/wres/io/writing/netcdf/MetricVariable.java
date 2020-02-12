@@ -2,10 +2,7 @@ package wres.io.writing.netcdf;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -13,6 +10,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import wres.datamodel.MetricConstants;
+import wres.datamodel.scale.TimeScale;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -26,7 +24,7 @@ class MetricVariable
 
     private final ChronoUnit durationUnits;
     
-    private final String name;
+    private final String variableName;
     private final String longName;
 
     private final String measurementUnit;
@@ -47,9 +45,10 @@ class MetricVariable
     private final String timeScalePeriod;
     private final String timeScaleFunction;
     
-    private final MetricConstants metricName;
+    private final MetricConstants metricId;
     
-    private final MetricConstants metricComponentName;
+    // Fixed until metric decompositions are allowed
+    private static final MetricConstants metricComponentName = MetricConstants.MAIN;
 
     private final OneOrTwoThresholds thresholds;
     
@@ -58,69 +57,42 @@ class MetricVariable
     // as 'int's here helps us avoid potential value conversion issues down the line
     private final int earliestLead;
     private final int latestLead;
-    
+
     /**
-     * Returns a {@link MetricVariable} for each metric result in the input, with times formatted according to the
-     * specified time units.
-     * @param metricResults The metric output that will be written to the Netcdf
-     * @param durationUnits the time units for durations
-     * @return a collection of metric variables
-     * @throws NullPointerException if either input is null
+     * Builds a 
+     * 
+     * @param variableName
+     * @param timeWindow
+     * @param metricId
+     * @param thresholds
+     * @param units
+     * @param desiredTimeScale
+     * @param durationUnits
      */
     
-    static Collection<MetricVariable> getAll( Iterable<DoubleScoreStatistic> metricResults, 
-                                              ChronoUnit durationUnits )
+    MetricVariable( String variableName,
+                    TimeWindow timeWindow,
+                    MetricConstants metricId,
+                    OneOrTwoThresholds thresholds,
+                    String units,
+                    TimeScale desiredTimeScale,
+                    ChronoUnit durationUnits )
     {
-        Objects.requireNonNull( metricResults, "Specify non-null metric results." );
-        
-        Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
-        
-        List<MetricVariable> variables = new ArrayList<>();
-
-        Map<OneOrTwoThresholds,String> variableNamesByThreshold = MetricVariable.getVariableNamesByThreshold( metricResults );
-
-        for (DoubleScoreStatistic output : metricResults)
-        {
-            // Create a unique name for the metric and threshold
-            StatisticMetadata meta = output.getMetadata();
-            
-            OneOrTwoThresholds thresholds = meta.getSampleMetadata()
-                                                .getThresholds();
-            
-            String name = variableNamesByThreshold.get( thresholds );
-
-            variables.add( new MetricVariable( name, output, durationUnits ) );
-        }
-
-        return Collections.unmodifiableCollection( variables );
-    }
-
-    private MetricVariable (String name, DoubleScoreStatistic output, ChronoUnit durationUnits )
-    {
-
         this.durationUnits = durationUnits;
-        
-        StatisticMetadata metadata = output.getMetadata();
-        String metric = metadata.getMetricID().toString();
-        
-        if ( metadata.hasMetricComponentID()
-             && metadata.getMetricComponentID() != MetricConstants.MAIN )
-        {
-            metric += " " + metadata.getMetricComponentID();
-        }
-        
-        this.thresholds = metadata.getSampleMetadata().getThresholds();
-        TimeWindow timeWindow = metadata.getSampleMetadata().getTimeWindow();
 
-        this.name = name;
-        
-        String fullName = metric + " " + this.getThreshold();
-        fullName = fullName.replaceAll("\\d+","#" );
-        
+        String metricName = metricId.toString();
+
+        this.thresholds = thresholds;
+
+        this.variableName = variableName;
+
+        String fullName = metricName + " " + this.getThreshold();
+        fullName = fullName.replaceAll( "\\d+", "#" );
+
         this.longName = fullName;
 
-        this.measurementUnit = metadata.getMeasurementUnit().getUnit();
-
+        this.measurementUnit = units;
+        
         this.firstCondition = this.getThreshold().first().getCondition().name();
         this.firstDataType = this.getThreshold().first().getDataType().name();
 
@@ -149,16 +121,16 @@ class MetricVariable
         // Use the default duration units
         int leadLow = Integer.MIN_VALUE;
         int leadHigh = Integer.MAX_VALUE;
-        
-        if( !timeWindow.getEarliestLeadDuration().equals( TimeWindow.DURATION_MIN ) )
+
+        if ( !timeWindow.getEarliestLeadDuration().equals( TimeWindow.DURATION_MIN ) )
         {
             leadLow = (int) TimeHelper.durationToLongUnits( timeWindow.getEarliestLeadDuration(),
                                                             this.getDurationUnits() );
         }
-        if( !timeWindow.getLatestLeadDuration().equals( TimeWindow.DURATION_MAX ) )
+        if ( !timeWindow.getLatestLeadDuration().equals( TimeWindow.DURATION_MAX ) )
         {
             leadHigh = (int) TimeHelper.durationToLongUnits( timeWindow.getLatestLeadDuration(),
-                                                            this.getDurationUnits() );
+                                                             this.getDurationUnits() );
         }
         this.earliestLead = leadLow;
         this.latestLead = leadHigh;
@@ -167,17 +139,15 @@ class MetricVariable
         this.latestReferenceTime = this.getInstantString( timeWindow.getLatestReferenceTime() );
         this.earliestValidTime = this.getInstantString( timeWindow.getEarliestValidTime() );
         this.latestValidTime = this.getInstantString( timeWindow.getLatestValidTime() );
-        
+
         // Add the time scale information if available
-        if( metadata.getSampleMetadata().hasTimeScale() )
+        if ( Objects.nonNull( desiredTimeScale ) )
         {
             // Use the default duration units
-            this.timeScalePeriod = Long.toString( TimeHelper.durationToLongUnits( metadata.getSampleMetadata()
-                                                                                          .getTimeScale()
-                                                                                          .getPeriod(),
+            this.timeScalePeriod = Long.toString( TimeHelper.durationToLongUnits( desiredTimeScale.getPeriod(),
                                                                                   this.getDurationUnits() ) );
             // Use the enum name()
-            this.timeScaleFunction = metadata.getSampleMetadata().getTimeScale().getFunction().name();
+            this.timeScaleFunction = desiredTimeScale.getFunction().name();
         }
         else
         {
@@ -185,9 +155,7 @@ class MetricVariable
             this.timeScaleFunction = "UNKNOWN";
         }
 
-        this.metricName = metadata.getMetricID();
-        this.metricComponentName = metadata.getMetricComponentID();
-        
+        this.metricId = metricId;
     }
     
     /**
@@ -233,7 +201,7 @@ class MetricVariable
 
     public String getName()
     {
-        return this.name;
+        return this.variableName;
     }
 
     Map<String, Object> getAttributes()
@@ -266,92 +234,6 @@ class MetricVariable
 
         return attributes;
     }
-    
-    /**
-     * Returns a map of thresholds and corresponding, normalized, variable names. The variable names comprise the
-     * metric name, followed by the metric component name (where applicable), followed by a normalized threshold name.
-     * 
-     * @param statistics the statistics
-     * @return the map of thresholds and normalized names
-     */
-    
-    private static Map<OneOrTwoThresholds, String> getVariableNamesByThreshold( Iterable<DoubleScoreStatistic> statistics )
-    {
-
-        // Build a map of thresholds by dataset identifier
-        // The thresholds can vary by dataset
-        Map<String, Map<OneOrTwoThresholds, String>> thresholdsByDataset = new TreeMap<>();
-        for ( DoubleScoreStatistic output : statistics )
-        {
-            StatisticMetadata meta = output.getMetadata();
-
-            // Dataset id
-            String id = meta.getSampleMetadata()
-                            .getIdentifier()
-                            .toString();
-            
-            OneOrTwoThresholds thresholds = meta.getSampleMetadata()
-                                                .getThresholds();
-
-            // Name begins with metric name(s)
-            String label = MetricVariable.getMetricName( meta );
-
-            if ( thresholdsByDataset.containsKey( id ) )
-            {
-                thresholdsByDataset.get( id )
-                                   .put( thresholds, label );
-            }
-            else
-            {
-                Map<OneOrTwoThresholds, String> set = new TreeMap<>();
-                set.put( thresholds, label );
-                thresholdsByDataset.put( id, set );
-            }
-        }
-
-        Map<OneOrTwoThresholds, String> returnMe = new TreeMap<>();
-        
-        // Add the normalized threshold name
-        for ( Map.Entry<String, Map<OneOrTwoThresholds, String>> outer : thresholdsByDataset.entrySet() )
-        {
-
-            Map<OneOrTwoThresholds, String> outerMap = outer.getValue();
-
-            int i = 1;
-            for ( Map.Entry<OneOrTwoThresholds, String> inner : outerMap.entrySet() )
-            {
-                String start = inner.getValue();
-                String end = "_THRESHOLD_" + i;
-
-                returnMe.put( inner.getKey(), start + end );
-                i++;
-            }
-
-        }
-
-        return Collections.unmodifiableMap( returnMe );
-
-    }
-
-    /**
-     * Returns the metric name from the input.
-     * @param meta the metadata
-     * @return the metric name
-     */
-    
-    private static String getMetricName( StatisticMetadata meta )
-    {
-        String label = meta.getMetricID()
-                           .name();
-
-        if ( meta.hasMetricComponentID()
-             && meta.getMetricComponentID() != MetricConstants.MAIN )
-        {
-            label += "_" + meta.getMetricComponentID();
-        }
-        
-        return label;
-    }
 
     private ChronoUnit getDurationUnits()
     {
@@ -365,12 +247,12 @@ class MetricVariable
     
     private MetricConstants getMetricName()
     {
-        return this.metricName;
+        return this.metricId;
     } 
     
     private MetricConstants getMetricComponentName()
     {
-        return this.metricComponentName;
+        return MetricVariable.metricComponentName;
     } 
     
     private String getInstantString( Instant instant )

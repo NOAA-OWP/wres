@@ -12,12 +12,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -28,6 +31,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,14 +46,25 @@ import ucar.nc2.NetcdfFileWriter;
 import ucar.nc2.Variable;
 import ucar.nc2.dt.GridDatatype;
 import ucar.nc2.dt.grid.GridDataset;
+import wres.config.FeaturePlus;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.NetcdfType;
+import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.Location;
+import wres.datamodel.sampledata.SampleMetadata;
+import wres.datamodel.scale.TimeScale;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
+import wres.datamodel.statistics.StatisticMetadata;
+import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.datamodel.thresholds.ThresholdsByMetric;
+import wres.datamodel.thresholds.ThresholdsGenerator;
 import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.generators.TimeWindowGenerator;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
 import wres.io.writing.WriteException;
@@ -65,16 +80,17 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
     private static final String DEFAULT_VECTOR_TEMPLATE = "vector_template.nc";
     private static final String DEFAULT_GRID_TEMPLATE = "lcc_grid_template.nc";
     private static final int VALUE_SAVE_LIMIT = 500;
+    private static final ZonedDateTime ANALYSIS_TIME = ZonedDateTime.now( ZoneId.of( "UTC" ) );
 
-    private final Object WINDOW_LOCK = new Object();
+    private final Object windowLock = new Object();
 
     private final DestinationConfig destinationConfig;
     private final Path outputDirectory;
     private NetcdfType netcdfConfiguration;
     
-    // Guarded by WINDOW_LOCK
+    // Guarded by windowLock
     private final Map<TimeWindow, TimeWindowWriter> writersMap = new HashMap<>();
-    
+
     /**
      * Default resolution for writing duration outputs. To change the resolution, change this default.
      */
@@ -83,16 +99,24 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
 
     /**
      * Set of paths that this writer actually wrote to
-     * Guarded by WINDOW_LOCK
+     * Guarded by windowLock
      */
     private final Set<Path> pathsWrittenTo = new ConcurrentSkipListSet<>();
 
     /**
      * Writing tasks submitted
-     * Guarded by WINDOW_LOCK
+     * Guarded by windowLock
      */
     private final List<Future<Set<Path>>> writingTasksSubmitted = new ArrayList<>();
-
+    
+    /**
+     * Mapping between standard threshold names and representative thresholds for those standard names. This is used
+     * to help determine the threshold portion of a variable name to which a statistic corresponds, based on the 
+     * standard name of a threshold chosen at blob creation time. 
+     */
+    
+    private Map<String,OneOrTwoThresholds> standardThresholdNames = new HashMap<>();
+    
     /**
      * Returns an instance of the writer. 
      * 
@@ -100,11 +124,12 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
      * @param durationUnits the time units for durations
      * @param outputDirectory the directory into which to write
      * @return an instance of the writer
+     * @throws IOException if the blobs could not be created for any reason
      */
 
     public static NetcdfOutputWriter of( ProjectConfig projectConfig,
                                          ChronoUnit durationUnits,
-                                         Path outputDirectory)
+                                         Path outputDirectory) throws IOException
     {
         return new NetcdfOutputWriter( projectConfig,
                                        durationUnits,
@@ -124,7 +149,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
 
     private NetcdfOutputWriter( ProjectConfig projectConfig,
                                 ChronoUnit durationUnits,
-                                Path outputDirectory )
+                                Path outputDirectory ) throws IOException
     {
         Objects.requireNonNull( projectConfig, "Specify non-null project config." );
         Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
@@ -145,9 +170,221 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                                                       null );
         }
 
+        // Create the blobs into which statistics will be written and a writer per blob
+        this.createBlobsAndBlobWriters( projectConfig );
+        
         Objects.requireNonNull( this.destinationConfig, "The NetcdfOutputWriter wasn't properly initialized." );
     }
 
+    /**
+     * Creates the blobs into which outputs will be written.
+     * 
+     * @param ProjectConfig projectConfig the project configuration
+     * @throws IOException if the blobs could not be created for any reason 
+     */
+    
+    private void createBlobsAndBlobWriters( ProjectConfig projectConfig ) throws IOException
+    {
+        // Time windows
+        PairConfig pairConfig = projectConfig.getPair();
+        Set<TimeWindow> timeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairConfig );
+
+        // External thresholds, if any
+        Map<FeaturePlus, ThresholdsByMetric> externalThresholds =
+                ConfigHelper.readExternalThresholdsFromProjectConfig( projectConfig );
+
+        // Find the feature with the maximum number of thresholds        
+        Comparator<ThresholdsByMetric> byCount = ( ThresholdsByMetric o1, ThresholdsByMetric o2 ) -> {
+            int first = o1.getOneOrTwoThresholds()
+                          .values()
+                          .stream()
+                          .mapToInt( Set::size )
+                          .max()
+                          .orElse( 0 );
+
+            int second = o2.getOneOrTwoThresholds()
+                           .values()
+                           .stream()
+                           .mapToInt( Set::size )
+                           .max()
+                           .orElse( 0 );
+
+            return Integer.compare( first, second );
+        };
+
+        // Internal thresholds, always at least one (all data)
+        ThresholdsByMetric thresholds = ThresholdsGenerator.getThresholdsFromConfig( projectConfig );
+        
+        Optional<ThresholdsByMetric> maximumExternal = externalThresholds.values()
+                                                                         .stream()
+                                                                         .max( byCount );
+        
+        if( maximumExternal.isPresent() )
+        {
+            thresholds = thresholds.unionWithThisStore( maximumExternal.get() );
+        }
+
+        // Units, if declared
+        String units = "UNKNOWN";
+        if ( Objects.nonNull( pairConfig.getUnit() ) )
+        {
+            units = pairConfig.getUnit();
+        }
+        
+        // Desired time scale, if declared
+        TimeScale desiredTimeScale = null;
+        if ( Objects.nonNull( pairConfig.getDesiredTimeScale() ) )
+        {
+            desiredTimeScale = TimeScale.of( pairConfig.getDesiredTimeScale() );
+        }
+        
+        // Dataset identifier, without a feature/location identifier
+        String variableId = ConfigHelper.getVariableIdFromProjectConfig( projectConfig, false );
+        String scenarioId = projectConfig.getInputs()
+                                         .getRight()
+                                         .getLabel();
+        
+        DatasetIdentifier identifier = DatasetIdentifier.of( null, variableId, scenarioId );
+        
+        // Create blobs from components
+        this.createBlobsAndBlobWriters( identifier, timeWindows, thresholds, units, desiredTimeScale );
+    }
+    
+    /**
+     * Creates the blobs into which outputs will be written.
+     * 
+     * @param timeWindows the time windows
+     * @param thresholds the thresholds
+     * @param units the measurement units, if available
+     * @param desiredTimeScale the desired time scale, if available
+     * @throws IOException if the blobs could not be created for any reason
+     */
+
+    private void createBlobsAndBlobWriters( DatasetIdentifier identifier,
+                                            Set<TimeWindow> timeWindows,
+                                            ThresholdsByMetric thresholds,
+                                            String units,
+                                            TimeScale desiredTimeScale ) throws IOException
+    {
+        // One blob and blob writer per time window      
+        for ( TimeWindow nextWindow : timeWindows )
+        {
+
+            Collection<MetricVariable> variables = getMetricVariablesForOneTimeWindow( nextWindow,
+                                                                                       thresholds,
+                                                                                       units,
+                                                                                       desiredTimeScale );
+            
+            // Create the blob path
+            Path targetPath = ConfigHelper.getOutputPathToWriteForOneTimeWindow( this.getOutputDirectory(),
+                                                                                 this.getDestinationConfig(),
+                                                                                 identifier,
+                                                                                 nextWindow,
+                                                                                 this.getDurationUnits() );
+
+            // Create the blob
+            String pathActuallyWritten = NetcdfOutputFileCreator.create( this.getTemplatePath(),
+                                                                         targetPath,
+                                                                         this.getDestinationConfig(),
+                                                                         nextWindow,
+                                                                         NetcdfOutputWriter.ANALYSIS_TIME,
+                                                                         variables,
+                                                                         this.getDurationUnits() );
+
+            // Create the blob writer
+            TimeWindowWriter writer = new TimeWindowWriter( this,
+                                                            pathActuallyWritten,
+                                                            nextWindow );
+
+            // Add the blob writer to the writer cache
+            this.writersMap.put( nextWindow, writer );
+        }
+    }  
+
+    private String getTemplatePath()
+    {
+        String templatePath;
+
+        if ( this.getNetcdfConfiguration()
+                 .getTemplatePath() == null )
+        {
+            String defaultTemplate;
+
+            if ( this.isGridded() )
+            {
+                defaultTemplate = DEFAULT_GRID_TEMPLATE;
+            }
+            else
+            {
+                defaultTemplate = DEFAULT_VECTOR_TEMPLATE;
+            }
+
+            URL template = NetcdfOutputWriter.class.getClassLoader().getResource( defaultTemplate );
+            Objects.requireNonNull( template,
+                                    "A default template for netcdf output could not be "
+                                              + "found on the class path." );
+            templatePath = template.getPath();
+        }
+        else
+        {
+            templatePath = this.getDestinationConfig()
+                               .getNetcdf()
+                               .getTemplatePath();
+        }
+
+        return templatePath;
+    }
+    
+    /**
+     * Creates a collection of {@link MetricVariable} for one time window.
+     * 
+     * @param timeWindow the time windows
+     * @param thresholds the thresholds
+     * @param units the measurement units, if available
+     * @param desiredTimeScale the desired time scale, if available 
+     * @return the metric variables
+     */
+
+    private Collection<MetricVariable> getMetricVariablesForOneTimeWindow( TimeWindow timeWindow,
+                                                                           ThresholdsByMetric thresholds,
+                                                                           String units,
+                                                                           TimeScale desiredTimeScale )
+    {
+
+        Map<MetricConstants, SortedSet<OneOrTwoThresholds>> thresholdMap = thresholds.getOneOrTwoThresholds();
+
+        Collection<MetricVariable> returnMe = new ArrayList<>();
+
+        // One variable for each combination of metric and threshold
+        for ( Map.Entry<MetricConstants, SortedSet<OneOrTwoThresholds>> nextEntry : thresholdMap.entrySet() )
+        {
+            MetricConstants nextMetric = nextEntry.getKey();
+            Set<OneOrTwoThresholds> nextThresholds = nextEntry.getValue();
+            int thresholdNumber = 1;
+            for ( OneOrTwoThresholds nextThreshold : nextThresholds )
+            {
+                String thresholdName = "THRESHOLD_" + thresholdNumber;
+                
+                // Add to the cache of standard threshold names
+                this.standardThresholdNames.put( thresholdName, nextThreshold );
+                
+                String variableName = nextMetric.name() + "_" + thresholdName;
+
+                MetricVariable nextVariable = new MetricVariable( variableName,
+                                                                  timeWindow,
+                                                                  nextMetric,
+                                                                  nextThreshold,
+                                                                  units,
+                                                                  desiredTimeScale,
+                                                                  this.getDurationUnits() );
+                returnMe.add( nextVariable );
+                thresholdNumber++;
+            }
+        }
+
+        return Collections.unmodifiableCollection( returnMe );
+    }
+    
     private boolean isGridded()
     {
         return this.getNetcdfConfiguration().isGridded();
@@ -178,43 +415,24 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                 score -> score.getMetadata().getSampleMetadata().getTimeWindow()
         );
 
-        for (TimeWindow window : outputByTimeWindow.keySet())
+        for ( Map.Entry<TimeWindow, List<DoubleScoreStatistic>> entries : outputByTimeWindow.entrySet() )
         {
-            List<DoubleScoreStatistic> scores = outputByTimeWindow.get( window );
+            TimeWindow timeWindow = entries.getKey();
+            List<DoubleScoreStatistic> scores = entries.getValue();
 
-            synchronized ( this.WINDOW_LOCK )
+            synchronized ( this.windowLock )
             {
-                Collection<MetricVariable> variables = MetricVariable.getAll( scores, this.getDurationUnits() );
-                
-                if ( !this.writersMap.containsKey( window ) )
-                {
-                    this.writersMap.put( window,
-                                      new TimeWindowWriter( this,
-                                                            this.getOutputDirectory(),
-                                                            window,
-                                                            this.getDurationUnits() ) );
-                }
-                
                 Callable<Set<Path>> writerTask = new Callable<Set<Path>>()
                 {
                     @Override
                     public Set<Path> call() throws IOException, InvalidRangeException, CoordinateNotFoundException
                     {
-                        Set<Path> pathsWrittenTo = new HashSet<>( 1 );
-
-                        try
-                        {
-                            NetcdfOutputWriter.TimeWindowWriter writer = writersMap.get( this.window );
-                            writer.write( variables, this.output );
-                            Path pathWritten = Paths.get( writer.outputPath );
-                            pathsWrittenTo.add( pathWritten );
-                            return Collections.unmodifiableSet( pathsWrittenTo );
-                        }
-                        catch ( IOException | InvalidRangeException | CoordinateNotFoundException e )
-                        {
-                            LOGGER.error( "Writing to output failed.", e );
-                            throw e;
-                        }
+                        Set<Path> pathsWritten = new HashSet<>( 1 );
+                        NetcdfOutputWriter.TimeWindowWriter writer = writersMap.get( this.window );
+                        writer.write( this.output );
+                        Path pathWritten = Paths.get( writer.outputPath );
+                        pathsWritten.add( pathWritten );
+                        return Collections.unmodifiableSet( pathsWritten );
                     }
 
                     Callable<Set<Path>> initialize( final TimeWindow window,
@@ -227,7 +445,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
 
                     private List<DoubleScoreStatistic> output;
                     private TimeWindow window;
-                }.initialize( window, scores );
+                }.initialize( timeWindow, scores );
 
                 LOGGER.debug( "Submitting a task to write to a netcdf file." );
                 Future<Set<Path>> taskFuture = Executor.submit( writerTask );
@@ -236,14 +454,13 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
         }
     }
 
-    @SuppressWarnings( "unchecked" )
     @Override
     public void close()
     {
 
         LOGGER.debug( "About to wait for writing tasks to finish from {}", this );
 
-        synchronized ( this.WINDOW_LOCK )
+        synchronized ( this.windowLock )
         {
             try
             {
@@ -264,7 +481,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
             catch ( ExecutionException ee )
             {
                 String message = "Failed to get a path from netcdf writer for " + this.destinationConfig;
-                throw new RuntimeException( message, ee );
+                throw new WriteException( message, ee );
             }
 
             LOGGER.debug( "About to close writers from {}", this );
@@ -280,13 +497,13 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
             {
                 closeExecutor = Executors.newFixedThreadPool( this.writersMap.size() );
 
-                FutureQueue closeQueue = new FutureQueue( 3000, TimeUnit.MILLISECONDS );
+                FutureQueue<Object> closeQueue = new FutureQueue<>( 3000, TimeUnit.MILLISECONDS );
 
                 try
                 {
                     for ( TimeWindowWriter writer : this.writersMap.values() )
                     {
-                        Callable<?> closeTask = new Callable()
+                        Callable<Object> closeTask = new Callable<Object>()
                         {
                             @Override
                             public Object call() throws IOException
@@ -298,15 +515,14 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                                 }
                                 catch ( IOException ioe )
                                 {
-                                    throw new IOException(
-                                            "The writer for " + writer.toString()
-                                            + " could not be closed.",
-                                            ioe );
+                                    throw new IOException( "The writer for " + writer.toString()
+                                                           + " could not be closed.",
+                                                           ioe );
                                 }
                                 return null;
                             }
 
-                            Callable initialize( TimeWindowWriter writer )
+                            Callable<Object> initialize( TimeWindowWriter writer )
                             {
                                 this.writer = writer;
                                 return this;
@@ -369,40 +585,35 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
     
     private static class TimeWindowWriter implements Closeable
     {
-        private static final ZonedDateTime ANALYSIS_TIME = ZonedDateTime.now( ZoneId.of( "UTC" ) );
-        
-        /**
-         * The time units for lead durations.
-         */
-        private final ChronoUnit durationUnits;
 
         NetcdfOutputWriter outputWriter;
-        Path outputDirectory;
         private boolean useLidForLocationIdentifier;
         private final Map<Object, Integer> vectorCoordinatesMap = new ConcurrentHashMap<>();
 
+        private final List<NetcdfValueKey> valuesToSave = new ArrayList<>();
+
+        private final String outputPath;
+        private final TimeWindow timeWindow;
+        private final ReentrantLock writeLock;
+
         TimeWindowWriter( NetcdfOutputWriter outputWriter,
-                          Path outputDirectory,
-                          final TimeWindow timeWindow,
-                          final ChronoUnit durationUnits )
+                          String outputPath,
+                          final TimeWindow timeWindow )
         {
-            this.durationUnits = durationUnits;
             this.outputWriter = outputWriter;
-            this.outputDirectory = outputDirectory;
+            this.outputPath = outputPath;
             this.timeWindow = timeWindow;
-            this.creationLock = new ReentrantLock();
             this.writeLock = new ReentrantLock();
         }
 
-        void write( Collection<MetricVariable> variables, Collection<DoubleScoreStatistic> output )
+        void write( List<DoubleScoreStatistic> scores )
                 throws IOException, InvalidRangeException, CoordinateNotFoundException
         {
             //this now needs to somehow get all metadata for all metrics
             // Ensure that the output file exists
-            this.buildWriter( output, variables );
-            for (DoubleScoreStatistic score : output)
+            for (DoubleScoreStatistic score : scores)
             {
-                String name = MetricVariable.getName( variables, score );
+                String name = this.getVariableName( score, scores );
                 // Figure out the location of all values and build the origin in each variable grid
                 Location location = score.getMetadata().getSampleMetadata().getIdentifier().getGeospatialID();
 
@@ -425,73 +636,6 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                 this.saveValues( name, origin, actualValue );
             }
         }
-
-        private void buildWriter(final Collection<DoubleScoreStatistic> output, final Collection<MetricVariable> variables )
-                throws IOException
-        {
-            this.creationLock.lock();
-
-            try
-            {
-                if ( !Strings.hasValue( this.outputPath ) )
-                {
-                    this.outputPath = NetcdfOutputFileCreator.create( getTemplatePath( this.outputWriter ),
-                                                                      this.outputDirectory,
-                                                                      this.outputWriter.getDestinationConfig(),
-                                                                      this.timeWindow,
-                                                                      ANALYSIS_TIME,
-                                                                      variables,
-                                                                      output,
-                                                                      this.durationUnits );
-                }
-            }
-            // Exception is being caught because the threads calling metric
-            // writing are currently eating runtime errors.
-            catch ( IOException e )
-            {
-                LOGGER.error( "The output writer could not be created", e );
-                throw new IOException( "The output writer could not be created.", e );
-            }
-            finally
-            {
-                this.creationLock.unlock();
-            }
-        }
-
-        private static String getTemplatePath( NetcdfOutputWriter outputWriter )
-        {
-            String templatePath;
-
-            if ( outputWriter.getNetcdfConfiguration()
-                             .getTemplatePath() == null )
-            {
-                String defaultTemplate;
-
-                if ( outputWriter.isGridded() )
-                {
-                    defaultTemplate = DEFAULT_GRID_TEMPLATE;
-                }
-                else
-                {
-                    defaultTemplate = DEFAULT_VECTOR_TEMPLATE;
-                }
-
-                URL template = NetcdfOutputWriter.class.getClassLoader().getResource( defaultTemplate );
-                Objects.requireNonNull( template,
-                                        "A default template for netcdf output could not be "
-                                                  + "found on the class path." );
-                templatePath = template.getPath();
-            }
-            else
-            {
-                templatePath = outputWriter.getDestinationConfig()
-                                           .getNetcdf()
-                                           .getTemplatePath();
-            }
-
-            return templatePath;
-        }
-
 
         private void writeMetricResults() throws IOException, InvalidRangeException
         {
@@ -523,7 +667,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                     
                     try
                     {
-//                        LOGGER.trace( "Writing data value {} with variable name {} to index {} within file {}",
+//                        LOGGER.debug( "Writing data value {} with variable name {} to index {} within file {}",
 //                                      key.getValue(),
 //                                      key.getVariableName(),
 //                                      Arrays.toString( key.getOrigin() ),
@@ -547,6 +691,68 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                     this.writeLock.unlock();
                 }
             }
+        }
+        
+        /**
+         * Attempts to find the standard metric-threshold name of a variable within the netCDF blob that corresponding to 
+         * the score metadata. Attempts to use the threshold name to locate the threshold. Otherwise, uses the natural 
+         * order of the thresholds.
+         * 
+         * @param score the score whose metric-threshold standard name is required
+         * @return the standard name
+         */
+        
+        private String getVariableName( DoubleScoreStatistic score, List<DoubleScoreStatistic> scores )
+        {
+            StatisticMetadata statisticMetadata = score.getMetadata();
+            SampleMetadata sampleMetadata = statisticMetadata.getSampleMetadata();
+
+            // Find the metric name
+            MetricConstants metricId = statisticMetadata.getMetricID();
+            MetricConstants metricComponentId = statisticMetadata.getMetricComponentID();
+            String metricName = metricId.name();
+
+            // Look for a threshold with a standard name that is like the threshold associated with this score
+            // Like means the same, except for any real values, which can vary by feature
+            // Only use this technique when the thresholds are named
+            if ( sampleMetadata.hasThresholds() && sampleMetadata.getThresholds().first().hasLabel() )
+            {
+                for ( Map.Entry<String, OneOrTwoThresholds> nextThreshold : this.outputWriter.standardThresholdNames.entrySet() )
+                {
+                    String nextName = nextThreshold.getKey();
+                    OneOrTwoThresholds threshold = nextThreshold.getValue();
+
+                    // Thresholds are equal, except for any real-values
+                    String thresholdWithValuesOne = threshold.toString().replaceAll( "\\d+", "#" );
+                    String thresholdWithValuesTwo = sampleMetadata.getThresholds().toString().replaceAll( "\\d+", "#" );
+
+                    if ( thresholdWithValuesOne.equals( thresholdWithValuesTwo ) )
+                    {
+                        return metricName + "_" + nextName;
+                    }
+                }
+            }
+
+            // Couldn't find a similar threshold, so look in the context instead
+            // Filter the scores by identifier, then return the threshold name based on order
+            List<DoubleScoreStatistic> statistics = scores.stream()
+                                                          .filter( a -> a.getMetadata().getMetricID() == metricId
+                                                                        && a.getMetadata()
+                                                                            .getMetricComponentID() == metricComponentId )
+                                                          .collect( Collectors.toList() );
+
+            int thresholdNumber = statistics.indexOf( score ) + 1;
+
+            if ( thresholdNumber < 1 )
+            {
+                throw new IllegalArgumentException( "Could not find the name of the thresholds variable corresponding to "
+                                                    + "the threshold "
+                                                    + sampleMetadata.getThresholds()
+                                                    + " associated with "
+                                                    + sampleMetadata );
+            }
+
+            return metricName + "_THRESHOLD_" + thresholdNumber;
         }
 
         private void saveValues( String name, int[] origin, double value )
@@ -693,6 +899,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                     return this.vectorCoordinatesMap.get(location.getVectorIdentifier().intValue());
                 }
             }
+            
         }
 
 
@@ -712,13 +919,6 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
 
             return representation;
         }
-
-        private final List<NetcdfValueKey> valuesToSave = new ArrayList<>();
-
-        private String outputPath = null;
-        private final TimeWindow timeWindow;
-        private final ReentrantLock creationLock;
-        private final ReentrantLock writeLock;
 
         @Override
         public void close() throws IOException
@@ -740,40 +940,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                 // Compressing the output results in around a 95.33%
                 // decrease in file size. Early tests had files dropping
                 // from 135MB to 6.3MB
-
-                //this.compressOutput( this.outputPath );
             }
         }
 
-        // TODO: Evaluate compression options
-        /*private void compressOutput(String uncompressedFileName)
-                throws IOException
-        {
-            String compressedFilename = uncompressedFileName + ".gz";
-        
-            byte[] buffer = new byte[1024];
-        
-            LOGGER.debug("Compressing {}...", uncompressedFileName);
-        
-            try (
-                    FileInputStream fileInput = new FileInputStream(uncompressedFileName);
-                    GZIPOutputStream gzipOutputStream = new GZIPOutputStream( new FileOutputStream( compressedFilename ) )
-            )
-            {
-        
-                int bytesRead;
-        
-                while ((bytesRead = fileInput.read(buffer)) > 0)
-                {
-                    gzipOutputStream.write( buffer, 0, bytesRead );
-                }
-        
-                gzipOutputStream.finish();
-        
-            }
-        
-            LOGGER.debug("Finished compressing {}", compressedFilename);
-        
-        }*/
     }
 }

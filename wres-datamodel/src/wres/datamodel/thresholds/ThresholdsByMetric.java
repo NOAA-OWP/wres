@@ -7,6 +7,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.Map.Entry;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -160,16 +162,16 @@ public class ThresholdsByMetric
      * <p>Returns the composed thresholds associated with each metric in the container. A composed threshold is a 
      * {@link OneOrTwoThresholds} that contains two thresholds if the metric consumes 
      * {@link SampleDataGroup#DICHOTOMOUS} and has {@link ThresholdGroup#PROBABILITY_CLASSIFIER},
-     * otherwise one threshold.</p>
+     * otherwise one threshold. The thresholds are stored in natural order.
      * 
      * <p>Also see: {@link #unionOfOneOrTwoThresholds()}.</p>
      * 
      * @return the composed thresholds
      */
 
-    public Map<MetricConstants, Set<OneOrTwoThresholds>> getOneOrTwoThresholds()
+    public Map<MetricConstants, SortedSet<OneOrTwoThresholds>> getOneOrTwoThresholds()
     {
-        Map<MetricConstants, Set<OneOrTwoThresholds>> returnMe = new EnumMap<>( MetricConstants.class );
+        Map<MetricConstants, SortedSet<OneOrTwoThresholds>> returnMe = new EnumMap<>( MetricConstants.class );
 
         // Find all stored metrics
         Set<MetricConstants> union = this.getMetrics();
@@ -184,7 +186,7 @@ public class ThresholdsByMetric
                     this.unionForThisMetricAndTheseTypes( next, types.toArray( new ThresholdGroup[types.size()] ) );
 
             // Thresholds to add
-            Set<OneOrTwoThresholds> oneOrTwo = new HashSet<>();
+            SortedSet<OneOrTwoThresholds> oneOrTwo = new TreeSet<>();
 
             // Dichotomous metrics with classifiers
             if ( next.isInGroup( SampleDataGroup.DICHOTOMOUS )
@@ -212,7 +214,7 @@ public class ThresholdsByMetric
             }
 
             // Update container
-            returnMe.put( next, Collections.unmodifiableSet( oneOrTwo ) );
+            returnMe.put( next, Collections.unmodifiableSortedSet( oneOrTwo ) );
         }
 
         return Collections.unmodifiableMap( returnMe );

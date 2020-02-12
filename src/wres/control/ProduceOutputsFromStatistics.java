@@ -269,10 +269,11 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
      * <p>Edit this method as new consumer types are supported by the project configuration.</p>
      * 
      * @param sharedWriters an optional set of shared writers
+     * @throws IOException if the sink for the consumers could not be constructed
      * @throws ProjectConfigException if the project configuration is invalid for writing
      */
 
-    private void buildConsumers( SharedStatisticsWriters sharedWriters )
+    private void buildConsumers( SharedStatisticsWriters sharedWriters ) throws IOException
     {
         // There is one consumer per project for each type, because consumers are built
         // with projects, not destinations. The consumers must iterate destinations.
@@ -465,7 +466,14 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
 
     }
 
-    private void buildNetCDFConsumers( SharedStatisticsWriters sharedWriters )
+    /**
+     * Builds a set of consumers for writing blobs in netCDF format.
+     *
+     * @throws ProjectConfigException if the project configuration is invalid for writing
+     * @throws IOException if the initial blobs could not be written
+     */
+    
+    private void buildNetCDFConsumers( SharedStatisticsWriters sharedWriters ) throws IOException
     {
         ProjectConfig projectConfig = this.getProjectConfigPlus().getProjectConfig();
 
@@ -786,7 +794,6 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         }
     }
 
-
     /**
      * @return the resolved project
      */
@@ -860,7 +867,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
             // implicitly passing resolvedProject via shared state
             this.buildConsumers( sharedWriters );
         }
-        catch ( ProjectConfigException e )
+        catch ( IOException | ProjectConfigException e )
         {
             throw new WresProcessingException( "While processing the project configuration to write output:", e );
         }
