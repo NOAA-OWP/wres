@@ -17,9 +17,7 @@ import ucar.ma2.DataType;
 import ucar.ma2.InvalidRangeException;
 import ucar.nc2.NetcdfFileWriter;
 import wres.config.generated.DestinationConfig;
-import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.time.TimeWindow;
-import wres.io.config.ConfigHelper;
 
 class NetcdfOutputFileCreator
 {
@@ -30,13 +28,12 @@ class NetcdfOutputFileCreator
     private static final Object CREATION_LOCK = new Object();
 
     static String create( final String templatePath,
-                          Path outputDirectory,
-                                    final DestinationConfig destinationConfig,
-                                    final TimeWindow window,
-                                    final ZonedDateTime analysisTime,
-                                    final Collection<MetricVariable> metricVariables,
-                                    final Collection<DoubleScoreStatistic> output,
-                                    final ChronoUnit durationUnits )
+                          Path targetPath,
+                          final DestinationConfig destinationConfig,
+                          final TimeWindow window,
+                          final ZonedDateTime analysisTime,
+                          final Collection<MetricVariable> metricVariables,
+                          final ChronoUnit durationUnits )
             throws IOException
     {
         // We're locking because each created output will be using the same
@@ -44,12 +41,7 @@ class NetcdfOutputFileCreator
         // worth experimenting with no locking
         synchronized ( NetcdfOutputFileCreator.CREATION_LOCK )
         {
-            Path targetPath = ConfigHelper.getOutputPathToWriteForOneTimeWindow( outputDirectory,
-                                                                                 destinationConfig,
-                                                                                 window,
-                                                                                 output,
-                                                                                 durationUnits );
-            if ( targetPath.toFile().exists())
+            if ( targetPath.toFile().exists() )
             {
                 LOGGER.warn("The file '{}' will be overwritten.", targetPath);
                 Files.deleteIfExists( targetPath );

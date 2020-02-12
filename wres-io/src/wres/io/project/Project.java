@@ -193,6 +193,9 @@ public class Project
             LOGGER.debug( "getIntersectingFeatures finished run: {}", script );
         }
 
+        LOGGER.info( "Discovered {} features with data on both the left and right sides (statistics should "
+                     + "be expected for this many features at most).", intersectingFeatures.size() );
+
         return Collections.unmodifiableSet( intersectingFeatures );
     }
 

@@ -12,7 +12,6 @@ import java.text.DecimalFormat;
 import java.time.DateTimeException;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.MonthDay;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
@@ -42,10 +41,8 @@ import wres.config.FeaturePlus;
 import wres.config.MetricConfigException;
 import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
-import wres.config.ProjectConfigs;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
-import wres.config.generated.DateCondition;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.EnsembleCondition;
@@ -56,7 +53,6 @@ import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.PairConfig;
-import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.SourceTransformationType;
 import wres.config.generated.ProjectConfig.Outputs;
@@ -64,10 +60,9 @@ import wres.config.generated.ThresholdFormat;
 import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.MeasurementUnit;
-import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.scale.TimeScale;
-import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
@@ -75,13 +70,11 @@ import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.thresholds.ThresholdsByMetric.ThresholdsByMetricBuilder;
 import wres.datamodel.time.TimeWindow;
-import wres.datamodel.time.generators.TimeWindowGenerator;
 import wres.io.data.caching.Features;
 import wres.io.project.Project;
 import wres.io.reading.commaseparated.CommaSeparatedReader;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.NoDataException;
-import wres.io.utilities.ScriptBuilder;
 import wres.system.SystemSettings;
 import wres.util.Strings;
 import wres.util.TimeHelper;
@@ -1328,8 +1321,8 @@ public class ConfigHelper
      *
      * @param outputDirectory the directory into which to write
      * @param destinationConfig the destination information
+     * @param identifier the dataset identifier
      * @param timeWindow the time window
-     * @param output the output to write
      * @param leadUnits the time units to use for the lead durations
      * @return the file name
      * @throws NoDataException if the output is empty
@@ -1337,40 +1330,29 @@ public class ConfigHelper
      * @throws IOException if the path cannot be produced
      */
 
-    public static Path getOutputPathToWriteForOneTimeWindow( Path outputDirectory,
+    public static Path getOutputPathToWriteForOneTimeWindow( final Path outputDirectory,
                                                              final DestinationConfig destinationConfig,
+                                                             final DatasetIdentifier identifier,
                                                              final TimeWindow timeWindow,
-                                                             final Collection<DoubleScoreStatistic> output,
                                                              final ChronoUnit leadUnits )
             throws IOException
     {
         Objects.requireNonNull( outputDirectory, "Enter non-null output directory to establish a path for writing." );
         Objects.requireNonNull( destinationConfig, "Enter non-null time window to establish a path for writing." );
 
-        Objects.requireNonNull( output, "Enter non-null output to establish a path for writing." );
-
         Objects.requireNonNull( timeWindow, "Enter a non-null time window  to establish a path for writing." );
 
         Objects.requireNonNull( leadUnits,
                                 "Enter a non-null time unit for the lead durations to establish a path for writing." );
 
-        if ( output.isEmpty() )
-        {
-            throw new NoDataException( "No data available to write for "
-                                       + timeWindow  + ".");
-        }
-
         StringJoiner filename = new StringJoiner( "_" );
-
-        // Representative metadata for variable and scenario information
-        SampleMetadata meta = output.iterator().next().getMetadata().getSampleMetadata();
-
-        filename.add( meta.getIdentifier().getVariableID() );
+        
+        filename.add( identifier.getVariableID() );
 
         // Add optional scenario identifier
-        if ( meta.getIdentifier().hasScenarioID() )
+        if ( identifier.hasScenarioID() )
         {
-            filename.add( meta.getIdentifier().getScenarioID() );
+            filename.add( identifier.getScenarioID() );
         }
 
         if ( !timeWindow.getLatestReferenceTime().equals( Instant.MAX ) )
