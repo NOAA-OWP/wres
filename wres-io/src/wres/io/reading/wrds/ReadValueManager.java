@@ -23,6 +23,9 @@ import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
 
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -58,7 +61,8 @@ import wres.util.TimeHelper;
 public class ReadValueManager
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( ReadValueManager.class );
-    private static SSLContext SSL_CONTEXT = ReadValueManager.getSslContextTrustingDodSigner();
+    private static Pair<SSLContext,X509TrustManager> SSL_CONTEXT
+            = ReadValueManager.getSslContextTrustingDodSigner();
 
     private static final WebClient WEB_CLIENT = new WebClient( SSL_CONTEXT );
 
@@ -569,7 +573,7 @@ public class ReadValueManager
      * Uses a pem on the classpath.
      * @return the resulting SSLContext or the default SSLContext if not found.
      */
-    private static SSLContext getSslContextTrustingDodSigner()
+    private static Pair<SSLContext,X509TrustManager> getSslContextTrustingDodSigner()
     {
         String trustFileOnClassPath = "dod_sw_ca-54_expires_2022-11.pem";
         try ( InputStream inputStream = ReadValueManager.class
@@ -581,11 +585,27 @@ public class ReadValueManager
             {
                 LOGGER.warn( "Failed to load {} from classpath. Using default SSLContext.",
                              trustFileOnClassPath );
-                return SSLContext.getDefault();
+
+                X509TrustManager theTrustManager = null;
+                for ( TrustManager manager : TrustManagerFactory.getInstance( TrustManagerFactory.getDefaultAlgorithm() )
+                                                                .getTrustManagers() )
+                {
+                    if ( manager instanceof X509TrustManager )
+                    {
+                        LOGGER.warn( "Failed to load {} from classpath. Using this X509TrustManager: {}",
+                                     trustFileOnClassPath, manager );
+                        theTrustManager = (X509TrustManager) manager;
+                    }
+                }
+                if ( Objects.isNull( theTrustManager) )
+                {
+                    throw new UnsupportedOperationException( "Could not find a default X509TrustManager" );
+                }
+                return Pair.of( SSLContext.getDefault(), theTrustManager );
             }
             SSLStuffThatTrustsOneCertificate sslGoo =
                     new SSLStuffThatTrustsOneCertificate( inputStream );
-            return sslGoo.getSSLContext();
+            return Pair.of( sslGoo.getSSLContext(), sslGoo.getTrustManager() );
         }
         catch ( IOException ioe )
         {

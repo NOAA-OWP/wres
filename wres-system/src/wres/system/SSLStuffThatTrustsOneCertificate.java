@@ -30,7 +30,7 @@ import javax.net.ssl.X509TrustManager;
 
 public class SSLStuffThatTrustsOneCertificate
 {
-    private final TrustManager trustManager;
+    private final X509TrustManager trustManager;
     private final SSLContext sslContext;
 
     /**
@@ -72,7 +72,7 @@ public class SSLStuffThatTrustsOneCertificate
                    .getSocketFactory();
     }
 
-    TrustManager getTrustManager()
+    public X509TrustManager getTrustManager()
     {
         return this.trustManager;
     }
@@ -89,7 +89,7 @@ public class SSLStuffThatTrustsOneCertificate
      * @return the TrustManager
      */
 
-    private TrustManager getTrustManagerWithOneAuthority( InputStream derEncodedCertificate )
+    private X509TrustManager getTrustManagerWithOneAuthority( InputStream derEncodedCertificate )
     {
         Objects.requireNonNull( derEncodedCertificate );
         KeyStore customTrustStore;
@@ -151,7 +151,7 @@ public class SSLStuffThatTrustsOneCertificate
         {
             if ( trustManager instanceof X509TrustManager )
             {
-                return trustManager;
+                return (X509TrustManager) trustManager;
             }
         }
 
