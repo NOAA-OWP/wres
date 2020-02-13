@@ -251,7 +251,7 @@ project(':wres-system')
         testCompile 'org.powermock:powermock-module-junit4:2.0.4'
 
         // Use mockserver to test certificate utilities
-        testCompile 'org.mock-server:mockserver-netty:5.8.1'
+        testCompile 'org.mock-server:mockserver-netty:5.9.0'
     }
 
     test
@@ -336,6 +336,8 @@ project(':wres-io')
         // Easier MD5
         compile 'commons-codec:commons-codec:1.13'
 
+        // Better-than-Java-11's HTTP client
+        compile 'com.squareup.okhttp3:okhttp:4.3.1'
 
         // Because org.postgresql:postgresql uses JUL logging, bridge at runtime
         runtime 'org.slf4j:jul-to-slf4j:1.8.0-beta4'
@@ -356,7 +358,7 @@ project(':wres-io')
         testCompile 'org.powermock:powermock-module-junit4:2.0.4'
 
         // Use mockserver as a mock server for mock API responses
-        testCompile 'org.mock-server:mockserver-netty:5.8.1'
+        testCompile 'org.mock-server:mockserver-netty:5.9.0'
 
         // Use H2 for truly embedded SQL db
         testCompile 'com.h2database:h2:1.4.199'

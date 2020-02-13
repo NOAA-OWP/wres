@@ -6,9 +6,6 @@ import java.io.InputStream;
 import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.net.http.HttpTimeoutException;
 import java.time.Duration;
 import java.time.Instant;
@@ -16,10 +13,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.zip.GZIPInputStream;
 
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.X509TrustManager;
 
+import okhttp3.HttpUrl;
+import okhttp3.OkHttpClient;
+import okhttp3.Protocol;
+import okhttp3.Request;
+import okhttp3.Response;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,29 +50,35 @@ public class WebClient
                                                                       523,
                                                                       524 );
 
-    private final HttpClient httpClient;
+    private final OkHttpClient httpClient;
     private final boolean trackTimings;
     private final List<TimingInformation> timingInformation = new ArrayList<>( 1 );
 
     public WebClient( boolean trackTimings )
     {
-        this.httpClient = HttpClient.newBuilder()
-                                    .version( HttpClient.Version.HTTP_1_1 )
-                                    .followRedirects( HttpClient.Redirect.NORMAL )
-                                    .connectTimeout( CONNECT_TIMEOUT )
-                                    .build();
+        this.httpClient = new OkHttpClient().newBuilder()
+                                            .protocols( List.of( Protocol.HTTP_1_1) )
+                                            .followRedirects( true )
+                                            .connectTimeout( CONNECT_TIMEOUT )
+                                            .callTimeout( REQUEST_TIMEOUT )
+                                            .readTimeout( REQUEST_TIMEOUT )
+                                            .build();
         this.trackTimings = trackTimings;
     }
 
-    public WebClient( SSLContext sslContext, boolean trackTimings )
+    public WebClient( Pair<SSLContext,X509TrustManager> sslGoo, boolean trackTimings )
     {
-        Objects.requireNonNull( sslContext );
-        this.httpClient = HttpClient.newBuilder()
-                                    .version( HttpClient.Version.HTTP_1_1 )
-                                    .followRedirects( HttpClient.Redirect.NORMAL )
-                                    .connectTimeout( CONNECT_TIMEOUT )
-                                    .sslContext( sslContext )
-                                    .build();
+        Objects.requireNonNull( sslGoo );
+        this.httpClient = new OkHttpClient().newBuilder()
+                                            .protocols( List.of( Protocol.HTTP_1_1) )
+                                            .followRedirects( true )
+                                            .connectTimeout( CONNECT_TIMEOUT )
+                                            .callTimeout( REQUEST_TIMEOUT )
+                                            .readTimeout( REQUEST_TIMEOUT )
+                                            .sslSocketFactory( sslGoo.getKey()
+                                                                     .getSocketFactory(),
+                                                               sslGoo.getRight() )
+                                            .build();
         this.trackTimings = trackTimings;
     }
 
@@ -79,12 +87,12 @@ public class WebClient
         this( false );
     }
 
-    public WebClient( SSLContext sslContext )
+    public WebClient( Pair<SSLContext,X509TrustManager> sslGoo )
     {
-        this( sslContext, false );
+        this( sslGoo, false );
     }
 
-    private HttpClient getHttpClient()
+    private OkHttpClient getHttpClient()
     {
         return this.httpClient;
     }
@@ -135,12 +143,11 @@ public class WebClient
 
         try
         {
-            HttpRequest request = HttpRequest.newBuilder()
-                                             .uri( uri )
-                                             .header( "Accept-Encoding", "gzip" )
-                                             .timeout( REQUEST_TIMEOUT )
-                                             .build();
-            HttpResponse<InputStream> httpResponse = tryRequest( request );
+            Request request = new Request.Builder()
+                    .url( uri.toURL() )
+                    .header( "Accept-Encoding", "gzip" )
+                    .build();
+            Response httpResponse = tryRequest( request );
 
             boolean retry = true;
             Instant start = Instant.now();
@@ -151,13 +158,13 @@ public class WebClient
                 // When a tolerable exception happened (httpResponse is null)
                 // or the status is something we need to retry:
                 if ( Objects.isNull( httpResponse )
-                     || retryOn.contains( httpResponse.statusCode() ) )
+                     || retryOn.contains( httpResponse.code() ) )
                 {
                     if ( Objects.nonNull( httpResponse ) )
                     {
                         LOGGER.warn( "Retrying {} in a bit due to HTTP status {}.",
                                      uri,
-                                     httpResponse.statusCode() );
+                                     httpResponse.code() );
                     }
 
                     Thread.sleep( sleepMillis );
@@ -178,18 +185,19 @@ public class WebClient
             Instant end = Instant.now();
             Duration duration = Duration.between( start, end );
 
-            if ( Objects.nonNull( httpResponse ) )
+            if ( Objects.nonNull( httpResponse )
+                 && Objects.nonNull( httpResponse.body() ) )
             {
-                int httpStatus = httpResponse.statusCode();
+                int httpStatus = httpResponse.code();
 
                 if ( httpStatus >= 200 && httpStatus < 300 )
                 {
                     LOGGER.debug( "Successfully got InputStream from {} in {}",
                                   uri,
                                   duration );
-                    InputStream decodedStream =
-                            WebClient.getDecodedInputStream( httpResponse );
-                    return Pair.of( httpStatus, decodedStream );
+                    InputStream stream = httpResponse.body()
+                                                     .byteStream();
+                    return Pair.of( httpStatus, stream );
                 }
                 else if ( httpStatus >= 400 && httpStatus < 500 )
                 {
@@ -231,19 +239,20 @@ public class WebClient
      * @throws IOException When non-retriable exception occurs.
      */
 
-    private HttpResponse<InputStream> tryRequest( HttpRequest request )
+    private Response tryRequest( Request request )
             throws IOException
     {
         LOGGER.debug( "Called tryRequest with {}", request );
-        URI uri = request.uri();
+        HttpUrl uri = request.url();
         TimingInformation timing = new TimingInformation( uri );
-        HttpResponse<InputStream> httpResponse = null;
+        Response httpResponse = null;
 
         try
         {
             httpResponse = this.getHttpClient()
-                               .send( request,
-                                      HttpResponse.BodyHandlers.ofInputStream() );
+                               .newCall( request )
+                               .execute();
+
             if ( LOGGER.isDebugEnabled() )
             {
                 LOGGER.debug( "For {}, request headers are {} response headers are {}",
@@ -268,12 +277,6 @@ public class WebClient
                                            + uri, ioe );
             }
         }
-        catch ( InterruptedException ie )
-        {
-            LOGGER.warn( "Interrupted while sending request {}", request, ie );
-            Thread.currentThread().interrupt();
-            return null;
-        }
         finally
         {
             timing.stop();
@@ -285,41 +288,6 @@ public class WebClient
         }
 
         return httpResponse;
-    }
-
-    /**
-     * Decode an HttpResponse<InputStream> based on encoding in the header.
-     * Only supports empty/non-existent encoding and gzip encoding.
-     * In other words, unwrap gzipped HTTP responses.
-     * Credit:
-     * https://stackoverflow.com/questions/53502626/does-java-http-client-handle-compression#answer-54064189
-     * @param response The HttpResponse having an InputStream.
-     * @return An InputStream ready for consumption.
-     * @throws IOException When creation of an underlying GZIPInputStream fails.
-     * @throws UnsupportedOperationException When encoding is neither blank nor gzip.
-     */
-
-    private static InputStream getDecodedInputStream( HttpResponse<InputStream> response )
-            throws IOException
-    {
-        InputStream rawStream = response.body();
-        String encoding = response.headers()
-                                  .firstValue( "Content-Encoding" )
-                                  .orElse( "" );
-
-        if ( encoding.equals( "" ) )
-        {
-            return rawStream;
-        }
-        else if ( encoding.equals( "gzip" ) )
-        {
-            return new GZIPInputStream( rawStream );
-        }
-        else
-        {
-            throw new UnsupportedOperationException( "Could not handle Content-Encoding "
-                                                     + encoding );
-        }
     }
 
 
@@ -392,7 +360,7 @@ public class WebClient
 
     private static final class TimingInformation
     {
-        private final URI uri;
+        private final HttpUrl uri;
         private final long startNanos;
         private long endNanos = Long.MAX_VALUE;
 
@@ -400,7 +368,7 @@ public class WebClient
          * Construction starts the timer.
          * @param uri The URI being timed.
          */
-        TimingInformation( URI uri )
+        TimingInformation( HttpUrl uri )
         {
             this.uri = uri;
             this.startNanos = System.nanoTime();
@@ -416,7 +384,7 @@ public class WebClient
             return this.endNanos - this.startNanos;
         }
 
-        URI getUri()
+        HttpUrl getUri()
         {
             return this.uri;
         }
