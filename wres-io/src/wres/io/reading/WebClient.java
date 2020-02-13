@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.zip.GZIPInputStream;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.X509TrustManager;
@@ -195,9 +196,8 @@ public class WebClient
                     LOGGER.debug( "Successfully got InputStream from {} in {}",
                                   uri,
                                   duration );
-                    InputStream stream = httpResponse.body()
-                                                     .byteStream();
-                    return Pair.of( httpStatus, stream );
+                    InputStream decodedStream = WebClient.getDecodedInputStream( httpResponse );
+                    return Pair.of( httpStatus, decodedStream );
                 }
                 else if ( httpStatus >= 400 && httpStatus < 500 )
                 {
@@ -288,6 +288,41 @@ public class WebClient
         }
 
         return httpResponse;
+    }
+
+    /**
+     * Decode an HttpResponse<InputStream> based on encoding in the header.
+     * Only supports empty/non-existent encoding and gzip encoding.
+     * In other words, unwrap gzipped HTTP responses.
+     * Credit:
+     * https://stackoverflow.com/questions/53502626/does-java-http-client-handle-compression#answer-54064189
+     * @param response The HttpResponse having an InputStream.
+     * @return An InputStream ready for consumption.
+     * @throws IOException When creation of an underlying GZIPInputStream fails.
+     * @throws UnsupportedOperationException When encoding is neither blank nor gzip.
+     */
+
+    private static InputStream getDecodedInputStream( Response response )
+            throws IOException
+    {
+        InputStream rawStream = response.body()
+                                        .byteStream();
+        String encoding = response.headers()
+                                  .get( "Content-Encoding" );
+
+        if ( Objects.isNull( encoding ) )
+        {
+            return rawStream;
+        }
+        else if ( encoding.equals( "gzip" ) )
+        {
+            return new GZIPInputStream( rawStream );
+        }
+        else
+        {
+            throw new UnsupportedOperationException( "Could not handle Content-Encoding "
+                                                     + encoding );
+        }
     }
 
 
