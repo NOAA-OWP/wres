@@ -16,7 +16,7 @@ import org.junit.rules.ExpectedException;
 
 import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
@@ -220,7 +220,7 @@ public final class ContinousRankedProbabilityScoreTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( crps.getScoreOutputGroup() == ScoreGroup.NONE );
+        assertTrue( crps.getScoreOutputGroup() == MetricGroup.NONE );
     }
 
     /**
@@ -269,7 +269,7 @@ public final class ContinousRankedProbabilityScoreTest
         exception.expect( MetricParameterException.class );
         exception.expectMessage( "Unsupported decomposition identifier 'LBR'." );
 
-        ContinuousRankedProbabilityScore.of( ScoreGroup.LBR );
+        ContinuousRankedProbabilityScore.of( MetricGroup.LBR );
     }
 
 }

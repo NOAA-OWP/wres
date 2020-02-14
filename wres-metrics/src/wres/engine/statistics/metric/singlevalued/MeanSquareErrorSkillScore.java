@@ -5,7 +5,7 @@ import java.util.Objects;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.DatasetIdentifier;
@@ -53,7 +53,7 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<SampleData<Pair
             throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
 
-        if ( this.getScoreOutputGroup() != ScoreGroup.NONE )
+        if ( this.getScoreOutputGroup() != MetricGroup.NONE )
         {
             throw new MetricCalculationException( "Decomposition is not currently implemented for the '" + this
                                                   + "'." );

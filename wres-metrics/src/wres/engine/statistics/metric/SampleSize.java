@@ -6,7 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
@@ -79,9 +79,9 @@ class SampleSize<S extends SampleData<?>> extends OrdinaryScore<S, DoubleScoreSt
     }
 
     @Override
-    public ScoreGroup getScoreOutputGroup()
+    public MetricGroup getScoreOutputGroup()
     {
-        return ScoreGroup.NONE;
+        return MetricGroup.NONE;
     }
 
     @Override

@@ -1,18 +1,20 @@
 package wres.engine.statistics.metric.categorical;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
@@ -21,11 +23,9 @@ import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DoubleScoreStatistic;
-import wres.datamodel.statistics.MatrixStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.Metric;
-import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.Score;
 
@@ -37,9 +37,6 @@ import wres.engine.statistics.metric.Score;
 public final class PeirceSkillScoreTest
 {
 
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
-    
     /**
      * Score used for testing. 
      */
@@ -74,7 +71,7 @@ public final class PeirceSkillScoreTest
     public void testApplyWithDichotomousInput()
     {
         //Generate some data
-        final SampleData<Pair<Boolean,Boolean>> input = MetricTestDataFactory.getDichotomousPairsOne();
+        final SampleData<Pair<Boolean, Boolean>> input = MetricTestDataFactory.getDichotomousPairsOne();
 
         //Check the results
         final DoubleScoreStatistic actual = pss.apply( input );
@@ -94,7 +91,7 @@ public final class PeirceSkillScoreTest
     public void testApplyWithNoData()
     {
         // Generate empty data
-        SampleData<Pair<Boolean,Boolean>> input =
+        SampleData<Pair<Boolean, Boolean>> input =
                 SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
         DoubleScoreStatistic actual = pss.apply( input );
@@ -133,13 +130,13 @@ public final class PeirceSkillScoreTest
     }
 
     /**
-     * Verifies that {@link Score#getScoreOutputGroup()} returns {@link ScoreGroup#NONE}.
+     * Verifies that {@link Score#getScoreOutputGroup()} returns {@link MetricGroup#NONE}.
      */
 
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( pss.getScoreOutputGroup() == ScoreGroup.NONE );
+        assertTrue( pss.getScoreOutputGroup() == MetricGroup.NONE );
     }
 
     /**
@@ -160,9 +157,13 @@ public final class PeirceSkillScoreTest
     @Test
     public void testExceptionOnNullInput()
     {
-        exception.expect( SampleDataException.class );
-        exception.expectMessage( "Specify non-null input to the '" + pss.getName() + "'." );
-        pss.aggregate( (MatrixStatistic) null );
+        SampleDataException exception =
+                assertThrows( SampleDataException.class,
+                              () -> pss.aggregate( pss.aggregate( (DoubleScoreStatistic) null ) ) );
+
+        String expectedMessage = "Specify non-null input to the '" + this.pss.getName() + "'.";
+
+        assertEquals( expectedMessage, exception.getMessage() );
     }
 
     /**
@@ -173,31 +174,21 @@ public final class PeirceSkillScoreTest
     @Test
     public void testExceptionOnInputThatIsNotSquare()
     {
-        exception.expect( SampleDataException.class );
-        exception.expectMessage( "Expected an intermediate result with a square matrix when computing the "
-                                 + "'"
-                                 + pss.getName()
-                                 + "': [2, 3]." );
-        pss.aggregate( MatrixStatistic.of( new double[][] { { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 } }, meta ) );
+        Map<MetricConstants, Double> elements = new HashMap<>();
+        elements.put( MetricConstants.TRUE_POSITIVES, 1.0 );
+        elements.put( MetricConstants.TRUE_NEGATIVES, 1.0 );
+        elements.put( MetricConstants.FALSE_POSITIVES, 1.0 );
+
+        SampleDataException exception =
+                assertThrows( SampleDataException.class,
+                              () -> pss.aggregate( DoubleScoreStatistic.of( elements, this.meta ) ) );
+
+        String expectedMessage = "Expected an intermediate result with a square number of elements when computing "
+                                 + "the '"
+                                 + this.pss.getName()
+                                 + "': [3].";
+
+        assertEquals( expectedMessage, exception.getMessage() );
     }
-
-    /**
-     * Checks for an exception when calling {@link Collectable#aggregate(wres.datamodel.statistics.MetricOutput)} with 
-     * input that does not have a positive sum product.
-     */
-
-    @Test
-    public void testExceptionOnInputWithZeroSumProduct()
-    {
-        exception.expect( MetricCalculationException.class );
-        exception.expectMessage( "The sum product of the rows and columns in the contingency table "
-                                 + "must exceed zero when computing the '"
-                                 + pss.getName()
-                                 + "': 0.0" );
-        pss.aggregate( MatrixStatistic.of( new double[][] { { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 },
-                                                                    { 0.0, 0.0, 0.0 } },
-                                                   meta ) );
-    }
-
 
 }

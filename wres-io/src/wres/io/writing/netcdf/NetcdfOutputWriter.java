@@ -21,6 +21,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -112,10 +114,10 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
     /**
      * Mapping between standard threshold names and representative thresholds for those standard names. This is used
      * to help determine the threshold portion of a variable name to which a statistic corresponds, based on the 
-     * standard name of a threshold chosen at blob creation time. 
+     * standard name of a threshold chosen at blob creation time. There is a separate group for each metric.
      */
     
-    private Map<String,OneOrTwoThresholds> standardThresholdNames = new HashMap<>();
+    private Map<String,Map<String,OneOrTwoThresholds>> standardThresholdNames = new HashMap<>();
     
     /**
      * Returns an instance of the writer. 
@@ -270,10 +272,10 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
         for ( TimeWindow nextWindow : timeWindows )
         {
 
-            Collection<MetricVariable> variables = getMetricVariablesForOneTimeWindow( nextWindow,
-                                                                                       thresholds,
-                                                                                       units,
-                                                                                       desiredTimeScale );
+            Collection<MetricVariable> variables = this.getMetricVariablesForOneTimeWindow( nextWindow,
+                                                                                            thresholds,
+                                                                                            units,
+                                                                                            desiredTimeScale );
             
             // Create the blob path
             Path targetPath = ConfigHelper.getOutputPathToWriteForOneTimeWindow( this.getOutputDirectory(),
@@ -353,22 +355,32 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
 
         Map<MetricConstants, SortedSet<OneOrTwoThresholds>> thresholdMap = thresholds.getOneOrTwoThresholds();
 
+        Map<String, SortedSet<OneOrTwoThresholds>> decomposed = this.decomposeThresholdsByMetricForBlobCreation( thresholdMap );
+
         Collection<MetricVariable> returnMe = new ArrayList<>();
 
         // One variable for each combination of metric and threshold
-        for ( Map.Entry<MetricConstants, SortedSet<OneOrTwoThresholds>> nextEntry : thresholdMap.entrySet() )
+        for ( Map.Entry<String, SortedSet<OneOrTwoThresholds>> nextEntry : decomposed.entrySet() )
         {
-            MetricConstants nextMetric = nextEntry.getKey();
+            String nextMetric = nextEntry.getKey();
             Set<OneOrTwoThresholds> nextThresholds = nextEntry.getValue();
             int thresholdNumber = 1;
+            
+            Map<String,OneOrTwoThresholds> nextMap = this.standardThresholdNames.get( nextMetric );
+            if( Objects.isNull( nextMap ) )
+            {
+                nextMap = new HashMap<>();
+                this.standardThresholdNames.put( nextMetric, nextMap );
+            }
+            
             for ( OneOrTwoThresholds nextThreshold : nextThresholds )
             {
                 String thresholdName = "THRESHOLD_" + thresholdNumber;
                 
                 // Add to the cache of standard threshold names
-                this.standardThresholdNames.put( thresholdName, nextThreshold );
+                nextMap.put( thresholdName, nextThreshold );
                 
-                String variableName = nextMetric.name() + "_" + thresholdName;
+                String variableName = nextMetric + "_" + thresholdName;
 
                 MetricVariable nextVariable = new MetricVariable( variableName,
                                                                   timeWindow,
@@ -384,6 +396,43 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
 
         return Collections.unmodifiableCollection( returnMe );
     }
+    
+    /**
+     * Expands a set of thresholds by metric to include a separate mapping for each component part of a multi-part 
+     * metric, because each part requires a separate variable in the netCDF.
+     * 
+     * @param thresholdsByMetric the thresholds-by-metric to expand
+     * @return the expanded thresholds-by-metric
+     */
+
+    private Map<String, SortedSet<OneOrTwoThresholds>>
+            decomposeThresholdsByMetricForBlobCreation( Map<MetricConstants, SortedSet<OneOrTwoThresholds>> thresholdsByMetric )
+    {
+
+        Map<String, SortedSet<OneOrTwoThresholds>> returnMe = new TreeMap<>();
+
+        for ( Map.Entry<MetricConstants, SortedSet<OneOrTwoThresholds>> nextEntry : thresholdsByMetric.entrySet() )
+        {
+            MetricConstants nextMetric = nextEntry.getKey();
+            SortedSet<OneOrTwoThresholds> nextThresholds = nextEntry.getValue();
+
+            Set<MetricConstants> components = nextMetric.getAllComponents();
+
+            // Decompose, except for the sample size, which has a large number of associations
+            // that are not relevant here
+            if ( components.size() > 1 && nextMetric != MetricConstants.SAMPLE_SIZE )
+            {
+                components.forEach( nextComponent -> returnMe.put( nextMetric.name() + "_" + nextComponent.name(),
+                                                                   nextThresholds ) );
+            }
+            else
+            {
+                returnMe.put( nextMetric.name(), nextThresholds );
+            }
+        }
+
+        return Collections.unmodifiableMap( returnMe );
+    }   
     
     private boolean isGridded()
     {
@@ -611,29 +660,43 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
         {
             //this now needs to somehow get all metadata for all metrics
             // Ensure that the output file exists
-            for (DoubleScoreStatistic score : scores)
+            for ( DoubleScoreStatistic score : scores )
             {
-                String name = this.getVariableName( score, scores );
-                // Figure out the location of all values and build the origin in each variable grid
-                Location location = score.getMetadata().getSampleMetadata().getIdentifier().getGeospatialID();
+                Set<MetricConstants> components = score.getComponents();
 
-                int[] origin;
-
-                try
+                for ( MetricConstants nextComponent : components )
                 {
-                    origin = this.getOrigin( name, location );
-                }
-                catch ( CoordinateNotFoundException e )
-                {
-                    LOGGER.error( "There are no records for where to put results for " + location +
-                                 ". Netcdf output for " + location + " cannot be written. If outputs are not "
-                                 + "written in other formats, you will not be able to view these results." );
-                    throw e;
-                }
+                    DoubleScoreStatistic componentScore = score.getComponent( nextComponent );
+                    
+                    String name = this.getVariableName( componentScore, scores );
+                    
+                    // Figure out the location of all values and build the origin in each variable grid
+                    Location location = score.getMetadata()
+                                             .getSampleMetadata()
+                                             .getIdentifier()
+                                             .getGeospatialID();
 
-                Double actualValue = score.getData();
+                    int[] origin;
 
-                this.saveValues( name, origin, actualValue );
+                    try
+                    {
+                        origin = this.getOrigin( name, location );
+                    }
+                    catch ( CoordinateNotFoundException e )
+                    {
+                        LOGGER.error( "There are no records for where to put results for " + location
+                                      +
+                                      ". Netcdf output for "
+                                      + location
+                                      + " cannot be written. If outputs are not "
+                                      + "written in other formats, you will not be able to view these results." );
+                        throw e;
+                    }
+
+                    Double actualValue = componentScore.getData();
+
+                    this.saveValues( name, origin, actualValue );
+                }
             }
         }
 
@@ -711,22 +774,36 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
             MetricConstants metricId = statisticMetadata.getMetricID();
             MetricConstants metricComponentId = statisticMetadata.getMetricComponentID();
             String metricName = metricId.name();
+            if ( metricComponentId != MetricConstants.MAIN )
+            {
+                metricName = metricName + "_" + metricComponentId.name();
+            }
 
             // Look for a threshold with a standard name that is like the threshold associated with this score
-            // Like means the same, except for any real values, which can vary by feature
             // Only use this technique when the thresholds are named
-            if ( sampleMetadata.hasThresholds() && sampleMetadata.getThresholds().first().hasLabel() )
+            Map<String, OneOrTwoThresholds> metricMap = this.outputWriter.standardThresholdNames.get( metricName );
+
+            for ( Map.Entry<String, OneOrTwoThresholds> nextThreshold : metricMap.entrySet() )
             {
-                for ( Map.Entry<String, OneOrTwoThresholds> nextThreshold : this.outputWriter.standardThresholdNames.entrySet() )
+                String nextName = nextThreshold.getKey();
+                OneOrTwoThresholds threshold = nextThreshold.getValue();
+                if ( threshold.first().hasLabel() )
                 {
-                    String nextName = nextThreshold.getKey();
-                    OneOrTwoThresholds threshold = nextThreshold.getValue();
 
-                    // Thresholds are equal, except for any real-values
-                    String thresholdWithValuesOne = threshold.toString().replaceAll( "\\d+", "#" );
-                    String thresholdWithValuesTwo = sampleMetadata.getThresholds().toString().replaceAll( "\\d+", "#" );
+                    // Label associated with event threshold is equal, and any decision threshold is equal
+                    String thresholdWithValuesOne = threshold.first()
+                                                             .getLabel();
+                    String thresholdWithValuesTwo = sampleMetadata.getThresholds()
+                                                                  .first()
+                                                                  .getLabel();
 
-                    if ( thresholdWithValuesOne.equals( thresholdWithValuesTwo ) )
+                    // Decision threshold equal?
+                    boolean hasSecond = threshold.hasTwo();
+                    boolean secondEqual = hasSecond &&
+                                          threshold.second().equals( sampleMetadata.getThresholds().second() );
+
+                    if ( thresholdWithValuesOne.equals( thresholdWithValuesTwo )
+                         && ( !hasSecond || secondEqual ) )
                     {
                         return metricName + "_" + nextName;
                     }
@@ -735,21 +812,27 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
 
             // Couldn't find a similar threshold, so look in the context instead
             // Filter the scores by identifier, then return the threshold name based on order
-            List<DoubleScoreStatistic> statistics = scores.stream()
-                                                          .filter( a -> a.getMetadata().getMetricID() == metricId
-                                                                        && a.getMetadata()
-                                                                            .getMetricComponentID() == metricComponentId )
-                                                          .collect( Collectors.toList() );
+            SortedSet<OneOrTwoThresholds> statistics = scores.stream()
+                                                          .filter( a -> a.getMetadata().getMetricID() == metricId )
+                                                          .map( a -> a.getMetadata().getSampleMetadata().getThresholds() )
+                                                          .collect( Collectors.toCollection( TreeSet::new ) );
 
-            int thresholdNumber = statistics.indexOf( score ) + 1;
+            // Find the elements strictly less than the element of interest, then add one
+            int thresholdNumber = statistics.headSet( sampleMetadata.getThresholds() )
+                                            .size()
+                                  + 1;
 
             if ( thresholdNumber < 1 )
             {
                 throw new IllegalArgumentException( "Could not find the name of the thresholds variable corresponding to "
                                                     + "the threshold "
                                                     + sampleMetadata.getThresholds()
+                                                    + " and metric "
+                                                    + metricName
                                                     + " associated with "
-                                                    + sampleMetadata );
+                                                    + sampleMetadata
+                                                    + ". Looked in this list of thresholds: "
+                                                    + statistics );
             }
 
             return metricName + "_THRESHOLD_" + thresholdNumber;

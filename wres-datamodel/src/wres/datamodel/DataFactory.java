@@ -26,7 +26,7 @@ import wres.config.generated.ThresholdsConfig;
 import wres.config.generated.TimeSeriesMetricConfig;
 import wres.config.generated.TimeSeriesMetricConfigName;
 import wres.datamodel.MetricConstants.SampleDataGroup;
-import wres.datamodel.MetricConstants.StatisticGroup;
+import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
@@ -635,8 +635,8 @@ public final class DataFactory
         PoolingWindowConfig windows = projectConfig.getPair().getIssuedDatesPoolingWindow();
         if ( Objects.nonNull( windows ) )
         {
-            returnMe.removeIf( a -> ! ( a.isInGroup( StatisticGroup.DOUBLE_SCORE )
-                                        || a.isInGroup( StatisticGroup.DURATION_SCORE ) ) );
+            returnMe.removeIf( a -> ! ( a.isInGroup( StatisticType.DOUBLE_SCORE )
+                                        || a.isInGroup( StatisticType.DURATION_SCORE ) ) );
         }
 
         //Remove CRPSS if no baseline is available

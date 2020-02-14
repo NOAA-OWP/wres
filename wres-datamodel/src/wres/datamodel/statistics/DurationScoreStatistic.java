@@ -4,7 +4,7 @@ import java.time.Duration;
 import java.util.Map;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.MetricConstants.MetricGroup;
 
 /**
  * An immutable statistic that comprises one or more {@link Duration} components.
@@ -55,7 +55,7 @@ public class DurationScoreStatistic extends BasicScoreStatistic<Duration, Durati
      */
 
     public static DurationScoreStatistic
-            of( final Duration[] statistic, final ScoreGroup template, final StatisticMetadata meta )
+            of( final Duration[] statistic, final MetricGroup template, final StatisticMetadata meta )
     {
         return new DurationScoreStatistic( statistic, template, meta );
     }
@@ -102,7 +102,7 @@ public class DurationScoreStatistic extends BasicScoreStatistic<Duration, Durati
      */
 
     private DurationScoreStatistic( final Duration[] statistic,
-                                    final ScoreGroup template,
+                                    final MetricGroup template,
                                     final StatisticMetadata meta )
     {
         super( statistic, template, meta );

@@ -6,7 +6,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
@@ -46,7 +46,7 @@ public class ContinuousRankedProbabilitySkillScore extends ContinuousRankedProba
      * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    public static ContinuousRankedProbabilitySkillScore of( ScoreGroup decompositionId )
+    public static ContinuousRankedProbabilitySkillScore of( MetricGroup decompositionId )
             throws MetricParameterException
     {
         return new ContinuousRankedProbabilitySkillScore( decompositionId );
@@ -126,7 +126,7 @@ public class ContinuousRankedProbabilitySkillScore extends ContinuousRankedProba
      * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    private ContinuousRankedProbabilitySkillScore( ScoreGroup decompositionId ) throws MetricParameterException
+    private ContinuousRankedProbabilitySkillScore( MetricGroup decompositionId ) throws MetricParameterException
     {
         super( decompositionId );
     }

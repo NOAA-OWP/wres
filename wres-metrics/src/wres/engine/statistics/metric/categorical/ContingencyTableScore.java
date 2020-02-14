@@ -1,16 +1,15 @@
 package wres.engine.statistics.metric.categorical;
 
 import java.util.Objects;
+import java.util.Set;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import wres.datamodel.MatrixOfDoubles;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DoubleScoreStatistic;
-import wres.datamodel.statistics.MatrixStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.Metric;
@@ -22,8 +21,8 @@ import wres.engine.statistics.metric.OrdinaryScore;
  * @author james.brown@hydrosolved.com
  */
 
-abstract class ContingencyTableScore extends OrdinaryScore<SampleData<Pair<Boolean,Boolean>>, DoubleScoreStatistic>
-        implements Collectable<SampleData<Pair<Boolean,Boolean>>, MatrixStatistic, DoubleScoreStatistic>
+abstract class ContingencyTableScore extends OrdinaryScore<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatistic>
+        implements Collectable<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatistic, DoubleScoreStatistic>
 {
 
     /**
@@ -45,7 +44,7 @@ abstract class ContingencyTableScore extends OrdinaryScore<SampleData<Pair<Boole
     }
 
     @Override
-    public MatrixStatistic getInputForAggregation( final SampleData<Pair<Boolean,Boolean>> s )
+    public DoubleScoreStatistic getInputForAggregation( final SampleData<Pair<Boolean, Boolean>> s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -61,9 +60,9 @@ abstract class ContingencyTableScore extends OrdinaryScore<SampleData<Pair<Boole
     }
 
     @Override
-    public ScoreGroup getScoreOutputGroup()
+    public MetricGroup getScoreOutputGroup()
     {
-        return ScoreGroup.NONE;
+        return MetricGroup.NONE;
     }
 
     @Override
@@ -79,8 +78,8 @@ abstract class ContingencyTableScore extends OrdinaryScore<SampleData<Pair<Boole
      * @return the {@link StatisticMetadata}
      */
 
-    StatisticMetadata getMetadata( final MatrixStatistic output )
-    {    
+    StatisticMetadata getMetadata( final DoubleScoreStatistic output )
+    {
         return StatisticMetadata.of( output.getMetadata().getSampleMetadata(),
                                      this.getID(),
                                      MetricConstants.MAIN,
@@ -98,7 +97,7 @@ abstract class ContingencyTableScore extends OrdinaryScore<SampleData<Pair<Boole
      * @throws SampleDataException if the output is not a valid input for an intermediate calculation
      */
 
-    void isContingencyTable( final MatrixStatistic output, final Metric<?, ?> metric )
+    void isContingencyTable( final DoubleScoreStatistic output, final Metric<?, ?> metric )
     {
         if ( Objects.isNull( output ) )
         {
@@ -108,17 +107,21 @@ abstract class ContingencyTableScore extends OrdinaryScore<SampleData<Pair<Boole
         {
             throw new SampleDataException( nullString );
         }
-        final MatrixOfDoubles v = output.getData();
-        if ( !v.isSquare() )
+        int count = output.getComponents().size();
+
+        double sr = Math.sqrt( count );
+
+        // If square root is an integer 
+        boolean square = sr - Math.floor( sr ) == 0;
+
+        if ( !square )
         {
-            throw new SampleDataException( "Expected an intermediate result with a square matrix when "
-                                            + "computing the '"
-                                            + metric
-                                            + "': ["
-                                            + v.rows()
-                                            + ", "
-                                            + v.columns()
-                                            + "]." );
+            throw new SampleDataException( "Expected an intermediate result with a square number of elements when "
+                                           + "computing the '"
+                                           + metric
+                                           + "': ["
+                                           + count
+                                           + "]." );
         }
     }
 
@@ -131,7 +134,7 @@ abstract class ContingencyTableScore extends OrdinaryScore<SampleData<Pair<Boole
      * @throws SampleDataException if the output is not a valid input for an intermediate calculation
      */
 
-    void is2x2ContingencyTable( final MatrixStatistic output, final Metric<?, ?> metric )
+    void is2x2ContingencyTable( final DoubleScoreStatistic output, final Metric<?, ?> metric )
     {
         if ( Objects.isNull( output ) )
         {
@@ -141,17 +144,21 @@ abstract class ContingencyTableScore extends OrdinaryScore<SampleData<Pair<Boole
         {
             throw new SampleDataException( nullString );
         }
-        final MatrixOfDoubles v = output.getData();
-        if ( v.rows() != 2 || v.columns() != 2 )
+
+        Set<MetricConstants> expected = Set.of( MetricConstants.TRUE_POSITIVES,
+                                                MetricConstants.TRUE_NEGATIVES,
+                                                MetricConstants.FALSE_POSITIVES,
+                                                MetricConstants.FALSE_NEGATIVES );
+
+        if ( !expected.equals( output.getComponents() ) )
         {
-            throw new SampleDataException( "Expected an intermediate result with a 2x2 square matrix when computing the '"
-                                            + metric
-                                            + "': ["
-                                            + v.rows()
-                                            + ", "
-                                            + v.columns()
-                                            + "]." );
+            throw new SampleDataException( "Expected an intermediate result with elements "
+                                           + expected
+                                           + " but found elements "
+                                           + output.getComponents()
+                                           + "." );
         }
+
     }
 
     /**

@@ -14,7 +14,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
@@ -154,7 +154,7 @@ public final class MeanSquareErrorSkillScoreNormalizedTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( msessn.getScoreOutputGroup() == ScoreGroup.NONE );
+        assertTrue( msessn.getScoreOutputGroup() == MetricGroup.NONE );
     }
 
     @Test

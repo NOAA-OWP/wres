@@ -15,7 +15,7 @@ import evs.metric.results.MetricResultByLeadTime;
 import evs.metric.results.MetricResultByThreshold;
 import evs.metric.results.MetricResultKey;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.Location;
@@ -276,7 +276,7 @@ public final class DataModelTestDataFactory
                     final double[] res = ( (DoubleMatrix1DResult) result ).getResult().toArray();
                     final DoubleScoreStatistic value =
                             DoubleScoreStatistic.of( res,
-                                                  ScoreGroup.CR_POT,
+                                                  MetricGroup.CR_POT,
                                                   StatisticMetadata.of( SampleMetadata.of( source, timeWindow, q ),
                                                                         1000,
                                                                         MeasurementUnit.of(),

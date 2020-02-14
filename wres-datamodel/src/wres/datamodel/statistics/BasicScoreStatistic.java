@@ -11,7 +11,7 @@ import java.util.Set;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.MetricConstants.MetricGroup;
 
 /**
  * An abstract base class for an immutable score output.
@@ -97,11 +97,8 @@ abstract class BasicScoreStatistic<T,U extends ScoreStatistic<T,?>> implements S
         {
             return statistic.get( MetricConstants.MAIN );
         }
-        else if( statistic.size() == 1 )
-        {
-            return statistic.values().iterator().next();
-        }
-        return null;
+
+        return statistic.values().iterator().next();
     }
 
     @Override
@@ -163,7 +160,10 @@ abstract class BasicScoreStatistic<T,U extends ScoreStatistic<T,?>> implements S
                                            .append( ")" )
                                            .append( NEWLINE ) );
         int lines = b.length();
-        b.delete( lines - NEWLINE.length(), lines );
+        if( lines > 0 )
+        {
+            b.delete( lines - NEWLINE.length(), lines );
+        }
         return b.toString();
     }
 
@@ -236,7 +236,7 @@ abstract class BasicScoreStatistic<T,U extends ScoreStatistic<T,?>> implements S
      * @throws StatisticException if any of the inputs are invalid
      */
 
-    BasicScoreStatistic( final T[] statistic, final ScoreGroup template, final StatisticMetadata meta )
+    BasicScoreStatistic( final T[] statistic, final MetricGroup template, final StatisticMetadata meta )
     {
         this.statistic = new EnumMap<>( MetricConstants.class );
         this.meta = meta;

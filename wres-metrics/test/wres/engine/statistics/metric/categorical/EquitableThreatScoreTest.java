@@ -12,7 +12,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
@@ -21,7 +21,6 @@ import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DoubleScoreStatistic;
-import wres.datamodel.statistics.MatrixStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.Metric;
@@ -138,7 +137,7 @@ public final class EquitableThreatScoreTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( ets.getScoreOutputGroup() == ScoreGroup.NONE );
+        assertTrue( ets.getScoreOutputGroup() == MetricGroup.NONE );
     }
 
     /**
@@ -161,7 +160,7 @@ public final class EquitableThreatScoreTest
     {
         exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the '" + ets.getName() + "'." );
-        ets.aggregate( (MatrixStatistic) null );
+        ets.aggregate( (DoubleScoreStatistic) null );
     }
 
 }

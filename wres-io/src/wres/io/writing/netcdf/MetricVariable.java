@@ -2,17 +2,10 @@ package wres.io.writing.netcdf;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.TreeMap;
-import java.util.TreeSet;
-
-import wres.datamodel.MetricConstants;
 import wres.datamodel.scale.TimeScale;
-import wres.datamodel.statistics.DoubleScoreStatistic;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindow;
 import wres.util.TimeHelper;
@@ -44,11 +37,6 @@ class MetricVariable
     
     private final String timeScalePeriod;
     private final String timeScaleFunction;
-    
-    private final MetricConstants metricId;
-    
-    // Fixed until metric decompositions are allowed
-    private static final MetricConstants metricComponentName = MetricConstants.MAIN;
 
     private final OneOrTwoThresholds thresholds;
     
@@ -59,28 +47,26 @@ class MetricVariable
     private final int latestLead;
 
     /**
-     * Builds a 
+     * Builds a new variable.
      * 
-     * @param variableName
-     * @param timeWindow
-     * @param metricId
-     * @param thresholds
-     * @param units
-     * @param desiredTimeScale
-     * @param durationUnits
+     * @param variableName the variable name
+     * @param timeWindow the time window
+     * @param metricName the metric name
+     * @param thresholds the thresholds
+     * @param units the measurement units
+     * @param desiredTimeScale the desired time scale
+     * @param durationUnits the duration units
      */
     
     MetricVariable( String variableName,
                     TimeWindow timeWindow,
-                    MetricConstants metricId,
+                    String metricName,
                     OneOrTwoThresholds thresholds,
                     String units,
                     TimeScale desiredTimeScale,
                     ChronoUnit durationUnits )
     {
         this.durationUnits = durationUnits;
-
-        String metricName = metricId.toString();
 
         this.thresholds = thresholds;
 
@@ -154,49 +140,6 @@ class MetricVariable
             this.timeScalePeriod = "UNKNOWN";
             this.timeScaleFunction = "UNKNOWN";
         }
-
-        this.metricId = metricId;
-    }
-    
-    /**
-     * Looks for a metric-threshold variable name within the input collection that corresponds to the statistic 
-     * provided. Checks for the metric name, metric component name and thresholds.
-     * 
-     * @param variables the metric variables
-     * @param output the score
-     * @return the metric-threshold variable name corresponding to the score
-     * @throws IllegalArgumentException if the name could not be found
-     * @throws NullPointerException if any input is null
-     */
-    
-    static String getName(Collection<MetricVariable> variables, DoubleScoreStatistic output)
-    {
-        Objects.requireNonNull( variables );
-
-        Objects.requireNonNull( output );
-
-        StatisticMetadata meta = output.getMetadata();
-        
-        Set<OneOrTwoThresholds> thresholdsFound = new TreeSet<>();
-        
-        for ( MetricVariable next : variables )
-        {
-            thresholdsFound.add( next.getThreshold() );
-            
-            if ( next.getMetricName() == meta.getMetricID()
-                 && next.getMetricComponentName() == meta.getMetricComponentID()
-                 && next.getThreshold().equals( meta.getSampleMetadata().getThresholds() ) )
-            {
-                return next.getName();
-            }
-        }
-        
-        OneOrTwoThresholds threshold = output.getMetadata().getSampleMetadata().getThresholds();
-        
-        throw new IllegalArgumentException( "Unable to find the metric-threshold variable name for the threshold "
-                                            + threshold 
-                                            + "among the thresholds "
-                                            + thresholdsFound );
     }
 
     public String getName()
@@ -243,16 +186,6 @@ class MetricVariable
     private OneOrTwoThresholds getThreshold()
     {
         return this.thresholds;
-    } 
-    
-    private MetricConstants getMetricName()
-    {
-        return this.metricId;
-    } 
-    
-    private MetricConstants getMetricComponentName()
-    {
-        return MetricVariable.metricComponentName;
     } 
     
     private String getInstantString( Instant instant )

@@ -43,7 +43,7 @@ import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.MetricConstants.StatisticGroup;
+import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.statistics.BoxPlotStatistics;
@@ -119,23 +119,23 @@ public abstract class ChartEngineFactory
     }
 
     /**
-     * Provides the default {@link ChartType} for a given {@link StatisticGroup}.
+     * Provides the default {@link ChartType} for a given {@link StatisticType}.
      * That chart type can then be used in the other maps to determine the default template file name.
      * Thus, the values from this map must be kept consistent with the template maps.
      * Any chart type selection of {@link ChartType#UNIQUE} indicates that the chart type doesn't matter for that metric
      * group, likely because the chart type is fixed for all metrics in that metric group.
      */
-    private static EnumMap<StatisticGroup, ChartType> metricOutputGroupToDefaultChartTypeMap =
-            new EnumMap<>( StatisticGroup.class );
+    private static EnumMap<StatisticType, ChartType> metricOutputGroupToDefaultChartTypeMap =
+            new EnumMap<>( StatisticType.class );
     static
     {
-        metricOutputGroupToDefaultChartTypeMap.put( StatisticGroup.BOXPLOT_PER_PAIR, ChartType.UNIQUE );
-        metricOutputGroupToDefaultChartTypeMap.put( StatisticGroup.BOXPLOT_PER_POOL, ChartType.UNIQUE );
-        metricOutputGroupToDefaultChartTypeMap.put( StatisticGroup.DOUBLE_SCORE, ChartType.LEAD_THRESHOLD );
-        metricOutputGroupToDefaultChartTypeMap.put( StatisticGroup.DURATION_SCORE, ChartType.UNIQUE );
-        metricOutputGroupToDefaultChartTypeMap.put( StatisticGroup.MATRIX, ChartType.UNIQUE );
-        metricOutputGroupToDefaultChartTypeMap.put( StatisticGroup.MULTIVECTOR, ChartType.LEAD_THRESHOLD );
-        metricOutputGroupToDefaultChartTypeMap.put( StatisticGroup.PAIRED, ChartType.UNIQUE );
+        metricOutputGroupToDefaultChartTypeMap.put( StatisticType.BOXPLOT_PER_PAIR, ChartType.UNIQUE );
+        metricOutputGroupToDefaultChartTypeMap.put( StatisticType.BOXPLOT_PER_POOL, ChartType.UNIQUE );
+        metricOutputGroupToDefaultChartTypeMap.put( StatisticType.DOUBLE_SCORE, ChartType.LEAD_THRESHOLD );
+        metricOutputGroupToDefaultChartTypeMap.put( StatisticType.DURATION_SCORE, ChartType.UNIQUE );
+        metricOutputGroupToDefaultChartTypeMap.put( StatisticType.MATRIX, ChartType.UNIQUE );
+        metricOutputGroupToDefaultChartTypeMap.put( StatisticType.MULTIVECTOR, ChartType.LEAD_THRESHOLD );
+        metricOutputGroupToDefaultChartTypeMap.put( StatisticType.PAIRED, ChartType.UNIQUE );
     }
 
     /**
@@ -661,14 +661,14 @@ public abstract class ChartEngineFactory
         int[] diagonalDataSourceIndices = null;
         String axisToSquareAgainstDomain = null;
 
-        if ( !input.getMetadata().getMetricID().isInGroup( StatisticGroup.BOXPLOT_PER_PAIR )
-             && !input.getMetadata().getMetricID().isInGroup( StatisticGroup.BOXPLOT_PER_POOL ) )
+        if ( !input.getMetadata().getMetricID().isInGroup( StatisticType.BOXPLOT_PER_PAIR )
+             && !input.getMetadata().getMetricID().isInGroup( StatisticType.BOXPLOT_PER_POOL ) )
         {
             throw new IllegalArgumentException( "Unrecognized data type for metric " + input.getMetadata().getMetricID()
                                                 + ". Expected one of "
-                                                + StatisticGroup.BOXPLOT_PER_PAIR
+                                                + StatisticType.BOXPLOT_PER_PAIR
                                                 + " or "
-                                                + StatisticGroup.BOXPLOT_PER_POOL
+                                                + StatisticType.BOXPLOT_PER_POOL
                                                 + ", but got "
                                                 + input.getMetadata().getMetricID().getMetricOutputGroup()
                                                 + "." );

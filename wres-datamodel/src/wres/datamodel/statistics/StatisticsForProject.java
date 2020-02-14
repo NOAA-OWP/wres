@@ -11,13 +11,13 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import wres.datamodel.MetricConstants.StatisticGroup;
+import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.statistics.ListOfStatistics.ListOfStatisticsBuilder;
 
 /**
  * <p>An immutable store of {@link Statistic} associated with a verification project.</p>
  * 
- * <p>Retrieve the statistics using the instance methods for particular {@link StatisticGroup}. If no statistics
+ * <p>Retrieve the statistics using the instance methods for particular {@link StatisticType}. If no statistics
  * exist, the instance methods return null. The store is built with {@link Future} of the {@link Statistic} and the 
  * instance methods call {@link Future#get()}.</p>
  * 
@@ -80,7 +80,7 @@ public class StatisticsForProject
     public ListOfStatistics<DoubleScoreStatistic> getDoubleScoreStatistics()
             throws InterruptedException
     {
-        return this.unwrap( StatisticGroup.DOUBLE_SCORE, doubleScore );
+        return this.unwrap( StatisticType.DOUBLE_SCORE, doubleScore );
     }
 
     /**
@@ -94,7 +94,7 @@ public class StatisticsForProject
     public ListOfStatistics<DurationScoreStatistic> getDurationScoreStatistics()
             throws InterruptedException
     {
-        return this.unwrap( StatisticGroup.DURATION_SCORE, durationScore );
+        return this.unwrap( StatisticType.DURATION_SCORE, durationScore );
     }
 
     /**
@@ -108,7 +108,7 @@ public class StatisticsForProject
     public ListOfStatistics<DiagramStatistic> getMultiVectorStatistics()
             throws InterruptedException
     {
-        return this.unwrap( StatisticGroup.MULTIVECTOR, multiVector );
+        return this.unwrap( StatisticType.MULTIVECTOR, multiVector );
     }
 
     /**
@@ -121,7 +121,7 @@ public class StatisticsForProject
 
     public ListOfStatistics<MatrixStatistic> getMatrixStatistics() throws InterruptedException
     {
-        return this.unwrap( StatisticGroup.MATRIX, matrix );
+        return this.unwrap( StatisticType.MATRIX, matrix );
     }
 
     /**
@@ -135,7 +135,7 @@ public class StatisticsForProject
 
     public ListOfStatistics<BoxPlotStatistics> getBoxPlotStatisticsPerPair() throws InterruptedException
     {
-        return this.unwrap( StatisticGroup.BOXPLOT_PER_PAIR, boxplotPerPair );
+        return this.unwrap( StatisticType.BOXPLOT_PER_PAIR, boxplotPerPair );
     }
 
     /**
@@ -149,7 +149,7 @@ public class StatisticsForProject
 
     public ListOfStatistics<BoxPlotStatistics> getBoxPlotStatisticsPerPool() throws InterruptedException
     {
-        return this.unwrap( StatisticGroup.BOXPLOT_PER_POOL, boxplotPerPool );
+        return this.unwrap( StatisticType.BOXPLOT_PER_POOL, boxplotPerPool );
     }
 
     /**
@@ -163,17 +163,17 @@ public class StatisticsForProject
     public ListOfStatistics<PairedStatistic<Instant, Duration>> getPairedStatistics()
             throws InterruptedException
     {
-        return this.unwrap( StatisticGroup.PAIRED, paired );
+        return this.unwrap( StatisticType.PAIRED, paired );
     }
 
     /**
      * Returns true if results are available for the input type, false otherwise.
      * 
-     * @param outGroup the {@link StatisticGroup} to test
+     * @param outGroup the {@link StatisticType} to test
      * @return true if results are available for the input, false otherwise
      */
 
-    public boolean hasStatistic( StatisticGroup outGroup )
+    public boolean hasStatistic( StatisticType outGroup )
     {
         switch ( outGroup )
         {
@@ -197,48 +197,48 @@ public class StatisticsForProject
     }
 
     /**
-     * Returns all {@link StatisticGroup} for which outputs are available.
+     * Returns all {@link StatisticType} for which outputs are available.
      * 
-     * @return all {@link StatisticGroup} for which outputs are available
+     * @return all {@link StatisticType} for which outputs are available
      */
 
-    public Set<StatisticGroup> getStatisticTypes()
+    public Set<StatisticType> getStatisticTypes()
     {
-        Set<StatisticGroup> returnMe = new HashSet<>();
+        Set<StatisticType> returnMe = new HashSet<>();
 
-        if ( this.hasStatistic( StatisticGroup.DOUBLE_SCORE ) )
+        if ( this.hasStatistic( StatisticType.DOUBLE_SCORE ) )
         {
-            returnMe.add( StatisticGroup.DOUBLE_SCORE );
+            returnMe.add( StatisticType.DOUBLE_SCORE );
         }
 
-        if ( this.hasStatistic( StatisticGroup.DURATION_SCORE ) )
+        if ( this.hasStatistic( StatisticType.DURATION_SCORE ) )
         {
-            returnMe.add( StatisticGroup.DURATION_SCORE );
+            returnMe.add( StatisticType.DURATION_SCORE );
         }
 
-        if ( this.hasStatistic( StatisticGroup.MULTIVECTOR ) )
+        if ( this.hasStatistic( StatisticType.MULTIVECTOR ) )
         {
-            returnMe.add( StatisticGroup.MULTIVECTOR );
+            returnMe.add( StatisticType.MULTIVECTOR );
         }
 
-        if ( this.hasStatistic( StatisticGroup.MATRIX ) )
+        if ( this.hasStatistic( StatisticType.MATRIX ) )
         {
-            returnMe.add( StatisticGroup.MATRIX );
+            returnMe.add( StatisticType.MATRIX );
         }
 
-        if ( this.hasStatistic( StatisticGroup.BOXPLOT_PER_PAIR ) )
+        if ( this.hasStatistic( StatisticType.BOXPLOT_PER_PAIR ) )
         {
-            returnMe.add( StatisticGroup.BOXPLOT_PER_PAIR );
+            returnMe.add( StatisticType.BOXPLOT_PER_PAIR );
         }
 
-        if ( this.hasStatistic( StatisticGroup.BOXPLOT_PER_POOL ) )
+        if ( this.hasStatistic( StatisticType.BOXPLOT_PER_POOL ) )
         {
-            returnMe.add( StatisticGroup.BOXPLOT_PER_POOL );
+            returnMe.add( StatisticType.BOXPLOT_PER_POOL );
         }
 
-        if ( this.hasStatistic( StatisticGroup.PAIRED ) )
+        if ( this.hasStatistic( StatisticType.PAIRED ) )
         {
-            returnMe.add( StatisticGroup.PAIRED );
+            returnMe.add( StatisticType.PAIRED );
         }
 
         return Collections.unmodifiableSet( returnMe );
@@ -447,14 +447,14 @@ public class StatisticsForProject
      * returning a map of the unwrapped entries.
      * 
      * @param <T> the type of statistic
-     * @param statsGroup the {@link StatisticGroup} for error logging
+     * @param statsGroup the {@link StatisticType} for error logging
      * @param wrapped the list of values wrapped in {@link Future}
      * @return the unwrapped map or null if the input is empty
      * @throws InterruptedException if the retrieval is interrupted
      * @throws StatisticException if the result could not be produced
      */
 
-    private <T extends Statistic<?>> ListOfStatistics<T> unwrap( StatisticGroup statsGroup,
+    private <T extends Statistic<?>> ListOfStatistics<T> unwrap( StatisticType statsGroup,
                                                                  List<Future<ListOfStatistics<T>>> wrapped )
             throws InterruptedException
     {

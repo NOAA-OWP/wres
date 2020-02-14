@@ -14,7 +14,7 @@ import java.util.concurrent.Future;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.MetricConstants.StatisticGroup;
+import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
@@ -102,48 +102,48 @@ class MetricFuturesByTime
     }
 
     /**
-     * Returns the {@link StatisticGroup} for which futures exist.
+     * Returns the {@link StatisticType} for which futures exist.
      * 
      * @return the set of output types for which futures exist
      */
 
-    Set<StatisticGroup> getOutputTypes()
+    Set<StatisticType> getOutputTypes()
     {
-        Set<StatisticGroup> returnMe = new HashSet<>();
+        Set<StatisticType> returnMe = new HashSet<>();
 
         if ( !this.doubleScore.isEmpty() )
         {
-            returnMe.add( StatisticGroup.DOUBLE_SCORE );
+            returnMe.add( StatisticType.DOUBLE_SCORE );
         }
 
         if ( !this.durationScore.isEmpty() )
         {
-            returnMe.add( StatisticGroup.DURATION_SCORE );
+            returnMe.add( StatisticType.DURATION_SCORE );
         }
 
         if ( !this.multiVector.isEmpty() )
         {
-            returnMe.add( StatisticGroup.MULTIVECTOR );
+            returnMe.add( StatisticType.MULTIVECTOR );
         }
 
         if ( !this.boxplotPerPair.isEmpty() )
         {
-            returnMe.add( StatisticGroup.BOXPLOT_PER_PAIR );
+            returnMe.add( StatisticType.BOXPLOT_PER_PAIR );
         }
         
         if ( !this.boxplotPerPool.isEmpty() )
         {
-            returnMe.add( StatisticGroup.BOXPLOT_PER_POOL );
+            returnMe.add( StatisticType.BOXPLOT_PER_POOL );
         }
 
         if ( !this.paired.isEmpty() )
         {
-            returnMe.add( StatisticGroup.PAIRED );
+            returnMe.add( StatisticType.PAIRED );
         }
 
         if ( !this.matrix.isEmpty() )
         {
-            returnMe.add( StatisticGroup.MATRIX );
+            returnMe.add( StatisticType.MATRIX );
         }
 
         return Collections.unmodifiableSet( returnMe );
@@ -354,7 +354,7 @@ class MetricFuturesByTime
 
         MetricFuturesByTimeBuilder addFutures( MetricFuturesByTime futures )
         {
-            this.addFutures( futures, StatisticGroup.set() );
+            this.addFutures( futures, StatisticType.set() );
             return this;
         }
 
@@ -369,37 +369,37 @@ class MetricFuturesByTime
          */
 
         MetricFuturesByTimeBuilder addFutures( MetricFuturesByTime futures,
-                                               Set<StatisticGroup> mergeSet )
+                                               Set<StatisticType> mergeSet )
         {
             if ( Objects.nonNull( mergeSet ) )
             {
-                for ( StatisticGroup nextGroup : mergeSet )
+                for ( StatisticType nextGroup : mergeSet )
                 {
-                    if ( nextGroup == StatisticGroup.DOUBLE_SCORE )
+                    if ( nextGroup == StatisticType.DOUBLE_SCORE )
                     {
                         this.doubleScore.addAll( futures.doubleScore );
                     }
-                    else if ( nextGroup == StatisticGroup.DURATION_SCORE )
+                    else if ( nextGroup == StatisticType.DURATION_SCORE )
                     {
                         this.durationScore.addAll( futures.durationScore );
                     }
-                    else if ( nextGroup == StatisticGroup.MULTIVECTOR )
+                    else if ( nextGroup == StatisticType.MULTIVECTOR )
                     {
                         this.multiVector.addAll( futures.multiVector );
                     }
-                    else if ( nextGroup == StatisticGroup.BOXPLOT_PER_PAIR )
+                    else if ( nextGroup == StatisticType.BOXPLOT_PER_PAIR )
                     {
                         this.boxplotPerPair.addAll( futures.boxplotPerPair );
                     }
-                    else if ( nextGroup == StatisticGroup.BOXPLOT_PER_POOL )
+                    else if ( nextGroup == StatisticType.BOXPLOT_PER_POOL )
                     {
                         this.boxplotPerPool.addAll( futures.boxplotPerPool );
                     }
-                    else if ( nextGroup == StatisticGroup.PAIRED )
+                    else if ( nextGroup == StatisticType.PAIRED )
                     {
                         this.paired.addAll( futures.paired );
                     }
-                    else if ( nextGroup == StatisticGroup.MATRIX )
+                    else if ( nextGroup == StatisticType.MATRIX )
                     {
                         this.matrix.addAll( futures.matrix );
                     }

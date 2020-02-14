@@ -15,7 +15,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
@@ -117,7 +117,7 @@ public final class VolumetricEfficiencyTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( ve.getScoreOutputGroup() == ScoreGroup.NONE );
+        assertTrue( ve.getScoreOutputGroup() == MetricGroup.NONE );
     }
 
     @Test

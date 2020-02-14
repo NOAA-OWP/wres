@@ -1,12 +1,15 @@
 package wres.engine.statistics.metric.categorical;
 
+import java.util.Iterator;
+import java.util.Objects;
+
 import org.apache.commons.lang3.tuple.Pair;
 
-import wres.datamodel.MatrixOfDoubles;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DoubleScoreStatistic;
-import wres.datamodel.statistics.MatrixStatistic;
+import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCalculationException;
 
@@ -16,50 +19,117 @@ import wres.engine.statistics.metric.MetricCalculationException;
  * predictand, the Peirce Skill Score corresponds to the difference between the {@link ProbabilityOfDetection} and the
  * {@link ProbabilityOfFalseDetection}. 
  * 
- * <p>TODO: The {@link #aggregate(MatrixStatistic)} is implemented for the multicategory case. Abstract this to 
+ * <p>TODO: The {@link #aggregate(DoubleScoreStatistic)} is implemented for the multicategory case. Abstract this to 
  * somewhere appropriately visible for extensibility. 
  * 
  * @author james.brown@hydrosolved.com
  */
 public class PeirceSkillScore extends ContingencyTableScore
 {
-    
+
     /**
      * Returns an instance.
      * 
      * @return an instance
      */
-    
+
     public static PeirceSkillScore of()
     {
         return new PeirceSkillScore();
-    } 
+    }
 
     @Override
-    public DoubleScoreStatistic apply( final SampleData<Pair<Boolean,Boolean>> s )
+    public DoubleScoreStatistic apply( final SampleData<Pair<Boolean, Boolean>> s )
     {
         return aggregate( this.getInputForAggregation( s ) );
     }
 
     @Override
-    public DoubleScoreStatistic aggregate( final MatrixStatistic output )
+    public DoubleScoreStatistic aggregate( final DoubleScoreStatistic output )
     {
-        //Check the input
-        this.isContingencyTable( output, this );
-
-        final MatrixOfDoubles v = output.getData();
-        final double[][] cm = v.getDoubles();
-
-        //Dichotomous predictand
-        if ( v.rows() == 2 )
+        if ( Objects.isNull( output ) )
         {
-            double result = FunctionFactory.finiteOrMissing().applyAsDouble( ( cm[0][0] / ( cm[0][0] + cm[1][0] ) )
-                                                                             - ( cm[0][1] / ( cm[0][1] + cm[1][1] ) ) );
-            return DoubleScoreStatistic.of( result, getMetadata( output ) );
+            throw new SampleDataException( "Specify non-null input to the '" + this.toString() + "'." );
+        }
+        
+        if ( output.getComponents().size() == 4 )
+        {
+            return this.aggregateTwoByTwo( output );
         }
 
-        //Multicategory predictand
-        //Compute the sum terms
+        return this.aggregateNByN( output );
+    }
+
+    @Override
+    public MetricConstants getID()
+    {
+        return MetricConstants.PEIRCE_SKILL_SCORE;
+    }
+
+    @Override
+    public boolean isSkillScore()
+    {
+        return true;
+    }
+
+    /**
+     * Computes the score for the 2x2 contingency table.
+     * 
+     * @param contingencyTable the 2x2 contingency table components
+     * @return the score
+     */
+
+    private DoubleScoreStatistic aggregateTwoByTwo( DoubleScoreStatistic score )
+    {
+        this.is2x2ContingencyTable( score, this );
+
+        double tP = score.getComponent( MetricConstants.TRUE_POSITIVES )
+                         .getData();
+
+        double fP = score.getComponent( MetricConstants.FALSE_POSITIVES )
+                         .getData();
+
+        double fN = score.getComponent( MetricConstants.FALSE_NEGATIVES )
+                         .getData();
+
+        double tN = score.getComponent( MetricConstants.TRUE_NEGATIVES )
+                         .getData();
+
+        StatisticMetadata meta = this.getMetadata( score );
+
+        double result = FunctionFactory.finiteOrMissing()
+                                       .applyAsDouble( ( tP / ( tP + fN ) )
+                                                       - ( fP / ( fP + tN ) ) );
+        return DoubleScoreStatistic.of( result, meta );
+    }
+
+    /**
+     * Computes the score for the NxN contingency table. The elements must be ordered from top-left to bottom right,
+     * based on the mapped dimension name.
+     * 
+     * @param contingencyTable the NxN contingency table components
+     * @return the score
+     */
+
+    private DoubleScoreStatistic aggregateNByN( DoubleScoreStatistic score )
+    {
+        //Check the input
+        this.isContingencyTable( score, this );
+
+        int square = (int) Math.sqrt( score.getComponents().size() );
+
+        double[][] cm = new double[square][square];
+
+        Iterator<MetricConstants> source = score.getComponents().iterator();
+        for ( int i = 0; i < square; i++ )
+        {
+            for ( int j = 0; j < square; j++ )
+            {
+                cm[i][j] = score.getComponent( source.next() )
+                                .getData();
+            }
+        }
+
         double diag = 0.0; //Sum of diagonal
         final double[] rowSums = new double[cm.length]; //Row sums
         final double[] colSums = new double[cm.length]; //Col sums
@@ -92,22 +162,14 @@ public class PeirceSkillScore extends ContingencyTableScore
         }
         //Compose the result
         final double nSquared = n * n;
-        final double result = FunctionFactory.finiteOrMissing().applyAsDouble( ( ( diag / n ) - ( sumProd / nSquared ) )
-                                                                               / ( 1.0 - ( uniProd / nSquared ) ) );
-        return DoubleScoreStatistic.of( result, getMetadata( output ) );
+        final double result = FunctionFactory.finiteOrMissing()
+                                             .applyAsDouble( ( ( diag / n ) - ( sumProd / nSquared ) )
+                                                             / ( 1.0 - ( uniProd / nSquared ) ) );
+        StatisticMetadata meta = this.getMetadata( score );
+
+        return DoubleScoreStatistic.of( result, meta );
     }
 
-    @Override
-    public MetricConstants getID()
-    {
-        return MetricConstants.PEIRCE_SKILL_SCORE;
-    }
-
-    @Override
-    public boolean isSkillScore()
-    {
-        return true;
-    }
 
     /**
      * Hidden constructor.

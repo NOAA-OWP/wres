@@ -30,7 +30,7 @@ import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.SampleDataGroup;
-import wres.datamodel.MetricConstants.StatisticGroup;
+import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
@@ -83,7 +83,7 @@ public final class MetricProcessorTest
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<PoolOfPairs<Double, Double>> trueProcessor =
                 MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
-                                                                        StatisticGroup.set() );
+                                                                        StatisticType.set() );
         MetricProcessor<PoolOfPairs<Double, Double>> falseProcessor =
                 MetricFactory.ofMetricProcessorForSingleValuedPairs( config, null );
         //Check for storage
@@ -113,13 +113,13 @@ public final class MetricProcessorTest
                                                                         null,
                                                                         thresholdExecutor,
                                                                         metricExecutor,
-                                                                        Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
+                                                                        Collections.singleton( StatisticType.DOUBLE_SCORE ) );
         // Compute the resuults and check the cache       
         PoolOfPairs<Double, Double> pairs = MetricTestDataFactory.getSingleValuedPairsFour();
 
         processor.apply( pairs );
 
-        Set<StatisticGroup> expectedCache = new HashSet<>( Arrays.asList( StatisticGroup.DOUBLE_SCORE ) );
+        Set<StatisticType> expectedCache = new HashSet<>( Arrays.asList( StatisticType.DOUBLE_SCORE ) );
 
         assertTrue( expectedCache.equals( processor.getCachedMetricOutputTypes() ) );
     }
@@ -131,7 +131,7 @@ public final class MetricProcessorTest
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<PoolOfPairs<Double, Double>> processor =
                 MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
-                                                                        StatisticGroup.set() );
+                                                                        StatisticType.set() );
         //Check for existence of metrics
         assertTrue( processor.hasMetrics( SampleDataGroup.SINGLE_VALUED ) );
     }
@@ -143,9 +143,9 @@ public final class MetricProcessorTest
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<PoolOfPairs<Double, Double>> processor =
                 MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
-                                                                        StatisticGroup.set() );
+                                                                        StatisticType.set() );
         //Check for existence of metrics
-        assertTrue( processor.hasMetrics( StatisticGroup.DOUBLE_SCORE ) );
+        assertTrue( processor.hasMetrics( StatisticType.DOUBLE_SCORE ) );
     }
 
     @Test
@@ -155,9 +155,9 @@ public final class MetricProcessorTest
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<PoolOfPairs<Double, Double>> processor =
                 MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
-                                                                        StatisticGroup.set() );
+                                                                        StatisticType.set() );
         //Check for existence of metrics
-        assertTrue( processor.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticGroup.DOUBLE_SCORE ) );
+        assertTrue( processor.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ) );
     }
 
     @Test
@@ -188,7 +188,7 @@ public final class MetricProcessorTest
 
         MetricProcessor<PoolOfPairs<Double, Ensemble>> processorWithDiscreteProbability =
                 MetricFactory.ofMetricProcessorForEnsemblePairs( discreteProbability,
-                                                                    StatisticGroup.set() );
+                                                                    StatisticType.set() );
 
         //Check for existence of metrics
         assertTrue( processorWithDiscreteProbability.hasThresholdMetrics() );
@@ -207,7 +207,7 @@ public final class MetricProcessorTest
 
         MetricProcessor<PoolOfPairs<Double, Double>> processorWithDichotomous =
                 MetricFactory.ofMetricProcessorForSingleValuedPairs( dichotomous,
-                                                                        StatisticGroup.set() );
+                                                                        StatisticType.set() );
 
         //Check for existence of metrics
         assertTrue( processorWithDichotomous.hasThresholdMetrics() );
@@ -226,7 +226,7 @@ public final class MetricProcessorTest
 
         MetricProcessor<PoolOfPairs<Double, Double>> processorWithSingleValued =
                 MetricFactory.ofMetricProcessorForSingleValuedPairs( singleValued,
-                                                                        StatisticGroup.set() );
+                                                                        StatisticType.set() );
 
         //Check for non-existence of metrics
         assertFalse( processorWithSingleValued.hasThresholdMetrics() );
@@ -245,7 +245,7 @@ public final class MetricProcessorTest
 
         MetricProcessor<PoolOfPairs<Double, Double>> processorWithMultiCat =
                 MetricFactory.ofMetricProcessorForSingleValuedPairs( multicategory,
-                                                                        StatisticGroup.set() );
+                                                                        StatisticType.set() );
 
         //Check for existence of metrics
         assertTrue( processorWithMultiCat.hasThresholdMetrics() );
@@ -260,17 +260,17 @@ public final class MetricProcessorTest
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
         MetricProcessor<PoolOfPairs<Double, Double>> processor =
                 MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
-                                                                        StatisticGroup.set() );
+                                                                        StatisticType.set() );
 
         //Check that score metrics are defined 
-        assertTrue( "Expected metrics for '" + StatisticGroup.DOUBLE_SCORE
+        assertTrue( "Expected metrics for '" + StatisticType.DOUBLE_SCORE
                     + "'.",
-                    processor.hasMetrics( StatisticGroup.DOUBLE_SCORE ) );
+                    processor.hasMetrics( StatisticType.DOUBLE_SCORE ) );
 
         //Check that no non-score metrics are defined
-        for ( StatisticGroup next : StatisticGroup.values() )
+        for ( StatisticType next : StatisticType.values() )
         {
-            if ( next != StatisticGroup.DOUBLE_SCORE )
+            if ( next != StatisticType.DOUBLE_SCORE )
             {
                 assertFalse( "Did not expect metrics for '" + next
                              + "'.",
@@ -289,15 +289,15 @@ public final class MetricProcessorTest
         ProjectConfig configEnsemble = ProjectConfigPlus.from( Paths.get( configPathEnsemble ) ).getProjectConfig();
         MetricProcessor<PoolOfPairs<Double, Ensemble>> processorEnsemble =
                 MetricFactory.ofMetricProcessorForEnsemblePairs( configEnsemble,
-                                                                    StatisticGroup.set() );
+                                                                    StatisticType.set() );
         //Check that score metrics are defined 
-        assertTrue( "Expected metrics for '" + StatisticGroup.DOUBLE_SCORE
+        assertTrue( "Expected metrics for '" + StatisticType.DOUBLE_SCORE
                     + "'.",
-                    processorEnsemble.hasMetrics( StatisticGroup.DOUBLE_SCORE ) );
+                    processorEnsemble.hasMetrics( StatisticType.DOUBLE_SCORE ) );
         //Check that no non-score metrics are defined
-        for ( StatisticGroup next : StatisticGroup.values() )
+        for ( StatisticType next : StatisticType.values() )
         {
-            if ( next != StatisticGroup.DOUBLE_SCORE )
+            if ( next != StatisticType.DOUBLE_SCORE )
             {
                 assertFalse( "Did not expect metrics for '" + next
                              + "'.",
@@ -316,12 +316,12 @@ public final class MetricProcessorTest
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
         MetricProcessor<PoolOfPairs<Double, Double>> processor =
                 MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
-                                                                        StatisticGroup.set() );
+                                                                        StatisticType.set() );
 
         ThresholdsByMetric thresholds =
                 processor.getThresholdsByMetric()
                          .filterByGroup( SampleDataGroup.SINGLE_VALUED,
-                                         StatisticGroup.DOUBLE_SCORE );
+                                         StatisticType.DOUBLE_SCORE );
 
         Threshold firstTest =
                 Threshold.of( OneOrTwoDoubles.of( 0.5 ),
@@ -377,7 +377,7 @@ public final class MetricProcessorTest
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
         MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
                 MetricFactory.ofMetricProcessorForEnsemblePairs( config,
-                                                                    StatisticGroup.set() );
+                                                                    StatisticType.set() );
         Threshold firstTest = Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
                                                                 Operator.GREATER,
                                                                 ThresholdDataType.LEFT );
@@ -429,7 +429,7 @@ public final class MetricProcessorTest
         ProjectConfig config = new ProjectConfig( null, null, null, null, null, null );
         MetricProcessor<PoolOfPairs<Double, Double>> processor =
                 MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
-                                                                        StatisticGroup.set() );
+                                                                        StatisticType.set() );
 
         Threshold expected = Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                            Operator.GREATER,

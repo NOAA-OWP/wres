@@ -12,7 +12,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
@@ -98,7 +98,7 @@ public final class CoefficientOfDeterminationTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( cod.getScoreOutputGroup() == ScoreGroup.NONE );
+        assertTrue( cod.getScoreOutputGroup() == MetricGroup.NONE );
     }
 
     @Test

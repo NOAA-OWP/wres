@@ -21,7 +21,7 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.SampleDataGroup;
-import wres.datamodel.MetricConstants.StatisticGroup;
+import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.Probability;
 import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleData;
@@ -176,7 +176,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
      * @param externalThresholds an optional set of external thresholds, may be null
      * @param thresholdExecutor an {@link ExecutorService} for executing thresholds, cannot be null 
      * @param metricExecutor an {@link ExecutorService} for executing metrics, cannot be null
-     * @param mergeSet a list of {@link StatisticGroup} whose outputs should be retained and merged across calls to
+     * @param mergeSet a list of {@link StatisticType} whose outputs should be retained and merged across calls to
      *            {@link #apply(Object)}
      * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
@@ -187,19 +187,19 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
                                                final ThresholdsByMetric externalThresholds,
                                                final ExecutorService thresholdExecutor,
                                                final ExecutorService metricExecutor,
-                                               final Set<StatisticGroup> mergeSet )
+                                               final Set<StatisticType> mergeSet )
             throws MetricParameterException
     {
         super( config, externalThresholds, thresholdExecutor, metricExecutor, mergeSet );
 
         //Construct the metrics
         //Discrete probability input, vector output
-        if ( this.hasMetrics( SampleDataGroup.DISCRETE_PROBABILITY, StatisticGroup.DOUBLE_SCORE ) )
+        if ( this.hasMetrics( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE ) )
         {
             this.discreteProbabilityScore =
                     MetricFactory.ofDiscreteProbabilityScoreCollection( metricExecutor,
                                                                         this.getMetrics( SampleDataGroup.DISCRETE_PROBABILITY,
-                                                                                         StatisticGroup.DOUBLE_SCORE ) );
+                                                                                         StatisticType.DOUBLE_SCORE ) );
 
             LOGGER.debug( "Created the discrete probability scores for processing. {}", this.discreteProbabilityScore );
         }
@@ -208,12 +208,12 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
             this.discreteProbabilityScore = null;
         }
         //Discrete probability input, multi-vector output
-        if ( this.hasMetrics( SampleDataGroup.DISCRETE_PROBABILITY, StatisticGroup.MULTIVECTOR ) )
+        if ( this.hasMetrics( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.MULTIVECTOR ) )
         {
             this.discreteProbabilityMultiVector =
                     MetricFactory.ofDiscreteProbabilityMultiVectorCollection( metricExecutor,
                                                                               this.getMetrics( SampleDataGroup.DISCRETE_PROBABILITY,
-                                                                                               StatisticGroup.MULTIVECTOR ) );
+                                                                                               StatisticType.MULTIVECTOR ) );
 
             LOGGER.debug( "Created the discrete probability diagrams for processing. {}",
                           this.discreteProbabilityMultiVector );
@@ -223,11 +223,11 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
             this.discreteProbabilityMultiVector = null;
         }
         //Ensemble input, score output
-        if ( this.hasMetrics( SampleDataGroup.ENSEMBLE, StatisticGroup.DOUBLE_SCORE ) )
+        if ( this.hasMetrics( SampleDataGroup.ENSEMBLE, StatisticType.DOUBLE_SCORE ) )
         {
             this.ensembleScore = MetricFactory.ofEnsembleScoreCollection( metricExecutor,
                                                                           this.getMetrics( SampleDataGroup.ENSEMBLE,
-                                                                                           StatisticGroup.DOUBLE_SCORE ) );
+                                                                                           StatisticType.DOUBLE_SCORE ) );
 
             LOGGER.debug( "Created the ensemble scores for processing. {}", this.ensembleScore );
         }
@@ -237,11 +237,11 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         }
 
         //Ensemble input, multi-vector output
-        if ( this.hasMetrics( SampleDataGroup.ENSEMBLE, StatisticGroup.MULTIVECTOR ) )
+        if ( this.hasMetrics( SampleDataGroup.ENSEMBLE, StatisticType.MULTIVECTOR ) )
         {
             this.ensembleMultiVector = MetricFactory.ofEnsembleMultiVectorCollection( metricExecutor,
                                                                                       this.getMetrics( SampleDataGroup.ENSEMBLE,
-                                                                                                       StatisticGroup.MULTIVECTOR ) );
+                                                                                                       StatisticType.MULTIVECTOR ) );
 
             LOGGER.debug( "Created the ensemble diagrams for processing. {}", this.ensembleMultiVector );
         }
@@ -250,11 +250,11 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
             this.ensembleMultiVector = null;
         }
         //Ensemble input, box-plot output
-        if ( this.hasMetrics( SampleDataGroup.ENSEMBLE, StatisticGroup.BOXPLOT_PER_PAIR ) )
+        if ( this.hasMetrics( SampleDataGroup.ENSEMBLE, StatisticType.BOXPLOT_PER_PAIR ) )
         {
             this.ensembleBoxPlot = MetricFactory.ofEnsembleBoxPlotCollection( metricExecutor,
                                                                               this.getMetrics( SampleDataGroup.ENSEMBLE,
-                                                                                               StatisticGroup.BOXPLOT_PER_PAIR ) );
+                                                                                               StatisticType.BOXPLOT_PER_PAIR ) );
 
             LOGGER.debug( "Created the ensemble box plots for processing. {}", this.ensembleBoxPlot );
         }
@@ -283,13 +283,13 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
      * <p>TODO: remove this on completing #65101 and removing the sample size metric
      * 
      * @param inGroup the {@link SampleDataGroup}, may be null
-     * @param outGroup the {@link StatisticGroup}, may be null
-     * @return a set of {@link MetricConstants} for a specified {@link SampleDataGroup} and {@link StatisticGroup}
+     * @param outGroup the {@link StatisticType}, may be null
+     * @return a set of {@link MetricConstants} for a specified {@link SampleDataGroup} and {@link StatisticType}
      *         or an empty array if both inputs are defined and no corresponding metrics are present
      */
 
     @Override
-    MetricConstants[] getMetrics( SampleDataGroup inGroup, StatisticGroup outGroup )
+    MetricConstants[] getMetrics( SampleDataGroup inGroup, StatisticType outGroup )
     {
 
         Set<MetricConstants> metrics = new HashSet<>( Arrays.asList( super.getMetrics( inGroup, outGroup ) ) );
@@ -375,7 +375,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
             this.validateCategoricalState();
 
             //Ensemble input, vector output
-            if ( hasMetrics( SampleDataGroup.ENSEMBLE, StatisticGroup.DOUBLE_SCORE )
+            if ( hasMetrics( SampleDataGroup.ENSEMBLE, StatisticType.DOUBLE_SCORE )
                  && this.metrics.contains( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE )
                  && Objects.isNull( config.getInputs().getBaseline() ) )
             {
@@ -405,23 +405,23 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
 
     private void processEnsemblePairs( SampleData<Pair<Double, Ensemble>> input, MetricFuturesByTimeBuilder futures )
     {
-        if ( hasMetrics( SampleDataGroup.ENSEMBLE, StatisticGroup.DOUBLE_SCORE ) )
+        if ( hasMetrics( SampleDataGroup.ENSEMBLE, StatisticType.DOUBLE_SCORE ) )
         {
-            processEnsemblePairsByThreshold( input, futures, StatisticGroup.DOUBLE_SCORE );
+            processEnsemblePairsByThreshold( input, futures, StatisticType.DOUBLE_SCORE );
         }
-        if ( hasMetrics( SampleDataGroup.ENSEMBLE, StatisticGroup.MULTIVECTOR ) )
+        if ( hasMetrics( SampleDataGroup.ENSEMBLE, StatisticType.MULTIVECTOR ) )
         {
-            processEnsemblePairsByThreshold( input, futures, StatisticGroup.MULTIVECTOR );
+            processEnsemblePairsByThreshold( input, futures, StatisticType.MULTIVECTOR );
         }
-        if ( hasMetrics( SampleDataGroup.ENSEMBLE, StatisticGroup.BOXPLOT_PER_PAIR ) )
+        if ( hasMetrics( SampleDataGroup.ENSEMBLE, StatisticType.BOXPLOT_PER_PAIR ) )
         {
-            processEnsemblePairsByThreshold( input, futures, StatisticGroup.BOXPLOT_PER_PAIR );
+            processEnsemblePairsByThreshold( input, futures, StatisticType.BOXPLOT_PER_PAIR );
         }
     }
 
     /**
      * Processes all thresholds for metrics that consume ensemble pairs and produce a specified 
-     * {@link StatisticGroup}. 
+     * {@link StatisticType}. 
      * 
      * @param input the input pairs
      * @param futures the metric futures
@@ -431,7 +431,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
 
     private void processEnsemblePairsByThreshold( SampleData<Pair<Double, Ensemble>> input,
                                                   MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
-                                                  StatisticGroup outGroup )
+                                                  StatisticType outGroup )
     {
         // Find the thresholds for this group and for the required types
         ThresholdsByMetric filtered = this.getThresholdsByMetric()
@@ -489,7 +489,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
 
     /**
      * Processes one threshold for metrics that consume ensemble pairs and produce a specified 
-     * {@link StatisticGroup}. 
+     * {@link StatisticType}. 
      * 
      * @param input the input pairs
      * @param futures the metric futures
@@ -499,22 +499,22 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
 
     private void processEnsemblePairs( SampleData<Pair<Double, Ensemble>> input,
                                        MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
-                                       StatisticGroup outGroup,
+                                       StatisticType outGroup,
                                        Set<MetricConstants> ignoreTheseMetrics )
     {
-        if ( outGroup == StatisticGroup.DOUBLE_SCORE )
+        if ( outGroup == StatisticType.DOUBLE_SCORE )
         {
             futures.addDoubleScoreOutput( this.processEnsemblePairs( input,
                                                                      ensembleScore,
                                                                      ignoreTheseMetrics ) );
         }
-        else if ( outGroup == StatisticGroup.MULTIVECTOR )
+        else if ( outGroup == StatisticType.MULTIVECTOR )
         {
             futures.addMultiVectorOutput( this.processEnsemblePairs( input,
                                                                      ensembleMultiVector,
                                                                      ignoreTheseMetrics ) );
         }
-        else if ( outGroup == StatisticGroup.BOXPLOT_PER_PAIR )
+        else if ( outGroup == StatisticType.BOXPLOT_PER_PAIR )
         {
             futures.addBoxPlotOutputPerPair( this.processEnsemblePairs( input,
                                                                         ensembleBoxPlot,
@@ -534,13 +534,13 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
     private void processDiscreteProbabilityPairs( SampleData<Pair<Double, Ensemble>> input,
                                                   MetricFuturesByTimeBuilder futures )
     {
-        if ( this.hasMetrics( SampleDataGroup.DISCRETE_PROBABILITY, StatisticGroup.DOUBLE_SCORE ) )
+        if ( this.hasMetrics( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE ) )
         {
-            this.processDiscreteProbabilityPairsByThreshold( input, futures, StatisticGroup.DOUBLE_SCORE );
+            this.processDiscreteProbabilityPairsByThreshold( input, futures, StatisticType.DOUBLE_SCORE );
         }
-        if ( this.hasMetrics( SampleDataGroup.DISCRETE_PROBABILITY, StatisticGroup.MULTIVECTOR ) )
+        if ( this.hasMetrics( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.MULTIVECTOR ) )
         {
-            this.processDiscreteProbabilityPairsByThreshold( input, futures, StatisticGroup.MULTIVECTOR );
+            this.processDiscreteProbabilityPairsByThreshold( input, futures, StatisticType.MULTIVECTOR );
         }
     }
 
@@ -555,18 +555,18 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
     private void processDichotomousPairs( SampleData<Pair<Double, Ensemble>> input,
                                           MetricFuturesByTimeBuilder futures )
     {
-        if ( this.hasMetrics( SampleDataGroup.DICHOTOMOUS, StatisticGroup.DOUBLE_SCORE ) )
+        if ( this.hasMetrics( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE ) )
         {
-            this.processDichotomousPairsByThreshold( input, futures, StatisticGroup.DOUBLE_SCORE );
+            this.processDichotomousPairsByThreshold( input, futures, StatisticType.DOUBLE_SCORE );
         }
-        if ( this.hasMetrics( SampleDataGroup.DICHOTOMOUS, StatisticGroup.MATRIX ) )
+        if ( this.hasMetrics( SampleDataGroup.DICHOTOMOUS, StatisticType.MATRIX ) )
         {
-            this.processDichotomousPairsByThreshold( input, futures, StatisticGroup.MATRIX );
+            this.processDichotomousPairsByThreshold( input, futures, StatisticType.MATRIX );
         }
     }
 
     /**
-     * Processes all thresholds for metrics that consume discrete probability pairs for a given {@link StatisticGroup}. 
+     * Processes all thresholds for metrics that consume discrete probability pairs for a given {@link StatisticType}. 
      * The discrete probability pairs are produced from ensemble pairs using a configured transformation. 
      * 
      * @param input the input pairs
@@ -577,7 +577,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
 
     private void processDiscreteProbabilityPairsByThreshold( SampleData<Pair<Double, Ensemble>> input,
                                                              MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
-                                                             StatisticGroup outGroup )
+                                                             StatisticType outGroup )
     {
         // Find the thresholds for this group and for the required types
         ThresholdsByMetric filtered = this.getThresholdsByMetric()
@@ -627,7 +627,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
     }
 
     /**
-     * Processes one threshold for metrics that consume discrete probability pairs for a given {@link StatisticGroup}.
+     * Processes one threshold for metrics that consume discrete probability pairs for a given {@link StatisticType}.
      * 
      * @param input the input pairs
      * @param futures the metric futures
@@ -638,16 +638,16 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
 
     private void processDiscreteProbabilityPairs( SampleData<Pair<Probability, Probability>> input,
                                                   MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
-                                                  StatisticGroup outGroup,
+                                                  StatisticType outGroup,
                                                   Set<MetricConstants> ignoreTheseMetrics )
     {
-        if ( outGroup == StatisticGroup.DOUBLE_SCORE )
+        if ( outGroup == StatisticType.DOUBLE_SCORE )
         {
             futures.addDoubleScoreOutput( processDiscreteProbabilityPairs( input,
                                                                            discreteProbabilityScore,
                                                                            ignoreTheseMetrics ) );
         }
-        else if ( outGroup == StatisticGroup.MULTIVECTOR )
+        else if ( outGroup == StatisticType.MULTIVECTOR )
         {
             futures.addMultiVectorOutput( processDiscreteProbabilityPairs( input,
                                                                            discreteProbabilityMultiVector,
@@ -696,7 +696,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
     }
 
     /**
-     * Processes all thresholds for metrics that consume dichotomous pairs for a given {@link StatisticGroup}. The 
+     * Processes all thresholds for metrics that consume dichotomous pairs for a given {@link StatisticType}. The 
      * dichotomous pairs are produced from the input ensemble pairs using a configured transformation. 
      * 
      * @param input the input pairs
@@ -707,7 +707,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
 
     private void processDichotomousPairsByThreshold( SampleData<Pair<Double, Ensemble>> input,
                                                      MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
-                                                     StatisticGroup outGroup )
+                                                     StatisticType outGroup )
     {
         // Find the thresholds filtered by group
         ThresholdsByMetric filtered = this.getThresholdsByMetric()

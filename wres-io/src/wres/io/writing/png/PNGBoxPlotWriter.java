@@ -24,7 +24,7 @@ import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
-import wres.datamodel.MetricConstants.StatisticGroup;
+import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.ListOfStatistics;
@@ -88,7 +88,7 @@ public class PNGBoxPlotWriter extends PNGWriter
 
             // Iterate through types per pair
             ListOfStatistics<BoxPlotStatistics> perPair =
-                    Slicer.filter( output, meta -> meta.getMetricID().isInGroup( StatisticGroup.BOXPLOT_PER_PAIR ) );
+                    Slicer.filter( output, meta -> meta.getMetricID().isInGroup( StatisticType.BOXPLOT_PER_PAIR ) );
 
             SortedSet<MetricConstants> metricsPerPair =
                     Slicer.discover( perPair, meta -> meta.getMetadata().getMetricID() );
@@ -105,7 +105,7 @@ public class PNGBoxPlotWriter extends PNGWriter
 
             // Iterate through the pool types
             ListOfStatistics<BoxPlotStatistics> perPool =
-                    Slicer.filter( output, meta -> meta.getMetricID().isInGroup( StatisticGroup.BOXPLOT_PER_POOL ) );
+                    Slicer.filter( output, meta -> meta.getMetricID().isInGroup( StatisticType.BOXPLOT_PER_POOL ) );
 
             SortedSet<MetricConstants> metricsPerPool =
                     Slicer.discover( perPool, meta -> meta.getMetadata().getMetricID() );

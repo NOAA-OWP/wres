@@ -15,7 +15,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.SampleDataGroup;
-import wres.datamodel.MetricConstants.StatisticGroup;
+import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.Probability;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
@@ -86,14 +86,14 @@ public final class MetricFactory
 
     /**
      * <p>Returns an instance of a {@link MetricProcessor} for processing single-valued pairs. Optionally, retain 
-     * and merge the results associated with specific {@link StatisticGroup} across successive calls to
+     * and merge the results associated with specific {@link StatisticType} across successive calls to
      * {@link MetricProcessor#apply(Object)}. If results are retained and merged across calls, the
      * {@link MetricProcessor#apply(Object)} will return the merged results from all prior calls.</p>
      * 
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
      * 
      * @param config the project configuration
-     * @param mergeSet an optional list of {@link StatisticGroup} for which results should be retained and merged
+     * @param mergeSet an optional list of {@link StatisticType} for which results should be retained and merged
      * @return the {@link MetricProcessorByTime}
      * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
@@ -101,7 +101,7 @@ public final class MetricFactory
 
     public static MetricProcessor<PoolOfPairs<Double, Double>>
             ofMetricProcessorForSingleValuedPairs( final ProjectConfig config,
-                                                   final Set<StatisticGroup> mergeSet )
+                                                   final Set<StatisticType> mergeSet )
                     throws MetricParameterException
     {
         return MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
@@ -113,14 +113,14 @@ public final class MetricFactory
 
     /**
      * <p>Returns an instance of a {@link MetricProcessor} for processing ensemble pairs. Optionally, retain 
-     * and merge the results associated with specific {@link StatisticGroup} across successive calls to
+     * and merge the results associated with specific {@link StatisticType} across successive calls to
      * {@link MetricProcessor#apply(Object)}. If results are retained and merged across calls, the
      * {@link MetricProcessor#apply(Object)} will return the merged results from all prior calls.</p>
      * 
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
      * 
      * @param config the project configuration
-     * @param mergeSet an optional list of {@link StatisticGroup} for which results should be retained and merged
+     * @param mergeSet an optional list of {@link StatisticType} for which results should be retained and merged
      * @return the {@link MetricProcessorByTime}
      * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
@@ -128,7 +128,7 @@ public final class MetricFactory
 
     public static MetricProcessor<PoolOfPairs<Double, Ensemble>>
             ofMetricProcessorForEnsemblePairs( final ProjectConfig config,
-                                               final Set<StatisticGroup> mergeSet )
+                                               final Set<StatisticType> mergeSet )
                     throws MetricParameterException
     {
         return MetricFactory.ofMetricProcessorForEnsemblePairs( config,
@@ -140,7 +140,7 @@ public final class MetricFactory
 
     /**
      * <p>Returns an instance of a {@link MetricProcessor} for processing single-valued pairs. Optionally, retain 
-     * and merge the results associated with specific {@link StatisticGroup} across successive calls to
+     * and merge the results associated with specific {@link StatisticType} across successive calls to
      * {@link MetricProcessor#apply(Object)}. If results are retained and merged across calls, the
      * {@link MetricProcessor#apply(Object)} will return the merged results from all prior calls.</p>
      * 
@@ -148,7 +148,7 @@ public final class MetricFactory
      * 
      * @param config the project configuration
      * @param externalThresholds an optional set of external thresholds, may be null
-     * @param mergeSet an optional list of {@link StatisticGroup} for which results should be retained and merged
+     * @param mergeSet an optional list of {@link StatisticType} for which results should be retained and merged
      * @return the {@link MetricProcessorByTime}
      * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
@@ -157,7 +157,7 @@ public final class MetricFactory
     public static MetricProcessor<PoolOfPairs<Double, Double>>
             ofMetricProcessorForSingleValuedPairs( final ProjectConfig config,
                                                    final ThresholdsByMetric externalThresholds,
-                                                   final Set<StatisticGroup> mergeSet )
+                                                   final Set<StatisticType> mergeSet )
                     throws MetricParameterException
     {
         return MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
@@ -169,7 +169,7 @@ public final class MetricFactory
 
     /**
      * <p>Returns an instance of a {@link MetricProcessor} for processing ensemble pairs. Optionally, retain 
-     * and merge the results associated with specific {@link StatisticGroup} across successive calls to
+     * and merge the results associated with specific {@link StatisticType} across successive calls to
      * {@link MetricProcessor#apply(Object)}. If results are retained and merged across calls, the
      * {@link MetricProcessor#apply(Object)} will return the merged results from all prior calls.</p>
      * 
@@ -177,7 +177,7 @@ public final class MetricFactory
      * 
      * @param config the project configuration
      * @param externalThresholds an optional set of external thresholds (one per metric), may be null
-     * @param mergeSet an optional list of {@link StatisticGroup} for which results should be retained and merged
+     * @param mergeSet an optional list of {@link StatisticType} for which results should be retained and merged
      * @return the {@link MetricProcessorByTime}
      * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
@@ -186,7 +186,7 @@ public final class MetricFactory
     public static MetricProcessor<PoolOfPairs<Double, Ensemble>>
             ofMetricProcessorForEnsemblePairs( final ProjectConfig config,
                                                final ThresholdsByMetric externalThresholds,
-                                               final Set<StatisticGroup> mergeSet )
+                                               final Set<StatisticType> mergeSet )
                     throws MetricParameterException
     {
         return MetricFactory.ofMetricProcessorForEnsemblePairs( config,
@@ -220,7 +220,7 @@ public final class MetricFactory
                                                    final ExecutorService metricExecutor )
                     throws MetricParameterException
     {
-        Set<StatisticGroup> mergeSet = MetricConfigHelper.getCacheListFromProjectConfig( config );
+        Set<StatisticType> mergeSet = MetricConfigHelper.getCacheListFromProjectConfig( config );
 
         return MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
                                                                     externalThresholds,
@@ -252,7 +252,7 @@ public final class MetricFactory
                                                final ExecutorService metricExecutor )
                     throws MetricParameterException
     {
-        Set<StatisticGroup> mergeSet = MetricConfigHelper.getCacheListFromProjectConfig( config );
+        Set<StatisticType> mergeSet = MetricConfigHelper.getCacheListFromProjectConfig( config );
 
         return MetricFactory.ofMetricProcessorForEnsemblePairs( config,
                                                                 externalThresholds,
@@ -263,7 +263,7 @@ public final class MetricFactory
 
     /**
      * Returns an instance of a {@link MetricProcessor} for processing single-valued pairs. Optionally, retain 
-     * and merge the results associated with specific {@link StatisticGroup} across successive calls to
+     * and merge the results associated with specific {@link StatisticType} across successive calls to
      * {@link MetricProcessor#apply(Object)}. If results are retained and merged across calls, the
      * {@link MetricProcessor#apply(Object)} will return the merged results from all prior calls.
      * 
@@ -273,7 +273,7 @@ public final class MetricFactory
      *            {@link ForkJoinPool#commonPool()}
      * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
      *            {@link ForkJoinPool#commonPool()} 
-     * @param mergeSet an optional list of {@link StatisticGroup} for which results should be retained and merged
+     * @param mergeSet an optional list of {@link StatisticType} for which results should be retained and merged
      * @return the {@link MetricProcessorByTime}
      * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
@@ -284,7 +284,7 @@ public final class MetricFactory
                                                    final ThresholdsByMetric externalThresholds,
                                                    final ExecutorService thresholdExecutor,
                                                    final ExecutorService metricExecutor,
-                                                   final Set<StatisticGroup> mergeSet )
+                                                   final Set<StatisticType> mergeSet )
                     throws MetricParameterException
     {
         return new MetricProcessorByTimeSingleValuedPairs( config,
@@ -296,7 +296,7 @@ public final class MetricFactory
 
     /**
      * Returns an instance of a {@link MetricProcessor} for processing ensemble pairs. Optionally, retain 
-     * and merge the results associated with specific {@link StatisticGroup} across successive calls to
+     * and merge the results associated with specific {@link StatisticType} across successive calls to
      * {@link MetricProcessor#apply(Object)}. If results are retained and merged across calls, the
      * {@link MetricProcessor#apply(Object)} will return the merged results from all prior calls.
      * 
@@ -306,7 +306,7 @@ public final class MetricFactory
      *            {@link ForkJoinPool#commonPool()}
      * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
      *            {@link ForkJoinPool#commonPool()} 
-     * @param mergeSet an optional set of {@link StatisticGroup} for which results should be retained and merged
+     * @param mergeSet an optional set of {@link StatisticType} for which results should be retained and merged
      * @return the {@link MetricProcessorByTime}
      * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
@@ -317,7 +317,7 @@ public final class MetricFactory
                                                final ThresholdsByMetric externalThresholds,
                                                final ExecutorService thresholdExecutor,
                                                final ExecutorService metricExecutor,
-                                               final Set<StatisticGroup> mergeSet )
+                                               final Set<StatisticType> mergeSet )
                     throws MetricParameterException
     {
         return new MetricProcessorByTimeEnsemblePairs( config,
@@ -393,7 +393,7 @@ public final class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public static MetricCollection<SampleData<Pair<Boolean, Boolean>>, MatrixStatistic, DoubleScoreStatistic>
+    public static MetricCollection<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatistic, DoubleScoreStatistic>
             ofDichotomousScoreCollection( MetricConstants... metric )
                     throws MetricParameterException
     {
@@ -416,24 +416,6 @@ public final class MetricFactory
             ofDiscreteProbabilityMultiVectorCollection( MetricConstants... metric ) throws MetricParameterException
     {
         return MetricFactory.ofDiscreteProbabilityMultiVectorCollection( ForkJoinPool.commonPool(), metric );
-    }
-
-    /**
-     * <p>Returns a {@link MetricCollection} of metrics that consume dichotomous pairs and produce
-     * {@link MatrixStatistic}.</p>
-     * 
-     * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
-     * 
-     * @param metric the metric identifiers
-     * @return a collection of metrics
-     * @throws MetricParameterException if one or more parameter values is incorrect
-     * @throws IllegalArgumentException if a metric identifier is not recognized
-     */
-
-    public static MetricCollection<SampleData<Pair<Boolean, Boolean>>, MatrixStatistic, MatrixStatistic>
-            ofDichotomousMatrixCollection( MetricConstants... metric ) throws MetricParameterException
-    {
-        return MetricFactory.ofDichotomousMatrixCollection( ForkJoinPool.commonPool(), metric );
     }
 
     /**
@@ -637,12 +619,12 @@ public final class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized 
      */
 
-    public static MetricCollection<SampleData<Pair<Boolean, Boolean>>, MatrixStatistic, DoubleScoreStatistic>
+    public static MetricCollection<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatistic, DoubleScoreStatistic>
             ofDichotomousScoreCollection( ExecutorService executor,
                                           MetricConstants... metric )
                     throws MetricParameterException
     {
-        final MetricCollectionBuilder<SampleData<Pair<Boolean, Boolean>>, MatrixStatistic, DoubleScoreStatistic> builder =
+        final MetricCollectionBuilder<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatistic, DoubleScoreStatistic> builder =
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
@@ -674,32 +656,6 @@ public final class MetricFactory
         for ( MetricConstants next : metric )
         {
             builder.addMetric( MetricFactory.ofDiscreteProbabilityMultiVector( next ) );
-        }
-        builder.setExecutorService( executor );
-        return builder.build();
-    }
-
-    /**
-     * Returns a {@link MetricCollection} of metrics that consume dichotomous pairs and produce
-     * {@link MatrixStatistic}.
-     * 
-     * @param executor an optional {@link ExecutorService} for executing the metrics
-     * @param metric the metric identifiers
-     * @return a collection of metrics
-     * @throws MetricParameterException if one or more parameter values is incorrect
-     * @throws IllegalArgumentException if a metric identifier is not recognized 
-     */
-
-    public static MetricCollection<SampleData<Pair<Boolean, Boolean>>, MatrixStatistic, MatrixStatistic>
-            ofDichotomousMatrixCollection( ExecutorService executor,
-                                           MetricConstants... metric )
-                    throws MetricParameterException
-    {
-        final MetricCollectionBuilder<SampleData<Pair<Boolean, Boolean>>, MatrixStatistic, MatrixStatistic> builder =
-                MetricCollectionBuilder.of();
-        for ( MetricConstants next : metric )
-        {
-            builder.addMetric( MetricFactory.ofDichotomousMatrix( next ) );
         }
         builder.setExecutorService( executor );
         return builder.build();
@@ -966,7 +922,7 @@ public final class MetricFactory
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public static Collectable<SampleData<Pair<Boolean, Boolean>>, MatrixStatistic, DoubleScoreStatistic>
+    public static Collectable<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatistic, DoubleScoreStatistic>
             ofDichotomousScore( MetricConstants metric )
     {
         switch ( metric )
@@ -983,6 +939,8 @@ public final class MetricFactory
                 return ProbabilityOfFalseDetection.of();
             case FREQUENCY_BIAS:
                 return FrequencyBias.of();
+            case CONTINGENCY_TABLE:
+                return ContingencyTable.of();
             default:
                 throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         }
@@ -1019,7 +977,7 @@ public final class MetricFactory
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public static Metric<SampleData<Pair<Boolean, Boolean>>, MatrixStatistic>
+    public static Metric<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatistic>
             ofDichotomousMatrix( MetricConstants metric )
     {
         if ( MetricConstants.CONTINGENCY_TABLE.equals( metric ) )

@@ -1,18 +1,18 @@
 package wres.engine.statistics.metric.categorical;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.statistics.MatrixStatistic;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
+import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.Metric;
 
 /**
@@ -25,7 +25,8 @@ import wres.engine.statistics.metric.Metric;
  * @author james.brown@hydrosolved.com
  */
 
-public class ContingencyTable implements Metric<SampleData<Pair<Boolean,Boolean>>, MatrixStatistic>
+public class ContingencyTable implements Metric<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatistic>,
+        Collectable<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatistic, DoubleScoreStatistic>
 {
 
     /**
@@ -40,7 +41,7 @@ public class ContingencyTable implements Metric<SampleData<Pair<Boolean,Boolean>
     }
 
     @Override
-    public MatrixStatistic apply( final SampleData<Pair<Boolean,Boolean>> s )
+    public DoubleScoreStatistic apply( final SampleData<Pair<Boolean,Boolean>> s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -80,20 +81,21 @@ public class ContingencyTable implements Metric<SampleData<Pair<Boolean,Boolean>
         s.getRawData().stream().forEach( f );
         
         // Name the outcomes for a 2x2 contingency table
-        List<MetricDimension> componentNames = Arrays.asList( MetricDimension.TRUE_POSITIVES,
-                                            MetricDimension.FALSE_POSITIVES,
-                                            MetricDimension.FALSE_NEGATIVES,
-                                            MetricDimension.TRUE_NEGATIVES );
+        Map<MetricConstants,Double> statistics = new HashMap<>();
+        statistics.put( MetricConstants.TRUE_POSITIVES, returnMe[0][0] );
+        statistics.put( MetricConstants.FALSE_POSITIVES, returnMe[0][1] );
+        statistics.put( MetricConstants.FALSE_NEGATIVES, returnMe[1][0] );
+        statistics.put( MetricConstants.TRUE_NEGATIVES, returnMe[1][1] );
 
         final StatisticMetadata metOut =
                 StatisticMetadata.of( s.getMetadata(),
                                     this.getID(),
-                                    MetricConstants.MAIN,
+                                    null,
                                     this.hasRealUnits(),
                                     s.getRawData().size(),
                                     null );
         
-        return MatrixStatistic.of( returnMe, componentNames, metOut );
+        return DoubleScoreStatistic.of( statistics, metOut );
     }
 
     @Override
@@ -114,6 +116,26 @@ public class ContingencyTable implements Metric<SampleData<Pair<Boolean,Boolean>
         return getID().toString();
     }
 
+    @Override
+    public DoubleScoreStatistic aggregate( DoubleScoreStatistic output )
+    {
+        Objects.requireNonNull( output );
+        
+        return output;
+    }
+
+    @Override
+    public DoubleScoreStatistic getInputForAggregation( SampleData<Pair<Boolean, Boolean>> input )
+    {
+        return this.apply( input );
+    }
+
+    @Override
+    public MetricConstants getCollectionOf()
+    {
+        return MetricConstants.CONTINGENCY_TABLE;
+    }
+
     /**
      * Hidden constructor.
      */
@@ -121,4 +143,5 @@ public class ContingencyTable implements Metric<SampleData<Pair<Boolean,Boolean>
     ContingencyTable()
     {
     }
+
 }

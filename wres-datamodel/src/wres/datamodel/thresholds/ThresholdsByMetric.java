@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.SampleDataGroup;
-import wres.datamodel.MetricConstants.StatisticGroup;
+import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
 
 /**
@@ -73,7 +73,7 @@ public class ThresholdsByMetric
      * <p>Returns a filtered view that contains the union of thresholds associated with metrics that belong to the 
      * specified group.</p> 
      * 
-     * <p>See {@link #filterByGroup(MetricConstants.SampleDataGroup, MetricConstants.StatisticGroup)} also.</p> 
+     * <p>See {@link #filterByGroup(MetricConstants.SampleDataGroup, MetricConstants.StatisticType)} also.</p> 
      * 
      * @param inGroup the input group
      * @return a filtered view by group
@@ -91,14 +91,14 @@ public class ThresholdsByMetric
      * <p>Returns a filtered view that contains the union of thresholds associated with metrics that belong to the 
      * specified group.</p>
      * 
-     * <p>See {@link #filterByGroup(MetricConstants.SampleDataGroup, MetricConstants.StatisticGroup)} also.</p>
+     * <p>See {@link #filterByGroup(MetricConstants.SampleDataGroup, MetricConstants.StatisticType)} also.</p>
      * 
      * @param outGroup the optional output group
      * @return a filtered view by group
      * @throws NullPointerException if the input is null
      */
 
-    public ThresholdsByMetric filterByGroup( StatisticGroup outGroup )
+    public ThresholdsByMetric filterByGroup( StatisticType outGroup )
     {
         Objects.requireNonNull( outGroup, "Specify a non-null output group on which to filter." );
 
@@ -551,7 +551,7 @@ public class ThresholdsByMetric
      * @return a filtered view by group
      */
 
-    public ThresholdsByMetric filterByGroup( SampleDataGroup inGroup, StatisticGroup outGroup )
+    public ThresholdsByMetric filterByGroup( SampleDataGroup inGroup, StatisticType outGroup )
     {
         if ( Objects.isNull( inGroup ) && Objects.isNull( outGroup ) )
         {

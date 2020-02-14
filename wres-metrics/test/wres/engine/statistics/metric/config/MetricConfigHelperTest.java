@@ -41,7 +41,7 @@ import wres.config.generated.TimeSeriesMetricConfig;
 import wres.config.generated.TimeSeriesMetricConfigName;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.StatisticGroup;
+import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -502,7 +502,7 @@ public final class MetricConfigHelperTest
 
     /**
      * Tests the {@link MetricConfigHelper#hasTheseOutputsByThresholdLead(ProjectConfig, 
-     * wres.datamodel.MetricConstants.StatisticGroup)}.
+     * wres.datamodel.MetricConstants.StatisticType)}.
      * @throws MetricConfigException if the metric configuration is invalid
      */
 
@@ -511,7 +511,7 @@ public final class MetricConfigHelperTest
     {
         // Outputs by threshold and lead time required
         assertTrue( MetricConfigHelper.hasTheseOutputsByThresholdLead( defaultMockedConfig,
-                                                                       StatisticGroup.DOUBLE_SCORE ) );
+                                                                       StatisticType.DOUBLE_SCORE ) );
 
         // No outputs configuration defined
         List<MetricConfig> metrics = new ArrayList<>();
@@ -526,7 +526,7 @@ public final class MetricConfigHelperTest
                                    null );
 
         assertFalse( MetricConfigHelper.hasTheseOutputsByThresholdLead( mockedConfig,
-                                                                        StatisticGroup.DOUBLE_SCORE ) );
+                                                                        StatisticType.DOUBLE_SCORE ) );
 
         // Output configuration defined, but is not by threshold then lead
         ProjectConfig mockedConfigWithOutput =
@@ -543,11 +543,11 @@ public final class MetricConfigHelperTest
                                    null );
 
         assertFalse( MetricConfigHelper.hasTheseOutputsByThresholdLead( mockedConfigWithOutput,
-                                                                        StatisticGroup.DOUBLE_SCORE ) );
+                                                                        StatisticType.DOUBLE_SCORE ) );
 
         // No output and no output groups of the specified type
         assertFalse( MetricConfigHelper.hasTheseOutputsByThresholdLead( mockedConfig,
-                                                                        StatisticGroup.MULTIVECTOR ) );
+                                                                        StatisticType.MULTIVECTOR ) );
 
     }
 
@@ -577,11 +577,11 @@ public final class MetricConfigHelperTest
                                    null,
                                    null );
 
-        Set<StatisticGroup> expected = new HashSet<>();
-        expected.add( StatisticGroup.MULTIVECTOR );
-        expected.add( StatisticGroup.PAIRED );
-        expected.add( StatisticGroup.DOUBLE_SCORE );
-        expected.add( StatisticGroup.BOXPLOT_PER_POOL );
+        Set<StatisticType> expected = new HashSet<>();
+        expected.add( StatisticType.MULTIVECTOR );
+        expected.add( StatisticType.PAIRED );
+        expected.add( StatisticType.DOUBLE_SCORE );
+        expected.add( StatisticType.BOXPLOT_PER_POOL );
         
         assertEquals( expected, MetricConfigHelper.getCacheListFromProjectConfig( mockedConfigWithOutput ) );
 

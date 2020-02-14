@@ -20,7 +20,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.MetricConstants.SampleDataGroup;
-import wres.datamodel.MetricConstants.StatisticGroup;
+import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdsByMetric.ThresholdsByMetricBuilder;
@@ -172,8 +172,8 @@ public class ThresholdsGenerator
                               ThresholdConstants.ThresholdDataType.LEFT_AND_RIGHT );
 
         // All data only
-        if ( metric.getMetricOutputGroup() == StatisticGroup.BOXPLOT_PER_PAIR
-             || metric.getMetricOutputGroup() == StatisticGroup.BOXPLOT_PER_POOL
+        if ( metric.getMetricOutputGroup() == StatisticType.BOXPLOT_PER_PAIR
+             || metric.getMetricOutputGroup() == StatisticType.BOXPLOT_PER_POOL
              || metric == MetricConstants.QUANTILE_QUANTILE_DIAGRAM )
         {
             return Collections.unmodifiableSet( new HashSet<>( Arrays.asList( allData ) ) );

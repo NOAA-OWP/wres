@@ -29,7 +29,7 @@ import ohd.hseb.charter.parameters.DataSourceDrawingParameters;
 import ohd.hseb.charter.parameters.SeriesDrawingParameters;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.MetricConstants.StatisticGroup;
+import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.statistics.BoxPlotStatistics;
@@ -75,7 +75,7 @@ public abstract class XYChartDataSourceFactory
         Objects.requireNonNull( durationUnits );
 
         // One box per pool? See #62374
-        boolean pooledInput = input.getMetadata().getMetricID().isInGroup( StatisticGroup.BOXPLOT_PER_POOL );
+        boolean pooledInput = input.getMetadata().getMetricID().isInGroup( StatisticType.BOXPLOT_PER_POOL );
 
         DefaultXYChartDataSource source = new DefaultXYChartDataSource()
         {

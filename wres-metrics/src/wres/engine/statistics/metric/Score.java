@@ -1,6 +1,6 @@
 package wres.engine.statistics.metric;
 
-import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.statistics.ScoreStatistic;
 
@@ -18,7 +18,7 @@ public interface Score<S extends SampleData<?>, T extends ScoreStatistic<?,T>> e
 
     /**
      * Returns <code>true</code> if the score is decomposable in principle, false otherwise. In practice, the output 
-     * may not be decomposed. For example {@link #getScoreOutputGroup()} may return {@link ScoreGroup#NONE} when 
+     * may not be decomposed. For example {@link #getScoreOutputGroup()} may return {@link MetricGroup#NONE} when 
      * this method returns <code>true</code>.
      * 
      * @return true if the score is decomposable, false otherwise
@@ -35,12 +35,12 @@ public interface Score<S extends SampleData<?>, T extends ScoreStatistic<?,T>> e
     boolean isSkillScore();
 
     /**
-     * Returns the group to which the score output belongs or {@link ScoreGroup#NONE} if the score output does 
+     * Returns the group to which the score output belongs or {@link MetricGroup#NONE} if the score output does 
      * not belong to a group.
      * 
-     * @return the {@link ScoreGroup}
+     * @return the {@link MetricGroup}
      */
 
-    ScoreGroup getScoreOutputGroup();
+    MetricGroup getScoreOutputGroup();
     
 }

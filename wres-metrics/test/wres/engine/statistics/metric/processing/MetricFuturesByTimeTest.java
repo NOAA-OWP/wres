@@ -18,7 +18,7 @@ import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.MetricConstants.StatisticGroup;
+import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.MeasurementUnit;
@@ -188,21 +188,21 @@ public final class MetricFuturesByTimeTest
     public void testGetOutputTypes()
     {
         // Check with all present
-        assertTrue( futures.getOutputTypes().contains( StatisticGroup.BOXPLOT_PER_PAIR ) );
-        assertTrue( futures.getOutputTypes().contains( StatisticGroup.DOUBLE_SCORE ) );
-        assertTrue( futures.getOutputTypes().contains( StatisticGroup.DURATION_SCORE ) );
-        assertTrue( futures.getOutputTypes().contains( StatisticGroup.MATRIX ) );
-        assertTrue( futures.getOutputTypes().contains( StatisticGroup.MULTIVECTOR ) );
-        assertTrue( futures.getOutputTypes().contains( StatisticGroup.PAIRED ) );
+        assertTrue( futures.getOutputTypes().contains( StatisticType.BOXPLOT_PER_PAIR ) );
+        assertTrue( futures.getOutputTypes().contains( StatisticType.DOUBLE_SCORE ) );
+        assertTrue( futures.getOutputTypes().contains( StatisticType.DURATION_SCORE ) );
+        assertTrue( futures.getOutputTypes().contains( StatisticType.MATRIX ) );
+        assertTrue( futures.getOutputTypes().contains( StatisticType.MULTIVECTOR ) );
+        assertTrue( futures.getOutputTypes().contains( StatisticType.PAIRED ) );
 
         // Check with none present
         MetricFuturesByTime emptyFutures = new MetricFuturesByTimeBuilder().build();
-        assertFalse( emptyFutures.getOutputTypes().contains( StatisticGroup.BOXPLOT_PER_PAIR ) );
-        assertFalse( emptyFutures.getOutputTypes().contains( StatisticGroup.DOUBLE_SCORE ) );
-        assertFalse( emptyFutures.getOutputTypes().contains( StatisticGroup.DURATION_SCORE ) );
-        assertFalse( emptyFutures.getOutputTypes().contains( StatisticGroup.MATRIX ) );
-        assertFalse( emptyFutures.getOutputTypes().contains( StatisticGroup.MULTIVECTOR ) );
-        assertFalse( emptyFutures.getOutputTypes().contains( StatisticGroup.PAIRED ) );
+        assertFalse( emptyFutures.getOutputTypes().contains( StatisticType.BOXPLOT_PER_PAIR ) );
+        assertFalse( emptyFutures.getOutputTypes().contains( StatisticType.DOUBLE_SCORE ) );
+        assertFalse( emptyFutures.getOutputTypes().contains( StatisticType.DURATION_SCORE ) );
+        assertFalse( emptyFutures.getOutputTypes().contains( StatisticType.MATRIX ) );
+        assertFalse( emptyFutures.getOutputTypes().contains( StatisticType.MULTIVECTOR ) );
+        assertFalse( emptyFutures.getOutputTypes().contains( StatisticType.PAIRED ) );
     }
 
     /**
@@ -256,12 +256,12 @@ public final class MetricFuturesByTimeTest
 
         // Check all expected output is present
         MetricFuturesByTime metricFutures = builder.build();
-        assertTrue( metricFutures.getOutputTypes().contains( StatisticGroup.BOXPLOT_PER_PAIR ) );
-        assertTrue( metricFutures.getOutputTypes().contains( StatisticGroup.DOUBLE_SCORE ) );
-        assertTrue( metricFutures.getOutputTypes().contains( StatisticGroup.DURATION_SCORE ) );
-        assertTrue( metricFutures.getOutputTypes().contains( StatisticGroup.MATRIX ) );
-        assertTrue( metricFutures.getOutputTypes().contains( StatisticGroup.MULTIVECTOR ) );
-        assertTrue( metricFutures.getOutputTypes().contains( StatisticGroup.PAIRED ) );
+        assertTrue( metricFutures.getOutputTypes().contains( StatisticType.BOXPLOT_PER_PAIR ) );
+        assertTrue( metricFutures.getOutputTypes().contains( StatisticType.DOUBLE_SCORE ) );
+        assertTrue( metricFutures.getOutputTypes().contains( StatisticType.DURATION_SCORE ) );
+        assertTrue( metricFutures.getOutputTypes().contains( StatisticType.MATRIX ) );
+        assertTrue( metricFutures.getOutputTypes().contains( StatisticType.MULTIVECTOR ) );
+        assertTrue( metricFutures.getOutputTypes().contains( StatisticType.PAIRED ) );
     }
 
     /**
@@ -283,12 +283,12 @@ public final class MetricFuturesByTimeTest
 
         // Check all expected output is present
         MetricFuturesByTime metricFutures = builder.build();
-        assertTrue( metricFutures.getOutputTypes().contains( StatisticGroup.BOXPLOT_PER_PAIR ) );
-        assertTrue( metricFutures.getOutputTypes().contains( StatisticGroup.DOUBLE_SCORE ) );
-        assertTrue( metricFutures.getOutputTypes().contains( StatisticGroup.DURATION_SCORE ) );
-        assertTrue( metricFutures.getOutputTypes().contains( StatisticGroup.MATRIX ) );
-        assertTrue( metricFutures.getOutputTypes().contains( StatisticGroup.MULTIVECTOR ) );
-        assertTrue( metricFutures.getOutputTypes().contains( StatisticGroup.PAIRED ) );
+        assertTrue( metricFutures.getOutputTypes().contains( StatisticType.BOXPLOT_PER_PAIR ) );
+        assertTrue( metricFutures.getOutputTypes().contains( StatisticType.DOUBLE_SCORE ) );
+        assertTrue( metricFutures.getOutputTypes().contains( StatisticType.DURATION_SCORE ) );
+        assertTrue( metricFutures.getOutputTypes().contains( StatisticType.MATRIX ) );
+        assertTrue( metricFutures.getOutputTypes().contains( StatisticType.MULTIVECTOR ) );
+        assertTrue( metricFutures.getOutputTypes().contains( StatisticType.PAIRED ) );
     }
 
 }

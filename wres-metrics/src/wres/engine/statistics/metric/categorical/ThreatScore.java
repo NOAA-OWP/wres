@@ -5,7 +5,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.statistics.DoubleScoreStatistic;
-import wres.datamodel.statistics.MatrixStatistic;
 import wres.engine.statistics.metric.FunctionFactory;
 
 /**
@@ -26,25 +25,33 @@ public class ThreatScore extends ContingencyTableScore
      * 
      * @return an instance
      */
-    
+
     public static ThreatScore of()
     {
         return new ThreatScore();
     }
-    
+
     @Override
-    public DoubleScoreStatistic apply( final SampleData<Pair<Boolean,Boolean>> s )
+    public DoubleScoreStatistic apply( final SampleData<Pair<Boolean, Boolean>> s )
     {
         return aggregate( getInputForAggregation( s ) );
     }
 
     @Override
-    public DoubleScoreStatistic aggregate( final MatrixStatistic output )
+    public DoubleScoreStatistic aggregate( final DoubleScoreStatistic output )
     {
         is2x2ContingencyTable( output, this );
-        final MatrixStatistic v = output;
-        final double[][] cm = v.getData().getDoubles();
-        double result = FunctionFactory.finiteOrMissing().applyAsDouble( cm[0][0] / ( cm[0][0] + cm[0][1] + cm[1][0] ) );
+
+        double tP = output.getComponent( MetricConstants.TRUE_POSITIVES )
+                          .getData();
+
+        double fP = output.getComponent( MetricConstants.FALSE_POSITIVES )
+                          .getData();
+
+        double fN = output.getComponent( MetricConstants.FALSE_NEGATIVES )
+                          .getData();
+
+        double result = FunctionFactory.finiteOrMissing().applyAsDouble( tP / ( tP + fP + fN ) );
         return DoubleScoreStatistic.of( result, getMetadata( output ) );
     }
 
