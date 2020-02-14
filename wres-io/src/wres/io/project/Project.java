@@ -430,6 +430,7 @@ public class Project
      * @param variableName The name of the variable.
      * @param feature The feature.
      * @return The integer id from the wres database, null if not found?
+     * @throws SQLException if the variableFeatureId cannot be retrieved
      */
 
     public Integer getVariableFeatureId( String variableName, Feature feature )

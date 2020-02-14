@@ -5,7 +5,7 @@ import java.util.Objects;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DoubleScoreStatistic;
@@ -52,9 +52,9 @@ public class MeanSquareErrorSkillScoreNormalized extends MeanSquareErrorSkillSco
     }
 
     @Override
-    public ScoreGroup getScoreOutputGroup()
+    public MetricGroup getScoreOutputGroup()
     {
-        return ScoreGroup.NONE;
+        return MetricGroup.NONE;
     }
 
     @Override

@@ -15,6 +15,9 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
 import wres.config.ProjectConfigException;
@@ -42,6 +45,8 @@ public class PNGDoubleScoreWriter extends PNGWriter
 {
     private Set<Path> pathsWrittenTo = new HashSet<>();
 
+    private static final Logger LOGGER = LoggerFactory.getLogger( PNGDoubleScoreWriter.class );
+    
     /**
      * Returns an instance of a writer.
      * 
@@ -85,13 +90,20 @@ public class PNGDoubleScoreWriter extends PNGWriter
             SortedSet<MetricConstants> metrics = Slicer.discover( output, meta -> meta.getMetadata().getMetricID() );
             for ( MetricConstants next : metrics )
             {
-                Set<Path> innerPathsWrittenTo =
-                        PNGDoubleScoreWriter.writeScoreCharts( super.getOutputDirectory(),
-                                                               super.getProjectConfigPlus(),
-                                                               destinationConfig,
-                                                               Slicer.filter( output, next ),
-                                                               super.getDurationUnits() );
-                this.pathsWrittenTo.addAll( innerPathsWrittenTo );
+                if ( next == MetricConstants.CONTINGENCY_TABLE )
+                {
+                    LOGGER.debug( "Discovered contingency table output while writing PNGs: ignoring these outputs." );
+                }
+                else
+                {
+                    Set<Path> innerPathsWrittenTo =
+                            PNGDoubleScoreWriter.writeScoreCharts( super.getOutputDirectory(),
+                                                                   super.getProjectConfigPlus(),
+                                                                   destinationConfig,
+                                                                   Slicer.filter( output, next ),
+                                                                   super.getDurationUnits() );
+                    this.pathsWrittenTo.addAll( innerPathsWrittenTo );
+                }
             }
         }
     }

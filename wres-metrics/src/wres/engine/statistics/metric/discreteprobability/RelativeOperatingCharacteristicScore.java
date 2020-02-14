@@ -11,7 +11,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Probability;
-import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
@@ -128,9 +128,9 @@ public class RelativeOperatingCharacteristicScore
     }
 
     @Override
-    public ScoreGroup getScoreOutputGroup()
+    public MetricGroup getScoreOutputGroup()
     {
-        return ScoreGroup.NONE;
+        return MetricGroup.NONE;
     }
 
     /**

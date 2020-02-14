@@ -19,7 +19,6 @@ import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
-import wres.datamodel.statistics.MatrixStatistic;
 import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Diagram;
@@ -50,7 +49,7 @@ public class RelativeOperatingCharacteristicDiagram
      * Components of the ROC.
      */
 
-    private final MetricCollection<SampleData<Pair<Boolean, Boolean>>, MatrixStatistic, DoubleScoreStatistic> roc;
+    private final MetricCollection<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatistic, DoubleScoreStatistic> roc;
 
     /**
      * Number of points in the empirical ROC diagram.

@@ -12,7 +12,7 @@ import java.util.function.Supplier;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.config.generated.DestinationType;
-import wres.datamodel.MetricConstants.StatisticGroup;
+import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.io.writing.netcdf.NetcdfOutputWriter;
@@ -34,7 +34,7 @@ public class SharedStatisticsWriters implements Closeable,
      * Set of types for which writers are available.
      */
     
-    private final Set<Pair<DestinationType,StatisticGroup>> storedTypes;
+    private final Set<Pair<DestinationType,StatisticType>> storedTypes;
     
     /**
      * Returns <code>true</code> if a writer is available for the specified types, otherwise <code>false</code>.
@@ -45,7 +45,7 @@ public class SharedStatisticsWriters implements Closeable,
      * @throws NullPointerException if either input is null
      */
 
-    public boolean contains( StatisticGroup type, DestinationType format  )
+    public boolean contains( StatisticType type, DestinationType format  )
     {
         Objects.requireNonNull( type, "Specify a non-null type to test." );
         
@@ -105,11 +105,11 @@ public class SharedStatisticsWriters implements Closeable,
         this.netcdfOutputWriter = builder.netcdfOutputWriter;
         
         // Register the stored types
-        Set<Pair<DestinationType,StatisticGroup>> localTypes = new HashSet<>();
+        Set<Pair<DestinationType,StatisticType>> localTypes = new HashSet<>();
         
         if( Objects.nonNull( this.getNetcdfOutputWriter() ) )
         {
-            localTypes.add( Pair.of( DestinationType.NETCDF, StatisticGroup.DOUBLE_SCORE ) );
+            localTypes.add( Pair.of( DestinationType.NETCDF, StatisticType.DOUBLE_SCORE ) );
         }
         
         this.storedTypes = Collections.unmodifiableSet( localTypes );

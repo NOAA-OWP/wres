@@ -14,7 +14,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
@@ -144,7 +144,7 @@ public final class MedianErrorTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( this.medianError.getScoreOutputGroup() == ScoreGroup.NONE );
+        assertTrue( this.medianError.getScoreOutputGroup() == MetricGroup.NONE );
     }
 
     @Test

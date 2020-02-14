@@ -5,7 +5,7 @@ import java.util.Objects;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.MissingValues;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
@@ -134,7 +134,7 @@ public class SumOfSquareError extends DecomposableScore<SampleData<Pair<Double, 
      * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    SumOfSquareError( ScoreGroup decompositionId ) throws MetricParameterException
+    SumOfSquareError( MetricGroup decompositionId ) throws MetricParameterException
     {
         super( decompositionId );
     }

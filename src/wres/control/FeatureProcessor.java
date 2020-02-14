@@ -23,7 +23,7 @@ import wres.config.generated.ProjectConfig;
 import wres.control.ProcessorHelper.ExecutorServices;
 import wres.control.ProcessorHelper.SharedWriters;
 import wres.datamodel.Ensemble;
-import wres.datamodel.MetricConstants.StatisticGroup;
+import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.statistics.StatisticsForProject.StatisticsForProjectBuilder;
@@ -247,7 +247,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
 
         // During the pipeline, only write types that are not end-of-pipeline types unless they refer to
         // a format that can be written incrementally
-        BiPredicate<StatisticGroup, DestinationType> onlyWriteTheseTypes =
+        BiPredicate<StatisticType, DestinationType> onlyWriteTheseTypes =
                 ( type, format ) -> !processor.getMetricOutputTypesToCache().contains( type )
                                     || ConfigHelper.getIncrementalFormats( projectConfig ).contains( format );
 
@@ -420,10 +420,10 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
             try
             {
                 // Determine the cached types
-                Set<StatisticGroup> cachedTypes = processor.getCachedMetricOutputTypes();
+                Set<StatisticType> cachedTypes = processor.getCachedMetricOutputTypes();
 
                 // Only process cached types that were not written incrementally
-                BiPredicate<StatisticGroup, DestinationType> nowWriteTheseTypes =
+                BiPredicate<StatisticType, DestinationType> nowWriteTheseTypes =
                         ( type, format ) -> cachedTypes.contains( type )
                                             && !ConfigHelper.getIncrementalFormats( this.resolvedProject.getProjectConfig() )
                                                             .contains( format );

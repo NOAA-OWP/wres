@@ -16,7 +16,7 @@ import wres.datamodel.statistics.BoxPlotStatistic;
 
 /**
  * Metric constants. The metric identifiers are grouped by metric input/output type, as defined by the
- * {@link SampleDataGroup} and {@link StatisticGroup}, respectively.
+ * {@link SampleDataGroup} and {@link StatisticType}, respectively.
  * 
  * @author james.brown@hydrosolved.com
  */
@@ -28,61 +28,61 @@ public enum MetricConstants
      * Identifier for fractional bias or relative mean error.
      */
 
-    BIAS_FRACTION( SampleDataGroup.SINGLE_VALUED, StatisticGroup.DOUBLE_SCORE ),
+    BIAS_FRACTION( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for a Brier Score.
      */
 
-    BRIER_SCORE( SampleDataGroup.DISCRETE_PROBABILITY, StatisticGroup.DOUBLE_SCORE ),
+    BRIER_SCORE( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for a Brier Skill Score.
      */
 
-    BRIER_SKILL_SCORE( SampleDataGroup.DISCRETE_PROBABILITY, StatisticGroup.DOUBLE_SCORE ),
+    BRIER_SKILL_SCORE( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for a box plot of errors by observed value.
      */
 
-    BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE( SampleDataGroup.ENSEMBLE, StatisticGroup.BOXPLOT_PER_PAIR ),
+    BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE( SampleDataGroup.ENSEMBLE, StatisticType.BOXPLOT_PER_PAIR ),
 
     /**
      * Identifier for a box plot of errors by forecast value.
      */
 
-    BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE( SampleDataGroup.ENSEMBLE, StatisticGroup.BOXPLOT_PER_PAIR ),
+    BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE( SampleDataGroup.ENSEMBLE, StatisticType.BOXPLOT_PER_PAIR ),
 
     /**
      * Identifier for a box plot of errors.
      */
 
-    BOX_PLOT_OF_ERRORS( SampleDataGroup.SINGLE_VALUED, StatisticGroup.BOXPLOT_PER_POOL ),
+    BOX_PLOT_OF_ERRORS( SampleDataGroup.SINGLE_VALUED, StatisticType.BOXPLOT_PER_POOL ),
 
     /**
      * Identifier for a box plot of errors as a percentage of the left value.
      */
 
-    BOX_PLOT_OF_PERCENTAGE_ERRORS( SampleDataGroup.SINGLE_VALUED, StatisticGroup.BOXPLOT_PER_POOL ),
+    BOX_PLOT_OF_PERCENTAGE_ERRORS( SampleDataGroup.SINGLE_VALUED, StatisticType.BOXPLOT_PER_POOL ),
 
     /**
      * Identifier for coefficient of determination.
      */
 
-    COEFFICIENT_OF_DETERMINATION( SampleDataGroup.SINGLE_VALUED, StatisticGroup.DOUBLE_SCORE ),
+    COEFFICIENT_OF_DETERMINATION( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for a Mean Continuous Ranked Probability Score
      */
 
-    CONTINUOUS_RANKED_PROBABILITY_SCORE( SampleDataGroup.ENSEMBLE, StatisticGroup.DOUBLE_SCORE ),
+    CONTINUOUS_RANKED_PROBABILITY_SCORE( SampleDataGroup.ENSEMBLE, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for a Mean Continuous Ranked Probability Skill Score
      */
 
-    CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE( SampleDataGroup.ENSEMBLE, StatisticGroup.DOUBLE_SCORE ),
+    CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE( SampleDataGroup.ENSEMBLE, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for a Contingency Table.
@@ -90,141 +90,141 @@ public enum MetricConstants
 
     CONTINGENCY_TABLE( new SampleDataGroup[] { SampleDataGroup.DICHOTOMOUS,
                                                SampleDataGroup.MULTICATEGORY },
-            StatisticGroup.MATRIX ),
+            StatisticType.DOUBLE_SCORE, MetricGroup.CONTINGENCY_TABLE ),
 
     /**
      * Identifier for Pearson's product-moment correlation coefficient.
      */
 
-    PEARSON_CORRELATION_COEFFICIENT( SampleDataGroup.SINGLE_VALUED, StatisticGroup.DOUBLE_SCORE ),
+    PEARSON_CORRELATION_COEFFICIENT( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for a Threat Score.
      */
 
-    THREAT_SCORE( SampleDataGroup.DICHOTOMOUS, StatisticGroup.DOUBLE_SCORE ),
+    THREAT_SCORE( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for an Equitable Threat Score.
      */
 
-    EQUITABLE_THREAT_SCORE( SampleDataGroup.DICHOTOMOUS, StatisticGroup.DOUBLE_SCORE ),
+    EQUITABLE_THREAT_SCORE( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for a Frequency Bias.
      */
 
-    FREQUENCY_BIAS( SampleDataGroup.DICHOTOMOUS, StatisticGroup.DOUBLE_SCORE ),
+    FREQUENCY_BIAS( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for an Index of Agreement.
      */
 
-    INDEX_OF_AGREEMENT( SampleDataGroup.SINGLE_VALUED, StatisticGroup.DOUBLE_SCORE ),
+    INDEX_OF_AGREEMENT( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for the Kling-Gupta Efficiency index.
      */
 
-    KLING_GUPTA_EFFICIENCY( SampleDataGroup.SINGLE_VALUED, StatisticGroup.DOUBLE_SCORE ),
+    KLING_GUPTA_EFFICIENCY( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for a Mean Absolute Error.
      */
 
-    MEAN_ABSOLUTE_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticGroup.DOUBLE_SCORE ),
+    MEAN_ABSOLUTE_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for a Mean Error.
      */
 
-    MEAN_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticGroup.DOUBLE_SCORE ),
+    MEAN_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for a Mean Square Error.
      */
 
-    MEAN_SQUARE_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticGroup.DOUBLE_SCORE ),
+    MEAN_SQUARE_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for a Mean Square Error Skill Score.
      */
 
-    MEAN_SQUARE_ERROR_SKILL_SCORE( SampleDataGroup.SINGLE_VALUED, StatisticGroup.DOUBLE_SCORE ),
+    MEAN_SQUARE_ERROR_SKILL_SCORE( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for a Mean Square Error Skill Score, normalized.
      */
 
-    MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED( SampleDataGroup.SINGLE_VALUED, StatisticGroup.DOUBLE_SCORE ),
+    MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
     
     /**
      * Identifier for a Median Error.
      */
 
-    MEDIAN_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticGroup.DOUBLE_SCORE ),
+    MEDIAN_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for a Peirce Skill Score.
      */
 
     PEIRCE_SKILL_SCORE( new SampleDataGroup[] { SampleDataGroup.DICHOTOMOUS, SampleDataGroup.MULTICATEGORY },
-            StatisticGroup.DOUBLE_SCORE ),
+            StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for a Probability Of Detection.
      */
 
-    PROBABILITY_OF_DETECTION( SampleDataGroup.DICHOTOMOUS, StatisticGroup.DOUBLE_SCORE ),
+    PROBABILITY_OF_DETECTION( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for a Probability Of False Detection.
      */
 
-    PROBABILITY_OF_FALSE_DETECTION( SampleDataGroup.DICHOTOMOUS, StatisticGroup.DOUBLE_SCORE ),
+    PROBABILITY_OF_FALSE_DETECTION( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Quantile-quantile diagram.
      */
 
-    QUANTILE_QUANTILE_DIAGRAM( SampleDataGroup.SINGLE_VALUED, StatisticGroup.MULTIVECTOR ),
+    QUANTILE_QUANTILE_DIAGRAM( SampleDataGroup.SINGLE_VALUED, StatisticType.MULTIVECTOR ),
 
     /**
      * Identifier for the Rank Histogram.
      */
 
-    RANK_HISTOGRAM( SampleDataGroup.ENSEMBLE, StatisticGroup.MULTIVECTOR ),
+    RANK_HISTOGRAM( SampleDataGroup.ENSEMBLE, StatisticType.MULTIVECTOR ),
 
     /**
      * Identifier for the Relative Operating Characteristic.
      */
 
-    RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM( SampleDataGroup.DISCRETE_PROBABILITY, StatisticGroup.MULTIVECTOR ),
+    RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.MULTIVECTOR ),
 
     /**
      * Identifier for the Relative Operating Characteristic Score.
      */
 
-    RELATIVE_OPERATING_CHARACTERISTIC_SCORE( SampleDataGroup.DISCRETE_PROBABILITY, StatisticGroup.DOUBLE_SCORE ),
+    RELATIVE_OPERATING_CHARACTERISTIC_SCORE( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for the Reliability Diagram.
      */
 
-    RELIABILITY_DIAGRAM( SampleDataGroup.DISCRETE_PROBABILITY, StatisticGroup.MULTIVECTOR ),
+    RELIABILITY_DIAGRAM( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.MULTIVECTOR ),
 
     /**
      * Identifier for a Root Mean Square Error.
      */
 
-    ROOT_MEAN_SQUARE_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticGroup.DOUBLE_SCORE ),
+    ROOT_MEAN_SQUARE_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for a Root Mean Square Error normalized by the standard deviation of
      * the left values.
      */
 
-    ROOT_MEAN_SQUARE_ERROR_NORMALIZED( SampleDataGroup.SINGLE_VALUED, StatisticGroup.DOUBLE_SCORE ),    
+    ROOT_MEAN_SQUARE_ERROR_NORMALIZED( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),    
     
     /**
      * Identifier for the sample size.
@@ -232,158 +232,182 @@ public enum MetricConstants
 
     SAMPLE_SIZE( new SampleDataGroup[] { SampleDataGroup.SINGLE_VALUED,
                                          SampleDataGroup.ENSEMBLE },
-            StatisticGroup.DOUBLE_SCORE, ScoreGroup.UNIVARIATE_STATISTIC ),
+            StatisticType.DOUBLE_SCORE, MetricGroup.UNIVARIATE_STATISTIC ),
 
     /**
      * Identifier for a Sum of Square Error.
      */
 
-    SUM_OF_SQUARE_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticGroup.DOUBLE_SCORE ),
+    SUM_OF_SQUARE_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for the Volumetric Efficiency.
      */
 
-    VOLUMETRIC_EFFICIENCY( SampleDataGroup.SINGLE_VALUED, StatisticGroup.DOUBLE_SCORE ),
+    VOLUMETRIC_EFFICIENCY( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for the Time-to-Peak Error.
      */
 
-    TIME_TO_PEAK_ERROR( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticGroup.PAIRED ),
+    TIME_TO_PEAK_ERROR( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.PAIRED ),
 
     /**
      * Identifier for a statistic derived from the Time-to-Peak Error.
      */
 
-    TIME_TO_PEAK_ERROR_STATISTIC( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticGroup.DURATION_SCORE ),
+    TIME_TO_PEAK_ERROR_STATISTIC( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE ),
 
     /**
      * Identifier for the Time-to-Peak Relative Error.
      */
 
-    TIME_TO_PEAK_RELATIVE_ERROR( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticGroup.PAIRED ),
+    TIME_TO_PEAK_RELATIVE_ERROR( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.PAIRED ),
 
     /**
      * Identifier for a statistic derived from the Time-to-Peak Relative Error.
      */
 
-    TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticGroup.DURATION_SCORE ),
+    TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE ),
 
     /**
      * Mean statistic.
      */
 
-    MEAN( ScoreGroup.UNIVARIATE_STATISTIC ),
+    MEAN( MetricGroup.UNIVARIATE_STATISTIC ),
 
     /**
      * Median statistic.
      */
 
-    MEDIAN( ScoreGroup.UNIVARIATE_STATISTIC ),
+    MEDIAN( MetricGroup.UNIVARIATE_STATISTIC ),
 
     /**
      * Standard deviation statistic.
      */
 
-    STANDARD_DEVIATION( ScoreGroup.UNIVARIATE_STATISTIC ),
+    STANDARD_DEVIATION( MetricGroup.UNIVARIATE_STATISTIC ),
 
     /**
      * Minimum statistic.
      */
 
-    MINIMUM( ScoreGroup.UNIVARIATE_STATISTIC ),
+    MINIMUM( MetricGroup.UNIVARIATE_STATISTIC ),
 
     /**
      * Maximum statistic.
      */
 
-    MAXIMUM( ScoreGroup.UNIVARIATE_STATISTIC ),
+    MAXIMUM( MetricGroup.UNIVARIATE_STATISTIC ),
 
     /**
      * Mean absolute statistic.
      */
 
-    MEAN_ABSOLUTE( ScoreGroup.UNIVARIATE_STATISTIC ),
+    MEAN_ABSOLUTE( MetricGroup.UNIVARIATE_STATISTIC ),
 
     /**
      * Indicator for no decomposition.
      */
 
-    NONE( ScoreGroup.NONE ),
+    NONE( MetricGroup.NONE ),
 
     /**
      * Identifier for a Calibration-Refinement (CR) factorization.
      */
 
-    CR( ScoreGroup.CR ),
+    CR( MetricGroup.CR ),
 
     /**
      * Identifier for a Calibration-Refinement (CR) factorization, together with an additional potential score
      * component.
      */
 
-    CR_POT( ScoreGroup.CR_POT ),
+    CR_POT( MetricGroup.CR_POT ),
 
     /**
      * Identifier for a Likelihood-Base-Rate (LBR) factorization.
      */
 
-    LBR( ScoreGroup.LBR ),
+    LBR( MetricGroup.LBR ),
 
     /**
      * Identifier for the score and components of both the CR and LBR factorizations.
      */
 
-    CR_AND_LBR( ScoreGroup.CR_AND_LBR ),
+    CR_AND_LBR( MetricGroup.CR_AND_LBR ),
 
     /**
      * Identifier for the main component of a metric, such as the overall score in a score decomposition.
      */
 
-    MAIN( ScoreGroup.NONE, ScoreGroup.CR, ScoreGroup.CR_POT, ScoreGroup.LBR, ScoreGroup.CR_AND_LBR ),
+    MAIN( MetricGroup.NONE, MetricGroup.CR, MetricGroup.CR_POT, MetricGroup.LBR, MetricGroup.CR_AND_LBR ),
 
     /**
      * Identifier for the reliability component of a score decomposition.
      */
 
-    RELIABILITY( ScoreGroup.CR, ScoreGroup.CR_POT, ScoreGroup.CR_AND_LBR ),
+    RELIABILITY( MetricGroup.CR, MetricGroup.CR_POT, MetricGroup.CR_AND_LBR ),
 
     /**
      * Identifier for the resolution component of a score decomposition.
      */
 
-    RESOLUTION( ScoreGroup.CR, ScoreGroup.CR_POT, ScoreGroup.CR_AND_LBR ),
+    RESOLUTION( MetricGroup.CR, MetricGroup.CR_POT, MetricGroup.CR_AND_LBR ),
 
     /**
      * Identifier for the uncertainty component of a score decomposition.
      */
 
-    UNCERTAINTY( ScoreGroup.CR, ScoreGroup.CR_POT, ScoreGroup.CR_AND_LBR ),
+    UNCERTAINTY( MetricGroup.CR, MetricGroup.CR_POT, MetricGroup.CR_AND_LBR ),
 
     /**
      * Identifier for the potential score value (perfect reliability).
      */
 
-    POTENTIAL( ScoreGroup.CR_POT ),
+    POTENTIAL( MetricGroup.CR_POT ),
 
     /**
      * Identifier for the Type-II conditional bias component of a score decomposition.
      */
 
-    TYPE_II_CONDITIONAL_BIAS( ScoreGroup.LBR, ScoreGroup.CR_AND_LBR ),
+    TYPE_II_CONDITIONAL_BIAS( MetricGroup.LBR, MetricGroup.CR_AND_LBR ),
 
     /**
      * Identifier for the discrimination component of a score decomposition.
      */
 
-    DISCRIMINATION( ScoreGroup.LBR, ScoreGroup.CR_AND_LBR ),
+    DISCRIMINATION( MetricGroup.LBR, MetricGroup.CR_AND_LBR ),
 
     /**
      * Identifier for the sharpness component of a score decomposition.
      */
 
-    SHARPNESS( ScoreGroup.LBR, ScoreGroup.CR_AND_LBR );
+    SHARPNESS( MetricGroup.LBR, MetricGroup.CR_AND_LBR ),
+    
+    /**
+     * Identifier for true positives.
+     */
+
+    TRUE_POSITIVES( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, MetricGroup.CONTINGENCY_TABLE ),
+
+    /**
+     * Identifier for false positives.
+     */
+
+    FALSE_POSITIVES( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, MetricGroup.CONTINGENCY_TABLE ),
+
+    /**
+     * Identifier for false negatives.
+     */
+
+    FALSE_NEGATIVES( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, MetricGroup.CONTINGENCY_TABLE ),
+
+    /**
+     * Identifier for true negatives.
+     */
+
+    TRUE_NEGATIVES( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, MetricGroup.CONTINGENCY_TABLE );
 
     /**
      * The {@link SampleDataGroup} or null if the {@link MetricConstants} does not belong to a group.
@@ -392,17 +416,17 @@ public enum MetricConstants
     private final SampleDataGroup[] inGroup;
 
     /**
-     * The {@link StatisticGroup} or null if the {@link MetricConstants} does not belong to a group.
+     * The {@link StatisticType} or null if the {@link MetricConstants} does not belong to a group.
      */
 
-    private final StatisticGroup outGroup;
+    private final StatisticType outGroup;
 
     /**
-     * The {@link ScoreGroup} to which this {@link MetricConstants} belongs or null if the
-     * {@link MetricConstants} does not belong to a {@link ScoreGroup}.
+     * The {@link MetricGroup} to which this {@link MetricConstants} belongs or null if the
+     * {@link MetricConstants} does not belong to a {@link MetricGroup}.
      */
 
-    private final ScoreGroup[] scoreTypeGroup;
+    private final MetricGroup[] scoreTypeGroup;
 
     /**
      * Default constructor
@@ -416,28 +440,41 @@ public enum MetricConstants
     }
 
     /**
-     * Construct with a {@link SampleDataGroup} and a {@link StatisticGroup}.
+     * Construct with a {@link SampleDataGroup} and a {@link StatisticType}.
      * 
      * @param inputGroup the input group
      * @param outputGroup the output group
      */
 
-    private MetricConstants( SampleDataGroup inGroup, StatisticGroup outGroup )
+    private MetricConstants( SampleDataGroup inGroup, StatisticType outGroup )
     {
-        this( new SampleDataGroup[] { inGroup }, outGroup, (ScoreGroup[]) null );
+        this( new SampleDataGroup[] { inGroup }, outGroup, (MetricGroup[]) null );
+    }
+    
+    /**
+     * Construct with a {@link SampleDataGroup} and a {@link StatisticType}.
+     * 
+     * @param inputGroup the input group
+     * @param outputGroup the output group
+     * @param scoreTypeGroup the metric group
+     */
+
+    private MetricConstants( SampleDataGroup inGroup, StatisticType outGroup, MetricGroup... scoreTypeGroup )
+    {
+        this( new SampleDataGroup[] { inGroup }, outGroup, scoreTypeGroup );
     }
 
     /**
-     * Construct with multiple {@link SampleDataGroup} and a {@link StatisticGroup}.
+     * Construct with multiple {@link SampleDataGroup} and a {@link StatisticType}.
      * 
      * @param inGroups the input groups
-     * @param secondGroup the second input group
-     * @param outputGroup the output group
+     * @param outGroup the output group
+     * @param scoreTypeGroup the metric group
      */
 
     private MetricConstants( SampleDataGroup[] inGroups,
-                             StatisticGroup outGroup,
-                             ScoreGroup... scoreTypeGroup )
+                             StatisticType outGroup,
+                             MetricGroup... scoreTypeGroup )
     {
         this.inGroup = inGroups;
         this.outGroup = outGroup;
@@ -445,12 +482,12 @@ public enum MetricConstants
     }
 
     /**
-     * Construct with a varargs of {@link ScoreGroup}.
+     * Construct with a varargs of {@link MetricGroup}.
      * 
      * @param decGroup the decomposition groups to which the {@link MetricConstants} belongs
      */
 
-    private MetricConstants( ScoreGroup... decGroup )
+    private MetricConstants( MetricGroup... decGroup )
     {
         this.scoreTypeGroup = decGroup;
         this.inGroup = null;
@@ -470,78 +507,83 @@ public enum MetricConstants
     }
 
     /**
-     * Returns true if the input {@link StatisticGroup} contains the current {@link MetricConstants}, false
+     * Returns true if the input {@link StatisticType} contains the current {@link MetricConstants}, false
      * otherwise.
      * 
-     * @param outGroup the {@link StatisticGroup}
-     * @return true if the input {@link StatisticGroup} contains the current {@link MetricConstants}, false otherwise
+     * @param outGroup the {@link StatisticType}
+     * @return true if the input {@link StatisticType} contains the current {@link MetricConstants}, false otherwise
      */
 
-    public boolean isInGroup( StatisticGroup outGroup )
+    public boolean isInGroup( StatisticType outGroup )
     {
         return this.outGroup == outGroup;
     }
 
     /**
-     * Returns true if the input {@link ScoreGroup} contains the current {@link MetricConstants}, false otherwise.
+     * Returns true if the input {@link MetricGroup} contains the current {@link MetricConstants}, false otherwise.
      * 
-     * @param inGroup the {@link ScoreGroup}
-     * @return true if the input {@link ScoreGroup} contains the current {@link MetricConstants}, false otherwise
+     * @param inGroup the {@link MetricGroup}
+     * @return true if the input {@link MetricGroup} contains the current {@link MetricConstants}, false otherwise
      */
 
-    public boolean isInGroup( ScoreGroup inGroup )
+    public boolean isInGroup( MetricGroup inGroup )
     {
         return Arrays.asList( this.scoreTypeGroup ).contains( inGroup );
     }
 
     /**
-     * Returns true if the input {@link SampleDataGroup} and {@link StatisticGroup} both contain the current
+     * Returns true if the input {@link SampleDataGroup} and {@link StatisticType} both contain the current
      * {@link MetricConstants}, false otherwise.
      * 
      * @param inGroup the {@link SampleDataGroup}
-     * @param outGroup the {@link StatisticGroup}
-     * @return true if the input {@link SampleDataGroup} and {@link StatisticGroup} and both contain the current
+     * @param outGroup the {@link StatisticType}
+     * @return true if the input {@link SampleDataGroup} and {@link StatisticType} and both contain the current
      *         {@link MetricConstants}, false otherwise
      */
 
-    public boolean isInGroup( SampleDataGroup inGroup, StatisticGroup outGroup )
+    public boolean isInGroup( SampleDataGroup inGroup, StatisticType outGroup )
     {
         return isInGroup( inGroup ) && isInGroup( outGroup );
     }
 
     /**
-     * Returns the {@link StatisticGroup} associated with the {@link MetricConstants}.
+     * Returns the {@link StatisticType} associated with the {@link MetricConstants}.
      * 
-     * @return the {@link StatisticGroup}.
+     * @return the {@link StatisticType}.
      */
 
-    public StatisticGroup getMetricOutputGroup()
+    public StatisticType getMetricOutputGroup()
     {
-        return outGroup;
+        return this.outGroup;
     }
 
     /**
-     * Returns all metric components in the {@link ScoreGroup} with which this constant is associated or
-     * null if none is defined.
+     * Returns all metric components in the {@link MetricGroup} with which this constant is associated or
+     * an empty set if none is defined.
      * 
-     * @return the components in the {@link ScoreGroup} or null
+     * @return the components in the {@link MetricGroup}
      */
 
     public Set<MetricConstants> getAllComponents()
     {
-        return Objects.isNull( scoreTypeGroup ) ? null : scoreTypeGroup[0].getAllComponents();
+        if( Objects.isNull( this.scoreTypeGroup ) || this.scoreTypeGroup.length == 0 )
+        {
+            return Collections.emptySet();
+        }
+        
+        return this.scoreTypeGroup[0].getAllComponents();
     }
 
     /**
      * Returns all {@link MetricConstants} associated with the specified {@link SampleDataGroup} and
-     * {@link StatisticGroup}.
+     * {@link StatisticType}.
      * 
      * @param inGroup the {@link SampleDataGroup}
-     * @param outGroup the {@link StatisticGroup}
+     * @param outGroup the {@link StatisticType}
      * @return the {@link MetricConstants} associated with the current {@link SampleDataGroup}
      */
 
-    public static Set<MetricConstants> getMetrics( SampleDataGroup inGroup, StatisticGroup outGroup )
+    public static Set<MetricConstants> getMetrics( SampleDataGroup inGroup, StatisticType outGroup )
     {
         Set<MetricConstants> all = EnumSet.allOf( MetricConstants.class );
         all.removeIf( a -> Objects.isNull( a.inGroup ) || !Arrays.asList( a.inGroup ).contains( inGroup )
@@ -564,13 +606,13 @@ public enum MetricConstants
     }
 
     /**
-     * Returns all {@link MetricConstants} associated with the specified {@link StatisticGroup}.
+     * Returns all {@link MetricConstants} associated with the specified {@link StatisticType}.
      * 
-     * @param outGroup the {@link StatisticGroup}
-     * @return the {@link MetricConstants} associated with the current {@link StatisticGroup}
+     * @param outGroup the {@link StatisticType}
+     * @return the {@link MetricConstants} associated with the current {@link StatisticType}
      */
 
-    public static Set<MetricConstants> getMetrics( StatisticGroup outGroup )
+    public static Set<MetricConstants> getMetrics( StatisticType outGroup )
     {
         Set<MetricConstants> all = EnumSet.allOf( MetricConstants.class );
         all.removeIf( a -> Objects.isNull( a.outGroup ) || a.outGroup != outGroup );
@@ -674,7 +716,7 @@ public enum MetricConstants
      * Type of statistic.
      */
 
-    public enum StatisticGroup
+    public enum StatisticType
     {
 
         /**
@@ -720,9 +762,9 @@ public enum MetricConstants
         DURATION_SCORE;
 
         /**
-         * Returns all {@link MetricConstants} associated with the current {@link StatisticGroup}.
+         * Returns all {@link MetricConstants} associated with the current {@link StatisticType}.
          * 
-         * @return the {@link MetricConstants} associated with the current {@link StatisticGroup}
+         * @return the {@link MetricConstants} associated with the current {@link StatisticType}
          */
 
         public Set<MetricConstants> getMetrics()
@@ -733,10 +775,10 @@ public enum MetricConstants
         }
 
         /**
-         * Returns true if this {@link StatisticGroup} contains the input {@link MetricConstants}, false otherwise.
+         * Returns true if this {@link StatisticType} contains the input {@link MetricConstants}, false otherwise.
          * 
          * @param input the {@link MetricConstants} to test
-         * @return true if this {@link StatisticGroup} contains the input {@link MetricConstants}, false otherwise
+         * @return true if this {@link StatisticType} contains the input {@link MetricConstants}, false otherwise
          */
 
         public boolean contains( MetricConstants input )
@@ -745,23 +787,23 @@ public enum MetricConstants
         }
 
         /**
-         * Returns a set representation of the enumeration. Contains all elements in {@link StatisticGroup#values()}.
+         * Returns a set representation of the enumeration. Contains all elements in {@link StatisticType#values()}.
          * 
          * @return a set representation of the elements in this enumeration
          */
 
-        public static Set<StatisticGroup> set()
+        public static Set<StatisticType> set()
         {
-            return Collections.unmodifiableSet( new HashSet<>( Arrays.asList( StatisticGroup.values() ) ) );
+            return Collections.unmodifiableSet( new HashSet<>( Arrays.asList( StatisticType.values() ) ) );
         }
 
     }
 
     /**
-     * A template associated with one or more scalar values that compose a score.
+     * Collects together multiple parts of a single metric.
      */
 
-    public enum ScoreGroup
+    public enum MetricGroup
     {
 
         /**
@@ -802,29 +844,37 @@ public enum MetricConstants
          * Identifier for a univariate statistic, such as the mean or median.
          */
 
-        UNIVARIATE_STATISTIC;
+        UNIVARIATE_STATISTIC,
 
         /**
-         * Returns all {@link MetricConstants} associated with the current {@link ScoreGroup}.
+         * Identifier for a contingency table group.
+         */
+        
+        CONTINGENCY_TABLE;
+        
+        /**
+         * Returns all {@link MetricConstants} associated with the current {@link MetricGroup}.
          * 
-         * @return the {@link MetricConstants} associated with the current {@link ScoreGroup}
+         * @return the {@link MetricConstants} associated with the current {@link MetricGroup}
          */
 
         public Set<MetricConstants> getAllComponents()
         {
             Set<MetricConstants> all = EnumSet.allOf( MetricConstants.class );
-            //Remove constants with the same name across MetricConstants and MetricDecompositionGroup
+
+            //Remove metrics that don't match
             all.removeIf( a -> Objects.isNull( a.scoreTypeGroup ) || a.name().equals( name() )
                                || !Arrays.asList( a.scoreTypeGroup ).contains( this ) );
+ 
             return all;
         }
 
         /**
-         * Returns true if this {@link ScoreGroup} contains the input {@link MetricConstants}, false
+         * Returns true if this {@link MetricGroup} contains the input {@link MetricConstants}, false
          * otherwise.
          * 
          * @param input the {@link MetricConstants} to test
-         * @return true if this {@link ScoreGroup} contains the input {@link MetricConstants}, false
+         * @return true if this {@link MetricGroup} contains the input {@link MetricConstants}, false
          *         otherwise
          */
 
@@ -834,7 +884,7 @@ public enum MetricConstants
         }
 
     }
-
+    
     /**
      * A dimension associated with a verification metric. The natural order of an enum type is dictated by the order 
      * of declaration. The general rule for diagram outputs is to specify the domain axis first and the range axis 

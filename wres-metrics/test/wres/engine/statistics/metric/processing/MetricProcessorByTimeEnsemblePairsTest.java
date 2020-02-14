@@ -11,7 +11,9 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.BiPredicate;
 
@@ -36,13 +38,18 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.MatrixOfDoubles;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.SampleDataGroup;
-import wres.datamodel.MetricConstants.StatisticGroup;
+import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
+import wres.datamodel.sampledata.DatasetIdentifier;
+import wres.datamodel.sampledata.Location;
+import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.MatrixStatistic;
+import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
@@ -161,7 +168,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
                 MetricFactory.ofMetricProcessorForEnsemblePairs( config,
-                                                                 StatisticGroup.set() );
+                                                                 StatisticType.set() );
         processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
 
         //Validate bias
@@ -263,7 +270,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
                 MetricFactory.ofMetricProcessorForEnsemblePairs( mockedConfig,
-                                                                 Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
+                                                                 Collections.singleton( StatisticType.DOUBLE_SCORE ) );
 
         processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
 
@@ -292,7 +299,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
                 MetricFactory.ofMetricProcessorForEnsemblePairs( config,
-                                                                 Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
+                                                                 Collections.singleton( StatisticType.DOUBLE_SCORE ) );
         processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
 
         //Obtain the results
@@ -365,7 +372,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                                     null,
                                                                                     null,
                                                                                     null ),
-                                                                 Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
+                                                                 Collections.singleton( StatisticType.DOUBLE_SCORE ) );
         processor.apply( null );
     }
 
@@ -388,7 +395,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                                     null,
                                                                                     null,
                                                                                     null ),
-                                                                 Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
+                                                                 Collections.singleton( StatisticType.DOUBLE_SCORE ) );
         processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
     }
 
@@ -423,7 +430,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
                 MetricFactory.ofMetricProcessorForEnsemblePairs( mockedConfig,
-                                                                 Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
+                                                                 Collections.singleton( StatisticType.DOUBLE_SCORE ) );
         processor.apply( MetricTestDataFactory.getEnsemblePairsThree() );
     }
 
@@ -449,7 +456,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
                 MetricFactory.ofMetricProcessorForEnsemblePairs( mockedConfig,
-                                                                 Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
+                                                                 Collections.singleton( StatisticType.DOUBLE_SCORE ) );
         processor.apply( MetricTestDataFactory.getEnsemblePairsThree() );
     }
 
@@ -482,7 +489,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null );
 
         MetricFactory.ofMetricProcessorForEnsemblePairs( mockedConfig,
-                                                         Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
+                                                         Collections.singleton( StatisticType.DOUBLE_SCORE ) );
     }
 
     @Test
@@ -514,7 +521,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null );
 
         MetricFactory.ofMetricProcessorForEnsemblePairs( mockedConfig,
-                                                         Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
+                                                         Collections.singleton( StatisticType.DOUBLE_SCORE ) );
     }
 
     @Test
@@ -525,7 +532,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
                 MetricFactory.ofMetricProcessorForEnsemblePairs( config,
-                                                                 StatisticGroup.set() );
+                                                                 StatisticType.set() );
         //Check for the expected number of metrics
         //One fewer than total, as sample size appears in both ensemble and single-valued
         assertTrue( processor.metrics.size() == SampleDataGroup.ENSEMBLE.getMetrics().size()
@@ -543,7 +550,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
                 MetricFactory.ofMetricProcessorForEnsemblePairs( config,
-                                                                 StatisticGroup.set() );
+                                                                 StatisticType.set() );
 
         processor.apply( MetricTestDataFactory.getEnsemblePairsOneWithMissings() );
 
@@ -611,7 +618,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
-                MetricFactory.ofMetricProcessorForEnsemblePairs( config, StatisticGroup.set() );
+                MetricFactory.ofMetricProcessorForEnsemblePairs( config, StatisticType.set() );
         processor.apply( MetricTestDataFactory.getEnsemblePairsTwo() );
 
         // Expected result
@@ -619,15 +626,28 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                          Instant.parse( "2010-12-31T11:59:59Z" ),
                                                          Duration.ofHours( 24 ) );
 
+        SampleMetadata expectedSampleMeta = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                               DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                                     "SQIN",
+                                                                                     "HEFS" ),
+                                                               expectedWindow,
+                                                               null );
+
         //Obtain the results
-        ListOfStatistics<MatrixStatistic> results =
-                Slicer.filter( processor.getCachedMetricOutput().getMatrixStatistics(),
+        ListOfStatistics<DoubleScoreStatistic> results =
+                Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
                                meta -> meta.getMetricID().equals( MetricConstants.CONTINGENCY_TABLE )
                                        && meta.getSampleMetadata().getTimeWindow().equals( expectedWindow ) );
 
+        System.out.println( results );
 
         // Exceeds 50.0 with occurrences > 0.05
-        MatrixOfDoubles expectedFirst = MatrixOfDoubles.of( new double[][] { { 40.0, 32.0 }, { 2.0, 91.0 } } );
+        Map<MetricConstants, Double> expectedFirstElements = new HashMap<>();
+        expectedFirstElements.put( MetricConstants.TRUE_POSITIVES, 40.0 );
+        expectedFirstElements.put( MetricConstants.TRUE_NEGATIVES, 91.0 );
+        expectedFirstElements.put( MetricConstants.FALSE_POSITIVES, 32.0 );
+        expectedFirstElements.put( MetricConstants.FALSE_NEGATIVES, 2.0 );
+
         OneOrTwoThresholds first = OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 50.0 ),
                                                                         Operator.GREATER,
                                                                         ThresholdDataType.LEFT ),
@@ -635,14 +655,28 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                                             Operator.GREATER,
                                                                                             ThresholdDataType.LEFT ) );
 
-        assertEquals( expectedFirst,
-                      Slicer.filter( results, meta -> meta.getSampleMetadata().getThresholds().equals( first ) )
-                            .getData()
-                            .get( 0 )
-                            .getData() );
+        StatisticMetadata expectedMetaFirst = StatisticMetadata.of( SampleMetadata.of( expectedSampleMeta, first ),
+                                                                    165,
+                                                                    MeasurementUnit.of(),
+                                                                    MetricConstants.CONTINGENCY_TABLE,
+                                                                    null );
+
+        DoubleScoreStatistic expectedFirst = DoubleScoreStatistic.of( expectedFirstElements, expectedMetaFirst );
+
+        DoubleScoreStatistic actualFirst =
+                Slicer.filter( results, meta -> meta.getSampleMetadata().getThresholds().equals( first ) )
+                      .getData()
+                      .get( 0 );
+
+        assertEquals( expectedFirst, actualFirst );
 
         // Exceeds 50.0 with occurrences > 0.25
-        MatrixOfDoubles expectedSecond = MatrixOfDoubles.of( new double[][] { { 39.0, 17.0 }, { 3.0, 106.0 } } );
+        Map<MetricConstants, Double> expectedSecondElements = new HashMap<>();
+        expectedSecondElements.put( MetricConstants.TRUE_POSITIVES, 39.0 );
+        expectedSecondElements.put( MetricConstants.TRUE_NEGATIVES, 106.0 );
+        expectedSecondElements.put( MetricConstants.FALSE_POSITIVES, 17.0 );
+        expectedSecondElements.put( MetricConstants.FALSE_NEGATIVES, 3.0 );
+
         OneOrTwoThresholds second = OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 50.0 ),
                                                                          Operator.GREATER,
                                                                          ThresholdDataType.LEFT ),
@@ -650,14 +684,28 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                                              Operator.GREATER,
                                                                                              ThresholdDataType.LEFT ) );
 
-        assertEquals( expectedSecond,
-                      Slicer.filter( results, meta -> meta.getSampleMetadata().getThresholds().equals( second ) )
-                            .getData()
-                            .get( 0 )
-                            .getData() );
+        StatisticMetadata expectedMetaSecond = StatisticMetadata.of( SampleMetadata.of( expectedSampleMeta, second ),
+                                                                     165,
+                                                                     MeasurementUnit.of(),
+                                                                     MetricConstants.CONTINGENCY_TABLE,
+                                                                     null );
+
+        DoubleScoreStatistic expectedSecond = DoubleScoreStatistic.of( expectedSecondElements, expectedMetaSecond );
+
+        DoubleScoreStatistic actualSecond =
+                Slicer.filter( results, meta -> meta.getSampleMetadata().getThresholds().equals( second ) )
+                      .getData()
+                      .get( 0 );
+
+        assertEquals( expectedSecond, actualSecond );
 
         // Exceeds 50.0 with occurrences > 0.5
-        MatrixOfDoubles expectedThird = MatrixOfDoubles.of( new double[][] { { 39.0, 15.0 }, { 3.0, 108.0 } } );
+        Map<MetricConstants, Double> expectedThirdElements = new HashMap<>();
+        expectedThirdElements.put( MetricConstants.TRUE_POSITIVES, 39.0 );
+        expectedThirdElements.put( MetricConstants.TRUE_NEGATIVES, 108.0 );
+        expectedThirdElements.put( MetricConstants.FALSE_POSITIVES, 15.0 );
+        expectedThirdElements.put( MetricConstants.FALSE_NEGATIVES, 3.0 );
+
         OneOrTwoThresholds third = OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 50.0 ),
                                                                         Operator.GREATER,
                                                                         ThresholdDataType.LEFT ),
@@ -665,14 +713,28 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                                             Operator.GREATER,
                                                                                             ThresholdDataType.LEFT ) );
 
-        assertEquals( expectedThird,
-                      Slicer.filter( results, meta -> meta.getSampleMetadata().getThresholds().equals( third ) )
-                            .getData()
-                            .get( 0 )
-                            .getData() );
+        StatisticMetadata expectedMetaThird = StatisticMetadata.of( SampleMetadata.of( expectedSampleMeta, third ),
+                                                                    165,
+                                                                    MeasurementUnit.of(),
+                                                                    MetricConstants.CONTINGENCY_TABLE,
+                                                                    null );
+
+        DoubleScoreStatistic expectedThird = DoubleScoreStatistic.of( expectedThirdElements, expectedMetaThird );
+
+        DoubleScoreStatistic actualThird =
+                Slicer.filter( results, meta -> meta.getSampleMetadata().getThresholds().equals( third ) )
+                      .getData()
+                      .get( 0 );
+
+        assertEquals( expectedThird, actualThird );
 
         // Exceeds 50.0 with occurrences > 0.75
-        MatrixOfDoubles expectedFourth = MatrixOfDoubles.of( new double[][] { { 37.0, 14.0 }, { 5.0, 109.0 } } );
+        Map<MetricConstants, Double> expectedFourthElements = new HashMap<>();
+        expectedFourthElements.put( MetricConstants.TRUE_POSITIVES, 37.0 );
+        expectedFourthElements.put( MetricConstants.TRUE_NEGATIVES, 109.0 );
+        expectedFourthElements.put( MetricConstants.FALSE_POSITIVES, 14.0 );
+        expectedFourthElements.put( MetricConstants.FALSE_NEGATIVES, 5.0 );
+
         OneOrTwoThresholds fourth = OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 50.0 ),
                                                                          Operator.GREATER,
                                                                          ThresholdDataType.LEFT ),
@@ -680,14 +742,27 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                                              Operator.GREATER,
                                                                                              ThresholdDataType.LEFT ) );
 
-        assertEquals( expectedFourth,
-                      Slicer.filter( results, meta -> meta.getSampleMetadata().getThresholds().equals( fourth ) )
-                            .getData()
-                            .get( 0 )
-                            .getData() );
+        StatisticMetadata expectedMetaFourth = StatisticMetadata.of( SampleMetadata.of( expectedSampleMeta, fourth ),
+                                                                     165,
+                                                                     MeasurementUnit.of(),
+                                                                     MetricConstants.CONTINGENCY_TABLE,
+                                                                     null );
+
+        DoubleScoreStatistic expectedFourth = DoubleScoreStatistic.of( expectedFourthElements, expectedMetaFourth );
+        DoubleScoreStatistic actualFourth =
+                Slicer.filter( results, meta -> meta.getSampleMetadata().getThresholds().equals( fourth ) )
+                      .getData()
+                      .get( 0 );
+
+        assertEquals( expectedFourth, actualFourth );
 
         // Exceeds 50.0 with occurrences > 0.9
-        MatrixOfDoubles expectedFifth = MatrixOfDoubles.of( new double[][] { { 37.0, 11.0 }, { 5.0, 112.0 } } );
+        Map<MetricConstants, Double> expectedFifthElements = new HashMap<>();
+        expectedFifthElements.put( MetricConstants.TRUE_POSITIVES, 37.0 );
+        expectedFifthElements.put( MetricConstants.TRUE_NEGATIVES, 112.0 );
+        expectedFifthElements.put( MetricConstants.FALSE_POSITIVES, 11.0 );
+        expectedFifthElements.put( MetricConstants.FALSE_NEGATIVES, 5.0 );
+
         OneOrTwoThresholds fifth = OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 50.0 ),
                                                                         Operator.GREATER,
                                                                         ThresholdDataType.LEFT ),
@@ -695,14 +770,28 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                                             Operator.GREATER,
                                                                                             ThresholdDataType.LEFT ) );
 
-        assertEquals( expectedFifth,
-                      Slicer.filter( results, meta -> meta.getSampleMetadata().getThresholds().equals( fifth ) )
-                            .getData()
-                            .get( 0 )
-                            .getData() );
+        StatisticMetadata expectedMetaFifth = StatisticMetadata.of( SampleMetadata.of( expectedSampleMeta, fifth ),
+                                                                    165,
+                                                                    MeasurementUnit.of(),
+                                                                    MetricConstants.CONTINGENCY_TABLE,
+                                                                    null );
+
+        DoubleScoreStatistic expectedFifth = DoubleScoreStatistic.of( expectedFifthElements, expectedMetaFifth );
+
+        DoubleScoreStatistic actualFifth =
+                Slicer.filter( results, meta -> meta.getSampleMetadata().getThresholds().equals( fifth ) )
+                      .getData()
+                      .get( 0 );
+
+        assertEquals( expectedFifth, actualFifth );
 
         // Exceeds 50.0 with occurrences > 0.95
-        MatrixOfDoubles expectedSixth = MatrixOfDoubles.of( new double[][] { { 36.0, 10.0 }, { 6.0, 113.0 } } );
+        Map<MetricConstants, Double> expectedSixthElements = new HashMap<>();
+        expectedSixthElements.put( MetricConstants.TRUE_POSITIVES, 36.0 );
+        expectedSixthElements.put( MetricConstants.TRUE_NEGATIVES, 113.0 );
+        expectedSixthElements.put( MetricConstants.FALSE_POSITIVES, 10.0 );
+        expectedSixthElements.put( MetricConstants.FALSE_NEGATIVES, 6.0 );
+
         OneOrTwoThresholds sixth = OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 50.0 ),
                                                                         Operator.GREATER,
                                                                         ThresholdDataType.LEFT ),
@@ -710,11 +799,20 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                                             Operator.GREATER,
                                                                                             ThresholdDataType.LEFT ) );
 
-        assertEquals( expectedSixth,
-                      Slicer.filter( results, meta -> meta.getSampleMetadata().getThresholds().equals( sixth ) )
-                            .getData()
-                            .get( 0 )
-                            .getData() );
+        StatisticMetadata expectedMetaSixth = StatisticMetadata.of( SampleMetadata.of( expectedSampleMeta, sixth ),
+                                                                    165,
+                                                                    MeasurementUnit.of(),
+                                                                    MetricConstants.CONTINGENCY_TABLE,
+                                                                    null );
+
+        DoubleScoreStatistic expectedSixth = DoubleScoreStatistic.of( expectedSixthElements, expectedMetaSixth );
+
+        DoubleScoreStatistic actualSixth =
+                Slicer.filter( results, meta -> meta.getSampleMetadata().getThresholds().equals( sixth ) )
+                      .getData()
+                      .get( 0 );
+
+        assertEquals( expectedSixth, actualSixth );
 
     }
 
@@ -726,7 +824,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
-                MetricFactory.ofMetricProcessorForEnsemblePairs( config, StatisticGroup.set() );
+                MetricFactory.ofMetricProcessorForEnsemblePairs( config, StatisticType.set() );
         processor.apply( MetricTestDataFactory.getEnsemblePairsFour() );
 
         //Obtain the results
@@ -769,17 +867,17 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null );
 
         MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
-                MetricFactory.ofMetricProcessorForEnsemblePairs( mock, StatisticGroup.set() );
+                MetricFactory.ofMetricProcessorForEnsemblePairs( mock, StatisticType.set() );
 
         Set<MetricConstants> actualSingleValuedScores =
-                Set.of( processor.getMetrics( SampleDataGroup.SINGLE_VALUED, StatisticGroup.DOUBLE_SCORE ) );
+                Set.of( processor.getMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ) );
 
         Set<MetricConstants> expectedSingleValuedScores = Set.of( MetricConstants.MEAN_ERROR );
 
         assertEquals( expectedSingleValuedScores, actualSingleValuedScores );
 
         Set<MetricConstants> actualEnsembleScores =
-                Set.of( processor.getMetrics( SampleDataGroup.ENSEMBLE, StatisticGroup.DOUBLE_SCORE ) );
+                Set.of( processor.getMetrics( SampleDataGroup.ENSEMBLE, StatisticType.DOUBLE_SCORE ) );
 
         Set<MetricConstants> expectedEnsembleScores =
                 Set.of( MetricConstants.SAMPLE_SIZE,
@@ -824,17 +922,17 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null );
 
         MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
-                MetricFactory.ofMetricProcessorForEnsemblePairs( mock, StatisticGroup.set() );
+                MetricFactory.ofMetricProcessorForEnsemblePairs( mock, StatisticType.set() );
 
         Set<MetricConstants> actualSingleValuedScores =
-                Set.of( processor.getMetrics( SampleDataGroup.SINGLE_VALUED, StatisticGroup.DOUBLE_SCORE ) );
+                Set.of( processor.getMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ) );
 
         Set<MetricConstants> expectedSingleValuedScores = Set.of( MetricConstants.MEAN_ERROR );
 
         assertEquals( expectedSingleValuedScores, actualSingleValuedScores );
 
         Set<MetricConstants> actualEnsembleScores =
-                Set.of( processor.getMetrics( SampleDataGroup.ENSEMBLE, StatisticGroup.DOUBLE_SCORE ) );
+                Set.of( processor.getMetrics( SampleDataGroup.ENSEMBLE, StatisticType.DOUBLE_SCORE ) );
 
         Set<MetricConstants> expectedEnsembleScores = Set.of( MetricConstants.SAMPLE_SIZE );
 
@@ -842,7 +940,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
 
         Set<MetricConstants> actualProbabilityScores =
-                Set.of( processor.getMetrics( SampleDataGroup.DISCRETE_PROBABILITY, StatisticGroup.DOUBLE_SCORE ) );
+                Set.of( processor.getMetrics( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE ) );
 
         Set<MetricConstants> expectedProbabilityScores = Set.of( MetricConstants.BRIER_SCORE );
 

@@ -1,24 +1,24 @@
 package wres.engine.statistics.metric.categorical;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
-import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.statistics.MatrixStatistic;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricTestDataFactory;
@@ -30,9 +30,6 @@ import wres.engine.statistics.metric.MetricTestDataFactory;
  */
 public final class ContingencyTableTest
 {
-
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
 
     /**
      * The metric to test.
@@ -65,16 +62,16 @@ public final class ContingencyTableTest
                                       input.getRawData().size(),
                                       MeasurementUnit.of(),
                                       MetricConstants.CONTINGENCY_TABLE,
-                                      MetricConstants.MAIN );
+                                      null );
 
-        final double[][] benchmark = new double[][] { { 82.0, 38.0 }, { 23.0, 222.0 } };
-        final MatrixStatistic actual = table.apply( input );
-        final MatrixStatistic expected = MatrixStatistic.of( benchmark,
-                                                                  Arrays.asList( MetricDimension.TRUE_POSITIVES,
-                                                                                 MetricDimension.FALSE_POSITIVES,
-                                                                                 MetricDimension.FALSE_NEGATIVES,
-                                                                                 MetricDimension.TRUE_NEGATIVES ),
-                                                                  meta );
+        Map<MetricConstants, Double> expectedElements = new HashMap<>();
+        expectedElements.put( MetricConstants.TRUE_POSITIVES, 82.0 );
+        expectedElements.put( MetricConstants.TRUE_NEGATIVES, 222.0 );
+        expectedElements.put( MetricConstants.FALSE_POSITIVES, 38.0 );
+        expectedElements.put( MetricConstants.FALSE_NEGATIVES, 23.0 );
+
+        final DoubleScoreStatistic actual = table.apply( input );
+        final DoubleScoreStatistic expected = DoubleScoreStatistic.of( expectedElements, meta );
         assertTrue( "Unexpected result for the contingency table.", actual.equals( expected ) );
 
         //Check the parameters
@@ -98,9 +95,13 @@ public final class ContingencyTableTest
     @Test
     public void testExceptionOnNullInput()
     {
-        exception.expect( SampleDataException.class );
-        exception.expectMessage( "Specify non-null input to the 'CONTINGENCY TABLE'." );
-        table.apply( (SampleData<Pair<Boolean,Boolean>>) null );
+        SampleDataException exception =
+                assertThrows( SampleDataException.class,
+                              () -> table.apply( (SampleData<Pair<Boolean, Boolean>>) null ) );
+
+        String expectedMessage = "Specify non-null input to the 'CONTINGENCY TABLE'.";
+
+        assertEquals( expectedMessage, exception.getMessage() );
     }
 
 }

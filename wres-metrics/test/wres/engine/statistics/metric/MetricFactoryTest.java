@@ -325,16 +325,6 @@ public final class MetricFactoryTest
     }
 
     /**
-     * Tests {@link MetricFactory#ofDichotomousMatrixCollection(MetricConstants...)}. 
-     * @throws MetricParameterException if the metric construction fails 
-     */
-    @Test
-    public void testOfMulticategoryMatrixCollection() throws MetricParameterException
-    {
-        assertTrue( Objects.nonNull( MetricFactory.ofDichotomousMatrixCollection( MetricConstants.CONTINGENCY_TABLE ) ) );
-    }
-
-    /**
      * Tests {@link MetricFactory#ofEnsembleScoreCollection(MetricConstants...)}. 
      * @throws MetricParameterException if the metric construction fails 
      */

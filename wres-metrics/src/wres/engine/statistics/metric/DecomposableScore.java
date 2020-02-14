@@ -2,7 +2,7 @@ package wres.engine.statistics.metric;
 
 import java.util.Objects;
 
-import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 
@@ -19,7 +19,7 @@ public abstract class DecomposableScore<S extends SampleData<?>> extends Ordinar
      * The decomposition identifier.
      */
 
-    private final ScoreGroup decompositionId;
+    private final MetricGroup decompositionId;
 
     @Override
     public boolean isDecomposable()
@@ -28,20 +28,20 @@ public abstract class DecomposableScore<S extends SampleData<?>> extends Ordinar
     }
 
     @Override
-    public ScoreGroup getScoreOutputGroup()
+    public MetricGroup getScoreOutputGroup()
     {
         return decompositionId;
     }
 
     /**
-     * Hidden constructor for a score with no decomposition, i.e. {@link ScoreGroup#NONE}.
+     * Hidden constructor for a score with no decomposition, i.e. {@link MetricGroup#NONE}.
      */
 
     protected DecomposableScore()
     {
         super();
         
-        this.decompositionId = ScoreGroup.NONE;        
+        this.decompositionId = MetricGroup.NONE;        
     }
     
     /**
@@ -51,7 +51,7 @@ public abstract class DecomposableScore<S extends SampleData<?>> extends Ordinar
      * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    protected DecomposableScore( ScoreGroup decompositionId ) throws MetricParameterException
+    protected DecomposableScore( MetricGroup decompositionId ) throws MetricParameterException
     {
         super();
 

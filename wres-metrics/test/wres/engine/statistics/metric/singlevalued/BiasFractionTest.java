@@ -12,7 +12,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
@@ -101,7 +101,7 @@ public final class BiasFractionTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( biasFraction.getScoreOutputGroup() == ScoreGroup.NONE );
+        assertTrue( biasFraction.getScoreOutputGroup() == MetricGroup.NONE );
     }
 
     @Test

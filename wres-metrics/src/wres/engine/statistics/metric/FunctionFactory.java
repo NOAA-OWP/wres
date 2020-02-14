@@ -17,7 +17,7 @@ import java.util.function.ToDoubleFunction;
 import org.apache.commons.math3.stat.descriptive.rank.Median;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.MissingValues;
 import wres.datamodel.VectorOfDoubles;
 
@@ -255,19 +255,19 @@ public class FunctionFactory
 
     /**
      * Returns a statistic associated with a {@link MetricConstants} that belongs to the 
-     * {@link ScoreGroup#UNIVARIATE_STATISTIC}.
+     * {@link MetricGroup#UNIVARIATE_STATISTIC}.
      * 
      * @param statistic the identifier for the statistic
      * @return the statistic
      * @throws NullPointerException if the input is null
-     * @throws IllegalArgumentException if the input does not belong to {@link ScoreGroup#UNIVARIATE_STATISTIC} 
+     * @throws IllegalArgumentException if the input does not belong to {@link MetricGroup#UNIVARIATE_STATISTIC} 
      *            or the statistic does not exist
      */
 
     public static ToDoubleFunction<VectorOfDoubles> ofStatistic( MetricConstants statistic )
     {
         Objects.requireNonNull( statistic );
-        if ( !statistic.isInGroup( ScoreGroup.UNIVARIATE_STATISTIC ) )
+        if ( !statistic.isInGroup( MetricGroup.UNIVARIATE_STATISTIC ) )
         {
             throw new IllegalArgumentException( "The statistic '" + statistic
                                                 + "' is not a recognized statistic "

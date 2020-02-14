@@ -17,13 +17,12 @@ import wres.config.MetricConfigException;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.SampleDataGroup;
-import wres.datamodel.MetricConstants.StatisticGroup;
+import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DoubleScoreStatistic;
-import wres.datamodel.statistics.MatrixStatistic;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.statistics.StatisticAccessException;
 import wres.datamodel.statistics.StatisticException;
@@ -75,10 +74,10 @@ import wres.engine.statistics.metric.config.MetricConfigHelper;
  * asynchronously for each {@link Threshold}.
  * </p>
  * <p>
- * The {@link Statistic} are computed and stored by {@link StatisticGroup}. For {@link Statistic} that are not
+ * The {@link Statistic} are computed and stored by {@link StatisticType}. For {@link Statistic} that are not
  * consumed until the end of a processing pipeline, the results from sequential calls to {@link #apply(Object)} may be
  * cached and merged. This is achieved by constructing a {@link MetricProcessor} with a <code>vararg</code> of
- * {@link StatisticGroup} whose results will be cached across successive calls. The merged results are accessible
+ * {@link StatisticType} whose results will be cached across successive calls. The merged results are accessible
  * from {@link #getCachedMetricOutput()}.
  * </p>
  * 
@@ -136,13 +135,7 @@ public abstract class MetricProcessor<S extends SampleData<?>>
      * A {@link MetricCollection} of {@link Metric} that consume dichotomous pairs and produce {@link ScoreStatistic}.
      */
 
-    final MetricCollection<SampleData<Pair<Boolean,Boolean>>, MatrixStatistic, DoubleScoreStatistic> dichotomousScalar;
-
-    /**
-     * A {@link MetricCollection} of {@link Metric} that consume dichotomous pairs and produce {@link MatrixStatistic}.
-     */
-
-    final MetricCollection<SampleData<Pair<Boolean,Boolean>>, MatrixStatistic, MatrixStatistic> dichotomousMatrix;
+    final MetricCollection<SampleData<Pair<Boolean,Boolean>>, DoubleScoreStatistic, DoubleScoreStatistic> dichotomousScalar;
 
     /**
      * The set of metrics associated with the verification project.
@@ -151,10 +144,10 @@ public abstract class MetricProcessor<S extends SampleData<?>>
     final Set<MetricConstants> metrics;
 
     /**
-     * An array of {@link StatisticGroup} that should be retained and merged across calls. May be null.
+     * An array of {@link StatisticType} that should be retained and merged across calls. May be null.
      */
 
-    final Set<StatisticGroup> mergeSet;
+    final Set<StatisticType> mergeSet;
 
     /**
      * An {@link ExecutorService} used to process the thresholds.
@@ -177,7 +170,7 @@ public abstract class MetricProcessor<S extends SampleData<?>>
     public abstract boolean hasCachedMetricOutput();
 
     /**
-     * Returns the (possibly empty) set of {@link StatisticGroup} that were cached across successive calls to 
+     * Returns the (possibly empty) set of {@link StatisticType} that were cached across successive calls to 
      * {@link #apply(Object)}. This may differ from the set of cached outputs that were declared on construction, 
      * because some outputs are cached automatically. For the set of cached outputs declared on construction, 
      * see: {@link #getMetricOutputTypesToCache()}.
@@ -188,7 +181,7 @@ public abstract class MetricProcessor<S extends SampleData<?>>
      * @throws MetricOutputMergeException if the cached output cannot be merged across calls
      */
 
-    public Set<StatisticGroup> getCachedMetricOutputTypes() throws InterruptedException
+    public Set<StatisticType> getCachedMetricOutputTypes() throws InterruptedException
     {
         return this.getCachedMetricOutput().getStatisticTypes();
     }
@@ -213,7 +206,7 @@ public abstract class MetricProcessor<S extends SampleData<?>>
     }
 
     /**
-     * Returns the (possibly empty) set of {@link StatisticGroup} that will be cached across successive calls to 
+     * Returns the (possibly empty) set of {@link StatisticType} that will be cached across successive calls to 
      * {@link #apply(Object)}. This contains the set of types to cache that were declared on construction of the 
      * {@link MetricProcessor}. It may differ from the actual set of cached outputs, because some outputs are
      * cached automatically. For the full set of cached outputs, post-computation, 
@@ -222,22 +215,22 @@ public abstract class MetricProcessor<S extends SampleData<?>>
      * @return the output types that will be cached
      */
 
-    public Set<StatisticGroup> getMetricOutputTypesToCache()
+    public Set<StatisticType> getMetricOutputTypesToCache()
     {
         return Collections.unmodifiableSet( new HashSet<>( this.mergeSet ) );
     }
 
     /**
-     * Returns true if metrics are available for the input {@link SampleDataGroup} and {@link StatisticGroup}, false
+     * Returns true if metrics are available for the input {@link SampleDataGroup} and {@link StatisticType}, false
      * otherwise.
      * 
      * @param inGroup the {@link SampleDataGroup}
-     * @param outGroup the {@link StatisticGroup}
-     * @return true if metrics are available for the input {@link SampleDataGroup} and {@link StatisticGroup}, false
+     * @param outGroup the {@link StatisticType}
+     * @return true if metrics are available for the input {@link SampleDataGroup} and {@link StatisticType}, false
      *         otherwise
      */
 
-    public boolean hasMetrics( SampleDataGroup inGroup, StatisticGroup outGroup )
+    public boolean hasMetrics( SampleDataGroup inGroup, StatisticType outGroup )
     {
         return this.getMetrics( inGroup, outGroup ).length > 0;
     }
@@ -256,13 +249,13 @@ public abstract class MetricProcessor<S extends SampleData<?>>
     }
 
     /**
-     * Returns true if metrics are available for the input {@link StatisticGroup}, false otherwise.
+     * Returns true if metrics are available for the input {@link StatisticType}, false otherwise.
      * 
-     * @param outGroup the {@link StatisticGroup}
-     * @return true if metrics are available for the input {@link StatisticGroup} false otherwise
+     * @param outGroup the {@link StatisticType}
+     * @return true if metrics are available for the input {@link StatisticType} false otherwise
      */
 
-    public boolean hasMetrics( StatisticGroup outGroup )
+    public boolean hasMetrics( StatisticType outGroup )
     {
         return this.metrics.stream().anyMatch( a -> a.isInGroup( outGroup ) );
     }
@@ -327,7 +320,7 @@ public abstract class MetricProcessor<S extends SampleData<?>>
      * @param externalThresholds an optional set of external thresholds, may be null
      * @param thresholdExecutor an {@link ExecutorService} for executing thresholds, cannot be null 
      * @param metricExecutor an {@link ExecutorService} for executing metrics, cannot be null
-     * @param mergeSet a list of {@link StatisticGroup} whose outputs should be retained and merged across calls to
+     * @param mergeSet a list of {@link StatisticType} whose outputs should be retained and merged across calls to
      *            {@link #apply(Object)}
      * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
@@ -338,7 +331,7 @@ public abstract class MetricProcessor<S extends SampleData<?>>
                      final ThresholdsByMetric externalThresholds,
                      final ExecutorService thresholdExecutor,
                      final ExecutorService metricExecutor,
-                     final Set<StatisticGroup> mergeSet )
+                     final Set<StatisticType> mergeSet )
             throws MetricParameterException
     {
 
@@ -353,12 +346,12 @@ public abstract class MetricProcessor<S extends SampleData<?>>
         LOGGER.debug( "Based on the project declaration, the following metrics will be computed: {}.", this.metrics );
 
         //Construct the metrics that are common to more than one type of input pairs
-        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticGroup.DOUBLE_SCORE ) )
+        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ) )
         {
             this.singleValuedScore =
                     MetricFactory.ofSingleValuedScoreCollection( metricExecutor,
                                                                  this.getMetrics( SampleDataGroup.SINGLE_VALUED,
-                                                                                  StatisticGroup.DOUBLE_SCORE ) );
+                                                                                  StatisticType.DOUBLE_SCORE ) );
 
             LOGGER.debug( "Created the single-valued scores for processing. {}", this.singleValuedScore );
         }
@@ -368,12 +361,12 @@ public abstract class MetricProcessor<S extends SampleData<?>>
         }
 
         // Diagrams
-        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticGroup.MULTIVECTOR ) )
+        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.MULTIVECTOR ) )
         {
             this.singleValuedMultiVector =
                     MetricFactory.ofSingleValuedMultiVectorCollection( metricExecutor,
                                                                        this.getMetrics( SampleDataGroup.SINGLE_VALUED,
-                                                                                        StatisticGroup.MULTIVECTOR ) );
+                                                                                        StatisticType.MULTIVECTOR ) );
 
             LOGGER.debug( "Created the single-valued diagrams for processing. {}", this.singleValuedMultiVector );
         }
@@ -383,12 +376,12 @@ public abstract class MetricProcessor<S extends SampleData<?>>
         }
 
         //Dichotomous scores
-        if ( this.hasMetrics( SampleDataGroup.DICHOTOMOUS, StatisticGroup.DOUBLE_SCORE ) )
+        if ( this.hasMetrics( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE ) )
         {
             this.dichotomousScalar =
                     MetricFactory.ofDichotomousScoreCollection( metricExecutor,
                                                                 this.getMetrics( SampleDataGroup.DICHOTOMOUS,
-                                                                                 StatisticGroup.DOUBLE_SCORE ) );
+                                                                                 StatisticType.DOUBLE_SCORE ) );
 
             LOGGER.debug( "Created the dichotomous scores for processing. {}", this.dichotomousScalar );
         }
@@ -397,28 +390,13 @@ public abstract class MetricProcessor<S extends SampleData<?>>
             this.dichotomousScalar = null;
         }
 
-        // Contingency table
-        if ( this.hasMetrics( SampleDataGroup.DICHOTOMOUS, StatisticGroup.MATRIX ) )
-        {
-            this.dichotomousMatrix =
-                    MetricFactory.ofDichotomousMatrixCollection( metricExecutor,
-                                                                 this.getMetrics( SampleDataGroup.DICHOTOMOUS,
-                                                                                  StatisticGroup.MATRIX ) );
-
-            LOGGER.debug( "Created the contingency table metrics for processing. {}", this.dichotomousMatrix );
-        }
-        else
-        {
-            this.dichotomousMatrix = null;
-        }
-
         //Box plots
-        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticGroup.BOXPLOT_PER_POOL ) )
+        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.BOXPLOT_PER_POOL ) )
         {
             this.singleValuedBoxPlot =
                     MetricFactory.ofSingleValuedBoxPlotCollection( metricExecutor,
                                                                    this.getMetrics( SampleDataGroup.SINGLE_VALUED,
-                                                                                    StatisticGroup.BOXPLOT_PER_POOL ) );
+                                                                                    StatisticType.BOXPLOT_PER_POOL ) );
 
             LOGGER.debug( "Created the single-valued box plots for processing. {}", this.singleValuedBoxPlot );
         }
@@ -485,19 +463,17 @@ public abstract class MetricProcessor<S extends SampleData<?>>
     }
 
     /**
-     * Returns a set of {@link MetricConstants} for a specified {@link SampleDataGroup} and {@link StatisticGroup}.
-     * If the specified {@link SampleDataGroup} is a {@link SampleDataGroup#ENSEMBLE} and this processor is already
-     * computing single-valued metrics, then the {@link MetricConstants#SAMPLE_SIZE} is removed from the returned set,
-     * in order to avoid duplication, since the {@link MetricConstants#SAMPLE_SIZE} belongs to both groups.
+     * Returns a set of {@link MetricConstants} for a specified {@link SampleDataGroup} and {@link StatisticType}.
+     * Individual elements of the contingency table are not considered.
      * 
      * @param inGroup the {@link SampleDataGroup}, may be null
-     * @param outGroup the {@link StatisticGroup}, may be null
-     * @return a set of {@link MetricConstants} for a specified {@link SampleDataGroup} and {@link StatisticGroup}
+     * @param outGroup the {@link StatisticType}, may be null
+     * @return a set of {@link MetricConstants} for a specified {@link SampleDataGroup} and {@link StatisticType}
      *         or an empty array if both inputs are defined and no corresponding metrics are present
      */
 
     MetricConstants[] getMetrics( SampleDataGroup inGroup,
-                                  StatisticGroup outGroup )
+                                  StatisticType outGroup )
     {
 
         // Unconditional set
@@ -515,6 +491,12 @@ public abstract class MetricProcessor<S extends SampleData<?>>
             unconditional.removeIf( a -> !a.isInGroup( outGroup ) );
         }
 
+        // Remove contingency table elements
+        unconditional.remove( MetricConstants.TRUE_POSITIVES );
+        unconditional.remove( MetricConstants.FALSE_POSITIVES );
+        unconditional.remove( MetricConstants.FALSE_NEGATIVES );
+        unconditional.remove( MetricConstants.TRUE_NEGATIVES );
+        
         // Return, removing any duplicate sample size instance, if needed
         return unconditional.toArray( new MetricConstants[unconditional.size()] );
     }

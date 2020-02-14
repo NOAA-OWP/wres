@@ -20,7 +20,7 @@ import wres.config.generated.TimeSeriesMetricConfig;
 import wres.config.generated.TimeSeriesMetricConfigName;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.StatisticGroup;
+import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.thresholds.ThresholdsGenerator;
 
@@ -264,13 +264,13 @@ public final class MetricConfigHelper
      * 
      * @param projectConfig the project configuration
      * @param outGroup the output group to test
-     * @return true if the input configuration requires outputs of the {@link StatisticGroup#MULTIVECTOR} 
+     * @return true if the input configuration requires outputs of the {@link StatisticType#MULTIVECTOR} 
      *            type whose output type is {@link OutputTypeSelection#THRESHOLD_LEAD}, false otherwise
      * @throws MetricConfigException if the configuration is invalid
      * @throws NullPointerException if the input is null
      */
 
-    public static boolean hasTheseOutputsByThresholdLead( ProjectConfig projectConfig, StatisticGroup outGroup )
+    public static boolean hasTheseOutputsByThresholdLead( ProjectConfig projectConfig, StatisticType outGroup )
     {
         Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
 
@@ -295,7 +295,7 @@ public final class MetricConfigHelper
     }
 
     /**
-     * Helper that interprets the input configuration and returns a list of {@link StatisticGroup} whose results 
+     * Helper that interprets the input configuration and returns a list of {@link StatisticType} whose results 
      * should be cached when computing metrics incrementally.
      * 
      * @param projectConfig the project configuration
@@ -304,19 +304,19 @@ public final class MetricConfigHelper
      * @throws NullPointerException if the input is null
      */
 
-    public static Set<StatisticGroup> getCacheListFromProjectConfig( ProjectConfig projectConfig )
+    public static Set<StatisticType> getCacheListFromProjectConfig( ProjectConfig projectConfig )
     {
         // Always cache ordinary scores and paired output for timing error metrics
-        Set<StatisticGroup> returnMe = new TreeSet<>();
-        returnMe.add( StatisticGroup.DOUBLE_SCORE );
-        returnMe.add( StatisticGroup.PAIRED );
+        Set<StatisticType> returnMe = new TreeSet<>();
+        returnMe.add( StatisticType.DOUBLE_SCORE );
+        returnMe.add( StatisticType.PAIRED );
         
         // Always cache box plot outputs for pooled predictions
-        returnMe.add( StatisticGroup.BOXPLOT_PER_POOL );
+        returnMe.add( StatisticType.BOXPLOT_PER_POOL );
 
         // Cache other outputs as required
-        StatisticGroup[] options = StatisticGroup.values();
-        for ( StatisticGroup next : options )
+        StatisticType[] options = StatisticType.values();
+        for ( StatisticType next : options )
         {
             if ( !returnMe.contains( next )
                  && MetricConfigHelper.hasTheseOutputsByThresholdLead( projectConfig, next ) )
@@ -326,11 +326,11 @@ public final class MetricConfigHelper
         }
 
         // Never cache box plot output for individual pairs
-        returnMe.remove( StatisticGroup.BOXPLOT_PER_PAIR );
+        returnMe.remove( StatisticType.BOXPLOT_PER_PAIR );
 
         // Never cache duration score output as timing error summary statistics are computed once all data 
         // is available
-        returnMe.remove( StatisticGroup.DURATION_SCORE );
+        returnMe.remove( StatisticType.DURATION_SCORE );
 
         return Collections.unmodifiableSet( returnMe );
     }

@@ -5,7 +5,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.statistics.DoubleScoreStatistic;
-import wres.datamodel.statistics.MatrixStatistic;
 import wres.engine.statistics.metric.FunctionFactory;
 
 /**
@@ -35,15 +34,26 @@ public class EquitableThreatScore extends ContingencyTableScore
     }
 
     @Override
-    public DoubleScoreStatistic aggregate( final MatrixStatistic output )
+    public DoubleScoreStatistic aggregate( final DoubleScoreStatistic output )
     {
         this.is2x2ContingencyTable( output, this );
-        final MatrixStatistic v = output;
-        final double[][] cm = v.getData().getDoubles();
-        final double t = cm[0][0] + cm[0][1] + cm[1][0];
-        final double hitsRandom = ( ( cm[0][0] + cm[1][0] ) * ( cm[0][0] + cm[0][1] ) ) / ( t + cm[1][1] );
+
+        double tP = output.getComponent( MetricConstants.TRUE_POSITIVES )
+                          .getData();
+
+        double fP = output.getComponent( MetricConstants.FALSE_POSITIVES )
+                          .getData();
+
+        double fN = output.getComponent( MetricConstants.FALSE_NEGATIVES )
+                          .getData();
+
+        double tN = output.getComponent( MetricConstants.TRUE_NEGATIVES )
+                          .getData();
+
+        final double t = tP + fP + fN;
+        final double hitsRandom = ( ( tP + fN ) * ( tP + fP ) ) / ( t + tN );
         double result =
-                FunctionFactory.finiteOrMissing().applyAsDouble( ( cm[0][0] - hitsRandom ) / ( t - hitsRandom ) );
+                FunctionFactory.finiteOrMissing().applyAsDouble( ( tP - hitsRandom ) / ( t - hitsRandom ) );
         return DoubleScoreStatistic.of( result, getMetadata( output ) );
     }
 

@@ -15,13 +15,13 @@ import wres.config.MetricConfigException;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.SampleDataGroup;
-import wres.datamodel.MetricConstants.StatisticGroup;
+import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic.SampleDataBasicBuilder;
 import wres.datamodel.sampledata.SampleMetadata;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
-import wres.datamodel.statistics.MatrixStatistic;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -92,7 +92,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
         Objects.requireNonNull( mergeFutures, "Specify non-null futures for merging." );
 
         //Merge futures if cached outputs identified
-        Set<StatisticGroup> cacheMe = this.getMetricOutputTypesToCache();
+        Set<StatisticType> cacheMe = this.getMetricOutputTypesToCache();
         if ( !cacheMe.isEmpty() )
         {
             MetricFuturesByTime.MetricFuturesByTimeBuilder builder =
@@ -115,19 +115,19 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
     void processSingleValuedPairs( SampleData<Pair<Double, Double>> singleValued,
                                    MetricFuturesByTime.MetricFuturesByTimeBuilder futures )
     {
-        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticGroup.DOUBLE_SCORE ) )
+        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ) )
         {
-            this.processSingleValuedPairsByThreshold( singleValued, futures, StatisticGroup.DOUBLE_SCORE );
+            this.processSingleValuedPairsByThreshold( singleValued, futures, StatisticType.DOUBLE_SCORE );
         }
 
-        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticGroup.MULTIVECTOR ) )
+        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.MULTIVECTOR ) )
         {
-            this.processSingleValuedPairsByThreshold( singleValued, futures, StatisticGroup.MULTIVECTOR );
+            this.processSingleValuedPairsByThreshold( singleValued, futures, StatisticType.MULTIVECTOR );
         }
 
-        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticGroup.BOXPLOT_PER_POOL ) )
+        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.BOXPLOT_PER_POOL ) )
         {
-            this.processSingleValuedPairsByThreshold( singleValued, futures, StatisticGroup.BOXPLOT_PER_POOL );
+            this.processSingleValuedPairsByThreshold( singleValued, futures, StatisticType.BOXPLOT_PER_POOL );
         }
 
     }
@@ -143,21 +143,15 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
 
     void processDichotomousPairs( SampleData<Pair<Boolean, Boolean>> input,
                                   MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
-                                  StatisticGroup outGroup,
+                                  StatisticType outGroup,
                                   Set<MetricConstants> ignoreTheseMetrics )
     {
 
-        if ( outGroup == StatisticGroup.DOUBLE_SCORE )
+        if ( outGroup == StatisticType.DOUBLE_SCORE )
         {
             futures.addDoubleScoreOutput( this.processDichotomousPairs( input,
-                                                                        dichotomousScalar,
+                                                                        this.dichotomousScalar,
                                                                         ignoreTheseMetrics ) );
-        }
-        else if ( outGroup == StatisticGroup.MATRIX )
-        {
-            futures.addMatrixOutput( this.processDichotomousPairs( input,
-                                                                   dichotomousMatrix,
-                                                                   ignoreTheseMetrics ) );
         }
 
     }
@@ -227,7 +221,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
      * @param externalThresholds an optional set of canonical thresholds, may be null
      * @param thresholdExecutor an {@link ExecutorService} for executing thresholds, cannot be null 
      * @param metricExecutor an {@link ExecutorService} for executing metrics, cannot be null
-     * @param mergeSet a list of {@link StatisticGroup} whose outputs should be retained and merged across calls to
+     * @param mergeSet a list of {@link StatisticType} whose outputs should be retained and merged across calls to
      *            {@link #apply(Object)}
      * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
@@ -238,7 +232,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
                            final ThresholdsByMetric externalThresholds,
                            final ExecutorService thresholdExecutor,
                            final ExecutorService metricExecutor,
-                           final Set<StatisticGroup> mergeSet )
+                           final Set<StatisticType> mergeSet )
             throws MetricParameterException
     {
         super( config, externalThresholds, thresholdExecutor, metricExecutor, mergeSet );
@@ -246,7 +240,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
 
     /**
      * Processes all thresholds for metrics that consume single-valued pairs and produce a specified 
-     * {@link StatisticGroup}. 
+     * {@link StatisticType}. 
      * 
      * @param input the input pairs
      * @param futures the metric futures
@@ -256,7 +250,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
 
     private void processSingleValuedPairsByThreshold( SampleData<Pair<Double, Double>> input,
                                                       MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
-                                                      StatisticGroup outGroup )
+                                                      StatisticType outGroup )
     {
         // Find the thresholds for this group and for the required types
         ThresholdsByMetric filtered = this.getThresholdsByMetric()
@@ -310,7 +304,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
 
     /**
      * Processes one threshold for metrics that consume single-valued pairs and produce a specified 
-     * {@link StatisticGroup}. 
+     * {@link StatisticType}. 
      * 
      * @param input the input pairs
      * @param futures the metric futures
@@ -320,7 +314,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
 
     private void processSingleValuedPairs( SampleData<Pair<Double, Double>> input,
                                            MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
-                                           StatisticGroup outGroup,
+                                           StatisticType outGroup,
                                            Set<MetricConstants> ignoreTheseMetrics )
     {
         switch ( outGroup )
@@ -381,7 +375,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
 
     private <T extends Statistic<?>> Future<ListOfStatistics<T>>
             processDichotomousPairs( SampleData<Pair<Boolean, Boolean>> pairs,
-                                     MetricCollection<SampleData<Pair<Boolean, Boolean>>, MatrixStatistic, T> collection,
+                                     MetricCollection<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatistic, T> collection,
                                      Set<MetricConstants> ignoreTheseMetrics )
     {
         return CompletableFuture.supplyAsync( () -> collection.apply( pairs, ignoreTheseMetrics ),

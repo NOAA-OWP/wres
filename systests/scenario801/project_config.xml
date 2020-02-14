@@ -82,9 +82,7 @@
     <outputs>
     
         <!-- Metric output CSV files. -->
-        <destination type="numeric" decimalFormat="0.000000">
-            <outputType>threshold lead</outputType>
-        </destination>
+        <destination type="numeric" decimalFormat="0.000000" />
         
         <!-- A CSV file specifying all pairs.  This file can be very large. -->
         <destination type="pairs" decimalFormat="0.000000" />

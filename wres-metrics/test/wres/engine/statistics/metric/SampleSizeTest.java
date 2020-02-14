@@ -8,7 +8,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
@@ -62,7 +62,7 @@ public final class SampleSizeTest
                     ss.getName().equals( MetricConstants.SAMPLE_SIZE.toString() ) );
         assertTrue( "The Sample Size is not decomposable.", !ss.isDecomposable() );
         assertTrue( "The Sample Size is not a skill score.", !ss.isSkillScore() );
-        assertTrue( "The Sample Size cannot be decomposed.", ss.getScoreOutputGroup() == ScoreGroup.NONE );
+        assertTrue( "The Sample Size cannot be decomposed.", ss.getScoreOutputGroup() == MetricGroup.NONE );
     }
 
     /**

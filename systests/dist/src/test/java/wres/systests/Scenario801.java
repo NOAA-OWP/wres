@@ -28,16 +28,7 @@ public class Scenario801
      */
 
     private static final Set<Path> EXPECTED_FILE_NAMES =
-            Set.of( Path.of( "CKLN6_STAGE_HEFS_CONTINGENCY_TABLE_GT_12.0_FT_MINOR_FLOOD_AND_Pr_GT_0.1.csv" ),
-                    Path.of( "CKLN6_STAGE_HEFS_CONTINGENCY_TABLE_GT_12.0_FT_MINOR_FLOOD_AND_Pr_GT_0.3.csv" ),
-                    Path.of( "CKLN6_STAGE_HEFS_CONTINGENCY_TABLE_GT_12.0_FT_MINOR_FLOOD_AND_Pr_GT_0.5.csv" ),
-                    Path.of( "CKLN6_STAGE_HEFS_CONTINGENCY_TABLE_GT_12.0_FT_MINOR_FLOOD_AND_Pr_GT_0.7.csv" ),
-                    Path.of( "CKLN6_STAGE_HEFS_CONTINGENCY_TABLE_GT_12.0_FT_MINOR_FLOOD_AND_Pr_GT_0.9.csv" ),
-                    Path.of( "CKLN6_STAGE_HEFS_CONTINGENCY_TABLE_GT_8.0_FT_ACTION_AND_Pr_GT_0.1.csv" ),
-                    Path.of( "CKLN6_STAGE_HEFS_CONTINGENCY_TABLE_GT_8.0_FT_ACTION_AND_Pr_GT_0.3.csv" ),
-                    Path.of( "CKLN6_STAGE_HEFS_CONTINGENCY_TABLE_GT_8.0_FT_ACTION_AND_Pr_GT_0.5.csv" ),
-                    Path.of( "CKLN6_STAGE_HEFS_CONTINGENCY_TABLE_GT_8.0_FT_ACTION_AND_Pr_GT_0.7.csv" ),
-                    Path.of( "CKLN6_STAGE_HEFS_CONTINGENCY_TABLE_GT_8.0_FT_ACTION_AND_Pr_GT_0.9.csv" ),
+            Set.of( Path.of( "CKLN6_STAGE_HEFS_CONTINGENCY_TABLE.csv" ),
                     Path.of( "pairs.csv" ) );
     
     private ScenarioInformation scenarioInfo;

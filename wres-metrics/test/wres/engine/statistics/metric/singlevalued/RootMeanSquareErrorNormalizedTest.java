@@ -12,7 +12,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
@@ -93,7 +93,7 @@ public final class RootMeanSquareErrorNormalizedTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( this.rmsen.getScoreOutputGroup() == ScoreGroup.NONE );
+        assertTrue( this.rmsen.getScoreOutputGroup() == MetricGroup.NONE );
     }
 
     @Test

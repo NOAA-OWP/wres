@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
@@ -28,7 +28,7 @@ import wres.engine.statistics.metric.ProbabilityScore;
  * The Continuous Ranked Probability Score (CRPS) is the square difference between the empirical distribution function
  * of an ensemble forecast and the step function associated with a single-valued observation, integrated over the unit
  * interval. By convention, the CRPS is then averaged over each pair of ensemble forecasts and observations. Optionally,
- * the CRPS may be factored into a three-component decomposition, {@link ScoreGroup#CR}.
+ * the CRPS may be factored into a three-component decomposition, {@link MetricGroup#CR}.
  * </p>
  * <p>
  * Uses the procedure outlined in Hersbach, H. (2000) Decomposition of the Continuous Ranked Probability Score for
@@ -68,7 +68,7 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<SampleDa
      * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    public static ContinuousRankedProbabilityScore of( ScoreGroup decompositionId )
+    public static ContinuousRankedProbabilityScore of( MetricGroup decompositionId )
             throws MetricParameterException
     {
         return new ContinuousRankedProbabilityScore( decompositionId );
@@ -167,7 +167,7 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<SampleDa
      * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    ContinuousRankedProbabilityScore( ScoreGroup decompositionId ) throws MetricParameterException
+    ContinuousRankedProbabilityScore( MetricGroup decompositionId ) throws MetricParameterException
     {
         super( decompositionId );
 

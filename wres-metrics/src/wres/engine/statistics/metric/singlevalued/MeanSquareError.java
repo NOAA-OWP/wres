@@ -5,7 +5,7 @@ import java.util.Objects;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DoubleScoreStatistic;
@@ -100,7 +100,7 @@ public class MeanSquareError extends SumOfSquareError
      * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    MeanSquareError( ScoreGroup decompositionId ) throws MetricParameterException
+    MeanSquareError( MetricGroup decompositionId ) throws MetricParameterException
     {
         super( decompositionId );
     }

@@ -23,7 +23,7 @@ import wres.config.generated.DestinationConfig;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.StatisticGroup;
+import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.Slicer;
 import wres.datamodel.statistics.ListOfStatistics;
@@ -97,7 +97,7 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
                           .get( 0 )
                           .getMetadata()
                           .getMetricID()
-                          .isInGroup( StatisticGroup.DOUBLE_SCORE ) )
+                          .isInGroup( StatisticType.DOUBLE_SCORE ) )
             {
                 formatter = ConfigHelper.getDecimalFormatter( destinationConfig );
             }
@@ -217,7 +217,8 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
                 SortedSet<Threshold> secondThresholds =
                         Slicer.discover( nextOutput,
                                          next -> next.getMetadata().getSampleMetadata().getThresholds().second() );
-                if ( !secondThresholds.isEmpty() )
+                if ( destinationConfig.getOutputType() == OutputTypeSelection.THRESHOLD_LEAD
+                     && !secondThresholds.isEmpty() )
                 {
                     append = secondThresholds.iterator().next().toStringSafe();
                 }

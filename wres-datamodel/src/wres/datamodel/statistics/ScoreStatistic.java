@@ -8,7 +8,8 @@ import wres.datamodel.MetricConstants;
 
 /**
  * A score statistic. A score may contain one or more components, such as the components of a score
- * decomposition or the values associated with alternative methods of calculation. 
+ * decomposition or the values associated with alternative methods of calculation. A score is a mapping between 
+ * {@link MetricConstants} and score values.
  * 
  * @param <T> the raw type of the score
  * @param <U> the score component type

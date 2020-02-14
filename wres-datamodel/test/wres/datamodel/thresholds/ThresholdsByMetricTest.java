@@ -14,7 +14,7 @@ import org.junit.Test;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.SampleDataGroup;
-import wres.datamodel.MetricConstants.StatisticGroup;
+import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.thresholds.ThresholdsByMetric.ThresholdsByMetricBuilder;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -515,7 +515,7 @@ public class ThresholdsByMetricTest
                                                           ThresholdDataType.LEFT ) );
 
         assertTrue( expected.equals( container.filterByGroup( SampleDataGroup.DICHOTOMOUS,
-                                                              StatisticGroup.DOUBLE_SCORE )
+                                                              StatisticType.DOUBLE_SCORE )
                                               .filterByType( ThresholdGroup.PROBABILITY )
                                               .union() ) );
         assertTrue( expected.equals( container.filterByGroup( SampleDataGroup.DICHOTOMOUS,
@@ -523,7 +523,7 @@ public class ThresholdsByMetricTest
                                               .filterByType( ThresholdGroup.PROBABILITY )
                                               .union() ) );
         assertTrue( expected.equals( container.filterByGroup( null,
-                                                              StatisticGroup.DOUBLE_SCORE )
+                                                              StatisticType.DOUBLE_SCORE )
                                               .filterByType( ThresholdGroup.PROBABILITY )
                                               .union() ) );
 

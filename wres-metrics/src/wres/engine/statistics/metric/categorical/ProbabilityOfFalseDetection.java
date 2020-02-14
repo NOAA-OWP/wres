@@ -5,7 +5,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.statistics.DoubleScoreStatistic;
-import wres.datamodel.statistics.MatrixStatistic;
 import wres.engine.statistics.metric.FunctionFactory;
 
 /**
@@ -34,12 +33,17 @@ public class ProbabilityOfFalseDetection extends ContingencyTableScore
     }
 
     @Override
-    public DoubleScoreStatistic aggregate( final MatrixStatistic output )
+    public DoubleScoreStatistic aggregate( final DoubleScoreStatistic output )
     {
         this.is2x2ContingencyTable( output, this );
-        final MatrixStatistic v = output;
-        final double[][] cm = v.getData().getDoubles();
-        double result = FunctionFactory.finiteOrMissing().applyAsDouble( cm[0][1] / ( cm[0][1] + cm[1][1] ) );
+
+        double fP = output.getComponent( MetricConstants.FALSE_POSITIVES )
+                          .getData();
+
+        double tN = output.getComponent( MetricConstants.TRUE_NEGATIVES )
+                          .getData();
+
+        double result = FunctionFactory.finiteOrMissing().applyAsDouble( fP / ( fP + tN ) );
         return DoubleScoreStatistic.of( result, getMetadata( output ) );
     }
 

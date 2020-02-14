@@ -27,7 +27,7 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.SampleDataGroup;
-import wres.datamodel.MetricConstants.StatisticGroup;
+import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic.SampleDataBasicBuilder;
@@ -123,7 +123,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         {
             this.processTimeSeriesPairs( inputNoMissing,
                                          futures,
-                                         StatisticGroup.PAIRED );
+                                         StatisticType.PAIRED );
         }
 
         // Log
@@ -147,7 +147,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
      * @param externalThresholds an optional set of external thresholds, may be null
      * @param thresholdExecutor an {@link ExecutorService} for executing thresholds, cannot be null 
      * @param metricExecutor an {@link ExecutorService} for executing metrics, cannot be null
-     * @param mergeSet a list of {@link StatisticGroup} whose outputs should be retained and merged across calls to
+     * @param mergeSet a list of {@link StatisticType} whose outputs should be retained and merged across calls to
      *            {@link #apply(Object)}
      * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
@@ -158,7 +158,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                                    final ThresholdsByMetric externalThresholds,
                                                    final ExecutorService thresholdExecutor,
                                                    final ExecutorService metricExecutor,
-                                                   final Set<StatisticGroup> mergeSet )
+                                                   final Set<StatisticType> mergeSet )
             throws MetricParameterException
     {
         super( config, externalThresholds, thresholdExecutor, metricExecutor, mergeSet );
@@ -166,10 +166,10 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         //Construct the metrics
 
         //Time-series 
-        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticGroup.PAIRED ) )
+        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.PAIRED ) )
         {
             MetricConstants[] timingErrorMetrics = this.getMetrics( SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
-                                                                    StatisticGroup.PAIRED );
+                                                                    StatisticType.PAIRED );
             this.timeSeries = MetricFactory.ofSingleValuedTimeSeriesCollection( metricExecutor,
                                                                                 timingErrorMetrics );
 
@@ -269,10 +269,10 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
     {
         // Determine whether to compute summary statistics
         boolean proceed = this.hasCachedMetricOutput()
-                          && this.getCachedMetricOutputInternal().hasStatistic( StatisticGroup.PAIRED );
+                          && this.getCachedMetricOutputInternal().hasStatistic( StatisticType.PAIRED );
 
         // Summary statistics not already computed
-        proceed = proceed && !this.getCachedMetricOutputInternal().hasStatistic( StatisticGroup.DURATION_SCORE );
+        proceed = proceed && !this.getCachedMetricOutputInternal().hasStatistic( StatisticType.DURATION_SCORE );
 
         //Add the summary statistics for the cached time-to-peak errors if these statistics do not already exist
         if ( proceed )
@@ -337,13 +337,13 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
     private void processDichotomousPairs( SampleData<Pair<Double, Double>> input,
                                           MetricFuturesByTimeBuilder futures )
     {
-        if ( hasMetrics( SampleDataGroup.DICHOTOMOUS, StatisticGroup.DOUBLE_SCORE ) )
+        if ( hasMetrics( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE ) )
         {
-            this.processDichotomousPairsByThreshold( input, futures, StatisticGroup.DOUBLE_SCORE );
+            this.processDichotomousPairsByThreshold( input, futures, StatisticType.DOUBLE_SCORE );
         }
-        if ( hasMetrics( SampleDataGroup.DICHOTOMOUS, StatisticGroup.MATRIX ) )
+        if ( hasMetrics( SampleDataGroup.DICHOTOMOUS, StatisticType.MATRIX ) )
         {
-            this.processDichotomousPairsByThreshold( input, futures, StatisticGroup.MATRIX );
+            this.processDichotomousPairsByThreshold( input, futures, StatisticType.MATRIX );
         }
     }
 
@@ -359,7 +359,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
 
     private void processDichotomousPairsByThreshold( SampleData<Pair<Double, Double>> input,
                                                      MetricFuturesByTimeBuilder futures,
-                                                     StatisticGroup outGroup )
+                                                     StatisticType outGroup )
     {
         // Find the thresholds for this group and for the required types
         ThresholdsByMetric filtered = this.getThresholdsByMetric()
@@ -420,7 +420,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
 
     private void processTimeSeriesPairs( PoolOfPairs<Double, Double> input,
                                          MetricFuturesByTimeBuilder futures,
-                                         StatisticGroup outGroup )
+                                         StatisticType outGroup )
     {
         // Find the thresholds for this group and for the required types
         ThresholdsByMetric filtered = this.getThresholdsByMetric()

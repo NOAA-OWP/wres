@@ -16,7 +16,7 @@ import ohd.hseb.hefs.utils.arguments.Argument;
 import ohd.hseb.hefs.utils.arguments.DefaultArgumentsProcessor;
 import ohd.hseb.hefs.utils.plugins.UniqueGenericParameterList;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.StatisticGroup;
+import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.DatasetIdentifier;
@@ -122,7 +122,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
                                 + this.getDurationUnits().name().toUpperCase();
 
         // Plot per pool? See: #62374
-        if ( displayPlotInput.getMetadata().getMetricID().isInGroup( StatisticGroup.BOXPLOT_PER_POOL ) )
+        if ( displayPlotInput.getMetadata().getMetricID().isInGroup( StatisticType.BOXPLOT_PER_POOL ) )
         {
             addArgument( "diagramInstanceDescription",
                          "and for Threshold " + meta.getSampleMetadata().getThresholds() );
@@ -185,7 +185,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         extractStandardArgumentsFromMetadata( meta );
 
         // Assemble a collection of smaller time windows where necessary
-        if ( plotType == ChartType.POOLING_WINDOW || meta.getMetricID().isInGroup( StatisticGroup.PAIRED ) )
+        if ( plotType == ChartType.POOLING_WINDOW || meta.getMetricID().isInGroup( StatisticType.PAIRED ) )
         {
             SortedSet<TimeWindow> timeWindows =
                     Slicer.discover( displayedPlotInput,

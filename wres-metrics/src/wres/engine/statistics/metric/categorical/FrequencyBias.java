@@ -5,7 +5,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.statistics.DoubleScoreStatistic;
-import wres.datamodel.statistics.MatrixStatistic;
 import wres.engine.statistics.metric.FunctionFactory;
 
 /**
@@ -35,13 +34,21 @@ public class FrequencyBias extends ContingencyTableScore
     }
 
     @Override
-    public DoubleScoreStatistic aggregate( final MatrixStatistic output )
+    public DoubleScoreStatistic aggregate( final DoubleScoreStatistic output )
     {
         this.is2x2ContingencyTable( output, this );
-        final MatrixStatistic v = output;
-        final double[][] cm = v.getData().getDoubles();
+
+        double tP = output.getComponent( MetricConstants.TRUE_POSITIVES )
+                          .getData();
+
+        double fP = output.getComponent( MetricConstants.FALSE_POSITIVES )
+                          .getData();
+
+        double fN = output.getComponent( MetricConstants.FALSE_NEGATIVES )
+                          .getData();
+              
         final double score =
-                FunctionFactory.finiteOrMissing().applyAsDouble( ( cm[0][0] + cm[0][1] ) / ( cm[0][0] + cm[1][0] ) );
+                FunctionFactory.finiteOrMissing().applyAsDouble( ( tP + fP ) / ( tP + fN ) );
         return DoubleScoreStatistic.of( score, getMetadata( output ) );
     }
 

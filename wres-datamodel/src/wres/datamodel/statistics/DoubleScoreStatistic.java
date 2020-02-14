@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.Map;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.MetricConstants.MetricGroup;
 
 /**
  * An immutable score statistic that comprises one or more {@link Double} components.
@@ -54,7 +54,7 @@ public class DoubleScoreStatistic extends BasicScoreStatistic<Double, DoubleScor
      */
 
     public static DoubleScoreStatistic
-            of( final double[] statistic, final ScoreGroup template, final StatisticMetadata meta )
+            of( final double[] statistic, final MetricGroup template, final StatisticMetadata meta )
     {
         return new DoubleScoreStatistic( statistic, template, meta );
     }
@@ -101,7 +101,7 @@ public class DoubleScoreStatistic extends BasicScoreStatistic<Double, DoubleScor
      */
 
     private DoubleScoreStatistic( final double[] statistic,
-                                  final ScoreGroup template,
+                                  final MetricGroup template,
                                   final StatisticMetadata meta )
     {
         super( Arrays.stream( statistic ).boxed().toArray( Double[]::new ), template, meta );

@@ -12,7 +12,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.Probability;
 import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.Location;
@@ -132,7 +132,7 @@ public final class BrierScoreTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( brierScore.getScoreOutputGroup() == ScoreGroup.NONE );
+        assertTrue( brierScore.getScoreOutputGroup() == MetricGroup.NONE );
     }
 
     /**

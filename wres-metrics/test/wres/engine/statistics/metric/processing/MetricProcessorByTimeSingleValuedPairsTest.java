@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -36,7 +37,7 @@ import wres.config.generated.TimeSeriesMetricConfigName;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.SampleDataGroup;
-import wres.datamodel.MetricConstants.StatisticGroup;
+import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
@@ -172,7 +173,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<PoolOfPairs<Double, Double>> processor =
-                MetricFactory.ofMetricProcessorForSingleValuedPairs( config, StatisticGroup.set() );
+                MetricFactory.ofMetricProcessorForSingleValuedPairs( config, StatisticType.set() );
         PoolOfPairs<Double, Double> pairs = MetricTestDataFactory.getSingleValuedPairsFour();
 
         // Generate results for 10 nominal lead times
@@ -195,15 +196,17 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         }
 
         // Validate a subset of the data 
-        assertTrue( Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
-                                   MetricConstants.THREAT_SCORE )
-                          .getData()
-                          .size() == 10 );
+        assertEquals( 10,
+                      Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
+                                     MetricConstants.THREAT_SCORE )
+                            .getData()
+                            .size() );
 
-        assertTrue( Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
-                                   metric -> metric.getMetricID() != MetricConstants.THREAT_SCORE )
-                          .getData()
-                          .size() == 20 * 8 );
+        assertEquals( 20 * 8 + 10,
+                      Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
+                                     metric -> metric.getMetricID() != MetricConstants.THREAT_SCORE )
+                            .getData()
+                            .size() );
 
         // Expected result
         final TimeWindow expectedWindow = TimeWindow.of( Instant.MIN,
@@ -225,25 +228,26 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                       500,
                                       MeasurementUnit.of(),
                                       MetricConstants.CONTINGENCY_TABLE,
-                                      MetricConstants.MAIN );
+                                      null );
 
-        MatrixStatistic expected =
-                MatrixStatistic.of( new double[][] { { 400.0, 100.0 }, { 0.0, 0.0 } },
-                                    Arrays.asList( MetricDimension.TRUE_POSITIVES,
-                                                   MetricDimension.FALSE_POSITIVES,
-                                                   MetricDimension.FALSE_NEGATIVES,
-                                                   MetricDimension.TRUE_NEGATIVES ),
-                                    expectedMeta );
+        Map<MetricConstants, Double> elements = new HashMap<>();
+        elements.put( MetricConstants.TRUE_POSITIVES, 400.0 );
+        elements.put( MetricConstants.TRUE_NEGATIVES, 0.0 );
+        elements.put( MetricConstants.FALSE_POSITIVES, 100.0 );
+        elements.put( MetricConstants.FALSE_NEGATIVES, 0.0 );
 
-        MatrixStatistic actual = Slicer.filter( processor.getCachedMetricOutput().getMatrixStatistics(),
-                                                meta -> meta.getSampleMetadata()
-                                                            .getThresholds()
-                                                            .equals( expectedThreshold )
-                                                        && meta.getSampleMetadata()
-                                                               .getTimeWindow()
-                                                               .equals( expectedWindow ) )
-                                       .getData()
-                                       .get( 0 );
+        DoubleScoreStatistic expected = DoubleScoreStatistic.of( elements, expectedMeta );
+
+        DoubleScoreStatistic actual = Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
+                                                     meta -> meta.getSampleMetadata()
+                                                                 .getThresholds()
+                                                                 .equals( expectedThreshold )
+                                                             && meta.getSampleMetadata()
+                                                                    .getTimeWindow()
+                                                                    .equals( expectedWindow )
+                                                             && meta.getMetricID() == MetricConstants.CONTINGENCY_TABLE )
+                                            .getData()
+                                            .get( 0 );
 
         assertEquals( expected, actual );
     }
@@ -255,11 +259,11 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<PoolOfPairs<Double, Double>> processor =
                 MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
-                                                                     StatisticGroup.set() );
+                                                                     StatisticType.set() );
 
         //Check for the expected number of metrics
         int expected = SampleDataGroup.SINGLE_VALUED.getMetrics().size()
-                     + SampleDataGroup.DICHOTOMOUS.getMetrics().size();
+                       + SampleDataGroup.DICHOTOMOUS.getMetrics().size();
         int actual = processor.metrics.size();
 
         assertEquals( expected, actual );
@@ -283,7 +287,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         MetricProcessor<PoolOfPairs<Double, Double>> processor =
                 MetricFactory.ofMetricProcessorForSingleValuedPairs( mockedConfig,
-                                                                     StatisticGroup.set() );
+                                                                     StatisticType.set() );
 
         //Break into two time-series to test sequential calls
         PoolOfPairs<Double, Double> first = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsTwo();
@@ -371,7 +375,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         MetricProcessor<PoolOfPairs<Double, Double>> processor =
                 MetricFactory.ofMetricProcessorForSingleValuedPairs( mockedConfig,
-                                                                     StatisticGroup.set() );
+                                                                     StatisticType.set() );
 
         //Break into two time-series to test sequential calls
         PoolOfPairs<Double, Double> first = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsTwo();
@@ -466,7 +470,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<PoolOfPairs<Double, Double>> processor =
                 MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
-                                                                     StatisticGroup.set() );
+                                                                     StatisticType.set() );
 
         //Break into two time-series to test sequential calls
         PoolOfPairs<Double, Double> first = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsTwo();
@@ -556,7 +560,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         MetricProcessor<PoolOfPairs<Double, Double>> processor =
                 MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
                                                                      thresholdsByMetric,
-                                                                     StatisticGroup.set() );
+                                                                     StatisticType.set() );
 
         PoolOfPairs<Double, Double> pairs = MetricTestDataFactory.getSingleValuedPairsFour();
 
@@ -579,15 +583,17 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         }
 
         // Validate a subset of the data       
-        assertTrue( Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
-                                   MetricConstants.THREAT_SCORE )
-                          .getData()
-                          .size() == 20 );
+        assertEquals( 20,
+                      Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
+                                     MetricConstants.THREAT_SCORE )
+                            .getData()
+                            .size() );
 
-        assertTrue( Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
-                                   metric -> metric.getMetricID() != MetricConstants.THREAT_SCORE )
-                          .getData()
-                          .size() == 30 * 8 );
+        assertEquals( 30 * 8 + 20,
+                      Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
+                                     metric -> metric.getMetricID() != MetricConstants.THREAT_SCORE )
+                            .getData()
+                            .size() );
 
         // Expected result
         final TimeWindow expectedWindow = TimeWindow.of( Instant.MIN,
@@ -607,25 +613,26 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                500,
                                                                MeasurementUnit.of(),
                                                                MetricConstants.CONTINGENCY_TABLE,
-                                                               MetricConstants.MAIN );
+                                                               null );
 
-        MatrixStatistic expected =
-                MatrixStatistic.of( new double[][] { { 500.0, 0.0 }, { 0.0, 0.0 } },
-                                    Arrays.asList( MetricDimension.TRUE_POSITIVES,
-                                                   MetricDimension.FALSE_POSITIVES,
-                                                   MetricDimension.FALSE_NEGATIVES,
-                                                   MetricDimension.TRUE_NEGATIVES ),
-                                    expectedMeta );
+        Map<MetricConstants, Double> elements = new HashMap<>();
+        elements.put( MetricConstants.TRUE_POSITIVES, 500.0 );
+        elements.put( MetricConstants.TRUE_NEGATIVES, 0.0 );
+        elements.put( MetricConstants.FALSE_POSITIVES, 0.0 );
+        elements.put( MetricConstants.FALSE_NEGATIVES, 0.0 );
 
-        MatrixStatistic actual = Slicer.filter( processor.getCachedMetricOutput().getMatrixStatistics(),
-                                                meta -> meta.getSampleMetadata()
-                                                            .getThresholds()
-                                                            .equals( expectedThreshold )
-                                                        && meta.getSampleMetadata()
-                                                               .getTimeWindow()
-                                                               .equals( expectedWindow ) )
-                                       .getData()
-                                       .get( 0 );
+        DoubleScoreStatistic expected = DoubleScoreStatistic.of( elements, expectedMeta );
+
+        DoubleScoreStatistic actual = Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
+                                                     meta -> meta.getSampleMetadata()
+                                                                 .getThresholds()
+                                                                 .equals( expectedThreshold )
+                                                             && meta.getSampleMetadata()
+                                                                    .getTimeWindow()
+                                                                    .equals( expectedWindow )
+                                                             && meta.getMetricID() == MetricConstants.CONTINGENCY_TABLE )
+                                            .getData()
+                                            .get( 0 );
 
         assertEquals( expected, actual );
     }
@@ -637,7 +644,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<PoolOfPairs<Double, Double>> processor =
-                MetricFactory.ofMetricProcessorForSingleValuedPairs( config, StatisticGroup.set() );
+                MetricFactory.ofMetricProcessorForSingleValuedPairs( config, StatisticType.set() );
         PoolOfPairs<Double, Double> pairs = MetricTestDataFactory.getSingleValuedPairsSeven();
 
         // Generate results for 10 nominal lead times
@@ -660,15 +667,17 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         }
 
         // Validate a subset of the data       
-        assertTrue( Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
-                                   MetricConstants.THREAT_SCORE )
-                          .getData()
-                          .size() == 10 );
+        assertEquals( 10,
+                      Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
+                                     MetricConstants.THREAT_SCORE )
+                            .getData()
+                            .size() );
 
-        assertTrue( Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
-                                   metric -> metric.getMetricID() != MetricConstants.THREAT_SCORE )
-                          .getData()
-                          .size() == 20 * 8 );
+        assertEquals( 20 * 8 + 10,
+                      Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
+                                     metric -> metric.getMetricID() != MetricConstants.THREAT_SCORE )
+                            .getData()
+                            .size() );
 
         // Expected result
         final TimeWindow expectedWindow = TimeWindow.of( Instant.MIN,
@@ -689,25 +698,26 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                0,
                                                                MeasurementUnit.of(),
                                                                MetricConstants.CONTINGENCY_TABLE,
-                                                               MetricConstants.MAIN );
+                                                               null );
 
-        MatrixStatistic expected =
-                MatrixStatistic.of( new double[][] { { 0.0, 0.0 }, { 0.0, 0.0 } },
-                                    Arrays.asList( MetricDimension.TRUE_POSITIVES,
-                                                   MetricDimension.FALSE_POSITIVES,
-                                                   MetricDimension.FALSE_NEGATIVES,
-                                                   MetricDimension.TRUE_NEGATIVES ),
-                                    expectedMeta );
+        Map<MetricConstants, Double> elements = new HashMap<>();
+        elements.put( MetricConstants.TRUE_POSITIVES, 0.0 );
+        elements.put( MetricConstants.TRUE_NEGATIVES, 0.0 );
+        elements.put( MetricConstants.FALSE_POSITIVES, 0.0 );
+        elements.put( MetricConstants.FALSE_NEGATIVES, 0.0 );
 
-        MatrixStatistic actual = Slicer.filter( processor.getCachedMetricOutput().getMatrixStatistics(),
-                                                meta -> meta.getSampleMetadata()
-                                                            .getThresholds()
-                                                            .equals( expectedThreshold )
-                                                        && meta.getSampleMetadata()
-                                                               .getTimeWindow()
-                                                               .equals( expectedWindow ) )
-                                       .getData()
-                                       .get( 0 );
+        DoubleScoreStatistic expected = DoubleScoreStatistic.of( elements, expectedMeta );
+
+        DoubleScoreStatistic actual = Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
+                                                     meta -> meta.getSampleMetadata()
+                                                                 .getThresholds()
+                                                                 .equals( expectedThreshold )
+                                                             && meta.getSampleMetadata()
+                                                                    .getTimeWindow()
+                                                                    .equals( expectedWindow )
+                                                             && meta.getMetricID() == MetricConstants.CONTINGENCY_TABLE )
+                                            .getData()
+                                            .get( 0 );
 
         assertEquals( expected, actual );
     }
@@ -722,7 +732,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         MetricProcessor<PoolOfPairs<Double, Double>> processor =
                 MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
-                                                                     StatisticGroup.set() );
+                                                                     StatisticType.set() );
 
         PoolOfPairs<Double, Double> pairs =
                 MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsFour();
@@ -778,7 +788,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<PoolOfPairs<Double, Double>> processor =
-                MetricFactory.ofMetricProcessorForSingleValuedPairs( config, StatisticGroup.set() );
+                MetricFactory.ofMetricProcessorForSingleValuedPairs( config, StatisticType.set() );
         PoolOfPairs<Double, Double> pairs = MetricTestDataFactory.getSingleValuedPairsEight();
 
         // Generate results
@@ -822,7 +832,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                                         null,
                                                                                         null,
                                                                                         null ),
-                                                                     Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
+                                                                     Collections.singleton( StatisticType.DOUBLE_SCORE ) );
         processor.apply( null );
     }
 
@@ -845,7 +855,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                                         null,
                                                                                         null,
                                                                                         null ),
-                                                                     Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
+                                                                     Collections.singleton( StatisticType.DOUBLE_SCORE ) );
         processor.apply( MetricTestDataFactory.getSingleValuedPairsSix() );
 
     }
@@ -881,7 +891,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         MetricProcessor<PoolOfPairs<Double, Double>> processor =
                 MetricFactory.ofMetricProcessorForSingleValuedPairs( mockedConfig,
-                                                                     Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
+                                                                     Collections.singleton( StatisticType.DOUBLE_SCORE ) );
         processor.apply( MetricTestDataFactory.getSingleValuedPairsSix() );
     }
 

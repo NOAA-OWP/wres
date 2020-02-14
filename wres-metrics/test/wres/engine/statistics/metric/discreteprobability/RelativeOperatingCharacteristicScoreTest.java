@@ -18,7 +18,7 @@ import org.junit.rules.ExpectedException;
 
 import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Probability;
 import wres.datamodel.Slicer;
@@ -247,7 +247,7 @@ public final class RelativeOperatingCharacteristicScoreTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( rocScore.getScoreOutputGroup() == ScoreGroup.NONE );
+        assertTrue( rocScore.getScoreOutputGroup() == MetricGroup.NONE );
     }
 
     /**

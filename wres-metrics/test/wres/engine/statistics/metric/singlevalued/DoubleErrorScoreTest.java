@@ -10,7 +10,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
@@ -69,7 +69,7 @@ public final class DoubleErrorScoreTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( score.getScoreOutputGroup() == ScoreGroup.NONE );
+        assertTrue( score.getScoreOutputGroup() == MetricGroup.NONE );
     }
 
     @Test
