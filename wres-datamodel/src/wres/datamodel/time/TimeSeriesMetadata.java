@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 
 import wres.datamodel.scale.TimeScale;
 
@@ -131,7 +132,7 @@ public class TimeSeriesMetadata
     @Override
     public String toString()
     {
-        return new ToStringBuilder( this )
+        return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
                 .append( "timeScale", timeScale )
                 .append( "referenceTimes", referenceTimes )
                 .append( "variableName", variableName )
