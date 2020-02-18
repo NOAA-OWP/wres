@@ -25,7 +25,6 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -103,7 +102,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
      * Set of paths that this writer actually wrote to
      * Guarded by windowLock
      */
-    private final Set<Path> pathsWrittenTo = new ConcurrentSkipListSet<>();
+    private final Set<Path> pathsWrittenTo;
 
     /**
      * Writing tasks submitted
@@ -173,7 +172,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
         }
 
         // Create the blobs into which statistics will be written and a writer per blob
-        this.createBlobsAndBlobWriters( projectConfig );
+        this.pathsWrittenTo = this.createBlobsAndBlobWriters( projectConfig );
         
         Objects.requireNonNull( this.destinationConfig, "The NetcdfOutputWriter wasn't properly initialized." );
     }
@@ -182,10 +181,11 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
      * Creates the blobs into which outputs will be written.
      * 
      * @param ProjectConfig projectConfig the project configuration
-     * @throws IOException if the blobs could not be created for any reason 
+     * @throws IOException if the blobs could not be created for any reason
+     * @return the paths written
      */
     
-    private void createBlobsAndBlobWriters( ProjectConfig projectConfig ) throws IOException
+    private Set<Path> createBlobsAndBlobWriters( ProjectConfig projectConfig ) throws IOException
     {
         // Time windows
         PairConfig pairConfig = projectConfig.getPair();
@@ -249,7 +249,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
         DatasetIdentifier identifier = DatasetIdentifier.of( null, variableId, scenarioId );
         
         // Create blobs from components
-        this.createBlobsAndBlobWriters( identifier, timeWindows, thresholds, units, desiredTimeScale );
+        return this.createBlobsAndBlobWriters( identifier, timeWindows, thresholds, units, desiredTimeScale );
     }
     
     /**
@@ -260,14 +260,17 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
      * @param units the measurement units, if available
      * @param desiredTimeScale the desired time scale, if available
      * @throws IOException if the blobs could not be created for any reason
+     * @return the paths written
      */
 
-    private void createBlobsAndBlobWriters( DatasetIdentifier identifier,
+    private Set<Path> createBlobsAndBlobWriters( DatasetIdentifier identifier,
                                             Set<TimeWindow> timeWindows,
                                             ThresholdsByMetric thresholds,
                                             String units,
                                             TimeScale desiredTimeScale ) throws IOException
     {
+        Set<Path> returnMe = new TreeSet<>();
+        
         // One blob and blob writer per time window      
         for ( TimeWindow nextWindow : timeWindows )
         {
@@ -293,6 +296,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                                                                          variables,
                                                                          this.getDurationUnits() );
 
+            returnMe.add( targetPath );
+            
             // Create the blob writer
             TimeWindowWriter writer = new TimeWindowWriter( this,
                                                             pathActuallyWritten,
@@ -301,6 +306,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
             // Add the blob writer to the writer cache
             this.writersMap.put( nextWindow, writer );
         }
+        
+        return Collections.unmodifiableSet( returnMe );
     }  
 
     private String getTemplatePath()
@@ -513,23 +520,22 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
         {
             try
             {
-                // Figure out which paths were written to. These should all be
-                // complete by this point, right?
+                // Complete outstanding tasks
                 for ( Future<Set<Path>> writingTaskResult : this.writingTasksSubmitted )
                 {
-                    Set<Path> oneSetOfPaths = writingTaskResult.get();
-                    LOGGER.debug( "Some paths written to by {}: {}", this, oneSetOfPaths );
-                    this.pathsWrittenTo.addAll( oneSetOfPaths );
+                    writingTaskResult.get();
                 }
             }
             catch ( InterruptedException ie )
             {
-                LOGGER.warn( "Interrupted while getting paths from netcdf writers.", ie );
+                LOGGER.warn( "Interrupted while completing a netcdf writing task.", ie );
+                
                 Thread.currentThread().interrupt();
             }
             catch ( ExecutionException ee )
             {
-                String message = "Failed to get a path from netcdf writer for " + this.destinationConfig;
+                String message = "Failed to complete a netcdf writing task for " + this.destinationConfig;
+                
                 throw new WriteException( message, ee );
             }
 
