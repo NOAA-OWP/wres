@@ -573,7 +573,7 @@ public class ReadValueManager
      * Uses a pem on the classpath.
      * @return the resulting SSLContext or the default SSLContext if not found.
      */
-    private static Pair<SSLContext,X509TrustManager> getSslContextTrustingDodSigner()
+    public static Pair<SSLContext,X509TrustManager> getSslContextTrustingDodSigner()
     {
         String trustFileOnClassPath = "dod_sw_ca-54_expires_2022-11.pem";
         try ( InputStream inputStream = ReadValueManager.class
