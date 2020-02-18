@@ -46,12 +46,6 @@ public class StatisticsForProject
     private final List<Future<ListOfStatistics<DiagramStatistic>>> multiVector = new ArrayList<>();
 
     /**
-     * Thread safe map for {@link MatrixStatistic}.
-     */
-
-    private final List<Future<ListOfStatistics<MatrixStatistic>>> matrix = new ArrayList<>();
-
-    /**
      * Thread safe map for {@link BoxPlotStatistics} for each pair within a pool.
      */
 
@@ -109,19 +103,6 @@ public class StatisticsForProject
             throws InterruptedException
     {
         return this.unwrap( StatisticType.MULTIVECTOR, multiVector );
-    }
-
-    /**
-     * Returns a {@link ListOfStatistics} of {@link MatrixStatistic} or null if no output exists.
-     * 
-     * @return the matrix output or null
-     * @throws StatisticException if the output could not be retrieved
-     * @throws InterruptedException if the retrieval was interrupted
-     */
-
-    public ListOfStatistics<MatrixStatistic> getMatrixStatistics() throws InterruptedException
-    {
-        return this.unwrap( StatisticType.MATRIX, matrix );
     }
 
     /**
@@ -183,8 +164,6 @@ public class StatisticsForProject
                 return !durationScore.isEmpty();
             case MULTIVECTOR:
                 return !multiVector.isEmpty();
-            case MATRIX:
-                return !matrix.isEmpty();
             case BOXPLOT_PER_PAIR:
                 return !boxplotPerPair.isEmpty();
             case BOXPLOT_PER_POOL:
@@ -219,11 +198,6 @@ public class StatisticsForProject
         if ( this.hasStatistic( StatisticType.MULTIVECTOR ) )
         {
             returnMe.add( StatisticType.MULTIVECTOR );
-        }
-
-        if ( this.hasStatistic( StatisticType.MATRIX ) )
-        {
-            returnMe.add( StatisticType.MATRIX );
         }
 
         if ( this.hasStatistic( StatisticType.BOXPLOT_PER_PAIR ) )
@@ -270,13 +244,6 @@ public class StatisticsForProject
          */
 
         private final ConcurrentLinkedQueue<Future<ListOfStatistics<DiagramStatistic>>> multiVectorInternal =
-                new ConcurrentLinkedQueue<>();
-
-        /**
-         * Thread safe map for {@link MatrixStatistic}.
-         */
-
-        private final ConcurrentLinkedQueue<Future<ListOfStatistics<MatrixStatistic>>> matrixInternal =
                 new ConcurrentLinkedQueue<>();
 
         /**
@@ -344,22 +311,6 @@ public class StatisticsForProject
                 addMultiVectorStatistics( Future<ListOfStatistics<DiagramStatistic>> result )
         {
             multiVectorInternal.add( result );
-
-            return this;
-        }
-
-        /**
-         * Adds a new {@link MatrixStatistic} for a collection of metrics to the internal store, merging with existing 
-         * items that share the same key, as required.
-         * 
-         * @param result the result
-         * @return the builder
-         */
-
-        public StatisticsForProjectBuilder
-                addMatrixStatistics( Future<ListOfStatistics<MatrixStatistic>> result )
-        {
-            matrixInternal.add( result );
 
             return this;
         }
@@ -436,7 +387,6 @@ public class StatisticsForProject
         doubleScore.addAll( builder.doubleScoreInternal );
         durationScore.addAll( builder.durationScoreInternal );
         multiVector.addAll( builder.multiVectorInternal );
-        matrix.addAll( builder.matrixInternal );
         boxplotPerPair.addAll( builder.boxplotPerPairInternal );
         boxplotPerPool.addAll( builder.boxplotPerPoolInternal );
         paired.addAll( builder.pairedInternal );

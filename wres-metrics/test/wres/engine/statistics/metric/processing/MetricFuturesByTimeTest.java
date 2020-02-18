@@ -27,7 +27,6 @@ import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
-import wres.datamodel.statistics.MatrixStatistic;
 import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
@@ -72,12 +71,6 @@ public final class MetricFuturesByTimeTest
      */
 
     private ListOfStatistics<DurationScoreStatistic> durationScore;
-
-    /**
-     * Default matrix output.
-     */
-
-    private ListOfStatistics<MatrixStatistic> matrix;
 
     /**
      * Default multivector output.
@@ -141,19 +134,6 @@ public final class MetricFuturesByTimeTest
 
         builder.addDurationScoreOutput( CompletableFuture.completedFuture( durationScore ) );
 
-
-        // Add a matrix output
-        matrix =
-                ListOfStatistics.of( Collections.singletonList( MatrixStatistic.of( new double[][] { { 1, 1 },
-                                                                                                     { 1, 1 } },
-                                                                                    StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
-                                                                                                          1,
-                                                                                                          MeasurementUnit.of(),
-                                                                                                          MetricConstants.CONTINGENCY_TABLE,
-                                                                                                          MetricConstants.MAIN ) ) ) );
-
-        builder.addMatrixOutput( CompletableFuture.completedFuture( matrix ) );
-
         // Add multi-vector output
         multivector =
                 ListOfStatistics.of( Collections.singletonList( DiagramStatistic.of( Collections.singletonMap( MetricDimension.FORECAST_PROBABILITY,
@@ -191,7 +171,6 @@ public final class MetricFuturesByTimeTest
         assertTrue( futures.getOutputTypes().contains( StatisticType.BOXPLOT_PER_PAIR ) );
         assertTrue( futures.getOutputTypes().contains( StatisticType.DOUBLE_SCORE ) );
         assertTrue( futures.getOutputTypes().contains( StatisticType.DURATION_SCORE ) );
-        assertTrue( futures.getOutputTypes().contains( StatisticType.MATRIX ) );
         assertTrue( futures.getOutputTypes().contains( StatisticType.MULTIVECTOR ) );
         assertTrue( futures.getOutputTypes().contains( StatisticType.PAIRED ) );
 
@@ -200,7 +179,6 @@ public final class MetricFuturesByTimeTest
         assertFalse( emptyFutures.getOutputTypes().contains( StatisticType.BOXPLOT_PER_PAIR ) );
         assertFalse( emptyFutures.getOutputTypes().contains( StatisticType.DOUBLE_SCORE ) );
         assertFalse( emptyFutures.getOutputTypes().contains( StatisticType.DURATION_SCORE ) );
-        assertFalse( emptyFutures.getOutputTypes().contains( StatisticType.MATRIX ) );
         assertFalse( emptyFutures.getOutputTypes().contains( StatisticType.MULTIVECTOR ) );
         assertFalse( emptyFutures.getOutputTypes().contains( StatisticType.PAIRED ) );
     }
@@ -243,14 +221,12 @@ public final class MetricFuturesByTimeTest
         builder.addBoxPlotOutputPerPair( CompletableFuture.completedFuture( boxplot ) );
         builder.addDoubleScoreOutput( CompletableFuture.completedFuture( doubleScore ) );
         builder.addDurationScoreOutput( CompletableFuture.completedFuture( durationScore ) );
-        builder.addMatrixOutput( CompletableFuture.completedFuture( matrix ) );
         builder.addMultiVectorOutput( CompletableFuture.completedFuture( multivector ) );
         builder.addPairedOutput( CompletableFuture.completedFuture( paired ) );
         // Add again
         builder.addBoxPlotOutputPerPair( CompletableFuture.completedFuture( boxplot ) );
         builder.addDoubleScoreOutput( CompletableFuture.completedFuture( doubleScore ) );
         builder.addDurationScoreOutput( CompletableFuture.completedFuture( durationScore ) );
-        builder.addMatrixOutput( CompletableFuture.completedFuture( matrix ) );
         builder.addMultiVectorOutput( CompletableFuture.completedFuture( multivector ) );
         builder.addPairedOutput( CompletableFuture.completedFuture( paired ) );
 
@@ -259,7 +235,6 @@ public final class MetricFuturesByTimeTest
         assertTrue( metricFutures.getOutputTypes().contains( StatisticType.BOXPLOT_PER_PAIR ) );
         assertTrue( metricFutures.getOutputTypes().contains( StatisticType.DOUBLE_SCORE ) );
         assertTrue( metricFutures.getOutputTypes().contains( StatisticType.DURATION_SCORE ) );
-        assertTrue( metricFutures.getOutputTypes().contains( StatisticType.MATRIX ) );
         assertTrue( metricFutures.getOutputTypes().contains( StatisticType.MULTIVECTOR ) );
         assertTrue( metricFutures.getOutputTypes().contains( StatisticType.PAIRED ) );
     }
@@ -276,7 +251,6 @@ public final class MetricFuturesByTimeTest
         builder.addBoxPlotOutputPerPair( CompletableFuture.completedFuture( boxplot ) );
         builder.addDoubleScoreOutput( CompletableFuture.completedFuture( doubleScore ) );
         builder.addDurationScoreOutput( CompletableFuture.completedFuture( durationScore ) );
-        builder.addMatrixOutput( CompletableFuture.completedFuture( matrix ) );
         builder.addMultiVectorOutput( CompletableFuture.completedFuture( multivector ) );
         builder.addPairedOutput( CompletableFuture.completedFuture( paired ) );
         builder.addFutures( this.futures );
@@ -286,7 +260,6 @@ public final class MetricFuturesByTimeTest
         assertTrue( metricFutures.getOutputTypes().contains( StatisticType.BOXPLOT_PER_PAIR ) );
         assertTrue( metricFutures.getOutputTypes().contains( StatisticType.DOUBLE_SCORE ) );
         assertTrue( metricFutures.getOutputTypes().contains( StatisticType.DURATION_SCORE ) );
-        assertTrue( metricFutures.getOutputTypes().contains( StatisticType.MATRIX ) );
         assertTrue( metricFutures.getOutputTypes().contains( StatisticType.MULTIVECTOR ) );
         assertTrue( metricFutures.getOutputTypes().contains( StatisticType.PAIRED ) );
     }

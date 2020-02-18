@@ -29,7 +29,6 @@ import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
-import wres.datamodel.statistics.MatrixStatistic;
 import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
@@ -318,64 +317,6 @@ public class WriterTestHelper
         ListOfStatistics<DiagramStatistic> fakeOutputData =
                 ListOfStatistics.of( Collections.singletonList( DiagramStatistic.of( fakeOutputs, fakeMetadata ) ) );
 
-        return fakeOutputData;
-    }
-
-    /**
-     * Returns a {@link ListOfStatistics} containing a {@link MatrixStatistic} that 
-     * represents the output of a 2x2 contingency table for one pool.
-     * 
-     * @return a contingency table for one pool
-     */
-
-    public static ListOfStatistics<MatrixStatistic> getContingencyTableForOnePool()
-    {
-
-
-        // location id
-        final String LID = "BDAC1";
-
-        TimeWindow timeOne =
-                TimeWindow.of( Instant.MIN,
-                               Instant.MAX,
-                               Duration.ofHours( 24 ),
-                               Duration.ofHours( 24 ) );
-
-        OneOrTwoThresholds threshold =
-                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                     Operator.GREATER,
-                                                     ThresholdDataType.LEFT ) );
-
-        // Output requires a future... which requires a metadata...
-        // which requires a datasetidentifier...
-        // which requires a location...
-
-        Location fakeLocation = Location.of( LID );
-        final Location geospatialID = fakeLocation;
-
-        DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( geospatialID, "SQIN", "HEFS", "ESP" );
-
-        StatisticMetadata fakeMetadata = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                                  datasetIdentifier,
-                                                                                  timeOne,
-                                                                                  threshold ),
-                                                               1000,
-                                                               MeasurementUnit.of(),
-                                                               MetricConstants.CONTINGENCY_TABLE,
-                                                               null );
-
-        double[][] fakeOutputs = new double[][] { { 23, 79 }, { 56, 342 } };
-
-
-        // Fake output wrapper.
-        ListOfStatistics<MatrixStatistic> fakeOutputData =
-                ListOfStatistics.of( Collections.singletonList( MatrixStatistic.of( fakeOutputs,
-                                                                                    Arrays.asList( MetricDimension.TRUE_POSITIVES,
-                                                                                                   MetricDimension.FALSE_POSITIVES,
-                                                                                                   MetricDimension.FALSE_NEGATIVES,
-                                                                                                   MetricDimension.TRUE_NEGATIVES ),
-                                                                                    fakeMetadata ) ) );
         return fakeOutputData;
     }
 

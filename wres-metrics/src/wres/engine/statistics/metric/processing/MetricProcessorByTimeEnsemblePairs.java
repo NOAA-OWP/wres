@@ -559,10 +559,6 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         {
             this.processDichotomousPairsByThreshold( input, futures, StatisticType.DOUBLE_SCORE );
         }
-        if ( this.hasMetrics( SampleDataGroup.DICHOTOMOUS, StatisticType.MATRIX ) )
-        {
-            this.processDichotomousPairsByThreshold( input, futures, StatisticType.MATRIX );
-        }
     }
 
     /**
