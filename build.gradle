@@ -290,12 +290,6 @@ project(':wres-io')
         compile 'org.slf4j:slf4j-api:1.8.0-beta4'
         compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 
-        // Glassfish deps may be able to be removed with USGSRegionSaver.
-        compile 'org.glassfish.jersey.core:jersey-common:2.29.1'
-        compile 'org.glassfish.jersey.core:jersey-client:2.29.1'
-        compile 'org.glassfish.jersey.inject:jersey-hk2:2.29.1'
-        compile 'org.glassfish.jersey.media:jersey-media-json-jackson:2.29.1'
-
         // JSON deserialization uses jackson directly. Specify recent version.
         compile 'com.fasterxml.jackson.core:jackson-databind:2.10.2'
         compile 'com.fasterxml.jackson.core:jackson-annotations:2.10.2'
@@ -329,9 +323,6 @@ project(':wres-io')
 
         // wres.io.utilities uses javax.json.* imports
         compile 'org.glassfish:javax.json:1.1.4'
-
-        // One reader uses javax.validation.constraints.NotNull
-        compile 'javax.validation:validation-api:2.0.1.Final'
 
         // Easier MD5
         compile 'commons-codec:commons-codec:1.13'

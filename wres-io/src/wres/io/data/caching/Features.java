@@ -159,11 +159,14 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
     private static Integer getFeatureID( Integer comid, String lid, String gageID, String huc)
             throws SQLException
     {
+        LOGGER.trace( "getFeatureID with 4-args: comid={}, lid={}, gageID={}, huc={}",
+                      comid, lid, gageID, huc );
         return Features.getFeatureID( new FeatureDetails.FeatureKey( comid, lid, gageID, huc, null, null ));
     }
 
     private static Integer getFeatureID( Feature feature ) throws SQLException
     {
+        LOGGER.trace( "getFeatureID with Feature: {}", feature );
         FeatureDetails details = new FeatureDetails(  );
         details.setLid( feature.getLocationId() );
 
@@ -229,6 +232,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 
     public static FeatureDetails getDetails(Feature feature) throws SQLException
     {
+        LOGGER.trace( "getDetails with Feature: {}", feature );
         Integer id = Features.getFeatureID( feature );
 
         if (id == null)
@@ -259,12 +263,6 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         {
             script.addTab().addLine("AND comid > 0");
             script.addTab().addLine("AND comid IS NOT NULL");
-        }
-
-        if (ConfigHelper.usesUSGSData( projectConfig ))
-        {
-            script.addTab(  ).addLine("AND character_length(gage_id) >= 8");
-            script.addTab(  ).addLine("AND gage_id ~ '^\\d+$'");
         }
 
         script.addLine("ORDER BY feature_id");
@@ -484,6 +482,8 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
     private static FeatureDetails getDetails(Integer comid, String lid, String gageID, String huc)
             throws SQLException
     {
+        LOGGER.trace( "getDetails with 4-args: comid={}, lid={}, gageID={}, huc={}",
+                      comid, lid, gageID, huc );
         Integer id = Features.getFeatureID( comid, lid, gageID, huc );
         if (id == null)
         {
@@ -500,11 +500,13 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 
     private static FeatureDetails getDetailsByLID(String lid) throws SQLException
     {
+        LOGGER.trace( "getDetailsByLID lid={}", lid );
         return Features.getDetails( null, lid, null, null );
     }
 
     public static FeatureDetails getDetailsByGageID(String gageID) throws SQLException
     {
+        LOGGER.trace( "getDetailsByGageID lid={}", gageID );
         return Features.getDetails( null, null, gageID, null );
     }
 
@@ -619,6 +621,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
     private static Set<FeatureDetails> getDetailsByRegion( String region )
             throws SQLException
     {
+        LOGGER.trace( "getDetailsByRegion region={}", region );
         DataScripter script = new DataScripter(  );
         script.addLine("SELECT *");
         script.addLine("FROM wres.Feature");
@@ -643,16 +646,20 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
     private static Set<FeatureDetails> getDetailsFromDatabase( DataScripter script )
             throws SQLException
     {
+        LOGGER.trace( "getDetailsFromDatabase( script={} )", script );
         List<FeatureDetails> features = script.interpret( FeatureDetails::new );
 
         features.forEach( Features.getCache()::add );
 
+        LOGGER.trace( "getDetailsFromDatabase( script={} ) found features: {}",
+                      script, features );
         return new HashSet<>( features );
     }
 
     public static Integer getVariableFeatureIDByLID(String lid, Integer variableID)
             throws SQLException
     {
+        LOGGER.trace( "getVariableFeatureIDByLID( lid={}, variableID={} )", lid, variableID );
         FeatureDetails featureDetails = Features.getDetailsByLID( lid );
         return Features.getVariableFeatureByFeature( featureDetails, variableID );
     }
@@ -660,16 +667,22 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
     @Override
     public boolean hasID( FeatureDetails.FeatureKey key )
     {
+        LOGGER.trace( "hasID( FeatureDetails.FeatureKey={} )", key );
         synchronized ( this.getKeyLock() )
         {
             if (key.hasPrimaryKey())
             {
+                LOGGER.trace( "hasID( FeatureDetails.FeatureKey={} ) key.hasPrimaryKey() was true",
+                              key );
                 // If the primary key for the FeatureKey has the current primary key (lid at the time of writing),
                 // use the standard search
                 return this.getKeyIndex().containsKey( key );
             }
             else
             {
+                LOGGER.trace( "hasID( FeatureDetails.FeatureKey={} ) key.hasPrimaryKey() was false, matching on partial key...",
+                              key );
+
                 // Otherwise, scan the keys for a match on a partial key
                 boolean hasIt = false;
 
@@ -682,6 +695,8 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
                     }
                 }
 
+                LOGGER.trace( "hasID( FeatureDetails.FeatureKey={} ) key.hasPrimaryKey() was false, hasIt={}",
+                              key, hasIt );
                 return hasIt;
             }
         }
@@ -690,17 +705,21 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
     @Override
     Integer getID( FeatureDetails.FeatureKey key ) throws SQLException
     {
+        LOGGER.trace( "getID( FeatureDetails.FeatureKey={} )", key );
         synchronized ( this.getKeyLock() )
         {
             if (key.hasPrimaryKey())
             {
-
+                LOGGER.trace( "getID( FeatureDetails.FeatureKey={} ) key.hasPrimaryKey() was true",
+                              key );
                 // If the primary key for the FeatureKey has the current primary key (lid at the time of writing),
                 // use the standard search
                 return this.getKeyIndex().get( key );
             }
             else
             {
+                LOGGER.trace( "getID( FeatureDetails.FeatureKey={} ) key.hasPrimaryKey() was false, matching on partial key...",
+                              key );
                 // Otherwise, scan the keys for a match on a partial key
                 Integer id = null;
                 boolean foundIt = false;
@@ -719,6 +738,9 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
                 {
                     LOGGER.debug( "The key of {} was found but the ID couldn't be retrieved.", key );
                 }
+
+                LOGGER.trace( "getID( FeatureDetails.FeatureKey={} ) key.hasPrimaryKey() was false, foundIt={}",
+                              key, foundIt );
                 return id;
             }
         }
@@ -733,10 +755,14 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 
     public static Integer getVariableFeatureByFeature(FeatureDetails featureDetails, Integer variableId) throws SQLException
     {
+        LOGGER.trace( "getVariableFeatureByFeature( FeatureDetails={}, variableId={} )",
+                      featureDetails, variableId );
         synchronized ( Features.POSITION_LOCK )
         {
             if (!Features.getCache().getKeyIndex().containsKey( featureDetails.getKey() ))
             {
+                LOGGER.trace( "getVariableFeatureByFeature( FeatureDetails={}, variableId={} ) key not found, adding new featureDetails.",
+                              featureDetails, variableId );
                 Features.getCache().add( featureDetails );
             }
 
@@ -744,6 +770,8 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 
             if (id == null)
             {
+                LOGGER.trace( "getVariableFeatureByFeature( FeatureDetails={}, variableId={} ) getVariableFeatureID returned null, scripting...",
+                              featureDetails, variableId );
                 DataScripter script = new DataScripter(  );
                 script.setHighPriority( true );
 

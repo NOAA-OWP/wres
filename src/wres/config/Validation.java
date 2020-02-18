@@ -35,6 +35,7 @@ import wres.config.generated.DestinationType;
 import wres.config.generated.Feature;
 import wres.config.generated.Format;
 import wres.config.generated.IntBoundsType;
+import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
@@ -778,7 +779,7 @@ public class Validation
 
                 // If we plan on using USGS, but we want a date later than now,
                 // break; that's impossible.
-                boolean usesUSGSData = ConfigHelper.usesUSGSData( projectConfigPlus.getProjectConfig() );
+                boolean usesUSGSData = Validation.usesUSGSData( projectConfigPlus.getProjectConfig() );
 
                 Instant now = Instant.now();
                 Instant latest = Instant.parse( latestRaw );
@@ -806,6 +807,65 @@ public class Validation
         }
 
         return result;
+    }
+
+    private static boolean usesUSGSData( ProjectConfig projectConfig )
+    {
+        for ( DataSourceConfig.Source source : projectConfig.getInputs()
+                                                            .getLeft()
+                                                            .getSource() )
+        {
+            if ( Validation.usesUSGSData( source ) )
+            {
+                return true;
+            }
+        }
+
+        for ( DataSourceConfig.Source source : projectConfig.getInputs().getRight().getSource() )
+        {
+            if ( Validation.usesUSGSData( source ) )
+            {
+                return true;
+            }
+        }
+
+        if ( projectConfig.getInputs().getBaseline() != null )
+        {
+            for ( DataSourceConfig.Source source : projectConfig.getInputs()
+                                                                .getBaseline()
+                                                                .getSource() )
+            {
+                if ( Validation.usesUSGSData( source ) )
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+
+    private static boolean usesUSGSData( DataSourceConfig.Source source )
+    {
+        InterfaceShortHand interfaceShortHand = source.getInterface();
+        URI uri = source.getValue();
+
+        if ( Objects.nonNull( interfaceShortHand )
+             && interfaceShortHand.equals( InterfaceShortHand.USGS_NWIS ) )
+        {
+            return true;
+        }
+        else if ( Objects.nonNull( uri )
+                  && Objects.nonNull( uri.getPath() )
+                  && uri.getPath()
+                        .toLowerCase()
+                        .contains( "/nwis/" ) )
+        {
+            return true;
+        }
+
+        return false;
     }
 
     private static boolean isDateStringValid( ProjectConfigPlus projectConfigPlus,
@@ -1757,7 +1817,7 @@ public class Validation
         // See #63493, notably #63493-18. In future, we will require a URI always
         // TODO: remove the conditionality on format when the declared format disappears
         if ( Objects.isNull( source.getValue() )
-             || source.getValue().toString().isBlank() && format != Format.S_3 && format != Format.USGS )
+             || source.getValue().toString().isBlank() && format != Format.S_3 )
         {
             LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE +
                          " A source has an invalid URI: please add a valid URI, which cannot be empty.",
