@@ -965,7 +965,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             {
                 FeatureKey other = (FeatureKey) obj;
 
-                return Objects.equals( this.comid, other.comid ) 
+                equal = Objects.equals( this.comid, other.comid )
                         && Objects.equals( this.lid, other.lid )
                         && Objects.equals( this.gageID, other.gageID )
                         && Objects.equals( this.longitude, other.longitude )
