@@ -27,7 +27,6 @@ import wres.config.generated.ThresholdOperator;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.MetricConstants;
-import wres.engine.statistics.metric.categorical.ContingencyTable;
 import wres.engine.statistics.metric.categorical.EquitableThreatScore;
 import wres.engine.statistics.metric.categorical.PeirceSkillScore;
 import wres.engine.statistics.metric.categorical.ProbabilityOfDetection;
@@ -181,20 +180,6 @@ public final class MetricFactoryTest
         // Unrecognized metric
         IllegalArgumentException expected = assertThrows( IllegalArgumentException.class,
                                                           () -> MetricFactory.ofEnsembleScore( MetricConstants.MAIN ) );
-        assertEquals( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN, expected.getMessage() );
-    }
-
-    /**
-     * Tests {@link MetricFactory#ofDichotomousMatrix(MetricConstants)}. 
-     */
-    @Test
-    public void testOfMulticategoryMatrix()
-    {
-        assertTrue( MetricFactory.ofDichotomousMatrix( MetricConstants.CONTINGENCY_TABLE ) instanceof ContingencyTable );
-
-        // Unrecognized metric
-        IllegalArgumentException expected = assertThrows( IllegalArgumentException.class,
-                                                          () -> MetricFactory.ofDichotomousMatrix( MetricConstants.MAIN ) );
         assertEquals( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN, expected.getMessage() );
     }
 

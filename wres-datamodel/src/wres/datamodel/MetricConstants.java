@@ -9,7 +9,6 @@ import java.util.Set;
 
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
-import wres.datamodel.statistics.MatrixStatistic;
 import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.BoxPlotStatistic;
@@ -724,12 +723,6 @@ public enum MetricConstants
          */
 
         MULTIVECTOR,
-
-        /**
-         * Metrics that produce a {@link MatrixStatistic}.
-         */
-
-        MATRIX,
 
         /**
          * Metrics that produce a {@link BoxPlotStatistic} for each pair within a pool.

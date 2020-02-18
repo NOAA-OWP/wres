@@ -22,7 +22,6 @@ import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DoubleScoreStatistic;
-import wres.datamodel.statistics.MatrixStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
@@ -173,7 +172,7 @@ public final class ContingencyTableScoreTest
     }
 
     /**
-     * Checks the output from {@link ContingencyTableScore#getMetadata(MatrixStatistic)} against a benchmark.
+     * Checks the output from {@link ContingencyTableScore#getMetadata(DoubleScoreStatistic)} against a benchmark.
      */
 
     @Test

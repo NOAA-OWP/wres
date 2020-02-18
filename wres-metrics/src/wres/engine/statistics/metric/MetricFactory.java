@@ -21,7 +21,6 @@ import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DoubleScoreStatistic;
-import wres.datamodel.statistics.MatrixStatistic;
 import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.thresholds.ThresholdsByMetric;
@@ -966,27 +965,6 @@ public final class MetricFactory
                 return ReliabilityDiagram.of();
             default:
                 throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
-        }
-    }
-
-    /**
-     * Returns a {@link Metric} that consumes dichotomous pairs and produces {@link MatrixStatistic}.
-     * 
-     * @param metric the metric identifier
-     * @return a metric
-     * @throws IllegalArgumentException if the metric identifier is not recognized
-     */
-
-    public static Metric<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatistic>
-            ofDichotomousMatrix( MetricConstants metric )
-    {
-        if ( MetricConstants.CONTINGENCY_TABLE.equals( metric ) )
-        {
-            return ContingencyTable.of();
-        }
-        else
-        {
-            throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         }
     }
 

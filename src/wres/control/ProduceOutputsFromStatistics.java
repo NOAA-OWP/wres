@@ -33,7 +33,6 @@ import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
-import wres.datamodel.statistics.MatrixStatistic;
 import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.Statistic;
@@ -41,7 +40,6 @@ import wres.datamodel.statistics.StatisticsForProject;
 import wres.io.writing.SharedStatisticsWriters;
 import wres.io.writing.commaseparated.statistics.CommaSeparatedBoxPlotWriter;
 import wres.io.writing.commaseparated.statistics.CommaSeparatedDiagramWriter;
-import wres.io.writing.commaseparated.statistics.CommaSeparatedMatrixWriter;
 import wres.io.writing.commaseparated.statistics.CommaSeparatedPairedWriter;
 import wres.io.writing.commaseparated.statistics.CommaSeparatedScoreWriter;
 import wres.io.writing.netcdf.NetcdfOutputWriter;
@@ -128,13 +126,6 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
 
     private final Map<DestinationType, Consumer<ListOfStatistics<BoxPlotStatistics>>> boxPlotConsumersPerPool =
             new EnumMap<>( DestinationType.class );
-    
-    /**
-     * Store of consumers for processing {@link MatrixStatistic} by {@link DestinationType} format.
-     */
-
-    private final Map<DestinationType, Consumer<ListOfStatistics<MatrixStatistic>>> matrixConsumers =
-            new EnumMap<>( DestinationType.class );
 
     /**
      * Store of consumers for processing {@link PairedStatistic} by {@link DestinationType} format.
@@ -206,12 +197,6 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
             if ( input.hasStatistic( StatisticType.BOXPLOT_PER_POOL ) )
             {
                 this.processBoxPlotOutputsPerPool( input.getBoxPlotStatisticsPerPool() );
-            }
-            
-            // Matrix output available
-            if ( input.hasStatistic( StatisticType.MATRIX ) )
-            {
-                this.processMatrixOutputs( input.getMatrixStatistics() );
             }
 
             // Ordinary scores available
@@ -343,17 +328,6 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
             this.boxPlotConsumersPerPool.put( DestinationType.CSV,
                                        boxPlotWriter );
             this.writersToPaths.add( boxPlotWriter );
-        }
-
-        if ( this.writeWhenTrue.test( StatisticType.MATRIX, DestinationType.CSV ) )
-        {
-            CommaSeparatedMatrixWriter matrixWriter =
-                    CommaSeparatedMatrixWriter.of( projectConfig,
-                                                   this.getDurationUnits(),
-                                                   outputDirectory );
-            this.matrixConsumers.put( DestinationType.CSV,
-                                      matrixWriter );
-            this.writersToPaths.add( matrixWriter );
         }
 
         if ( this.writeWhenTrue.test( StatisticType.PAIRED, DestinationType.CSV ) )
@@ -585,34 +559,6 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
                 log( outputs, next.getKey(), false );
             }
         }
-    }
-    
-    /**
-     * Processes {@link MatrixStatistic}.
-     * 
-     * @param outputs the output to consume
-     * @throws NullPointerException if the input is null
-     */
-
-    private void processMatrixOutputs( ListOfStatistics<MatrixStatistic> outputs )
-    {
-        Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
-
-        // Iterate through the consumers
-        for ( Entry<DestinationType, Consumer<ListOfStatistics<MatrixStatistic>>> next : this.matrixConsumers.entrySet() )
-        {
-            // Consume conditionally
-            if ( this.writeWhenTrue.test( StatisticType.MATRIX, next.getKey() ) )
-            {
-                log( outputs, next.getKey(), true );
-
-                // Consume the output
-                next.getValue().accept( outputs );
-
-                log( outputs, next.getKey(), false );
-            }
-        }
-
     }
 
     /**

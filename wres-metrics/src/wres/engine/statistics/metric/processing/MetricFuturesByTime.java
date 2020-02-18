@@ -19,7 +19,6 @@ import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
-import wres.datamodel.statistics.MatrixStatistic;
 import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.StatisticsForProject;
@@ -74,12 +73,6 @@ class MetricFuturesByTime
     private final List<Future<ListOfStatistics<PairedStatistic<Instant, Duration>>>> paired = new ArrayList<>();
 
     /**
-     * {@link MatrixStatistic} results.
-     */
-
-    private final List<Future<ListOfStatistics<MatrixStatistic>>> matrix = new ArrayList<>();
-
-    /**
      * Returns the results associated with the futures.
      * 
      * @return the metric results
@@ -97,7 +90,6 @@ class MetricFuturesByTime
         boxplotPerPair.forEach( builder::addBoxPlotStatisticsPerPair );
         boxplotPerPool.forEach( builder::addBoxPlotStatisticsPerPool );
         paired.forEach( builder::addPairedStatistics );
-        matrix.forEach( builder::addMatrixStatistics );
         return builder.build();
     }
 
@@ -139,11 +131,6 @@ class MetricFuturesByTime
         if ( !this.paired.isEmpty() )
         {
             returnMe.add( StatisticType.PAIRED );
-        }
-
-        if ( !this.matrix.isEmpty() )
-        {
-            returnMe.add( StatisticType.MATRIX );
         }
 
         return Collections.unmodifiableSet( returnMe );
@@ -207,13 +194,6 @@ class MetricFuturesByTime
          */
 
         private final ConcurrentLinkedQueue<Future<ListOfStatistics<PairedStatistic<Instant, Duration>>>> paired =
-                new ConcurrentLinkedQueue<>();
-
-        /**
-         * {@link MatrixStatistic} results.
-         */
-
-        private final ConcurrentLinkedQueue<Future<ListOfStatistics<MatrixStatistic>>> matrix =
                 new ConcurrentLinkedQueue<>();
 
         /**
@@ -287,7 +267,7 @@ class MetricFuturesByTime
         }        
 
         /**
-         * Adds a set of future {@link MatrixStatistic} to the appropriate internal store.
+         * Adds a set of future {@link PairedStatistic} to the appropriate internal store.
          * 
          * @param value the future result
          * @return the builder
@@ -296,20 +276,6 @@ class MetricFuturesByTime
         MetricFuturesByTimeBuilder addPairedOutput( Future<ListOfStatistics<PairedStatistic<Instant, Duration>>> value )
         {
             this.paired.add( value );
-
-            return this;
-        }
-
-        /**
-         * Adds a set of future {@link MatrixStatistic} to the appropriate internal store.
-         * 
-         * @param value the future result
-         * @return the builder
-         */
-
-        MetricFuturesByTimeBuilder addMatrixOutput( Future<ListOfStatistics<MatrixStatistic>> value )
-        {
-            this.matrix.add( value );
 
             return this;
         }
@@ -399,10 +365,6 @@ class MetricFuturesByTime
                     {
                         this.paired.addAll( futures.paired );
                     }
-                    else if ( nextGroup == StatisticType.MATRIX )
-                    {
-                        this.matrix.addAll( futures.matrix );
-                    }
                 }
             }
             return this;
@@ -423,7 +385,6 @@ class MetricFuturesByTime
         boxplotPerPair.addAll( builder.boxplotPerPair );
         boxplotPerPool.addAll( builder.boxplotPerPool );
         paired.addAll( builder.paired );
-        matrix.addAll( builder.matrix );
     }
 
 }
