@@ -24,6 +24,9 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.X509TrustManager;
+
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -45,6 +48,7 @@ import wres.io.concurrency.TimeSeriesIngester;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Features;
 import wres.io.data.details.FeatureDetails;
+import wres.io.reading.wrds.ReadValueManager;
 import wres.io.reading.wrds.nwm.NwmDataPoint;
 import wres.io.reading.wrds.nwm.NwmFeature;
 import wres.io.reading.wrds.nwm.NwmForecast;
@@ -67,7 +71,11 @@ import wres.system.SystemSettings;
 public class WrdsNwmReader implements Callable<List<IngestResult>>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( WrdsNwmReader.class );
-    private static final WebClient WEB_CLIENT = new WebClient( true );
+    private static Pair<SSLContext, X509TrustManager> SSL_CONTEXT
+            = ReadValueManager.getSslContextTrustingDodSigner();
+
+    private static final WebClient WEB_CLIENT = new WebClient( SSL_CONTEXT,
+                                                               true );
     private static final ObjectMapper JSON_OBJECT_MAPPER =
             new ObjectMapper().registerModule( new JavaTimeModule() )
                               .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true );
