@@ -97,8 +97,27 @@ public class Scenario650
                     Path.of( "76.822586W_39.230167N_RAINRATE_NWM_Short_Range_MEAN_ERROR.csv" ),
                     Path.of( "76.822586W_39.230167N_RAINRATE_NWM_Short_Range_PEARSON_CORRELATION_COEFFICIENT.csv" ),
                     Path.of( "76.822586W_39.230167N_RAINRATE_NWM_Short_Range_SAMPLE_SIZE.csv" ),
-                    Path.of( "pairs.csv" ) );
-    
+                    Path.of( "pairs.csv" ),
+                    Path.of( "RAINRATE_NWM_Short_Range_10800_SECONDS.nc" ),
+                    Path.of( "RAINRATE_NWM_Short_Range_14400_SECONDS.nc" ),
+                    Path.of( "RAINRATE_NWM_Short_Range_18000_SECONDS.nc" ),
+                    Path.of( "RAINRATE_NWM_Short_Range_21600_SECONDS.nc" ),
+                    Path.of( "RAINRATE_NWM_Short_Range_25200_SECONDS.nc" ),
+                    Path.of( "RAINRATE_NWM_Short_Range_28800_SECONDS.nc" ),
+                    Path.of( "RAINRATE_NWM_Short_Range_32400_SECONDS.nc" ),
+                    Path.of( "RAINRATE_NWM_Short_Range_3600_SECONDS.nc" ),
+                    Path.of( "RAINRATE_NWM_Short_Range_36000_SECONDS.nc" ),
+                    Path.of( "RAINRATE_NWM_Short_Range_39600_SECONDS.nc" ),
+                    Path.of( "RAINRATE_NWM_Short_Range_43200_SECONDS.nc" ),
+                    Path.of( "RAINRATE_NWM_Short_Range_46800_SECONDS.nc" ),
+                    Path.of( "RAINRATE_NWM_Short_Range_50400_SECONDS.nc" ),
+                    Path.of( "RAINRATE_NWM_Short_Range_54000_SECONDS.nc" ),
+                    Path.of( "RAINRATE_NWM_Short_Range_57600_SECONDS.nc" ),
+                    Path.of( "RAINRATE_NWM_Short_Range_61200_SECONDS.nc" ),
+                    Path.of( "RAINRATE_NWM_Short_Range_64800_SECONDS.nc" ),
+                    Path.of( "RAINRATE_NWM_Short_Range_7200_SECONDS.nc" ) );
+
+
     private ScenarioInformation scenarioInfo;
     
     /**

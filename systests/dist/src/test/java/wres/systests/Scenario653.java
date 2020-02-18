@@ -97,7 +97,8 @@ public class Scenario653
                     Path.of( "76.822586W_39.230167N_SOILSAT_TOP_NWM_Short_Range_MEAN_ERROR.csv" ),
                     Path.of( "76.822586W_39.230167N_SOILSAT_TOP_NWM_Short_Range_PEARSON_CORRELATION_COEFFICIENT.csv" ),
                     Path.of( "76.822586W_39.230167N_SOILSAT_TOP_NWM_Short_Range_SAMPLE_SIZE.csv" ),
-                    Path.of( "pairs.csv" ) );    
+                    Path.of( "pairs.csv" ),
+                    Path.of( "SOILSAT_TOP_NWM_Short_Range_14400_SECONDS.nc" ) );
     
     private ScenarioInformation scenarioInfo;
     

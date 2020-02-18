@@ -73,7 +73,16 @@ public class Scenario651
                     Path.of( "124.768875W_50.54845N_SNOWH_NWM_Short_Range_MEAN_ERROR.csv" ),
                     Path.of( "124.768875W_50.54845N_SNOWH_NWM_Short_Range_PEARSON_CORRELATION_COEFFICIENT.csv" ),
                     Path.of( "124.768875W_50.54845N_SNOWH_NWM_Short_Range_SAMPLE_SIZE.csv" ),
-                    Path.of( "pairs.csv" ) );
+                    Path.of( "pairs.csv" ),
+                    Path.of( "SNOWH_NWM_Short_Range_14400_SECONDS.nc" ),
+                    Path.of( "SNOWH_NWM_Short_Range_50400_SECONDS.nc" ),
+                    Path.of( "SNOWH_NWM_Short_Range_21600_SECONDS.nc" ),
+                    Path.of( "SNOWH_NWM_Short_Range_57600_SECONDS.nc" ),
+                    Path.of( "SNOWH_NWM_Short_Range_28800_SECONDS.nc" ),
+                    Path.of( "SNOWH_NWM_Short_Range_64800_SECONDS.nc" ),
+                    Path.of( "SNOWH_NWM_Short_Range_36000_SECONDS.nc" ),
+                    Path.of( "SNOWH_NWM_Short_Range_7200_SECONDS.nc" ),
+                    Path.of( "SNOWH_NWM_Short_Range_43200_SECONDS.nc" ) );
     
     private ScenarioInformation scenarioInfo;
     
