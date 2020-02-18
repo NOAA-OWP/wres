@@ -1,6 +1,7 @@
 package wres.io.data.details;
 
 import java.sql.SQLException;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -22,9 +23,6 @@ import wres.util.Strings;
 public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDetails.FeatureKey>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureDetails.class);
-
-    // Prevents asynchronous saving of identical features
-    private static final Object FEATURE_SAVE_LOCK = new Object();
 
 	private String lid = null;
 	private String featureName = null;
@@ -938,60 +936,41 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
         @Override
         public String toString()
         {
-            return "Comid: '" + String.valueOf(comid) +
-                   "', lid: '" + String.valueOf(lid) +
-                   "', gageID: '" + String.valueOf(gageID) +
-                   "', huc: '" + String.valueOf(huc) +
-                   "', Longitude: '" + String.valueOf(this.longitude) +
-                   "', Latitude: '" + String.valueOf(this.latitude);
+            return "Comid: '" + comid +
+                   "', lid: '" + lid +
+                   "', gageID: '" + gageID +
+                   "', huc: '" + huc +
+                   "', Longitude: '" + this.longitude +
+                   "', Latitude: '" + this.latitude;
         }
 
         @Override
         public int hashCode()
         {
-            return Objects.hash(this.comid, this.lid, this.gageID, this.huc);
+            return Objects.hash(this.comid, this.lid, this.gageID, this.huc, this.longitude, this.latitude );
         }
 
         @Override
         public boolean equals( Object obj )
         {
-            Boolean equal = null;
-
-            if (obj instanceof FeatureKey)
+            // Identity equals
+            if( this == obj )
             {
-                FeatureKey other = (FeatureKey)obj;
-
-                if (other.comid != null && other.comid > 0 &&
-                    this.comid != null && this.comid > 0)
-                {
-                    equal = this.comid.equals( other.comid );
-                }
-
-                if ( equal == null && Strings.hasValue(other.lid) && Strings.hasValue( this.lid ))
-                {
-                    equal = other.lid.equalsIgnoreCase( this.lid );
-                }
-
-                if ( equal == null && Strings.hasValue( other.gageID ) && Strings.hasValue( this.gageID ))
-                {
-                    equal = other.gageID.equalsIgnoreCase( this.gageID );
-                }
-
-                if ( equal == null && Strings.hasValue( other.huc ) && Strings.hasValue( this.huc ))
-                {
-                    equal = other.huc.equalsIgnoreCase( this.huc );
-                }
-
-                if (equal == null && this.longitude != null && this.latitude != null &&
-                    other.longitude != null && other.latitude != null)
-                {
-                    equal = this.longitude.equals( other.longitude ) && this.latitude.equals( other.latitude );
-                }
+                return true;
             }
+            
+            boolean equal = false;
 
-            if (equal == null)
+            if ( obj instanceof FeatureKey )
             {
-                equal = false;
+                FeatureKey other = (FeatureKey) obj;
+
+                return Objects.equals( this.comid, other.comid ) 
+                        && Objects.equals( this.lid, other.lid )
+                        && Objects.equals( this.gageID, other.gageID )
+                        && Objects.equals( this.longitude, other.longitude )
+                        && Objects.equals( this.latitude, other.latitude )
+                        && Objects.equals( this.huc, other.huc );
             }
 
             return equal;
@@ -999,27 +978,53 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
 
         @Override
         public int compareTo( FeatureKey otherKey )
-        {
-            int comparison;
+        {    
+            Objects.requireNonNull( otherKey, "Specify a non-null feature key for comparison." );
 
-            if (otherKey == null)
+            // Null-friendly Integer comparator
+            Comparator<Integer> nullFriendlyInteger = Comparator.nullsFirst( Comparator.naturalOrder() );
+
+            // Compare the comid
+            int returnMe = Objects.compare( otherKey.comid, this.comid, nullFriendlyInteger );
+            if ( returnMe != 0 )
             {
-                comparison = 1;
-            }
-            else if (this.equals( otherKey ))
-            {
-                comparison = 0;
-            }
-            else if (this.hasPrimaryKey() && otherKey.hasPrimaryKey() )
-            {
-                return this.getPrimaryKey().compareTo( otherKey.getPrimaryKey() );
-            }
-            else
-            {
-                comparison = 1;
+                return returnMe;
             }
 
-            return comparison;
+            Comparator<String> nullFriendlyString = Comparator.nullsFirst( Comparator.naturalOrder() );
+
+            // Compare gageId
+            returnMe = Objects.compare( this.gageID, otherKey.gageID, nullFriendlyString );
+            if ( returnMe != 0 )
+            {
+                return returnMe;
+            }
+            
+            // Compare HUC
+            returnMe = Objects.compare( this.huc, otherKey.huc, nullFriendlyString );
+            if ( returnMe != 0 )
+            {
+                return returnMe;
+            }
+
+            // Compare lid
+            returnMe = Objects.compare( this.lid, otherKey.lid, nullFriendlyString );
+            if ( returnMe != 0 )
+            {
+                return returnMe;
+            }
+
+            Comparator<Double> nullFriendlyDouble = Comparator.nullsFirst( Comparator.naturalOrder() );
+
+            // Compare longitude
+            returnMe = Objects.compare( this.longitude, otherKey.longitude, nullFriendlyDouble );
+            if ( returnMe != 0 )
+            {
+                return returnMe;
+            }
+
+            // Compare latitude
+            return Objects.compare( this.latitude, otherKey.latitude, nullFriendlyDouble );
         }
     }
 }

@@ -72,7 +72,11 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 	    synchronized ( this.getDetailLock() )
         {
             this.details = null;
-            this.keyIndex = null;
+            
+            synchronized ( this.getKeyLock() )
+            {
+                this.keyIndex = null;
+            }
         }
 	}
 	
