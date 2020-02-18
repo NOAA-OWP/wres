@@ -10,7 +10,6 @@ import wres.io.reading.datacard.DatacardSource;
 import wres.io.reading.fews.FEWSSource;
 import wres.io.reading.nwm.NWMSource;
 import wres.io.reading.s3.S3Reader;
-import wres.io.reading.usgs.USGSReader;
 import wres.io.reading.waterml.WaterMLBasicSource;
 import wres.io.reading.wrds.WRDSSource;
 import wres.system.DatabaseLockManager;
@@ -55,11 +54,6 @@ public class ReaderFactory {
                                          dataSource,
                                          lockManager );
 				break;
-            case USGS:
-                source = new USGSReader( projectConfig,
-                                         dataSource,
-                                         lockManager );
-                break;
             case S_3:
                 source = S3Reader.getReader( projectConfig,
                                              dataSource,
@@ -119,10 +113,6 @@ public class ReaderFactory {
 		{
             type = Format.PI_XML;
 		}
-		else if (filename.equals( URI.create( "usgs" ) ) )
-        {
-            type = Format.USGS;
-        }
         else if (filename.equals( URI.create( "s3" ) ) )
         {
             type = Format.S_3;

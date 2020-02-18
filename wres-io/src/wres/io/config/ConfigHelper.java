@@ -127,42 +127,6 @@ public class ConfigHelper
         // prevent construction
     }
 
-    // TODO: Move to Project Details
-    // ... or wres-config if useful outside of wres-io
-    public static boolean usesUSGSData( ProjectConfig projectConfig )
-    {
-        for ( DataSourceConfig.Source source : projectConfig.getInputs().getLeft().getSource() )
-        {
-            if ( source.getFormat() == Format.USGS )
-            {
-                return true;
-            }
-        }
-
-        for ( DataSourceConfig.Source source : projectConfig.getInputs().getRight().getSource() )
-        {
-            if ( source.getFormat() == Format.USGS )
-            {
-                return true;
-            }
-        }
-
-        if ( projectConfig.getInputs().getBaseline() != null )
-        {
-            for ( DataSourceConfig.Source source : projectConfig.getInputs()
-                                                                .getBaseline()
-                                                                .getSource() )
-            {
-                if ( source.getFormat() == Format.USGS )
-                {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
     public static boolean usesS3Data(ProjectConfig projectConfig)
     {
         boolean usesS3 = wres.util.Collections.exists(

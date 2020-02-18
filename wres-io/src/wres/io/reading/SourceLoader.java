@@ -244,27 +244,6 @@ public class SourceLoader
                                                 this.lockManager );
             return Executor.submit( webSource );
         }
-        else if ( source.getSource().getFormat() == Format.USGS)
-        {
-            if (ConfigHelper.isForecast( source.getContext() ))
-            {
-                throw new IllegalArgumentException( "USGS data cannot be used to supply forecasts." );
-            }
-
-            // Should use the uri containing usgs.gov instead of faking a name.
-            DataSource fakeDataSource = DataSource.of( source.getSource(),
-                                                       source.getContext(),
-                                                       source.getLinks(),
-                                                       URI.create( "usgs" ) );
-            return Executor.submit(
-                    IngestSaver.createTask()
-                               .withProject( this.projectConfig )
-                               .withDataSource( fakeDataSource )
-                               .withLockManager( this.lockManager )
-                               .withoutHash()
-                               .build()
-            );
-        }
         else if ( source.getSource().getFormat() == Format.S_3 )
         {
             // Should use the uri containing usgs.gov instead of faking a name
