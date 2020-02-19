@@ -581,7 +581,7 @@ project(':wres-messages')
         // Automatically download and use the correct protobuf compiler
         protoc
         {
-            artifact = 'com.google.protobuf:protoc:3.10.0'
+            artifact = 'com.google.protobuf:protoc:3.11.4'
         }
         // So all IDEs/editors can see generated files, use actual src dir:
         generatedFilesBaseDir = "${generatedDir}"
@@ -618,7 +618,7 @@ project(':wres-messages')
     dependencies
     {
         compile 'org.slf4j:slf4j-api:1.8.0-beta4'
-        compile 'com.google.protobuf:protobuf-java:3.10.0'
+        compile 'com.google.protobuf:protobuf-java:3.11.4'
 
         testCompile 'junit:junit:4.13-beta-3'
     }
