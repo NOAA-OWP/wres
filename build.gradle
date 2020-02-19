@@ -466,7 +466,7 @@ project(':wres-config')
 
         runtime 'org.glassfish.jaxb:jaxb-runtime:2.3.2'
 
-        runtime 'org.eclipse.persistence:org.eclipse.persistence.moxy:2.7.4'
+        runtime 'org.eclipse.persistence:org.eclipse.persistence.moxy:2.7.6'
 
         testCompile 'junit:junit:4.13-beta-3'
 
