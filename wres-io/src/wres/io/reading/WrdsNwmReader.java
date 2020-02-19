@@ -397,18 +397,9 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
             // Infer that this is ensemble data.
             SortedMap<Instant,double[]> primitiveData = new TreeMap<>();
 
-            if ( members[0] == null
-                 || members[0].getDataPoints() == null
-                 || members[0].getDataPoints().length == 0 )
-            {
-                throw new PreIngestException( "While reading data at "
-                                              + this.getUri()
-                                              + " more than one member found "
-                                              + " but no data was in the first "
-                                              + "member." );
-            }
-
-
+            // TODO: avoid reading into multiple intermediate containers. Instead, create a
+            // TimeSeriesBuilder<Ensemble> and then add each Event<Ensemble> to the builder.
+            
             for ( int i = 0; i < members.length; i++ )
             {
                 int valueCountInTrace = members[i].getDataPoints().length;
