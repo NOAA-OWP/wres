@@ -228,11 +228,11 @@ project(':wres-system')
         compile 'com.google.guava:guava:28.1-jre'
 
         // to use native postgres copy, need this on compile, otherwise runtime
-        compile 'org.postgresql:postgresql:42.2.8'
+        compile 'org.postgresql:postgresql:42.2.10'
         compile group: 'org.liquibase', name: 'liquibase-core', version: '3.8.4'
 
         // connection pooling:
-        compile 'com.mchange:c3p0:0.9.5.4'
+        compile 'com.mchange:c3p0:0.9.5.5'
 
         // Because org.postgresql:postgresql uses JUL logging, bridge it, here
         // at compile time because we need to expose a class to JUL.
@@ -316,10 +316,10 @@ project(':wres-io')
         }
 
         // to use native postgres copy, need this on compile, otherwise runtime
-        compile 'org.postgresql:postgresql:42.2.8'
+        compile 'org.postgresql:postgresql:42.2.10'
 
         // connection pooling:
-        compile 'com.mchange:c3p0:0.9.5.4'
+        compile 'com.mchange:c3p0:0.9.5.5'
 
         // wres.io.utilities uses javax.json.* imports
         compile 'org.glassfish:javax.json:1.1.4'
@@ -352,7 +352,7 @@ project(':wres-io')
         testCompile 'org.mock-server:mockserver-netty:5.9.0'
 
         // Use H2 for truly embedded SQL db
-        testCompile 'com.h2database:h2:1.4.199'
+        testCompile 'com.h2database:h2:1.4.200'
     }
 
     test
