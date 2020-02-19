@@ -31,8 +31,9 @@ RUN yum install -y \
     nss-tools-3.44.0-7.el7_7 \
     nss-util-3.44.0-4.el7_7 \
     procps-ng-3.3.10-26.el7_7.1 \
-    systemd-219-67.el7_7.2 \
-    systemd-libs-219-67.el7_7.2 \
+    sqlite-3.7.17-8.el7_7.1 \
+    systemd-219-67.el7_7.3 \
+    systemd-libs-219-67.el7_7.3 \
     tzdata-2019c-1.el7 \
     util-linux-2.23.2-61.el7_7.1 \
     && yum clean all
