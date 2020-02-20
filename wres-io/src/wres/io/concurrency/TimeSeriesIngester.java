@@ -48,9 +48,9 @@ import wres.system.DatabaseLockManager;
 /**
  * Ingests given TimeSeries data if not already ingested.
  *
- * As of 2019-10-29, only used by NWMReader, which as of 2019-10-29 is disabled.
  * As of 2019-10-29, only supports data with one or more reference datetime.
  * As of 2019-10-29, uses toString() representation to identify data.
+ * As of 2020-02-18, used by (raw) NWM reader, WRDS NWM reader, NWIS reader.
  *
  * Identifies data for convenience (and parallelism).
  *
