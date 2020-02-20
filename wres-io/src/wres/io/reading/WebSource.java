@@ -127,16 +127,6 @@ class WebSource implements Callable<List<IngestResult>>
 
         int concurrentCount = SystemSettings.getMaximumWebClientThreads();
 
-        // In the case of the WRDS NWM service, we have been asked to take it
-        // easy on the service by not doing concurrent requests.
-        InterfaceShortHand interfaceShortHand = dataSource.getSource()
-                                                          .getInterface();
-        if ( Objects.nonNull( interfaceShortHand )
-             && interfaceShortHand.equals( InterfaceShortHand.WRDS_NWM ) )
-        {
-            concurrentCount = 1;
-        }
-
         // Because we use a latch and queue below, no need to make this queue
         // any larger than that queue and latch.
         BlockingQueue<Runnable> webClientQueue = new ArrayBlockingQueue<>( concurrentCount );
