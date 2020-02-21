@@ -1434,8 +1434,13 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         {
             // Add both reference times and valid times
             validTimes.addAll( next.getReferenceTimes().values() );
-            validTimes.add( next.getEvents().first().getTime() );
-            validTimes.add( next.getEvents().last().getTime() );
+            
+            // #73227-40
+            if ( !validTimes.isEmpty() )
+            {
+                validTimes.add( next.getEvents().first().getTime() );
+                validTimes.add( next.getEvents().last().getTime() );
+            }
             timeScale = next.getTimeScale();
         }
 
