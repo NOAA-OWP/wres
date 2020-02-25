@@ -53,6 +53,7 @@ import wres.util.Strings;
 public class SourceLoader
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(SourceLoader.class);
+    private static final int KEY_NOT_FOUND = Integer.MIN_VALUE;
 
     /**
      * The project configuration indicating what data to use
@@ -380,12 +381,13 @@ public class SourceLoader
             // When the ingest requires retry and also is not in progress,
             // attempt cleanup: some process trying to ingest the source
             // died during ingest and data needs to be cleaned out.
+            int surrogateKey = checkIngest.getSurrogateKey();
             String hash = checkIngest.getHash();
             LOGGER.info(
                     "Another WRES instance started to ingest a source like '{}' identified by '{}' but did not finish, cleaning up...",
                     sourceUri,
-                    hash );
-            IncompleteIngest.removeSourceDataSafely( hash,
+                    surrogateKey );
+            IncompleteIngest.removeSourceDataSafely( surrogateKey,
                                                      lockManager );
             List<Future<List<IngestResult>>> futureList =
                     SourceLoader.ingestData( source,
@@ -404,7 +406,7 @@ public class SourceLoader
             tasks.add( IngestResult.fakeFutureSingleItemListFrom(
                     projectConfig,
                     source,
-                    checkIngest.getHash(),
+                    checkIngest.getSurrogateKey(),
                     !checkIngest.ingestMarkedComplete() ) );
         }
         else if ( sourceStatus.equals( SourceStatus.INVALID ) )
@@ -428,36 +430,6 @@ public class SourceLoader
     }
 
 
-    /**
-     * Helper that returns the data source context from a project for a specified type
-     * of context.
-     * 
-     * @param projectConfig the project
-     * @param type the the type of context
-     * @return the context
-     * @throws IllegalArgumentException if the type is unrecognized
-     * @throws NullPointerException if either input is null
-     */
-    
-    private static DataSourceConfig getDataSourceConfig( ProjectConfig projectConfig, LeftOrRightOrBaseline type )
-    {
-        Objects.requireNonNull( projectConfig );
-        
-        Objects.requireNonNull( type );
-        
-        switch ( type )
-        {
-            case LEFT:
-                return projectConfig.getInputs().getLeft();
-            case RIGHT:
-                return projectConfig.getInputs().getRight();
-            case BASELINE:
-                return projectConfig.getInputs().getBaseline();
-            default: throw new IllegalArgumentException( "Unrecognized type '"+type+"'." );
-        }
-
-    }
-    
     /**
      * Determines whether or not data at an indicated path should be ingested.
      * archived data will always be further evaluated to determine whether its
@@ -483,11 +455,15 @@ public class SourceLoader
         // Archives perform their own ingest verification
         if ( pathFormat == Format.ARCHIVE )
         {
-            LOGGER.debug( "The data at '{}' will be marked as ingested because it has " +
-                          "determined that it is an archive that will need to " +
-                          "be further evaluated.",
-                          filePath);
-            return new FileEvaluation( null, SourceStatus.REQUIRES_DECOMPOSITION );
+            LOGGER.debug(
+                    "The data at '{}' will be marked as ingested because it has "
+                    +
+                    "determined that it is an archive that will need to " +
+                    "be further evaluated.",
+                    filePath );
+            return new FileEvaluation( null,
+                                       SourceStatus.REQUIRES_DECOMPOSITION,
+                                       KEY_NOT_FOUND );
         }
 
         boolean ingest = specifiedFormat == null ||
@@ -496,14 +472,14 @@ public class SourceLoader
 
         String hash;
 
-        if (ingest)
+        if ( ingest )
         {
             try
             {
                 // If the format is Netcdf, we want to possibly bypass traditional hashing
-                if (pathFormat == Format.NET_CDF)
+                if ( pathFormat == Format.NET_CDF )
                 {
-                    hash = NetCDF.getUniqueIdentifier(filePath, variableName);
+                    hash = NetCDF.getUniqueIdentifier( filePath, variableName );
                 }
                 else
                 {
@@ -525,8 +501,10 @@ public class SourceLoader
             }
             catch ( IOException ioe )
             {
-                throw new PreIngestException( "Could not determine whether to ingest '"
-                                              +  filePath + "'", ioe );
+                throw new PreIngestException(
+                        "Could not determine whether to ingest '"
+                        + filePath + "'",
+                        ioe );
             }
         }
         else
@@ -537,16 +515,44 @@ public class SourceLoader
                           filePath,
                           specifiedFormat,
                           pathFormat );
-            return new FileEvaluation(  null,
-                                       SourceStatus.INVALID );
+            return new FileEvaluation( null,
+                                       SourceStatus.INVALID,
+                                       KEY_NOT_FOUND );
         }
 
         if ( sourceStatus == null )
         {
-            throw new IllegalStateException( "Expected sourceStatus to always be set by now." );
+            throw new IllegalStateException(
+                    "Expected sourceStatus to always be set by now." );
         }
 
-        return new FileEvaluation( hash, sourceStatus );
+        // Get the surrogate key if it exists
+        int surrogateKey = KEY_NOT_FOUND;
+        Integer dataSourceKey = null;
+
+        try
+        {
+            dataSourceKey = DataSources.getActiveSourceID( hash );
+        }
+        catch ( SQLException se )
+        {
+            throw new PreIngestException( "While determining if source '"
+                                          + filePath + "' should be ingested, "
+                                          + "failed to translate natural key '"
+                                          + hash + "' to surrogate key.",
+                                          se );
+        }
+
+        if ( Objects.isNull( dataSourceKey ) )
+        {
+            surrogateKey = KEY_NOT_FOUND;
+        }
+        else
+        {
+            surrogateKey = dataSourceKey;
+        }
+
+        return new FileEvaluation( hash, sourceStatus, surrogateKey );
     }
 
     /**
@@ -618,8 +624,11 @@ public class SourceLoader
         }
 
         LOGGER.info( "Attempting retry of {}.", ingestResult );
-
-        SourceStatus sourceStatus = querySourceStatus( ingestResult.getHash(),
+        // Admittedly not optimal to alternate between hash and key, but other
+        // places are using querySourceStatus with the hash.
+        int surrogateKey = ingestResult.getSurrogateKey();
+        String hash = SourceLoader.getHashFromSurrogateKey( surrogateKey );
+        SourceStatus sourceStatus = querySourceStatus( hash,
                                                        this.lockManager );
 
         if ( sourceStatus.equals( SourceStatus.COMPLETED ) )
@@ -629,7 +638,7 @@ public class SourceLoader
             Future<List<IngestResult>> futureResult =
                     IngestResult.fakeFutureSingleItemListFrom( this.projectConfig,
                                                                ingestResult.getDataSource(),
-                                                               ingestResult.getHash(),
+                                                               ingestResult.getSurrogateKey(),
                                                                false );
             return List.of( futureResult );
         }
@@ -640,8 +649,10 @@ public class SourceLoader
                     ingestResult,
                     sourceStatus );
 
+            // Need the hash but we only have a surrogate key. Get the hash.
+
             // First, try to safely remove it:
-            boolean removed = IncompleteIngest.removeSourceDataSafely( ingestResult.getHash(),
+            boolean removed = IncompleteIngest.removeSourceDataSafely( ingestResult.getSurrogateKey(),
                                                                        this.lockManager );
             if ( removed )
             {
@@ -650,7 +661,7 @@ public class SourceLoader
                 return SourceLoader.ingestData( ingestResult.getDataSource(),
                                                 this.projectConfig,
                                                 this.lockManager,
-                                                ingestResult.getHash() );
+                                                hash );
             }
             else
             {
@@ -663,7 +674,7 @@ public class SourceLoader
         Future<List<IngestResult>> futureResult =
                 IngestResult.fakeFutureSingleItemListFrom( this.projectConfig,
                                                            ingestResult.getDataSource(),
-                                                           ingestResult.getHash(),
+                                                           ingestResult.getSurrogateKey(),
                                                            true );
         return List.of( futureResult );
     }
@@ -676,12 +687,15 @@ public class SourceLoader
     {
         private final String hash;
         private final SourceStatus sourceStatus;
+        private final int surrogateKey;
 
         FileEvaluation( String hash,
-                        SourceStatus sourceStatus )
+                        SourceStatus sourceStatus,
+                        int surrogateKey )
         {
             this.hash = hash;
             this.sourceStatus = sourceStatus;
+            this.surrogateKey = surrogateKey;
         }
 
         public boolean isValid()
@@ -713,6 +727,11 @@ public class SourceLoader
         SourceStatus getSourceStatus()
         {
             return this.sourceStatus;
+        }
+
+        int getSurrogateKey()
+        {
+            return this.surrogateKey;
         }
     }
 
@@ -1045,6 +1064,50 @@ public class SourceLoader
         {
             throw new PreIngestException( "Unable to query status of the source identified by "
                                           + hash, se );
+        }
+    }
+
+
+    /**
+     * Return the natural id from a given database-specific source row id.
+     * @param surrogateKey The surrogate key id.
+     * @return The hash.
+     * @throws PreIngestException When database calls fail or cache fails.
+     */
+
+    private static String getHashFromSurrogateKey( int surrogateKey )
+    {
+        SourceDetails details;
+
+        try
+        {
+            details = DataSources.getFromCacheOrDatabaseByIdThenCache( surrogateKey );
+        }
+        catch ( SQLException se )
+        {
+            throw new PreIngestException( "While looking for natural id of source_id '"
+                                          + surrogateKey, se );
+        }
+
+        if ( Objects.nonNull( details ) )
+        {
+            String hash = details.getHash();
+
+            if ( Objects.nonNull( hash )
+                 && !hash.isBlank() )
+            {
+                return hash;
+            }
+            else
+            {
+                throw new PreIngestException( "DataSources cache returned a null hash for data identified by surrogate key "
+                                              + surrogateKey );
+            }
+        }
+        else
+        {
+            throw new PreIngestException( "Unable to find natural id for data identified by surrogate key "
+                                          + surrogateKey );
         }
     }
 }

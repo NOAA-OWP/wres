@@ -100,7 +100,7 @@ public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
 
 			return IngestResult.singleItemListFrom( this.projectConfig,
                                                     this.dataSource,
-                                                    this.hash,
+                                                    griddedSource.getId(),
                                                     !griddedSource.performedInsert(),
                                                     !complete );
 		}

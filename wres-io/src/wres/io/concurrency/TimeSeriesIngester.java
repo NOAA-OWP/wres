@@ -217,7 +217,7 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
             completer.complete( this.latches );
             return IngestResult.singleItemListFrom( this.projectConfig,
                                                     this.dataSource,
-                                                    hash,
+                                                    source.getId(),
                                                     false,
                                                     false );
         }
@@ -238,7 +238,7 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
             // Already present.
             return IngestResult.singleItemListFrom( this.projectConfig,
                                                     this.dataSource,
-                                                    hash,
+                                                    source.getId(),
                                                     true,
                                                     !completed );
         }

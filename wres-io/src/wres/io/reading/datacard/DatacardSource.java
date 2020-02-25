@@ -126,10 +126,12 @@ public class DatacardSource extends BasicSource
 	@Override
     protected List<IngestResult> saveObservation() throws IOException
     {
+        int id;
+
         try
         {
             // This sets inChargeOfIngest (there may be a better way to do it).
-            this.getSourceID();
+            id = this.getSourceID();
         }
         catch ( SQLException se )
         {
@@ -157,7 +159,7 @@ public class DatacardSource extends BasicSource
             // Yield to another ingester task, say it was already started.
             return IngestResult.singleItemListFrom( this.getProjectConfig(),
                                                     this.getDataSource(),
-                                                    this.getHash(),
+                                                    id,
                                                     true,
                                                     !wasCompleted );
         }
@@ -396,7 +398,7 @@ public class DatacardSource extends BasicSource
 
         return IngestResult.singleItemListFrom( this.getProjectConfig(),
                                                 this.getDataSource(),
-                                                this.getHash(),
+                                                id,
                                                 false,
                                                 false );
 	}

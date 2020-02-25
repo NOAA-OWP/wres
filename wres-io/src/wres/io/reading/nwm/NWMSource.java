@@ -130,7 +130,7 @@ public class NWMSource extends BasicSource
                         boolean completed = completedDetails.wasCompleted();
                         return IngestResult.singleItemListFrom( this.getProjectConfig(),
                                                                 this.getDataSource(),
-                                                                hash,
+                                                                sourceDetails.getId(),
                                                                 !this.alreadyFound,
                                                                 !completed );
                     }

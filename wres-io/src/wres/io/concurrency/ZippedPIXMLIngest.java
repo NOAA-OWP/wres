@@ -59,6 +59,7 @@ public final class ZippedPIXMLIngest extends WRESCallable<List<IngestResult>>
         List<IngestResult> result = new ArrayList<>( 1 );
         boolean anotherTaskInChargeOfIngest;
         boolean ingestFullyCompleted;
+        int id;
 
         String hash = Strings.getMD5Checksum( content );
 
@@ -78,6 +79,7 @@ public final class ZippedPIXMLIngest extends WRESCallable<List<IngestResult>>
                     reader.setDataSourceConfig( this.dataSource.getContext() );
                     reader.setSourceConfig( this.dataSource.getSource() );
                     reader.parse();
+                    id = reader.getLastSourceId();
                     anotherTaskInChargeOfIngest = !reader.inChargeOfIngest();
                     ingestFullyCompleted = reader.ingestFullyCompleted();
                 }
@@ -87,6 +89,7 @@ public final class ZippedPIXMLIngest extends WRESCallable<List<IngestResult>>
                 anotherTaskInChargeOfIngest = true;
                 SourceDetails
                         sourceDetails = DataSources.getExistingSource( hash );
+                id = sourceDetails.getId();
                 SourceCompletedDetails completedDetails =
                         new SourceCompletedDetails( sourceDetails );
                 ingestFullyCompleted = completedDetails.wasCompleted();
@@ -120,7 +123,7 @@ public final class ZippedPIXMLIngest extends WRESCallable<List<IngestResult>>
 
             IngestResult ingestResult = IngestResult.from( this.projectConfig,
                                                            resultingDataSource,
-                                                           hash,
+                                                           id,
                                                            anotherTaskInChargeOfIngest,
                                                            !ingestFullyCompleted );
             result.add( ingestResult );
