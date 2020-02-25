@@ -143,7 +143,7 @@ public class ReadValueManager
                     return IngestResult.singleItemListFrom(
                             this.projectConfig,
                             this.dataSource,
-                            MD5SUM_OF_EMPTY_STRING.toUpperCase(),
+                            details.getId(),
                             foundAlready,
                             false
                     );
@@ -319,7 +319,7 @@ public class ReadValueManager
         return IngestResult.singleItemListFrom(
                 this.projectConfig,
                 this.dataSource,
-                hash,
+                source.getId(),
                 foundAlready,
                 !completed
         );

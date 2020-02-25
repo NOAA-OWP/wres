@@ -137,7 +137,7 @@ public class CSVSource extends BasicSource
         return IngestResult.singleItemListFrom(
                 this.getProjectConfig(),
                 this.getDataSource(),
-                this.getHash(),
+                this.sourceDetails.getId(),
                 !sourceDetails.performedInsert(),
                 !sourceCompleted
         );
@@ -219,7 +219,7 @@ public class CSVSource extends BasicSource
         return IngestResult.singleItemListFrom(
                 this.getProjectConfig(),
                 this.getDataSource(),
-                this.getHash(),
+                this.sourceDetails.getId(),
                 !sourceDetails.performedInsert(),
                 !sourceCompleted
         );

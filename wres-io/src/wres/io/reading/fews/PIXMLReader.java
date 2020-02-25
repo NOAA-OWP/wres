@@ -1067,4 +1067,9 @@ public final class PIXMLReader extends XMLReader
     }
 
     private DataSourceConfig dataSourceConfig;
+
+    public Integer getLastSourceId()
+    {
+        return this.currentSourceID;
+    }
 }

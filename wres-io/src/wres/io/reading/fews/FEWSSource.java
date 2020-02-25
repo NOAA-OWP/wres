@@ -46,6 +46,7 @@ public class FEWSSource extends BasicSource
     {
         boolean anotherTaskInChargeOfIngest;
         boolean ingestFullyCompleted;
+        int id;
 
         try
         {
@@ -59,6 +60,7 @@ public class FEWSSource extends BasicSource
                 sourceReader.setDataSourceConfig( this.getDataSourceConfig() );
                 sourceReader.setSourceConfig( this.getSourceConfig() );
                 sourceReader.parse();
+                id = sourceReader.getLastSourceId();
                 anotherTaskInChargeOfIngest = !sourceReader.inChargeOfIngest();
                 ingestFullyCompleted = sourceReader.ingestFullyCompleted();
             }
@@ -66,6 +68,7 @@ public class FEWSSource extends BasicSource
             {
                 anotherTaskInChargeOfIngest = true;
                 SourceDetails sourceDetails = DataSources.getExistingSource( this.getHash() );
+                id = sourceDetails.getId();
                 SourceCompletedDetails completedDetails =
                         new SourceCompletedDetails( sourceDetails );
                 ingestFullyCompleted = completedDetails.wasCompleted();
@@ -95,7 +98,7 @@ public class FEWSSource extends BasicSource
 
         return IngestResult.singleItemListFrom( this.getProjectConfig(),
                                                 this.getDataSource(),
-                                                this.getHash(),
+                                                id,
                                                 anotherTaskInChargeOfIngest,
                                                 !ingestFullyCompleted );
     }

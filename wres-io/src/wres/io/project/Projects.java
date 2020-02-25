@@ -5,8 +5,12 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.StringJoiner;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -18,7 +22,6 @@ import wres.io.config.ConfigHelper;
 import static wres.io.config.LeftOrRightOrBaseline.*;
 
 import wres.io.config.LeftOrRightOrBaseline;
-import wres.io.data.caching.DataSources;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.utilities.DataProvider;
@@ -74,9 +77,9 @@ public class Projects
                                                 List<IngestResult> ingestResults )
             throws SQLException, IOException
     {
-        List<String> leftHashes = new ArrayList<>();
-        List<String> rightHashes = new ArrayList<>();
-        List<String> baselineHashes = new ArrayList<>();
+        List<Integer> leftIds = new ArrayList<>();
+        List<Integer> rightIds = new ArrayList<>();
+        List<Integer> baselineIds = new ArrayList<>();
 
         for ( IngestResult ingestResult : ingestResults )
         {
@@ -85,19 +88,19 @@ public class Projects
             if ( ingestResult.getLeftOrRightOrBaseline()
                              .equals( LeftOrRightOrBaseline.LEFT ) )
             {
-                leftHashes.add( ingestResult.getHash() );
+                leftIds.add( ingestResult.getSurrogateKey() );
                 countAdded++;
             }
             else if ( ingestResult.getLeftOrRightOrBaseline()
                                   .equals( LeftOrRightOrBaseline.RIGHT ) )
             {
-                rightHashes.add( ingestResult.getHash() );
+                rightIds.add( ingestResult.getSurrogateKey() );
                 countAdded++;
             }
             else if ( ingestResult.getLeftOrRightOrBaseline()
                                   .equals( LeftOrRightOrBaseline.BASELINE ) )
             {
-                baselineHashes.add( ingestResult.getHash() );
+                baselineIds.add( ingestResult.getSurrogateKey() );
                 countAdded++;
             }
             else
@@ -115,22 +118,78 @@ public class Projects
             {
                 if ( leftOrRightOrBaseline.equals( LEFT ) )
                 {
-                    leftHashes.add( ingestResult.getHash() );
+                    leftIds.add( ingestResult.getSurrogateKey() );
                     countAdded++;
                 }
                 else if ( leftOrRightOrBaseline.equals( RIGHT ) )
                 {
-                    rightHashes.add( ingestResult.getHash() );
+                    rightIds.add( ingestResult.getSurrogateKey() );
                     countAdded++;
                 }
                 else if ( leftOrRightOrBaseline.equals( BASELINE ) )
                 {
-                    baselineHashes.add( ingestResult.getHash() );
+                    baselineIds.add( ingestResult.getSurrogateKey() );
                     countAdded++;
                 }
             }
 
             LOGGER.debug( "Noticed {} has {} links.", ingestResult, countAdded );
+        }
+
+        List<Integer> finalLeftIds = Collections.unmodifiableList( leftIds );
+        List<Integer> finalRightIds = Collections.unmodifiableList( rightIds );
+        List<Integer> finalBaselineIds = Collections.unmodifiableList( baselineIds );
+
+        Set<Integer> uniqueHashesUsed = new HashSet<>( finalLeftIds );
+        uniqueHashesUsed.addAll( finalRightIds );
+        uniqueHashesUsed.addAll( finalBaselineIds );
+        int countOfUniqueHashes = uniqueHashesUsed.size();
+        StringJoiner paramPlaceholdersJoiner = new StringJoiner( ", ", "( ", " )" );
+
+        for ( int i = 0; i < countOfUniqueHashes; i++ )
+        {
+            paramPlaceholdersJoiner.add( "?" );
+        }
+
+        String query = "SELECT source_id, hash "
+                       + "FROM wres.Source "
+                       + "WHERE source_id in "
+                       + paramPlaceholdersJoiner.toString();
+        DataScripter script = new DataScripter( query );
+        Object[] params = uniqueHashesUsed.toArray();
+        Map<Integer,String> idsToHashes = new HashMap<>( countOfUniqueHashes );
+
+        try ( DataProvider dataProvider = script.getData( params ) )
+        {
+            while ( dataProvider.next() )
+            {
+                Integer id = dataProvider.getInt( "source_id" );
+                String hash = dataProvider.getString( "hash" );
+                idsToHashes.put( id, hash );
+            }
+        }
+
+        // "select hash from wres.Source S inner join ( select ... ) I on S.source_id = I.source_id"
+        List<String> leftHashes = new ArrayList<>( finalLeftIds.size() );
+        List<String> rightHashes = new ArrayList<>( finalRightIds.size() );
+        List<String> baselineHashes = new ArrayList<>( finalBaselineIds.size() );
+
+        for ( Integer id : finalLeftIds )
+        {
+            String hash = idsToHashes.get( id );
+            leftHashes.add( hash );
+        }
+
+        for ( Integer id : finalRightIds )
+        {
+            String hash = idsToHashes.get( id );
+            rightHashes.add( hash );
+        }
+
+        for ( Integer id : finalBaselineIds )
+        {
+            String hash = idsToHashes.get( id );
+            baselineHashes.add( hash );
         }
 
         List<String> finalLeftHashes = Collections.unmodifiableList( leftHashes );
@@ -174,21 +233,7 @@ public class Projects
 
             for ( IngestResult ingestResult : ingestResults )
             {
-                Integer sourceID =
-                    DataSources.getActiveSourceID( ingestResult.getHash() );
-
-                if (sourceID == null)
-                {
-                    throw new IngestException( "The id for source data '"
-                                               + ingestResult.getHash()
-                                               + "' that must be linked to "
-                                               + "project "
-                                               + details.getId()
-                                               + " could not be determined. The"
-                                               + " data ingest cannot "
-                                               + "continue.");
-                }
-
+                int sourceID = ingestResult.getSurrogateKey();
                 copyStatement.add( details.getId() + delimiter
                                    + sourceID + delimiter
                                    + ingestResult.getLeftOrRightOrBaseline().value() );

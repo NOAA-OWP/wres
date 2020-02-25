@@ -6,6 +6,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+
+import org.apache.commons.lang3.builder.ToStringBuilder;
+
 import wres.io.config.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
@@ -20,21 +23,20 @@ public class IngestResult
 {
     private final LeftOrRightOrBaseline leftOrRightOrBaseline;
     private final DataSource dataSource;
-    private final String hash;
+    private final int surrogateKey;
     private final boolean foundAlready;
     private final boolean requiresRetry;
 
     private IngestResult( LeftOrRightOrBaseline leftOrRightOrBaseline,
                           DataSource dataSource,
-                          String hash,
+                          int surrogateKey,
                           boolean foundAlready,
                           boolean requiresRetry )
     {
-        Objects.requireNonNull( hash, "Ingester must include a hash." );
         Objects.requireNonNull( leftOrRightOrBaseline, "Ingester must include left/right/baseline" );
         Objects.requireNonNull( dataSource, "Ingester must include datasource information." );
         this.leftOrRightOrBaseline = leftOrRightOrBaseline;
-        this.hash = hash;
+        this.surrogateKey = surrogateKey;
         this.dataSource = dataSource;
         this.foundAlready = foundAlready;
         this.requiresRetry = requiresRetry;
@@ -42,19 +44,19 @@ public class IngestResult
 
     public static IngestResult of( LeftOrRightOrBaseline leftOrRightOrBaseline,
                                    DataSource dataSource,
-                                   String hash,
+                                   int surrogateKey,
                                    boolean foundAlready,
                                    boolean requiresRetry )
     {
-        return new IngestResult( leftOrRightOrBaseline, dataSource, hash, foundAlready, requiresRetry );
+        return new IngestResult( leftOrRightOrBaseline, dataSource, surrogateKey, foundAlready, requiresRetry );
     }
 
     public static IngestResult of( LeftOrRightOrBaseline leftOrRightOrBaseline,
-                                   String hash,
+                                   int surrogateKey,
                                    DataSource dataSource,
                                    boolean foundAlready )
     {
-        return IngestResult.of( leftOrRightOrBaseline, dataSource, hash, foundAlready, false );
+        return IngestResult.of( leftOrRightOrBaseline, dataSource, surrogateKey, foundAlready, false );
     }
 
 
@@ -62,14 +64,14 @@ public class IngestResult
      * Get an IngestResult using the configuration elements, for convenience
      * @param projectConfig the ProjectConfig causing the ingest
      * @param dataSource the data source information
-     * @param hash the hash of the data
+     * @param surrogateKey The surrogate key of the source data.
      * @param foundAlready true if found in the database, false otherwise
      * @param requiresRetry true if this requires retry, false otherwise
      * @return the IngestResult
      */
     public static IngestResult from( ProjectConfig projectConfig,
                                      DataSource dataSource,
-                                     String hash,
+                                     int surrogateKey,
                                      boolean foundAlready,
                                      boolean requiresRetry )
     {
@@ -78,7 +80,7 @@ public class IngestResult
                                                        dataSource.getContext() );
         return IngestResult.of( leftOrRightOrBaseline,
                                 dataSource,
-                                hash,
+                                surrogateKey,
                                 foundAlready,
                                 requiresRetry );
     }
@@ -87,13 +89,13 @@ public class IngestResult
      * Get an IngestResult using the configuration elements, for convenience
      * @param projectConfig the ProjectConfig causing the ingest
      * @param dataSource the data source information
-     * @param hash the hash of the data
+     * @param surrogateKey The surrogate key of the source data.
      * @param foundAlready true if found in the database, false otherwise
      * @return the IngestResult
      */
     public static IngestResult from( ProjectConfig projectConfig,
                                      DataSource dataSource,
-                                     String hash,
+                                     int surrogateKey,
                                      boolean foundAlready )
     {
         LeftOrRightOrBaseline leftOrRightOrBaseline =
@@ -101,7 +103,7 @@ public class IngestResult
                                                        dataSource.getContext() );
         return IngestResult.of( leftOrRightOrBaseline,
                                 dataSource,
-                                hash,
+                                surrogateKey,
                                 foundAlready,
                                 false );
     }
@@ -114,7 +116,7 @@ public class IngestResult
      * For convenience (since this will be done all over the various ingesters).
      * @param projectConfig the ProjectConfig causing the ingest
      * @param dataSource the data source information
-     * @param hash the hash of the data
+     * @param surrogateKey The surrogate key of the source data.
      * @param foundAlready true if found in the database, false otherwise
      * @param requiresRetry true if this requires retry, false otherwise
      * @return a list with a single IngestResult in it
@@ -122,13 +124,13 @@ public class IngestResult
 
     public static List<IngestResult> singleItemListFrom( ProjectConfig projectConfig,
                                                          DataSource dataSource,
-                                                         String hash,
+                                                         int surrogateKey,
                                                          boolean foundAlready,
                                                          boolean requiresRetry )
     {
         IngestResult ingestResult = IngestResult.from( projectConfig,
                                                        dataSource,
-                                                       hash,
+                                                       surrogateKey,
                                                        foundAlready,
                                                        requiresRetry );
         return List.of( ingestResult );
@@ -141,19 +143,19 @@ public class IngestResult
      * For convenience (since this will be done all over the various ingesters).
      * @param projectConfig the ProjectConfig causing the ingest
      * @param dataSource the data source information
-     * @param hash the hash of the data
+     * @param surrogateKey The surrogate key of the source data.
      * @param foundAlready true if found in the database, false otherwise
      * @return a list with a single IngestResult in it
      */
 
     public static List<IngestResult> singleItemListFrom( ProjectConfig projectConfig,
                                                          DataSource dataSource,
-                                                         String hash,
+                                                         int surrogateKey,
                                                          boolean foundAlready )
     {
         IngestResult ingestResult = IngestResult.from( projectConfig,
                                                        dataSource,
-                                                       hash,
+                                                       surrogateKey,
                                                        foundAlready,
                                                        false );
         return List.of( ingestResult );
@@ -165,41 +167,22 @@ public class IngestResult
      * a Future for easy consumption by the ingest classes.
      * @param projectConfig the project configuration
      * @param dataSource the data source information
-     * @param hash the hash of the individual source
+     * @param surrogateKey The surrogate key of the source data.
      * @param requiresRetry true if this requires retry, false otherwise
      * @return an immediately-returning Future
      */
 
     public static Future<List<IngestResult>> fakeFutureSingleItemListFrom( ProjectConfig projectConfig,
                                                                            DataSource dataSource,
-                                                                           String hash,
+                                                                           int surrogateKey,
                                                                            boolean requiresRetry )
     {
         return FakeFutureListOfIngestResults.from( projectConfig,
                                                    dataSource,
-                                                   hash,
+                                                   surrogateKey,
                                                    requiresRetry );
     }
 
-
-    /**
-     * Wrap a single item list of "already-found-in-database" ingest result in
-     * a Future for easy consumption by the ingest classes.
-     * @param projectConfig the project configuration
-     * @param dataSource the data source information
-     * @param hash the hash of the individual source
-     * @return an immediately-returning Future
-     */
-
-    public static Future<List<IngestResult>> fakeFutureSingleItemListFrom( ProjectConfig projectConfig,
-                                                                           DataSource dataSource,
-                                                                           String hash )
-    {
-        return FakeFutureListOfIngestResults.from( projectConfig,
-                                                   dataSource,
-                                                   hash,
-                                                   false );
-    }
 
     public DataSource getDataSource()
     {
@@ -211,9 +194,9 @@ public class IngestResult
         return this.leftOrRightOrBaseline;
     }
 
-    public String getHash()
+    public int getSurrogateKey()
     {
-        return this.hash;
+        return this.surrogateKey;
     }
 
     public boolean wasFoundAlready()
@@ -229,11 +212,14 @@ public class IngestResult
     @Override
     public String toString()
     {
-        return "DataSource:" + this.dataSource + ", hash: " + this.getHash() + ", "
-               + "another party ingested? " + this.wasFoundAlready() + ", "
-               + "l/r/b: " + getLeftOrRightOrBaseline().value();
+        return new ToStringBuilder( this )
+                .append( "leftOrRightOrBaseline", leftOrRightOrBaseline )
+                .append( "dataSource", dataSource )
+                .append( "surrogateKey", surrogateKey )
+                .append( "foundAlready", foundAlready )
+                .append( "requiresRetry", requiresRetry )
+                .toString();
     }
-
 
     /**
      * For convenience of those clients needing an immediately-returning Future
@@ -251,12 +237,12 @@ public class IngestResult
 
         public static FakeFutureListOfIngestResults from( ProjectConfig projectConfig,
                                                           DataSource dataSource,
-                                                          String hash,
+                                                          int surrogateKey,
                                                           boolean requiresRetry )
         {
             IngestResult results = IngestResult.from( projectConfig,
                                                       dataSource,
-                                                      hash,
+                                                      surrogateKey,
                                                       true,
                                                       requiresRetry );
             return new FakeFutureListOfIngestResults( results );

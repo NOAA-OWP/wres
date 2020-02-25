@@ -32,23 +32,21 @@ public class IncompleteIngest
             "Communication with the database failed.";
 
 
-    public static boolean removeSourceDataSafely( String sourceHash,
+    public static boolean removeSourceDataSafely( int surrogateKey,
                                                   DatabaseLockManager lockManager )
     {
-        Objects.requireNonNull( sourceHash );
         Objects.requireNonNull( lockManager );
 
         try
         {
-            SourceDetails sourceDetails =
-                    DataSources.getExistingSource( sourceHash );
+            SourceDetails sourceDetails = DataSources.getFromCacheOrDatabaseByIdThenCache( surrogateKey );
 
             if ( sourceDetails == null )
             {
                 // This means a source has been removed by some Thread after the
                 // call to this method but prior to getExistingSource.
                 LOGGER.warn( "Another task removed source {}, not removing.",
-                             sourceHash );
+                             surrogateKey );
                 return false;
             }
             return IncompleteIngest.removeSourceDataSafely( sourceDetails,

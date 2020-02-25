@@ -131,7 +131,7 @@ public class WaterMLBasicSource extends BasicSource
                     return IngestResult.singleItemListFrom(
                             this.projectConfig,
                             this.dataSource,
-                            MD5SUM_OF_EMPTY_STRING.toUpperCase(),
+                            details.getId(),
                             foundAlready,
                             false
                     );

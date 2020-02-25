@@ -114,7 +114,7 @@ public abstract class S3Reader extends BasicSource
                             IngestResult.from(
                                     this.getProjectConfig(),
                                     innerDataSource,
-                                    tagAndKey.getEtag(),
+                                    source.getId(),
                                     true
                             )
                     );

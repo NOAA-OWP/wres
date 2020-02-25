@@ -122,6 +122,51 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
         return DataSources.getCache().get( id );
     }
 
+    public static SourceDetails getFromCacheOrDatabaseByIdThenCache( Integer id )
+            throws SQLException
+    {
+        SourceDetails foundInCache = DataSources.getCache()
+                                                .get( id );
+        if ( Objects.nonNull( foundInCache) )
+        {
+            return foundInCache;
+        }
+
+        DataScripter script = new DataScripter();
+        script.setHighPriority( true );
+        script.addLine( "SELECT source_id, path, output_time::text, lead, hash, is_point_data" );
+        script.addLine( "FROM wres.Source" );
+        script.addLine( "WHERE source_id = ?;" );
+        script.addArgument( id );
+
+        SourceDetails notFoundInCache = null;
+
+        try ( DataProvider data = script.getData() )
+        {
+            while(data.next())
+            {
+                notFoundInCache = new SourceDetails();
+                notFoundInCache.setHash( data.getString( "hash" ) );
+                notFoundInCache.setLead( data.getInt( "lead" ) );
+                notFoundInCache.setOutputTime( data.getString( "output_time" ) );
+                notFoundInCache.setSourcePath( URI.create( data.getString( "path" ) ) );
+                notFoundInCache.setID( data.getInt( "source_id" ) );
+                notFoundInCache.setIsPointData( data.getBoolean( "is_point_data" ) );
+
+                DataSources.getCache().addElement( notFoundInCache );
+            }
+        }
+
+        if ( Objects.isNull( notFoundInCache ) )
+        {
+            throw new IllegalArgumentException( "Unable to find source_id '"
+                                                + id
+                                                + "' in this database instance." );
+        }
+
+        return notFoundInCache;
+    }
+
     public static boolean isCached( SourceDetails.SourceKey key )
     {
         return DataSources.getCache()
