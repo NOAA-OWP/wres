@@ -504,12 +504,12 @@ class WebSource implements Callable<List<IngestResult>>
         }
         else
         {
-            // TODO: consider simply returning the base uri if the uri cannot be decomposed into parts
-            // It should be possible to process an arbitrary uri here, even when it cannot be decomposed
             // #74994-8
-            throw new ProjectConfigException( dataSource.getContext(),
-                                              "Unrecognized URI base "
-                                              + baseUri );
+            LOGGER.debug( "While attempting to create a precise URI from a base URI, failed to recognize the base URI "
+                          + "{} as a standard type. Returning the base URI instead.",
+                          baseUri );
+
+            return baseUri;
         }
     }
 

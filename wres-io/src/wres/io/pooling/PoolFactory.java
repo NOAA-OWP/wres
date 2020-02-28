@@ -34,6 +34,7 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesOfDoubleBasicUpscaler;
 import wres.datamodel.time.TimeSeriesOfEnsembleUpscaler;
 import wres.datamodel.time.TimeSeriesPairer;
+import wres.datamodel.time.TimeSeriesPairer.TimePairingType;
 import wres.datamodel.time.TimeSeriesPairerByExactTime;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesUpscaler;
@@ -85,8 +86,8 @@ public class PoolFactory
      *            data
      */
 
-    public static List<Supplier<PoolOfPairs<Double, Double>>> getSingleValuedPools( Project project, 
-                                                                                    Feature feature, 
+    public static List<Supplier<PoolOfPairs<Double, Double>>> getSingleValuedPools( Project project,
+                                                                                    Feature feature,
                                                                                     UnitMapper unitMapper )
     {
         Objects.requireNonNull( project, "Cannot create pools from a null project." );
@@ -120,7 +121,15 @@ public class PoolFactory
                                                                                              unitMapper );
 
         // Create a default pairer for finite left and right values
-        TimeSeriesPairer<Double, Double> pairer = TimeSeriesPairerByExactTime.of( Double::isFinite, Double::isFinite );
+        TimePairingType timePairingType = PoolFactory.getTimePairingTypeFromInputsConfig( inputsConfig );
+        
+        LOGGER.debug( "Using a time-based pairing strategy of {} for the input declaration {}.",
+                      timePairingType,
+                      inputsConfig );
+        
+        TimeSeriesPairer<Double, Double> pairer = TimeSeriesPairerByExactTime.of( Double::isFinite,
+                                                                                  Double::isFinite,
+                                                                                  timePairingType );
 
         // Create a default upscaler
         TimeSeriesUpscaler<Double> upscaler = TimeSeriesOfDoubleBasicUpscaler.of();
@@ -199,8 +208,8 @@ public class PoolFactory
      *            data
      */
 
-    public static List<Supplier<PoolOfPairs<Double, Ensemble>>> getEnsemblePools( Project project, 
-                                                                                  Feature feature, 
+    public static List<Supplier<PoolOfPairs<Double, Ensemble>>> getEnsemblePools( Project project,
+                                                                                  Feature feature,
                                                                                   UnitMapper unitMapper )
     {
         Objects.requireNonNull( project, "Cannot create pools from a null project." );
@@ -233,10 +242,17 @@ public class PoolFactory
                                                                                            unitMapper );
 
         // Create a default pairer for finite left values and one or more finite right values
+        TimePairingType timePairingType = PoolFactory.getTimePairingTypeFromInputsConfig( inputsConfig );
+        
+        LOGGER.debug( "Using a time-based pairing strategy of {} for the input declaration {}.",
+                      timePairingType,
+                      inputsConfig );
+        
         TimeSeriesPairer<Double, Ensemble> pairer =
                 TimeSeriesPairerByExactTime.of( Double::isFinite,
                                                 en -> Arrays.stream( en.getMembers() )
-                                                            .anyMatch( Double::isFinite ) );
+                                                            .anyMatch( Double::isFinite ),
+                                                timePairingType );
 
         // Create a default upscaler for left-ish data
         TimeSeriesUpscaler<Double> leftUpscaler = TimeSeriesOfDoubleBasicUpscaler.of();
@@ -484,6 +500,27 @@ public class PoolFactory
                                                      + baselineConfig.getTransformation()
                                                      + "'." );
         }
+    }
+
+    /**
+     * Returns the type of time-based pairing to perform given the declared input type of the datasets in the project.
+     * 
+     * @param inputsConfig the inputs declaration
+     * @return the type of time-based pairing to perform
+     */
+
+    private static TimePairingType getTimePairingTypeFromInputsConfig( Inputs inputsConfig )
+    {
+        Objects.requireNonNull( inputsConfig );
+
+        TimePairingType returnMe = TimePairingType.REFERENCE_TIME_AND_VALID_TIME;
+
+        if ( !ConfigHelper.isForecast( inputsConfig.getLeft() ) || !ConfigHelper.isForecast( inputsConfig.getRight() ) )
+        {
+            returnMe = TimePairingType.VALID_TIME_ONLY;
+        }
+
+        return returnMe;
     }
 
     /**

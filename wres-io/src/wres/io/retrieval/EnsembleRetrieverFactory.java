@@ -18,11 +18,13 @@ import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.Ensemble;
 import wres.datamodel.scale.TimeScale;
+import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindow;
 import wres.io.config.ConfigHelper;
 import wres.io.config.LeftOrRightOrBaseline;
 import wres.io.project.Project;
+import wres.io.retrieval.EnsembleForecastRetriever.Builder;
 
 /**
  * <p>A factory class that creates retrievers for the single-valued left and ensemble right datasets associated with one 
@@ -307,7 +309,7 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
     {
         if ( dataType == DatasourceType.ENSEMBLE_FORECASTS )
         {
-            return new EnsembleForecastRetriever.Builder();
+            return (Builder) new EnsembleForecastRetriever.Builder().setReferenceTimeType( ReferenceTimeType.T0 );
         }
         else
         {

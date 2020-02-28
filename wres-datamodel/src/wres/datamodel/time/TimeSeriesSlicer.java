@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -17,6 +18,7 @@ import java.util.TreeSet;
 import java.util.function.DoublePredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import wres.datamodel.Ensemble;
 import wres.datamodel.Slicer;
@@ -191,10 +193,10 @@ public final class TimeSeriesSlicer
 
         return builder.build();
     }
-
+    
     /**
-     * Returns a filtered {@link TimeSeries} whose events are within the right-closed time intervals (with respect to 
-     * {@link Instant} or periods (with respect to {@link Duration}) contained in the prescribed {@link TimeWindow}.
+     * Returns a filtered {@link TimeSeries} whose events are within the right-closed time intervals contained in the 
+     * prescribed {@link TimeWindow}.
      * 
      * @param <T> the type of time-series data
      * @param input the input to slice
@@ -203,22 +205,60 @@ public final class TimeSeriesSlicer
      * @throws NullPointerException if any input is null
      */
 
-    public static <T> TimeSeries<T> filter( TimeSeries<T> input, TimeWindow timeWindow )
+    public static <T> TimeSeries<T> filter( TimeSeries<T> input, 
+                                            TimeWindow timeWindow )
+    {
+        Objects.requireNonNull( input );
+        
+        return TimeSeriesSlicer.filter( input, timeWindow, input.getReferenceTimes().keySet() );
+    }
+
+    /**
+     * Returns a filtered {@link TimeSeries} whose events are within the right-closed time intervals contained in the 
+     * prescribed {@link TimeWindow}. When considering lead durations, the filter may focus on all 
+     * {@link ReferenceTimeType} of a prescribed subset.
+     * 
+     * @param <T> the type of time-series data
+     * @param input the input to slice
+     * @param timeWindow the time window on which to slice
+     * @param referenceTimeTypes the reference time types to consider when filtering lead durations
+     * @return the subset of the input that meets the condition
+     * @throws NullPointerException if any input is null
+     */
+
+    public static <T> TimeSeries<T> filter( TimeSeries<T> input, 
+                                            TimeWindow timeWindow, 
+                                            Set<ReferenceTimeType> referenceTimeTypes )
     {
         Objects.requireNonNull( input );
 
         Objects.requireNonNull( timeWindow );
 
-        // Filter reference times
+        Objects.requireNonNull( referenceTimeTypes );
+        
+        // Find the subset of reference times to consider
+        Map<ReferenceTimeType, Instant> subset = input.getReferenceTimes()
+                                                      .entrySet()
+                                                      .stream()
+                                                      .filter( a -> referenceTimeTypes.contains( a.getKey() ) )
+                                                      .collect( Collectors.toMap( Entry::getKey, Entry::getValue ) );
+
+        // Filter the subset of reference times according to the pool boundaries
         Map<ReferenceTimeType, Instant> referenceTimes =
-                TimeSeriesSlicer.filterReferenceTimes( input.getReferenceTimes(), timeWindow );
+                TimeSeriesSlicer.filterReferenceTimes( subset, timeWindow );
+        
+        // Find the references times that were not in the subset, plus the ones that were and are within bounds
+        Map<ReferenceTimeType, Instant> notConsideredOrWithinBounds = new TreeMap<>();
+        notConsideredOrWithinBounds.putAll( input.getReferenceTimes() );
+        notConsideredOrWithinBounds.keySet().removeAll( subset.keySet() );
+        notConsideredOrWithinBounds.putAll( referenceTimes );
         
         TimeSeriesBuilder<T> builder = new TimeSeriesBuilder<>();
-        builder.addReferenceTimes( referenceTimes )
+        builder.addReferenceTimes( notConsideredOrWithinBounds )
                .setTimeScale( input.getTimeScale() );
-        
+
         // Some reference times existed and none were within the filter bounds?
-        if( !input.getReferenceTimes().isEmpty() && referenceTimes.isEmpty() )
+        if ( !input.getReferenceTimes().isEmpty() && notConsideredOrWithinBounds.isEmpty() )
         {
             return builder.build();
         }
@@ -241,12 +281,12 @@ public final class TimeSeriesSlicer
 
                     // Inside the right-closed period?
                     if ( !TimeSeriesSlicer.isContained( leadDuration,
-                                                       timeWindow.getEarliestLeadDuration(),
-                                                       timeWindow.getLatestLeadDuration() ) )
+                                                        timeWindow.getEarliestLeadDuration(),
+                                                        timeWindow.getLatestLeadDuration() ) )
                     {
                         isContained = false;
                         break;
-                    }                   
+                    }
                 }
             }
 
@@ -343,6 +383,38 @@ public final class TimeSeriesSlicer
     }
 
     /**
+     * Extracts the events within a time-series and maps them by the duration between a prescribed 
+     * {@link ReferenceTimeType} and the event valid time. If the reference time is not found, an empty map is returned.
+     * 
+     * @param <T> the type of event value
+     * @param timeSeries the time-series to map
+     * @param referenceTimeType the reference time from which to compute durations
+     * @return the mapped events
+     * @throws NullPointerException if the event set is null
+     */
+
+
+    public static <T> Map<Duration, Event<T>> mapEventsByDuration( TimeSeries<T> timeSeries,
+                                                                   ReferenceTimeType referenceTimeType )
+    {
+        Objects.requireNonNull( timeSeries, NULL_INPUT_EXCEPTION );
+
+        Instant referenceTime = timeSeries.getReferenceTimes()
+                                          .get( referenceTimeType );
+
+        if ( Objects.isNull( referenceTime ) )
+        {
+            return Map.of();
+        }
+
+        Map<Duration, Event<T>> returnMe = new TreeMap<>();
+        timeSeries.getEvents()
+                  .forEach( event -> returnMe.put( Duration.between( referenceTime, event.getTime() ), event ) );
+
+        return Collections.unmodifiableMap( returnMe );
+    }
+
+    /**
      * Inspects the sorted list of events by counting backwards from the input index. Returns the index of the earliest 
      * time that is larger than the prescribed start time. This is useful for backfilling when searching for groups of
      * events by time. See {@link #groupEventsByInterval(SortedSet, Set, Duration)}.
@@ -391,7 +463,7 @@ public final class TimeSeriesSlicer
      * to distinguish between them.
      */
 
-    public static Map<Object,SortedSet<Event<Double>>> decomposeWithLabels( TimeSeries<Ensemble> timeSeries )
+    public static Map<Object, SortedSet<Event<Double>>> decomposeWithLabels( TimeSeries<Ensemble> timeSeries )
     {
         Objects.requireNonNull( timeSeries );
 
@@ -470,10 +542,10 @@ public final class TimeSeriesSlicer
                                                            .build() );
         }
 
-        Map<Object,SortedSet<Event<Double>>> withLabels = TimeSeriesSlicer.decomposeWithLabels( timeSeries );
+        Map<Object, SortedSet<Event<Double>>> withLabels = TimeSeriesSlicer.decomposeWithLabels( timeSeries );
         List<TimeSeries<Double>> returnMe = new ArrayList<>();
 
-        for ( Map.Entry<Object,SortedSet<Event<Double>>> next : withLabels.entrySet() )
+        for ( Map.Entry<Object, SortedSet<Event<Double>>> next : withLabels.entrySet() )
         {
             TimeSeriesBuilder<Double> builder = new TimeSeriesBuilder<>();
             TimeSeries<Double> series = builder.addReferenceTimes( timeSeries.getReferenceTimes() )
@@ -897,7 +969,20 @@ public final class TimeSeriesSlicer
             }
         }
 
-        return snippedSeries.build();
+        TimeSeries<S> snipped = snippedSeries.build();
+
+        if ( snipped.getEvents().isEmpty() )
+        {
+            LOGGER.trace( "While snipping series {} to series {} with lower buffer {} and upper buffer {}, no events "
+                          + "were discovered within the series to snip that were within the bounds of the series to "
+                          + "snip to.",
+                          toSnip,
+                          snipTo,
+                          lowerBuffer,
+                          upperBuffer );
+        }
+
+        return snipped;
     }
 
     /**

@@ -47,11 +47,6 @@ public class WRDSSource extends BasicSource
     @Override
     public List<IngestResult> save() throws IOException
     {
-        if (!ConfigHelper.isForecast( this.getDataSourceConfig() ))
-        {
-            return this.saveObservation();
-        }
-
         InterfaceShortHand interfaceShortHand = this.getDataSource()
                                                     .getSource()
                                                     .getInterface();

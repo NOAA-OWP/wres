@@ -698,7 +698,7 @@ public final class TimeSeriesSlicerTest
 
         assertEquals( expected, actual );
     }
-    
+
     @Test
     public void testApplyTimeOffsetToValidTimes()
     {
@@ -720,6 +720,37 @@ public final class TimeSeriesSlicerTest
         TimeSeries<Double> expected = TimeSeries.of( T2010_01_01T12_00_00Z, expectedEvents );
 
         assertEquals( expected, actual );
-    }    
+    }
+
+    @Test
+    public void testMapEventsByDuration()
+    {
+        // Build a time-series to adjust
+        SortedSet<Event<Double>> first = new TreeSet<>();
+        Instant firstBasisTime = T1985_01_01T00_00_00Z;
+        first.add( Event.of( T1985_01_01T01_00_00Z, 1.0 ) );
+        first.add( Event.of( T1985_01_01T02_00_00Z, 2.0 ) );
+        first.add( Event.of( T1985_01_01T03_00_00Z, 3.0 ) );
+
+        //Add the time-series
+        TimeSeries<Double> one = TimeSeries.of( firstBasisTime, ReferenceTimeType.T0, first );
+
+        // Create the expected mapping
+        Map<Duration, Event<Double>> expectedMapping = new HashMap<>();
+        expectedMapping.put( Duration.ofHours( 1 ), Event.of( T1985_01_01T01_00_00Z, 1.0 ) );
+        expectedMapping.put( Duration.ofHours( 2 ), Event.of( T1985_01_01T02_00_00Z, 2.0 ) );
+        expectedMapping.put( Duration.ofHours( 3 ), Event.of( T1985_01_01T03_00_00Z, 3.0 ) );
+
+        Map<Duration, Event<Double>> actualMapping = TimeSeriesSlicer.mapEventsByDuration( one, ReferenceTimeType.T0 );
+
+        assertEquals( expectedMapping, actualMapping );
+
+        // Check that a missing reference time produces an empty mapping
+        Map<Duration, Event<Double>> actualEmptyMapping =
+                TimeSeriesSlicer.mapEventsByDuration( one, ReferenceTimeType.ANALYSIS_START_TIME );
+
+        assertEquals( Map.of(), actualEmptyMapping );
+
+    }
 
 }
