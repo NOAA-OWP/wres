@@ -21,10 +21,12 @@ import org.slf4j.LoggerFactory;
 import wres.datamodel.sampledata.pairs.PairingException;
 
 /**
- * <p>Implements pairing of two {@link TimeSeries} by matching valid times exactly. When pairing two time-series that 
- * both contain reference times, pairs are only formed when one or more reference times intersect. When there are 
- * matching reference times or one or both time-series do not contain reference times, then pairs are formed by valid 
- * time only. Exact matching means that times must be actually equal.
+ * <p>Implements pairing of two {@link TimeSeries} by matching times exactly. The times considered may be reference
+ * times and/or valid times, depending on a {@link TimePairingType} provided on construction. When the type is 
+ * {@link TimePairingType#REFERENCE_TIME_AND_VALID_TIME}, then the reference times are considered. In that case, when 
+ * pairing two time-series that both contain reference times, pairs are only formed when one or more reference times 
+ * intersect. When constructed with {@link TimePairingType#VALID_TIME_ONLY} or one or both time-series do not contain 
+ * reference times, then pairs are formed by valid time only. Exact matching means that times must be exactly equal.
  * 
  * <p>Can optionally add validation checks for admissible values on the left and right. If either the left or
  * right values are not admissible, no pair is added.
@@ -56,6 +58,12 @@ public class TimeSeriesPairerByExactTime<L, R> implements TimeSeriesPairer<L, R>
     private final Predicate<R> rightAdmissibleValue;
 
     /**
+     * The times to inspect when looking for equivalence.
+     */
+
+    private final TimePairingType timePairingType;
+
+    /**
      * Creates an instance. By default, when the left and right inputs both contain reference times, as shown by
      * {@link TimeSeries#getReferenceTimes()}, then the reference times associated with the right are preserved in the
      * paired outputs. If different behavior is desired, that must be additionally implemented.
@@ -68,7 +76,9 @@ public class TimeSeriesPairerByExactTime<L, R> implements TimeSeriesPairer<L, R>
     public static <L, R> TimeSeriesPairerByExactTime<L, R> of()
     {
         // Admit all values
-        return new TimeSeriesPairerByExactTime<>( left -> true, right -> true );
+        return new TimeSeriesPairerByExactTime<>( left -> true,
+                                                  right -> true,
+                                                  TimePairingType.REFERENCE_TIME_AND_VALID_TIME );
     }
 
     /**
@@ -85,7 +95,30 @@ public class TimeSeriesPairerByExactTime<L, R> implements TimeSeriesPairer<L, R>
     public static <L, R> TimeSeriesPairerByExactTime<L, R> of( Predicate<L> leftAdmissibleValue,
                                                                Predicate<R> rightAdmissibleValue )
     {
-        return new TimeSeriesPairerByExactTime<>( leftAdmissibleValue, rightAdmissibleValue );
+        return new TimeSeriesPairerByExactTime<>( leftAdmissibleValue,
+                                                  rightAdmissibleValue,
+                                                  TimePairingType.REFERENCE_TIME_AND_VALID_TIME );
+    }
+
+    /**
+     * Creates an instance with left and right value guards and an explicit pairing type.
+     * 
+     * @param <L> the left type of event value
+     * @param <R> the right type of event value
+     * @param leftAdmissibleValue the left value guard
+     * @param rightAdmissibleValue the right value guard
+     * @param timePairingType the time pairing type 
+     * @return an instance of the pairer
+     * @throws NullPointerException if any input is null
+     */
+
+    public static <L, R> TimeSeriesPairerByExactTime<L, R> of( Predicate<L> leftAdmissibleValue,
+                                                               Predicate<R> rightAdmissibleValue,
+                                                               TimePairingType timePairingType )
+    {
+        return new TimeSeriesPairerByExactTime<>( leftAdmissibleValue,
+                                                  rightAdmissibleValue,
+                                                  timePairingType );
     }
 
     @Override
@@ -99,9 +132,19 @@ public class TimeSeriesPairerByExactTime<L, R> implements TimeSeriesPairer<L, R>
         // Any reference times on one side only or that intersect in both type and value?
         Map<ReferenceTimeType, Instant> referenceTimes = this.getLeftOrRightOrIntersectingReferenceTimes( left, right );
 
-        // If both have reference times and none intersect, there are no pairs
-        if ( referenceTimes.isEmpty() && !left.getReferenceTimes().isEmpty() && !right.getReferenceTimes().isEmpty() )
+        // If pairing by reference time and both have reference times and none intersect, then there are no pairs
+        if ( this.getTimePairingType() == TimePairingType.REFERENCE_TIME_AND_VALID_TIME
+             && referenceTimes.isEmpty()
+             && !left.getReferenceTimes().isEmpty()
+             && !right.getReferenceTimes().isEmpty() )
         {
+            LOGGER.debug( "While attempting to pair left time-series {} with right time-series {} using a time-based "
+                          + "pairing strategy of {}, discovered no intersecting reference times in the two time series "
+                          + "and hence no pairs.",
+                          left.hashCode(),
+                          right.hashCode(),
+                          TimePairingType.REFERENCE_TIME_AND_VALID_TIME );
+
             return new TimeSeriesBuilder<Pair<L, R>>().setTimeScale( left.getTimeScale() )
                                                       .build();
         }
@@ -208,8 +251,16 @@ public class TimeSeriesPairerByExactTime<L, R> implements TimeSeriesPairer<L, R>
     }
 
     /**
-     * Returns the reference times present in either the left or right time-series or the intersecting reference times
-     * if both time-series contain reference times.
+     * Returns:
+     * 
+     * <ol>
+     * <li>The reference times present in the left if the right contains no reference times</li>
+     * <li>The reference times present in the right if the left contains no reference times</li>
+     * <li>The reference times present in both the left and right if the {@link #timePairingType} is 
+     * {@link TimePairingType#VALID_TIME_ONLY}</li>
+     * <li>The intersecting reference times by type that are present in the right and the left if the 
+     * {@link #timePairingType} is {@link TimePairingType#REFERENCE_TIME_AND_VALID_TIME}</li> </li>
+     * </ol>
      * 
      * @return the left or right or intersecting reference times
      */
@@ -225,6 +276,16 @@ public class TimeSeriesPairerByExactTime<L, R> implements TimeSeriesPairer<L, R>
         else if ( right.getReferenceTimes().isEmpty() )
         {
             return left.getReferenceTimes();
+        }
+
+        // Comparing by valid time only, return the union of reference times
+        if ( this.getTimePairingType() == TimePairingType.VALID_TIME_ONLY )
+        {
+            Map<ReferenceTimeType, Instant> returnMe = new EnumMap<>( ReferenceTimeType.class );
+            returnMe.putAll( left.getReferenceTimes() );
+            returnMe.putAll( right.getReferenceTimes() );
+
+            return Collections.unmodifiableMap( returnMe );
         }
 
         // Find the intersecting types
@@ -284,20 +345,39 @@ public class TimeSeriesPairerByExactTime<L, R> implements TimeSeriesPairer<L, R>
     }
 
     /**
+     * Returns the {@link TimePairingType} associated with the instance.
+     * 
+     * @return the time pairing type.
+     */
+
+    private TimePairingType getTimePairingType()
+    {
+        return this.timePairingType;
+    }
+
+    /**
      * Hidden constructor.
      * 
      * @param leftAdmissibleValue the left value guard
      * @param rightAdmissibleValue the right value guard
-     * @throws NullPointerException if either input is null
+     * @throws NullPointerException if any input is null
      */
 
-    private TimeSeriesPairerByExactTime( Predicate<L> leftAdmissibleValue, Predicate<R> rightAdmissibleValue )
+    private TimeSeriesPairerByExactTime( Predicate<L> leftAdmissibleValue,
+                                         Predicate<R> rightAdmissibleValue,
+                                         TimePairingType timePairingType )
     {
         Objects.requireNonNull( leftAdmissibleValue );
         Objects.requireNonNull( rightAdmissibleValue );
+        Objects.requireNonNull( timePairingType );
 
         this.leftAdmissibleValue = leftAdmissibleValue;
         this.rightAdmissibleValue = rightAdmissibleValue;
+        this.timePairingType = timePairingType;
+
+        LOGGER.debug( "Built a time-based pairer that considers the time information '{}.'",
+                      this.getTimePairingType() );
+
     }
 
 }

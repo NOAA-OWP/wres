@@ -16,6 +16,7 @@
         <unit>CMS</unit>
         <feature locationId="DRRC2" />
         <leadHours minimum="0" maximum="18" />
+        <analysisHour>0</analysisHour>
         <dates earliest="2017-08-07T23:59:59Z" latest="2017-08-09T17:00:00Z" />
         <issuedDates earliest="2017-08-07T23:59:59Z" latest="2017-08-08T23:00:00Z" />
         <leadTimesPoolingWindow>

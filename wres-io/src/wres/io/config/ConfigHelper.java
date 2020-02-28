@@ -442,18 +442,17 @@ public class ConfigHelper
     }
 
     /**
-     * Returns whether the data belongs to the @wres.TimeSeries@ tables, not
-     * necessarily whether the data *is* a forecast.
+     * Returns whether the declared {@link DatasourceType} matches one of the forecast types, currently 
+     * {@link DatasourceType#SINGLE_VALUED_FORECASTS} and {@link DatasourceType#ENSEMBLE_FORECASTS}.
      * @param dataSourceConfig the configuration
-     * @return true when data may be found in @wres.TimeSeries@ et al. tables.
+     * @return true when the type of data is a forecast type
      */
     public static boolean isForecast( DataSourceConfig dataSourceConfig )
     {
         Objects.requireNonNull( dataSourceConfig );
 
         return dataSourceConfig.getType() == DatasourceType.SINGLE_VALUED_FORECASTS
-               || dataSourceConfig.getType() == DatasourceType.ENSEMBLE_FORECASTS
-               || dataSourceConfig.getType() == DatasourceType.ANALYSES;
+               || dataSourceConfig.getType() == DatasourceType.ENSEMBLE_FORECASTS;
     }
 
     public static boolean isSimulation( DataSourceConfig dataSourceConfig )

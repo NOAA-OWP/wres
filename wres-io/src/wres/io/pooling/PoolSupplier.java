@@ -37,6 +37,7 @@ import wres.datamodel.scale.ScaleValidationEvent;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.scale.ScaleValidationEvent.EventType;
 import wres.datamodel.time.Event;
+import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.RescaledTimeSeriesPlusValidation;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
@@ -323,7 +324,14 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
             // Filter the pairs against the pool boundaries, if required
             if ( this.metadata.hasTimeWindow() )
             {
-                pairs = TimeSeriesSlicer.filter( pairs, this.metadata.getTimeWindow() );
+                // Do not filter lead durations with respect to reference times that are ANALYSIS_START_TIME because
+                // these may be used interchangeably when pairing with other reference time types.
+                Set<ReferenceTimeType> typesToFilter = new TreeSet<>( pairs.getReferenceTimes().keySet() );
+                typesToFilter.remove( ReferenceTimeType.ANALYSIS_START_TIME );
+
+                pairs = TimeSeriesSlicer.filter( pairs,
+                                                 this.metadata.getTimeWindow(),
+                                                 Collections.unmodifiableSet( typesToFilter ) );
             }
 
             builder.addTimeSeries( pairs );
@@ -354,7 +362,14 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
                 // Filter the pairs against the pool boundaries, if required
                 if ( this.metadata.hasTimeWindow() )
                 {
-                    pairs = TimeSeriesSlicer.filter( pairs, this.metadata.getTimeWindow() );
+                    // Do not filter lead durations with respect to reference times that are ANALYSIS_START_TIME because
+                    // these may be used interchangeably when pairing with other reference time types.
+                    Set<ReferenceTimeType> typesToFilter = new TreeSet<>( pairs.getReferenceTimes().keySet() );
+                    typesToFilter.remove( ReferenceTimeType.ANALYSIS_START_TIME );
+
+                    pairs = TimeSeriesSlicer.filter( pairs,
+                                                     this.metadata.getTimeWindow(),
+                                                     Collections.unmodifiableSet( typesToFilter ) );
                 }
 
                 builder.addTimeSeriesForBaseline( pairs );
@@ -732,8 +747,8 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
 
         // Snip the left data to the right with a buffer on the lower bound, if required
         Duration period = this.getPeriodFromTimeScale( desiredTimeScale );
-        TimeSeries<L> scaledLeft = TimeSeriesSlicer.snip( left, right, period, Duration.ZERO );
 
+        TimeSeries<L> scaledLeft = TimeSeriesSlicer.snip( left, right, period, Duration.ZERO );
         TimeSeries<R> scaledRight = right;
         boolean upscaleLeft = Objects.nonNull( desiredTimeScale ) && !desiredTimeScale.equals( left.getTimeScale() );
         boolean upscaleRight = Objects.nonNull( desiredTimeScale ) && !desiredTimeScale.equals( right.getTimeScale() );
@@ -1393,7 +1408,8 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
             for ( TimeSeries<T> next : timeSeries )
             {
                 // No reference times? Then consolidate into one series
-                if ( next.getReferenceTimes().isEmpty() )
+                Map<ReferenceTimeType, Instant> referenceTimes = next.getReferenceTimes();
+                if ( referenceTimes.isEmpty() )
                 {
                     consolidatedbuilder.addEvents( next.getEvents() )
                                        .setTimeScale( next.getTimeScale() );
@@ -1434,7 +1450,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         {
             // Add both reference times and valid times
             validTimes.addAll( next.getReferenceTimes().values() );
-            
+
             // #73227-40
             if ( !validTimes.isEmpty() )
             {

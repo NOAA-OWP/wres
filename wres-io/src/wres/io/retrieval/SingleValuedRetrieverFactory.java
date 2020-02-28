@@ -18,11 +18,13 @@ import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.scale.TimeScale;
+import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindow;
 import wres.io.config.ConfigHelper;
 import wres.io.config.LeftOrRightOrBaseline;
 import wres.io.project.Project;
+import wres.io.retrieval.SingleValuedGriddedRetriever.Builder;
 import wres.io.retrieval.TimeSeriesRetriever.TimeSeriesRetrieverBuilder;
 
 /**
@@ -246,18 +248,6 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     }
 
     /**
-     * Returns <code>true</code> if the project associated with this retriever factory has a baseline, otherwise
-     * <code>false</code>.
-     * 
-     * @return true if the project has a baseline, otherwise false
-     */
-
-    private boolean hasBaseline()
-    {
-        return this.project.hasBaseline();
-    }
-
-    /**
      * Hidden constructor.
      * 
      * @param project the project
@@ -303,27 +293,32 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
 
     private TimeSeriesRetrieverBuilder<Double> getRetrieverBuilder( DatasourceType dataType )
     {
-        Integer analysisHour = this.project.getProjectConfig()
-                                           .getPair()
-                                           .getAnalysisHour();
-
-        if ( dataType.equals( DatasourceType.ANALYSES )
-             && Objects.isNull( analysisHour ) )
+        
+        Duration analysisMember = null;
+        
+        if ( dataType.equals( DatasourceType.ANALYSES ) )
         {
-            LOGGER.debug( "No <analysisHour> specified, defaulting to 0." );
-            analysisHour = 0;
+            Integer analysisHour = this.project.getProjectConfig()
+                    .getPair()
+                    .getAnalysisHour();
+            
+            if( Objects.nonNull( analysisHour ) )
+            {
+                analysisMember = Duration.ofHours( analysisHour );
+            }
         }
 
         switch ( dataType )
         {
             case SINGLE_VALUED_FORECASTS:
-                return new SingleValuedForecastRetriever.Builder();
+                return new SingleValuedForecastRetriever.Builder().setReferenceTimeType( ReferenceTimeType.T0 );
             case OBSERVATIONS:
-            case SIMULATIONS:
                 return new ObservationRetriever.Builder();
+            case SIMULATIONS:
+                return new ObservationRetriever.Builder().setReferenceTimeType( ReferenceTimeType.ANALYSIS_START_TIME );
             case ANALYSES:
-                Duration analysisMember = Duration.ofHours( analysisHour );
-                return new AnalysisRetriever.Builder().setAnalysisHour( analysisMember );
+                return new AnalysisRetriever.Builder().setAnalysisHour( analysisMember )
+                                                      .setReferenceTimeType( ReferenceTimeType.ANALYSIS_START_TIME );
             default:
                 throw new IllegalArgumentException( "Unrecognized data type from which to create the single-valued "
                                                     + "retriever: "
@@ -345,10 +340,11 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
         switch ( dataType )
         {
             case SINGLE_VALUED_FORECASTS:
-                return new SingleValuedGriddedRetriever.Builder().setIsForecast( true );
+                return (Builder) new SingleValuedGriddedRetriever.Builder().setIsForecast( true )
+                                                                           .setReferenceTimeType( ReferenceTimeType.T0 );
             case OBSERVATIONS:
             case SIMULATIONS:
-                return new SingleValuedGriddedRetriever.Builder();
+                return (Builder) new SingleValuedGriddedRetriever.Builder().setReferenceTimeType( ReferenceTimeType.ANALYSIS_START_TIME );
             default:
                 throw new IllegalArgumentException( "Unrecognized data type from which to create the single-valued "
                                                     + "retriever: "

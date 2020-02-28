@@ -2,9 +2,16 @@ package wres.io.retrieval;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Function;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
@@ -14,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeWindow;
 
 /**
@@ -35,37 +43,54 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
     private static final Logger LOGGER = LoggerFactory.getLogger( AnalysisRetriever.class );
 
     private final TimeSeriesRetriever<Double> individualAnalysisRetriever;
-    private final Duration analysisMember;
+    private final Duration analysisHour;
 
-    private AnalysisRetriever( TimeSeriesRetrieverBuilder<Double> builder,
-                               Duration analysisMember )
+    private AnalysisRetriever( Builder builder )
     {
         super( builder, "TS.initialization_date", "TSV.lead" );
-        this.analysisMember = analysisMember;
+        this.analysisHour = builder.analysisHour;
 
         // Change the lead duration to the analysis step set by the user,
         // also set the reference datetime to an infinitely wide range so
         // that we do not restrict the analyses incorrectly.
         TimeWindow originalRanges = super.getTimeWindow();
-        TimeWindow analysisRanges = TimeWindow.of( Instant.MIN,
-                                                   Instant.MAX,
-                                                   originalRanges.getEarliestValidTime(),
-                                                   originalRanges.getLatestValidTime(),
-                                                   this.analysisMember,
-                                                   this.analysisMember );
+        TimeWindow analysisRanges = originalRanges;
+
+        if ( Objects.nonNull( this.analysisHour ) )
+        {
+            LOGGER.debug( "Building a single-event analysis retriever for analysis hour {}.", this.analysisHour );
+
+            analysisRanges = TimeWindow.of( Instant.MIN,
+                                            Instant.MAX,
+                                            originalRanges.getEarliestValidTime(),
+                                            originalRanges.getLatestValidTime(),
+                                            this.analysisHour,
+                                            this.analysisHour );
+        }
+        else
+        {
+            LOGGER.debug( "Building a multi-event analysis retriever." );
+            
+            analysisRanges = TimeWindow.of( Instant.MIN,
+                                            Instant.MAX,
+                                            originalRanges.getEarliestValidTime(),
+                                            originalRanges.getLatestValidTime() );
+        }
+
         this.individualAnalysisRetriever =
                 new SingleValuedForecastRetriever.Builder()
-                        .setProjectId( super.getProjectId() )
-                        .setDeclaredExistingTimeScale( super.getDeclaredExistingTimeScale() )
-                        .setDesiredTimeScale( super.getDesiredTimeScale() )
-                        .setHasMultipleSourcesPerSeries( false )
-                        .setUnitMapper( super.getMeasurementUnitMapper() )
-                        .setLeftOrRightOrBaseline( super.getLeftOrRightOrBaseline() )
-                        .setTimeWindow( analysisRanges )
-                        .setVariableFeatureId( super.getVariableFeatureId() )
-                        //.setSeasonEnd(  )
-                        //.setSeasonStart(  )
-                        .build();
+                                                           .setProjectId( super.getProjectId() )
+                                                           .setDeclaredExistingTimeScale( super.getDeclaredExistingTimeScale() )
+                                                           .setDesiredTimeScale( super.getDesiredTimeScale() )
+                                                           .setHasMultipleSourcesPerSeries( false )
+                                                           .setUnitMapper( super.getMeasurementUnitMapper() )
+                                                           .setLeftOrRightOrBaseline( super.getLeftOrRightOrBaseline() )
+                                                           .setTimeWindow( analysisRanges )
+                                                           .setVariableFeatureId( super.getVariableFeatureId() )
+                                                           .setReferenceTimeType( ReferenceTimeType.ANALYSIS_START_TIME )
+                                                           //.setSeasonEnd(  )
+                                                           //.setSeasonStart(  )
+                                                           .build();
     }
 
     @Override
@@ -88,7 +113,7 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
 
     static class Builder extends TimeSeriesRetrieverBuilder<Double>
     {
-        private Duration analysisHour = Duration.ZERO;
+        private Duration analysisHour = null;
 
         /**
          * Set the analysis hour, or leave at default when passing null
@@ -97,10 +122,7 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
          */
         Builder setAnalysisHour( Duration analysisHour )
         {
-            if ( Objects.nonNull( analysisHour ) )
-            {
-                this.analysisHour = analysisHour;
-            }
+            this.analysisHour = analysisHour;
 
             return this;
         }
@@ -108,7 +130,7 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
         @Override
         TimeSeriesRetriever<Double> build()
         {
-            return new AnalysisRetriever( this, this.analysisHour );
+            return new AnalysisRetriever( this );
         }
     }
 
@@ -123,75 +145,59 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
     @Override
     public Stream<TimeSeries<Double>> get()
     {
-        TimeSeries.TimeSeriesBuilder<Double> timeSeriesBuilder =
-                new TimeSeries.TimeSeriesBuilder<>();
-        SingleEventExtractor eventExtractor = new SingleEventExtractor( this.analysisMember );
-        this.individualAnalysisRetriever.get()
-                                        .map( eventExtractor )
-                                        .filter( Objects::nonNull )
-                                        .forEach( timeSeriesBuilder::addEvent );
-        TimeSeries<Double> timeSeries = timeSeriesBuilder.build();
-        LOGGER.debug( "Built an analysis timeseries: {}", timeSeries );
-        return Stream.of( timeSeries );
-    }
 
+        Stream<TimeSeries<Double>> timeSeries = this.individualAnalysisRetriever.get();
 
-    /**
-     * Extracts a single event where the difference between the reference
-     * datetime and the valid datetime matches the given (on construction)
-     * Duration.
-     */
-
-    private static final class SingleEventExtractor implements Function<TimeSeries<Double>,Event<Double>>
-    {
-        private final Duration analysisMember;
-
-        SingleEventExtractor( Duration analysisMember )
+        // All events required?
+        if ( Objects.isNull( this.analysisHour ) )
         {
-            this.analysisMember = analysisMember;
+            LOGGER.debug( "No discrete analysis times defined. Built a multi-event timeseries from the analysis." );
+
+            return timeSeries;
         }
-
-        /**
-         * Extracts a single event where the difference between the reference
-         * datetime and the valid datetime matches the given (on construction)
-         * Duration.
-         * @return A single matching event or null when not found.
-         * @throws UnsupportedOperationException If no reference datetime found.
-         */
-
-        @Override
-        public Event<Double> apply( TimeSeries<Double> timeSeries )
+        
+        // Filter the time-series. Create one new time-series for each event-by-duration within an existing 
+        // time-series whose duration falls within the constraints
+        Set<TimeSeries<Double>> toStream = new HashSet<>();
+        
+        List<TimeSeries<Double>> collection = timeSeries.collect( Collectors.toList() );
+        for( TimeSeries<Double> next : collection )
         {
-            Instant analysisReference = timeSeries.getReferenceTimes()
-                                                  .get( ReferenceTimeType.T0 );
-
-            if ( Objects.isNull( analysisReference) )
+            Map<Duration, Event<Double>> eventsByDuration =
+                    TimeSeriesSlicer.mapEventsByDuration( next, ReferenceTimeType.ANALYSIS_START_TIME );
+            
+            for( Entry<Duration,Event<Double>> nextSeries : eventsByDuration.entrySet() )
             {
-                analysisReference = timeSeries.getReferenceTimes()
-                                              .get( ReferenceTimeType.UNKNOWN );
-            }
+                Duration duration = nextSeries.getKey();
+                Event<Double> event = nextSeries.getValue();
 
-            if ( Objects.isNull( analysisReference )
-                 || analysisReference.equals( Instant.MIN )
-                 || analysisReference.equals( Instant.MAX ) )
-            {
-                throw new UnsupportedOperationException( "Unable to find a reference datetime for analysis dataset "
-                                                         + timeSeries );
-            }
-
-            for ( Event<Double> event : timeSeries.getEvents() )
-            {
-                Duration durationFromReference = Duration.between( analysisReference,
-                                                                   event.getTime() );
-                if ( durationFromReference.equals( this.analysisMember ) )
+                if ( duration.equals( this.analysisHour ) )
                 {
-                    return event;
+                    toStream.add( TimeSeries.of( next.getReferenceTimes(),
+                                                 new TreeSet<>( Collections.singleton( event ) ) ) );
                 }
             }
-
-            LOGGER.warn( "No analysis member matching {} found in timeseries, skipping {}",
-                         this.analysisMember, timeSeries );
-            return null;
         }
+        
+        // Warn if no events
+        if ( toStream.isEmpty() )
+        {
+            LOGGER.warn( "While attempting to build single-event timeseries for each analysis time between {} and {}"
+                         + ", failed to discover any time-series events between those analysis times.",
+                         this.analysisHour,
+                         this.analysisHour );
+
+        }
+        else
+        {
+            LOGGER.debug( "Built {} single-event timeseries for each analysis time between {} and {}: {}",
+                          toStream.size(),
+                          this.analysisHour,
+                          this.analysisHour,
+                          toStream );
+        }
+
+        return toStream.stream();
     }
+
 }

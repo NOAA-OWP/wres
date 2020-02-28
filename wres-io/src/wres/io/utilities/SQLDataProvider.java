@@ -10,7 +10,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.sql.Types;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -228,10 +227,7 @@ public class SQLDataProvider implements DataProvider
     @Override
     public boolean isNull( String columnName )
     {
-        return this.columnNames.stream()
-                               .filter( next -> next.equalsIgnoreCase( columnName ) )
-                               .findFirst()
-                               .isEmpty();
+        return Objects.isNull( this.getObject( columnName ) );
     }
 
     @Override

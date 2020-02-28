@@ -265,7 +265,7 @@ public class EnsembleRetrieverFactoryTest
                 builder.addEvent( Event.of( Instant.parse( T2023_04_01T02_00_00Z ), Ensemble.of( 37.0, 107.0, 72.0) ) )
                        .addEvent( Event.of( Instant.parse( T2023_04_01T03_00_00Z ), Ensemble.of( 44.0, 114.0, 79.0) ) )
                        .addEvent( Event.of( Instant.parse( T2023_04_01T04_00_00Z ), Ensemble.of( 51.0, 121.0, 86.0 ) ) )
-                       .addReferenceTime( Instant.parse( T2023_04_01T00_00_00Z ), ReferenceTimeType.UNKNOWN )
+                       .addReferenceTime( Instant.parse( T2023_04_01T00_00_00Z ), ReferenceTimeType.T0 )
                        .setTimeScale( TimeScale.of() )
                        .build();
 
@@ -298,7 +298,7 @@ public class EnsembleRetrieverFactoryTest
                 builder.addEvent( Event.of( Instant.parse( T2023_04_01T02_00_00Z ), Ensemble.of( 37.0, 107.0, 72.0  ) ) )
                        .addEvent( Event.of( Instant.parse( T2023_04_01T03_00_00Z ), Ensemble.of( 44.0, 114.0, 79.0 ) ) )
                        .addEvent( Event.of( Instant.parse( T2023_04_01T04_00_00Z ), Ensemble.of( 51.0, 121.0, 86.0 ) ) )
-                       .addReferenceTime( Instant.parse( T2023_04_01T00_00_00Z ), ReferenceTimeType.UNKNOWN )
+                       .addReferenceTime( Instant.parse( T2023_04_01T00_00_00Z ), ReferenceTimeType.T0 )
                        .setTimeScale( TimeScale.of() )
                        .build();
 

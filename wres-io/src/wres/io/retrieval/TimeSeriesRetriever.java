@@ -148,6 +148,14 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      */
 
     private final boolean hasMultipleSourcesPerSeries;
+    
+    /**
+     * Reference time type. If there are multiple instances per time-series in future, then the shape of retrieval will 
+     * substantively differ and the reference time type would necessarily become inline to the time-series, not 
+     * declared upfront.  
+     */
+    
+    private ReferenceTimeType referenceTimeType = ReferenceTimeType.UNKNOWN;
 
     /**
      * Returns true if the retriever supplies forecast data.
@@ -207,10 +215,10 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                 Instant validTime = provider.getInstant( "valid_time" );
 
                 // Add the explicit reference time
-                if ( provider.hasColumn( "reference_time" ) )
+                if ( provider.hasColumn( "reference_time" ) && !provider.isNull( "reference_time" ) )
                 {
                     Instant referenceTime = provider.getInstant( "reference_time" );
-                    builder.addReferenceTime( referenceTime, ReferenceTimeType.UNKNOWN );
+                    builder.addReferenceTime( referenceTime, this.getReferenceTimeType() );
                 }
 
                 // Add the event     
@@ -509,7 +517,18 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     {
         return Objects.nonNull( this.getTimeWindow() );
     }
+    
+    /**
+     * Returns the {@link ReferenceTimeType} of the retriever instance.
+     * 
+     * @return the reference time type
+     */
 
+    ReferenceTimeType getReferenceTimeType()
+    {
+        return this.referenceTimeType;
+    }
+    
     /**
      * Adds a clause to a script according to the start of the last available clause. When the last available clause
      * starts with <code>WHERE</code>, then the clause added starts with <code>AND</code>, otherwise <code>WHERE</code>. 
@@ -1151,6 +1170,12 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         private boolean hasMultipleSourcesPerSeries;
 
         /**
+         * The reference time type.
+         */
+        
+        private ReferenceTimeType referenceTimeType = ReferenceTimeType.UNKNOWN;
+        
+        /**
          * Sets the <code>wres.Project.project_id</code>.
          * 
          * @param projectId the <code>wres.Project.project_id</code>
@@ -1286,6 +1311,19 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             this.unitMapper = unitMapper;
             return this;
         }
+        
+        /**
+         * Sets the {@link ReferenceTimeType}.
+         * 
+         * @param referenceTimeType the reference time type
+         * @return the builder
+         */
+
+        TimeSeriesRetrieverBuilder<S> setReferenceTimeType( ReferenceTimeType referenceTimeType )
+        {
+            this.referenceTimeType = referenceTimeType;
+            return this;
+        }
 
         abstract TimeSeriesRetriever<S> build();
     }
@@ -1313,6 +1351,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         this.hasMultipleSourcesPerSeries = builder.hasMultipleSourcesPerSeries;
         this.seasonStart = builder.seasonStart;
         this.seasonEnd = builder.seasonEnd;
+        this.referenceTimeType = builder.referenceTimeType;
         this.timeColumn = timeColumn;
         this.leadDurationColumn = leadDurationColumn;
 
@@ -1328,6 +1367,12 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                                                 + this.seasonStart
                                                 + "Season end: "
                                                 + this.seasonEnd );
+        }
+
+        if ( Objects.isNull( this.referenceTimeType ) )
+        {
+            throw new IllegalArgumentException( "Cannot build a time-series retriever with a null reference time "
+                                                + "type." );
         }
 
         // Log missing information
