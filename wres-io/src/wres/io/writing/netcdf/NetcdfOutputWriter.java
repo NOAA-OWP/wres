@@ -68,6 +68,7 @@ import wres.datamodel.time.TimeWindow;
 import wres.datamodel.time.generators.TimeWindowGenerator;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
+import wres.io.retrieval.UnitMapper;
 import wres.io.writing.WriteException;
 import wres.util.FutureQueue;
 import wres.util.Strings;
@@ -124,16 +125,19 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
      * @param projectConfig the project configuration
      * @param durationUnits the time units for durations
      * @param outputDirectory the directory into which to write
+     * @param unitMapper a measurement unit mapper
      * @return an instance of the writer
      * @throws IOException if the blobs could not be created for any reason
      */
 
     public static NetcdfOutputWriter of( ProjectConfig projectConfig,
                                          ChronoUnit durationUnits,
+                                         UnitMapper unitMapper,
                                          Path outputDirectory) throws IOException
     {
         return new NetcdfOutputWriter( projectConfig,
                                        durationUnits,
+                                       unitMapper,
                                        outputDirectory );
     }
 
@@ -150,6 +154,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
 
     private NetcdfOutputWriter( ProjectConfig projectConfig,
                                 ChronoUnit durationUnits,
+                                UnitMapper unitMapper,
                                 Path outputDirectory ) throws IOException
     {
         Objects.requireNonNull( projectConfig, "Specify non-null project config." );
@@ -164,15 +169,15 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
 
         if ( this.netcdfConfiguration == null )
         {
-            this.netcdfConfiguration = new NetcdfType(null,
-                                                      null,
-                                                      null,
-                                                      null,
-                                                      null );
+            this.netcdfConfiguration = new NetcdfType( null,
+                                                       null,
+                                                       null,
+                                                       null,
+                                                       null );
         }
 
         // Create the blobs into which statistics will be written and a writer per blob
-        this.pathsWrittenTo = this.createBlobsAndBlobWriters( projectConfig );
+        this.pathsWrittenTo = this.createBlobsAndBlobWriters( projectConfig, unitMapper );
         
         Objects.requireNonNull( this.destinationConfig, "The NetcdfOutputWriter wasn't properly initialized." );
     }
@@ -181,11 +186,12 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
      * Creates the blobs into which outputs will be written.
      * 
      * @param ProjectConfig projectConfig the project configuration
+     * @param unitMapper a measurement unit mapper
      * @throws IOException if the blobs could not be created for any reason
      * @return the paths written
      */
-    
-    private Set<Path> createBlobsAndBlobWriters( ProjectConfig projectConfig ) throws IOException
+
+    private Set<Path> createBlobsAndBlobWriters( ProjectConfig projectConfig, UnitMapper unitMapper ) throws IOException
     {
         // Time windows
         PairConfig pairConfig = projectConfig.getPair();
@@ -193,7 +199,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
 
         // External thresholds, if any
         Map<FeaturePlus, ThresholdsByMetric> externalThresholds =
-                ConfigHelper.readExternalThresholdsFromProjectConfig( projectConfig );
+                ConfigHelper.readExternalThresholdsFromProjectConfig( projectConfig, unitMapper );
 
         // Find the feature with the maximum number of thresholds        
         Comparator<ThresholdsByMetric> byCount = ( ThresholdsByMetric o1, ThresholdsByMetric o2 ) -> {

@@ -90,6 +90,11 @@ class ProcessorHelper
         // Create output directory prior to ingest, fails early when it fails.
         Path outputDirectory = ProcessorHelper.createTempOutputDirectory();
 
+        // Get a unit mapper for the declared measurement units
+        PairConfig pairConfig = projectConfig.getPair();
+        String desiredMeasurementUnit = pairConfig.getUnit();
+        UnitMapper unitMapper = UnitMapper.of( desiredMeasurementUnit );
+        
         // Read external thresholds from the configuration, per feature
         // Compare on locationId only. TODO: consider how better to transmit these thresholds
         // to wres-metrics, given that they are resolved by project configuration that is
@@ -97,7 +102,7 @@ class ProcessorHelper
         // wres-control, since they make processing decisions, or passing ResolvedProject onwards
         final Map<FeaturePlus, ThresholdsByMetric> thresholds =
                 new TreeMap<>( FeaturePlus::compareByLocationId );
-        thresholds.putAll( ConfigHelper.readExternalThresholdsFromProjectConfig( projectConfig ) );
+        thresholds.putAll( ConfigHelper.readExternalThresholdsFromProjectConfig( projectConfig, unitMapper ) );
 
         LOGGER.debug( "Beginning ingest for project {}...", projectConfigPlus );
 
@@ -157,6 +162,7 @@ class ProcessorHelper
             // Use the gridded netcdf writer
             sharedWritersBuilder.setNetcdfOutputWriter( NetcdfOutputWriter.of( projectConfig,
                                                                                durationUnits,
+                                                                               unitMapper,
                                                                                outputDirectory ) );
         }
 
@@ -209,11 +215,6 @@ class ProcessorHelper
         SharedWriters sharedWriters = SharedWriters.of( sharedStatisticsWriters,
                                                         sharedSampleWriters,
                                                         sharedBaselineSampleWriters );
-
-        // Get a unit mapper for the declared measurement units
-        PairConfig pairConfig = projectConfig.getPair();
-        String desiredMeasurementUnit = pairConfig.getUnit();
-        UnitMapper unitMapper = UnitMapper.of( desiredMeasurementUnit );
         
         // Create one task per feature
         for ( FeaturePlus feature : decomposedFeatures )

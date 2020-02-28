@@ -73,6 +73,7 @@ import wres.datamodel.time.TimeWindow;
 import wres.io.data.caching.Features;
 import wres.io.project.Project;
 import wres.io.reading.commaseparated.CommaSeparatedReader;
+import wres.io.retrieval.UnitMapper;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.NoDataException;
 import wres.system.SystemSettings;
@@ -102,6 +103,10 @@ import wres.util.TimeHelper;
 
 public class ConfigHelper
 {
+    private static final String ONE_OR_BOTH_OF_THEM_DON_T_HAVE_ONE = "one or both of them don't have one.";
+
+    private static final String ENTER_NON_NULL_METADATA_TO_ESTABLISH_A_PATH_FOR_WRITING = "Enter non-null metadata to establish a path for writing.";
+
     public static final Logger LOGGER = LoggerFactory.getLogger( ConfigHelper.class );
 
     private static final ConcurrentMap<ProjectConfig, ConcurrentSkipListSet<String>> messages =
@@ -240,7 +245,7 @@ public class ConfigHelper
             else
             {
                 LOGGER.trace( "Either {} and {} have the same location ids or "
-                              + "one or both of them don't have one.",
+                              + ONE_OR_BOTH_OF_THEM_DON_T_HAVE_ONE,
                               featureDescription,
                               t1Description );
             }
@@ -253,7 +258,7 @@ public class ConfigHelper
             else
             {
                 LOGGER.trace( "Either {} and {} have the same gage ids or "
-                              + "one or both of them don't have one.",
+                              + ONE_OR_BOTH_OF_THEM_DON_T_HAVE_ONE,
                               featureDescription,
                               t1Description );
             }
@@ -266,7 +271,7 @@ public class ConfigHelper
             else
             {
                 LOGGER.trace( "Either {} and {} have the same com ids or "
-                              + "one or both of them don't have one.",
+                              + ONE_OR_BOTH_OF_THEM_DON_T_HAVE_ONE,
                               featureDescription,
                               t1Description );
             }
@@ -1150,7 +1155,7 @@ public class ConfigHelper
     {
         Objects.requireNonNull( destinationConfig, "Enter non-null time window to establish a path for writing." );
 
-        Objects.requireNonNull( meta, "Enter non-null metadata to establish a path for writing." );
+        Objects.requireNonNull( meta, ENTER_NON_NULL_METADATA_TO_ESTABLISH_A_PATH_FOR_WRITING );
 
         Objects.requireNonNull( timeWindow, "Enter a non-null time window  to establish a path for writing." );
 
@@ -1185,7 +1190,7 @@ public class ConfigHelper
                                              OneOrTwoThresholds threshold )
             throws IOException
     {
-        Objects.requireNonNull( meta, "Enter non-null metadata to establish a path for writing." );
+        Objects.requireNonNull( meta, ENTER_NON_NULL_METADATA_TO_ESTABLISH_A_PATH_FOR_WRITING );
 
         Objects.requireNonNull( threshold, "Enter non-null threshold to establish a path for writing." );
 
@@ -1220,7 +1225,7 @@ public class ConfigHelper
                                 "Enter non-null destination configuration to establish "
                                                    + "a path for writing." );
 
-        Objects.requireNonNull( meta, "Enter non-null metadata to establish a path for writing." );
+        Objects.requireNonNull( meta, ENTER_NON_NULL_METADATA_TO_ESTABLISH_A_PATH_FOR_WRITING );
 
         Objects.requireNonNull( meta.getSampleMetadata().getIdentifier(),
                                 "Enter a non-null identifier for the metadata to establish "
@@ -1354,12 +1359,13 @@ public class ConfigHelper
      * returned.
      * 
      * @param projectConfig the project configuration
+     * @param unitMapper a measurement unit mapper
      * @return the thresholds associated with each feature obtained from a source in the project configuration
      * @throws MetricConfigException if the metric configuration is invalid
      */
 
     public static Map<FeaturePlus, ThresholdsByMetric>
-            readExternalThresholdsFromProjectConfig( ProjectConfig projectConfig )
+            readExternalThresholdsFromProjectConfig( ProjectConfig projectConfig, UnitMapper unitMapper )
     {
         Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
 
@@ -1368,11 +1374,11 @@ public class ConfigHelper
         // Obtain and read thresholds
         List<MetricsConfig> metrics = projectConfig.getMetrics();
 
-        // Obtain any units for non-probability thresholds
-        MeasurementUnit units = null;
+        // Obtain any desired units for non-probability thresholds
+        MeasurementUnit desiredUnits = null;
         if ( Objects.nonNull( projectConfig.getPair() ) && Objects.nonNull( projectConfig.getPair().getUnit() ) )
         {
-            units = MeasurementUnit.of( projectConfig.getPair().getUnit() );
+            desiredUnits = MeasurementUnit.of( projectConfig.getPair().getUnit() );
         }
 
         for ( MetricsConfig nextGroup : metrics )
@@ -1387,12 +1393,22 @@ public class ConfigHelper
             // Iterate the external sources and read them all into the map
             for ( ThresholdsConfig next : external )
             {
+                // Filtered above
+                ThresholdsConfig.Source nextSource = (ThresholdsConfig.Source) next.getCommaSeparatedValuesOrSource();
+                
+                MeasurementUnit existingUnits = desiredUnits;
+                if( Objects.nonNull( nextSource.getUnit() ) && !nextSource.getUnit().isBlank() )
+                {
+                    existingUnits = MeasurementUnit.of( nextSource.getUnit() );
+                }
+                
                 // Add or append
                 ConfigHelper.addExternalThresholdsForOneMetricConfigGroup( projectConfig,
                                                                            returnMe,
                                                                            nextGroup,
                                                                            next,
-                                                                           units );
+                                                                           existingUnits,
+                                                                           unitMapper );
             }
 
         }
@@ -1441,7 +1457,9 @@ public class ConfigHelper
      * @param projectConfig the project configuration
      * @param mutate the map of results to mutate
      * @param group The group of metrics to add the threshold to
-     * @param units the optional units associated with the threshold values
+     * @param units the (optional) existing measurement units associated with the threshold values; if null, equal to 
+     *            the evaluation units
+     * @param UnitMapper a measurement unit mapper
      * @throws MetricConfigException if the metric configuration is invalid
      * @throws NullPointerException if any input is null
      */
@@ -1451,7 +1469,8 @@ public class ConfigHelper
                                                           Map<FeaturePlus, ThresholdsByMetric> mutate,
                                                           MetricsConfig group,
                                                           ThresholdsConfig thresholdsConfig,
-                                                          MeasurementUnit units )
+                                                          MeasurementUnit units,
+                                                          UnitMapper unitMapper )
     {
 
         Objects.requireNonNull( mutate, "Specify a non-null map of thresholds to mutate." );
@@ -1465,7 +1484,7 @@ public class ConfigHelper
 
         // Obtain the thresholds
         Map<FeaturePlus, ThresholdsByMetric> thresholdsByFeature =
-                ConfigHelper.readOneExternalThresholdFromProjectConfig( thresholdsConfig, metrics, units );
+                ConfigHelper.readOneExternalThresholdFromProjectConfig( thresholdsConfig, metrics, units, unitMapper );
 
         // Iterate the thresholds
         for ( Entry<FeaturePlus, ThresholdsByMetric> nextEntry : thresholdsByFeature.entrySet() )
@@ -1490,7 +1509,9 @@ public class ConfigHelper
      * 
      * @param threshold the threshold configuration
      * @param metrics the metrics to which the threshold applies
-     * @param units the optional units associated with the threshold values
+     * @param units the (optional) existing measurement units associated with the threshold values; if null, equal to 
+     *            the evaluation units
+     * @param UnitMapper a measurement unit mapper
      * @return a map of thresholds by feature
      * @throws MetricConfigException if the threshold could not be read
      * @throws NullPointerException if the threshold configuration is null or the metrics are null
@@ -1499,7 +1520,8 @@ public class ConfigHelper
     private static Map<FeaturePlus, ThresholdsByMetric>
             readOneExternalThresholdFromProjectConfig( ThresholdsConfig threshold,
                                                        Set<MetricConstants> metrics,
-                                                       MeasurementUnit units )
+                                                       MeasurementUnit units, 
+                                                       UnitMapper unitMapper )
     {
 
         Objects.requireNonNull( threshold, "Specify non-null threshold configuration." );
@@ -1583,7 +1605,8 @@ public class ConfigHelper
                                                                                          operator,
                                                                                          dataType,
                                                                                          missing,
-                                                                                         units );
+                                                                                         units,
+                                                                                         unitMapper );
 
             // Add the thresholds for each feature
             for ( Entry<FeaturePlus, Set<Threshold>> nextEntry : read.entrySet() )

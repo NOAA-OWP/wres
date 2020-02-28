@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.DoubleUnaryOperator;
 
 import wres.config.FeaturePlus;
 import wres.config.generated.Feature;
@@ -20,6 +21,7 @@ import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
+import wres.io.retrieval.UnitMapper;
 
 /**
  * Helps read files of Comma Separated Values (CSV).
@@ -39,7 +41,9 @@ public class CommaSeparatedReader
      * @param condition the threshold condition
      * @param dataType the threshold data type
      * @param missingValue an optional missing value identifier to ignore (may be null)
-     * @param units the optional units associated with the threshold values
+     * @param units the (optional) existing measurement units associated with the threshold values; if null, equal to 
+     *            the evaluation units
+     * @param unitMapper a measurement unit mapper
      * @return a map of thresholds by feature
      * @throws IOException if the source cannot be read or contains unexpected input
      * @throws NullPointerException if the source is null or the condition is null
@@ -53,7 +57,8 @@ public class CommaSeparatedReader
                                                                    Operator condition,
                                                                    ThresholdDataType dataType,
                                                                    Double missingValue,
-                                                                   MeasurementUnit units )
+                                                                   MeasurementUnit units,
+                                                                   UnitMapper unitMapper )
             throws IOException
     {
         Objects.requireNonNull( commaSeparated, "Specify a non-null source of comma separated thresholds to read." );
@@ -83,6 +88,9 @@ public class CommaSeparatedReader
 
         // Feature count
         int totalFeatures = 0;
+
+        // Internal unit mapper
+        InnerUnitMapper innerUnitMapper = InnerUnitMapper.of( units, unitMapper );
 
         // Read the input
         try ( BufferedReader input = Files.newBufferedReader( commaSeparated, StandardCharsets.UTF_8 ) )
@@ -139,7 +147,7 @@ public class CommaSeparatedReader
                                                                                       labels,
                                                                                       featureThresholds,
                                                                                       missingValue,
-                                                                                      units ) );
+                                                                                      innerUnitMapper ) );
                 }
                 // Catch expected exceptions and propagate finally to avoid drip-feeding
                 catch ( LabelInconsistencyException e )
@@ -187,7 +195,7 @@ public class CommaSeparatedReader
      * @param labels the optional labels (may be null)
      * @param featureThresholds the next set of thresholds to process for a given feature, including the feature label
      * @param missingValue an optional missing value identifier to ignore (may be null)
-     * @param units the optional units associated with the threshold values
+     * @param unitMapper a mapper for the measurement units
      * @throws NullPointerException if the featureThresholds is null
      * @throws LabelInconsistencyException if the number of labels is inconsistent with the number of thresholds
      * @throws NumberFormatException if one of the thresholds was not a number
@@ -201,7 +209,7 @@ public class CommaSeparatedReader
                                                                  String[] labels,
                                                                  String[] featureThresholds,
                                                                  Double missingValue,
-                                                                 MeasurementUnit units )
+                                                                 InnerUnitMapper unitMapper )
     {
 
         Objects.requireNonNull( featureThresholds );
@@ -221,7 +229,7 @@ public class CommaSeparatedReader
                                                    condition,
                                                    dataType,
                                                    missingValue,
-                                                   units );
+                                                   unitMapper );
     }
 
     /**
@@ -233,7 +241,7 @@ public class CommaSeparatedReader
      * @param condition the threshold condition
      * @param dataType the threshold data type
      * @param missingValue an optional missing value identifier to ignore (may be null)
-     * @param units the optional units associated with the threshold values
+     * @param unitMapper a mapper for the measurement units
      * @throws NullPointerException if the input is null
      * @throws IllegalArgumentException if the threshold content is inconsistent with the type of threshold
      *            or all threshold values match the missingValue 
@@ -246,7 +254,7 @@ public class CommaSeparatedReader
                                                  Operator condition,
                                                  ThresholdDataType dataType,
                                                  Double missingValue,
-                                                 MeasurementUnit units )
+                                                 InnerUnitMapper unitMapper )
     {
         Objects.requireNonNull( input, "Specify a non-null input in order to read the thresholds." );
 
@@ -279,16 +287,18 @@ public class CommaSeparatedReader
                                                                     condition,
                                                                     dataType,
                                                                     iterateLabels[i],
-                                                                    units ) );
+                                                                    unitMapper.getDesiredMeasurementUnit() ) );
                 }
                 // Ordinary thresholds
                 else
                 {
-                    returnMe.add( Threshold.of( OneOrTwoDoubles.of( threshold ),
+                    double thresholdInDesiredUnits = unitMapper.getValueInDesiredUnits( threshold );
+
+                    returnMe.add( Threshold.of( OneOrTwoDoubles.of( thresholdInDesiredUnits ),
                                                 condition,
                                                 dataType,
                                                 iterateLabels[i],
-                                                units ) );
+                                                unitMapper.getDesiredMeasurementUnit() ) );
                 }
             }
             else
@@ -410,6 +420,91 @@ public class CommaSeparatedReader
         if ( exceptionMessage.length() > 0 )
         {
             throw new IllegalArgumentException( exceptionMessage.toString() );
+        }
+    }
+
+    /**
+     * Inner units mapper.
+     */
+
+    private static class InnerUnitMapper
+    {
+        /**
+         * Existing measurement units.
+         */
+        private final MeasurementUnit existingUnit;
+
+        /**
+         * A general unit mapper.
+         */
+
+        private final UnitMapper generalUnitMapper;
+
+        /**
+         * A mapper to create desired measurement units.
+         */
+        private final DoubleUnaryOperator specificUnitMapper;
+
+        /**
+         * Create an instance.
+         * @param existingUnit the existing measurement unit
+         * @param desiredUnitMapper a mapper to create desired measurement units
+         * @return an inner mapper
+         */
+
+        private static InnerUnitMapper of( MeasurementUnit existingUnits, UnitMapper desiredUnitMapper )
+        {
+            return new InnerUnitMapper( existingUnits, desiredUnitMapper );
+        }
+
+        /**
+         * Returns the desired measurement unit.
+         * @return the desired measurement unit
+         */
+
+        private MeasurementUnit getDesiredMeasurementUnit()
+        {
+            return MeasurementUnit.of( this.generalUnitMapper.getDesiredMeasurementUnitName() );
+        }
+
+        /**
+         * Maps an input value in the existing measurement units to the desired units. If the existing units are
+         * unknown, the input value is returned.
+         * 
+         * @param thresholdValue a threshold value in existing units
+         * @return the thresholds value in desired units
+         */
+
+        private double getValueInDesiredUnits( double valueInExistingUnits )
+        {
+            // No existing units, desired units assumed
+            if ( Objects.isNull( this.existingUnit ) )
+            {
+                return valueInExistingUnits;
+            }
+
+            return this.specificUnitMapper.applyAsDouble( valueInExistingUnits );
+        }
+
+        /**
+         * Create an instance.
+         * @param existingUnit the existing measurement unit
+         * @param desiredUnitMapper a mapper to create desired measurement units
+         */
+
+        private InnerUnitMapper( MeasurementUnit existingUnit, UnitMapper generalUnitMapper )
+        {
+            this.existingUnit = existingUnit;
+            this.generalUnitMapper = generalUnitMapper;
+
+            if ( Objects.nonNull( this.existingUnit ) )
+            {
+                this.specificUnitMapper = generalUnitMapper.getUnitMapper( existingUnit.toString() );
+            }
+            else
+            {
+                this.specificUnitMapper = null;
+            }
         }
     }
 
