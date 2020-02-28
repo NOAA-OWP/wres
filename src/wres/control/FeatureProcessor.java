@@ -268,7 +268,8 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                              ProduceOutputsFromStatistics outputProcessor =
                                                      ProduceOutputsFromStatistics.of( this.resolvedProject,
                                                                                       onlyWriteTheseTypes,
-                                                                                      this.sharedWriters.getStatisticsWriters() );
+                                                                                      this.sharedWriters.getStatisticsWriters(),
+                                                                                      this.unitMapper );
                                              outputProcessor.accept( metricOutputs );
                                              outputProcessor.close();
                                              return outputProcessor.get();
@@ -431,7 +432,8 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                       ProduceOutputsFromStatistics endOfPipeline =
                               ProduceOutputsFromStatistics.of( this.resolvedProject,
                                                                nowWriteTheseTypes,
-                                                               this.sharedWriters.getStatisticsWriters() ) )
+                                                               this.sharedWriters.getStatisticsWriters(),
+                                                               this.unitMapper ) )
                 {
                     // Generate output
                     endOfPipeline.accept( processor.getCachedMetricOutput() );

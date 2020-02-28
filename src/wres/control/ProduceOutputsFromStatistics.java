@@ -37,6 +37,7 @@ import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.statistics.StatisticsForProject;
+import wres.io.retrieval.UnitMapper;
 import wres.io.writing.SharedStatisticsWriters;
 import wres.io.writing.commaseparated.statistics.CommaSeparatedBoxPlotWriter;
 import wres.io.writing.commaseparated.statistics.CommaSeparatedDiagramWriter;
@@ -150,22 +151,30 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
      */
 
     private final ChronoUnit durationUnits;
+    
+    /**
+     * Unit mapper.
+     */
 
+    private final UnitMapper unitMapper;
+    
     /**
      * Build a product processor.
      * 
      * @param resolvedProject the resolved project
      * @param writeWhenTrue the condition under which outputs should be written
      * @param sharedWriters an optional set of shared writers to consume outputs
+     * @param unitMapper a measurement unit mapper
      * @throws NullPointerException if any of the inputs are null
      * @throws WresProcessingException if the project is invalid for writing
      */
 
     static ProduceOutputsFromStatistics of( ResolvedProject resolvedProject,
                                             BiPredicate<StatisticType, DestinationType> writeWhenTrue,
-                                            SharedStatisticsWriters sharedWriters )
+                                            SharedStatisticsWriters sharedWriters,
+                                            UnitMapper unitMapper )
     {
-        return new ProduceOutputsFromStatistics( resolvedProject, writeWhenTrue, sharedWriters );
+        return new ProduceOutputsFromStatistics( resolvedProject, writeWhenTrue, sharedWriters, unitMapper );
     }
 
     /**
@@ -466,6 +475,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
             LOGGER.debug( "There are netcdf consumers for {}", this );
             NetcdfOutputWriter netcdfOutputWriter = NetcdfOutputWriter.of( projectConfig,
                                                                            this.getDurationUnits(),
+                                                                           this.unitMapper,
                                                                            this.getResolvedProject()
                                                                                .getOutputDirectory() );
             doubleScoreConsumers.put( DestinationType.NETCDF,
@@ -784,13 +794,15 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
      * @param resolvedProject the resolved project
      * @param writeWhenTrue the condition under which outputs should be written
      * @param sharedWriters an optional set of shared writers to consume outputs
+     * @param unitMapper a measurement unit mapper
      * @throws NullPointerException if any of the inputs are null
      * @throws WresProcessingException if the project is invalid for writing
      */
 
     private ProduceOutputsFromStatistics( final ResolvedProject resolvedProject,
                                           final BiPredicate<StatisticType, DestinationType> writeWhenTrue,
-                                          final SharedStatisticsWriters sharedWriters )
+                                          final SharedStatisticsWriters sharedWriters,
+                                          final UnitMapper unitMapper )
     {
         Objects.requireNonNull( resolvedProject,
                                 "Specify a non-null configuration for the results processor." );
@@ -801,6 +813,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         this.writersToPaths = new ArrayList<>();
         this.resolvedProject = resolvedProject;
         this.writeWhenTrue = writeWhenTrue;
+        this.unitMapper = unitMapper;
 
         // Register the duration units
         String durationUnitsString =

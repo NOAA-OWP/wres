@@ -74,43 +74,14 @@ public class UnitMapper
     }
 
     /**
-     * Returns a unit mapper for the existing <code>measurementunit_id</code> provided.
-     * 
-     * @param measurementUnitId the existing <code>measurementunit_id</code>
-     * @throws NoSuchUnitConversionException if there is no conversion for the supplied <code>measurementunit_id</code>
-     */
-
-    DoubleUnaryOperator getUnitMapper( Integer measurementUnitId )
-    {
-        Objects.requireNonNull( measurementUnitId, "Specify a non-null measurement unit for conversion." );
-
-        // Identity
-        if ( measurementUnitId.equals( this.desiredMeasurementUnitId ) )
-        {
-            return in -> in;
-        }
-
-        if ( !this.conversions.containsKey( measurementUnitId ) )
-        {
-            throw new NoSuchUnitConversionException( "There is no such unit conversion function to "
-                                                     + "'"
-                                                     + this.desiredMeasurementUnit
-                                                     + "' for the measurementunit_id '"
-                                                     + measurementUnitId
-                                                     + "'." );
-        }
-
-        return this.conversions.get( measurementUnitId );
-    }
-
-    /**
      * Returns a unit mapper for the name of an existing measurement unit.
      * 
      * @param unitName the name of an existing measurement unit
+     * @return a unit mapper for the prescribed, existing, units
      * @throws NoSuchUnitConversionException if there is no conversion for the supplied unitName
      */
 
-    DoubleUnaryOperator getUnitMapper( String unitName )
+    public DoubleUnaryOperator getUnitMapper( String unitName )
     {
         Objects.requireNonNull( unitName, "Specify a non-null measurement unit name for conversion." );
 
@@ -136,6 +107,48 @@ public class UnitMapper
         return this.conversions.get( identifier );
     }
 
+    /**
+     * Returns the name of the desired measurement unit for which the mapper was constructed.
+     * 
+     * @return the name of the desired measurement unit
+     */
+    
+    public String getDesiredMeasurementUnitName()
+    {
+        return this.desiredMeasurementUnit;
+    }
+    
+    /**
+     * Returns a unit mapper for the existing <code>measurementunit_id</code> provided.
+     * 
+     * @param measurementUnitId the existing <code>measurementunit_id</code>
+     * @return a unit mapper for the prescribed, existing, units
+     * @throws NoSuchUnitConversionException if there is no conversion for the supplied <code>measurementunit_id</code>
+     */
+
+    DoubleUnaryOperator getUnitMapper( Integer measurementUnitId )
+    {
+        Objects.requireNonNull( measurementUnitId, "Specify a non-null measurement unit for conversion." );
+
+        // Identity
+        if ( measurementUnitId.equals( this.desiredMeasurementUnitId ) )
+        {
+            return in -> in;
+        }
+
+        if ( !this.conversions.containsKey( measurementUnitId ) )
+        {
+            throw new NoSuchUnitConversionException( "There is no such unit conversion function to "
+                                                     + "'"
+                                                     + this.desiredMeasurementUnit
+                                                     + "' for the measurementunit_id '"
+                                                     + measurementUnitId
+                                                     + "'." );
+        }
+
+        return this.conversions.get( measurementUnitId );
+    }
+    
     /**
      * Hidden constructor.
      * 

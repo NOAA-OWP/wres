@@ -107,12 +107,18 @@ public class MeasurementUnit implements Comparable<MeasurementUnit>
      * 
      * @param unit the dimension
      * @throws NullPointerException if the input is null
+     * @throws IllegalArgumentException if the unit is blank
      */
 
     private MeasurementUnit( final String unit )
     {
         Objects.requireNonNull( unit, "Specify a non-null unit string." );
 
+        if( unit.isBlank() )
+        {
+            throw new IllegalArgumentException( "Cannot create a measurement unit with a blank input string." );
+        }
+        
         this.unit = unit;
     }
     
