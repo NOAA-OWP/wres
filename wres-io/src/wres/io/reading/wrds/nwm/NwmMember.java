@@ -1,21 +1,26 @@
 package wres.io.reading.wrds.nwm;
 
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 @JsonIgnoreProperties( ignoreUnknown = true )
 public class NwmMember
 {
     private final int identifier;
-    private final NwmDataPoint[] dataPoints;
+    private final List<NwmDataPoint> dataPoints;
 
     @JsonCreator( mode = JsonCreator.Mode.PROPERTIES )
     public NwmMember( @JsonProperty( "identifier" )
                       int identifier,
                       @JsonProperty( "data_points")
-                      NwmDataPoint[] dataPoints )
+                      @JsonSetter( nulls = Nulls.AS_EMPTY)
+                      List<NwmDataPoint> dataPoints )
     {
         this.identifier = identifier;
         this.dataPoints = dataPoints;
@@ -26,7 +31,7 @@ public class NwmMember
         return this.identifier;
     }
 
-    public NwmDataPoint[] getDataPoints()
+    public List<NwmDataPoint> getDataPoints()
     {
         return this.dataPoints;
     }
