@@ -366,6 +366,13 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
 
             for ( NwmDataPoint dataPoint : members[0].getDataPoints() )
             {
+                if ( Objects.isNull( dataPoint ) )
+                {
+                    LOGGER.debug( "Found null datapoint at referenceDatetime={} for nwm feature={}",
+                                 referenceDatetime, rawLocationId );
+                    continue;
+                }
+
                 Event<Double> event = Event.of( dataPoint.getTime(),
                                                 dataPoint.getValue() );
                 events.add( event );
@@ -402,7 +409,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
             
             for ( int i = 0; i < members.length; i++ )
             {
-                int valueCountInTrace = members[i].getDataPoints().length;
+                int valueCountInTrace = members[i].getDataPoints().size();
 
                 for ( NwmDataPoint dataPoint : members[i].getDataPoints() )
                 {

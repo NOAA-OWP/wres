@@ -204,14 +204,103 @@ class WebSource implements Callable<List<IngestResult>>
         catch ( SQLException se )
         {
             this.shutdownNow();
-            throw new IngestException( "Failed to get features/locations.", se );
+            throw new IngestException( "Failed to get features/locations.",
+                                       se );
         }
 
-        Set<Pair<Instant,Instant>> weekRanges = createWeekRanges( this.getProjectConfig(),
-                                                                  this.getDataSource(),
-                                                                  this.getNow() );
-
+        Set<Pair<Instant, Instant>> weekRanges =
+                createWeekRanges( this.getProjectConfig(),
+                                  this.getDataSource(),
+                                  this.getNow() );
         Set<URI> alreadySubmittedUris = new HashSet<>();
+
+        if ( this.usesFeatureBlocks() )
+        {
+            // getFeatureStrings replaces shouldCreateUri by filtering nulls.
+            List<String> featureNames = this.getFeatureStrings( features,
+                                                                this.getDataSource() );
+            List<String[]> featureBlocks =
+                    this.createFeatureBlocks( featureNames );
+            try
+            {
+                for ( String[] featureBlock : featureBlocks )
+                {
+                    for ( Pair<Instant, Instant> range : weekRanges )
+                    {
+                        URI uri = createUri( this.getBaseUri(),
+                                             this.getDataSource(),
+                                             range,
+                                             featureBlock );
+
+                        DataSource dataSource =
+                                DataSource.of( this.getSourceConfig(),
+                                               this.getDataSourceConfig(),
+                                               // Pass through the links because we
+                                               // trust the SourceLoader to have
+                                               // deduplicated this source if it was
+                                               // repeated in other contexts.
+                                               this.getDataSource()
+                                                   .getLinks(),
+                                               uri );
+                        LOGGER.debug( "Created datasource {}", dataSource );
+
+                        IngestSaver ingestSaver =
+                                IngestSaver.createTask()
+                                           .withDataSource( dataSource )
+                                           .withProject( this.getProjectConfig() )
+                                           .withoutHash()
+                                           .withLockManager( this.getLockManager() )
+                                           .build();
+
+                        Future<List<IngestResult>> future =
+                                this.getIngestSaverExecutor()
+                                    .submit( ingestSaver );
+                        this.ingests.add( future );
+
+                        alreadySubmittedUris.add( uri );
+
+                        // Check that all is well with previously submitted tasks, but
+                        // only after a handful have been submitted. This means that
+                        // an exception should propagate relatively shortly after it
+                        // occurs with the ingest task. It also means after creation
+                        // of a handful of tasks, we only create one after a
+                        // previously created one has been completed, fifo/lockstep.
+                        this.startGettingResults.countDown();
+
+                        if ( this.startGettingResults.getCount() <= 0 )
+                        {
+                            List<IngestResult> ingested = this.ingests.take()
+                                                                      .get();
+                            ingestResults.addAll( ingested );
+                        }
+                    }
+                }
+
+                // Finish getting the remainder of ingest results.
+                for ( Future<List<IngestResult>> ingested : this.ingests )
+                {
+                    ingestResults.addAll( ingested.get() );
+                }
+            }
+            catch ( InterruptedException ie )
+            {
+                LOGGER.warn( "Interrupted while getting web ingest results.",
+                             ie );
+                Thread.currentThread().interrupt();
+            }
+            catch ( ExecutionException ee )
+            {
+                throw new IngestException( "Failed to get web ingest results.",
+                                           ee );
+            }
+            finally
+            {
+                this.shutdownNow();
+            }
+
+            return Collections.unmodifiableList( ingestResults );
+        }
+
         SortedSet<String> allKnownUsgsGageIds = this.getAllKnownUsgsGageIds();
 
         LOGGER.debug( "Found all these gage ids: {}", allKnownUsgsGageIds );
@@ -311,6 +400,186 @@ class WebSource implements Callable<List<IngestResult>>
         }
 
         return Collections.unmodifiableList( ingestResults );
+    }
+
+    private boolean isWrdsNwmSource( DataSource source )
+    {
+        URI uri = source.getUri();
+        InterfaceShortHand interfaceShortHand = source.getSource()
+                                                      .getInterface();
+        if ( Objects.nonNull( interfaceShortHand ) )
+        {
+            return interfaceShortHand.equals( InterfaceShortHand.WRDS_NWM );
+        }
+
+        // Fallback for unspecified interface.
+        return  uri.getPath()
+                   .toLowerCase()
+                   .contains( "nwm" );
+    }
+
+    private boolean isWrdsAhpsSource( DataSource source )
+    {
+        URI uri = source.getUri();
+        InterfaceShortHand interfaceShortHand = source.getSource()
+                                                      .getInterface();
+        if ( Objects.nonNull( interfaceShortHand ) )
+        {
+            return interfaceShortHand.equals( InterfaceShortHand.WRDS_AHPS );
+        }
+
+        // Fallback for unspecified interface.
+        return uri.getPath()
+                  .toLowerCase()
+                  .endsWith( "ahps" ) ||
+               uri.getPath()
+                  .toLowerCase()
+                  .endsWith( "ahps/" );
+    }
+
+    private boolean isUsgsSource( DataSource source )
+    {
+        URI uri = source.getUri();
+        InterfaceShortHand interfaceShortHand = source.getSource()
+                                                      .getInterface();
+        if ( Objects.nonNull( interfaceShortHand ) )
+        {
+            return interfaceShortHand.equals( InterfaceShortHand.USGS_NWIS );
+        }
+
+        // Fallback for unspecified interface.
+        return uri.getHost()
+                  .toLowerCase()
+                  .contains( "usgs.gov" )
+               || uri.getPath()
+                     .toLowerCase()
+                     .contains( "nwis" );
+    }
+
+    /**
+     * If this source needs features to be recomposed into blocks of features.
+     * @return true if recomposition neeeded.
+     */
+    private boolean usesFeatureBlocks()
+    {
+        return this.isWrdsNwmSource( this.getDataSource() );
+    }
+
+    /**
+     * Depending on the source given, return the feature ids as Strings.
+     * @param featureDetails The feature details to reduce.
+     * @param source The source to use to decide how to reduce them.
+     * @return The reduced feature list.
+     */
+    private List<String> getFeatureStrings( Set<FeatureDetails> featureDetails,
+                                            DataSource source )
+    {
+        List<String> features = new ArrayList<>( featureDetails.size() );
+
+        if ( this.isWrdsNwmSource( source ) )
+        {
+            for ( FeatureDetails details : featureDetails )
+            {
+                Integer comid = details.getComid();
+
+                if ( Objects.nonNull( comid ) )
+                {
+                    features.add( comid.toString() );
+                }
+            }
+        }
+        else if ( this.isUsgsSource( source ) )
+        {
+            for ( FeatureDetails details : featureDetails )
+            {
+                String siteCode = details.getGageID();
+
+                if ( Objects.nonNull( siteCode )
+                     && !siteCode.isBlank() )
+                {
+                    features.add( siteCode );
+                }
+            }
+        }
+        else
+        {
+            for ( FeatureDetails details : featureDetails )
+            {
+                String lid = details.getLid();
+
+                if ( Objects.nonNull( lid )
+                     && !lid.isBlank() )
+                {
+                    features.add( lid );
+                }
+            }
+        }
+
+        features.sort( null );
+        return Collections.unmodifiableList( features );
+    }
+
+    private List<String[]> createFeatureBlocks( List<String> features )
+    {
+        // Chunk reads by FEATURE_READ_COUNT
+        final int FEATURE_READ_COUNT = 125;
+        int maxCountOfBlocks = ( features.size()
+                                 / FEATURE_READ_COUNT )
+                               + 1;
+        List<String[]> featureBlocks = new ArrayList<>( maxCountOfBlocks );
+
+        int j = 0;
+        String[] block;
+
+        // The last block is unlikely to be exactly FEATURE_READ_COUNT
+        int remaining = features.size();
+
+        if ( remaining < FEATURE_READ_COUNT )
+        {
+            block = new String[remaining];
+        }
+        else
+        {
+            block = new String[FEATURE_READ_COUNT];
+        }
+
+        for ( int i = 0; i < features.size(); i++ )
+        {
+            if ( i % FEATURE_READ_COUNT == 0 )
+            {
+                LOGGER.debug( "Found we are at a boundary. i={}, j={}", i, j );
+                // After the first block is written, add to list.
+                if ( i > 0 )
+                {
+                    featureBlocks.add( block );
+                }
+
+                // The last block is unlikely to be exactly FEATURE_READ_COUNT
+                remaining = features.size() - i;
+
+                if ( remaining < FEATURE_READ_COUNT )
+                {
+                    LOGGER.debug( "Creating last int[] of size {}", remaining );
+                    block = new String[remaining];
+                }
+                else
+                {
+                    LOGGER.debug( "Creating full sized int[] of size {}",
+                                  FEATURE_READ_COUNT );
+                    block = new String[FEATURE_READ_COUNT];
+                }
+
+                j = 0;
+            }
+
+            block[j] = features.get( i );
+            j++;
+        }
+
+        // Add the last feature block
+        featureBlocks.add( block );
+
+        return Collections.unmodifiableList( featureBlocks );
     }
 
 
@@ -460,17 +729,20 @@ class WebSource implements Callable<List<IngestResult>>
                           featureDetails, this );
             return false;
         }
-        else if ( Objects.nonNull( interfaceShortHand )
-                  && interfaceShortHand.equals( InterfaceShortHand.WRDS_NWM )
-                  && ( Objects.isNull( featureDetails.getComid() ) ) )
-        {
-            LOGGER.debug( "Avoiding null NWM feature id for feature {} when looking for WRDS NWM data: {}",
-                          featureDetails, this );
-            return false;
-        }
 
         return true;
     }
+
+    /**
+     * Create a uri for a single location. Older method than below createUri.
+     * Used for USGS NWIS and WRDS AHPS services as of 2020-02-25.
+     * @param baseUri The uri prefix.
+     * @param dataSource The data source.
+     * @param range The date range.
+     * @param featureDetails The individual feature.
+     * @param allKnownUsgsGageIds The list of all wres.Feature USGS site codes.
+     * @return The URI to use to get data.
+     */
 
     private URI createUri( URI baseUri,
                            DataSource dataSource,
@@ -478,41 +750,57 @@ class WebSource implements Callable<List<IngestResult>>
                            FeatureDetails featureDetails,
                            SortedSet<String> allKnownUsgsGageIds )
     {
-        if ( baseUri.getHost()
-                    .toLowerCase()
-                    .contains( "usgs.gov" )
-             || baseUri.getPath()
-                       .toLowerCase()
-                       .contains( "nwis" ) )
+        if ( this.isUsgsSource( dataSource ) )
         {
             return this.createUsgsNwisUri( baseUri, range, featureDetails, allKnownUsgsGageIds );
         }
-        else if ( baseUri.getPath()
-                         .toLowerCase()
-                         .endsWith( "ahps" ) ||
-                  baseUri.getPath()
-                         .toLowerCase()
-                         .endsWith( "ahps/" ) )
+        else if ( this.isWrdsAhpsSource( dataSource ) )
         {
             return this.createWrdsAhpsUri( baseUri, range, featureDetails );
-        }
-        else if ( baseUri.getPath()
-                         .toLowerCase()
-                         .contains( "nwm" ) )
-        {
-            return this.createWrdsNwmUri( baseUri, dataSource, range, featureDetails );
         }
         else
         {
             // #74994-8
-            LOGGER.debug( "While attempting to create a precise URI from a base URI, failed to recognize the base URI "
-                          + "{} as a standard type. Returning the base URI instead.",
-                          baseUri );
+            if ( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( "While attempting to create a precise URI from a "
+                              + "base URI, failed to recognize the base URI '"
+                              + baseUri + "' as a standard type. Returning the "
+                              + " base URI instead." );
+            }
 
             return baseUri;
         }
     }
 
+
+    /**
+     * Create a URI for multiple locations. Newer method than above createUri.
+     * Only used for WRDS NWM services as of 2020-02-25.
+     * @param baseUri The URI prefix.
+     * @param dataSource The data source.
+     * @param range The date range.
+     * @param featureNames The group of features to include in single URI.
+     * @return The URI to use to get data.
+     */
+
+    private URI createUri( URI baseUri,
+                           DataSource dataSource,
+                           Pair<Instant,Instant> range,
+                           String[] featureNames )
+    {
+        if ( this.isWrdsNwmSource( dataSource ) )
+        {
+            return this.createWrdsNwmUri( baseUri, dataSource, range, featureNames );
+        }
+        else
+        {
+            throw new ProjectConfigException( dataSource.getContext(),
+                                              "Unsupported URI base "
+                                              + baseUri +
+                                              " for four-param createUri method." );
+        }
+    }
 
     /**
      * Specific to USGS API, get a URI for a given issued date range and feature
@@ -620,30 +908,26 @@ class WebSource implements Callable<List<IngestResult>>
 
     /**
      * Specific to WRDS NWM API, create a URI for nwm forecasts with given range
+     *
+     * Assumes validation of the combination of arguments happened earlier.
+     *
      * @param baseUri Base URI, a URI with missing parameters to be added.
      * @param dataSource The data source information, because variable needed.
      * @param issuedRange The datetime range of nwm reference datetimes to set.
-     * @param featureDetails The WRES features used in this evaluation.
+     * @param featureNames The List of NWM features used in this evaluation.
      * @return A URI with full path and parameters to get NWM from WRDS NWM API.
+     * @throws NullPointerException When any argument is null.
      */
 
     private URI createWrdsNwmUri( URI baseUri,
                                   DataSource dataSource,
                                   Pair<Instant, Instant> issuedRange,
-                                  FeatureDetails featureDetails )
+                                  String[] featureNames )
     {
         Objects.requireNonNull( baseUri );
+        Objects.requireNonNull( dataSource );
         Objects.requireNonNull( issuedRange );
-        Objects.requireNonNull( featureDetails );
-
-        if ( !baseUri.getPath()
-                     .toLowerCase()
-                     .contains( "nwm" ) )
-        {
-            throw new IllegalArgumentException( "Expected URI like '" +
-                                                "http://***REMOVED***.***REMOVED***.***REMOVED***/api/v1/nwm/ops'"
-                                                + " but instead got " + baseUri.toString() );
-        }
+        Objects.requireNonNull( featureNames );
 
         String variableName = dataSource.getVariable()
                                         .getValue();
@@ -662,8 +946,23 @@ class WebSource implements Callable<List<IngestResult>>
 
         Map<String, String> wrdsParameters = createWrdsAhpsNwmParameters( issuedRange,
                                                                           isEnsemble );
+        StringJoiner joiner = new StringJoiner( "," );
+
+        for ( String featureName : featureNames )
+        {
+            joiner.add( featureName );
+        }
+
+        String featureNamesCsv = joiner.toString();
         String pathWithLocation = basePath + variableName + "/nwm_feature_id/"
-                                  + featureDetails.getComid() + "/";
+                                  + featureNamesCsv + "/";
+
+        if ( pathWithLocation.length() > 1960 )
+        {
+            LOGGER.warn( "Built an unexpectedly long path: {}",
+                         pathWithLocation );
+        }
+
         URIBuilder uriBuilder = new URIBuilder( this.getBaseUri() );
         uriBuilder.setPath( pathWithLocation );
 
