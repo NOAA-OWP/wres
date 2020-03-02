@@ -140,26 +140,26 @@ public class Projects
         List<Integer> finalRightIds = Collections.unmodifiableList( rightIds );
         List<Integer> finalBaselineIds = Collections.unmodifiableList( baselineIds );
 
-        Set<Integer> uniqueHashesUsed = new HashSet<>( finalLeftIds );
-        uniqueHashesUsed.addAll( finalRightIds );
-        uniqueHashesUsed.addAll( finalBaselineIds );
-        int countOfUniqueHashes = uniqueHashesUsed.size();
-        StringJoiner paramPlaceholdersJoiner = new StringJoiner( ", ", "( ", " )" );
+        Set<Integer> uniqueSourcesUsed = new HashSet<>( finalLeftIds );
+        uniqueSourcesUsed.addAll( finalRightIds );
+        uniqueSourcesUsed.addAll( finalBaselineIds );
+        int countOfUniqueHashes = uniqueSourcesUsed.size();
+        StringJoiner idJoiner = new StringJoiner( ",", "(", ");" );
 
-        for ( int i = 0; i < countOfUniqueHashes; i++ )
+        for ( Integer rawId : uniqueSourcesUsed )
         {
-            paramPlaceholdersJoiner.add( "?" );
+            String id = rawId.toString();
+            idJoiner.add( id );
         }
 
         String query = "SELECT source_id, hash "
                        + "FROM wres.Source "
                        + "WHERE source_id in "
-                       + paramPlaceholdersJoiner.toString();
+                       + idJoiner.toString();
         DataScripter script = new DataScripter( query );
-        Object[] params = uniqueHashesUsed.toArray();
         Map<Integer,String> idsToHashes = new HashMap<>( countOfUniqueHashes );
 
-        try ( DataProvider dataProvider = script.getData( params ) )
+        try ( DataProvider dataProvider = script.getData() )
         {
             while ( dataProvider.next() )
             {
