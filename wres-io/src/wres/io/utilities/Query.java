@@ -293,7 +293,8 @@ public class Query
 
                 // If the connection doesn't automatically rollback any changes, do so manually before
                 // rethrowing the error
-                if ( !connection.getAutoCommit() )
+                if ( !connection.isClosed()
+                     && !connection.getAutoCommit() )
                 {
                     connection.rollback();
                 }
@@ -320,7 +321,8 @@ public class Query
                 // the previous state, unless the ResultSet is still open, in
                 // that case there is an agreement that SQLDataProvider or the
                 // class reading the ResultSet will set autocommit to true.
-                if ( connection.getAutoCommit() != initialAutoCommit
+                if ( !connection.isClosed()
+                     && connection.getAutoCommit() != initialAutoCommit
                      && !this.useCursor )
                 {
                     LOGGER.trace( "Setting {} back to initialAutoCommit={}",
@@ -330,7 +332,8 @@ public class Query
                 }
 
                 // Reset the transaction isolation level to its previous state
-                if ( connection.getTransactionIsolation() != initialTransactionIsolation )
+                if ( !connection.isClosed()
+                     && connection.getTransactionIsolation() != initialTransactionIsolation )
                 {
                     LOGGER.trace( "Setting {} back to initialTransactionIsolation={}",
                                   connection,
@@ -430,7 +433,8 @@ public class Query
 
                 // If the connection doesn't automatically rollback any changes, do so manually before
                 // rethrowing the error
-                if ( !connection.getAutoCommit() )
+                if ( !connection.isClosed()
+                     && !connection.getAutoCommit() )
                 {
                     connection.rollback();
                 }
@@ -455,13 +459,15 @@ public class Query
             {
                 // If the connection is in a transaction, we probably modified it, so we want to return it to
                 // the previous state
-                if ( connection.getAutoCommit() != initialAutoCommit )
+                if ( !connection.isClosed()
+                     && connection.getAutoCommit() != initialAutoCommit )
                 {
                     connection.setAutoCommit( initialAutoCommit );
                 }
 
                 // Reset the transaction isolation level to its previous state
-                if ( connection.getTransactionIsolation() != initialTransactionIsolation )
+                if ( !connection.isClosed()
+                     && connection.getTransactionIsolation() != initialTransactionIsolation )
                 {
                     connection.setTransactionIsolation( initialTransactionIsolation );
                 }
