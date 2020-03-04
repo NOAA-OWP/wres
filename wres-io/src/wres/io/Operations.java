@@ -549,8 +549,13 @@ public final class Operations {
                                        + "data. Please contact the WRES team." );
         }
 
+        // Subtract the yet-to-retry sources, add the completed retried sources.
+        List<IngestResult> composedResults = projectSources.stream()
+                                                           .filter( r -> !r.requiresRetry() )
+                                                           .collect( Collectors.toList() );
+        composedResults.addAll( retriesFinished );
         List<IngestResult> safeToShareResults =
-                Collections.unmodifiableList( projectSources );
+                Collections.unmodifiableList( composedResults );
 
         try
         {
