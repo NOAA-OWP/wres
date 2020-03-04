@@ -24,6 +24,7 @@ import static wres.io.config.LeftOrRightOrBaseline.*;
 import wres.io.config.LeftOrRightOrBaseline;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
+import wres.io.reading.PreIngestException;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
@@ -165,7 +166,20 @@ public class Projects
             {
                 Integer id = dataProvider.getInt( "source_id" );
                 String hash = dataProvider.getString( "hash" );
-                idsToHashes.put( id, hash );
+
+                if ( Objects.nonNull( id )
+                     && Objects.nonNull( hash ) )
+                {
+                    idsToHashes.put( id, hash );
+                }
+                else
+                {
+                    boolean idNull = Objects.isNull( id );
+                    boolean hashNull = Objects.isNull( hash );
+                    throw new PreIngestException( "Found a null value in db when expecting a value. idNull="
+                                                  + idNull + " hashNull="
+                                                  + hashNull );
+                }
             }
         }
 
@@ -177,19 +191,46 @@ public class Projects
         for ( Integer id : finalLeftIds )
         {
             String hash = idsToHashes.get( id );
-            leftHashes.add( hash );
+
+            if ( Objects.nonNull( hash ) )
+            {
+                leftHashes.add( hash );
+            }
+            else
+            {
+                throw new PreIngestException( "Unexpected null left hash value for id="
+                                              + id );
+            }
         }
 
         for ( Integer id : finalRightIds )
         {
             String hash = idsToHashes.get( id );
-            rightHashes.add( hash );
+
+            if ( Objects.nonNull( hash ) )
+            {
+                rightHashes.add( hash );
+            }
+            else
+            {
+                throw new PreIngestException( "Unexpected null right hash value for id="
+                                              + id );
+            }
         }
 
         for ( Integer id : finalBaselineIds )
         {
             String hash = idsToHashes.get( id );
-            baselineHashes.add( hash );
+
+            if ( Objects.nonNull( hash ) )
+            {
+                baselineHashes.add( hash );
+            }
+            else
+            {
+                throw new PreIngestException( "Unexpected null baseline hash value for id="
+                                              + id );
+            }
         }
 
         List<String> finalLeftHashes = Collections.unmodifiableList( leftHashes );

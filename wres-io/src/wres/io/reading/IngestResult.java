@@ -8,6 +8,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.io.config.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
@@ -21,6 +23,7 @@ import wres.io.config.ConfigHelper;
 
 public class IngestResult
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger( IngestResult.class );
     private final LeftOrRightOrBaseline leftOrRightOrBaseline;
     private final DataSource dataSource;
     private final int surrogateKey;
@@ -35,6 +38,19 @@ public class IngestResult
     {
         Objects.requireNonNull( leftOrRightOrBaseline, "Ingester must include left/right/baseline" );
         Objects.requireNonNull( dataSource, "Ingester must include datasource information." );
+
+        if ( surrogateKey == 0 )
+        {
+            LOGGER.warn( "Suspicious surrogate key id=0 given for dataSource={} with l/r/b={} foundAlready={} requiresRetry={}",
+                         dataSource, leftOrRightOrBaseline, leftOrRightOrBaseline, foundAlready, requiresRetry );
+        }
+
+        if ( surrogateKey < 0 )
+        {
+            throw new IllegalArgumentException( "Auto-generated ids are usually positive, but given surrogateKey was "
+                                                + surrogateKey );
+        }
+
         this.leftOrRightOrBaseline = leftOrRightOrBaseline;
         this.surrogateKey = surrogateKey;
         this.dataSource = dataSource;
