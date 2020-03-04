@@ -368,7 +368,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
             {
                 if ( Objects.isNull( dataPoint ) )
                 {
-                    LOGGER.debug( "Found null datapoint at referenceDatetime={} for nwm feature={}",
+                    LOGGER.debug( "Found null datapoint in sole trace at referenceDatetime={} for nwm feature={}",
                                  referenceDatetime, rawLocationId );
                     continue;
                 }
@@ -413,6 +413,13 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
 
                 for ( NwmDataPoint dataPoint : members[i].getDataPoints() )
                 {
+                    if ( Objects.isNull( dataPoint ) )
+                    {
+                        LOGGER.debug( "Found null datapoint in member trace={} at referenceDatetime={} for nwm feature={}",
+                                      i, referenceDatetime, rawLocationId );
+                        continue;
+                    }
+
                     Instant validDatetime = dataPoint.getTime();
 
                     if ( !primitiveData.containsKey( validDatetime ) )
@@ -425,7 +432,14 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                     rawEnsemble[i] = dataPoint.getValue();
                 }
 
-                if ( primitiveData.keySet().size() != valueCountInTrace )
+                // Special case of zero data in the trace means skip the others.
+                if ( primitiveData.keySet().isEmpty() )
+                {
+                    LOGGER.warn( "Empty ensemble trace found in member trace index={} at reference datetime={} for NWM feature={}, skipping the remaining traces.",
+                                 i, referenceDatetime, rawLocationId );
+                    break;
+                }
+                else if ( primitiveData.keySet().size() != valueCountInTrace )
                 {
                     throw new PreIngestException( "Data from "
                                                   + this.getUri()
@@ -437,7 +451,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                                                   + "of datetimes so far was "
                                                   + primitiveData.keySet().size()
                                                   + ". Therefore one member is "
-                                                  + "of different length than"
+                                                  + "of different length than "
                                                   + "another, different valid "
                                                   + "datetimes were found, or "
                                                   + "duplicate datetimes were "
