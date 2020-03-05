@@ -15,7 +15,7 @@
                   slots are reserved for non-replication superuser connections" -->
         <max_pool_size>8</max_pool_size>
         <use_ssl>true</use_ssl>
-        <certificate_file_to_trust>classpath:***REMOVED***ca_expires_2020-06.pem</certificate_file_to_trust>
+        <certificate_file_to_trust>classpath:dod_sw_ca-54_expires_2022-11.pem</certificate_file_to_trust>
     </database>
     <maximum_thread_count>7</maximum_thread_count>
     <maximum_archive_threads>5</maximum_archive_threads>
