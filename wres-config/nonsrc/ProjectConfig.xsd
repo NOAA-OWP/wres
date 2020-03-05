@@ -17,6 +17,12 @@
         <xs:attribute name="maximum" type="xs:int" />
     </xs:complexType>
 
+    <xs:complexType name="durationBoundsType">
+        <xs:attribute name="greaterThan" type="duration" />
+        <xs:attribute name="lessThanOrEqualTo" type="duration" />
+        <xs:attribute name="unit" type="durationUnit" default="hours" />
+    </xs:complexType>
+
     <xs:simpleType name="datasourceType">
         <xs:annotation>
             <xs:documentation>
@@ -799,8 +805,8 @@ time scale within a single class, rather than two classes.
             <xs:element name="byTimeSeries" type="xs:boolean" default="false" minOccurs="0" />
             <xs:element name="leadHours" type="intBoundsType" minOccurs="0" />
 
-            <!-- analysisHour chooses which analysis step to evaluate #65216 -->
-            <xs:element name="analysisHour" type="xs:int" minOccurs="0" default="0" />
+            <!-- analysisDurations chooses which analysis durations to evaluate #65216, #61593 -->
+            <xs:element name="analysisDurations" type="durationBoundsType" minOccurs="0" />
             <xs:element name="dates" type="dateCondition" minOccurs="0" />
             <xs:element name="issuedDates" type="dateCondition" minOccurs="0" />
 

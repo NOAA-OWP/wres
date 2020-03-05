@@ -133,7 +133,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     @Override
     public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever()
     {
-        return this.get( this.project.getProjectConfig(),
+        return this.get( this.getProject().getProjectConfig(),
                          this.leftConfig,
                          null,
                          this.featureString );
@@ -142,7 +142,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     @Override
     public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( TimeWindow timeWindow )
     {
-        return this.get( this.project.getProjectConfig(),
+        return this.get( this.getProject().getProjectConfig(),
                          this.leftConfig,
                          timeWindow,
                          this.featureString );
@@ -151,7 +151,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     @Override
     public Supplier<Stream<TimeSeries<Double>>> getRightRetriever( TimeWindow timeWindow )
     {
-        return get( this.project.getProjectConfig(),
+        return get( this.getProject().getProjectConfig(),
                     this.rightConfig,
                     timeWindow,
                     this.featureString );
@@ -160,7 +160,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     @Override
     public Supplier<Stream<TimeSeries<Double>>> getBaselineRetriever( TimeWindow timeWindow )
     {
-        return get( this.project.getProjectConfig(),
+        return get( this.getProject().getProjectConfig(),
                     this.baselineConfig,
                     timeWindow,
                     this.featureString );
@@ -179,7 +179,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
                                                        dataSourceConfig );
         LOGGER.debug( "Creating a {} retriever for project '{}', feature '{}' and time window {}.",
                       leftOrRightOrBaseline,
-                      this.project.getId(),
+                      this.getProject().getId(),
                       featureName,
                       timeWindow );
         TimeSeriesRetrieverBuilder<Double> builder;
@@ -193,7 +193,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
         try
         {
             // Gridded data?
-            if ( this.project.usesGriddedData( dataSourceConfig ) )
+            if ( this.getProject().usesGriddedData( dataSourceConfig ) )
             {
                 builder = this.getGriddedRetrieverBuilder( dataSourceConfig.getType() )
                               .setVariableName( dataSourceConfig.getVariable().getValue() )
@@ -203,7 +203,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
             else
             {
                 Integer variableFeatureId =
-                        this.project.getVariableFeatureId( variableName,
+                        this.getProject().getVariableFeatureId( variableName,
                                                            this.feature );
                 builder = this.getRetrieverBuilder( dataSourceConfig.getType() )
                               .setVariableFeatureId( variableFeatureId );
@@ -214,7 +214,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
             throw new DataAccessException( "While creating a retriever of "
                                            + leftOrRightOrBaseline
                                            + " data for project "
-                                           + this.project.getId()
+                                           + this.getProject().getId()
                                            + FEATURE_MESSAGE
                                            + this.featureString
                                            + AND_TIME_WINDOW_MESSAGE
@@ -223,7 +223,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
                                            e );
         }
 
-        builder.setProjectId( this.project.getId() )
+        builder.setProjectId( this.getProject().getId() )
                .setLeftOrRightOrBaseline( leftOrRightOrBaseline )
                .setDeclaredExistingTimeScale( declaredExistingTimeScale )
                .setDesiredTimeScale( this.desiredTimeScale )
@@ -293,20 +293,11 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
 
     private TimeSeriesRetrieverBuilder<Double> getRetrieverBuilder( DatasourceType dataType )
     {
-        
-        Duration analysisMember = null;
-        
-        if ( dataType.equals( DatasourceType.ANALYSES ) )
-        {
-            Integer analysisHour = this.project.getProjectConfig()
-                    .getPair()
-                    .getAnalysisHour();
-            
-            if( Objects.nonNull( analysisHour ) )
-            {
-                analysisMember = Duration.ofHours( analysisHour );
-            }
-        }
+
+        Duration earliestAnalysisDuration = this.getProject()
+                                                .getEarliestAnalysisDurationOrNull();
+        Duration latestAnalysisDuration = this.getProject()
+                                              .getLatestAnalysisDurationOrNull();
 
         switch ( dataType )
         {
@@ -317,7 +308,8 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
             case SIMULATIONS:
                 return new ObservationRetriever.Builder().setReferenceTimeType( ReferenceTimeType.ANALYSIS_START_TIME );
             case ANALYSES:
-                return new AnalysisRetriever.Builder().setAnalysisHour( analysisMember )
+                return new AnalysisRetriever.Builder().setEarliestAnalysisDuration( earliestAnalysisDuration )
+                                                      .setLatestAnalysisDuration( latestAnalysisDuration )
                                                       .setReferenceTimeType( ReferenceTimeType.ANALYSIS_START_TIME );
             default:
                 throw new IllegalArgumentException( "Unrecognized data type from which to create the single-valued "
@@ -372,5 +364,16 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
         }
 
         return declaredExistingTimeScale;
+    }
+    
+    /**
+     * Returns the project associated with this factory instance.
+     * 
+     * @return the project
+     */
+    
+    private Project getProject()
+    {
+        return this.project;
     }
 }
