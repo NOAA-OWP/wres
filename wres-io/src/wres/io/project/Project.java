@@ -2,7 +2,9 @@ package wres.io.project;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.time.MonthDay;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -16,6 +18,8 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
+import wres.config.generated.DurationBoundsType;
+import wres.config.generated.DurationUnit;
 import wres.config.generated.EnsembleCondition;
 import wres.config.generated.Feature;
 import wres.config.generated.MetricsConfig;
@@ -441,6 +445,71 @@ public class Project
                                               variableId );
     }
 
+    /**
+     * Returns the earliest analysis duration associated with the project or <code>null</code>.
+     * 
+     * @return the earliest analysis duration or null
+     */
+
+    public Duration getEarliestAnalysisDurationOrNull()
+    {
+        Duration returnMe = null;
+
+        if ( Objects.nonNull( this.getProjectConfig().getPair().getAnalysisDurations() ) )
+        {
+            DurationBoundsType analysisDurations = this.getProjectConfig()
+                                                       .getPair()
+                                                       .getAnalysisDurations();
+
+            returnMe = this.getDurationOrNull( analysisDurations.getGreaterThan(), analysisDurations.getUnit() );
+        }
+
+        return returnMe;
+    }
+
+    /**
+     * Returns the latest analysis duration associated with the project or <code>null</code>.
+     * 
+     * @return the latest analysis duration or null
+     */
+
+    public Duration getLatestAnalysisDurationOrNull()
+    {
+        Duration returnMe = null;
+
+        if ( Objects.nonNull( this.getProjectConfig().getPair().getAnalysisDurations() ) )
+        {
+            DurationBoundsType analysisDurations = this.getProjectConfig()
+                                                       .getPair()
+                                                       .getAnalysisDurations();
+
+            returnMe = this.getDurationOrNull( analysisDurations.getLessThanOrEqualTo(), analysisDurations.getUnit() );
+        }
+
+        return returnMe;
+    }    
+    
+    /**
+     * Returns a duration from an integer amount and a string unit, else <code>null</null>.
+     * 
+     * @return a duration or null
+     */
+
+    private Duration getDurationOrNull( Integer duration, DurationUnit durationUnit )
+    {
+        Duration returnMe = null;
+
+        if ( Objects.nonNull( duration ) && Objects.nonNull( durationUnit ) )
+        {
+            ChronoUnit unit = ChronoUnit.valueOf( durationUnit.toString()
+                                                              .toUpperCase() );
+
+            returnMe = Duration.of( duration, unit );
+        }
+
+        return returnMe;
+    }
+    
     /**
      * @return The earliest possible day in a season. NULL unless specified in
      * the configuration

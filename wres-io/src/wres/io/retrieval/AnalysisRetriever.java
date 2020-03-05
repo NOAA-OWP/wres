@@ -43,12 +43,14 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
     private static final Logger LOGGER = LoggerFactory.getLogger( AnalysisRetriever.class );
 
     private final TimeSeriesRetriever<Double> individualAnalysisRetriever;
-    private final Duration analysisHour;
+    private final Duration earliestAnalysisDuration;
+    private final Duration latestAnalysisDuration;
 
     private AnalysisRetriever( Builder builder )
     {
         super( builder, "TS.initialization_date", "TSV.lead" );
-        this.analysisHour = builder.analysisHour;
+        this.earliestAnalysisDuration = builder.earliestAnalysisDuration;
+        this.latestAnalysisDuration = builder.latestAnalysisDuration;
 
         // Change the lead duration to the analysis step set by the user,
         // also set the reference datetime to an infinitely wide range so
@@ -56,21 +58,24 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
         TimeWindow originalRanges = super.getTimeWindow();
         TimeWindow analysisRanges = originalRanges;
 
-        if ( Objects.nonNull( this.analysisHour ) )
+        if ( Objects.nonNull( this.getEarliestAnalysisDuration() )
+             || Objects.nonNull( this.getLatestAnalysisDuration() ) )
         {
-            LOGGER.debug( "Building a single-event analysis retriever for analysis hour {}.", this.analysisHour );
+            LOGGER.debug( "Building a single-event analysis retriever for each analysis duration between {} and {}.",
+                          this.getEarliestAnalysisDuration(),
+                          this.getLatestAnalysisDuration() );
 
             analysisRanges = TimeWindow.of( Instant.MIN,
                                             Instant.MAX,
                                             originalRanges.getEarliestValidTime(),
                                             originalRanges.getLatestValidTime(),
-                                            this.analysisHour,
-                                            this.analysisHour );
+                                            this.getEarliestAnalysisDuration(),
+                                            this.getLatestAnalysisDuration() );
         }
         else
         {
             LOGGER.debug( "Building a multi-event analysis retriever." );
-            
+
             analysisRanges = TimeWindow.of( Instant.MIN,
                                             Instant.MAX,
                                             originalRanges.getEarliestValidTime(),
@@ -102,7 +107,8 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
     @Override
     public Optional<TimeSeries<Double>> get( long identifier )
     {
-        throw new UnsupportedOperationException( "There is no existing identifier stored for an analysis timeseries, rather it is composed on demand." );
+        throw new UnsupportedOperationException( "There is no existing identifier stored for an analysis timeseries, "
+                                                 + "rather it is composed on demand." );
     }
 
     @Override
@@ -113,17 +119,39 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
 
     static class Builder extends TimeSeriesRetrieverBuilder<Double>
     {
-        private Duration analysisHour = null;
+        private Duration earliestAnalysisDuration = TimeWindow.DURATION_MIN;
+
+        private Duration latestAnalysisDuration = TimeWindow.DURATION_MAX;
 
         /**
-         * Set the analysis hour, or leave at default when passing null
-         * @param analysisHour duration or null
+         * Sets the earliest analysis hour, if not <code>null</null>.
+         * 
+         * @param earliestAnalysisDuration duration
          * @return A builder
          */
-        Builder setAnalysisHour( Duration analysisHour )
+        Builder setEarliestAnalysisDuration( Duration earliestAnalysisDuration )
         {
-            this.analysisHour = analysisHour;
+            if( Objects.nonNull( earliestAnalysisDuration ) )
+            {
+                this.earliestAnalysisDuration = earliestAnalysisDuration;
+            }
+            
+            return this;
+        }
 
+        /**
+         * Set the latest analysis hour, if not <code>null</null>.
+         * 
+         * @param latestAnalysisDuration duration
+         * @return A builder
+         */
+        Builder setLatestAnalysisDuration( Duration latestAnalysisDuration )
+        {
+            if( Objects.nonNull( latestAnalysisDuration ) )
+            {
+                this.latestAnalysisDuration = latestAnalysisDuration;
+            }
+            
             return this;
         }
 
@@ -149,55 +177,92 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
         Stream<TimeSeries<Double>> timeSeries = this.individualAnalysisRetriever.get();
 
         // All events required?
-        if ( Objects.isNull( this.analysisHour ) )
+        if ( !this.addOneTimeSeriesForEachAnalysisDuration() )
         {
             LOGGER.debug( "No discrete analysis times defined. Built a multi-event timeseries from the analysis." );
 
             return timeSeries;
         }
-        
+
         // Filter the time-series. Create one new time-series for each event-by-duration within an existing 
         // time-series whose duration falls within the constraints
         Set<TimeSeries<Double>> toStream = new HashSet<>();
-        
+
         List<TimeSeries<Double>> collection = timeSeries.collect( Collectors.toList() );
-        for( TimeSeries<Double> next : collection )
+        for ( TimeSeries<Double> next : collection )
         {
             Map<Duration, Event<Double>> eventsByDuration =
                     TimeSeriesSlicer.mapEventsByDuration( next, ReferenceTimeType.ANALYSIS_START_TIME );
-            
-            for( Entry<Duration,Event<Double>> nextSeries : eventsByDuration.entrySet() )
+
+            for ( Entry<Duration, Event<Double>> nextSeries : eventsByDuration.entrySet() )
             {
                 Duration duration = nextSeries.getKey();
                 Event<Double> event = nextSeries.getValue();
 
-                if ( duration.equals( this.analysisHour ) )
+                if ( duration.compareTo( this.getEarliestAnalysisDuration() ) >= 0
+                     && duration.compareTo( this.getLatestAnalysisDuration() ) <= 0 )
                 {
                     toStream.add( TimeSeries.of( next.getReferenceTimes(),
                                                  new TreeSet<>( Collections.singleton( event ) ) ) );
                 }
             }
         }
-        
+
         // Warn if no events
         if ( toStream.isEmpty() )
         {
-            LOGGER.warn( "While attempting to build single-event timeseries for each analysis time between {} and {}"
-                         + ", failed to discover any time-series events between those analysis times.",
-                         this.analysisHour,
-                         this.analysisHour );
+            LOGGER.warn( "While attempting to build a single-event timeseries for each analysis duration between {} "
+                         + "and {}, failed to discover any events between those analysis durations.",
+                         this.getEarliestAnalysisDuration(),
+                         this.getLatestAnalysisDuration() );
 
         }
         else
         {
-            LOGGER.debug( "Built {} single-event timeseries for each analysis time between {} and {}: {}",
+            LOGGER.debug( "Built {} single-event timeseries for each analysis duration between {} and {}: {}",
                           toStream.size(),
-                          this.analysisHour,
-                          this.analysisHour,
+                          this.getEarliestAnalysisDuration(),
+                          this.getLatestAnalysisDuration(),
                           toStream );
         }
 
         return toStream.stream();
     }
 
+    /**
+     * Returns the earliest analysis duration or null.
+     * 
+     * @return the earliest analysis duration or null
+     */
+
+    private Duration getEarliestAnalysisDuration()
+    {
+        return this.earliestAnalysisDuration;
+    }
+
+    /**
+     * Returns the latest analysis duration or null.
+     * 
+     * @return the latest analysis duration or null
+     */
+
+    private Duration getLatestAnalysisDuration()
+    {
+        return this.latestAnalysisDuration;
+    }
+    
+    /**
+     * Returns <code>true</code> if the retriever should return one time-series for each of the common analysis 
+     * durations across several reference times of the type {@link ANALYSIS_START_TIME}, <code>false</code> if it 
+     * should return a single time-series per {@link ANALYSIS_START_TIME}.
+     * 
+     * @return true if the retriever should return a separate time-series for each analysis duration, otherwise false
+     */
+
+    private boolean addOneTimeSeriesForEachAnalysisDuration()
+    {
+        return !this.getEarliestAnalysisDuration().equals( TimeWindow.DURATION_MIN )
+               || !this.getLatestAnalysisDuration().equals( TimeWindow.DURATION_MAX );
+    }
+    
 }
