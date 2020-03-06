@@ -384,36 +384,43 @@ public class CommaSeparatedReader
                                   + " features contained in '"
                                   + pathToThresholds
                                   + "' failed with exceptions, as follows." );
+            exceptionMessage.add( System.lineSeparator() );
+            
         }
 
         if ( !featuresThatFailedWithLabelInconsistency.isEmpty() )
         {
-            exceptionMessage.add( "These features failed with an inconsistency between "
+            exceptionMessage.add( "    These features failed with an inconsistency between "
                                   + "the number of labels and the number of thresholds: "
                                   + featuresThatFailedWithLabelInconsistency
                                   + "." );
+            exceptionMessage.add( System.lineSeparator() );
+            
         }
 
         if ( !featuresThatFailedWithAllThresholdsMissing.isEmpty() )
         {
-            exceptionMessage.add( "These features failed because "
+            exceptionMessage.add( "    These features failed because "
                                   + "all thresholds matched the missing value: "
                                   + featuresThatFailedWithAllThresholdsMissing
                                   + "." );
+            exceptionMessage.add( System.lineSeparator() );           
         }
 
         if ( !featuresThatFailedWithNonNumericInput.isEmpty() )
         {
-            exceptionMessage.add( "These features failed with non-numeric input: "
+            exceptionMessage.add( "    These features failed with non-numeric input: "
                                   + featuresThatFailedWithNonNumericInput
                                   + "." );
+            exceptionMessage.add( System.lineSeparator() );
+            
         }
 
         if ( !featuresThatFailedWithOtherWrongInput.isEmpty() )
         {
-            exceptionMessage.add( "These features failed with invalid input for the threshold type: "
+            exceptionMessage.add( "    These features failed with invalid input for the threshold type: "
                                   + featuresThatFailedWithOtherWrongInput
-                                  + "." );
+                                  + "." );        
         }
 
         // Throw exception if required

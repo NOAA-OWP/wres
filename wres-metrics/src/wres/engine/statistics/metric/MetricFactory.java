@@ -516,7 +516,7 @@ public final class MetricFactory
         {
             if ( MetricFactory.isCollectable( next ) )
             {
-                builder.addCollectable( MetricFactory.ofSingleValuedScoreCollectable( next ) );
+                builder.addCollectableMetric( MetricFactory.ofSingleValuedScoreCollectable( next ) );
             }
             else
             {
@@ -628,7 +628,7 @@ public final class MetricFactory
         for ( MetricConstants next : metric )
         {
             // All dichotomous scores are collectable
-            builder.addCollectable( MetricFactory.ofDichotomousScore( next ) );
+            builder.addCollectableMetric( MetricFactory.ofDichotomousScore( next ) );
         }
         builder.setExecutorService( executor );
         return builder.build();
