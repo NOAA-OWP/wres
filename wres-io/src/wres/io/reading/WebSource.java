@@ -764,9 +764,10 @@ class WebSource implements Callable<List<IngestResult>>
             if ( LOGGER.isDebugEnabled() )
             {
                 LOGGER.debug( "While attempting to create a precise URI from a "
-                              + "base URI, failed to recognize the base URI '"
-                              + baseUri + "' as a standard type. Returning the "
-                              + " base URI instead." );
+                              + "base URI, failed to recognize the base URI '{}'"
+                              + "as a standard type. Returning the "
+                              + " base URI instead.",
+                              baseUri );
             }
 
             return baseUri;

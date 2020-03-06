@@ -219,6 +219,34 @@ public final class TimeSeriesSlicerTest
     }
 
     @Test
+    public void testFilterByEvent()
+    {
+
+        // Create the series to filter
+        SortedSet<Event<Pair<Double, Double>>> first = new TreeSet<>();
+        Instant firstBasisTime = T1985_01_01T00_00_00Z;
+
+        first.add( Event.of( T1985_01_01T01_00_00Z, Pair.of( 1.0, 1.0 ) ) );
+        first.add( Event.of( T1985_01_01T02_00_00Z, Pair.of( 2.0, 2.0 ) ) );
+        first.add( Event.of( T1985_01_01T03_00_00Z, Pair.of( 3.0, 3.0 ) ) );
+
+        TimeSeries<Pair<Double, Double>> one = TimeSeries.of( firstBasisTime, first );
+
+        // Filter the series
+        TimeSeries<Pair<Double, Double>> actual =
+                TimeSeriesSlicer.filterByEvent( one, event -> !event.getTime().equals( T1985_01_01T02_00_00Z ) );
+
+        // Create the expected series
+        SortedSet<Event<Pair<Double, Double>>> expectedEvents = new TreeSet<>();
+        expectedEvents.add( Event.of( T1985_01_01T01_00_00Z, Pair.of( 1.0, 1.0 ) ) );
+        expectedEvents.add( Event.of( T1985_01_01T03_00_00Z, Pair.of( 3.0, 3.0 ) ) );
+        
+        TimeSeries<Pair<Double, Double>> expected = TimeSeries.of( firstBasisTime, expectedEvents );
+
+        assertEquals( expected, actual );
+    }
+    
+    @Test
     public void testGroupEventsByIntervalProducesThreeGroupsEachWithTwoEvents()
     {
         // Create the events
