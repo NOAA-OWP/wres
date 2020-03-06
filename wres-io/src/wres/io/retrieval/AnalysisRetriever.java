@@ -2,7 +2,9 @@ package wres.io.retrieval;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -40,17 +42,44 @@ import wres.datamodel.time.TimeWindow;
 
 class AnalysisRetriever extends TimeSeriesRetriever<Double>
 {
+    /**
+     * Policy for handling duplicates by valid time.
+     */
+
+    enum DuplicatePolicy
+    {
+        /**
+         * Maintain all duplicates.
+         */
+
+        KEEP_ALL,
+
+        /**
+         * Keep only one duplicate by valid time, namely the latest one by reference time.
+         */
+
+        KEEP_LATEST_REFERENCE_TIME,
+
+        /**
+         * Keep only one duplicate by valid time, namely the earliest one by reference time.
+         */
+
+        KEEP_EARLIEST_REFERENCE_TIME;
+    }
+
     private static final Logger LOGGER = LoggerFactory.getLogger( AnalysisRetriever.class );
 
     private final TimeSeriesRetriever<Double> individualAnalysisRetriever;
     private final Duration earliestAnalysisDuration;
     private final Duration latestAnalysisDuration;
+    private final DuplicatePolicy duplicatePolicy;
 
     private AnalysisRetriever( Builder builder )
     {
         super( builder, "TS.initialization_date", "TSV.lead" );
         this.earliestAnalysisDuration = builder.earliestAnalysisDuration;
         this.latestAnalysisDuration = builder.latestAnalysisDuration;
+        this.duplicatePolicy = builder.duplicatePolicy;
 
         // Change the lead duration to the analysis step set by the user,
         // also set the reference datetime to an infinitely wide range so
@@ -81,6 +110,9 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
                                             originalRanges.getEarliestValidTime(),
                                             originalRanges.getLatestValidTime() );
         }
+
+        LOGGER.debug( "Using a duplicate handling policy of {} for the retrieval of analysis time-series.",
+                      this.duplicatePolicy );
 
         this.individualAnalysisRetriever =
                 new SingleValuedForecastRetriever.Builder()
@@ -123,6 +155,8 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
 
         private Duration latestAnalysisDuration = TimeWindow.DURATION_MAX;
 
+        private DuplicatePolicy duplicatePolicy = DuplicatePolicy.KEEP_ALL;
+
         /**
          * Sets the earliest analysis hour, if not <code>null</null>.
          * 
@@ -131,11 +165,11 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
          */
         Builder setEarliestAnalysisDuration( Duration earliestAnalysisDuration )
         {
-            if( Objects.nonNull( earliestAnalysisDuration ) )
+            if ( Objects.nonNull( earliestAnalysisDuration ) )
             {
                 this.earliestAnalysisDuration = earliestAnalysisDuration;
             }
-            
+
             return this;
         }
 
@@ -147,11 +181,27 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
          */
         Builder setLatestAnalysisDuration( Duration latestAnalysisDuration )
         {
-            if( Objects.nonNull( latestAnalysisDuration ) )
+            if ( Objects.nonNull( latestAnalysisDuration ) )
             {
                 this.latestAnalysisDuration = latestAnalysisDuration;
             }
-            
+
+            return this;
+        }
+
+        /**
+         * Set the duplicate policy, if not <code>null</null>.
+         * 
+         * @param latestAnalysisDuration duration
+         * @return A builder
+         */
+        Builder setDuplicatePolicy( DuplicatePolicy duplicatePolicy )
+        {
+            if ( Objects.nonNull( duplicatePolicy ) )
+            {
+                this.duplicatePolicy = duplicatePolicy;
+            }
+
             return this;
         }
 
@@ -162,12 +212,8 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
         }
     }
 
-
     /**
-     * Get the analysis timeseries, at the moment only one allowed, which is
-     * composed of the nth event from each analysis within the overall bounds
-     * of the project declaration.
-     * @throws IllegalArgumentException When duplicate datetimes would be used.
+     * Get the analysis timeseries in one of several possible shapes and account for duplicates.
      */
 
     @Override
@@ -180,13 +226,35 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
         if ( !this.addOneTimeSeriesForEachAnalysisDuration() )
         {
             LOGGER.debug( "No discrete analysis times defined. Built a multi-event timeseries from the analysis." );
-
-            return timeSeries;
         }
+        else
+        {
+            LOGGER.debug( "Building a single-event timeseries for each analysis duration between {} and {}.",
+                          this.getEarliestAnalysisDuration(),
+                          this.getLatestAnalysisDuration() );
+
+            timeSeries = this.createOneTimeSeriesForEachAnalysisDuration( timeSeries );
+        }
+
+        // Apply the duplicate policy and return
+
+        return this.applyDuplicatePolicy( timeSeries );
+    }
+
+    /**
+     * Transforms the input series to create one series for each required analysis duration.
+     * 
+     * @param timeSeries the input series to transform
+     * @return one series for each analysis duration
+     */
+
+    private Stream<TimeSeries<Double>>
+            createOneTimeSeriesForEachAnalysisDuration( Stream<TimeSeries<Double>> timeSeries )
+    {
 
         // Filter the time-series. Create one new time-series for each event-by-duration within an existing 
         // time-series whose duration falls within the constraints
-        Set<TimeSeries<Double>> toStream = new HashSet<>();
+        List<TimeSeries<Double>> toStream = new ArrayList<>();
 
         List<TimeSeries<Double>> collection = timeSeries.collect( Collectors.toList() );
         for ( TimeSeries<Double> next : collection )
@@ -250,7 +318,7 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
     {
         return this.latestAnalysisDuration;
     }
-    
+
     /**
      * Returns <code>true</code> if the retriever should return one time-series for each of the common analysis 
      * durations across several reference times of the type {@link ANALYSIS_START_TIME}, <code>false</code> if it 
@@ -264,5 +332,103 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
         return !this.getEarliestAnalysisDuration().equals( TimeWindow.DURATION_MIN )
                || !this.getLatestAnalysisDuration().equals( TimeWindow.DURATION_MAX );
     }
-    
+
+    /**
+     * Applies a duplicate policy to analysis time-series. One of {@link DuplicatePolicy@}.
+     * 
+     * @param timeSeries the input series whose duplicates, if any, should be treated
+     * @return the time-series with duplicates treated
+     */
+
+    private Stream<TimeSeries<Double>> applyDuplicatePolicy( Stream<TimeSeries<Double>> timeSeries )
+    {
+        // Retain all
+        if ( this.duplicatePolicy == DuplicatePolicy.KEEP_ALL )
+        {
+            return timeSeries;
+        }
+
+        // Filter, handling absence of reference times
+        Comparator<Instant> nullsFriendly = Comparator.nullsFirst( Instant::compareTo );
+        Comparator<TimeSeries<Double>> comparator =
+                ( a, b ) -> nullsFriendly.compare( a.getReferenceTimes()
+                                                    .get( ReferenceTimeType.ANALYSIS_START_TIME ),
+                                                   b.getReferenceTimes()
+                                                    .get( ReferenceTimeType.ANALYSIS_START_TIME ) );
+
+        // Keep the duplicate with the earliest reference time
+        if ( this.duplicatePolicy == DuplicatePolicy.KEEP_EARLIEST_REFERENCE_TIME )
+        {
+            return this.filterDuplicatesByValidTime( timeSeries, comparator );
+        }
+        // Keep the duplicate with the latest reference time
+        else if ( this.duplicatePolicy == DuplicatePolicy.KEEP_LATEST_REFERENCE_TIME )
+        {
+            // Reversed: latest to earliest by ReferenceTimeType.ANALYSIS_START_TIME
+            Comparator<TimeSeries<Double>> reversed = comparator.reversed();
+            return this.filterDuplicatesByValidTime( timeSeries, reversed );
+        }
+        else
+        {
+            throw new IllegalStateException( "Encountered unexpected duplicate policy when filtering analysis "
+                                             + "time-series for duiplicates: "
+                                             + this.duplicatePolicy );
+        }
+    }
+
+    /**
+     * Filters the input time-series for duplicates using a prescribed comparator to order the time-series prior to
+     * filtering. The first encountered duplicate, after ordering, will be retained. 
+     * 
+     * @param filterMe the time-series to filter
+     * @param comparator the comparator for ordering the time-series
+     * @return the filtered time-series with duplicates removed
+     */
+
+    private Stream<TimeSeries<Double>> filterDuplicatesByValidTime( Stream<TimeSeries<Double>> filterMe,
+                                                                    Comparator<TimeSeries<Double>> comparator )
+    {
+        List<TimeSeries<Double>> collection = filterMe.collect( Collectors.toList() );
+
+        // Sort the collection
+        collection.sort( comparator );
+
+        // Record the valid times consumed so far
+        Set<Instant> validTimesConsumed = new HashSet<>();
+
+        List<TimeSeries<Double>> toStream = new ArrayList<>();
+
+        for ( TimeSeries<Double> next : collection )
+        {
+            TimeSeries<Double> filtered =
+                    TimeSeriesSlicer.filterByEvent( next,
+                                                    event -> !validTimesConsumed.contains( event.getTime() ) );
+
+            // Add series with some events left
+            if ( !filtered.getEvents().isEmpty() )
+            {
+                toStream.add( filtered );
+            }
+
+            if ( LOGGER.isTraceEnabled() && filtered.getEvents().size() != next.getEvents().size() )
+            {
+                LOGGER.trace( "While filtering analysis time-series {} according to the duplicate policy of {}, "
+                              + "removed {} events that were duplicates by valid time across time-series.",
+                              next.hashCode(),
+                              this.duplicatePolicy,
+                              next.getEvents().size() - filtered.getEvents().size() );
+            }
+
+            // Get the valid times to ignore in subsequent series
+            Set<Instant> nextValidTimes = next.getEvents()
+                                              .stream()
+                                              .map( Event::getTime )
+                                              .collect( Collectors.toSet() );
+
+            validTimesConsumed.addAll( nextValidTimes );
+        }
+
+        return toStream.stream();
+    }
+
 }

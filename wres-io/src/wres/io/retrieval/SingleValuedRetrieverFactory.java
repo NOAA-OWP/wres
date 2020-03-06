@@ -24,6 +24,7 @@ import wres.datamodel.time.TimeWindow;
 import wres.io.config.ConfigHelper;
 import wres.io.config.LeftOrRightOrBaseline;
 import wres.io.project.Project;
+import wres.io.retrieval.AnalysisRetriever.DuplicatePolicy;
 import wres.io.retrieval.SingleValuedGriddedRetriever.Builder;
 import wres.io.retrieval.TimeSeriesRetriever.TimeSeriesRetrieverBuilder;
 
@@ -310,6 +311,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
             case ANALYSES:
                 return new AnalysisRetriever.Builder().setEarliestAnalysisDuration( earliestAnalysisDuration )
                                                       .setLatestAnalysisDuration( latestAnalysisDuration )
+                                                      .setDuplicatePolicy( DuplicatePolicy.KEEP_LATEST_REFERENCE_TIME )
                                                       .setReferenceTimeType( ReferenceTimeType.ANALYSIS_START_TIME );
             default:
                 throw new IllegalArgumentException( "Unrecognized data type from which to create the single-valued "

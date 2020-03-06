@@ -1452,7 +1452,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
             validTimes.addAll( next.getReferenceTimes().values() );
 
             // #73227-40
-            if ( !validTimes.isEmpty() )
+            if ( !next.getEvents().isEmpty() )
             {
                 validTimes.add( next.getEvents().first().getTime() );
                 validTimes.add( next.getEvents().last().getTime() );

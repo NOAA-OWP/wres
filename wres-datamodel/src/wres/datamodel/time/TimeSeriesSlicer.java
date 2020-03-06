@@ -161,7 +161,6 @@ public final class TimeSeriesSlicer
         };
     }
 
-
     /**
      * Returns a filtered view of a time-series based on the input predicate.
      * 
@@ -192,7 +191,7 @@ public final class TimeSeriesSlicer
         }
 
         return builder.build();
-    }
+    }   
     
     /**
      * Returns a filtered {@link TimeSeries} whose events are within the right-closed time intervals contained in the 
@@ -299,6 +298,35 @@ public final class TimeSeriesSlicer
 
         return builder.build();
     }
+    
+    /**
+     * Returns a filtered view of a time-series based on the input predicate.
+     * 
+     * @param <T> the type of time-series value
+     * @param timeSeries the time-series
+     * @param filter the filter
+     * @return a filtered view of the input series
+     * @throws NullPointerException if any input is null
+     */
+
+    public static <T> TimeSeries<T> filterByEvent( TimeSeries<T> timeSeries, Predicate<Event<T>> filter )
+    {
+        Objects.requireNonNull( timeSeries );
+
+        Objects.requireNonNull( filter );
+
+        TimeSeriesBuilder<T> builder = new TimeSeriesBuilder<>();
+
+        builder.setTimeScale( timeSeries.getTimeScale() )
+               .addReferenceTimes( timeSeries.getReferenceTimes() );
+
+        timeSeries.getEvents()
+                  .stream()
+                  .filter( filter )
+                  .forEach( builder::addEvent );
+
+        return builder.build();
+    }     
 
     /**
      * Groups the input events according to the event valid time. An event falls within a group if its valid time falls 
@@ -941,6 +969,18 @@ public final class TimeSeriesSlicer
         Objects.requireNonNull( toSnip );
         Objects.requireNonNull( snipTo );
 
+        if ( snipTo.getEvents().isEmpty() )
+        {
+            LOGGER.trace( "While snipping series {} to series {} with lower buffer {} and upper buffer {}, no events "
+                          + "were discovered within the series to snip to. Returning the unsnipped series.",
+                          toSnip,
+                          snipTo,
+                          lowerBuffer,
+                          upperBuffer );
+
+            return toSnip;
+        }
+        
         Instant lower = snipTo.getEvents().first().getTime();
         Instant upper = snipTo.getEvents().last().getTime();
 
