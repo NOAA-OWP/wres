@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.StringJoiner;
 import java.util.TreeSet;
 import java.util.Map.Entry;
 import java.util.function.Predicate;
@@ -581,7 +582,21 @@ public class ThresholdsByMetric
 
         return builder.build();
     }
-
+    
+    @Override
+    public String toString()
+    {
+        StringJoiner joiner = new StringJoiner( System.lineSeparator() );
+        
+        joiner.add( "ThresholdsByMetric@" + this.hashCode() );
+        joiner.add( "    Event probability thresholds: " + this.getProbabilities() );
+        joiner.add( "    Event value thresholds: " + this.getValues() );
+        joiner.add( "    Event quantile thresholds: " + this.getQuantiles() );
+        joiner.add( "    Decision thresholds: " + this.getProbabilityClassifiers() );
+        
+        return joiner.toString(); 
+    }
+    
     /**
      * Builder.
      */

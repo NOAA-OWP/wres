@@ -6,8 +6,10 @@ import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -126,9 +128,16 @@ public class MetricCollection<S extends SampleData<?>, T extends Statistic<?>, U
     @Override
     public String toString()
     {
-        Set<MetricConstants> m = this.getMetrics();
+        StringJoiner joiner = new StringJoiner( " " );
 
-        return "The following metrics are in collection object '" + this.hashCode() + "': " + m;
+        joiner.add( "The following metrics are in collection object 'MetricCollection@" + this.hashCode() + "': " );
+        joiner.add( "Ordinary metrics: " + this.metrics.keySet() + "; and " );
+        joiner.add( "Collectable metrics by parent: "
+                    + this.collectableMetrics.entrySet()
+                                             .stream()
+                                             .collect( Collectors.toMap( Entry::getKey,
+                                                                         b -> b.getValue().keySet() ) ) );
+        return joiner.toString();
     }
 
     /**
@@ -196,7 +205,7 @@ public class MetricCollection<S extends SampleData<?>, T extends Statistic<?>, U
          * @return the builder
          */
 
-        protected MetricCollectionBuilder<S, T, U> addCollectable( final Collectable<S, T, U> metric )
+        protected MetricCollectionBuilder<S, T, U> addCollectableMetric( final Collectable<S, T, U> metric )
         {
             this.collectableMetrics.put( metric.getID(), metric );
             return this;
@@ -271,11 +280,9 @@ public class MetricCollection<S extends SampleData<?>, T extends Statistic<?>, U
         }
 
         //Compute only the required metrics
-        Map<MetricConstants, Metric<S, U>> localMetrics = new EnumMap<>( this.metrics );
+        Map<MetricConstants, Metric<S, U>> localMetrics = this.getMetricsButIgnoreThese( ignoreTheseMetrics );
         Map<MetricConstants, Map<MetricConstants, Collectable<S, T, U>>> localCollectableMetrics =
-                new EnumMap<>( this.collectableMetrics );
-        localMetrics.keySet().removeAll( ignoreTheseMetrics );
-        localCollectableMetrics.keySet().removeAll( ignoreTheseMetrics );
+                this.getCollectableMetricsButIgnoreThese( ignoreTheseMetrics );
 
         //Remove from each map in the collection
         localCollectableMetrics.forEach( ( key, value ) -> value.keySet().removeAll( ignoreTheseMetrics ) );
@@ -330,24 +337,33 @@ public class MetricCollection<S extends SampleData<?>, T extends Statistic<?>, U
 
     private MetricCollection( final MetricCollectionBuilder<S, T, U> builder ) throws MetricParameterException
     {
+
         //Set 
         this.metricPool = builder.metricPool;
-        this.metrics = new EnumMap<>( builder.metrics );
-        this.collectableMetrics = new EnumMap<>( MetricConstants.class );
+
+        Map<MetricConstants, Metric<S, U>> localMetrics = new EnumMap<>( builder.metrics );
+        Map<MetricConstants, Map<MetricConstants, Collectable<S, T, U>>> localCollectableMetrics =
+                new EnumMap<>( MetricConstants.class );
 
         //Set the collectable metrics
         builder.collectableMetrics.forEach( ( id, metric ) -> {
-            if ( collectableMetrics.containsKey( metric.getCollectionOf() ) )
+
+            MetricConstants parent = metric.getCollectionOf();
+
+            if ( localCollectableMetrics.containsKey( parent ) )
             {
-                this.collectableMetrics.get( metric.getCollectionOf() ).put( id, metric );
+                localCollectableMetrics.get( parent ).put( id, metric );
             }
             else
             {
                 Map<MetricConstants, Collectable<S, T, U>> addMe = new EnumMap<>( MetricConstants.class );
                 addMe.put( id, metric );
-                this.collectableMetrics.put( metric.getCollectionOf(), addMe );
+                localCollectableMetrics.put( parent, addMe );
             }
         } );
+
+        this.metrics = Collections.unmodifiableMap( localMetrics );
+        this.collectableMetrics = Collections.unmodifiableMap( localCollectableMetrics );
 
         validate();
     }
@@ -361,11 +377,11 @@ public class MetricCollection<S extends SampleData<?>, T extends Statistic<?>, U
     private void validate() throws MetricParameterException
     {
         //Validate 
-        if ( Objects.isNull( metricPool ) )
+        if ( Objects.isNull( this.metricPool ) )
         {
             throw new MetricParameterException( "Cannot construct the metric collection without an executor service." );
         }
-        if ( metrics.isEmpty() && collectableMetrics.isEmpty() )
+        if ( this.metrics.isEmpty() && this.collectableMetrics.isEmpty() )
         {
             throw new MetricParameterException( "Cannot construct a metric collection without any metrics." );
         }
@@ -384,13 +400,13 @@ public class MetricCollection<S extends SampleData<?>, T extends Statistic<?>, U
             // Determine the metrics to compute
             Set<MetricConstants> started = new TreeSet<>();
             Set<MetricConstants> collected = new TreeSet<>();
-            collectableMetrics.values().forEach( next -> collected.addAll( next.keySet() ) );
-            started.addAll( metrics.keySet() );
+            this.collectableMetrics.values().forEach( next -> collected.addAll( next.keySet() ) );
+            started.addAll( this.metrics.keySet() );
             started.addAll( collected );
 
             logger.trace( "Attempting to compute metrics for a collection that contains {} ordinary metric(s) and {} "
                           + "collectable metric(s). The metrics include {}.",
-                          metrics.size(),
+                          this.metrics.size(),
                           collected.size(),
                           started );
         }
@@ -409,16 +425,16 @@ public class MetricCollection<S extends SampleData<?>, T extends Statistic<?>, U
         {
             // Determine the metrics computed
             Set<MetricConstants> collected = new TreeSet<>();
-            collectableMetrics.values().forEach( next -> collected.addAll( next.keySet() ) );
+            this.collectableMetrics.values().forEach( next -> collected.addAll( next.keySet() ) );
             Set<MetricConstants> completed = Slicer.discover( results, meta -> meta.getMetadata().getMetricID() );
 
             logger.trace( "Finished computing metrics for a collection that contains {} ordinary metric(s) and {} "
                           + "collectable metric(s). Obtained {} result(s) of the {} result(s) expected. Results were "
                           + "obtained for these metrics {}.",
-                          metrics.size(),
+                          this.metrics.size(),
                           collected.size(),
                           completed.size(),
-                          metrics.size() + collected.size(),
+                          this.metrics.size() + collected.size(),
                           completed );
         }
     }
@@ -433,6 +449,66 @@ public class MetricCollection<S extends SampleData<?>, T extends Statistic<?>, U
     {
         return Stream.concat( this.collectableMetrics.keySet().stream(), this.metrics.keySet().stream() )
                      .collect( Collectors.toSet() );
+    }
+
+    /**
+     * Returns the set of all stored metrics, except the metrics to ignore.
+     * 
+     * @param ignoreTheseMetrics the metrics to ignore
+     * @return the metrics, minus any ignored ones
+     */
+
+    private Map<MetricConstants, Metric<S, U>> getMetricsButIgnoreThese( Set<MetricConstants> ignoreTheseMetrics )
+    {
+        Map<MetricConstants, Metric<S, U>> returnMe = new EnumMap<>( MetricConstants.class );
+        for ( Map.Entry<MetricConstants, Metric<S, U>> next : this.metrics.entrySet() )
+        {
+            if ( !ignoreTheseMetrics.contains( next.getKey() ) )
+            {
+                returnMe.put( next.getKey(), next.getValue() );
+            }
+        }
+
+        return Collections.unmodifiableMap( returnMe );
+    }
+
+    /**
+     * Returns the set of all stored metrics, except the metrics to ignore.
+     * 
+     * @param ignoreTheseMetrics the metrics to ignore
+     * @return the metrics, minus any ignored ones
+     */
+
+    private Map<MetricConstants, Map<MetricConstants, Collectable<S, T, U>>>
+            getCollectableMetricsButIgnoreThese( Set<MetricConstants> ignoreTheseMetrics )
+    {
+        Map<MetricConstants, Map<MetricConstants, Collectable<S, T, U>>> returnMe =
+                new EnumMap<>( MetricConstants.class );
+        for ( Entry<MetricConstants, Map<MetricConstants, Collectable<S, T, U>>> next : this.collectableMetrics.entrySet() )
+        {
+            if ( !ignoreTheseMetrics.contains( next.getKey() ) )
+            {
+                Map<MetricConstants, Collectable<S, T, U>> inner = returnMe.get( next.getKey() );
+
+                if ( Objects.isNull( inner ) )
+                {
+                    inner = new EnumMap<>( MetricConstants.class );
+                    returnMe.put( next.getKey(), inner );
+                }
+
+                Map<MetricConstants, Collectable<S, T, U>> nextValue = next.getValue();
+
+                for ( Entry<MetricConstants, Collectable<S, T, U>> nextInnerValue : nextValue.entrySet() )
+                {
+                    if ( !ignoreTheseMetrics.contains( nextInnerValue.getKey() ) )
+                    {
+                        inner.put( nextInnerValue.getKey(), nextInnerValue.getValue() );
+                    }
+                }
+            }
+        }
+
+        return Collections.unmodifiableMap( returnMe );
     }
 
 }
