@@ -215,7 +215,7 @@ public final class TimeSeriesSlicer
     /**
      * Returns a filtered {@link TimeSeries} whose events are within the right-closed time intervals contained in the 
      * prescribed {@link TimeWindow}. When considering lead durations, the filter may focus on all 
-     * {@link ReferenceTimeType} of a prescribed subset.
+     * {@link ReferenceTimeType} or a prescribed subset.
      * 
      * @param <T> the type of time-series data
      * @param input the input to slice
