@@ -399,12 +399,18 @@ public class CommaSeparatedReaderTest
                                                                                              null,
                                                                                              this.unitMapper ) );
 
+        String nL = System.lineSeparator();
+
         String expectedMessage = "When processing thresholds by feature, 7 of 8 features contained in '"
                                  + commaSeparated
-                                 + "' failed with exceptions, as follows. \r\n"
-                                 + "     These features failed with an inconsistency between the number of labels and the number of thresholds: [LOCWITHWRONGCOUNT_A, LOCWITHWRONGCOUNT_B]. \r\n"
-                                 + "     These features failed because all thresholds matched the missing value: [LOCWITHALLMISSING_A, LOCWITHALLMISSING_B, LOCWITHALLMISSING_C]. \r\n"
-                                 + "     These features failed with non-numeric input: [LOCWITHNONNUMERIC_A]. \r\n"
+                                 + "' failed with exceptions, as follows. "
+                                 + nL
+                                 + "     These features failed with an inconsistency between the number of labels and the number of thresholds: [LOCWITHWRONGCOUNT_A, LOCWITHWRONGCOUNT_B]. "
+                                 + nL
+                                 + "     These features failed because all thresholds matched the missing value: [LOCWITHALLMISSING_A, LOCWITHALLMISSING_B, LOCWITHALLMISSING_C]. "
+                                 + nL
+                                 + "     These features failed with non-numeric input: [LOCWITHNONNUMERIC_A]. "
+                                 + nL
                                  + "     These features failed with invalid input for the threshold type: [LOCWITHWRONGPROBS_A].";
 
         assertEquals( expectedMessage, actualException.getMessage() );
