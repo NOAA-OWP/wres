@@ -318,23 +318,11 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
                                                                    desiredTimeScaleToUse,
                                                                    pairedFrequency );
 
+        // Snip to the pool boundaries
         for ( TimeSeries<Pair<L, R>> pairs : mainPairs )
         {
-
-            // Filter the pairs against the pool boundaries, if required
-            if ( this.metadata.hasTimeWindow() )
-            {
-                // Do not filter lead durations with respect to reference times that are ANALYSIS_START_TIME because
-                // these may be used interchangeably when pairing with other reference time types.
-                Set<ReferenceTimeType> typesToFilter = new TreeSet<>( pairs.getReferenceTimes().keySet() );
-                typesToFilter.remove( ReferenceTimeType.ANALYSIS_START_TIME );
-
-                pairs = TimeSeriesSlicer.filter( pairs,
-                                                 this.metadata.getTimeWindow(),
-                                                 Collections.unmodifiableSet( typesToFilter ) );
-            }
-
-            builder.addTimeSeries( pairs );
+            TimeSeries<Pair<L, R>> snipped = this.snip( pairs, this.metadata.getTimeWindow() );
+            builder.addTimeSeries( snipped );
         }
 
         // Create the baseline pairs
@@ -357,22 +345,11 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
                                                                        desiredTimeScaleToUse,
                                                                        pairedFrequency );
 
+            // Snip to the pool boundaries
             for ( TimeSeries<Pair<L, R>> pairs : basePairs )
             {
-                // Filter the pairs against the pool boundaries, if required
-                if ( this.metadata.hasTimeWindow() )
-                {
-                    // Do not filter lead durations with respect to reference times that are ANALYSIS_START_TIME because
-                    // these may be used interchangeably when pairing with other reference time types.
-                    Set<ReferenceTimeType> typesToFilter = new TreeSet<>( pairs.getReferenceTimes().keySet() );
-                    typesToFilter.remove( ReferenceTimeType.ANALYSIS_START_TIME );
-
-                    pairs = TimeSeriesSlicer.filter( pairs,
-                                                     this.metadata.getTimeWindow(),
-                                                     Collections.unmodifiableSet( typesToFilter ) );
-                }
-
-                builder.addTimeSeriesForBaseline( pairs );
+                TimeSeries<Pair<L, R>> snipped = this.snip( pairs, this.baselineMetadata.getTimeWindow() );
+                builder.addTimeSeriesForBaseline( snipped );
             }
         }
 
@@ -1384,6 +1361,58 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         }
 
         return Collections.unmodifiableList( returnMe );
+    }
+
+    /**
+     * Snips the input pairs to the pool boundary. Only filters lead durations with respect to reference times with 
+     * the type {@link ReferenceTimeType#T0}.
+     * 
+     * @param toSnip the pairs to snip
+     * @param snipTo the time window to use when snipping
+     * @return the snipped pairs
+     */
+
+    private TimeSeries<Pair<L, R>> snip( TimeSeries<Pair<L, R>> toSnip, TimeWindow snipTo )
+    {
+        Objects.requireNonNull( toSnip );
+
+        TimeSeries<Pair<L, R>> returnMe = toSnip;
+
+        if ( Objects.nonNull( snipTo ) )
+        {
+
+            // Snip datetimes first, because lead durations are only snipped with respect to 
+            // the ReferenceTimeType.T0            
+            TimeWindow partialSnip = TimeWindow.of( snipTo.getEarliestReferenceTime(),
+                                                    snipTo.getLatestReferenceTime(),
+                                                    snipTo.getEarliestValidTime(),
+                                                    snipTo.getLatestValidTime() );
+            
+            LOGGER.debug( "Snipping paired time-series {} to the pool boundaries of {}.",
+                          toSnip.hashCode(),
+                          partialSnip );
+
+            returnMe = TimeSeriesSlicer.filter( returnMe, partialSnip );            
+
+
+            // For all other reference time types, filter the datetimes only
+            if ( toSnip.getReferenceTimes().containsKey( ReferenceTimeType.T0 )
+                 && !snipTo.bothLeadDurationsAreUnbounded() )
+            {
+                LOGGER.debug( "Additionally snipping paired time-series {} to lead durations ({},{}] for the reference "
+                              + "time type of {}.",
+                              toSnip.hashCode(),
+                              snipTo.getEarliestLeadDuration(),
+                              snipTo.getLatestLeadDuration() );
+
+                returnMe = TimeSeriesSlicer.filter( returnMe,
+                                                    snipTo,
+                                                    Set.of( ReferenceTimeType.T0 ) );
+            }
+
+        }
+
+        return returnMe;
     }
 
     /**
