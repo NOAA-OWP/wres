@@ -4,9 +4,9 @@
 # After deploying a new version of WRES, this script runs migration.
 # Intended to be run from a directory one level deeper than wres/scripts.
 
-env_suffix=-dev
+host=localhost
 
-echo "We are using the $env_suffix environment in this program."
+echo "We are using the $host environment in this program."
 read -n1 -r -p "Please ctrl-c if that is not correct, any key otherwise..." key
 
 wres_ca_file=../cacerts/wres_ca_x509_cert.pem
@@ -19,7 +19,7 @@ else
     exit 1
 fi
 
-post_result=$( curl -i -s --cacert $wres_ca_file --data "projectConfig=noProjectConfigOnlyMigration&verb=connecttodb" https://***REMOVED***wres${env_suffix}.***REMOVED***.***REMOVED***/job | tr -d '\r' )
+post_result=$( curl -i -s --cacert $wres_ca_file --data "projectConfig=noProjectConfigOnlyMigration&verb=connecttodb" https://${host}/job | tr -d '\r' )
 post_result_http_code=$( echo -n "$post_result" | grep HTTP | tail -n 1 | cut -d' ' -f2 )
 echo "The last status code in the response was $post_result_http_code"
 
