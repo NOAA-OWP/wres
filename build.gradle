@@ -189,7 +189,7 @@ project(':wres-util')
         compile 'com.google.guava:guava:28.2-jre'
         compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 
-        compile('edu.ucar:cdm-core:5.3.0')
+        compile('edu.ucar:cdm-core:5.2.0')
         {
             // Because we use slf4j, not jcl:
             exclude group: 'commons-logging', module: 'commons-logging'
@@ -298,7 +298,7 @@ project(':wres-io')
         // For Java 8 java.time support
         compile 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.10.2'
 
-        compile('edu.ucar:cdm-core:5.3.0')
+        compile('edu.ucar:cdm-core:5.2.0')
         {
             // Because we use slf4j, not jcl:
             exclude group: 'commons-logging', module: 'commons-logging'
@@ -359,8 +359,7 @@ project(':wres-io')
     {
         // Set the socket timeout for tests involving mockserver to 120s
         systemProperties = [ "mockserver.maxSocketTimeout": 120000,
-                             "ucar.unidata.io.http.maxReadCacheSize": 200000,
-                             "ucar.unidata.io.http.httpBufferSize": 200000 ]
+                             "ucar.unidata.io.http.maxHttpBufferSize": 200000 ]
     }
 
 
@@ -556,7 +555,7 @@ project(':wres-grid')
         compile project(':wres-util')
         compile project(':wres-system')
         compile 'org.slf4j:slf4j-api:1.8.0-beta4'
-        compile('edu.ucar:cdm-core:5.3.0')
+        compile('edu.ucar:cdm-core:5.2.0')
         {
             // Because we use slf4j, not jcl:
             exclude group: 'commons-logging', module: 'commons-logging'
@@ -863,8 +862,7 @@ targetCompatibility = '11'
 applicationDefaultJvmArgs = ['-Xms2180m', '-Xmx2180m',
                              '-XX:+HeapDumpOnOutOfMemoryError',
                              '-Djava.util.logging.config.class=wres.system.logging.JavaUtilLoggingRedirector',
-                             '-Ducar.unidata.io.http.maxReadCacheSize=200000',
-                             '-Ducar.unidata.io.http.httpBufferSize=200000' ]
+                             '-Ducar.unidata.io.http.maxHttpBufferSize=200000']
 
 // Get the commit and date from the TOP for this project, it is outermost.
 // The top level commit will also reflect changes to this build.gradle script.
