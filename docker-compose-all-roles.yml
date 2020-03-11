@@ -3,7 +3,7 @@ services:
     tasker:
         ports:
          - "443:8443"
-        image: "${DOCKER_REGISTRY}/wres/wres-tasker:20200219-d2fafa1"
+        image: "${DOCKER_REGISTRY}/wres/wres-tasker:20200309-532b060"
         restart: always
         depends_on:
          - "broker"
@@ -38,7 +38,7 @@ services:
         cap_drop:
          - ALL
     worker:
-        image: "${DOCKER_REGISTRY}/wres/wres-worker:20200306-261d012"
+        image: "${DOCKER_REGISTRY}/wres/wres-worker:20200311-a3750c7"
         restart: always
         depends_on:
          - "broker"
