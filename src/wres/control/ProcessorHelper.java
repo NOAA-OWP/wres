@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -126,9 +127,9 @@ class ProcessorHelper
         }
 
         // Validate the thresholds-by-feature against the features 
-        ProcessorHelper.throwExceptionIfSomeFeaturesAreMissingRequiredThresholds( thresholds.keySet(),
-                                                                                  decomposedFeatures,
-                                                                                  projectConfig );
+        decomposedFeatures = ProcessorHelper.filterOutFeaturesMissingRequiredThresholds( thresholds.keySet(),
+                                                                                         decomposedFeatures,
+                                                                                         projectConfig );
 
         // The project code - ideally project hash
         String projectIdentifier = String.valueOf( project.getInputCode() );
@@ -359,7 +360,9 @@ class ProcessorHelper
     }
 
     /**
-     * <p>Throws an exception if:
+     * Returns a list of features that should work within the declaration.
+     *
+     * <p>Logs a warning message if:
      * 
      * <ol>
      * <li>Thresholds have been defined for one or more features individually; and</li>
@@ -368,20 +371,23 @@ class ProcessorHelper
      * <li>The project declaration contains metrics that require thresholds.</li>
      * </ol>
      * 
-     * <p>In these circumstances, thresholds will be missing for some metrics, so 
-     * failure is guaranteed, and this validation makes it happen sooner.
+     * <p>In these circumstances, thresholds will be missing for some metrics,
+     * and these
      * 
      * @param featuresWithThresholds the features with thresholds
      * @param featuresToEvaluate the features to evaluate
      * @param projectConfig the project declaration
+     * @return The list of filtered features to evaluate
      * @throws IllegalArgumentException if some expected thresholds are missing
      */
 
-    private static void
-            throwExceptionIfSomeFeaturesAreMissingRequiredThresholds( Set<FeaturePlus> featuresWithThresholds,
-                                                                      Set<FeaturePlus> featuresToEvaluate,
-                                                                      ProjectConfig projectConfig )
+    private static Set<FeaturePlus>
+    filterOutFeaturesMissingRequiredThresholds( Set<FeaturePlus> featuresWithThresholds,
+                                                Set<FeaturePlus> featuresToEvaluate,
+                                                ProjectConfig projectConfig )
     {
+        Set<FeaturePlus> filteredFeatures = new HashSet<>( featuresToEvaluate );
+
         // Thresholds have been defined by feature, so validate them
         if ( !featuresWithThresholds.isEmpty() )
         {
@@ -395,25 +401,45 @@ class ProcessorHelper
             // If thresholds are required, check that all features have them 
             if ( requiresThresholds )
             {
-                // Determine missing thresholds by locationId
-                Set<String> missingThresholds =
-                        featuresToEvaluate.stream()
-                                          .filter( Predicate.not( featuresWithThresholds::contains ) )
-                                          .map( feature -> feature.getFeature().getLocationId() )
-                                          .collect( Collectors.toSet() );
+                filteredFeatures.clear();
+                Set<FeaturePlus> missingThresholds = new HashSet<>();
 
-                if ( !missingThresholds.isEmpty() )
+                for ( FeaturePlus featurePlus : featuresToEvaluate )
                 {
-                    throw new IllegalArgumentException( "The project declaration contains some metrics for which thresholds are "
-                                                        + "required, but some features for which thresholds are not available. "
-                                                        + "Found "
-                                                        + missingThresholds.size()
-                                                        + " features to evaluate in the project declaration for which "
-                                                        + "thresholds were missing from an external source of thresholds: "
-                                                        + missingThresholds );
+                    if ( featuresWithThresholds.contains( featurePlus ) )
+                    {
+                        filteredFeatures.add( featurePlus );
+                    }
+                    else
+                    {
+                        missingThresholds.add( featurePlus );
+                    }
+                }
+
+                if ( !missingThresholds.isEmpty() && LOGGER.isWarnEnabled() )
+                {
+                    StringJoiner joiner = new StringJoiner( ", " );
+
+                    for ( FeaturePlus featurePlus : missingThresholds )
+                    {
+                        String description = ConfigHelper.getFeatureDescription( featurePlus );
+                        joiner.add( description );
+                    }
+
+                    LOGGER.warn( "{}{}{}{}{}{}{}{}",
+                                 "The project declaration contains some ",
+                                 "metrics for which thresholds are required, ",
+                                 "but some features for which thresholds are ",
+                                 "not available. Found the following features ",
+                                 "to evaluate in the project for which ",
+                                 "thresholds were missing from an ",
+                                 "external source of thresholds: ",
+                                 joiner );
                 }
             }
         }
+
+        return Collections.unmodifiableSet( filteredFeatures );
     }
 
     /**
