@@ -11,12 +11,12 @@ import java.sql.SQLException;
 import java.text.MessageFormat;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
-import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
@@ -43,7 +43,6 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
-import wres.datamodel.time.TimeWindow;
 import wres.io.config.LeftOrRightOrBaseline;
 import wres.io.data.caching.Features;
 import wres.io.data.details.EnsembleDetails;
@@ -52,23 +51,30 @@ import wres.io.data.details.MeasurementDetails;
 import wres.io.data.details.SourceDetails;
 import wres.io.data.details.VariableDetails;
 import wres.io.project.Project;
+import wres.io.retrieval.AnalysisRetriever.DuplicatePolicy;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.TestDatabase;
 import wres.system.SystemSettings;
 
 /**
- * Tests the {@link SingleValuedForecastRetriever}.
+ * Tests the {@link AnalysisRetriever}.
  * @author james.brown@hydrosolved.com
  */
 
 @RunWith( PowerMockRunner.class )
 @PrepareForTest( { SystemSettings.class } )
 @PowerMockIgnore( { "javax.management.*", "java.io.*", "javax.xml.*", "com.sun.*", "org.xml.*" } )
-public class SingleValuedForecastRetrieverTest
+public class AnalysisRetrieverTest
 {
-    private static final String T2023_04_01T19_00_00Z = "2023-04-01T19:00:00Z";
-    private static final String T2023_04_01T17_00_00Z = "2023-04-01T17:00:00Z";
-    private static final String T2023_04_01T00_00_00Z = "2023-04-01T00:00:00Z";
+    private static final Instant T2023_04_01T00_00_00Z = Instant.parse( "2023-04-01T00:00:00Z" );
+    private static final Instant T2023_04_01T03_00_00Z = Instant.parse( "2023-04-01T03:00:00Z" );
+    private static final Instant T2023_04_01T06_00_00Z = Instant.parse( "2023-04-01T06:00:00Z" );
+    // Comparator for ordering time-series by reference time
+    private final Comparator<TimeSeries<Double>> comparator =
+            ( a, b ) -> a.getReferenceTimes()
+                         .get( ReferenceTimeType.ANALYSIS_START_TIME )
+                         .compareTo( b.getReferenceTimes()
+                                      .get( ReferenceTimeType.ANALYSIS_START_TIME ) );
     private TestDatabase testDatabase;
     private ComboPooledDataSource dataSource;
     private Connection rawConnection;
@@ -97,11 +103,11 @@ public class SingleValuedForecastRetrieverTest
      */
 
     private static final String UNITS = "CFS";
-    
+
     /**
      * The unit mapper.
      */
-    
+
     private UnitMapper unitMapper;
 
     @BeforeClass
@@ -132,150 +138,234 @@ public class SingleValuedForecastRetrieverTest
     }
 
     @Test
-    public void testRetrievalOfTwoForecastTimeSeriesEachWithFiveEvents()
+    public void testRetrievalOfThreeOverlappingAnalysisTimeSeriesWithDuplicatesRemoved()
     {
         // Build the retriever
-        Retriever<TimeSeries<Double>> forecastRetriever =
-                new SingleValuedForecastRetriever.Builder().setProjectId( PROJECT_ID )
-                                                           .setVariableFeatureId( this.variableFeatureId )
-                                                           .setUnitMapper( this.unitMapper )
-                                                           .setLeftOrRightOrBaseline( LRB )
-                                                           .build();
+        Retriever<TimeSeries<Double>> analysisRetriever =
+                new AnalysisRetriever.Builder().setDuplicatePolicy( DuplicatePolicy.KEEP_LATEST_REFERENCE_TIME )
+                                               .setProjectId( PROJECT_ID )
+                                               .setVariableFeatureId( this.variableFeatureId )
+                                               .setUnitMapper( this.unitMapper )
+                                               .setLeftOrRightOrBaseline( LRB )
+                                               .build();
 
         // Get the time-series
-        Stream<TimeSeries<Double>> forecastSeries = forecastRetriever.get();
+        Stream<TimeSeries<Double>> forecastSeries = analysisRetriever.get();
 
         // Stream into a collection
         List<TimeSeries<Double>> actualCollection = forecastSeries.collect( Collectors.toList() );
 
-        // There are two time-series, so assert that
-        assertEquals( 2, actualCollection.size() );
+        actualCollection.sort( this.comparator );
+
+        // There are three time-series, so assert that
+        assertEquals( 3, actualCollection.size() );
         TimeSeries<Double> actualSeriesOne = actualCollection.get( 0 );
         TimeSeries<Double> actualSeriesTwo = actualCollection.get( 1 );
+        TimeSeries<Double> actualSeriesThree = actualCollection.get( 2 );
 
         // Create the first expected series
-        TimeSeriesBuilder<Double> builderOne = new TimeSeriesBuilder<>();
         TimeSeries<Double> expectedSeriesOne =
-                builderOne.addReferenceTime( Instant.parse( T2023_04_01T00_00_00Z ), ReferenceTimeType.UNKNOWN )
-                          .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ), 30.0 ) )
-                          .addEvent( Event.of( Instant.parse( "2023-04-01T02:00:00Z" ), 37.0 ) )
-                          .addEvent( Event.of( Instant.parse( "2023-04-01T03:00:00Z" ), 44.0 ) )
-                          .addEvent( Event.of( Instant.parse( "2023-04-01T04:00:00Z" ), 51.0 ) )
-                          .addEvent( Event.of( Instant.parse( "2023-04-01T05:00:00Z" ), 58.0 ) )
-                          .setTimeScale( TimeScale.of() )
-                          .build();
+                new TimeSeriesBuilder<Double>().addReferenceTime( T2023_04_01T00_00_00Z,
+                                                                  ReferenceTimeType.ANALYSIS_START_TIME )
+                                               .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ), 30.0 ) )
+                                               .addEvent( Event.of( Instant.parse( "2023-04-01T02:00:00Z" ), 37.0 ) )
+                                               .addEvent( Event.of( Instant.parse( "2023-04-01T03:00:00Z" ), 44.0 ) )
+                                               .setTimeScale( TimeScale.of() )
+                                               .build();
 
         // Actual series equals expected series
         assertEquals( expectedSeriesOne, actualSeriesOne );
 
         // Create the second expected series
-        TimeSeriesBuilder<Double> builderTwo = new TimeSeriesBuilder<>();
         TimeSeries<Double> expectedSeriesTwo =
-                builderTwo.addReferenceTime( Instant.parse( T2023_04_01T17_00_00Z ), ReferenceTimeType.UNKNOWN )
-                          .addEvent( Event.of( Instant.parse( "2023-04-01T18:00:00Z" ), 65.0 ) )
-                          .addEvent( Event.of( Instant.parse( T2023_04_01T19_00_00Z ), 72.0 ) )
-                          .addEvent( Event.of( Instant.parse( "2023-04-01T20:00:00Z" ), 79.0 ) )
-                          .addEvent( Event.of( Instant.parse( "2023-04-01T21:00:00Z" ), 86.0 ) )
-                          .addEvent( Event.of( Instant.parse( "2023-04-01T22:00:00Z" ), 93.0 ) )
-                          .setTimeScale( TimeScale.of() )
-                          .build();
+                new TimeSeriesBuilder<Double>().addReferenceTime( T2023_04_01T03_00_00Z,
+                                                                  ReferenceTimeType.ANALYSIS_START_TIME )
+                                               .addEvent( Event.of( Instant.parse( "2023-04-01T04:00:00Z" ), 72.0 ) )
+                                               .addEvent( Event.of( Instant.parse( "2023-04-01T05:00:00Z" ), 79.0 ) )
+                                               .addEvent( Event.of( Instant.parse( "2023-04-01T06:00:00Z" ), 86.0 ) )
+                                               .setTimeScale( TimeScale.of() )
+                                               .build();
 
         // Actual series equals expected series
         assertEquals( expectedSeriesTwo, actualSeriesTwo );
-    }   
+
+        // Create the third expected series
+        TimeSeries<Double> expectedSeriesThree =
+                new TimeSeriesBuilder<Double>().addReferenceTime( T2023_04_01T06_00_00Z,
+                                                                  ReferenceTimeType.ANALYSIS_START_TIME )
+                                               .addEvent( Event.of( Instant.parse( "2023-04-01T07:00:00Z" ), 114.0 ) )
+                                               .addEvent( Event.of( Instant.parse( "2023-04-01T08:00:00Z" ), 121.0 ) )
+                                               .addEvent( Event.of( Instant.parse( "2023-04-01T09:00:00Z" ), 128.0 ) )
+                                               .addEvent( Event.of( Instant.parse( "2023-04-01T10:00:00Z" ), 135.0 ) )
+                                               .addEvent( Event.of( Instant.parse( "2023-04-01T11:00:00Z" ), 142.0 ) )
+                                               .addEvent( Event.of( Instant.parse( "2023-04-01T12:00:00Z" ), 149.0 ) )
+                                               .setTimeScale( TimeScale.of() )
+                                               .build();
+
+        // Actual series equals expected series
+        assertEquals( expectedSeriesThree, actualSeriesThree );
+
+    }
 
     @Test
-    public void testRetrievalOfTwoForecastTimeSeriesWithinTimeWindow()
+    public void testRetrievalOfAnalysisTimeSeriesWithAnalysisDurationOfPT1H()
     {
-        // Set the time window filter, aka pool boundaries
-        Instant referenceStart = Instant.parse( "2023-03-31T23:00:00Z" );
-        Instant referenceEnd = Instant.parse( T2023_04_01T19_00_00Z );
-        Instant validStart = Instant.parse( "2023-04-01T03:00:00Z" );
-        Instant validEnd = Instant.parse( T2023_04_01T19_00_00Z );
-        Duration leadStart = Duration.ofHours( 1 );
-        Duration leadEnd = Duration.ofHours( 4 );
-
-        TimeWindow timeWindow = TimeWindow.of( referenceStart, referenceEnd, validStart, validEnd, leadStart, leadEnd );
-
         // Build the retriever
-        Retriever<TimeSeries<Double>> forecastRetriever =
-                new SingleValuedForecastRetriever.Builder().setProjectId( PROJECT_ID )
-                                                           .setVariableFeatureId( this.variableFeatureId )
-                                                           .setUnitMapper( this.unitMapper )
-                                                           .setTimeWindow( timeWindow )
-                                                           .setLeftOrRightOrBaseline( LRB )
-                                                           .build();
+        Retriever<TimeSeries<Double>> analysisRetriever =
+                new AnalysisRetriever.Builder().setLatestAnalysisDuration( Duration.ofHours( 1 ) )
+                                               .setProjectId( PROJECT_ID )
+                                               .setVariableFeatureId( this.variableFeatureId )
+                                               .setUnitMapper( this.unitMapper )
+                                               .setLeftOrRightOrBaseline( LRB )
+                                               .build();
 
         // Get the time-series
-        Stream<TimeSeries<Double>> forecastSeries = forecastRetriever.get();
+        Stream<TimeSeries<Double>> forecastSeries = analysisRetriever.get();
 
         // Stream into a collection
         List<TimeSeries<Double>> actualCollection = forecastSeries.collect( Collectors.toList() );
 
-        // There are two time-series, so assert that
-        assertEquals( 2, actualCollection.size() );
+        actualCollection.sort( this.comparator );
+
+        // There are three time-series, so assert that
+        assertEquals( 3, actualCollection.size() );
         TimeSeries<Double> actualSeriesOne = actualCollection.get( 0 );
         TimeSeries<Double> actualSeriesTwo = actualCollection.get( 1 );
+        TimeSeries<Double> actualSeriesThree = actualCollection.get( 2 );
 
         // Create the first expected series
-        TimeSeriesBuilder<Double> builderOne = new TimeSeriesBuilder<>();
         TimeSeries<Double> expectedSeriesOne =
-                builderOne.addReferenceTime( Instant.parse( T2023_04_01T00_00_00Z ), ReferenceTimeType.UNKNOWN )
-                          .addEvent( Event.of( Instant.parse( "2023-04-01T04:00:00Z" ), 51.0 ) )
-                          .setTimeScale( TimeScale.of() )
-                          .build();
+                new TimeSeriesBuilder<Double>().addReferenceTime( T2023_04_01T00_00_00Z,
+                                                                  ReferenceTimeType.ANALYSIS_START_TIME )
+                                               .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ), 30.0 ) )
+                                               .setTimeScale( TimeScale.of() )
+                                               .build();
 
         // Actual series equals expected series
         assertEquals( expectedSeriesOne, actualSeriesOne );
 
         // Create the second expected series
-        TimeSeriesBuilder<Double> builderTwo = new TimeSeriesBuilder<>();
         TimeSeries<Double> expectedSeriesTwo =
-                builderTwo.addReferenceTime( Instant.parse( T2023_04_01T17_00_00Z ), ReferenceTimeType.UNKNOWN )
-                          .addEvent( Event.of( Instant.parse( T2023_04_01T19_00_00Z ), 72.0 ) )
-                          .setTimeScale( TimeScale.of() )
-                          .build();
+                new TimeSeriesBuilder<Double>().addReferenceTime( T2023_04_01T03_00_00Z,
+                                                                  ReferenceTimeType.ANALYSIS_START_TIME )
+                                               .addEvent( Event.of( Instant.parse( "2023-04-01T04:00:00Z" ), 72.0 ) )
+                                               .setTimeScale( TimeScale.of() )
+                                               .build();
 
         // Actual series equals expected series
         assertEquals( expectedSeriesTwo, actualSeriesTwo );
+
+        // Create the third expected series
+        TimeSeries<Double> expectedSeriesThree =
+                new TimeSeriesBuilder<Double>().addReferenceTime( T2023_04_01T06_00_00Z,
+                                                                  ReferenceTimeType.ANALYSIS_START_TIME )
+                                               .addEvent( Event.of( Instant.parse( "2023-04-01T07:00:00Z" ), 114.0 ) )
+                                               .setTimeScale( TimeScale.of() )
+                                               .build();
+
+        // Actual series equals expected series
+        assertEquals( expectedSeriesThree, actualSeriesThree );
+
     }
 
     @Test
-    public void testGetRetrievalOfTimeSeriesIdentifiersReturnsTwoIdentifiers()
+    public void testRetrievalOfAnalysisTimeSeriesWithAnalysisDurationOfPT1HAndPT2H()
     {
         // Build the retriever
-        Retriever<TimeSeries<Double>> forecastRetriever =
-                new SingleValuedForecastRetriever.Builder().setProjectId( PROJECT_ID )
-                                                           .setVariableFeatureId( this.variableFeatureId )
-                                                           .setUnitMapper( this.unitMapper )
-                                                           .setLeftOrRightOrBaseline( LRB )
-                                                           .build();
+        Retriever<TimeSeries<Double>> analysisRetriever =
+                new AnalysisRetriever.Builder().setEarliestAnalysisDuration( Duration.ofHours( 0 ) )
+                                               .setLatestAnalysisDuration( Duration.ofHours( 2 ) )
+                                               .setProjectId( PROJECT_ID )
+                                               .setVariableFeatureId( this.variableFeatureId )
+                                               .setUnitMapper( this.unitMapper )
+                                               .setLeftOrRightOrBaseline( LRB )
+                                               .build();
 
         // Get the time-series
-        List<Long> identifiers = forecastRetriever.getAllIdentifiers().boxed().collect( Collectors.toList() );
-        
-        // Actual number of time-series equals expected number
-        assertEquals( 2, identifiers.size() );
+        Stream<TimeSeries<Double>> forecastSeries = analysisRetriever.get();
+
+        // Stream into a collection
+        List<TimeSeries<Double>> actualCollection = forecastSeries.collect( Collectors.toList() );
+
+        actualCollection.sort( this.comparator );
+
+        // There are three time-series, so assert that
+        assertEquals( 6, actualCollection.size() );
+        TimeSeries<Double> actualSeriesOne = actualCollection.get( 0 );
+        TimeSeries<Double> actualSeriesTwo = actualCollection.get( 1 );
+        TimeSeries<Double> actualSeriesThree = actualCollection.get( 2 );
+        TimeSeries<Double> actualSeriesFour = actualCollection.get( 3 );
+        TimeSeries<Double> actualSeriesFive = actualCollection.get( 4 );
+        TimeSeries<Double> actualSeriesSix = actualCollection.get( 5 );
+
+        // Create the first expected series
+        TimeSeries<Double> expectedSeriesOne =
+                new TimeSeriesBuilder<Double>().addReferenceTime( T2023_04_01T00_00_00Z,
+                                                                  ReferenceTimeType.ANALYSIS_START_TIME )
+                                               .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ), 30.0 ) )
+                                               .setTimeScale( TimeScale.of() )
+                                               .build();
+
+        // Actual series equals expected series
+        assertEquals( expectedSeriesOne, actualSeriesOne );
+
+        // Create the second expected series
+        TimeSeries<Double> expectedSeriesTwo =
+                new TimeSeriesBuilder<Double>().addReferenceTime( T2023_04_01T00_00_00Z,
+                                                                  ReferenceTimeType.ANALYSIS_START_TIME )
+                                               .addEvent( Event.of( Instant.parse( "2023-04-01T02:00:00Z" ), 37.0 ) )
+                                               .setTimeScale( TimeScale.of() )
+                                               .build();
+
+        // Actual series equals expected series
+        assertEquals( expectedSeriesTwo, actualSeriesTwo );
+
+        // Create the third expected series
+        TimeSeries<Double> expectedSeriesThree =
+                new TimeSeriesBuilder<Double>().addReferenceTime( T2023_04_01T03_00_00Z,
+                                                                  ReferenceTimeType.ANALYSIS_START_TIME )
+                                               .addEvent( Event.of( Instant.parse( "2023-04-01T04:00:00Z" ), 72.0 ) )
+                                               .setTimeScale( TimeScale.of() )
+                                               .build();
+
+        // Actual series equals expected series
+        assertEquals( expectedSeriesThree, actualSeriesThree );
+
+        // Create the fourth expected series
+        TimeSeries<Double> expectedSeriesFour =
+                new TimeSeriesBuilder<Double>().addReferenceTime( T2023_04_01T03_00_00Z,
+                                                                  ReferenceTimeType.ANALYSIS_START_TIME )
+                                               .addEvent( Event.of( Instant.parse( "2023-04-01T05:00:00Z" ), 79.0 ) )
+                                               .setTimeScale( TimeScale.of() )
+                                               .build();
+
+        // Actual series equals expected series
+        assertEquals( expectedSeriesFour, actualSeriesFour );
+
+        // Create the fifth expected series
+        TimeSeries<Double> expectedSeriesFive =
+                new TimeSeriesBuilder<Double>().addReferenceTime( T2023_04_01T06_00_00Z,
+                                                                  ReferenceTimeType.ANALYSIS_START_TIME )
+                                               .addEvent( Event.of( Instant.parse( "2023-04-01T07:00:00Z" ), 114.0 ) )
+                                               .setTimeScale( TimeScale.of() )
+                                               .build();
+
+        // Actual series equals expected series
+        assertEquals( expectedSeriesFive, actualSeriesFive );
+
+        // Create the sixth expected series
+        TimeSeries<Double> expectedSeriesSix =
+                new TimeSeriesBuilder<Double>().addReferenceTime( T2023_04_01T06_00_00Z,
+                                                                  ReferenceTimeType.ANALYSIS_START_TIME )
+                                               .addEvent( Event.of( Instant.parse( "2023-04-01T08:00:00Z" ), 121.0 ) )
+                                               .setTimeScale( TimeScale.of() )
+                                               .build();
+
+        // Actual series equals expected series
+        assertEquals( expectedSeriesSix, actualSeriesSix );
+
     }
-    
-    @Test
-    public void testGetRetrievalOfTimeSeriesByIdentifierReturnsTwoTimeSeries()
-    {
-        // Build the retriever
-        Retriever<TimeSeries<Double>> forecastRetriever =
-                new SingleValuedForecastRetriever.Builder().setProjectId( PROJECT_ID )
-                                                           .setVariableFeatureId( this.variableFeatureId )
-                                                           .setUnitMapper( this.unitMapper )
-                                                           .setLeftOrRightOrBaseline( LRB )
-                                                           .build();
 
-        // Get the time-series
-        LongStream identifiers = forecastRetriever.getAllIdentifiers();
-
-        // Actual number of time-series equals expected number
-        assertEquals( 2, forecastRetriever.get( identifiers ).count() );
-    }    
-    
     @After
     public void tearDown() throws SQLException
     {
@@ -353,7 +443,7 @@ public class SingleValuedForecastRetrieverTest
     }
 
     /**
-     * Performs the detailed set-up work to add two time-series to the database. Some assertions are made here, which
+     * Performs the detailed set-up work to add three time-series to the database. Some assertions are made here, which
      * could fail, in order to clarify the source of a failure.
      * 
      * @throws SQLException if the detailed set-up fails
@@ -439,14 +529,15 @@ public class SingleValuedForecastRetrieverTest
 
         assertNotNull( ensembleId );
 
-        // Add two forecasts
+        // Add two three analysis time-series
         // There is an abstraction to help with this, namely wres.io.data.details.TimeSeries, but the resulting 
         // prepared statement fails on wres.TimeSeriesSource, seemingly on the datatype of the timeseries_id column, 
-        // although H2 reported the expected type. See #56214-102        
+        // although H2 reported the expected type. See #56214-102
 
-        // Two reference times, PT17H apart
-        Instant firstReference = Instant.parse( T2023_04_01T00_00_00Z );
-        Instant secondReference = Instant.parse( T2023_04_01T17_00_00Z );
+        // Three reference times, PT3H apart
+        Instant firstReference = T2023_04_01T00_00_00Z;
+        Instant secondReference = T2023_04_01T03_00_00Z;
+        Instant thirdReference = T2023_04_01T06_00_00Z;
 
         TimeScale timeScale = TimeScale.of( Duration.ofMinutes( 1 ), TimeScaleFunction.UNKNOWN );
 
@@ -502,6 +593,26 @@ public class SingleValuedForecastRetrieverTest
 
         Integer secondSeriesId = seriesTwoScript.getInsertedIds().get( 0 ).intValue();
 
+
+        // Add the third series
+        DataScripter seriesThreeScript = new DataScripter( timeSeriesInsert );
+
+        int rowAddedThree = seriesThreeScript.execute( this.variableFeatureId,
+                                                       ensembleId,
+                                                       measurementUnitId,
+                                                       thirdReference.toString(),
+                                                       timeScale.getPeriod().toMinutesPart(),
+                                                       timeScale.getFunction().name(),
+                                                       sourceId );
+
+        // One row added
+        assertEquals( 1, rowAddedThree );
+
+        assertNotNull( seriesThreeScript.getInsertedIds() );
+        assertEquals( 1, seriesThreeScript.getInsertedIds().size() );
+
+        Integer thirdSeriesId = seriesThreeScript.getInsertedIds().get( 0 ).intValue();
+
         // Add the time-series values to wres.TimeSeriesValue       
         Duration seriesIncrement = Duration.ofHours( 1 );
         double valueStart = 23.0;
@@ -513,28 +624,29 @@ public class SingleValuedForecastRetrieverTest
                 "INSERT INTO wres.TimeSeriesValue (timeseries_id, lead, series_value) VALUES ({0},{1},{2})";
 
         // Insert the time-series values into the db
-        double forecastValue = valueStart;
+        double analysisValue = valueStart;
         Map<Integer, Instant> series = new TreeMap<>();
         series.put( firstSeriesId, firstReference );
         series.put( secondSeriesId, secondReference );
+        series.put( thirdSeriesId, thirdReference );
 
         // Iterate and add the series values
         for ( Map.Entry<Integer, Instant> nextSeries : series.entrySet() )
         {
             Instant validTime = nextSeries.getValue();
 
-            for ( long i = 0; i < 5; i++ )
+            for ( long i = 0; i < 6; i++ )
             {
                 // Increment the valid datetime and value
                 validTime = validTime.plus( seriesIncrement );
-                forecastValue = forecastValue + valueIncrement;
+                analysisValue = analysisValue + valueIncrement;
                 int lead = (int) seriesIncrement.multipliedBy( i + 1 ).toMinutes();
 
                 // Insert
                 String insert = MessageFormat.format( forecastInsert,
                                                       nextSeries.getKey(),
                                                       lead,
-                                                      forecastValue );
+                                                      analysisValue );
 
                 DataScripter forecastScript = new DataScripter( insert );
 

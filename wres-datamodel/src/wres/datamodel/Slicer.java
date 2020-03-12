@@ -720,6 +720,7 @@ public final class Slicer
                 second = Slicer.rounder().apply( second, digits );
             }
         }
+        
         return Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( first, second ),
                                               threshold.getProbabilities(),
                                               threshold.getCondition(),

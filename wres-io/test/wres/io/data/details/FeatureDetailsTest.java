@@ -78,7 +78,7 @@ public final class FeatureDetailsTest
         FeatureDetails.FeatureKey unequalOnHuc =
                 new FeatureDetails.FeatureKey( 123, "456", "789", "10111213", 23.7, 43.8 );
 
-        assertFalse( "Expected the FeatureKey to differ on gage id.", this.first.equals( unequalOnHuc ) );
+        assertFalse( "Expected the FeatureKey to differ on HUC.", this.first.equals( unequalOnHuc ) );
 
         FeatureDetails.FeatureKey unequalOnLon =
                 new FeatureDetails.FeatureKey( 123, "456", "789", S101112, 23.9, 43.8 );
@@ -88,7 +88,7 @@ public final class FeatureDetailsTest
         FeatureDetails.FeatureKey unequalOnLat =
                 new FeatureDetails.FeatureKey( 123, "456", "789", S101112, 23.7, 43.9 );
 
-        assertFalse( "Expected the FeatureKey to differ on longitude.", this.first.equals( unequalOnLat ) );
+        assertFalse( "Expected the FeatureKey to differ on latitude.", this.first.equals( unequalOnLat ) );
     }
 
     /**
