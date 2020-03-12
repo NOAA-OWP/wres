@@ -1,4 +1,4 @@
-FROM rabbitmq:3.8.2-management-alpine
+FROM rabbitmq:3.8.3-management-alpine
 
 # Wish we could do the following, but busybox does not support long gids:
 #RUN addgroup -g 1370800073 wres && adduser -D -u 498 -g 1370800073 wres_docker
@@ -15,6 +15,7 @@ RUN rabbitmq-plugins enable --offline rabbitmq_auth_mechanism_ssl
 
 WORKDIR /etc/rabbitmq
 COPY nonsrc/rabbitmq.config .
+COPY nonsrc/rabbitmq-prod.config .
 COPY nonsrc/rabbitmq-ti.config .
 COPY nonsrc/rabbitmq-dev.config .
 COPY nonsrc/definitions.json .
