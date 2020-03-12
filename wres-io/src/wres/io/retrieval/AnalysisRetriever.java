@@ -99,10 +99,19 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
             // time should be treated when that declaration is concerned with filtering or pooling by reference time.
             // TODO: be explicit about the connection between reference times/types and declaration options. 
             // For now, reference times are not used to filter here
+            Instant earliestValidTime = Instant.MIN;
+            Instant latestValidTime = Instant.MAX;
+
+            if ( Objects.nonNull( originalRanges ) )
+            {
+                earliestValidTime = originalRanges.getEarliestValidTime();
+                latestValidTime = originalRanges.getLatestValidTime();
+            }
+
             analysisRanges = TimeWindow.of( Instant.MIN,
                                             Instant.MAX,
-                                            originalRanges.getEarliestValidTime(),
-                                            originalRanges.getLatestValidTime(),
+                                            earliestValidTime,
+                                            latestValidTime,
                                             this.getEarliestAnalysisDuration(),
                                             this.getLatestAnalysisDuration() );
         }
@@ -229,9 +238,9 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
     @Override
     public Stream<TimeSeries<Double>> get()
     {
-        
+
         Stream<TimeSeries<Double>> timeSeries = this.individualAnalysisRetriever.get();
-        
+
         // All events required?
         if ( !this.addOneTimeSeriesForEachAnalysisDuration() )
         {
@@ -246,8 +255,8 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
                           this.getEarliestAnalysisDuration(),
                           this.getLatestAnalysisDuration() );
 
-           // No duplicate policy here, because we composed each time-series from common durations
-           return this.createOneTimeSeriesForEachAnalysisDuration( timeSeries );
+            // No duplicate policy here, because we composed each time-series from common durations
+            return this.createOneTimeSeriesForEachAnalysisDuration( timeSeries );
         }
     }
 
@@ -280,7 +289,7 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
                 if ( duration.compareTo( this.getEarliestAnalysisDuration() ) >= 0
                      && duration.compareTo( this.getLatestAnalysisDuration() ) <= 0 )
                 {
-                    toStream.add( TimeSeries.of( next.getReferenceTimes(),
+                    toStream.add( TimeSeries.of( next.getMetadata(),
                                                  new TreeSet<>( Collections.singleton( event ) ) ) );
                 }
             }
@@ -408,7 +417,7 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
 
         List<TimeSeries<Double>> toStream = new ArrayList<>();
         Comparator<Instant> nullsFriendly = Comparator.nullsFirst( Instant::compareTo );
-        
+
         for ( TimeSeries<Double> next : collection )
         {
             TimeSeries<Double> filtered =
@@ -418,22 +427,31 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
             // Add series with some events left and whose reference times fall within the reference time bounds
             // See: #74987-174. TODO: be explicit about the connection between reference times/types and declaration 
             // options. For now, reference times are not used to filter here
-            Instant isGreaterThan = this.getTimeWindow().getEarliestReferenceTime();
-            Instant isLessThanOrEqualTo = this.getTimeWindow().getLatestReferenceTime();
+            Instant isGreaterThan = null;
+            Instant isLessThanOrEqualTo = null;
+            if ( Objects.nonNull( this.getTimeWindow() ) )
+            {
+                isGreaterThan = this.getTimeWindow().getEarliestReferenceTime();
+                isLessThanOrEqualTo = this.getTimeWindow().getLatestReferenceTime();
+            }
+
             Instant referenceTime = filtered.getReferenceTimes().get( ReferenceTimeType.ANALYSIS_START_TIME );
 
-            if ( !filtered.getEvents().isEmpty() && nullsFriendly.compare( referenceTime, isGreaterThan ) > 0
-                 && nullsFriendly.compare( referenceTime, isLessThanOrEqualTo ) <= 0 )
+            // Some events left after filter and either no reference time bounds or reference times are within 
+            // bounds
+            if ( !filtered.getEvents().isEmpty() && Objects.isNull( this.getTimeWindow() )
+                 || ( nullsFriendly.compare( referenceTime, isGreaterThan ) > 0
+                      && nullsFriendly.compare( referenceTime, isLessThanOrEqualTo ) <= 0 ) )
             {
                 toStream.add( filtered );
-                
+
                 // Get the valid times to ignore in subsequent series
                 Set<Instant> nextValidTimes = next.getEvents()
                                                   .stream()
                                                   .map( Event::getTime )
                                                   .collect( Collectors.toSet() );
 
-                validTimesConsumed.addAll( nextValidTimes );                
+                validTimesConsumed.addAll( nextValidTimes );
             }
 
             if ( LOGGER.isTraceEnabled() && filtered.getEvents().size() != next.getEvents().size() )

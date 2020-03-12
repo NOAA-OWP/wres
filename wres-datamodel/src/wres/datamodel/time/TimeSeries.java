@@ -137,6 +137,15 @@ public class TimeSeries<T>
         return builder.build();
     }
 
+    /**
+     * Returns a {@link TimeSeries} with prescribed metadata.
+     * 
+     * @param <T> the event type
+     * @param timeSeriesMetadata the metadata
+     * @param events the events
+     * @return the time-series
+     */
+    
     public static <T> TimeSeries<T> of ( TimeSeriesMetadata timeSeriesMetadata,
                                          SortedSet<Event<T>> events )
     {
