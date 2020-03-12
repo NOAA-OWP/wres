@@ -39,6 +39,7 @@ import ucar.ma2.Array;
 
 import ucar.nc2.dataset.DatasetUrl;
 import ucar.nc2.dataset.NetcdfDataset;
+import ucar.nc2.dataset.NetcdfDatasets;
 import ucar.nc2.dt.GridDatatype;
 import ucar.nc2.dt.grid.GridDataset;
 
@@ -47,14 +48,6 @@ public class GriddedReader
     /**
      * Stands-up resources per JVM.
      */
-
-    static
-    {
-        NetcdfDataset.initNetcdfFileCache( SystemSettings.getMinimumCachedNetcdf(),
-                                           SystemSettings.getMaximumCachedNetcdf(),
-                                           SystemSettings.getHardNetcdfCacheLimit(),
-                                           SystemSettings.getNetcdfCachePeriod() );
-    }
 
     private static final Object READER_LOCK = new Object();
 
@@ -313,7 +306,7 @@ public class GriddedReader
             // This is underlying THREDDS code. It generally expects some semi-remote location for its data, but we're local, so we're using
             DatasetUrl url = new DatasetUrl( ServiceType.File, this.path );
 
-            try ( NetcdfDataset dataset = NetcdfDataset.acquireDataset( url, null );
+            try ( NetcdfDataset dataset = NetcdfDatasets.acquireDataset( url, null );
                   GridDataset gridDataset = new GridDataset( dataset ) )
             {
                 GridDatatype variable = gridDataset.findGridDatatype( variableName );
@@ -358,7 +351,7 @@ public class GriddedReader
             if ( this.issueTime == null && this.isForecast )
             {
                 DatasetUrl url = new DatasetUrl( ServiceType.File, this.path );
-                try ( NetcdfFile file = NetcdfDataset.acquireFile( url, null ) )
+                try ( NetcdfFile file = NetcdfDatasets.acquireFile( url, null ) )
                 {
                     this.issueTime = NetCDF.getReferenceTime( file );
                 }
