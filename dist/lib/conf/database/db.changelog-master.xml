@@ -58,6 +58,6 @@
     <include file="update_stock_features.xml" relativeToChangelogFile="true" />
     <include file="widen_feature_coordinates.xml" relativeToChangelogFile="true" />
     <include file="wres.project_v2.xml" relativeToChangelogFile="true" />
-    <include file="update_lsno2_and_hdga4.xml" relativeToChangelogFile="true" />
+    <include file="update_lsno2_and_hdga4_v2.xml" relativeToChangelogFile="true" />
     <include file="wres.TimeSeries_v5.xml" relativeToChangelogFile="true" />
 </databaseChangeLog>

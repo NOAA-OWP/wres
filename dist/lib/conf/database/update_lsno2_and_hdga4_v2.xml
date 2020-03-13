@@ -4,7 +4,7 @@
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.6.xsd"
     objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
-    <changeSet id="Remove data related to LSNO2 and HDGA4 locations from 1.20"
+    <changeSet id="Remove data related to LSNO2 and HDGA4 locations from 1.20 v2"
                author="Jesse Bickel">
         <preConditions onFail="MARK_RAN">
             <!-- Find tables used in the sql because tables can die. -->
@@ -25,12 +25,12 @@
             </sqlCheck>
         </preConditions>
         <comment>See issue #72786</comment>
-        <sqlFile path="20200102_Remove_LSNO2_and_HDGA4_data.sql"
+        <sqlFile path="20200313_Remove_LSNO2_and_HDGA4_data_from_1.20.sql"
                  splitStatements="false"
                  stripComments="true"
                  relativeToChangelogFile="true" />
     </changeSet>
-    <changeSet id="Remove data related to LSNO2 and HDGA4 after 1.20"
+    <changeSet id="Remove data related to LSNO2 and HDGA4 after 1.20 v2"
                author="Jesse Bickel">
         <preConditions onFail="MARK_RAN">
             <!-- Find tables used in the sql because tables can die. -->
@@ -53,7 +53,7 @@
             </sqlCheck>
         </preConditions>
         <comment>See issue #72786</comment>
-        <sqlFile path="20200103_Remove_LSNO2_and_HDGA4_data.sql"
+        <sqlFile path="20200313_Remove_LSNO2_and_HDGA4_data_after_1.20.sql"
                  splitStatements="false"
                  stripComments="true"
                  relativeToChangelogFile="true" />
