@@ -386,7 +386,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                      .toLowerCase()
                      .contains( "analysis" ) )
             {
-                referenceTimeType = ReferenceTimeType.UNKNOWN;
+                referenceTimeType = ReferenceTimeType.ANALYSIS_START_TIME;
 
                 if ( LOGGER.isDebugEnabled() )
                 {

@@ -53,7 +53,7 @@ public class TimeSeries<T>
 
 
     /**
-     * Returns an empty {@link TimeSeries}.
+     * Returns an empty {@link TimeSeries} with a <code>null</code> {@link TimeScale}.
      *
      * @param <T> the event type
      * @return an empty time-series
@@ -65,7 +65,7 @@ public class TimeSeries<T>
     }
     
     /**
-     * Returns a {@link TimeSeries} without any reference times. Assumes a time-scale of {@link TimeScale#of()}.
+     * Returns a {@link TimeSeries} without any reference times. Assumes a <code>null</code> {@link TimeScale}.
      *
      * @param <T> the event type
      * @param events the events
@@ -79,8 +79,8 @@ public class TimeSeries<T>
     }
 
     /**
-     * Returns a {@link TimeSeries} with a reference time type of {@link ReferenceTimeType#UNKNOWN}. Assumes a 
-     * time-scale of {@link TimeScale#of()}.
+     * Returns a {@link TimeSeries} with a reference time type of {@link ReferenceTimeType#UNKNOWN} and a 
+     * <code>null</code> {@link TimeScale}.
      * 
      * @param <T> the event type
      * @param referenceTime the reference time
@@ -96,7 +96,7 @@ public class TimeSeries<T>
     }
 
     /**
-     * Returns a {@link TimeSeries}. Assumes a time-scale of {@link TimeScale#of()}.
+     * Returns a {@link TimeSeries} with a <code>null</code> {@link TimeScale}.
      * 
      * @param <T> the event type
      * @param referenceTime the reference time
@@ -114,7 +114,7 @@ public class TimeSeries<T>
     }
 
     /**
-     * Returns a {@link TimeSeries}.  Assumes a time-scale of {@link TimeScale#of()}.
+     * Returns a {@link TimeSeries} with a <code>null</code> {@link TimeScale}.
      * 
      * @param <T> the event type
      * @param referenceTimes the reference times

@@ -79,10 +79,31 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
                                                                + "existing time scale is ''{1}''. "
                                                                + "Assuming that the latter is also a ''{2}''.";
 
-    private static final String EXISTING_TIME_SCALE_IS_MISSING = "When attempting to upscale to a desired time scale "
-                                                                 + "of ''{0}'', encountered an existing time-scale "
-                                                                 + "that was missing. Assuming that the existing time "
-                                                                 + "scale is the desired time scale.";
+    private static final String EXISTING_TIME_SCALE_IS_MISSING = "While attempting to upscale to a desired time scale "
+                                                                 + "of ''{0}'', encountered a time-series whose "
+                                                                 + "existing time-scale is undefined. This occurs when "
+                                                                 + "the data source fails to identify the existing time "
+                                                                 + "scale and the project declaration fails to clarify "
+                                                                 + "this information. Please include the existing time "
+                                                                 + "scale (existingTimeScale) in the project "
+                                                                 + "declaration, otherwise a change of scale is "
+                                                                 + "impossible.";
+
+    private static final String EXISTING_TIME_SCALE_IS_MISSING_DESIRED_INSTANTANEOUS = "Encountered a time-series "
+                                                                                       + "whose existing time "
+                                                                                       + "scale is undefined, but whose "
+                                                                                       + "desired time scale is "
+                                                                                       + "instantaneous. This occurs "
+                                                                                       + "when the data source fails to "
+                                                                                       + "identify the existing time "
+                                                                                       + "scale and the project "
+                                                                                       + "declaration fails to clarify "
+                                                                                       + "this information. Consider "
+                                                                                       + "including the existing time "
+                                                                                       + "scale (existingTimeScale) in "
+                                                                                       + "the project declaration. "
+                                                                                       + "Assuming that the existing "
+                                                                                       + "time scale is instantaneous.";
 
     private static final String BECAUSE_THE_VALUES_WERE_NOT_EVENLY_SPACED_WITHIN_THE_INTERVAL =
             "Skipped upscaling a collection of {} events in an interval ending at {} because the values were not evenly "
@@ -159,8 +180,8 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
 
             return RescaledTimeSeriesPlusValidation.of( timeSeries, validationEvents );
         }
-
-        // Existing time scale missing
+        
+        // Existing time scale missing and this was allowed during validation
         if ( !timeSeries.hasTimeScale() )
         {
             if ( LOGGER.isTraceEnabled() )
@@ -169,6 +190,21 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
                               + "time scale was missing. Assuming that the existing and desired scales are the same.'",
                               timeSeries.hashCode(),
                               desiredTimeScale );
+            }
+
+            return RescaledTimeSeriesPlusValidation.of( timeSeries, validationEvents );
+        }   
+        
+        // Existing and desired are both instantaneous
+        if ( timeSeries.getTimeScale().isInstantaneous() && desiredTimeScale.isInstantaneous() )
+        {
+            if ( LOGGER.isTraceEnabled() )
+            {
+                LOGGER.trace( "Skipped upscaling time-series {} to the desired time scale of {} because the existing "
+                              + "time scale is {} and both are recognized as instantaneous.",
+                              timeSeries.hashCode(),
+                              desiredTimeScale,
+                              timeSeries.getTimeScale() );
             }
 
             return RescaledTimeSeriesPlusValidation.of( timeSeries, validationEvents );
@@ -288,7 +324,7 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
         List<ScaleValidationEvent> events =
                 TimeSeriesOfDoubleBasicUpscaler.validateForUpscaling( timeSeries.getTimeScale(), desiredTimeScale );
 
-        // Exception?
+        // Errors to translate into exceptions?
         List<ScaleValidationEvent> errors = events.stream()
                                                   .filter( a -> a.getEventType() == EventType.ERROR )
                                                   .collect( Collectors.toList() );
@@ -297,12 +333,11 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
         if ( !errors.isEmpty() )
         {
             StringJoiner message = new StringJoiner( System.lineSeparator() );
-            message.add( "While attempting to upscale time-series '" + timeSeries.hashCode()
-                         + "' with reference times '"
-                         + timeSeries.getReferenceTimes()
-                         + "', encountered "
+            message.add( "Encountered "
                          + errors.size()
-                         + " errors as follows:" );
+                         + " errors while attempting to upscale time-series "
+                         + timeSeries
+                         + ": " );
 
             errors.stream().forEach( e -> message.add( spacer + spacer + e.toString() ) );
 
@@ -479,12 +514,18 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
                                                                     TimeScale desiredTimeScale )
     {
         // Existing time-scale is unknown
-        // This will happen repeatedly for some datasets so qualify with a neutral message
         if ( Objects.isNull( existingTimeScale ) )
         {
-            String message = MessageFormat.format( EXISTING_TIME_SCALE_IS_MISSING, desiredTimeScale );
+            // The desired time scale is not instantaneous, so upscaling may be required, but cannot be determined. 
+            // This is an exceptional outcome
+            if ( !desiredTimeScale.isInstantaneous() )
+            {
+                String message = MessageFormat.format( EXISTING_TIME_SCALE_IS_MISSING, desiredTimeScale );
 
-            return List.of( ScaleValidationEvent.info( message ) );
+                return List.of( ScaleValidationEvent.error( message ) );
+            }
+
+            return List.of( ScaleValidationEvent.info( EXISTING_TIME_SCALE_IS_MISSING_DESIRED_INSTANTANEOUS ) );
         }
 
         // The validation events encountered

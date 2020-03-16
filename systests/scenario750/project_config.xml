@@ -10,6 +10,12 @@
             <type>ensemble forecasts</type>
             <source interface="nwm_medium_range_ensemble_channel_rt_conus">data/nwmVector/</source>
             <variable>streamflow</variable>
+            <!-- #76062-38. Can remove when the service supports time scale information -->
+            <existingTimeScale>
+                <function>mean</function>
+                <period>1</period>
+                <unit>seconds</unit>
+            </existingTimeScale>
         </right>
     </inputs>
     <pair label="Pairs by location and lead time"> <!-- required for unit -->
