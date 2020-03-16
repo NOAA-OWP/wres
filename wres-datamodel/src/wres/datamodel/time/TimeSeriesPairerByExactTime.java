@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.datamodel.sampledata.pairs.PairingException;
+import wres.datamodel.scale.TimeScale;
 
 /**
  * <p>Implements pairing of two {@link TimeSeries} by matching times exactly. The times considered may be reference
@@ -207,7 +208,8 @@ public class TimeSeriesPairerByExactTime<L, R> implements TimeSeriesPairer<L, R>
 
     private void validateTimeScalesForPairing( TimeSeries<L> left, TimeSeries<R> right )
     {
-        if ( left.hasTimeScale() && right.hasTimeScale() && !left.getTimeScale().equals( right.getTimeScale() ) )
+        if ( left.hasTimeScale() && right.hasTimeScale()
+             && !this.timeScalesAreEqual( left.getTimeScale(), right.getTimeScale() ) )
         {
             throw new PairingException( "Cannot pair two datasets with different time scales. The left time-series "
                                         + "has a time-scale of '"
@@ -250,6 +252,27 @@ public class TimeSeriesPairerByExactTime<L, R> implements TimeSeriesPairer<L, R>
         }
     }
 
+    /**
+     * Returns <code>true</code> if the inputs are equal, otherwise <code>false</code>.
+     * 
+     * @param left the left time scale
+     * @param right the right time scale 
+     * @return true if the time scales are equal, otherwise false
+     */
+    
+    private boolean timeScalesAreEqual( TimeScale left, TimeScale right )
+    {
+        Objects.requireNonNull( left );
+        Objects.requireNonNull( right );
+        
+        if( left.isInstantaneous() && right.isInstantaneous() )
+        {
+            return true;
+        }
+        
+        return left.equals( right );
+    }
+    
     /**
      * Returns:
      * 

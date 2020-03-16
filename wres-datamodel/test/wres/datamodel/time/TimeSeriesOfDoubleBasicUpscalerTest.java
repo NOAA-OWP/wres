@@ -295,7 +295,7 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
         Instant seventeenth = Instant.parse( "2017-01-08T12:00:00Z" );
         Instant eighteenth = Instant.parse( "2017-01-08T18:00:00Z" );
 
-        // Eleven events
+        // eighteen events
         Event<Double> one = Event.of( first, 6.575788 );
         Event<Double> two = Event.of( second, 6.999999 );
         Event<Double> three = Event.of( third, 6.969816 );
@@ -356,6 +356,123 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
                                                                                           four.getValue() ) )
                                                                      .addReferenceTime( referenceTime,
                                                                                         ReferenceTimeType.UNKNOWN )
+                                                                     .setTimeScale( desiredTimeScale )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    public void testUpscaleTimeSeriesToPT24H()
+    {
+        // Sixteen event times, PT3H apart
+        Instant first = Instant.parse( "2020-01-14T15:00:00Z" );
+        Instant second = Instant.parse( "2020-01-14T18:00:00Z" );
+        Instant third = Instant.parse( "2020-01-14T21:00:00Z" );
+        Instant fourth = Instant.parse( "2020-01-15T00:00:00Z" );
+        Instant fifth = Instant.parse( "2020-01-15T03:00:00Z" );
+        Instant sixth = Instant.parse( "2020-01-15T06:00:00Z" );
+        Instant seventh = Instant.parse( "2020-01-15T09:00:00Z" );
+        Instant eighth = Instant.parse( "2020-01-15T12:00:00Z" );
+        Instant ninth = Instant.parse( "2020-01-15T15:00:00Z" );
+        Instant tenth = Instant.parse( "2020-01-15T18:00:00Z" );
+        Instant eleventh = Instant.parse( "2020-01-15T21:00:00Z" );
+        Instant twelfth = Instant.parse( "2020-01-16T00:00:00Z" );
+        Instant thirteenth = Instant.parse( "2020-01-16T03:00:00Z" );
+        Instant fourteenth = Instant.parse( "2020-01-16T06:00:00Z" );
+        Instant fifteenth = Instant.parse( "2020-01-16T09:00:00Z" );
+        Instant sixteenth = Instant.parse( "2020-01-16T12:00:00Z" );
+
+        // Sixteen events
+        Event<Double> one = Event.of( first, 51.409998850896955 );
+        Event<Double> two = Event.of( second, 50.95999886095524 );
+        Event<Double> three = Event.of( third, 50.679998867213726 );
+        Event<Double> four = Event.of( fourth, 50.789998864755034 );
+        Event<Double> five = Event.of( fifth, 51.08999885804951 );
+        Event<Double> six = Event.of( sixth, 51.47999884933233 );
+        Event<Double> seven = Event.of( seventh, 51.96999883837998 );
+        Event<Double> eight = Event.of( eighth, 52.569998824968934 );
+        Event<Double> nine = Event.of( ninth, 53.229998810216784 );
+        Event<Double> ten = Event.of( tenth, 53.83999879658222 );
+        Event<Double> eleven = Event.of( eleventh, 54.25999878719449 );
+        Event<Double> twelve = Event.of( twelfth, 54.44999878294766 );
+        Event<Double> thirteen = Event.of( thirteenth, 54.49999878183007 );
+        Event<Double> fourteen = Event.of( fourteenth, 54.509998781606555 );
+        Event<Double> fifteen = Event.of( fifteenth, 54.5999987795949 );
+        Event<Double> sixteen = Event.of( sixteenth, 54.829998774454 );
+
+        // Time scale of the event values: instantaneous
+        TimeScale existingScale = TimeScale.of();
+
+        // Forecast reference time
+        Instant referenceTime = Instant.parse( "2020-01-14T12:00:00Z" );
+
+        // Time-series to upscale
+        TimeSeries<Double> forecast = new TimeSeriesBuilder<Double>().addEvent( one )
+                                                                     .addEvent( two )
+                                                                     .addEvent( three )
+                                                                     .addEvent( four )
+                                                                     .addEvent( five )
+                                                                     .addEvent( six )
+                                                                     .addEvent( seven )
+                                                                     .addEvent( eight )
+                                                                     .addEvent( nine )
+                                                                     .addEvent( ten )
+                                                                     .addEvent( eleven )
+                                                                     .addEvent( twelve )
+                                                                     .addEvent( thirteen )
+                                                                     .addEvent( fourteen )
+                                                                     .addEvent( fifteen )
+                                                                     .addEvent( sixteen )
+                                                                     .addReferenceTime( referenceTime,
+                                                                                        ReferenceTimeType.T0 )
+                                                                     .setTimeScale( existingScale )
+                                                                     .build();
+
+        TimeScale desiredTimeScale = TimeScale.of( Duration.ofHours( 24 ), TimeScaleFunction.MEAN );
+
+        SortedSet<Instant> endsAt = new TreeSet<>( Set.of( first,
+                                                           second,
+                                                           third,
+                                                           fourth,
+                                                           fifth,
+                                                           sixth,
+                                                           seventh,
+                                                           eighth,
+                                                           ninth,
+                                                           tenth,
+                                                           eleventh,
+                                                           twelfth,
+                                                           thirteenth,
+                                                           fourteenth,
+                                                           fifteenth,
+                                                           sixteenth ) );
+
+        TimeSeries<Double> actual = this.upscaler.upscale( forecast, desiredTimeScale, endsAt )
+                                                 .getTimeSeries();
+
+
+        TimeSeries<Double> expected = new TimeSeriesBuilder<Double>()
+                                                                     .addEvent( Event.of( eighth,
+                                                                                          51.368748851818964 ) )
+                                                                     .addEvent( Event.of( ninth,
+                                                                                          51.59624884673394 ) )
+                                                                     .addEvent( Event.of( tenth,
+                                                                                          51.956248838687316 ) )
+                                                                     .addEvent( Event.of( eleventh,
+                                                                                          52.40374882868491 ) )
+                                                                     .addEvent( Event.of( twelfth,
+                                                                                          52.86124881845899 ) )
+                                                                     .addEvent( Event.of( thirteenth,
+                                                                                          53.28749880893156 ) )
+                                                                     .addEvent( Event.of( fourteenth,
+                                                                                          53.66624880046584 ) )
+                                                                     .addEvent( Event.of( fifteenth,
+                                                                                          53.9949987931177 ) )
+                                                                     .addEvent( Event.of( sixteenth,
+                                                                                          54.277498786803335 ) )
+                                                                     .addReferenceTime( referenceTime,
+                                                                                        ReferenceTimeType.T0 )
                                                                      .setTimeScale( desiredTimeScale )
                                                                      .build();
 

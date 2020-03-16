@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.ProjectConfig;
-import wres.io.config.ConfigHelper;
 import wres.io.reading.BasicSource;
 import wres.io.reading.DataSource;
 import wres.io.reading.IngestException;

@@ -961,6 +961,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         {
             baselineData.forEach( next -> existingTimeScales.add( next.getTimeScale() ) );
         }
+        
         // Remove any null element from the existing scales
         existingTimeScales.remove( null );
 
@@ -979,7 +980,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         }
 
         // Look for the LCS among the declared inputs
-        if ( Objects.nonNull( inputs ) )
+        if ( Objects.nonNull( this.inputs ) )
         {
             Set<TimeScale> declaredExistingTimeScales = new HashSet<>();
             TimeScaleConfig leftScaleConfig = inputDeclaration.getLeft().getExistingTimeScale();
@@ -1215,8 +1216,8 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
             if ( Objects.isNull( frequency ) )
             {
                 jump = period;
-            }
-
+            }         
+            
             TimeSeriesBuilder<Pair<L, R>> filteredSeries = new TimeSeriesBuilder<>();
             filteredSeries.addReferenceTimes( toFilter.getReferenceTimes() )
                           .setTimeScale( toFilter.getTimeScale() );
@@ -1403,7 +1404,8 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
                               + "time type of {}.",
                               toSnip.hashCode(),
                               snipTo.getEarliestLeadDuration(),
-                              snipTo.getLatestLeadDuration() );
+                              snipTo.getLatestLeadDuration(),
+                              ReferenceTimeType.T0 );
 
                 returnMe = TimeSeriesSlicer.filter( returnMe,
                                                     snipTo,
