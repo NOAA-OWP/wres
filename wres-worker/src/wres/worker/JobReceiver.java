@@ -2,6 +2,7 @@ package wres.worker;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileAttribute;
@@ -37,6 +38,7 @@ import static wres.messages.generated.Job.job.Verb;
 class JobReceiver extends DefaultConsumer
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( JobReceiver.class );
+    private static final int MAX_COMMAND_ARG_LENGTH = 131072;
 
     private final File wresExecutable;
     private final BlockingQueue<WresProcess> processToLaunch;
@@ -172,6 +174,34 @@ class JobReceiver extends DefaultConsumer
                 LOGGER.warn( "No project config specified in message with {} verb.",
                              command );
                 return null;
+            }
+        }
+        else if ( projectConfig.length() / 4 >= MAX_COMMAND_ARG_LENGTH )
+        {
+            LOGGER.warn( "Found long project declaration, using a temp file." );
+            Set<PosixFilePermission> permissions = new HashSet<>( 6 );
+            permissions.add( PosixFilePermission.OWNER_READ );
+            permissions.add( PosixFilePermission.OWNER_WRITE );
+            permissions.add( PosixFilePermission.OWNER_EXECUTE );
+            permissions.add( PosixFilePermission.GROUP_READ );
+            permissions.add( PosixFilePermission.GROUP_WRITE );
+            permissions.add( PosixFilePermission.GROUP_EXECUTE );
+            FileAttribute<Set<PosixFilePermission>> fileAttribute =
+                    PosixFilePermissions.asFileAttribute( permissions );
+
+            try
+            {
+                Path tempProject =
+                        Files.createTempFile( "wres_project_declaration_",
+                                              ".xml",
+                                              fileAttribute );
+                Files.writeString( tempProject, projectConfig );
+                result.add( tempProject.toString() );
+            }
+            catch ( IOException ioe )
+            {
+                throw new IllegalStateException( "Unable to write temp file",
+                                                 ioe );
             }
         }
         else
