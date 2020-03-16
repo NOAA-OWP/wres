@@ -194,7 +194,8 @@ class JobReceiver extends DefaultConsumer
             try
             {
                 Path tempProject =
-                        Files.createTempFile( "wres_project_declaration_",
+                        Files.createTempFile( outputDirectory,
+                                              "wres_project_declaration_",
                                               ".xml",
                                               fileAttribute );
                 Files.writeString( tempProject, projectConfig );
