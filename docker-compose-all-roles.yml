@@ -38,7 +38,7 @@ services:
         cap_drop:
          - ALL
     worker:
-        image: "${DOCKER_REGISTRY}/wres/wres-worker:20200316-4a37ae7"
+        image: "${DOCKER_REGISTRY}/wres/wres-worker:20200316-43f027a"
         restart: always
         depends_on:
          - "broker"
