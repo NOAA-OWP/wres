@@ -176,8 +176,10 @@ class JobReceiver extends DefaultConsumer
                 return null;
             }
         }
-        else if ( projectConfig.length() / 4 >= MAX_COMMAND_ARG_LENGTH )
+        else if ( projectConfig.length() * 4 >= MAX_COMMAND_ARG_LENGTH )
         {
+            // A single character can take anywhere from 1 to 4 bytes depending
+            // on use of a common encoding (ASCII 1, UTF-16 2, UTF-8 1-4).
             LOGGER.warn( "Found long project declaration, using a temp file." );
             Set<PosixFilePermission> permissions = new HashSet<>( 6 );
             permissions.add( PosixFilePermission.OWNER_READ );
