@@ -104,18 +104,29 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
                                                                                        + "the project declaration. "
                                                                                        + "Assuming that the existing "
                                                                                        + "time scale is instantaneous.";
+    
+    private static final String THESE_INTERVALS_BEFORE_STOPPING = "these intervals before stopping: ";
 
-    private static final String BECAUSE_THE_VALUES_WERE_NOT_EVENLY_SPACED_WITHIN_THE_INTERVAL =
-            "Skipped upscaling a collection of {} events in an interval ending at {} because the values were not evenly "
-                                                                                                + "spaced within the "
-                                                                                                + "interval. Identified "
-                                                                                                + "these intervals "
-                                                                                                + "before stopping: "
-                                                                                                + "{}.";
+    private static final String DISCOVERED_THAT_THE_VALUES_WERE_NOT_EVENLY_SPACED_WITHIN_THE_PERIOD_IDENTIFIED =
+            ", discovered that the values were not evenly spaced within the period. Identified ";
 
-    private static final String BECAUSE_THERE_WERE_FEWER_THAN_TWO_EVENTS_TO_UPSCALE =
-            "Skipped upscaling a collection of {} events in an interval ending at {} because there were fewer than two "
-                                                                                      + "events to upscale.";
+    private static final String UPSCALING = "upscaling.";
+
+    private static final String DISCOVERED_FEWER_THAN_TWO_EVENTS_IN_THE_COLLECTION_WHICH_IS_INSUFFICIENT_FOR =
+            ", discovered fewer than two events in the collection, which is insufficient for ";
+
+    private static final String ENDING_AT = " ending at ";
+
+    private static final String EVENTS_TO_A_PERIOD_OF = " events to a period of ";
+
+    private static final String WHILE_ATTEMPING_TO_UPSCALE_A_COLLECTION_OF =
+            "While attemping to upscale a collection of ";    
+
+    private static final String THREE_MEMBER_MESSAGE = "{}{}{}";
+
+    private static final String FIVE_MEMBER_MESSAGE = "{}{}{}{}{}";
+
+    private static final String SEVEN_MEMBER_MESSAGE = "{}{}{}{}{}";
 
     /**
      * Lenient on values that match the {@link MissingValues.DOUBLE}? TODO: expose this to declaration.
@@ -172,40 +183,40 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
         // Empty time-series
         if ( timeSeries.getEvents().isEmpty() )
         {
-            if ( LOGGER.isTraceEnabled() )
-            {
-                LOGGER.trace( "No upscaling required for time-series {}: the time-series contained no events.'",
-                              timeSeries.hashCode() );
-            }
+            LOGGER.trace( THREE_MEMBER_MESSAGE,
+                          "No upscaling required for time-series ",
+                          timeSeries.hashCode(),
+                          ": the time-series contained no events." );
 
             return RescaledTimeSeriesPlusValidation.of( timeSeries, validationEvents );
         }
-        
+
         // Existing time scale missing and this was allowed during validation
         if ( !timeSeries.hasTimeScale() )
         {
-            if ( LOGGER.isTraceEnabled() )
-            {
-                LOGGER.trace( "Skipped upscaling time-series {} to the desired time scale of {} because the existing "
-                              + "time scale was missing. Assuming that the existing and desired scales are the same.'",
-                              timeSeries.hashCode(),
-                              desiredTimeScale );
-            }
+            LOGGER.trace( FIVE_MEMBER_MESSAGE,
+                          "Skipped upscaling time-series ",
+                          timeSeries.hashCode(),
+                          " to the desired time scale of ",
+                          desiredTimeScale,
+                          " because the existing time scale was missing. Assuming that the existing and desired scales "
+                                            + "are the same." );
+
 
             return RescaledTimeSeriesPlusValidation.of( timeSeries, validationEvents );
-        }   
-        
+        }
+
         // Existing and desired are both instantaneous
         if ( timeSeries.getTimeScale().isInstantaneous() && desiredTimeScale.isInstantaneous() )
         {
-            if ( LOGGER.isTraceEnabled() )
-            {
-                LOGGER.trace( "Skipped upscaling time-series {} to the desired time scale of {} because the existing "
-                              + "time scale is {} and both are recognized as instantaneous.",
-                              timeSeries.hashCode(),
-                              desiredTimeScale,
-                              timeSeries.getTimeScale() );
-            }
+            LOGGER.trace( SEVEN_MEMBER_MESSAGE,
+                          "Skipped upscaling time-series ",
+                          timeSeries.hashCode(),
+                          " to the desired time scale of ",
+                          desiredTimeScale,
+                          " because the existing time scale is ",
+                          timeSeries.getTimeScale(),
+                          " and both are recognized as instantaneous." );
 
             return RescaledTimeSeriesPlusValidation.of( timeSeries, validationEvents );
         }
@@ -214,14 +225,14 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
         // The validation of the function happens above. For example, the existing could be UNKNOWN
         if ( desiredTimeScale.getPeriod().equals( timeSeries.getTimeScale().getPeriod() ) )
         {
-            if ( LOGGER.isTraceEnabled() )
-            {
-                LOGGER.trace( "No upscaling required for time-series {}: the existing time scale of {} effectively "
-                              + "matches the desired time scale of {}.'",
-                              timeSeries.hashCode(),
-                              timeSeries.getTimeScale(),
-                              desiredTimeScale );
-            }
+            LOGGER.trace( SEVEN_MEMBER_MESSAGE,
+                          "No upscaling required for time-series ",
+                          timeSeries.hashCode(),
+                          ": the existing time scale of ",
+                          timeSeries.getTimeScale(),
+                          " effectively matches the desired time scale of ",
+                          desiredTimeScale,
+                          "." );
 
             // Create new series in case the function differs
             TimeSeries<Double> returnMe = new TimeSeriesBuilder<Double>().addEvents( timeSeries.getEvents() )
@@ -254,10 +265,20 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
 
         ToDoubleFunction<SortedSet<Event<Double>>> upscaler = this.getUpscaler( desiredFunction );
 
+        // Create a mutable copy of the validation events to add more, as needed
+        List<ScaleValidationEvent> mutableValidationEvents = new ArrayList<>( validationEvents );
+        validationEvents = mutableValidationEvents;
+
         // Upscale each group
         for ( Map.Entry<Instant, SortedSet<Event<Double>>> nextGroup : groups.entrySet() )
         {
-            if ( this.canUpscale( nextGroup.getValue(), nextGroup.getKey(), period ) )
+            List<ScaleValidationEvent> validation = this.checkThatUpscalingIsPossible( nextGroup.getValue(),
+                                                                                       nextGroup.getKey(),
+                                                                                       period );
+            validationEvents.addAll( validation );
+
+            // No validation events, upscaling can proceed
+            if ( validation.isEmpty() )
             {
                 Event<Double> upscaled = Event.of( nextGroup.getKey(), upscaler.applyAsDouble( nextGroup.getValue() ) );
 
@@ -268,7 +289,7 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
         // Set the upscaled scale
         builder.setTimeScale( desiredTimeScale );
 
-        return RescaledTimeSeriesPlusValidation.of( builder.build(), validationEvents );
+        return RescaledTimeSeriesPlusValidation.of( builder.build(), Collections.unmodifiableList( validationEvents ) );
     }
 
     /**
@@ -348,17 +369,19 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
     }
 
     /**
-     * Returns <code>true</code> if the times of the events are equally spaced, otherwise <code>false</code>. 
-     * Additionally, logs groups that are not eligible for upscaling.
+     * Returns an empty list of {@link ScaleValidationEvent} if the inputs can produce an upscaled value, otherwise
+     * one or more {@link ScaleValidationEvent} that explain why this is not possible.
      * 
      * @param events the events
      * @param endsAt the end of the interval to aggregate, which is used for logging
      * @param the period over which to upscale
-     * @return true if the events can be upscaled, otherwise false
+     * @return a list of scale validation events, empty if upscaling is possible
      * @throws NullPointerException if any input is null
      */
 
-    private boolean canUpscale( SortedSet<Event<Double>> events, Instant endsAt, Duration period )
+    private List<ScaleValidationEvent> checkThatUpscalingIsPossible( SortedSet<Event<Double>> events,
+                                                                     Instant endsAt,
+                                                                     Duration period )
     {
         Objects.requireNonNull( events );
         Objects.requireNonNull( endsAt );
@@ -366,11 +389,15 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
 
         if ( events.size() < 2 )
         {
-            this.logSkippedGroup( BECAUSE_THERE_WERE_FEWER_THAN_TWO_EVENTS_TO_UPSCALE,
-                                  events,
-                                  endsAt );
+            String message = WHILE_ATTEMPING_TO_UPSCALE_A_COLLECTION_OF + events.size()
+                             + EVENTS_TO_A_PERIOD_OF
+                             + period
+                             + ENDING_AT
+                             + endsAt
+                             + DISCOVERED_FEWER_THAN_TWO_EVENTS_IN_THE_COLLECTION_WHICH_IS_INSUFFICIENT_FOR
+                             + UPSCALING;
 
-            return false;
+            return List.of( ScaleValidationEvent.debug( message ) );
         }
 
         // Unpack the event times
@@ -386,6 +413,15 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
         // Check for even spacing if there are two or more gaps
         if ( times.size() > 2 )
         {
+
+            String message = WHILE_ATTEMPING_TO_UPSCALE_A_COLLECTION_OF + events.size()
+                             + EVENTS_TO_A_PERIOD_OF
+                             + period
+                             + ENDING_AT
+                             + endsAt
+                             + DISCOVERED_THAT_THE_VALUES_WERE_NOT_EVENLY_SPACED_WITHIN_THE_PERIOD_IDENTIFIED
+                             + THESE_INTERVALS_BEFORE_STOPPING;
+
             Instant last = null;
             Duration lastPeriod = null;
 
@@ -397,12 +433,8 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
 
                     if ( !Objects.equals( lastPeriod, nextPeriod ) )
                     {
-                        this.logSkippedGroup( BECAUSE_THE_VALUES_WERE_NOT_EVENLY_SPACED_WITHIN_THE_INTERVAL,
-                                              events,
-                                              endsAt,
-                                              Set.of( lastPeriod, nextPeriod ) );
 
-                        return false;
+                        return List.of( ScaleValidationEvent.debug( message + Set.of( lastPeriod, nextPeriod ) ) );
                     }
                 }
 
@@ -415,7 +447,7 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
             }
         }
 
-        return true;
+        return List.of();
     }
 
     /**
@@ -477,25 +509,6 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
 
             return RETURN_DOUBLE_OR_MISSING.applyAsDouble( upscaled );
         };
-    }
-
-    /**
-     * Logs a skipped group of events at an appropriate logging level.
-     * 
-     * @param messageString the message string
-     * @param events the events
-     * @param endsAt the end of the interval to aggregate, which is used for logging
-     * @param other other parameterized objects to log
-     */
-    private void logSkippedGroup( String messageString,
-                                  SortedSet<Event<Double>> events,
-                                  Instant endsAt,
-                                  Object... other )
-    {
-        if ( LOGGER.isTraceEnabled() )
-        {
-            LOGGER.trace( messageString, events.size(), endsAt, other );
-        }
     }
 
     /**
