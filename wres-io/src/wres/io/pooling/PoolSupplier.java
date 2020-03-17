@@ -961,7 +961,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         {
             baselineData.forEach( next -> existingTimeScales.add( next.getTimeScale() ) );
         }
-        
+
         // Remove any null element from the existing scales
         existingTimeScales.remove( null );
 
@@ -1216,8 +1216,8 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
             if ( Objects.isNull( frequency ) )
             {
                 jump = period;
-            }         
-            
+            }
+
             TimeSeriesBuilder<Pair<L, R>> filteredSeries = new TimeSeriesBuilder<>();
             filteredSeries.addReferenceTimes( toFilter.getReferenceTimes() )
                           .setTimeScale( toFilter.getTimeScale() );
@@ -1294,7 +1294,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
     {
         Objects.requireNonNull( scaleValidationEvents );
 
-        // Any warnings? Log those individually.              
+        // Any warnings? Push to log for now, but see #61930 (logging isn't for users)
         if ( LOGGER.isWarnEnabled() )
         {
             Set<ScaleValidationEvent> warnEvents = scaleValidationEvents.stream()
@@ -1306,28 +1306,36 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
                 String spacer = "    ";
                 warnEvents.stream().forEach( e -> message.add( spacer + e.toString() ) );
 
-                if ( context.getReferenceTimes().isEmpty() )
-                {
-                    LOGGER.warn( "While rescaling time-series {}, encountered {} validation "
-                                 + "warnings, as follows: {}{}",
-                                 context.hashCode(),
-                                 warnEvents.size(),
-                                 System.lineSeparator(),
-                                 message );
-                }
-                else
-                {
-                    LOGGER.warn( "While rescaling time-series {} with reference times {}, encountered {} validation "
-                                 + "warnings, as follows: {}{}",
-                                 context.hashCode(),
-                                 context.getReferenceTimes(),
-                                 warnEvents.size(),
-                                 System.lineSeparator(),
-                                 message );
-                }
-
+                LOGGER.warn( "While rescaling time-series with metadata {}, encountered {} validation "
+                             + "warnings, as follows: {}{}",
+                             context.getMetadata(),
+                             warnEvents.size(),
+                             System.lineSeparator(),
+                             message );
             }
         }
+
+        // Any user-facing debug-level events? Push to log for now, but see #61930 (logging isn't for users)
+        if ( LOGGER.isDebugEnabled() )
+        {
+            Set<ScaleValidationEvent> debugWarnEvents = scaleValidationEvents.stream()
+                                                                             .filter( a -> a.getEventType() == EventType.DEBUG )
+                                                                             .collect( Collectors.toSet() );
+            if ( !debugWarnEvents.isEmpty() )
+            {
+                StringJoiner message = new StringJoiner( System.lineSeparator() );
+                String spacer = "    ";
+                debugWarnEvents.stream().forEach( e -> message.add( spacer + e.toString() ) );
+
+                LOGGER.debug( "While rescaling time-series with metadata {}, encountered {} detailed validation "
+                              + "warnings, as follows: {}{}",
+                              context.getMetadata(),
+                              debugWarnEvents.size(),
+                              System.lineSeparator(),
+                              message );
+            }
+        }
+
     }
 
     /**
@@ -1388,12 +1396,12 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
                                                     snipTo.getLatestReferenceTime(),
                                                     snipTo.getEarliestValidTime(),
                                                     snipTo.getLatestValidTime() );
-            
+
             LOGGER.debug( "Snipping paired time-series {} to the pool boundaries of {}.",
                           toSnip.hashCode(),
                           partialSnip );
 
-            returnMe = TimeSeriesSlicer.filter( returnMe, partialSnip );            
+            returnMe = TimeSeriesSlicer.filter( returnMe, partialSnip );
 
 
             // For all other reference time types, filter the datetimes only

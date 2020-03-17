@@ -31,7 +31,12 @@ public class ScaleValidationEvent implements Comparable<ScaleValidationEvent>
          * An event that represents a warning.
          */
         WARN,
-
+        
+        /**
+         * An event that represents a debug level of information, but still user facing.
+         */
+        DEBUG,
+        
         /**
          * An event that represents an error.
          */
@@ -126,6 +131,19 @@ public class ScaleValidationEvent implements Comparable<ScaleValidationEvent>
         return new ScaleValidationEvent( EventType.INFO, message );
     }    
 
+    /**
+     * Construct a validation event of type {@link EventType#DEBUG}.
+     * 
+     * @param message the message
+     * @throws NullPointerException if the message is null
+     * @return a validation event
+     */
+    
+    public static ScaleValidationEvent debug( String message )
+    {
+        return new ScaleValidationEvent( EventType.DEBUG, message );
+    } 
+    
     /**
      * Returns the event type.
      * 
