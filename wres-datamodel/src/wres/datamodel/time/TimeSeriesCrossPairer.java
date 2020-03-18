@@ -57,7 +57,7 @@ public class TimeSeriesCrossPairer<L, R>
         int mainRemoved = 0;
         int baselineRemoved = 0;
 
-        LOGGER.debug( "Finished cross-pairing the right and baseline inputs, which removed {} pairs from the right "
+        LOGGER.info( "Finished cross-pairing the right and baseline inputs, which removed {} pairs from the right "
                       + "inputs and {} pairs from the baseline inputs.",
                       mainRemoved,
                       baselineRemoved );

@@ -3489,6 +3489,7 @@ public class WRDSSourceTest
                                                 null,
                                                 null,
                                                 null,
+                                                null,
                                                 null );
 
         ProjectConfig projectConfig = new ProjectConfig( inputs,
@@ -3613,6 +3614,7 @@ public class WRDSSourceTest
         features.add( featureConfig );
         PairConfig pairConfig = new PairConfig( "CMS",
                                                 features,
+                                                null,
                                                 null,
                                                 null,
                                                 null,
@@ -3751,6 +3753,7 @@ public class WRDSSourceTest
                                                 null,
                                                 null,
                                                 null,
+                                                null,
                                                 null );
 
         ProjectConfig projectConfig = new ProjectConfig( inputs,
@@ -3854,6 +3857,7 @@ public class WRDSSourceTest
         features.add( featureConfig );
         PairConfig pairConfig = new PairConfig( "CMS",
                                                 features,
+                                                null,
                                                 null,
                                                 null,
                                                 null,

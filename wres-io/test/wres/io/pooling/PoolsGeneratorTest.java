@@ -75,6 +75,7 @@ public class PoolsGeneratorTest
                                                  issuedDatesPoolingWindowConfig,
                                                  leadTimesPoolingWindowConfig,
                                                  null,
+                                                 null,
                                                  null );
         List<DataSourceConfig.Source> sourceList = new ArrayList<>();
 
@@ -166,6 +167,7 @@ public class PoolsGeneratorTest
                                                  null,
                                                  issuedDatesPoolingWindowConfig,
                                                  leadTimesPoolingWindowConfig,
+                                                 null,
                                                  null,
                                                  null );
         List<DataSourceConfig.Source> sourceList = new ArrayList<>();
