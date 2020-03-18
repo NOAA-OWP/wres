@@ -198,7 +198,8 @@ public class Project
         }
 
         LOGGER.info( "Discovered {} features with data on both the left and right sides (statistics should "
-                     + "be expected for this many features at most).", intersectingFeatures.size() );
+                     + "be expected for this many features at most).",
+                     intersectingFeatures.size() );
 
         return Collections.unmodifiableSet( intersectingFeatures );
     }
@@ -487,8 +488,8 @@ public class Project
         }
 
         return returnMe;
-    }    
-    
+    }
+
     /**
      * Returns a duration from an integer amount and a string unit, else <code>null</null>.
      * 
@@ -509,7 +510,7 @@ public class Project
 
         return returnMe;
     }
-    
+
     /**
      * @return The earliest possible day in a season. NULL unless specified in
      * the configuration
@@ -604,6 +605,19 @@ public class Project
         }
 
         return usesGriddedData;
+    }
+
+    /**
+     * Returns <code>true</code> if the project declaration asks for common pairs (by time) from the <code>right</code>
+     * and <code>baseline</code> sources, otherwise <code>false</code>.
+     * 
+     * @return true if cross-pairing is required, otherwise false
+     */
+
+    public boolean shouldCrossPair()
+    {
+        // No op until declaration option is available
+        return false;
     }
 
     /**
