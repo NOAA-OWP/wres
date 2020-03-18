@@ -31,6 +31,7 @@ import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesCrossPairer;
 import wres.datamodel.time.TimeSeriesOfDoubleBasicUpscaler;
 import wres.datamodel.time.TimeSeriesOfEnsembleUpscaler;
 import wres.datamodel.time.TimeSeriesPairer;
@@ -130,6 +131,13 @@ public class PoolFactory
         TimeSeriesPairer<Double, Double> pairer = TimeSeriesPairerByExactTime.of( Double::isFinite,
                                                                                   Double::isFinite,
                                                                                   timePairingType );
+        
+        // Create a cross pairer, in case this is required by the declaration
+        TimeSeriesCrossPairer<Double,Double> crossPairer = null;
+        if( project.shouldCrossPair() )
+        {
+            crossPairer = TimeSeriesCrossPairer.of();
+        }
 
         // Create a default upscaler
         TimeSeriesUpscaler<Double> upscaler = TimeSeriesOfDoubleBasicUpscaler.of();
@@ -190,6 +198,7 @@ public class PoolFactory
                                                            .setLeftUpscaler( upscaler )
                                                            .setRightUpscaler( upscaler )
                                                            .setPairer( pairer )
+                                                           .setCrossPairer( crossPairer )
                                                            .setClimateMapper( Double::doubleValue )
                                                            .setClimateAdmissibleValue( Double::isFinite )
                                                            .build()
@@ -254,6 +263,13 @@ public class PoolFactory
                                                             .anyMatch( Double::isFinite ),
                                                 timePairingType );
 
+        // Create a cross pairer, in case this is required by the declaration
+        TimeSeriesCrossPairer<Double,Ensemble> crossPairer = null;
+        if( project.shouldCrossPair() )
+        {
+            crossPairer = TimeSeriesCrossPairer.of();
+        }
+        
         // Create a default upscaler for left-ish data
         TimeSeriesUpscaler<Double> leftUpscaler = TimeSeriesOfDoubleBasicUpscaler.of();
         TimeSeriesUpscaler<Ensemble> rightUpscaler = TimeSeriesOfEnsembleUpscaler.of( leftUpscaler );
@@ -301,6 +317,7 @@ public class PoolFactory
                                                              .setLeftUpscaler( leftUpscaler )
                                                              .setRightUpscaler( rightUpscaler )
                                                              .setPairer( pairer )
+                                                             .setCrossPairer( crossPairer )
                                                              .setClimateMapper( Double::doubleValue )
                                                              .setClimateAdmissibleValue( Double::isFinite )
                                                              .build()

@@ -25,6 +25,7 @@ import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesCrossPairer;
 import wres.datamodel.time.TimeSeriesPairer;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesUpscaler;
@@ -94,7 +95,13 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
      */
 
     private final TimeSeriesPairer<L, R> pairer;
+    
+    /**
+     * An optional cross-pairer to use common pairs (by time) for the main and baseline pairs.
+     */
 
+    private final TimeSeriesCrossPairer<L,R> crossPairer;
+    
     /**
      * A transformer that applies value constraints to left-ish values.
      */
@@ -174,6 +181,12 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
          */
 
         private TimeSeriesPairer<L, R> pairer;
+        
+        /**
+         * An optional cross-pairer to use common pairs (by time) for the main and baseline pairs.
+         */
+
+        private TimeSeriesCrossPairer<L,R> crossPairer;
 
         /**
          * A function to upscale left data.
@@ -274,6 +287,17 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
             return this;
         }
 
+        /**
+         * @param crossPairer the cross-pairer
+         * @return the builder
+         */
+        Builder<L, R> setCrossPairer( TimeSeriesCrossPairer<L, R> crossPairer )
+        {
+            this.crossPairer = crossPairer;
+
+            return this;
+        }
+        
         /**
          * @param leftUpscaler the upscaler for left values
          * @return the builder
@@ -388,6 +412,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
         this.leftTransformer = builder.leftTransformer;
         this.rightTransformer = builder.rightTransformer;
         this.climateMapper = builder.climateMapper;
+        this.crossPairer = builder.crossPairer;
 
         String messageStart = "Cannot build the pool generator: ";
 
@@ -437,6 +462,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
         builder.setLeftUpscaler( this.getLeftUpscaler() )
                .setRightUpscaler( this.getRightUpscaler() )
                .setPairer( this.getPairer() )
+               .setCrossPairer( this.getCrossPairer() )
                .setInputsDeclaration( inputsConfig )
                .setLeftTransformer( this.getLeftTransformer() )
                .setRightTransformer( this.getRightTransformer() );
@@ -572,6 +598,17 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
     private TimeSeriesPairer<L, R> getPairer()
     {
         return this.pairer;
+    }
+    
+    /**
+     * Returns the cross pairer.
+     * 
+     * @return the cross pairer
+     */
+
+    private TimeSeriesCrossPairer<L, R> getCrossPairer()
+    {
+        return this.crossPairer;
     }
 
     /**

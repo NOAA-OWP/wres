@@ -29,6 +29,7 @@ import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleMetadata;
+import wres.datamodel.sampledata.pairs.CrossPairs;
 import wres.datamodel.sampledata.pairs.PairingException;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
@@ -41,6 +42,7 @@ import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.RescaledTimeSeriesPlusValidation;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
+import wres.datamodel.time.TimeSeriesCrossPairer;
 import wres.datamodel.time.TimeSeriesPairer;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesUpscaler;
@@ -140,6 +142,12 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
      */
 
     private final TimeSeriesPairer<L, R> pairer;
+
+    /**
+     * An optional cross-pairer to ensure that the main pairs and baseline pairs are coincident in time.
+     */
+
+    private final TimeSeriesCrossPairer<L, R> crossPairer;
 
     /**
      * Upscaler for left-type data. Optional on construction, but may be exceptional if later required.
@@ -318,13 +326,6 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
                                                                    desiredTimeScaleToUse,
                                                                    pairedFrequency );
 
-        // Snip to the pool boundaries
-        for ( TimeSeries<Pair<L, R>> pairs : mainPairs )
-        {
-            TimeSeries<Pair<L, R>> snipped = this.snip( pairs, this.metadata.getTimeWindow() );
-            builder.addTimeSeries( snipped );
-        }
-
         // Create the baseline pairs
         if ( this.hasBaseline() )
         {
@@ -345,12 +346,29 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
                                                                        desiredTimeScaleToUse,
                                                                        pairedFrequency );
 
+            // Cross-pair?
+            if ( Objects.nonNull( this.crossPairer ) )
+            {
+                LOGGER.debug( "Conducting cross-pairing of {} and {}.", this.metadata, this.baselineMetadata );
+
+                CrossPairs<L, R> crossPairs = this.crossPairer.apply( mainPairs, basePairs );
+                mainPairs = crossPairs.getMainPairs();
+                basePairs = crossPairs.getBaselinePairs();
+            }
+
             // Snip to the pool boundaries
             for ( TimeSeries<Pair<L, R>> pairs : basePairs )
             {
                 TimeSeries<Pair<L, R>> snipped = this.snip( pairs, this.baselineMetadata.getTimeWindow() );
                 builder.addTimeSeriesForBaseline( snipped );
             }
+        }
+
+        // Snip to the pool boundaries
+        for ( TimeSeries<Pair<L, R>> pairs : mainPairs )
+        {
+            TimeSeries<Pair<L, R>> snipped = this.snip( pairs, this.metadata.getTimeWindow() );
+            builder.addTimeSeries( snipped );
         }
 
         VectorOfDoubles clim = this.getClimatology();
@@ -474,6 +492,12 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         private Duration frequency;
 
         /**
+         * An optional cross-pairer to ensure that the main pairs and baseline pairs are coincident in time.
+         */
+
+        private TimeSeriesCrossPairer<L, R> crossPairer;
+
+        /**
          * @param climatology the climatology to set
          * @param climatologyMapper the mapper from the climatological type to a double type
          * @return the builder
@@ -538,6 +562,17 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         PoolOfPairsSupplierBuilder<L, R> setPairer( TimeSeriesPairer<L, R> pairer )
         {
             this.pairer = pairer;
+
+            return this;
+        }
+
+        /**
+         * @param crossPairer the cross-pairer to set
+         * @return the builder
+         */
+        PoolOfPairsSupplierBuilder<L, R> setCrossPairer( TimeSeriesCrossPairer<L, R> crossPairer )
+        {
+            this.crossPairer = crossPairer;
 
             return this;
         }
@@ -1597,6 +1632,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         this.leftTransformer = builder.leftTransformer;
         this.rightTransformer = builder.rightTransformer;
         this.frequency = builder.frequency;
+        this.crossPairer = builder.crossPairer;
 
         // Set any time offsets required
         Map<LeftOrRightOrBaseline, Duration> offsets = this.getValidTimeOffsets( this.inputs );
