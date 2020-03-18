@@ -86,6 +86,7 @@ public class WriterTestHelper
                                                 null,
                                                 null,
                                                 null,
+                                                null,
                                                 null );
 
         ProjectConfig projectConfig = new ProjectConfig( null,

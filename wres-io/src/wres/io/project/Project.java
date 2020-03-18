@@ -614,10 +614,11 @@ public class Project
      * @return true if cross-pairing is required, otherwise false
      */
 
-    public boolean shouldCrossPair()
+    public boolean isCrossPair()
     {
-        // No op until declaration option is available
-        return false;
+        PairConfig pair = this.getProjectConfig().getPair();
+        
+        return Objects.nonNull( pair.isCrossPair() ) && pair.isCrossPair();
     }
 
     /**

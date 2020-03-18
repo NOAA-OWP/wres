@@ -134,7 +134,7 @@ public class PoolFactory
         
         // Create a cross pairer, in case this is required by the declaration
         TimeSeriesCrossPairer<Double,Double> crossPairer = null;
-        if( project.shouldCrossPair() )
+        if( project.isCrossPair() )
         {
             crossPairer = TimeSeriesCrossPairer.of();
         }
@@ -265,7 +265,7 @@ public class PoolFactory
 
         // Create a cross pairer, in case this is required by the declaration
         TimeSeriesCrossPairer<Double,Ensemble> crossPairer = null;
-        if( project.shouldCrossPair() )
+        if( project.isCrossPair() )
         {
             crossPairer = TimeSeriesCrossPairer.of();
         }

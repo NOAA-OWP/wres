@@ -843,6 +843,16 @@ time scale within a single class, rather than two classes.
                     </xs:simpleContent>
                 </xs:complexType>
             </xs:element>
+
+            <xs:element name="crossPair" type="xs:boolean" default="false" minOccurs="0" >
+               <xs:annotation>
+                    <xs:documentation>Is true to use common pairs by reference time and 
+                        valid time when evaluating right and baseline sources, false to 
+                        retain all pairs of each type. Only applies when a baseline is 
+                        declared.</xs:documentation>
+               </xs:annotation>
+            </xs:element>
+
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
     </xs:complexType>
