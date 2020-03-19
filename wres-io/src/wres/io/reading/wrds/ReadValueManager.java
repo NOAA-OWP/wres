@@ -99,6 +99,7 @@ public class ReadValueManager
         {
             Pair<Integer,InputStream> response = WEB_CLIENT.getFromWeb( location );
             int httpStatus = response.getLeft();
+            forecastData = response.getRight();
             LOGGER.debug( "Got HTTP response code {} for {}", httpStatus, location );
 
             if ( httpStatus >= 400 && httpStatus < 500 )
@@ -155,10 +156,21 @@ public class ReadValueManager
                                                "' could not be stored in or retrieved from the database.",
                                                e );
                 }
-            }
-            else
-            {
-                forecastData = response.getRight();
+                finally
+                {
+                    if ( Objects.nonNull( forecastData) )
+                    {
+                        try
+                        {
+                            forecastData.close();
+                        }
+                        catch ( IOException ioe )
+                        {
+                            LOGGER.warn( "Could not close a data stream from {}",
+                                         location, ioe );
+                        }
+                    }
+                }
             }
         }
         else
@@ -168,12 +180,27 @@ public class ReadValueManager
                                                      + location );
         }
 
+
         // It is conceivable that we could tee/pipe the data to both
         // the md5sum and the parser at the same time, but this involves
         // more complexity and may not be worth it. For now assume that we are
         // not going to exhaust our heap by including the whole forecast
         // here in memory temporarily.
         byte[] rawForecast = IOUtils.toByteArray( forecastData );
+
+        //Close the forecastData stream.
+        if ( Objects.nonNull( forecastData) )
+        {
+            try
+            {
+                forecastData.close();
+            }
+            catch ( IOException ioe )
+            {
+                LOGGER.warn( "Could not close a data stream from {}",
+                             location, ioe );
+            }
+        }
 
         if ( LOGGER.isTraceEnabled() )
         {

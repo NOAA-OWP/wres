@@ -88,6 +88,7 @@ public class WaterMLBasicSource extends BasicSource
         {
             Pair<Integer,InputStream> response = WEB_CLIENT.getFromWeb( location );
             int httpStatus = response.getLeft();
+            data = response.getRight();
 
             if ( httpStatus == 404 )
             {
@@ -143,12 +144,24 @@ public class WaterMLBasicSource extends BasicSource
                                                "' could not be stored in or retrieved from the database.",
                                                e );
                 }
+                finally
+                {
+                    if ( Objects.nonNull( data) )
+                    {
+                        try
+                        {
+                            data.close();
+                        }
+                        catch ( IOException ioe )
+                        {
+                            LOGGER.warn( "Could not close a data stream from {}",
+                                         location, ioe );
+                        }
+                    }
+                }
+
             }
-            else if ( httpStatus >= 200 && httpStatus < 300 )
-            {
-                data = response.getRight();
-            }
-            else
+            else if ( ! (httpStatus >= 200 && httpStatus < 300) )
             {
                 throw new PreIngestException( "Failed to get data from '"
                                               + location +
@@ -207,8 +220,19 @@ public class WaterMLBasicSource extends BasicSource
         }
         finally
         {
-            data.close();
-            LOGGER.debug( "InputStream closed/ingested for {}", location );
+            if ( Objects.nonNull( data) )
+            {
+                try 
+                {   
+                    data.close();
+                    LOGGER.debug( "InputStream closed/ingested for {}", location );
+                }
+                catch ( IOException ioe )
+                {
+                    LOGGER.warn( "Could not close a data stream from {}",
+                                 location, ioe );
+                }
+            }
         }
     }
 
