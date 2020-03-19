@@ -208,6 +208,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
         {
             Pair<Integer,InputStream> response = WEB_CLIENT.getFromWeb( uri );
             int responseStatus = response.getLeft();
+            dataStream = response.getRight();
 
             if ( responseStatus >= 400 && responseStatus < 500 )
             {
@@ -217,7 +218,6 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                 return Collections.emptyList();
             }
 
-            dataStream = response.getRight();
             document = this.getJsonObjectMapper()
                            .readValue( dataStream,
                                        NwmRootDocument.class );
