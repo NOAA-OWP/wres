@@ -4,6 +4,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.time.TimeSeries;
@@ -40,11 +42,12 @@ public class CrossPairs<L, R>
      * @throws NullPointerException if either input is null
      */
 
-    public static <L,R> CrossPairs<L,R> of( List<TimeSeries<Pair<L, R>>> mainPairs, List<TimeSeries<Pair<L, R>>> baselinePairs )
+    public static <L, R> CrossPairs<L, R> of( List<TimeSeries<Pair<L, R>>> mainPairs,
+                                              List<TimeSeries<Pair<L, R>>> baselinePairs )
     {
         return new CrossPairs<>( mainPairs, baselinePairs );
     }
-    
+
     /**
      * Returns the main pairs, cross paired against the baseline pairs.
      * 
@@ -65,6 +68,41 @@ public class CrossPairs<L, R>
     public List<TimeSeries<Pair<L, R>>> getBaselinePairs()
     {
         return this.baselinePairs;
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( ! ( o instanceof CrossPairs ) )
+        {
+            return false;
+        }
+
+        if ( o == this )
+        {
+            return true;
+        }
+
+        CrossPairs<?, ?> in = (CrossPairs<?, ?>) o;
+
+        return in.getMainPairs().equals( this.getMainPairs() )
+               && in.getBaselinePairs().equals( this.getBaselinePairs() );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( this.getMainPairs(), this.getBaselinePairs() );
+    }
+
+    @Override
+    public String toString()
+    {
+        return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
+                                                                            .append( "mainPairs", this.getMainPairs() )
+                                                                            .append( "baselinePairs",
+                                                                                     this.getBaselinePairs() )
+                                                                            .toString();
     }
 
     /**

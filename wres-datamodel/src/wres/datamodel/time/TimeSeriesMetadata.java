@@ -10,6 +10,10 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 
 import wres.datamodel.scale.TimeScale;
 
+/**
+ * Value object the stores the metadata associated with an {@link TimeSeries}.
+ */
+
 public class TimeSeriesMetadata
 {
     /**
@@ -46,7 +50,19 @@ public class TimeSeriesMetadata
 
     private final String unit;
 
-    public static TimeSeriesMetadata of( Map<ReferenceTimeType,Instant> referenceTimes,
+    /**
+     * Create an instance.
+     * 
+     * @param referenceTimes the reference times
+     * @param timeScale the time scale
+     * @param variableName the variable name
+     * @param featureName the feature name
+     * @param unit the measurement unit
+     * @return an instance
+     * @throws NullPointerException if the map of reference times is null (may be empty)
+     */
+
+    public static TimeSeriesMetadata of( Map<ReferenceTimeType, Instant> referenceTimes,
                                          TimeScale timeScale,
                                          String variableName,
                                          String featureName,
@@ -59,7 +75,52 @@ public class TimeSeriesMetadata
                                        unit );
     }
 
-    private TimeSeriesMetadata( Map<ReferenceTimeType,Instant> referenceTimes,
+    /**
+     * Create an instance.
+     * 
+     * @param referenceTimes the reference times
+     * @return an instance
+     * @throws NullPointerException if the map of reference times is null (may be empty)
+     */
+
+    public static TimeSeriesMetadata of( Map<ReferenceTimeType, Instant> referenceTimes )
+    {
+        return new TimeSeriesMetadata( referenceTimes,
+                                       null,
+                                       null,
+                                       null,
+                                       null );
+    }
+
+    /**
+     * Create an instance.
+     * 
+     * @param referenceTimes the reference times
+     * @param timeScale the time scale
+     * @return an instance
+     * @throws NullPointerException if the map of reference times is null (may be empty)
+     */
+
+    public static TimeSeriesMetadata of( Map<ReferenceTimeType, Instant> referenceTimes, TimeScale timeScale )
+    {
+        return new TimeSeriesMetadata( referenceTimes,
+                                       timeScale,
+                                       null,
+                                       null,
+                                       null );
+    }
+
+    /**
+     * Hidden constructor.
+     * 
+     * @param referenceTimes the reference times
+     * @param timeScale the time scale
+     * @param variableName the variable name
+     * @param featureName the feature name
+     * @param unit the measurement unit
+     */
+
+    private TimeSeriesMetadata( Map<ReferenceTimeType, Instant> referenceTimes,
                                 TimeScale timeScale,
                                 String variableName,
                                 String featureName,
@@ -111,33 +172,33 @@ public class TimeSeriesMetadata
             return false;
         }
 
-        TimeSeriesMetadata metadata = ( TimeSeriesMetadata ) o;
-        return Objects.equals( timeScale, metadata.timeScale ) &&
-               referenceTimes.equals( metadata.referenceTimes ) &&
-               Objects.equals( variableName, metadata.variableName ) &&
-               Objects.equals( featureName, metadata.featureName ) &&
-               Objects.equals( unit, metadata.unit );
+        TimeSeriesMetadata metadata = (TimeSeriesMetadata) o;
+        return Objects.equals( this.timeScale, metadata.timeScale ) &&
+               this.referenceTimes.equals( metadata.referenceTimes )
+               && Objects.equals( this.variableName, metadata.variableName )
+               && Objects.equals( this.featureName, metadata.featureName )
+               && Objects.equals( this.unit, metadata.unit );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( timeScale,
-                             referenceTimes,
-                             variableName,
-                             featureName,
-                             unit );
+        return Objects.hash( this.timeScale,
+                             this.referenceTimes,
+                             this.variableName,
+                             this.featureName,
+                             this.unit );
     }
 
     @Override
     public String toString()
     {
         return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
-                .append( "timeScale", timeScale )
-                .append( "referenceTimes", referenceTimes )
-                .append( "variableName", variableName )
-                .append( "featureName", featureName )
-                .append( "unit", unit )
-                .toString();
+                                                                            .append( "timeScale", timeScale )
+                                                                            .append( "referenceTimes", referenceTimes )
+                                                                            .append( "variableName", variableName )
+                                                                            .append( "featureName", featureName )
+                                                                            .append( "unit", unit )
+                                                                            .toString();
     }
 }
