@@ -15,6 +15,7 @@ import java.util.TreeSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.generated.CrossPair;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
@@ -605,20 +606,6 @@ public class Project
         }
 
         return usesGriddedData;
-    }
-
-    /**
-     * Returns <code>true</code> if the project declaration asks for common pairs (by time) from the <code>right</code>
-     * and <code>baseline</code> sources, otherwise <code>false</code>.
-     * 
-     * @return true if cross-pairing is required, otherwise false
-     */
-
-    public boolean isCrossPair()
-    {
-        PairConfig pair = this.getProjectConfig().getPair();
-        
-        return Objects.nonNull( pair.isCrossPair() ) && pair.isCrossPair();
     }
 
     /**

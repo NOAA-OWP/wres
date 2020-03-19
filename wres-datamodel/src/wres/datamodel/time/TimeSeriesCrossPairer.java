@@ -35,13 +35,39 @@ public class TimeSeriesCrossPairer<L, R>
 {
 
     /**
+     * An enumeration of techniques for matching by reference time.
+     */
+
+    public enum MatchMode
+    {
+        /**
+         * Only pair time-series whose reference times match exactly.
+         */
+
+        EXACT,
+
+        /**
+         * Find the nearest time-series by reference time for each time-series considered, using each time-series only
+         * once.
+         */
+
+        FUZZY;
+    }
+
+    /**
      * Logger.
      */
 
     private static final Logger LOGGER = LoggerFactory.getLogger( TimeSeriesCrossPairer.class );
 
     /**
-     * Creates an instance of a cross pairer.
+     * Match mode.
+     */
+
+    private final MatchMode matchMode;
+
+    /**
+     * Creates an instance of a cross pairer using {@link MatchMode#FUZZY} matching by reference time.
      * 
      * @param <L> the left type of data on one side of a pairing
      * @param <R> the right type of data on one side of a pairing
@@ -50,7 +76,22 @@ public class TimeSeriesCrossPairer<L, R>
 
     public static <L, R> TimeSeriesCrossPairer<L, R> of()
     {
-        return new TimeSeriesCrossPairer<>();
+        return new TimeSeriesCrossPairer<>( MatchMode.FUZZY );
+    }
+
+    /**
+     * Creates an instance of a cross pairer using a prescribed {@link MatchMode}.
+     * 
+     * @param <L> the left type of data on one side of a pairing
+     * @param <R> the right type of data on one side of a pairing
+     * @param matchMode the match mode for reference times
+     * @return an instance
+     * @throws NullPointerException if the match mode is null
+     */
+
+    public static <L, R> TimeSeriesCrossPairer<L, R> of( MatchMode matchMode )
+    {
+        return new TimeSeriesCrossPairer<>( matchMode );
     }
 
     /**
@@ -90,12 +131,19 @@ public class TimeSeriesCrossPairer<L, R>
 
     /**
      * Create an instance.
+     * 
+     * @param matchMode the match mode
+     * @throws NullPointerException if the match mode is null
      */
 
-    private TimeSeriesCrossPairer()
+    private TimeSeriesCrossPairer( MatchMode matchMode )
     {
-    }
+        Objects.requireNonNull( matchMode );
 
+        this.matchMode = matchMode;
+
+        LOGGER.debug( "Built a time-series cross-pairer with a matching mode of {}.", this.matchMode );
+    }
 
     /**
      * Cross-pair the first input against the second.
@@ -115,11 +163,8 @@ public class TimeSeriesCrossPairer<L, R>
         // Iterate through the time-series to filter
         for ( TimeSeries<Pair<L, R>> next : againstThese )
         {
-            // Find the nearest time-series by reference time 
+            // Find the nearest time-series by reference time
             TimeSeries<Pair<L, R>> nearest = this.getNearestByReferenceTimes( filterTheseMutable, next );
-
-            // Consider one time-series only once
-            filterTheseMutable.remove( nearest );
 
             Set<Instant> validTimesToCheck = next.getEvents()
                                                  .stream()
@@ -135,13 +180,16 @@ public class TimeSeriesCrossPairer<L, R>
             {
                 // Consider only valid times that are part of the next time-series
                 TimeSeries<Pair<L, R>> nextSeries =
-                        new TimeSeriesBuilder<Pair<L, R>>().setMetadata( next.getMetadata() )
+                        new TimeSeriesBuilder<Pair<L, R>>().setMetadata( nearest.getMetadata() )
                                                            .addEvents( events )
                                                            .build();
 
                 returnMe.add( nextSeries );
 
+                // Consider one time-series only once
+                filterTheseMutable.remove( nearest );
             }
+
         }
 
         return Collections.unmodifiableList( returnMe );
@@ -177,18 +225,18 @@ public class TimeSeriesCrossPairer<L, R>
             }
 
             // Find the approximate nearest
+            // Find the total duration error for all reference times in the next series
+            // relative to the series to check
+            Duration nextError = this.getTotalDurationBetweenCommonTimeTypes( lookNearToMe,
+                                                                              next );
 
             // If the existing nearest is null, this is the new nearest
             if ( Objects.isNull( nearest ) )
             {
                 nearest = next;
+                durationError = nextError;
                 continue;
             }
-
-            // Find the total duration error for all reference times in the next series
-            // relative to the series to check
-            Duration nextError = this.getTotalDurationBetweenCommonTimeTypes( lookNearToMe,
-                                                                              next );
 
             // Is it nearest than the current nearest?
             if ( nextError.compareTo( durationError ) < 0 )
@@ -196,12 +244,21 @@ public class TimeSeriesCrossPairer<L, R>
                 nearest = next;
                 durationError = nextError;
             }
-
         }
 
-        // Return the empty time-series if nothing found
-        if ( Objects.isNull( nearest ) )
+        // Return the empty time-series if nothing found or if the duration error is not zero when exact matching
+        if ( Objects.isNull( nearest )
+             || ( this.matchMode == MatchMode.EXACT && !Duration.ZERO.equals( durationError ) ) )
         {
+            LOGGER.debug( "While attempting to find a match by reference time for time-series {} within a list of {} "
+                          + "  time-series, failed to identify a match. The match mode was {} and the total absolute "
+                          + "duration between all considered reference times of the nearest time-series discovered was "
+                          + "{}.",
+                          lookNearToMe.getMetadata(),
+                          lookInHere.size(),
+                          this.matchMode,
+                          durationError );
+
             return TimeSeries.of();
         }
 

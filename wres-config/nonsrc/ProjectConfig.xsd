@@ -844,17 +844,28 @@ time scale within a single class, rather than two classes.
                 </xs:complexType>
             </xs:element>
 
-            <xs:element name="crossPair" type="xs:boolean" default="false" minOccurs="0" >
-               <xs:annotation>
-                    <xs:documentation>Is true to use common pairs by reference time and 
-                        valid time when evaluating right and baseline sources, false to 
-                        retain all pairs of each type. Only applies when a baseline is 
-                        declared.</xs:documentation>
-               </xs:annotation>
-            </xs:element>
+            <xs:element name="crossPair" type="crossPair" minOccurs="0" />
 
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
+    </xs:complexType>
+
+    <xs:complexType name ="crossPair">
+           <xs:annotation>
+                <xs:documentation>If present, use common pairs by reference time and 
+                    valid time when evaluating right and baseline sources, If absent,  
+                    retain all pairs of each type. Only applies when a baseline is 
+                    declared. Employs fuzzy matching of reference times by default,
+                    with exact matching as an option (exact="true"). With fuzzy matching, 
+                    each time-series in the main set of pairs is matched with a 
+                    time-series in the baseline set of pairs (and vice versa) according 
+                    to the total duration between all reference times of a 
+                    corresponding type. In other words, if there is an exact match, 
+                    that will be used, else the time-series whose reference times 
+                    are nearest overall. Once a time-series has been matched, it cannot
+                    be re-used. Always uses exact matching for valid times.</xs:documentation>
+               </xs:annotation>
+        <xs:attribute name="exact" type="xs:boolean" default = "false" />
     </xs:complexType>
 
     <!-- A place to declare which metrics to generate, as distinct from what
