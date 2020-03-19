@@ -63,7 +63,7 @@ public class TimeSeries<T>
     {
         return TimeSeries.of( Collections.emptyMap(), Collections.emptySortedSet() );
     }
-    
+
     /**
      * Returns a {@link TimeSeries} without any reference times. Assumes a <code>null</code> {@link TimeScale}.
      *
@@ -145,24 +145,16 @@ public class TimeSeries<T>
      * @param events the events
      * @return the time-series
      */
-    
-    public static <T> TimeSeries<T> of ( TimeSeriesMetadata timeSeriesMetadata,
-                                         SortedSet<Event<T>> events )
+
+    public static <T> TimeSeries<T> of( TimeSeriesMetadata timeSeriesMetadata,
+                                        SortedSet<Event<T>> events )
     {
         Objects.requireNonNull( timeSeriesMetadata );
         Objects.requireNonNull( events );
 
-        // Admittedly awkward, probably should make the builder delegate all
-        // this stuff to a TimeSeriesMetadataBuilder or something.
-        TimeSeriesBuilder<T> builder = new TimeSeriesBuilder<>();
-        events.forEach( builder::addEvent );
-        timeSeriesMetadata.getReferenceTimes()
-                          .forEach( ( type, time ) -> builder.addReferenceTime( time, type ) );
-        builder.setFeatureName( timeSeriesMetadata.getFeatureName() );
-        builder.setTimeScale( timeSeriesMetadata.getTimeScale() );
-        builder.setUnit( timeSeriesMetadata.getUnit() );
-        builder.setVariableName( timeSeriesMetadata.getVariableName() );
-        return builder.build();
+        return new TimeSeriesBuilder<T>().setMetadata( timeSeriesMetadata )
+                                         .addEvents( events )
+                                         .build();
     }
 
     /**
@@ -193,7 +185,7 @@ public class TimeSeries<T>
         return this.getMetadata()
                    .getTimeScale();
     }
-    
+
     /**
      * Returns <code>true</code> if the time-scale is known, otherwise <code>false</code>.
      * 
@@ -203,10 +195,10 @@ public class TimeSeries<T>
     public boolean hasTimeScale()
     {
         return Objects.nonNull( this.getMetadata() )
-                      && Objects.nonNull( this.getMetadata()
-                                              .getTimeScale() );
+               && Objects.nonNull( this.getMetadata()
+                                       .getTimeScale() );
     }
-    
+
     /**
      * Returns the reference datetime.
      * 
@@ -232,7 +224,7 @@ public class TimeSeries<T>
             return false;
         }
 
-        TimeSeries<?> that = ( TimeSeries<?> ) o;
+        TimeSeries<?> that = (TimeSeries<?>) o;
         return metadata.equals( that.metadata ) &&
                events.equals( that.events );
     }
@@ -247,9 +239,9 @@ public class TimeSeries<T>
     public String toString()
     {
         return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
-                .append( "metadata", metadata )
-                .append( "events", events )
-                .toString();
+                                                                            .append( "metadata", metadata )
+                                                                            .append( "events", events )
+                                                                            .toString();
     }
 
     /**
@@ -263,9 +255,9 @@ public class TimeSeries<T>
         // Set then validate
         // Important to place in a new set here, because the builder uses a special 
         // comparator, based on event time only
-        SortedSet<Event<T>>  localEvents = new TreeSet<>();
+        SortedSet<Event<T>> localEvents = new TreeSet<>();
         localEvents.addAll( builder.events );
-        this.events = Collections.unmodifiableSortedSet( localEvents );       
+        this.events = Collections.unmodifiableSortedSet( localEvents );
 
         Map<ReferenceTimeType, Instant> localMap = new EnumMap<>( ReferenceTimeType.class );
         localMap.putAll( builder.referenceTimes );
@@ -275,7 +267,8 @@ public class TimeSeries<T>
         if ( Objects.isNull( builder.timeScale ) )
         {
             LOGGER.trace( "No time-scale information was provided in builder {} for time-series {}.",
-                          builder, this );
+                          builder,
+                          this );
         }
         else
         {
@@ -284,11 +277,18 @@ public class TimeSeries<T>
 
         localMap = Collections.unmodifiableMap( localMap );
 
-        this.metadata = TimeSeriesMetadata.of( localMap,
-                                               localTimeScale,
-                                               builder.variableName,
-                                               builder.featureName,
-                                               builder.unit );
+        TimeSeriesMetadata localMetadata = builder.metadata;
+        if ( Objects.nonNull( localMetadata ) )
+        {
+            this.metadata = localMetadata;
+        }
+        // TODO: deprecated route, to remove
+        // Once removed, require metadata
+        else
+        {
+            this.metadata = TimeSeriesMetadata.of( localMap,
+                                                   localTimeScale );
+        }
 
         // All reference datetimes and types must be non-null
         for ( Map.Entry<ReferenceTimeType, Instant> nextEntry : this.getReferenceTimes().entrySet() )
@@ -319,6 +319,12 @@ public class TimeSeries<T>
                 new TreeSet<>( ( e1, e2 ) -> e1.getTime().compareTo( e2.getTime() ) );
 
         /**
+         * The time-series metadata.
+         */
+
+        private TimeSeriesMetadata metadata;
+
+        /**
          * The reference datetime associated with the time-series.
          */
 
@@ -330,42 +336,39 @@ public class TimeSeries<T>
 
         private TimeScale timeScale;
 
-
-        private String variableName;
-        private String featureName;
-        private String unit;
-
         /**
          * Adds a reference time.
          * 
          * @param referenceTime the reference time
          * @param referenceTimeType the reference time type
          * @return the builder
+         * @deprecated use {@link #setMetadata(TimeSeriesMetadata)} instead
          */
-
+        @Deprecated( since = "4.0", forRemoval = true )
         public TimeSeriesBuilder<T> addReferenceTime( Instant referenceTime, ReferenceTimeType referenceTimeType )
         {
             this.referenceTimes.put( referenceTimeType, referenceTime );
 
             return this;
         }
-        
+
         /**
          * Adds a map of reference times.
          * 
          * @param referenceTimes the reference times
          * @return the builder
          * @throws NullPointerException if the input is null
+         * @deprecated use {@link #setMetadata(TimeSeriesMetadata)} instead
          */
-
+        @Deprecated( since = "4.0", forRemoval = true )
         public TimeSeriesBuilder<T> addReferenceTimes( Map<ReferenceTimeType, Instant> referenceTimes )
         {
             Objects.requireNonNull( referenceTimes );
-            
+
             this.referenceTimes.putAll( referenceTimes );
 
             return this;
-        }        
+        }
 
         /**
          * Adds several events to the time-series.
@@ -374,14 +377,14 @@ public class TimeSeries<T>
          * @return the builder
          * @throws IllegalArgumentException if the time-series already contains an event at the prescribed time
          */
-        
+
         public TimeSeriesBuilder<T> addEvents( Set<Event<T>> events )
         {
             events.stream().forEach( this::addEvent );
-            
+
             return this;
         }
-        
+
         /**
          * Adds an event.
          * 
@@ -407,34 +410,32 @@ public class TimeSeries<T>
         }
 
         /**
+         * Sets the time-series metadata.
+         * 
+         * @param metadata the time-series metadata
+         * @return the builder
+         */
+
+        public TimeSeriesBuilder<T> setMetadata( TimeSeriesMetadata metadata )
+        {
+            this.metadata = metadata;
+
+            return this;
+        }
+
+        /**
          * Adds the time-scale information.
          * 
          * @param timeScale the time scale
          * @return the builder
+         * @deprecated use {@link #setMetadata(TimeSeriesMetadata)} instead
          */
 
+        @Deprecated( since = "4.0", forRemoval = true )
         public TimeSeriesBuilder<T> setTimeScale( TimeScale timeScale )
         {
             this.timeScale = timeScale;
 
-            return this;
-        }
-
-        public TimeSeriesBuilder<T> setVariableName( String variableName )
-        {
-            this.variableName = variableName;
-            return this;
-        }
-
-        public TimeSeriesBuilder<T> setFeatureName( String featureName )
-        {
-            this.featureName = featureName;
-            return this;
-        }
-
-        public TimeSeriesBuilder<T> setUnit( String unit )
-        {
-            this.unit = unit;
             return this;
         }
 
