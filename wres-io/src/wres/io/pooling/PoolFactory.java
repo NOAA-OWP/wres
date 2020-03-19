@@ -13,6 +13,7 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.generated.CrossPair;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DoubleBoundsType;
@@ -32,6 +33,7 @@ import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesCrossPairer;
+import wres.datamodel.time.TimeSeriesCrossPairer.MatchMode;
 import wres.datamodel.time.TimeSeriesOfDoubleBasicUpscaler;
 import wres.datamodel.time.TimeSeriesOfEnsembleUpscaler;
 import wres.datamodel.time.TimeSeriesPairer;
@@ -123,21 +125,17 @@ public class PoolFactory
 
         // Create a default pairer for finite left and right values
         TimePairingType timePairingType = PoolFactory.getTimePairingTypeFromInputsConfig( inputsConfig );
-        
+
         LOGGER.debug( "Using a time-based pairing strategy of {} for the input declaration {}.",
                       timePairingType,
                       inputsConfig );
-        
+
         TimeSeriesPairer<Double, Double> pairer = TimeSeriesPairerByExactTime.of( Double::isFinite,
                                                                                   Double::isFinite,
                                                                                   timePairingType );
-        
+
         // Create a cross pairer, in case this is required by the declaration
-        TimeSeriesCrossPairer<Double,Double> crossPairer = null;
-        if( project.isCrossPair() )
-        {
-            crossPairer = TimeSeriesCrossPairer.of();
-        }
+        TimeSeriesCrossPairer<Double, Double> crossPairer = PoolFactory.getCrossPairerOrNull( pairConfig );
 
         // Create a default upscaler
         TimeSeriesUpscaler<Double> upscaler = TimeSeriesOfDoubleBasicUpscaler.of();
@@ -252,11 +250,11 @@ public class PoolFactory
 
         // Create a default pairer for finite left values and one or more finite right values
         TimePairingType timePairingType = PoolFactory.getTimePairingTypeFromInputsConfig( inputsConfig );
-        
+
         LOGGER.debug( "Using a time-based pairing strategy of {} for the input declaration {}.",
                       timePairingType,
                       inputsConfig );
-        
+
         TimeSeriesPairer<Double, Ensemble> pairer =
                 TimeSeriesPairerByExactTime.of( Double::isFinite,
                                                 en -> Arrays.stream( en.getMembers() )
@@ -264,12 +262,8 @@ public class PoolFactory
                                                 timePairingType );
 
         // Create a cross pairer, in case this is required by the declaration
-        TimeSeriesCrossPairer<Double,Ensemble> crossPairer = null;
-        if( project.isCrossPair() )
-        {
-            crossPairer = TimeSeriesCrossPairer.of();
-        }
-        
+        TimeSeriesCrossPairer<Double, Ensemble> crossPairer = PoolFactory.getCrossPairerOrNull( pairConfig );
+
         // Create a default upscaler for left-ish data
         TimeSeriesUpscaler<Double> leftUpscaler = TimeSeriesOfDoubleBasicUpscaler.of();
         TimeSeriesUpscaler<Ensemble> rightUpscaler = TimeSeriesOfEnsembleUpscaler.of( leftUpscaler );
@@ -322,6 +316,31 @@ public class PoolFactory
                                                              .setClimateAdmissibleValue( Double::isFinite )
                                                              .build()
                                                              .get();
+    }
+
+    /**
+     * Returns an instance of a {@link TimeSeriesCrossPairer} or null if none is required.
+     * 
+     * 
+     * @return a cross-pairer or null
+     */
+
+    private static <L, R> TimeSeriesCrossPairer<L, R> getCrossPairerOrNull( PairConfig pairConfig )
+    {
+        // Create a cross pairer, in case this is required by the declaration
+        TimeSeriesCrossPairer<L, R> crossPairer = null;
+        CrossPair crossPair = pairConfig.getCrossPair();
+        if ( Objects.nonNull( crossPair ) )
+        {
+            MatchMode matchMode = MatchMode.EXACT;
+            if ( Objects.nonNull( crossPair ) )
+            {
+                matchMode = crossPair.isExact() ? MatchMode.EXACT : MatchMode.FUZZY;
+                crossPairer = TimeSeriesCrossPairer.of( matchMode );
+            }
+        }
+
+        return crossPairer;
     }
 
     /**
