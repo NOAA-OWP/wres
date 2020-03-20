@@ -1,6 +1,7 @@
 package wres.datamodel.time;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 
 import java.time.Instant;
 import java.util.Collections;
@@ -11,6 +12,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import wres.datamodel.sampledata.pairs.CrossPairs;
+import wres.datamodel.sampledata.pairs.PairingException;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 import wres.datamodel.time.TimeSeriesCrossPairer.MatchMode;
 
@@ -381,9 +383,12 @@ public final class TimeSeriesCrossPairerTest
 
         Event<Pair<Integer, Integer>> fifth = Event.of( SECOND, Pair.of( 5, 5 ) );
 
+
+        Instant nearToFirst = Instant.parse( "2123-12-01T06:01:00Z" );
+
         TimeSeriesMetadata fifthMetadata =
                 TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.T0,
-                                                                 FIRST ) );
+                                                                 nearToFirst ) );
 
         TimeSeries<Pair<Integer, Integer>> fifthSeries =
                 new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( fifthMetadata )
@@ -412,5 +417,42 @@ public final class TimeSeriesCrossPairerTest
         assertEquals( expected, actual );
     }
 
+    @Test
+    public void testCrossPairTimeSeriesWithNoEqualReferenceTimeTypes()
+    {
+        Event<Pair<Integer, Integer>> first = Event.of( FIRST, Pair.of( 1, 1 ) );
+
+        TimeSeriesMetadata firstMetadata =
+                TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.T0,
+                                                                 ZEROTH ) );
+
+        TimeSeries<Pair<Integer, Integer>> firstSeries =
+                new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( firstMetadata )
+                                                               .addEvent( first )
+                                                               .build();
+
+        Event<Pair<Integer, Integer>> second = Event.of( FIRST, Pair.of( 2, 2 ) );
+
+        TimeSeriesMetadata secondMetadata =
+                TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.ANALYSIS_START_TIME,
+                                                                 ZEROTH ) );
+
+        TimeSeries<Pair<Integer, Integer>> secondSeries =
+                new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( secondMetadata )
+                                                               .addEvent( second )
+                                                               .build();
+
+        PairingException expected = assertThrows( PairingException.class,
+                                                  () -> this.instance.apply( List.of( firstSeries ),
+                                                                             List.of( secondSeries ) ) );
+
+        assertEquals( "While attempting to cross pair time-series TimeSeriesMetadata[timeScale=<null>,"
+                      + "referenceTimes={ANALYSIS_START_TIME=2123-12-01T00:00:00Z},variableName=<null>,"
+                      + "featureName=<null>,unit=<null>] against time-series TimeSeriesMetadata[timeScale=<null>,"
+                      + "referenceTimes={T0=2123-12-01T00:00:00Z},variableName=<null>,featureName=<null>,unit=<null>] "
+                      + "using their common reference times by type, found no common reference time types, which is "
+                      + "not allowed.",
+                      expected.getMessage() );
+    }
 
 }
