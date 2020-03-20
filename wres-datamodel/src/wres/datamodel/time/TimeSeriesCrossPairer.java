@@ -238,7 +238,7 @@ public class TimeSeriesCrossPairer<L, R>
                 continue;
             }
 
-            // Is it nearest than the current nearest?
+            // Is it nearer than the current nearest?
             if ( nextError.compareTo( durationError ) < 0 )
             {
                 nearest = next;
@@ -250,15 +250,17 @@ public class TimeSeriesCrossPairer<L, R>
         if ( Objects.isNull( nearest )
              || ( this.matchMode == MatchMode.EXACT && !Duration.ZERO.equals( durationError ) ) )
         {
-            LOGGER.debug( "While attempting to find a match by reference time for time-series {} within a list of {} "
-                          + "  time-series, failed to identify a match. The match mode was {} and the total absolute "
-                          + "duration between all considered reference times of the nearest time-series discovered was "
-                          + "{}.",
-                          lookNearToMe.getMetadata(),
-                          lookInHere.size(),
-                          this.matchMode,
-                          durationError );
-
+            if ( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( "While attempting to find a match by reference time for time-series {} within a list of {} "
+                              + "  time-series, failed to identify a match. The match mode was {} and the total absolute "
+                              + "duration between all considered reference times of the nearest time-series discovered was "
+                              + "{}.",
+                              lookNearToMe.getMetadata(),
+                              lookInHere.size(),
+                              this.matchMode,
+                              durationError );
+            }
             return TimeSeries.of();
         }
 
