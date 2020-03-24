@@ -251,6 +251,9 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                 ( type, format ) -> !processor.getMetricOutputTypesToCache().contains( type )
                                     || ConfigHelper.getIncrementalFormats( projectConfig ).contains( format );
 
+        // The union of statistics types for which statistics were actually produced
+        Set<StatisticType> typesProduced = new HashSet<>();
+
         try
         {
             // Iterate
@@ -272,6 +275,10 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                                                                       this.unitMapper );
                                              outputProcessor.accept( metricOutputs );
                                              outputProcessor.close();
+
+                                             // Register statistics produced
+                                             typesProduced.addAll( metricOutputs.getStatisticTypes() );
+
                                              return outputProcessor.get();
                                          },
                                                           this.executors.getProductExecutor() );
@@ -335,7 +342,8 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         Set<Path> allPaths = Collections.unmodifiableSet( paths );
 
         return new FeatureProcessingResult( this.feature.getFeature(),
-                                            allPaths );
+                                            allPaths,
+                                            !typesProduced.isEmpty() );
     }
 
     /**

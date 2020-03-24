@@ -24,9 +24,7 @@ import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
@@ -258,7 +256,7 @@ class ProcessorHelper
             }
 
             // Report on the features
-            featureReport.report( pathsWrittenTo.isEmpty() );
+            featureReport.report();
         }
         catch ( CompletionException e )
         {

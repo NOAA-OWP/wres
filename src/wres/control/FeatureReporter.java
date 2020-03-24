@@ -107,8 +107,7 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
         this.processed = new AtomicInteger( 1 );
         this.pathsWrittenTo = new ConcurrentSkipListSet<>();
 
-        // Statistical outputs requested in a format that is written per feature? Anything that is not pairs is 
-        // statistics
+        // Statistical outputs requested in a format that is written per feature?
         this.statisticalOutputsRequestedPerFeature =
                 this.projectConfigPlus.getProjectConfig()
                                       .getOutputs()
@@ -132,7 +131,7 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
         // Increment the feature count
         int currentFeature = this.processed.getAndIncrement();
 
-        if ( result.getPathsWrittenTo().isEmpty() && this.statisticalOutputsRequestedPerFeature )
+        if ( !result.hasStatistics() && this.statisticalOutputsRequestedPerFeature )
         {
             LOGGER.warn( "[{}/{}] Completed feature '{}', but no statistics were produced. "
                          + "This probably occurred because no pools contained valid pairs.",
@@ -154,16 +153,12 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
     }
 
     /**
-     * Reports by logging information about the status of features. Optionally, an exception may be thrown when no
-     * outputs are produced for any features. This may not be desired when per-feature outputs were not requested,
-     * such as when pairs were requested and no statistics were requested.
-     * 
-     * @param throwsExceptionIfNoOutputs is true if an exception should be thrown on encountering no outputs in this 
-     *            context, false to not throw an exception 
+     * Reports by logging information about the status of features.
+     *  
      * @throws WresProcessingException if no features were completed successfully
      */
 
-    void report( boolean throwsExceptionIfNoOutputs )
+    void report()
     {
         // Finalize results
         List<Feature> successfulFeaturesToReport =
@@ -175,14 +170,14 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
              &&
              !successfulFeaturesToReport.isEmpty() )
         {
-            LOGGER.info( "The following features produced statistics: {}",
+            LOGGER.info( "The following features succeeded: {}",
                          ConfigHelper.getFeaturesDescription( successfulFeaturesToReport ) );
         }
 
         // Exception after detailed report: in practice, this should be handled earlier
         // but this is another opportunity to signal that zero successful features is 
         // exceptional behavior
-        if ( successfulFeaturesToReport.isEmpty() && throwsExceptionIfNoOutputs )
+        if ( successfulFeaturesToReport.isEmpty() )
         {
             throw new WresProcessingException( "No features were successfully evaluated.", null );
         }
@@ -192,13 +187,13 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
         {
             if ( this.totalFeatures == successfulFeaturesToReport.size() )
             {
-                LOGGER.info( "All features in project {} produced some statistics.",
+                LOGGER.info( "All features in project {} succeeded.",
                              projectConfigPlus );
             }
             else
             {
-                LOGGER.info( "{} out of {} features in project {} produced some statistics and "
-                             + "{} out of {} features produced no statistics.",
+                LOGGER.info( "{} out of {} features in project {} succeeded and "
+                             + "{} out of {} features did not succeed.",
                              successfulFeaturesToReport.size(),
                              totalFeatures,
                              projectConfigPlus,
