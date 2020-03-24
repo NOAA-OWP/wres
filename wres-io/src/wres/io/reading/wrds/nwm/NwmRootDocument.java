@@ -7,6 +7,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
+import wres.io.reading.wrds.ParameterCodes;
+
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
@@ -58,15 +61,19 @@ public class NwmRootDocument
 {
     private final List<NwmForecast> forecasts;
     private final Map<String,String> variable;
+    private final ParameterCodes parameterCodes;
 
     @JsonCreator( mode = JsonCreator.Mode.PROPERTIES )
     public NwmRootDocument( @JsonProperty( "forecasts" )
                             List<NwmForecast> forecasts,
                             @JsonProperty( "variable" )
-                            Map<String,String> variable )
+                            Map<String,String> variable,
+                            @JsonProperty( "parameter_codes" )
+                            ParameterCodes parameterCodes )
     {
         this.forecasts = forecasts;
         this.variable = variable;
+        this.parameterCodes = parameterCodes;
     }
 
     public List<NwmForecast> getForecasts()
@@ -79,6 +86,11 @@ public class NwmRootDocument
         return this.variable;
     }
 
+    public ParameterCodes getParameterCodes()
+    {
+        return this.parameterCodes;
+    }
+    
     @Override
     public String toString()
     {

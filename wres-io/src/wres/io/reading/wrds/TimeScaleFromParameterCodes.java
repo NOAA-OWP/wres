@@ -23,7 +23,7 @@ import wres.datamodel.scale.TimeScale.TimeScaleFunction;
  * @author james.brown@hydrosolved.com
  */
 
-class TimeScaleFromParameterCodes
+public class TimeScaleFromParameterCodes
 {
 
     /**
@@ -42,7 +42,7 @@ class TimeScaleFromParameterCodes
      * @throws UnsupportedOperationException if the scale is unsupported
      */
 
-    static TimeScale getTimeScale( ParameterCodes parameterCodes, URI source )
+    public static TimeScale getTimeScale( ParameterCodes parameterCodes, URI source )
     {
         Objects.requireNonNull( parameterCodes,
                                 "Specify non-null parameter codes alongside the WRDS source '" + source + "'." );

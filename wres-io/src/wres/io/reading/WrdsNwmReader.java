@@ -41,14 +41,18 @@ import wres.config.generated.DatasourceType;
 import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
+import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
+import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.concurrency.TimeSeriesIngester;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Features;
 import wres.io.data.details.FeatureDetails;
 import wres.io.reading.wrds.ReadValueManager;
+import wres.io.reading.wrds.TimeScaleFromParameterCodes;
 import wres.io.reading.wrds.nwm.NwmDataPoint;
 import wres.io.reading.wrds.nwm.NwmFeature;
 import wres.io.reading.wrds.nwm.NwmForecast;
@@ -250,7 +254,20 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                                          .get( "name" );
         String measurementUnit = document.getVariable()
                                          .get( "unit" );
-
+        
+        // Time scale if available
+        TimeScale timeScale = null;
+ 
+        if( Objects.nonNull( document.getParameterCodes() ) )
+        {
+            timeScale = TimeScaleFromParameterCodes.getTimeScale( document.getParameterCodes(), uri );
+            LOGGER.debug( "{}{}{}{}",
+                         "While processing source ",
+                         uri,
+                         " discovered a time scale of ",
+                         timeScale );
+        }
+        
         // Is this a hack or not? Translate "meter^3 / sec" to "CMS"
         if ( measurementUnit.equals( "meter^3 / sec") )
         {
@@ -267,7 +284,8 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                 {
                     Pair<String, TimeSeries<?>> transformed =
                             this.transform( forecast.getReferenceDatetime(),
-                                            nwmFeature );
+                                            nwmFeature,
+                                            timeScale );
                     String locationName = transformed.getKey();
                     TimeSeries<?> timeSeries = transformed.getValue();
 
@@ -342,11 +360,13 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
     /**
      * Transform deserialized JSON document (now a POJO tree) to TimeSeries.
      * @param feature The POJO with a TimeSeries in it.
+     * @param the time scale associated with the time series.
      * @return The NWM location name (akd nwm feature id, comid) and TimeSeries.
      */
 
     private Pair<String,TimeSeries<?>> transform( Instant referenceDatetime,
-                                                  NwmFeature feature )
+                                                  NwmFeature feature,
+                                                  TimeScale timeScale )
     {
         Objects.requireNonNull( feature );
         Objects.requireNonNull( feature.getLocation() );
@@ -395,9 +415,12 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                 }
             }
 
-            timeSeries = TimeSeries.of( referenceDatetime,
-                                        referenceTimeType,
-                                        Collections.unmodifiableSortedSet( events ) );
+            TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of( referenceTimeType, referenceDatetime ),
+                                                                 timeScale );
+
+            timeSeries = new TimeSeriesBuilder<Double>().addEvents( Collections.unmodifiableSortedSet( events ) )
+                                                        .setMetadata( metadata )
+                                                        .build();
         }
         else if ( members.length > 1 )
         {
@@ -462,18 +485,19 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
             }
 
             // Re-shape the data to match the WRES metrics/datamodel expectation
-            SortedSet<Event<Ensemble>> data = new TreeSet<>();
+            TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, referenceDatetime ),
+                                                                 timeScale );
 
-            for ( Map.Entry<Instant,double[]> row : primitiveData.entrySet() )
+            TimeSeriesBuilder<Ensemble> builder = new TimeSeriesBuilder<Ensemble>().setMetadata( metadata );
+
+            for ( Map.Entry<Instant, double[]> row : primitiveData.entrySet() )
             {
                 Ensemble ensemble = Ensemble.of( row.getValue() );
                 Event<Ensemble> ensembleEvent = Event.of( row.getKey(), ensemble );
-                data.add( ensembleEvent );
+                builder.addEvent( ensembleEvent );
             }
 
-            timeSeries = TimeSeries.of( referenceDatetime,
-                                        ReferenceTimeType.T0,
-                                        data );
+            timeSeries = builder.build();
         }
         else
         {
