@@ -82,6 +82,8 @@ import wres.system.SystemSettings;
  * Another improvement would be to allow reading of NWM feature ids not present
  * in the wres.Features table. The NWMTimeSeries class used to read the NWM data
  * has no assumption of connection to the wres.Features table.
+ *
+ * One-shot callable. Closes internal executor at end of first call().
  */
 
 public class NWMReader implements Callable<List<IngestResult>>
@@ -335,6 +337,18 @@ public class NWMReader implements Callable<List<IngestResult>>
 
     @Override
     public List<IngestResult> call() throws IOException
+    {
+        try
+        {
+            return this.ingest();
+        }
+        finally
+        {
+            this.shutdownNow();
+        }
+    }
+
+    private List<IngestResult> ingest() throws IngestException
     {
         List<IngestResult> ingestResults = new ArrayList<>();
         Set<FeatureDetails> features;
@@ -689,5 +703,22 @@ public class NWMReader implements Callable<List<IngestResult>>
         }
 
         return Pair.of( earliestReferenceDatetime, latestReferenceDatetime );
+    }
+
+    /**
+     * Shut down this instance's executor(s) to prevent Thread leaks.
+     */
+
+    private void shutdownNow()
+    {
+        List<Runnable> incompleteTasks = this.executor.shutdownNow();
+
+        // An exception should already be propagating if the following is true.
+        if ( !incompleteTasks.isEmpty() && LOGGER.isWarnEnabled() )
+        {
+            LOGGER.warn( "Failed to complete {} ingest tasks associated with {}",
+                         incompleteTasks.size(),
+                         this.getDataSource().getUri() );
+        }
     }
 }
