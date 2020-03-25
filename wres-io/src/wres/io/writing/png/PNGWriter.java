@@ -36,6 +36,7 @@ import wres.system.SystemSettings;
 
 abstract class PNGWriter
 {
+    private final SystemSettings systemSettings;
 
     /**
      * Resolution for writing duration outputs.
@@ -53,6 +54,11 @@ abstract class PNGWriter
      * The output directory to use to write
      */
     private final Path outputDirectory;
+
+    protected SystemSettings getSystemSettings()
+    {
+        return this.systemSettings;
+    }
 
     /**
      * Returns the duration units for writing lead durations.
@@ -83,14 +89,16 @@ abstract class PNGWriter
 
     /**
      * Writes an output chart to a specified path.
-     * 
+     *
+     * @param systemSettings The system settings to use.
      * @param outputImage the path to the output image
      * @param engine the chart engine
      * @param dest the destination configuration
      * @throws PNGWriteException if the chart could not be written
      */
 
-    static void writeChart( final Path outputImage,
+    static void writeChart( SystemSettings systemSettings,
+                            final Path outputImage,
                             final ChartEngine engine,
                             final DestinationConfig dest )
             throws PNGWriteException
@@ -98,8 +106,8 @@ abstract class PNGWriter
         final File outputImageFile = outputImage.toFile();
 
         // TODO: these defaults should be provided in the declaration
-        int width = SystemSettings.getDefaultChartWidth();
-        int height = SystemSettings.getDefaultChartHeight();
+        int width = systemSettings.getDefaultChartWidth();
+        int height = systemSettings.getDefaultChartHeight();
 
         if ( dest.getGraphical() != null && dest.getGraphical().getWidth() != null )
         {
@@ -283,14 +291,17 @@ abstract class PNGWriter
      * @throws NullPointerException if either input is null
      */
 
-    PNGWriter( ProjectConfigPlus projectConfigPlus,
+    PNGWriter( SystemSettings systemSettings,
+               ProjectConfigPlus projectConfigPlus,
                ChronoUnit durationUnits,
                Path outputDirectory )
     {
+        Objects.requireNonNull( systemSettings );
         Objects.requireNonNull( projectConfigPlus, "Specify a non-null project declaration." );
         Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
         Objects.requireNonNull( outputDirectory, "Specify non-null output directory." );
 
+        this.systemSettings = systemSettings;
         this.projectConfigPlus = projectConfigPlus;
         this.durationUnits = durationUnits;
         this.outputDirectory = outputDirectory;

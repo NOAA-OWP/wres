@@ -31,10 +31,13 @@ import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.processing.MetricProcessor;
+import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
 import wres.io.pooling.PoolFactory;
 import wres.io.project.Project;
 import wres.io.retrieval.UnitMapper;
+import wres.io.utilities.Database;
+import wres.system.SystemSettings;
 import wres.util.IterationFailedException;
 import wres.io.writing.commaseparated.pairs.PairsWriter;
 
@@ -162,7 +165,10 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
             if ( type == DatasourceType.ENSEMBLE_FORECASTS )
             {
                 List<Supplier<PoolOfPairs<Double, Ensemble>>> pools =
-                        PoolFactory.getEnsemblePools( this.project, this.feature.getFeature(), this.unitMapper );
+                        PoolFactory.getEnsemblePools( this.project.getDatabase(),
+                                                      this.project,
+                                                      this.feature.getFeature(),
+                                                      this.unitMapper );
 
                 // Stand-up the pair writers
                 PairsWriter<Double, Ensemble> pairsWriter = null;
@@ -182,7 +188,9 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                                                          this.executors.getThresholdExecutor(),
                                                                          this.executors.getMetricExecutor() );
 
-                return this.processFeature( projectConfig,
+                return this.processFeature( this.project.getSystemSettings(),
+                                            this.project.getExecutor(),
+                                            projectConfig,
                                             processor,
                                             pools,
                                             pairsWriter,
@@ -192,7 +200,10 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
             else
             {
                 List<Supplier<PoolOfPairs<Double, Double>>> pools =
-                        PoolFactory.getSingleValuedPools( this.project, this.feature.getFeature(), this.unitMapper );
+                        PoolFactory.getSingleValuedPools( this.project.getDatabase(),
+                                                          this.project,
+                                                          this.feature.getFeature(),
+                                                          this.unitMapper );
 
                 // Stand-up the pair writers
                 PairsWriter<Double, Double> pairsWriter = null;
@@ -212,7 +223,9 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                                                              this.executors.getThresholdExecutor(),
                                                                              this.executors.getMetricExecutor() );
 
-                return this.processFeature( projectConfig,
+                return this.processFeature( this.project.getSystemSettings(),
+                                            this.project.getExecutor(),
+                                            projectConfig,
                                             processor,
                                             pools,
                                             pairsWriter,
@@ -236,7 +249,9 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      * @return a processing result
      */
 
-    private <L, R> FeatureProcessingResult processFeature( ProjectConfig projectConfig,
+    private <L, R> FeatureProcessingResult processFeature( SystemSettings systemSettings,
+                                                           Executor executor,
+                                                           ProjectConfig projectConfig,
                                                            MetricProcessor<PoolOfPairs<L, R>> processor,
                                                            List<Supplier<PoolOfPairs<L, R>>> pools,
                                                            PairsWriter<L, R> sampleWriter,
@@ -269,7 +284,9 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                                           this.executors.getPairExecutor() )
                                          .thenApplyAsync( metricOutputs -> {
                                              ProduceOutputsFromStatistics outputProcessor =
-                                                     ProduceOutputsFromStatistics.of( this.resolvedProject,
+                                                     ProduceOutputsFromStatistics.of( systemSettings,
+                                                                                      executor,
+                                                                                      this.resolvedProject,
                                                                                       onlyWriteTheseTypes,
                                                                                       this.sharedWriters.getStatisticsWriters(),
                                                                                       this.unitMapper );
@@ -327,7 +344,9 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         }
 
         // Generate cached output if available
-        Set<Path> endOfPipelinePaths = this.generateEndOfPipelineProducts( processor );
+        Set<Path> endOfPipelinePaths = this.generateEndOfPipelineProducts( systemSettings,
+                                                                           executor,
+                                                                           processor );
 
         Set<Path> paths = new HashSet<>( endOfPipelinePaths );
 
@@ -422,7 +441,9 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      * @return a set of paths written
      */
 
-    private <L, R> Set<Path> generateEndOfPipelineProducts( MetricProcessor<PoolOfPairs<L, R>> processor )
+    private <L, R> Set<Path> generateEndOfPipelineProducts( SystemSettings systemSettings,
+                                                            Executor executor,
+                                                            MetricProcessor<PoolOfPairs<L, R>> processor )
     {
         if ( processor.hasCachedMetricOutput() )
         {
@@ -438,7 +459,9 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                                             .contains( format );
                 try ( // End of pipeline processor
                       ProduceOutputsFromStatistics endOfPipeline =
-                              ProduceOutputsFromStatistics.of( this.resolvedProject,
+                              ProduceOutputsFromStatistics.of( systemSettings,
+                                                               executor,
+                                                               this.resolvedProject,
                                                                nowWriteTheseTypes,
                                                                this.sharedWriters.getStatisticsWriters(),
                                                                this.unitMapper ) )

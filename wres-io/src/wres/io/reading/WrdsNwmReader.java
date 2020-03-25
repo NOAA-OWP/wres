@@ -49,7 +49,10 @@ import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.concurrency.TimeSeriesIngester;
 import wres.io.config.ConfigHelper;
+import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
+import wres.io.data.caching.MeasurementUnits;
+import wres.io.data.caching.Variables;
 import wres.io.data.details.FeatureDetails;
 import wres.io.reading.wrds.ReadValueManager;
 import wres.io.reading.wrds.TimeScaleFromParameterCodes;
@@ -58,6 +61,7 @@ import wres.io.reading.wrds.nwm.NwmFeature;
 import wres.io.reading.wrds.nwm.NwmForecast;
 import wres.io.reading.wrds.nwm.NwmMember;
 import wres.io.reading.wrds.nwm.NwmRootDocument;
+import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
 
@@ -84,6 +88,12 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
             new ObjectMapper().registerModule( new JavaTimeModule() )
                               .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true );
 
+    private final SystemSettings systemSettings;
+    private final Database database;
+    private final Features featuresCache;
+    private final Variables variablesCache;
+    private final Ensembles ensemblesCache;
+    private final MeasurementUnits measurementUnitsCache;
     private final ProjectConfig projectConfig;
     private final DataSource dataSource;
     private final DatabaseLockManager lockManager;
@@ -92,10 +102,32 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
     private final BlockingQueue<Future<List<IngestResult>>> ingests;
     private final CountDownLatch startGettingIngestResults;
 
-    public WrdsNwmReader(  ProjectConfig projectConfig,
-                           DataSource dataSource,
-                           DatabaseLockManager lockManager )
+    public WrdsNwmReader( SystemSettings systemSettings,
+                          Database database,
+                          Features featuresCache,
+                          Variables variablesCache,
+                          Ensembles ensemblesCache,
+                          MeasurementUnits measurementUnitsCache,
+                          ProjectConfig projectConfig,
+                          DataSource dataSource,
+                          DatabaseLockManager lockManager )
     {
+        Objects.requireNonNull( systemSettings );
+        Objects.requireNonNull( database );
+        Objects.requireNonNull( featuresCache );
+        Objects.requireNonNull( variablesCache );
+        Objects.requireNonNull( ensemblesCache );
+        Objects.requireNonNull( measurementUnitsCache );
+        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( dataSource );
+        Objects.requireNonNull( lockManager );
+
+        this.systemSettings = systemSettings;
+        this.database = database;
+        this.featuresCache = featuresCache;
+        this.variablesCache = variablesCache;
+        this.ensemblesCache = ensemblesCache;
+        this.measurementUnitsCache = measurementUnitsCache;
         this.projectConfig = projectConfig;
         this.dataSource = dataSource;
         this.lockManager = lockManager;
@@ -160,11 +192,11 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                 .build();
 
         // As of 2.1, the SystemSetting is used in two different NWM readers:
-        int concurrentCount = SystemSettings.getMaxiumNwmIngestThreads();
+        int concurrentCount = systemSettings.getMaxiumNwmIngestThreads();
         BlockingQueue<Runnable> webClientQueue = new ArrayBlockingQueue<>( concurrentCount );
         this.ingestSaverExecutor = new ThreadPoolExecutor( concurrentCount,
                                                            concurrentCount,
-                                                           SystemSettings.poolObjectLifespan(),
+                                                           systemSettings.poolObjectLifespan(),
                                                            TimeUnit.MILLISECONDS,
                                                            webClientQueue,
                                                            wrdsNwmReaderIngest );
@@ -172,6 +204,36 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
         this.ingests = new ArrayBlockingQueue<>( concurrentCount );
         this.startGettingIngestResults = new CountDownLatch( concurrentCount );
         LOGGER.debug( "Created WrdsNwmReader for {}", this.dataSource );
+    }
+
+    private SystemSettings getSystemSettings()
+    {
+        return this.systemSettings;
+    }
+
+    private Database getDatabase()
+    {
+        return this.database;
+    }
+
+    private Variables getVariablesCache()
+    {
+        return this.variablesCache;
+    }
+
+    private Features getFeaturesCache()
+    {
+        return this.featuresCache;
+    }
+
+    private Ensembles getEnsemblesCache()
+    {
+        return this.ensemblesCache;
+    }
+
+    private MeasurementUnits getMeasurementUnitsCache()
+    {
+        return this.measurementUnitsCache;
     }
 
     private ProjectConfig getProjectConfig()
@@ -293,7 +355,13 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                                     .isEmpty() )
                     {
                         TimeSeriesIngester timeSeriesIngester =
-                                this.createTimeSeriesIngester( this.getProjectConfig(),
+                                this.createTimeSeriesIngester( this.getSystemSettings(),
+                                                               this.getDatabase(),
+                                                               this.getFeaturesCache(),
+                                                               this.getVariablesCache(),
+                                                               this.getEnsemblesCache(),
+                                                               this.getMeasurementUnitsCache(),
+                                                               this.getProjectConfig(),
                                                                this.getDataSource(),
                                                                this.getLockManager(),
                                                                timeSeries,
@@ -360,7 +428,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
     /**
      * Transform deserialized JSON document (now a POJO tree) to TimeSeries.
      * @param feature The POJO with a TimeSeries in it.
-     * @param the time scale associated with the time series.
+     * @param timeScale the time scale associated with the time series.
      * @return The NWM location name (akd nwm feature id, comid) and TimeSeries.
      */
 
@@ -375,7 +443,8 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
         int rawLocationId = feature.getLocation()
                                    .getNwmLocationNames()
                                    .getNwmFeatureId();
-        String wresGenericFeatureName = this.getWresFeatureNameFromNwmFeatureId( rawLocationId );
+        String wresGenericFeatureName = this.getWresFeatureNameFromNwmFeatureId( this.getFeaturesCache(),
+                                                                                 rawLocationId );
         NwmMember[] members = feature.getMembers();
         TimeSeries<?> timeSeries;
 
@@ -509,7 +578,8 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                         timeSeries );
     }
 
-    String getWresFeatureNameFromNwmFeatureId( int rawLocationId )
+    String getWresFeatureNameFromNwmFeatureId( Features featuresCache,
+                                               int rawLocationId )
     {
         FeatureDetails featureDetailsFromKey;
         Feature featureWithComid =  new Feature( null,
@@ -527,7 +597,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                                                  null );
         try
         {
-            featureDetailsFromKey = Features.getDetails( featureWithComid );
+            featureDetailsFromKey = featuresCache.getDetails( featureWithComid );
         }
         catch ( SQLException se )
         {
@@ -545,7 +615,13 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
      * @return a TimeSeriesIngester
      */
 
-    TimeSeriesIngester createTimeSeriesIngester( ProjectConfig projectConfig,
+    TimeSeriesIngester createTimeSeriesIngester( SystemSettings systemSettings,
+                                                 Database database,
+                                                 Features featuresCache,
+                                                 Variables variablesCache,
+                                                 Ensembles ensemblesCache,
+                                                 MeasurementUnits measurementUnitsCache,
+                                                 ProjectConfig projectConfig,
                                                  DataSource dataSource,
                                                  DatabaseLockManager lockManager,
                                                  TimeSeries<?> timeSeries,
@@ -553,7 +629,13 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                                                  String variableName,
                                                  String measurementUnit )
     {
-        return new TimeSeriesIngester( projectConfig,
+        return new TimeSeriesIngester( systemSettings,
+                                       database,
+                                       featuresCache,
+                                       variablesCache,
+                                       ensemblesCache,
+                                       measurementUnitsCache,
+                                       projectConfig,
                                        dataSource,
                                        lockManager,
                                        timeSeries,

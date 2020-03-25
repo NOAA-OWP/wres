@@ -38,6 +38,8 @@ public class Query
      */
     private static final long TIMER_DELAY = 2000L;
 
+    private final SystemSettings systemSettings;
+
     /**
      * The script to run as part of the query
      */
@@ -81,19 +83,11 @@ public class Query
      * Constructor
      * @param script The script that the query will run
      */
-    private Query(final String script)
+    Query( SystemSettings systemSettings,
+           final String script )
     {
+        this.systemSettings = systemSettings;
         this.script = script;
-    }
-
-    /**
-     * Generates a query with the given script
-     * @param script The script to run
-     * @return The newly generated {@link Query} instance
-     */
-    static Query withScript( final String script)
-    {
-        return new Query( script );
     }
 
     /**
@@ -652,11 +646,11 @@ public class Query
     {
         // All system-wide database connection settings should be added here
         Statement statement = connection.createStatement();
-        statement.setQueryTimeout( SystemSettings.getQueryTimeout() );
+        statement.setQueryTimeout( systemSettings.getQueryTimeout() );
 
         if ( this.useCursor )
         {
-            statement.setFetchSize( SystemSettings.fetchSize() );
+            statement.setFetchSize( systemSettings.fetchSize() );
         }
 
         return statement;
@@ -674,11 +668,11 @@ public class Query
         // All system-wide database connection settings should be added here
         PreparedStatement statement = connection.prepareStatement( this.script,
                                                                    RETURN_GENERATED_KEYS );
-        statement.setQueryTimeout( SystemSettings.getQueryTimeout() );
+        statement.setQueryTimeout( systemSettings.getQueryTimeout() );
 
         if ( this.useCursor )
         {
-            statement.setFetchSize( SystemSettings.fetchSize() );
+            statement.setFetchSize( systemSettings.fetchSize() );
         }
 
         // If we have a basic array of parameters, we can just add them directly to the statement

@@ -1,6 +1,6 @@
 package wres.io.data.caching;
 
-import com.mchange.v2.c3p0.ComboPooledDataSource;
+import com.zaxxer.hikari.HikariDataSource;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -13,14 +13,14 @@ public class UnitConversionTest
     private static final double EPSILON = 0.000001;
 
     private static TestDatabase testDatabase;
-    private static ComboPooledDataSource dataSource;
+    private static HikariDataSource dataSource;
 
     @BeforeClass
     public void setup()
     {
         UnitConversionTest.testDatabase = new TestDatabase( this.getClass()
                                                                 .getSimpleName() );
-        UnitConversionTest.dataSource = UnitConversionTest.testDatabase.getNewComboPooledDataSource();
+        UnitConversionTest.dataSource = UnitConversionTest.testDatabase.getNewHikariDataSource();
     }
 
     @Test

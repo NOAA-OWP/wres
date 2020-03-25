@@ -5,7 +5,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Objects;
 
-import com.mchange.v2.c3p0.ComboPooledDataSource;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import liquibase.Contexts;
 import liquibase.Liquibase;
 import liquibase.database.Database;
@@ -59,17 +60,13 @@ public class TestDatabase
      * @return a newly created ComboPooledDataSource
      */
 
-    public ComboPooledDataSource getNewComboPooledDataSource()
+    public HikariDataSource getNewHikariDataSource()
     {
-        ComboPooledDataSource dataSource = new ComboPooledDataSource();
-        dataSource.setJdbcUrl( this.getJdbcString() );
-        dataSource.setAutoCommitOnClose( true );
-        dataSource.setInitialPoolSize( 10 );
-        dataSource.setMaxIdleTime( 30 );
-        dataSource.setMaxPoolSize( 20 );
-        dataSource.setUnreturnedConnectionTimeout( 1 );
-        dataSource.setDebugUnreturnedConnectionStackTraces( true );
-        return dataSource;
+        HikariConfig poolConfig = new HikariConfig();
+        String url = this.getJdbcString();
+        poolConfig.setJdbcUrl( url );
+        poolConfig.setMaximumPoolSize( 10 );
+        return new HikariDataSource( poolConfig );
     }
 
     /**
@@ -98,7 +95,7 @@ public class TestDatabase
         //return "jdbc:h2:mem:" + this.name + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL;TRACE_LEVEL_SYSTEM_OUT=3";
         //return "jdbc:h2:mem:" + this.name + ";MODE=PostgreSQL;TRACE_LEVEL_SYSTEM_OUT=3";
 
-        return "jdbc:h2:mem:" + this.name + ";MODE=PostgreSQL;";
+        return "jdbc:h2:mem:" + this.name + ";MODE=PostgreSQL;TRACE_LEVEL_FILE=4";
     }
 
     /**
@@ -622,6 +619,15 @@ public class TestDatabase
         try ( Statement statement = connection.createStatement() )
         {
             statement.execute( "DROP TABLE public.databasechangelog; DROP TABLE public.databasechangeloglock;" );
+        }
+    }
+
+    public void shutdown( Connection connection )
+            throws SQLException
+    {
+        try ( Statement statement = connection.createStatement() )
+        {
+            statement.execute( "SHUTDOWN" );
         }
     }
 }

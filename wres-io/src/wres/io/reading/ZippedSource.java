@@ -35,11 +35,16 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Format;
 import wres.config.generated.ProjectConfig;
-import wres.io.concurrency.Executor;
 import wres.io.concurrency.IngestSaver;
 import wres.io.concurrency.WRESCallable;
 import wres.io.concurrency.ZippedPIXMLIngest;
 import wres.io.config.ConfigHelper;
+import wres.io.data.caching.DataSources;
+import wres.io.data.caching.Ensembles;
+import wres.io.data.caching.Features;
+import wres.io.data.caching.MeasurementUnits;
+import wres.io.data.caching.Variables;
+import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
 import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
@@ -52,26 +57,33 @@ public class ZippedSource extends BasicSource {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ZippedSource.class);
 
-    private final ThreadPoolExecutor readerService = createReaderService();
+    private final SystemSettings systemSettings;
+    private final Database database;
+    private final DataSources dataSourcesCache;
+    private final Features featuresCache;
+    private final Variables variablesCache;
+    private final Ensembles ensemblesCache;
+    private final MeasurementUnits measurementUnitsCache;
+    private final ThreadPoolExecutor readerService;
     private final Queue<Future<List<IngestResult>>> tasks = new LinkedList<>();
     // After submitting N tasks, call get() on one task prior to next submission
-    private final CountDownLatch startGettingOnTasks = new CountDownLatch( SystemSettings.maximumArchiveThreads() );
+    private final CountDownLatch startGettingOnTasks;
     private final Queue<URI> savedFiles = new LinkedList<>();
     private final DatabaseLockManager lockManager;
 
-    private ThreadPoolExecutor createReaderService()
+    private ThreadPoolExecutor createReaderService( SystemSettings systemSettings )
     {
         ThreadFactory zippedSourceFactory = new BasicThreadFactory.Builder()
                 .namingPattern( "ZippedSource Ingest" )
                 .build();
         BlockingQueue<Runnable>
-                zippedSourceQueue = new ArrayBlockingQueue<>( SystemSettings.maximumArchiveThreads() );
-        ThreadPoolExecutor executor = new ThreadPoolExecutor(SystemSettings.maximumArchiveThreads(),
-                                                             SystemSettings.maximumArchiveThreads(),
-                                                             SystemSettings.poolObjectLifespan(),
-                                                             TimeUnit.MILLISECONDS,
-                                                             zippedSourceQueue,
-                                                             zippedSourceFactory );
+                zippedSourceQueue = new ArrayBlockingQueue<>( systemSettings.maximumArchiveThreads() );
+        ThreadPoolExecutor executor = new ThreadPoolExecutor( systemSettings.maximumArchiveThreads(),
+                                                              systemSettings.maximumArchiveThreads(),
+                                                              systemSettings.poolObjectLifespan(),
+                                                              TimeUnit.MILLISECONDS,
+                                                              zippedSourceQueue,
+                                                              zippedSourceFactory );
 
         // Abort policy, but ought never be hit because we throttle submission
         // of tasks to the count of maximum threads and wait to submit another
@@ -116,13 +128,65 @@ public class ZippedSource extends BasicSource {
      * @param dataSource details of the data source
      * @param lockManager The lock manager to use.
 	 */
-    ZippedSource ( ProjectConfig projectConfig,
-                   DataSource dataSource,
-                   DatabaseLockManager lockManager )
-	{
+
+    ZippedSource( SystemSettings systemSettings,
+                  Database database,
+                  DataSources dataSourcesCache,
+                  Features featuresCache,
+                  Variables variablesCache,
+                  Ensembles ensemblesCache,
+                  MeasurementUnits measurementUnitsCache,
+                  ProjectConfig projectConfig,
+                  DataSource dataSource,
+                  DatabaseLockManager lockManager )
+    {
         super( projectConfig,
                dataSource );
+        this.systemSettings = systemSettings;
+        this.database = database;
+        this.dataSourcesCache = dataSourcesCache;
+        this.featuresCache = featuresCache;
+        this.variablesCache = variablesCache;
+        this.ensemblesCache = ensemblesCache;
+        this.measurementUnitsCache = measurementUnitsCache;
         this.lockManager = lockManager;
+        this.readerService = createReaderService( systemSettings );
+        this.startGettingOnTasks = new CountDownLatch( systemSettings.maximumArchiveThreads() );
+    }
+
+    private SystemSettings getSystemSettings()
+    {
+        return this.systemSettings;
+    }
+
+    private Database getDatabase()
+    {
+        return this.database;
+    }
+
+    private DataSources getDataSourcesCache()
+    {
+        return this.dataSourcesCache;
+    }
+
+    private Features getFeaturesCache()
+    {
+        return this.featuresCache;
+    }
+
+    private Variables getVariablesCache()
+    {
+        return this.variablesCache;
+    }
+
+    private Ensembles getEnsemblesCache()
+    {
+        return this.ensemblesCache;
+    }
+
+    private MeasurementUnits getMeasurementUnitsCache()
+    {
+        return this.measurementUnitsCache;
     }
 
     private List<IngestResult> issue()
@@ -277,7 +341,14 @@ public class ZippedSource extends BasicSource {
 
         if ( sourceType == Format.PI_XML )
         {
-            ingest = new ZippedPIXMLIngest( this.getProjectConfig(),
+            ingest = new ZippedPIXMLIngest( this.getSystemSettings(),
+                                            this.getDatabase(),
+                                            this.getDataSourcesCache(),
+                                            this.getFeaturesCache(),
+                                            this.getVariablesCache(),
+                                            this.getEnsemblesCache(),
+                                            this.getMeasurementUnitsCache(),
+                                            this.getProjectConfig(),
                                             innerDataSource,
                                             content,
                                             this.getLockManager() );
@@ -296,14 +367,20 @@ public class ZippedSource extends BasicSource {
                 this.savedFiles.add( tempFileLocation );
 
                 ProgressMonitor.increment();
-                Future<List<IngestResult>> task = Executor.submit(
+                Callable<List<IngestResult>> task =
                         IngestSaver.createTask()
+                                   .withSystemSettings( this.getSystemSettings() )
+                                   .withDatabase( this.getDatabase() )
+                                   .withDataSourcesCache( this.getDataSourcesCache() )
+                                   .withFeaturesCache( this.getFeaturesCache() )
+                                   .withVariablesCache( this.getVariablesCache() )
+                                   .withEnsemblesCache( this.getEnsemblesCache() )
+                                   .withMeasurementUnitsCache( this.getMeasurementUnitsCache() )
                                    .withProject( this.getProjectConfig() )
                                    .withDataSource( innerDataSource )
                                    .withoutHash()
                                    .withProgressMonitoring()
-                                   .build()
-                );
+                                   .build();
                 this.addIngestTask(task);
             }
         }

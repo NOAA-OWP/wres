@@ -114,10 +114,12 @@ class NWMTimeSeries implements Closeable
      * @throws IllegalArgumentException When baseUri is not absolute.
      */
 
-    NWMTimeSeries( NWMProfile profile,
+    NWMTimeSeries( SystemSettings systemSettings,
+                   NWMProfile profile,
                    Instant referenceDatetime,
                    URI baseUri )
     {
+        Objects.requireNonNull( systemSettings );
         Objects.requireNonNull( profile );
         Objects.requireNonNull( referenceDatetime );
         Objects.requireNonNull( baseUri );
@@ -153,7 +155,7 @@ class NWMTimeSeries implements Closeable
                 new ArrayBlockingQueue<>( CONCURRENT_READS );
         this.readExecutor = new ThreadPoolExecutor( CONCURRENT_READS,
                                                     CONCURRENT_READS,
-                                                    SystemSettings.poolObjectLifespan(),
+                                                    systemSettings.poolObjectLifespan(),
                                                     TimeUnit.MILLISECONDS,
                                                     nwmReaderQueue,
                                                     nwmReaderThreadFactory );

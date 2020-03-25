@@ -48,6 +48,7 @@ import wres.io.retrieval.EnsembleRetrieverFactory;
 import wres.io.retrieval.RetrieverFactory;
 import wres.io.retrieval.SingleValuedRetrieverFactory;
 import wres.io.retrieval.UnitMapper;
+import wres.io.utilities.Database;
 
 /**
  * A factory class for generating the pools of pairs associated with an evaluation.
@@ -80,6 +81,7 @@ public class PoolFactory
     /**
      * Create pools for single-valued data from a prescribed {@link Project} and {@link Feature}.
      * 
+     * @param database The database to use.
      * @param project the project for which pools are required
      * @param feature the feature for which pools are required
      * @param unitMapper the mapper to convert measurement units
@@ -89,7 +91,8 @@ public class PoolFactory
      *            data
      */
 
-    public static List<Supplier<PoolOfPairs<Double, Double>>> getSingleValuedPools( Project project,
+    public static List<Supplier<PoolOfPairs<Double, Double>>> getSingleValuedPools( Database database,
+                                                                                    Project project,
                                                                                     Feature feature,
                                                                                     UnitMapper unitMapper )
     {
@@ -119,7 +122,8 @@ public class PoolFactory
         TimeScale desiredTimeScale = ConfigHelper.getDesiredTimeScale( pairConfig );
 
         // Create a feature-shaped retriever factory to support retrieval for this project
-        RetrieverFactory<Double, Double> retrieverFactory = SingleValuedRetrieverFactory.of( project,
+        RetrieverFactory<Double, Double> retrieverFactory = SingleValuedRetrieverFactory.of( database,
+                                                                                             project,
                                                                                              feature,
                                                                                              unitMapper );
 
@@ -215,7 +219,8 @@ public class PoolFactory
      *            data
      */
 
-    public static List<Supplier<PoolOfPairs<Double, Ensemble>>> getEnsemblePools( Project project,
+    public static List<Supplier<PoolOfPairs<Double, Ensemble>>> getEnsemblePools( Database database,
+                                                                                  Project project,
                                                                                   Feature feature,
                                                                                   UnitMapper unitMapper )
     {
@@ -244,7 +249,8 @@ public class PoolFactory
         TimeScale desiredTimeScale = ConfigHelper.getDesiredTimeScale( pairConfig );
 
         // Create a feature-shaped retriever factory to support retrieval for this project
-        RetrieverFactory<Double, Ensemble> retrieverFactory = EnsembleRetrieverFactory.of( project,
+        RetrieverFactory<Double, Ensemble> retrieverFactory = EnsembleRetrieverFactory.of( database,
+                                                                                           project,
                                                                                            feature,
                                                                                            unitMapper );
 

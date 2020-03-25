@@ -232,7 +232,7 @@ project(':wres-system')
         compile group: 'org.liquibase', name: 'liquibase-core', version: '3.8.4'
 
         // connection pooling:
-        compile 'com.mchange:c3p0:0.9.5.5'
+        compile 'com.zaxxer:HikariCP:3.4.2'
 
         // Because org.postgresql:postgresql uses JUL logging, bridge it, here
         // at compile time because we need to expose a class to JUL.
@@ -309,17 +309,11 @@ project(':wres-io')
 
         compile group: 'org.liquibase', name: 'liquibase-core', version: '3.8.6'
 
-        compile( group: 'com.amazonaws', name: 'aws-java-sdk-s3', version: '1.11.725' )
-        {
-            // Because we use slf4j, not jcl:
-            exclude group: 'commons-logging', module: 'commons-logging'
-        }
-
         // to use native postgres copy, need this on compile, otherwise runtime
         compile 'org.postgresql:postgresql:42.2.10'
 
         // connection pooling:
-        compile 'com.mchange:c3p0:0.9.5.5'
+        compile 'com.zaxxer:HikariCP:3.4.2'
 
         // wres.io.utilities uses javax.json.* imports
         compile 'org.glassfish:javax.json:1.1.4'

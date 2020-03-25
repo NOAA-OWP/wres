@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
-import com.mchange.v2.c3p0.ComboPooledDataSource;
+import com.zaxxer.hikari.HikariDataSource;
 import liquibase.database.Database;
 import liquibase.exception.LiquibaseException;
 
@@ -26,15 +26,11 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PowerMockIgnore;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.mockito.MockitoAnnotations;
 
-import wres.system.DatabaseConnectionSupplier;
+import wres.io.concurrency.Executor;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.scale.TimeScale.TimeScaleFunction;
@@ -49,9 +45,6 @@ import wres.io.data.details.MeasurementDetails;
 import wres.io.data.details.SourceDetails;
 import wres.io.data.details.VariableDetails;
 import wres.io.project.Project;
-import wres.io.retrieval.ObservationRetriever;
-import wres.io.retrieval.Retriever;
-import wres.io.retrieval.UnitMapper;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.TestDatabase;
 import wres.system.SystemSettings;
@@ -61,17 +54,17 @@ import wres.system.SystemSettings;
  * @author james.brown@hydrosolved.com
  */
 
-@RunWith( PowerMockRunner.class )
-@PrepareForTest( { SystemSettings.class } )
-@PowerMockIgnore( { "javax.management.*", "java.io.*", "javax.xml.*", "com.sun.*", "org.xml.*" } )
 public class ObservationRetrieverTest
 {
     private static final String SECOND_TIME = "2023-04-01T09:00:00Z";
     private static final String FIRST_TIME = "2023-04-01T03:00:00Z";
+    @Mock private SystemSettings mockSystemSettings;
+    private wres.io.utilities.Database wresDatabase;
+    @Mock private Executor mockExecutor;
+    private Features featuresCache;
     private TestDatabase testDatabase;
-    private ComboPooledDataSource dataSource;
+    private HikariDataSource dataSource;
     private Connection rawConnection;
-    private @Mock DatabaseConnectionSupplier mockConnectionSupplier;
 
     /**
      * A project_id for testing;
@@ -120,9 +113,20 @@ public class ObservationRetrieverTest
     @Before
     public void setup() throws Exception
     {
+        MockitoAnnotations.initMocks( this );
+
         // Create the database and connection pool
         this.testDatabase = new TestDatabase( "ObservationRetrieverTest" );
-        this.dataSource = this.testDatabase.getNewComboPooledDataSource();
+        this.dataSource = this.testDatabase.getNewHikariDataSource();
+
+        // Substitute our H2 connection pool for both pools:
+        Mockito.when( this.mockSystemSettings.getConnectionPool() )
+               .thenReturn( this.dataSource );
+        Mockito.when( this.mockSystemSettings.getHighPriorityConnectionPool() )
+               .thenReturn( this.dataSource );
+
+        this.wresDatabase = new wres.io.utilities.Database( this.mockSystemSettings );
+        this.featuresCache = new Features( this.wresDatabase );
 
         // Create the connection and schema
         this.createTheConnectionAndSchema();
@@ -133,7 +137,7 @@ public class ObservationRetrieverTest
         // Add some data for testing
         this.addAnObservedTimeSeriesWithTenEventsToTheDatabase();
 
-        this.unitMapper = UnitMapper.of( UNITS );
+        this.unitMapper = UnitMapper.of( this.wresDatabase, UNITS );
     }
 
     @Test
@@ -141,7 +145,8 @@ public class ObservationRetrieverTest
     {
         // Build the retriever
         Retriever<TimeSeries<Double>> observedRetriever =
-                new ObservationRetriever.Builder().setProjectId( PROJECT_ID )
+                new ObservationRetriever.Builder().setDatabase( this.wresDatabase )
+                                                  .setProjectId( PROJECT_ID )
                                                   .setVariableFeatureId( this.variableFeatureId )
                                                   .setUnitMapper( this.unitMapper )
                                                   .setLeftOrRightOrBaseline( LRB )
@@ -186,7 +191,8 @@ public class ObservationRetrieverTest
 
         // Build the retriever
         Retriever<TimeSeries<Double>> observedRetriever =
-                new ObservationRetriever.Builder().setProjectId( PROJECT_ID )
+                new ObservationRetriever.Builder().setDatabase( this.wresDatabase )
+                                                  .setProjectId( PROJECT_ID )
                                                   .setVariableFeatureId( this.variableFeatureId )
                                                   .setUnitMapper( this.unitMapper )
                                                   .setTimeWindow( poolBoundaries )
@@ -228,7 +234,8 @@ public class ObservationRetrieverTest
     {
         // Build the retriever
         Retriever<TimeSeries<Double>> forecastRetriever =
-                new ObservationRetriever.Builder().setProjectId( PROJECT_ID )
+                new ObservationRetriever.Builder().setDatabase( this.wresDatabase )
+                                                  .setProjectId( PROJECT_ID )
                                                   .setVariableFeatureId( this.variableFeatureId )
                                                   .setUnitMapper( this.unitMapper )
                                                   .setLeftOrRightOrBaseline( LRB )
@@ -245,7 +252,8 @@ public class ObservationRetrieverTest
     {
         // Build the retriever
         Retriever<TimeSeries<Double>> forecastRetriever =
-                new ObservationRetriever.Builder().setProjectId( PROJECT_ID )
+                new ObservationRetriever.Builder().setDatabase( this.wresDatabase )
+                                                  .setProjectId( PROJECT_ID )
                                                   .setVariableFeatureId( this.variableFeatureId )
                                                   .setUnitMapper( this.unitMapper )
                                                   .setLeftOrRightOrBaseline( LRB )
@@ -262,7 +270,8 @@ public class ObservationRetrieverTest
     {
         // Build the retriever
         Retriever<TimeSeries<Double>> forecastRetriever =
-                new ObservationRetriever.Builder().setProjectId( PROJECT_ID )
+                new ObservationRetriever.Builder().setDatabase( this.wresDatabase )
+                                                  .setProjectId( PROJECT_ID )
                                                   .setVariableFeatureId( this.variableFeatureId )
                                                   .setUnitMapper( this.unitMapper )
                                                   .setLeftOrRightOrBaseline( LRB )
@@ -281,6 +290,7 @@ public class ObservationRetrieverTest
         this.rawConnection.close();
         this.rawConnection = null;
         this.testDatabase = null;
+        this.dataSource.close();
         this.dataSource = null;
     }
 
@@ -294,25 +304,9 @@ public class ObservationRetrieverTest
     {
         // Also mock a plain datasource (which works per test unlike c3p0)
         this.rawConnection = DriverManager.getConnection( this.testDatabase.getJdbcString() );
-        Mockito.when( this.mockConnectionSupplier.get() ).thenReturn( this.rawConnection );
 
         // Set up a bare bones database with only the schema
         this.testDatabase.createWresSchema( this.rawConnection );
-
-        // Substitute raw connection where needed:
-        PowerMockito.mockStatic( SystemSettings.class );
-        PowerMockito.when( SystemSettings.class, "getRawDatabaseConnection" )
-                    .thenReturn( this.rawConnection );
-
-        PowerMockito.whenNew( DatabaseConnectionSupplier.class )
-                    .withNoArguments()
-                    .thenReturn( this.mockConnectionSupplier );
-
-        // Substitute our H2 connection pool for both pools:
-        PowerMockito.when( SystemSettings.class, "getConnectionPool" )
-                    .thenReturn( this.dataSource );
-        PowerMockito.when( SystemSettings.class, "getHighPriorityConnectionPool" )
-                    .thenReturn( this.dataSource );
     }
 
     /**
@@ -332,6 +326,7 @@ public class ObservationRetrieverTest
         this.testDatabase.createVariableTable( liquibaseDatabase );
         this.testDatabase.createFeatureTable( liquibaseDatabase );
         this.testDatabase.createVariableFeatureTable( liquibaseDatabase );
+        this.testDatabase.createEnsembleTable( liquibaseDatabase );
         this.testDatabase.createObservationTable( liquibaseDatabase );
         this.testDatabase.createMeasurementUnitTable( liquibaseDatabase );
         this.testDatabase.createUnitConversionTable( liquibaseDatabase );
@@ -366,7 +361,7 @@ public class ObservationRetrieverTest
 
         SourceDetails sourceDetails = new SourceDetails( sourceKey );
 
-        sourceDetails.save();
+        sourceDetails.save( this.wresDatabase );
 
         assertTrue( sourceDetails.performedInsert() );
 
@@ -376,7 +371,10 @@ public class ObservationRetrieverTest
 
         // Add a project 
         Project project =
-                new Project( new ProjectConfig( null, null, null, null, null, "test_project" ), PROJECT_ID );
+                new Project( this.mockSystemSettings,
+                             this.wresDatabase,
+                             this.mockExecutor,
+                             new ProjectConfig( null, null, null, null, null, "test_project" ), PROJECT_ID );
         project.save();
 
         assertTrue( project.performedInsert() );
@@ -394,7 +392,8 @@ public class ObservationRetrieverTest
                                                     sourceId,
                                                     LRB.value() );
 
-        DataScripter script = new DataScripter( projectSourceInsert );
+        DataScripter script = new DataScripter( this.wresDatabase,
+                                                projectSourceInsert );
         int rows = script.execute();
 
         assertEquals( 1, rows );
@@ -402,20 +401,20 @@ public class ObservationRetrieverTest
         // Add a feature
         FeatureDetails feature = new FeatureDetails();
         feature.setLid( "FEAT" );
-        feature.save();
+        feature.save( this.wresDatabase );
 
         assertNotNull( feature.getId() );
 
         // Add a variable
         VariableDetails variable = new VariableDetails();
         variable.setVariableName( "VAR" );
-        variable.save();
+        variable.save( this.wresDatabase );
 
         assertNotNull( variable.getId() );
 
         // Get (and add) a variablefeature
         // There is no wres abstraction to help with this, but there is a static helper
-        this.variableFeatureId = Features.getVariableFeatureByFeature( feature, variable.getId() );
+        this.variableFeatureId = this.featuresCache.getVariableFeatureByFeature( feature, variable.getId() );
 
         assertNotNull( this.variableFeatureId );
 
@@ -423,7 +422,7 @@ public class ObservationRetrieverTest
         MeasurementDetails measurement = new MeasurementDetails();
 
         measurement.setUnit( UNITS );
-        measurement.save();
+        measurement.save( this.wresDatabase );
         Integer measurementUnitId = measurement.getId();
 
         assertNotNull( measurementUnitId );
@@ -464,7 +463,8 @@ public class ObservationRetrieverTest
                                                   scalePeriod,
                                                   scaleFunction );
 
-            DataScripter observedScript = new DataScripter( insert );
+            DataScripter observedScript = new DataScripter( this.wresDatabase,
+                                                            insert );
 
             int row = observedScript.execute();
 

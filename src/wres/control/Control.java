@@ -50,7 +50,38 @@ public class Control implements Function<String[], Integer>,
                                 Consumer<ProjectConfigPlus>,
                                 Supplier<Set<Path>>
 {
+    private final SystemSettings systemSettings;
+    private final Database database;
+    private final Executor executor;
+
     private final Set<Path> pathsWrittenTo = new HashSet<>();
+
+    public Control( SystemSettings systemSettings,
+                    Database database,
+                    Executor executor )
+    {
+        Objects.requireNonNull( systemSettings );
+        Objects.requireNonNull( database );
+        Objects.requireNonNull( executor );
+        this.systemSettings = systemSettings;
+        this.database = database;
+        this.executor = executor;
+    }
+
+    private SystemSettings getSystemSettings()
+    {
+        return this.systemSettings;
+    }
+
+    private Database getDatabase()
+    {
+        return this.database;
+    }
+
+    private Executor getExecutor()
+    {
+        return this.executor;
+    }
 
     /**
      * Processes one or more projects whose paths are provided in the input arguments.
@@ -115,9 +146,11 @@ public class Control implements Function<String[], Integer>,
                      + ", validating further...",
                      projectConfigPlus );
 
+        SystemSettings systemSettings = this.getSystemSettings();
+
         // Validate unmarshalled configurations
         final boolean validated =
-                Validation.isProjectValid( projectConfigPlus );
+                Validation.isProjectValid( systemSettings, projectConfigPlus );
 
         if ( validated )
         {
@@ -151,33 +184,35 @@ public class Control implements Function<String[], Integer>,
         // Build a processing pipeline
         // Essential to use a separate thread pool for thresholds and metrics as ArrayBlockingQueue operates a FIFO 
         // policy. If dependent tasks (thresholds) are queued ahead of independent ones (metrics) in the same pool, 
-        // there is a DEADLOCK probability       
+        // there is a DEADLOCK probability
         ThreadFactory featureFactory = runnable -> new Thread( runnable, "Feature Thread" );
         ThreadFactory pairFactory = runnable -> new Thread( runnable, "Pair Thread" );
         ThreadFactory thresholdFactory = runnable -> new Thread( runnable, "Threshold Dispatch Thread" );
         ThreadFactory metricFactory = runnable -> new Thread( runnable, "Metric Thread" );
         ThreadFactory productFactory = runnable -> new Thread( runnable, "Product Thread" );
 
+        SystemSettings systemSettings = this.getSystemSettings();
+
         // Name our queues in order to easily monitor them
-        BlockingQueue<Runnable> featureQueue =new ArrayBlockingQueue<>( SystemSettings
+        BlockingQueue<Runnable> featureQueue =new ArrayBlockingQueue<>( systemSettings
                                                                                 .maximumThreadCount() * 5 );
-        BlockingQueue<Runnable> pairQueue = new ArrayBlockingQueue<>( SystemSettings.maximumThreadCount() * 5 );
+        BlockingQueue<Runnable> pairQueue = new ArrayBlockingQueue<>( systemSettings.maximumThreadCount() * 5 );
         BlockingQueue<Runnable> thresholdQueue = new LinkedBlockingQueue<>();
-        BlockingQueue<Runnable> metricQueue = new ArrayBlockingQueue<>( SystemSettings.maximumThreadCount() * 5 );
-        BlockingQueue<Runnable> productQueue = new ArrayBlockingQueue<>( SystemSettings.maximumThreadCount() * 5 );
+        BlockingQueue<Runnable> metricQueue = new ArrayBlockingQueue<>( systemSettings.maximumThreadCount() * 5 );
+        BlockingQueue<Runnable> productQueue = new ArrayBlockingQueue<>( systemSettings.maximumThreadCount() * 5 );
 
         // Processes features
-        ThreadPoolExecutor featureExecutor = new ThreadPoolExecutor( SystemSettings.maximumThreadCount(),
-                                                                  SystemSettings.maximumThreadCount(),
-                                                                  SystemSettings.poolObjectLifespan(),
+        ThreadPoolExecutor featureExecutor = new ThreadPoolExecutor( systemSettings.maximumThreadCount(),
+                                                                  systemSettings.maximumThreadCount(),
+                                                                  systemSettings.poolObjectLifespan(),
                                                                   TimeUnit.MILLISECONDS,
                                                                   featureQueue,
                                                                   featureFactory );
         
         // Processes pairs       
-        ThreadPoolExecutor pairExecutor = new ThreadPoolExecutor( SystemSettings.maximumThreadCount(),
-                                                                  SystemSettings.maximumThreadCount(),
-                                                                  SystemSettings.poolObjectLifespan(),
+        ThreadPoolExecutor pairExecutor = new ThreadPoolExecutor( systemSettings.maximumThreadCount(),
+                                                                  systemSettings.maximumThreadCount(),
+                                                                  systemSettings.poolObjectLifespan(),
                                                                   TimeUnit.MILLISECONDS,
                                                                   pairQueue,
                                                                   pairFactory );
@@ -191,17 +226,17 @@ public class Control implements Function<String[], Integer>,
                                                                        thresholdFactory );
 
         // Processes metrics
-        ThreadPoolExecutor metricExecutor = new ThreadPoolExecutor( SystemSettings.maximumThreadCount(),
-                                                                    SystemSettings.maximumThreadCount(),
-                                                                    SystemSettings.poolObjectLifespan(),
+        ThreadPoolExecutor metricExecutor = new ThreadPoolExecutor( systemSettings.maximumThreadCount(),
+                                                                    systemSettings.maximumThreadCount(),
+                                                                    systemSettings.poolObjectLifespan(),
                                                                     TimeUnit.MILLISECONDS,
                                                                     metricQueue,
                                                                     metricFactory );
 
         // Processes products
-        ThreadPoolExecutor productExecutor = new ThreadPoolExecutor( SystemSettings.maximumThreadCount(),
-                                                                     SystemSettings.maximumThreadCount(),
-                                                                     SystemSettings.poolObjectLifespan(),
+        ThreadPoolExecutor productExecutor = new ThreadPoolExecutor( systemSettings.maximumThreadCount(),
+                                                                     systemSettings.maximumThreadCount(),
+                                                                     systemSettings.poolObjectLifespan(),
                                                                      TimeUnit.MILLISECONDS,
                                                                      productQueue,
                                                                      productFactory );
@@ -214,13 +249,17 @@ public class Control implements Function<String[], Integer>,
 
         ScheduledExecutorService monitoringService = new ScheduledThreadPoolExecutor( 1 );
 
-        QueueMonitor queueMonitor = new QueueMonitor( featureQueue,
+        Database database = this.getDatabase();
+        Executor executor = this.getExecutor();
+        QueueMonitor queueMonitor = new QueueMonitor( database,
+                                                      executor,
+                                                      featureQueue,
                                                       pairQueue,
                                                       thresholdQueue,
                                                       metricQueue,
                                                       productQueue );
 
-        Supplier<Connection> connectionSupplier = new DatabaseConnectionSupplier();
+        Supplier<Connection> connectionSupplier = new DatabaseConnectionSupplier( systemSettings );
         DatabaseLockManager lockManager = new DatabaseLockManager( connectionSupplier );
 
         try
@@ -245,7 +284,10 @@ public class Control implements Function<String[], Integer>,
 
             // Process the configuration
             Set<Path> innerPathsWrittenTo =
-                    ProcessorHelper.processProjectConfig( projectConfigPlus,
+                    ProcessorHelper.processProjectConfig( systemSettings,
+                                                          database,
+                                                          executor,
+                                                          projectConfigPlus,
                                                           executors,
                                                           lockManager );
 
@@ -318,49 +360,6 @@ public class Control implements Function<String[], Integer>,
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Control.class);
 
-    /**
-     * System property used to retrieve max thread count, passed as -D
-     */
-
-    public static final String MAX_THREADS_PROP_NAME = "wres.maxThreads";
-
-    /**
-     * Maximum threads.
-     */
-
-    public static final int MAX_THREADS;
-
-    // Figure out the max threads from property or by default rule.
-    // Ideally priority order would be: -D, SystemSettings, default rule.
-    static
-    {
-        final String maxThreadsStr = System.getProperty(MAX_THREADS_PROP_NAME);
-        int maxThreads;
-        try
-        {
-            maxThreads = Integer.parseInt(maxThreadsStr);
-        }
-        catch(final NumberFormatException nfe)
-        {
-            maxThreads = SystemSettings.maximumThreadCount();
-        }
-
-        // Since ForkJoinPool goes ape when this is 2 or less...
-        if ( maxThreads >= 3 )
-        {
-            MAX_THREADS = maxThreads;
-        }
-        else
-        {
-            LOGGER.warn( "Java -D property {} or SystemSettings "
-                         + "maximumThreadCount was likely less than 1, setting "
-                         + " Control.MAX_THREADS to 3",
-                         MAX_THREADS_PROP_NAME );
-
-            MAX_THREADS = 3;
-        }
-    }
-
     private static final Object EXCEPTION_LOCK = new Object();
     private static List<Exception> encounteredExceptions;
 
@@ -392,18 +391,24 @@ public class Control implements Function<String[], Integer>,
 
     private static class QueueMonitor implements Runnable
     {
-        private Queue<?> featureQueue;
-        private Queue<?> pairQueue;
-        private Queue<?> thresholdQueue;
-        private Queue<?> metricQueue;
-        private Queue<?> productQueue;
+        private final Database database;
+        private final Executor executor;
+        private final Queue<?> featureQueue;
+        private final Queue<?> pairQueue;
+        private final Queue<?> thresholdQueue;
+        private final Queue<?> metricQueue;
+        private final Queue<?> productQueue;
 
-        QueueMonitor( Queue<?> featureQueue,
+        QueueMonitor( Database database,
+                      Executor executor,
+                      Queue<?> featureQueue,
                       Queue<?> pairQueue,
                       Queue<?> thresholdQueue,
                       Queue<?> metricQueue,
                       Queue<?> productQueue )
         {
+            this.database = database;
+            this.executor = executor;
             this.featureQueue = featureQueue;
             this.pairQueue = pairQueue;
             this.thresholdQueue = thresholdQueue;
@@ -416,9 +421,9 @@ public class Control implements Function<String[], Integer>,
         {
             int featureCount = 0;
             int pairCount = 0;
-            int ioCount = Executor.getIoExecutorQueueTaskCount();
-            int databaseCount = Database.getDatabaseQueueTaskCount();
-            int hiPriCount = Executor.getHiPriIoExecutorQueueTaskCount();
+            int ioCount = executor.getIoExecutorQueueTaskCount();
+            int databaseCount = database.getDatabaseQueueTaskCount();
+            int hiPriCount = executor.getHiPriIoExecutorQueueTaskCount();
             int thresholdCount = 0;
             int metricCount = 0;
             int productCount = 0;

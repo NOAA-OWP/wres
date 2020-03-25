@@ -32,14 +32,16 @@ public class IncompleteIngest
             "Communication with the database failed.";
 
 
-    public static boolean removeSourceDataSafely( int surrogateKey,
+    public static boolean removeSourceDataSafely( Database database,
+                                                  DataSources dataSourcesCache,
+                                                  int surrogateKey,
                                                   DatabaseLockManager lockManager )
     {
         Objects.requireNonNull( lockManager );
 
         try
         {
-            SourceDetails sourceDetails = DataSources.getFromCacheOrDatabaseByIdThenCache( surrogateKey );
+            SourceDetails sourceDetails = dataSourcesCache.getFromCacheOrDatabaseByIdThenCache( surrogateKey );
 
             if ( sourceDetails == null )
             {
@@ -49,7 +51,9 @@ public class IncompleteIngest
                              surrogateKey );
                 return false;
             }
-            return IncompleteIngest.removeSourceDataSafely( sourceDetails,
+            return IncompleteIngest.removeSourceDataSafely( database,
+                                                            dataSourcesCache,
+                                                            sourceDetails,
                                                             lockManager );
         }
         catch ( SQLException se )
@@ -58,7 +62,9 @@ public class IncompleteIngest
         }
     }
 
-    private static boolean removeSourceDataSafely( SourceDetails source,
+    private static boolean removeSourceDataSafely( Database database,
+                                                   DataSources dataSourcesCache,
+                                                   SourceDetails source,
                                                    DatabaseLockManager lockManager )
             throws SQLException
     {
@@ -66,7 +72,8 @@ public class IncompleteIngest
         Objects.requireNonNull( source.getId() );
         Objects.requireNonNull( lockManager );
 
-        boolean wasIngested = IncompleteIngest.wasCompletelyIngested( source );
+        boolean wasIngested = IncompleteIngest.wasCompletelyIngested( database,
+                                                                      source );
 
         if ( wasIngested )
         {
@@ -85,13 +92,13 @@ public class IncompleteIngest
         }
 
         int sourceId = source.getId();
-        DataScripter observationsScript = new DataScripter();
+        DataScripter observationsScript = new DataScripter( database );
         observationsScript.addLine( "DELETE FROM wres.Observation" );
         observationsScript.addLine( "WHERE source_id = ?" );
         observationsScript.addArgument( sourceId );
 
         // Simple, but slow when the partitions are not by timeseries_id:
-        DataScripter timeSeriesValueScript = new DataScripter();
+        DataScripter timeSeriesValueScript = new DataScripter( database );
         timeSeriesValueScript.addLine( "DELETE FROM wres.TimeSeriesValue" );
         timeSeriesValueScript.addLine( "WHERE timeseries_id IN" );
         timeSeriesValueScript.addLine( "(" );
@@ -101,7 +108,7 @@ public class IncompleteIngest
         timeSeriesValueScript.addArgument( sourceId );
         timeSeriesValueScript.addLine( ")" );
 
-        DataScripter timeSeriesScript = new DataScripter();
+        DataScripter timeSeriesScript = new DataScripter( database );
         timeSeriesScript.addLine( "DELETE FROM wres.TimeSeries" );
         timeSeriesScript.addLine( "WHERE timeseries_id IN" );
         timeSeriesScript.addLine( "(" );
@@ -111,7 +118,7 @@ public class IncompleteIngest
         timeSeriesScript.addArgument( sourceId );
         timeSeriesScript.addLine( ")" );
 
-        DataScripter sourceScript = new DataScripter();
+        DataScripter sourceScript = new DataScripter( database );
         sourceScript.addLine( "DELETE from wres.Source" );
         sourceScript.addLine( "WHERE source_id = ?" );
         sourceScript.addArgument( sourceId );
@@ -141,7 +148,7 @@ public class IncompleteIngest
         }
 
         // Invalidate caches affected by deletes above
-        DataSources.invalidateGlobalCache();
+        dataSourcesCache.invalidate();
         TimeSeries.invalidateGlobalCache();
 
         return true;
@@ -192,9 +199,11 @@ public class IncompleteIngest
      * @throws IllegalStateException When communication with the database fails.
      */
 
-    private static boolean wasCompletelyIngested( SourceDetails source )
+    private static boolean wasCompletelyIngested( Database database,
+                                                  SourceDetails source )
     {
-        SourceCompletedDetails completedDetails = new SourceCompletedDetails( source );
+        SourceCompletedDetails completedDetails = new SourceCompletedDetails( database,
+                                                                              source );
 
         try
         {
@@ -211,9 +220,9 @@ public class IncompleteIngest
      * @return True if orphaned data exists within the database; false otherwise
      * @throws SQLException Thrown if the query used to detect orphaned data failed
      */
-    private static boolean thereAreOrphanedValues() throws SQLException
+    private static boolean thereAreOrphanedValues( Database database ) throws SQLException
     {
-        DataScripter scriptBuilder = new DataScripter();
+        DataScripter scriptBuilder = new DataScripter( database );
 
         scriptBuilder.addLine("SELECT EXISTS (");
         scriptBuilder.addTab().addLine("SELECT 1");
@@ -240,16 +249,17 @@ public class IncompleteIngest
      * Removes all data from the database that isn't properly linked to a project
      * Assumes that the caller (or caller of caller) holds an exclusive lock on
      * the database instance.
+     * @param database The database to use.
      * @return Whether or not values were removed
      * @throws SQLException Thrown when one of the required scripts could not complete
      */
 
     @SuppressWarnings( "unchecked" )
-    public static boolean removeOrphanedData() throws SQLException
+    public static boolean removeOrphanedData( Database database ) throws SQLException
     {
         try
         {
-            if (!thereAreOrphanedValues())
+            if ( !thereAreOrphanedValues( database ) )
             {
                 return false;
             }
@@ -268,7 +278,7 @@ public class IncompleteIngest
 
             for (String partition : partitionTables)
             {
-                DataScripter valueRemover = new DataScripter();
+                DataScripter valueRemover = new DataScripter( database );
                 valueRemover.setHighPriority( false );
                 valueRemover.addLine( "DELETE FROM ", partition, " P" );
                 valueRemover.addLine( "WHERE NOT EXISTS (");
@@ -285,7 +295,7 @@ public class IncompleteIngest
                 LOGGER.debug( "Started task to remove orphaned values in {}...", partition);
             }
 
-            DataScripter removeObservations = new DataScripter();
+            DataScripter removeObservations = new DataScripter( database );
             removeObservations.setHighPriority( false );
             removeObservations.addLine( "DELETE FROM wres.Observation O" );
             removeObservations.addLine( "WHERE NOT EXISTS (" );
@@ -309,7 +319,7 @@ public class IncompleteIngest
             }
 
 
-            DataScripter removeTimeSeries = new DataScripter();
+            DataScripter removeTimeSeries = new DataScripter( database );
 
             removeTimeSeries.addLine( "DELETE FROM wres.TimeSeries TS" );
             removeTimeSeries.addLine( "WHERE NOT EXISTS (" );
@@ -323,7 +333,7 @@ public class IncompleteIngest
 
             LOGGER.debug( "Added Task to remove orphaned time series...");
 
-            DataScripter removeSources = new DataScripter();
+            DataScripter removeSources = new DataScripter( database );
 
             removeSources.addLine( "DELETE FROM wres.Source S" );
             removeSources.addLine( "WHERE NOT EXISTS (" );
@@ -337,7 +347,7 @@ public class IncompleteIngest
 
             LOGGER.debug( "Added task to remove orphaned sources...");
 
-            DataScripter removeProjects = new DataScripter();
+            DataScripter removeProjects = new DataScripter( database );
 
             removeProjects.addLine( "DELETE FROM wres.Project P" );
             removeProjects.addLine( "WHERE NOT EXISTS (" );

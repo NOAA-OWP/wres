@@ -1,6 +1,5 @@
 package wres.system;
 
-import java.beans.PropertyVetoException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -15,7 +14,8 @@ import java.util.function.Supplier;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
-import com.mchange.v2.c3p0.ComboPooledDataSource;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -406,59 +406,44 @@ final class DatabaseSettings
         return DriverManager.getConnection( connectionString, connectionProperties );
 	}
 
-	ComboPooledDataSource createDatasource()
+    HikariDataSource createDatasource()
 	{
-		ComboPooledDataSource datasource = new ComboPooledDataSource();
-
-		try {
-
-            datasource.setProperties( this.getConnectionProperties() );
-			datasource.setDriverClass(DRIVER_MAPPING.get(getDatabaseType()));
-			datasource.setJdbcUrl(getConnectionString(this.databaseName));
-			datasource.setUser(username);
-			datasource.setPassword(password);
-			datasource.setAutoCommitOnClose(true);
-            datasource.setMaxIdleTime( maxIdleTime );
-            datasource.setMaxPoolSize( maxPoolSize );
-            datasource.setInitialPoolSize( maxPoolSize );
-			datasource.setPreferredTestQuery("SELECT 1");
-            datasource.setTestConnectionOnCheckin( true );
-			datasource.setIdleConnectionTestPeriod( 5 );
-			datasource.setAcquireRetryAttempts( 10 );
-		} 
-		catch (PropertyVetoException e)
-        {
-			LOGGER.warn( "A property veto issue occurred", e );
-		}
-
-        return datasource;
+        HikariConfig poolConfig = new HikariConfig();
+        Properties properties = this.getConnectionProperties();
+        poolConfig.setDataSourceProperties( properties );
+        String type = this.getDatabaseType();
+        String className = DRIVER_MAPPING.get( type );
+        String name = this.getDatabaseName();
+        String url = this.getConnectionString( name );
+        poolConfig.setDriverClassName( className );
+        poolConfig.setJdbcUrl( url );
+        String user = this.getUsername();
+        poolConfig.setUsername( user );
+        String pass = this.password;
+        poolConfig.setPassword( pass );
+        int maxSize = this.maxPoolSize;
+        poolConfig.setMaximumPoolSize( maxSize );
+        return new HikariDataSource( poolConfig );
 	}
 
-	ComboPooledDataSource createHighPriorityDataSource()
-	{
-		ComboPooledDataSource highPrioritySource = new ComboPooledDataSource();
-
-		try
-		{
-            highPrioritySource.setProperties( this.getConnectionProperties() );
-			highPrioritySource.setDriverClass(DRIVER_MAPPING.get(getDatabaseType()));
-			highPrioritySource.setJdbcUrl(getConnectionString(this.databaseName));
-			highPrioritySource.setUser(username);
-			highPrioritySource.setPassword(password);
-			highPrioritySource.setAutoCommitOnClose(true);
-			highPrioritySource.setMaxIdleTime(10);
-			highPrioritySource.setMaxPoolSize(5);
-			highPrioritySource.setPreferredTestQuery("SELECT 1");
-			highPrioritySource.setTestConnectionOnCheckin( true );
-            highPrioritySource.setIdleConnectionTestPeriod( 5 );
-            highPrioritySource.setAcquireRetryAttempts( 5 );
-		}
-		catch (PropertyVetoException e)
-		{
-			LOGGER.error("Property Configuration on database connection pool failed.", e);
-		}
-
-		return highPrioritySource;
+    HikariDataSource createHighPriorityDataSource()
+    {
+        HikariConfig poolConfig = new HikariConfig();
+        Properties properties = this.getConnectionProperties();
+        poolConfig.setDataSourceProperties( properties );
+        String type = this.getDatabaseType();
+        String className = DRIVER_MAPPING.get( type );
+        String name = this.getDatabaseName();
+        String url = this.getConnectionString( name );
+        poolConfig.setDriverClassName( className );
+        poolConfig.setJdbcUrl( url );
+        String user = this.getUsername();
+        poolConfig.setUsername( user );
+        String pass = this.password;
+        poolConfig.setPassword( pass );
+        int maxSize = 5;
+        poolConfig.setMaximumPoolSize( maxSize );
+        return new HikariDataSource( poolConfig );
 	}
 
     private String getUrl()

@@ -32,6 +32,7 @@ import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindow;
 import wres.io.config.ConfigHelper;
+import wres.system.SystemSettings;
 import wres.vis.ChartEngineFactory;
 
 /**
@@ -49,6 +50,7 @@ public class PNGBoxPlotWriter extends PNGWriter
     /**
      * Returns an instance of a writer.
      *
+     * @param systemSettings The system settings to use.
      * @param outputDirectory the directory into which to write
      * @param projectConfigPlus the project configuration
      * @param durationUnits the time units for durations
@@ -57,11 +59,12 @@ public class PNGBoxPlotWriter extends PNGWriter
      * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
-    public static PNGBoxPlotWriter of( ProjectConfigPlus projectConfigPlus,
+    public static PNGBoxPlotWriter of( SystemSettings systemSettings,
+                                       ProjectConfigPlus projectConfigPlus,
                                        ChronoUnit durationUnits,
                                        Path outputDirectory )
     {
-        return new PNGBoxPlotWriter( projectConfigPlus, durationUnits, outputDirectory );
+        return new PNGBoxPlotWriter( systemSettings, projectConfigPlus, durationUnits, outputDirectory );
     }
 
     /**
@@ -95,7 +98,8 @@ public class PNGBoxPlotWriter extends PNGWriter
             for ( MetricConstants next : metricsPerPair )
             {
                 Set<Path> innerPathsWrittenTo =
-                        PNGBoxPlotWriter.writeOneBoxPlotChartPerMetricAndPool( super.getOutputDirectory(),
+                        PNGBoxPlotWriter.writeOneBoxPlotChartPerMetricAndPool( super.getSystemSettings(),
+                                                                               super.getOutputDirectory(),
                                                                                super.getProjectConfigPlus(),
                                                                                destinationConfig,
                                                                                Slicer.filter( perPair, next ),
@@ -112,7 +116,8 @@ public class PNGBoxPlotWriter extends PNGWriter
             for ( MetricConstants next : metricsPerPool )
             {
                 Set<Path> innerPathsWrittenTo =
-                        PNGBoxPlotWriter.writeOneBoxPlotChartPerMetric( super.getOutputDirectory(),
+                        PNGBoxPlotWriter.writeOneBoxPlotChartPerMetric( super.getSystemSettings(),
+                                                                        super.getOutputDirectory(),
                                                                         super.getProjectConfigPlus(),
                                                                         destinationConfig,
                                                                         Slicer.filter( perPool, next ),
@@ -149,7 +154,8 @@ public class PNGBoxPlotWriter extends PNGWriter
      * @return the paths actually written to
      */
 
-    private static Set<Path> writeOneBoxPlotChartPerMetricAndPool( Path outputDirectory,
+    private static Set<Path> writeOneBoxPlotChartPerMetricAndPool( SystemSettings systemSettings,
+                                                                   Path outputDirectory,
                                                                    ProjectConfigPlus projectConfigPlus,
                                                                    DestinationConfig destinationConfig,
                                                                    ListOfStatistics<BoxPlotStatistics> output,
@@ -180,7 +186,7 @@ public class PNGBoxPlotWriter extends PNGWriter
                                                                       nextEntry.getKey().getLeft(),
                                                                       durationUnits );
 
-                PNGWriter.writeChart( outputImage, nextEntry.getValue(), destinationConfig );
+                PNGWriter.writeChart( systemSettings, outputImage, nextEntry.getValue(), destinationConfig );
                 // Only if writeChart succeeded do we assume that it was written
                 pathsWrittenTo.add( outputImage );
             }
@@ -206,7 +212,8 @@ public class PNGBoxPlotWriter extends PNGWriter
      * @return the paths actually written to
      */
 
-    private static Set<Path> writeOneBoxPlotChartPerMetric( Path outputDirectory,
+    private static Set<Path> writeOneBoxPlotChartPerMetric( SystemSettings systemSettings,
+                                                            Path outputDirectory,
                                                             ProjectConfigPlus projectConfigPlus,
                                                             DestinationConfig destinationConfig,
                                                             ListOfStatistics<BoxPlotStatistics> output,
@@ -238,7 +245,7 @@ public class PNGBoxPlotWriter extends PNGWriter
                                                                   destinationConfig,
                                                                   metadata );
 
-            PNGWriter.writeChart( outputImage, engine, destinationConfig );
+            PNGWriter.writeChart( systemSettings, outputImage, engine, destinationConfig );
 
             // Only if writeChart succeeded do we assume that it was written
             pathsWrittenTo.add( outputImage );
@@ -262,11 +269,12 @@ public class PNGBoxPlotWriter extends PNGWriter
      * @throws NullPointerException if either input is null
      */
 
-    private PNGBoxPlotWriter( ProjectConfigPlus projectConfigPlus,
+    private PNGBoxPlotWriter( SystemSettings systemSettings,
+                              ProjectConfigPlus projectConfigPlus,
                               ChronoUnit durationUnits,
                               Path outputDirectory )
     {
-        super( projectConfigPlus, durationUnits, outputDirectory );
+        super( systemSettings, projectConfigPlus, durationUnits, outputDirectory );
     }
 
 }

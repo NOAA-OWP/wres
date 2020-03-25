@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.io.data.details.SourceCompletedDetails;
+import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
 
 /**
@@ -22,18 +23,23 @@ public class SourceCompleter
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( SourceCompleter.class );
     private static final Duration PATIENCE_LEVEL = Duration.ofMinutes( 30 );
+    private final Database database;
     private final int sourceId;
     private final DatabaseLockManager lockManager;
 
     /**
+     * @param database The database to use.
      * @param sourceId the source to work with
      * @param lockManager the lock manager to use for signals in the db
      */
 
-    public SourceCompleter( int sourceId,
+    public SourceCompleter( Database database,
+                            int sourceId,
                             DatabaseLockManager lockManager )
     {
+        Objects.requireNonNull( database );
         Objects.requireNonNull( lockManager );
+        this.database = database;
         this.sourceId = sourceId;
         this.lockManager = lockManager;
     }
@@ -85,7 +91,8 @@ public class SourceCompleter
                     {
                         LOGGER.debug( "Sick of waiting for another task, saving data myself! {}, {}",
                                       this.sourceId, latchPair );
-                        boolean thisFlushed = IngestedValues.flush( latchPair );
+                        boolean thisFlushed = IngestedValues.flush( this.database,
+                                                                    latchPair );
 
                         // It is still necessary to double-check that the data has
                         // actually been written, because even if we call flush(),
@@ -146,9 +153,8 @@ public class SourceCompleter
 
         // This is used to avoid throwing an exception from finally
         Exception exceptionDuringUnlock = null;
-
         SourceCompletedDetails completedDetails =
-                new SourceCompletedDetails( this.sourceId );
+                new SourceCompletedDetails( this.database, this.sourceId );
 
         try
         {

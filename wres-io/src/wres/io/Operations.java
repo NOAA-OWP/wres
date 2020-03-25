@@ -38,7 +38,6 @@ import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.USGSParameters;
 import wres.io.data.caching.Variables;
 import wres.io.data.details.FeatureDetails;
 import wres.io.data.details.TimeSeries;
@@ -54,6 +53,7 @@ import wres.system.DatabaseLockManager;
 import wres.io.utilities.NoDataException;
 import wres.io.writing.netcdf.NetCDFCopier;
 import wres.system.ProgressMonitor;
+import wres.system.SystemSettings;
 import wres.util.CalculationException;
 
 public final class Operations {
@@ -62,6 +62,7 @@ public final class Operations {
     private Operations ()
     {
     }
+
 
     /**
      * Prepares IO operations for evaluation execution checks if evaluations
@@ -73,6 +74,7 @@ public final class Operations {
      * @throws NoDataException Thrown if a variable to evaluate is not
      * accessible to the evaluation
      */
+
     public static void prepareForExecution( Project project ) throws IOException
     {
         LOGGER.info("Loading preliminary metadata...");
@@ -81,6 +83,8 @@ public final class Operations {
                 "The process for determining if '{}' is a valid variable was interrupted.";
 
         boolean isVector;
+        Variables variables = project.getVariablesCache();
+        Executor executor = project.getExecutor();
         Future<Boolean> leftObservationValid = null;
         Future<Boolean> leftTimeSeriesValid= null;
         Future<Boolean> rightObservationValid = null;
@@ -101,14 +105,14 @@ public final class Operations {
 
         if ( isVector )
         {
-            leftTimeSeriesValid = Executor.submit(
-                    () -> Variables.isForecastValid( project.getId(),
+            leftTimeSeriesValid = executor.submit(
+                    () -> variables.isForecastValid( project.getId(),
                                                      Project.LEFT_MEMBER,
                                                      project.getLeftVariableID()
                     )
             );
-            leftObservationValid = Executor.submit(
-                    () -> Variables.isObservationValid( project.getId(),
+            leftObservationValid = executor.submit(
+                    () -> variables.isObservationValid( project.getId(),
                                                         Project.LEFT_MEMBER,
                                                         project.getLeftVariableID()
                     ) );
@@ -116,14 +120,14 @@ public final class Operations {
 
         if ( isVector )
         {
-            rightTimeSeriesValid = Executor.submit(
-                    () -> Variables.isForecastValid( project.getId(),
+            rightTimeSeriesValid = executor.submit(
+                    () -> variables.isForecastValid( project.getId(),
                                                      Project.RIGHT_MEMBER,
                                                      project.getRightVariableID()
                     )
             );
-            rightObservationValid = Executor.submit(
-                    () -> Variables.isObservationValid( project.getId(),
+            rightObservationValid = executor.submit(
+                    () -> variables.isObservationValid( project.getId(),
                                                         Project.RIGHT_MEMBER,
                                                         project.getRightVariableID()
                     )
@@ -132,14 +136,14 @@ public final class Operations {
 
         if ( isVector && project.getBaseline() != null )
         {
-            baselineTimeSeriesValid = Executor.submit(
-                    () -> Variables.isForecastValid( project.getId(),
+            baselineTimeSeriesValid = executor.submit(
+                    () -> variables.isForecastValid( project.getId(),
                                                      Project.BASELINE_MEMBER,
                                                      project.getBaselineVariableID()
                     )
             );
-            baselineObservationValid = Executor.submit(
-                    () -> Variables.isObservationValid( project.getId(),
+            baselineObservationValid = executor.submit(
+                    () -> variables.isObservationValid( project.getId(),
                                                         Project.BASELINE_MEMBER,
                                                         project.getBaselineVariableID()
                     )
@@ -172,11 +176,11 @@ public final class Operations {
 
             if (!leftIsValid)
             {
-                List<String> availableVariables = Variables.getAvailableObservationVariables(
+                List<String> availableVariables = variables.getAvailableObservationVariables(
                         project.getId(),
                         Project.LEFT_MEMBER
                 );
-                List<String> moreVariables = Variables.getAvailableForecastVariables(
+                List<String> moreVariables = variables.getAvailableForecastVariables(
                         project.getId(),
                         Project.LEFT_MEMBER
                 );
@@ -236,11 +240,11 @@ public final class Operations {
 
             if (!rightIsValid)
             {
-                List<String> availableVariables = Variables.getAvailableForecastVariables(
+                List<String> availableVariables = variables.getAvailableForecastVariables(
                         project.getId(),
                         Project.RIGHT_MEMBER
                 );
-                List<String> moreVariables = Variables.getAvailableObservationVariables(
+                List<String> moreVariables = variables.getAvailableObservationVariables(
                         project.getId(),
                         Project.RIGHT_MEMBER
                 );
@@ -304,11 +308,11 @@ public final class Operations {
 
             if (!baselineIsValid)
             {
-                List<String> availableVariables = Variables.getAvailableForecastVariables(
+                List<String> availableVariables = variables.getAvailableForecastVariables(
                         project.getId(),
                         Project.BASELINE_MEMBER
                 );
-                List<String> moreVariables = Variables.getAvailableObservationVariables(
+                List<String> moreVariables = variables.getAvailableObservationVariables(
                         project.getId(),
                         Project.BASELINE_MEMBER
                 );
@@ -358,35 +362,65 @@ public final class Operations {
         LOGGER.info("Preliminary metadata loading is complete.");
     }
 
+
     /**
      * Ingests for an evaluation project and returns state regarding the same.
+     * @param systemSettings The system settings to use.
+     * @param database The database to use.
+     * @param executor The executor to use.
      * @param projectConfig the projectConfig for the evaluation
      * @param lockManager The lock manager to use.
      * @return the {@link Project} (state about this evaluation)
      * @throws IOException when anything goes wrong
      * @throws IllegalStateException when another process already holds lock.
      */
-    public static Project ingest( ProjectConfig projectConfig,
+
+    public static Project ingest( SystemSettings systemSettings,
+                                  Database database,
+                                  Executor executor,
+                                  ProjectConfig projectConfig,
                                   DatabaseLockManager lockManager )
             throws IOException
     {
-        return Operations.doIngestWork( projectConfig, lockManager );
+        return Operations.doIngestWork( systemSettings, database, executor, projectConfig, lockManager );
     }
 
     /**
      * Ingests and returns the hashes of source files involved in this project.
      * TODO: Find a more appropriate location; this should call the ingest logic, not implement it
+     * @param systemSettings The system settings to use.
+     * @param database The database to use.
+     * @param executor The executor to use
      * @param projectConfig the projectConfig to ingest
+     * @param lockManager The lock manager to use.
      * @return the projectdetails object from ingesting this project
      * @throws IOException when anything goes wrong
      */
-    private static Project doIngestWork( ProjectConfig projectConfig,
+    private static Project doIngestWork( SystemSettings systemSettings,
+                                         Database database,
+                                         Executor executor,
+                                         ProjectConfig projectConfig,
                                          DatabaseLockManager lockManager )
             throws IOException
     {
         Project result = null;
         List<IngestResult> projectSources = new ArrayList<>();
-        SourceLoader loader = new SourceLoader( projectConfig, lockManager );
+        DataSources dataSourcesCache = new DataSources( database );
+        Features featuresCache = new Features( database );
+        Variables variablesCache = new Variables( database );
+        Ensembles ensemblesCache = new Ensembles( database );
+        MeasurementUnits measurementUnitsCache = new MeasurementUnits( database );
+
+        SourceLoader loader = new SourceLoader( systemSettings,
+                                                executor,
+                                                database,
+                                                dataSourcesCache,
+                                                featuresCache,
+                                                variablesCache,
+                                                ensemblesCache,
+                                                measurementUnitsCache,
+                                                projectConfig,
+                                                lockManager );
 
         try
         {
@@ -417,7 +451,7 @@ public final class Operations {
         }
         finally
         {
-            List<IngestResult> leftovers = Database.completeAllIngestTasks();
+            List<IngestResult> leftovers = database.completeAllIngestTasks();
 
             if ( LOGGER.isDebugEnabled() )
             {
@@ -449,9 +483,6 @@ public final class Operations {
 
             while ( retriesNeeded.size() > 0 && retriesAttempted < RETRY_LIMIT )
             {
-                // First, invalidate the data sources cache.
-                DataSources.invalidateGlobalCache();
-
                 List<IngestResult> doRetryOnThese =
                         new ArrayList<>( retriesNeeded.size() );
                 doRetryOnThese.addAll( retriesNeeded );
@@ -559,12 +590,15 @@ public final class Operations {
 
         try
         {
-            result = Projects.getProjectFromIngest( projectConfig,
+            result = Projects.getProjectFromIngest( systemSettings,
+                                                    database,
+                                                    executor,
+                                                    projectConfig,
                                                     safeToShareResults );
 
             if ( Operations.shouldAnalyze( safeToShareResults ) )
             {
-                Database.refreshStatistics( false );
+                database.refreshStatistics( false );
             }
         }
         catch ( SQLException se )
@@ -582,27 +616,35 @@ public final class Operations {
 
     /**
      * Gracefully shuts down all IO operations
+     * @param database The database to use.
+     * @param executor The executor to use.
      */
-    public static void shutdown()
+    public static void shutdown( Database database,
+                                 Executor executor )
     {
         LOGGER.info("Shutting down the IO layer...");
-        Executor.complete();
-        Database.shutdown();
+        executor.complete();
+        database.shutdown();
     }
 
     /**
      * Forces the IO to shutdown all IO operations without finishing stored tasks
+     * @param database The database to use.
+     * @param executor The executor to use.
      * @param timeOut The amount of time to wait while shutting down tasks
      * @param timeUnit The unit with which to measure the shutdown
      */
-    public static void forceShutdown( long timeOut, TimeUnit timeUnit )
+    public static void forceShutdown( Database database,
+                                      Executor executor,
+                                      long timeOut,
+                                      TimeUnit timeUnit )
     {
         LOGGER.info( "Forcefully shutting down the IO module..." );
 
         List<Runnable> executorTasks =
-                Executor.forceShutdown( timeOut / 2, timeUnit );
+                executor.forceShutdown( timeOut / 2, timeUnit );
         List<Runnable> databaseTasks =
-                Database.forceShutdown( timeOut / 2, timeUnit );
+                database.forceShutdown( timeOut / 2, timeUnit );
 
         if ( LOGGER.isInfoEnabled() )
         {
@@ -617,13 +659,15 @@ public final class Operations {
     /**
      * Tests whether or not the WRES may access the database and logs the
      * version of the database it may access
+     * @param database The database to use.
      * @throws SQLException when WRES cannot access the database
      */
-    public static void testConnection() throws SQLException
+    public static void testConnection( Database database ) throws SQLException
     {
         try
         {
-            final DataScripter script = new DataScripter( "SELECT version() as version_detail" );
+            final DataScripter script = new DataScripter( database,
+                                                          "SELECT version() as version_detail" );
             final String version = script.retrieve( "version_detail" );
             LOGGER.info(version);
             LOGGER.info("Successfully connected to the database");
@@ -638,13 +682,14 @@ public final class Operations {
     /**
      * Removes all loaded user information from the database
      * Assumes that the caller has already gotten an exclusive lock for modify.
+     * @param database The database to use.
      * @throws SQLException when cleaning or refreshing stats fails
      */
 
-    public static void cleanDatabase() throws SQLException
+    public static void cleanDatabase( Database database ) throws SQLException
     {
-        Database.clean();
-        Database.refreshStatistics( true );
+        database.clean();
+        database.refreshStatistics( true );
 
         // Nuke the application cache: see #61206
         Operations.invalidateCache();
@@ -673,31 +718,25 @@ public final class Operations {
         // Invalidate cached partition names
         TimeSeries.invalidateGlobalCache();
         
-        // Invalidate data
-        DataSources.invalidateGlobalCache();
-        Ensembles.invalidateGlobalCache();
-        Features.invalidateGlobalCache();
-        MeasurementUnits.invalidateGlobalCache();
-        USGSParameters.invalidateGlobalCache();
-        Variables.invalidateGlobalCache();
-        
         LOGGER.debug( "Finished invalidating the application cache." );
     }
 
     /**
      * Updates the statistics and removes all dead rows from the database
      * Assumes caller has already obtained exclusive lock on database.
+     * @param database The database to use.
      * @throws SQLException if the orphaned data could not be removed or the refreshing of statistics fails
      */
-    public static void refreshDatabase() throws SQLException
+    public static void refreshDatabase( Database database ) throws SQLException
     {
-        IncompleteIngest.removeOrphanedData();
-        Database.refreshStatistics(true);
+        IncompleteIngest.removeOrphanedData( database );
+        database.refreshStatistics(true);
     }
 
     /**
      * Logs information about the execution of the WRES into the database for
      * aid in remote debugging
+     * @param database The database to use.
      * @param arguments The arguments used to run the WRES
      * @param start The instant at which the WRES began execution
      * @param duration The length of time that the WRES executed in
@@ -705,7 +744,8 @@ public final class Operations {
      * @param error Any error that caused the WRES to crash
      * @param version The top-level version of WRES (module versions vary)
      */
-    public static void logExecution( String[] arguments,
+    public static void logExecution( Database database,
+                                     String[] arguments,
                                      Instant start,
                                      Duration duration,
                                      boolean failed,
@@ -753,7 +793,7 @@ public final class Operations {
                 }
             }
 
-            DataScripter script = new DataScripter(  );
+            DataScripter script = new DataScripter( database );
 
             script.addLine("INSERT INTO wres.ExecutionLog (");
             script.addTab().addLine("arguments,");

@@ -6,7 +6,7 @@ import java.sql.SQLException;
 import java.util.TimeZone;
 import java.util.function.DoubleUnaryOperator;
 
-import com.mchange.v2.c3p0.ComboPooledDataSource;
+import com.zaxxer.hikari.HikariDataSource;
 import liquibase.database.Database;
 import liquibase.exception.LiquibaseException;
 
@@ -14,21 +14,14 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PowerMockIgnore;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.mockito.MockitoAnnotations;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
-import wres.system.DatabaseConnectionSupplier;
 import wres.io.data.details.MeasurementDetails;
-import wres.io.retrieval.NoSuchUnitConversionException;
-import wres.io.retrieval.UnitMapper;
 import wres.io.utilities.TestDatabase;
 import wres.system.SystemSettings;
 
@@ -37,15 +30,13 @@ import wres.system.SystemSettings;
  * @author james.brown@hydrosolved.com
  */
 
-@RunWith( PowerMockRunner.class )
-@PrepareForTest( { SystemSettings.class } )
-@PowerMockIgnore( { "javax.management.*", "java.io.*", "javax.xml.*", "com.sun.*", "org.xml.*" } )
 public class UnitMapperTest
 {
+    @Mock private SystemSettings mockSystemSettings;
+    private wres.io.utilities.Database wresDatabase;
     private TestDatabase testDatabase;
-    private ComboPooledDataSource dataSource;
+    private HikariDataSource dataSource;
     private Connection rawConnection;
-    private @Mock DatabaseConnectionSupplier mockConnectionSupplier;
 
     @BeforeClass
     public static void oneTimeSetup()
@@ -57,12 +48,22 @@ public class UnitMapperTest
     @Before
     public void setup() throws Exception
     {
+        MockitoAnnotations.initMocks( this );
         // Create the database and connection pool
         this.testDatabase = new TestDatabase( "SingleValuedForecastRetrieverTest" );
-        this.dataSource = this.testDatabase.getNewComboPooledDataSource();
+        this.dataSource = this.testDatabase.getNewHikariDataSource();
 
         // Create the connection and schema
-        this.createTheConnectionAndSchema();
+        this.rawConnection = DriverManager.getConnection( this.testDatabase.getJdbcString() );
+        this.testDatabase.createWresSchema( this.rawConnection );
+
+        // Substitute our H2 connection pool for both pools:
+        Mockito.when( this.mockSystemSettings.getConnectionPool() )
+               .thenReturn( this.dataSource );
+        Mockito.when( this.mockSystemSettings.getHighPriorityConnectionPool() )
+               .thenReturn( this.dataSource );
+
+        this.wresDatabase = new wres.io.utilities.Database( this.mockSystemSettings );
 
         // Create the tables
         this.addTheDatabaseAndTables();
@@ -72,13 +73,13 @@ public class UnitMapperTest
     public void testConversionOfCFSToCMS() throws SQLException
     {
         // Create the unit mapper for CMS
-        UnitMapper mapper = UnitMapper.of( "CMS" );
+        UnitMapper mapper = UnitMapper.of( this.wresDatabase, "CMS" );
 
         // Obtain the measurement units for CFS
         MeasurementDetails measurement = new MeasurementDetails();
         String units = "CFS";
         measurement.setUnit( units );
-        measurement.save();
+        measurement.save( this.wresDatabase );
         Integer measurementUnitId = measurement.getId();
 
         DoubleUnaryOperator converter = mapper.getUnitMapper( measurementUnitId );
@@ -99,13 +100,13 @@ public class UnitMapperTest
     public void testIdentityConversionOfCMSToCMS() throws SQLException
     {
         // Create the unit mapper for CMS
-        UnitMapper mapper = UnitMapper.of( "CMS" );
+        UnitMapper mapper = UnitMapper.of( this.wresDatabase,"CMS" );
 
         // Obtain the measurement units for CMS
         MeasurementDetails measurement = new MeasurementDetails();
         String units = "CMS";
         measurement.setUnit( units );
-        measurement.save();
+        measurement.save( this.wresDatabase );
         Integer measurementUnitId = measurement.getId();
 
         DoubleUnaryOperator converter = mapper.getUnitMapper( measurementUnitId );
@@ -119,9 +120,11 @@ public class UnitMapperTest
     @Test
     public void constructWithBlankUnitThrowsExpectedException()
     {
-        assertThrows( NoSuchUnitConversionException.class, () -> UnitMapper.of( "" ) );
+        assertThrows( NoSuchUnitConversionException.class,
+                      () -> UnitMapper.of( this.wresDatabase, "" ) );
         
-        assertThrows( NoSuchUnitConversionException.class, () -> UnitMapper.of( "   " ) );
+        assertThrows( NoSuchUnitConversionException.class,
+                      () -> UnitMapper.of( this.wresDatabase, "   " ) );
     }
     
     @After
@@ -131,39 +134,10 @@ public class UnitMapperTest
         this.rawConnection.close();
         this.rawConnection = null;
         this.testDatabase = null;
+        this.dataSource.close();
         this.dataSource = null;
     }
 
-    /**
-     * Does the basic set-up work to create a connection and schema.
-     * 
-     * @throws Exception if the set-up failed
-     */
-
-    private void createTheConnectionAndSchema() throws Exception
-    {
-        // Also mock a plain datasource (which works per test unlike c3p0)
-        this.rawConnection = DriverManager.getConnection( this.testDatabase.getJdbcString() );
-        Mockito.when( this.mockConnectionSupplier.get() ).thenReturn( this.rawConnection );
-
-        // Set up a bare bones database with only the schema
-        this.testDatabase.createWresSchema( this.rawConnection );
-
-        // Substitute raw connection where needed:
-        PowerMockito.mockStatic( SystemSettings.class );
-        PowerMockito.when( SystemSettings.class, "getRawDatabaseConnection" )
-                    .thenReturn( this.rawConnection );
-
-        PowerMockito.whenNew( DatabaseConnectionSupplier.class )
-                    .withNoArguments()
-                    .thenReturn( this.mockConnectionSupplier );
-
-        // Substitute our H2 connection pool for both pools:
-        PowerMockito.when( SystemSettings.class, "getConnectionPool" )
-                    .thenReturn( this.dataSource );
-        PowerMockito.when( SystemSettings.class, "getHighPriorityConnectionPool" )
-                    .thenReturn( this.dataSource );
-    }
 
     /**
      * Adds the required tables for the tests presented here, which is a subset of all tables.

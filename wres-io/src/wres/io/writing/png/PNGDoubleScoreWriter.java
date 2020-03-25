@@ -31,6 +31,7 @@ import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.Threshold;
 import wres.io.config.ConfigHelper;
+import wres.system.SystemSettings;
 import wres.vis.ChartEngineFactory;
 
 /**
@@ -49,7 +50,8 @@ public class PNGDoubleScoreWriter extends PNGWriter
     
     /**
      * Returns an instance of a writer.
-     * 
+     *
+     * @param systemSettings The system settings to use.
      * @param projectConfigPlus the project configuration
      * @param durationUnits the time units for durations
      * @param outputDirectory the directory into which to write
@@ -58,11 +60,12 @@ public class PNGDoubleScoreWriter extends PNGWriter
      * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
-    public static PNGDoubleScoreWriter of( ProjectConfigPlus projectConfigPlus,
+    public static PNGDoubleScoreWriter of( SystemSettings systemSettings,
+                                           ProjectConfigPlus projectConfigPlus,
                                            ChronoUnit durationUnits,
                                            Path outputDirectory )
     {
-        return new PNGDoubleScoreWriter( projectConfigPlus, durationUnits, outputDirectory );
+        return new PNGDoubleScoreWriter( systemSettings, projectConfigPlus, durationUnits, outputDirectory );
     }
 
     /**
@@ -97,7 +100,8 @@ public class PNGDoubleScoreWriter extends PNGWriter
                 else
                 {
                     Set<Path> innerPathsWrittenTo =
-                            PNGDoubleScoreWriter.writeScoreCharts( super.getOutputDirectory(),
+                            PNGDoubleScoreWriter.writeScoreCharts( super.getSystemSettings(),
+                                                                   super.getOutputDirectory(),
                                                                    super.getProjectConfigPlus(),
                                                                    destinationConfig,
                                                                    Slicer.filter( output, next ),
@@ -124,6 +128,7 @@ public class PNGDoubleScoreWriter extends PNGWriter
      * Writes a set of charts associated with {@link DoubleScoreStatistic} for a single metric and time window,
      * stored in a {@link ListOfStatistics}.
      *
+     * @param systemSettings The system settings to use.
      * @param outputDirectory the directory into which to write
      * @param projectConfigPlus the project configuration
      * @param destinationConfig the destination configuration for the written output
@@ -133,7 +138,8 @@ public class PNGDoubleScoreWriter extends PNGWriter
      * @return the paths actually written to
      */
 
-    private static Set<Path> writeScoreCharts( Path outputDirectory,
+    private static Set<Path> writeScoreCharts( SystemSettings systemSettings,
+                                               Path outputDirectory,
                                                ProjectConfigPlus projectConfigPlus,
                                                DestinationConfig destinationConfig,
                                                ListOfStatistics<DoubleScoreStatistic> output,
@@ -201,7 +207,7 @@ public class PNGDoubleScoreWriter extends PNGWriter
                                                                           meta,
                                                                           append );
 
-                    PNGWriter.writeChart( outputImage, nextEntry.getValue(), destinationConfig );
+                    PNGWriter.writeChart( systemSettings, outputImage, nextEntry.getValue(), destinationConfig );
                     // Only if writeChart succeeded do we assume that it was written
                     pathsWrittenTo.add( outputImage );
                 }
@@ -226,11 +232,12 @@ public class PNGDoubleScoreWriter extends PNGWriter
      * @throws NullPointerException if either input is null
      */
 
-    private PNGDoubleScoreWriter( ProjectConfigPlus projectConfigPlus,
+    private PNGDoubleScoreWriter( SystemSettings systemSettings,
+                                  ProjectConfigPlus projectConfigPlus,
                                   ChronoUnit durationUnits,
                                   Path outputDirectory )
     {
-        super( projectConfigPlus, durationUnits, outputDirectory );
+        super( systemSettings, projectConfigPlus, durationUnits, outputDirectory );
     }
 
 }

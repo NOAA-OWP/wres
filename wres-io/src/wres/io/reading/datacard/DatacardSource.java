@@ -41,7 +41,9 @@ import wres.io.reading.IngestResult;
 import wres.io.reading.IngestedValues;
 import wres.io.reading.InvalidInputDataException;
 import wres.io.reading.SourceCompleter;
+import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
+import wres.system.SystemSettings;
 import wres.util.Strings;
 
 /**
@@ -52,7 +54,13 @@ public class DatacardSource extends BasicSource
 {
 	private static final Double[] IGNORABLE_VALUES = {-998.0, -999.0, -9999.0};
 
-    private final DatabaseLockManager lockManager;
+	private final SystemSettings systemSettings;
+	private final Database database;
+	private final DataSources dataSourcesCache;
+	private final Features featuresCache;
+	private final Variables variablesCache;
+	private final MeasurementUnits measurementUnitsCache;
+	private final DatabaseLockManager lockManager;
     private final Set<Pair<CountDownLatch, CountDownLatch>> latches = new HashSet<>();
 
     private String currentLocationId;
@@ -60,19 +68,67 @@ public class DatacardSource extends BasicSource
     private boolean inChargeOfIngest;
 
 	/**
+	 * @param systemSettings The system settings to use.
+	 * @param database The database to use.
+	 * @param dataSourcesCache The data sources cache to use.
+	 * @param featuresCache The features cache to use.
+	 * @param variablesCache The variables cache to use.
+	 * @param measurementUnitsCache The measurement units cache to use.
      * @param projectConfig the ProjectConfig causing ingest
      * @param dataSource the data source information
 	 * @param lockManager The lock manager to use.
 	 */
-    public DatacardSource( ProjectConfig projectConfig,
+    public DatacardSource( SystemSettings systemSettings,
+						   Database database,
+						   DataSources dataSourcesCache,
+						   Features featuresCache,
+						   Variables variablesCache,
+						   MeasurementUnits measurementUnitsCache,
+						   ProjectConfig projectConfig,
                            DataSource dataSource,
                            DatabaseLockManager lockManager )
     {
         super( projectConfig, dataSource );
+        this.systemSettings = systemSettings;
+		this.database = database;
+		this.dataSourcesCache = dataSourcesCache;
+		this.featuresCache = featuresCache;
+		this.variablesCache = variablesCache;
+		this.measurementUnitsCache = measurementUnitsCache;
         this.lockManager = lockManager;
 	}
-    
-    private void setMeasurementUnitStr(String str)
+
+	private SystemSettings getSystemSettings()
+	{
+		return this.systemSettings;
+	}
+
+	private Database getDatabase()
+	{
+		return this.database;
+	}
+
+	private DataSources getDataSourcesCache()
+	{
+		return this.dataSourcesCache;
+	}
+
+	private Features getFeaturesCache()
+	{
+		return this.featuresCache;
+	}
+
+	private Variables getVariablesCache()
+	{
+		return this.variablesCache;
+	}
+
+	private MeasurementUnits getMeasurementUnitsCache()
+	{
+		return this.measurementUnitsCache;
+	}
+
+	private void setMeasurementUnitStr(String str)
     {
         this.measurementUnitStr = str;
     }
@@ -138,7 +194,9 @@ public class DatacardSource extends BasicSource
             throw new IngestException( "While retrieving source ID:", se );
         }
 
-        SourceCompletedDetails completedDetails = new SourceCompletedDetails( this.currentSourceID );
+        Database database = this.getDatabase();
+        SourceCompletedDetails completedDetails =
+				new SourceCompletedDetails( database, this.currentSourceID );
 
         if ( !this.inChargeOfIngest )
         {
@@ -364,7 +422,8 @@ public class DatacardSource extends BasicSource
                                               .scaledBy( TimeScale.TimeScaleFunction.UNKNOWN )
                                               .inSource( this.getSourceID() )
                                               .forVariableAndFeatureID( this.getVariableFeatureID() )
-                                              .add();
+                                              .add( this.getSystemSettings(),
+													this.getDatabase() );
                         this.latches.add( synchronizer );
                     }
                     else
@@ -384,7 +443,8 @@ public class DatacardSource extends BasicSource
 
         try
         {
-            SourceCompleter sourceCompleter = new SourceCompleter( this.currentSourceID,
+            SourceCompleter sourceCompleter = new SourceCompleter( database,
+																   this.currentSourceID,
                                                                    this.lockManager );
             sourceCompleter.complete( this.latches );
         }
@@ -407,7 +467,8 @@ public class DatacardSource extends BasicSource
 	{
 		if(currentMeasurementUnitID == null)
 		{
-			currentMeasurementUnitID = MeasurementUnits.getMeasurementUnitID(getMeasurementUnitStr());
+			MeasurementUnits measurementUnits = this.getMeasurementUnitsCache();
+			currentMeasurementUnitID = measurementUnits.getMeasurementUnitID(getMeasurementUnitStr());
 		}
 		
 		return currentMeasurementUnitID ;
@@ -421,7 +482,8 @@ public class DatacardSource extends BasicSource
     {
 		if (currentVariableID == null)
 		{
-			this.currentVariableID = Variables.getVariableID(this.getSpecifiedVariableName());
+			Variables variables = this.getVariablesCache();
+			this.currentVariableID = variables.getVariableID(this.getSpecifiedVariableName());
 		}
 		
 		return this.currentVariableID;
@@ -448,7 +510,8 @@ public class DatacardSource extends BasicSource
                                                  null,
                                                  this.getHash() );
 
-            boolean wasInCache = DataSources.isCached( sourceKey );
+			DataSources dataSources = this.getDataSourcesCache();
+            boolean wasInCache = dataSources.isCached( sourceKey );
             boolean wasThisReaderTheOneThatInserted = false;
             SourceDetails sourceDetails;
 
@@ -457,7 +520,8 @@ public class DatacardSource extends BasicSource
             {
                 // We *might* be the one in charge of doing this source ingest.
                 sourceDetails = new SourceDetails( sourceKey );
-                sourceDetails.save();
+                Database database = this.getDatabase();
+                sourceDetails.save( database );
                 if ( sourceDetails.performedInsert() )
                 {
                     // Now we have the definitive answer from the database.
@@ -467,7 +531,7 @@ public class DatacardSource extends BasicSource
                     this.lockManager.lockSource( sourceDetails.getId() );
 
                     // Now that ball is in our court we should put in cache
-                    DataSources.put( sourceDetails );
+                    dataSources.put( sourceDetails );
                     // // Older, implicit way:
                     // DataSources.hasSource( this.getHash() );
                 }
@@ -477,7 +541,7 @@ public class DatacardSource extends BasicSource
             inChargeOfIngest = wasThisReaderTheOneThatInserted;
 
             // Regardless of whether we were the ones or not, get it from cache
-            currentSourceID = DataSources.getActiveSourceID( this.getHash() );
+            currentSourceID = dataSources.getActiveSourceID( this.getHash() );
 		}
 
 		return currentSourceID;
@@ -542,8 +606,9 @@ public class DatacardSource extends BasicSource
 	{
 		if(VariableFeatureID  == null)
 		{
-            VariableFeatureID = Features.getVariableFeatureIDByLID( this.getCurrentLocationId(),
-																	  getVariableID() );
+			Features features = this.getFeaturesCache();
+            VariableFeatureID = features.getVariableFeatureIDByLID( this.getCurrentLocationId(),
+																	getVariableID() );
 		}
 		
 		return VariableFeatureID  ;

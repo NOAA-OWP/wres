@@ -20,33 +20,37 @@ import wres.system.SystemSettings;
  * 
  * @author Christopher Tubbs
  */
-public final class Executor {
-
-	// The underlying thread executor
-	private static final ThreadPoolExecutor SERVICE = createService();
-
-	private static final ThreadPoolExecutor HIGH_PRIORITY_TASKS = createHighPriorityService();
+public class Executor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger( Executor.class );
 
-    private Executor()
+    private final SystemSettings systemSettings;
+
+	// The underlying thread executor
+    private final ThreadPoolExecutor service;
+    private final ThreadPoolExecutor highPriorityService;
+
+    public Executor( SystemSettings systemSettings)
     {
-        // prevent direct construction
+        this.systemSettings = systemSettings;
+        this.service = createService();
+        this.highPriorityService = createHighPriorityService();
     }
+
 
 	/**
 	 * Creates a new thread executor
 	 * @return A new thread executor that may run the maximum number of configured threads
 	 */
-	private static ThreadPoolExecutor createService()
+    private ThreadPoolExecutor createService()
 	{
 		ThreadFactory factory = runnable -> new Thread(runnable, "Executor Thread");
 		ThreadPoolExecutor executor = new ThreadPoolExecutor(
-				SystemSettings.maximumThreadCount(),
-				SystemSettings.maximumThreadCount(),
-				SystemSettings.poolObjectLifespan(),
+                systemSettings.maximumThreadCount(),
+                systemSettings.maximumThreadCount(),
+                systemSettings.poolObjectLifespan(),
 				TimeUnit.MILLISECONDS,
-				new ArrayBlockingQueue<>( SystemSettings.maximumThreadCount() * 5 ),
+                new ArrayBlockingQueue<>( systemSettings.maximumThreadCount() * 5 ),
 				factory
 		);
 
@@ -60,9 +64,9 @@ public final class Executor {
 		return (ThreadPoolExecutor) Executors.newFixedThreadPool(10, factory);
 	}
 
-	public static <V> Future<V> submitHighPriorityTask(Callable<V> task)
+    public <V> Future<V> submitHighPriorityTask(Callable<V> task)
 	{
-		return HIGH_PRIORITY_TASKS.submit( task );
+        return highPriorityService.submit( task );
 	}
 	
 	/**
@@ -71,9 +75,9 @@ public final class Executor {
 	 * @param task The thread whose task to call
 	 * @return An object containing the value returned in the future
 	 */
-	public static <U> Future<U> submit(Callable<U> task)
+    public <U> Future<U> submit(Callable<U> task)
 	{
-		return SERVICE.submit(task);
+        return service.submit( task);
 	}
 	
 	/**
@@ -81,26 +85,26 @@ public final class Executor {
 	 * @param task The thread whose task to execute
 	 * @return An object containing an empty value generated at the end of thread execution
 	 */
-	public static Future execute(Runnable task)
+    public Future execute(Runnable task)
 	{
-		return SERVICE.submit(task);
+        return service.submit( task);
 	}
 	
 	/**
 	 * Waits until all passed in jobs have executed.
 	 */
-	public static void complete()
+    public void complete()
 	{
-		if (!SERVICE.isShutdown())
+        if (!service.isShutdown())
 		{
-			SERVICE.shutdown();
-			while (!SERVICE.isTerminated());
+            service.shutdown();
+            while (!service.isTerminated());
 		}
 
-		if (!HIGH_PRIORITY_TASKS.isShutdown())
+        if (!highPriorityService.isShutdown())
 		{
-			HIGH_PRIORITY_TASKS.shutdown();
-			while (!HIGH_PRIORITY_TASKS.isTerminated());
+            highPriorityService.shutdown();
+            while (!highPriorityService.isTerminated());
 		}
 	}
 
@@ -113,42 +117,42 @@ public final class Executor {
      * @return the list of abandoned tasks as a result of forced shutdown
      */
 
-    public static List<Runnable> forceShutdown( long timeOut,
-                                                TimeUnit timeUnit )
+    public List<Runnable> forceShutdown( long timeOut,
+                                         TimeUnit timeUnit )
     {
         long halfTheTimeout = timeOut / 2;
         List<Runnable> abandonedTasks = new ArrayList<>();
 
-        SERVICE.shutdown();
+        service.shutdown();
         try
         {
-            SERVICE.awaitTermination( halfTheTimeout, timeUnit );
+            service.awaitTermination( halfTheTimeout, timeUnit );
         }
         catch ( InterruptedException ie )
         {
             LOGGER.warn( "Executor 1 shutdown interrupted.", ie );
-            List<Runnable> abandoned = SERVICE.shutdownNow();
+            List<Runnable> abandoned = service.shutdownNow();
             abandonedTasks.addAll( abandoned );
             Thread.currentThread().interrupt();
         }
 
-        List<Runnable> abandonedOne = SERVICE.shutdownNow();
+        List<Runnable> abandonedOne = service.shutdownNow();
         abandonedTasks.addAll( abandonedOne );
 
-        HIGH_PRIORITY_TASKS.shutdown();
+        highPriorityService.shutdown();
         try
         {
-            HIGH_PRIORITY_TASKS.awaitTermination( halfTheTimeout, timeUnit );
+            highPriorityService.awaitTermination( halfTheTimeout, timeUnit );
         }
         catch ( InterruptedException ie )
         {
             LOGGER.warn( "Executor 2 shutdown interrupted.", ie );
-            List<Runnable> abandoned = HIGH_PRIORITY_TASKS.shutdownNow();
+            List<Runnable> abandoned = highPriorityService.shutdownNow();
             abandonedTasks.addAll( abandoned );
             Thread.currentThread().interrupt();
         }
 
-        List<Runnable> abandonedTwo = HIGH_PRIORITY_TASKS.shutdownNow();
+        List<Runnable> abandonedTwo = highPriorityService.shutdownNow();
         abandonedTasks.addAll( abandonedTwo );
 
         return abandonedTasks;
@@ -161,12 +165,12 @@ public final class Executor {
 	 * @return the count of tasks waiting to be performed by the workers.
 	 */
 
-	public static int getIoExecutorQueueTaskCount()
+    public int getIoExecutorQueueTaskCount()
 	{
-		if ( Executor.SERVICE != null
-             && Executor.SERVICE.getQueue() != null )
+        if ( this.service != null
+             && this.service.getQueue() != null )
         {
-            return Executor.SERVICE.getQueue().size();
+            return this.service.getQueue().size();
         }
 
 		return 0;
@@ -179,11 +183,11 @@ public final class Executor {
      * @return the count of tasks waiting to be performed by the hi pri workers.
      */
 
-    public static int getHiPriIoExecutorQueueTaskCount()
+    public int getHiPriIoExecutorQueueTaskCount()
     {
-        if ( Executor.HIGH_PRIORITY_TASKS.getQueue() != null )
+        if ( this.highPriorityService.getQueue() != null )
         {
-            return Executor.HIGH_PRIORITY_TASKS.getQueue().size();
+            return this.highPriorityService.getQueue().size();
         }
 
         return 0;

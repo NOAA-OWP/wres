@@ -528,23 +528,29 @@ public interface DataProvider extends AutoCloseable
      * Copies the data within the provider from the current row through the last row into the the schema and table
      * <br>
      * The position of the provider will be at the end of the dataset after function completion
+     * @param database The database to use.
+     * TODO: implementations may not have/use a database, may want to not
+     *       require the database as a param but as a member of implementations.
      * @param table Fully qualified table name to copy data into
      * @throws CopyException When the copy fails.
      */
-    default void copy( final String table ) throws CopyException
+    default void copy( Database database, final String table ) throws CopyException
     {
-        this.copy( table, false );
+        this.copy( database, table, false );
     }
 
     /**
      * Copies the data within the provider from the current row through the last row into the the schema and table
      * <br>
      * The position of the provider will be at the end of the dataset after function completion
+     * @param database The database to use
+     * TODO: implementations may not have/use a database, may want to not
+     *       require the database as a param but as a member of implementations.
      * @param table Fully qualified table name to copy data into
      * @param showProgress Whether or not to show progress during the copy operation
      * @throws CopyException When the copy fails.
      */
-    default void copy( final String table, final boolean showProgress )
+    default void copy( Database database, final String table, final boolean showProgress )
             throws CopyException
     {
         final String delimiter = "|";
@@ -575,7 +581,7 @@ public interface DataProvider extends AutoCloseable
         // Until we can figure out how to get exceptions to propagate from
         // submitting to the Database executor, run synchronously in caller's
         // Thread.
-        Database.copy( definitionJoiner.toString(),
+        database.copy( definitionJoiner.toString(),
                        lineJoiner.toString(),
                        delimiter );
     }

@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.scale.TimeScale.TimeScaleFunction;
 import wres.io.utilities.DataScripter;
+import wres.io.utilities.Database;
 
 /**
  * Defines details about a forecasted time series
@@ -28,6 +29,8 @@ public class TimeSeries
      */
     private static final Map<Integer, String> TIMESERIESVALUE_PARTITION_NAMES =
             new ConcurrentHashMap<>();
+
+    private final Database database;
 
     /**
      * The ID of the ensemble for the time series. A time series without
@@ -69,12 +72,15 @@ public class TimeSeries
      */
     private final String initializationDate;
 
-    public TimeSeries( Integer sourceID, String initializationDate )
+    public TimeSeries( Database database,
+                       Integer sourceID,
+                       String initializationDate )
     {
+        this.database = database;
         this.sourceID = sourceID;
         this.initializationDate = initializationDate;
     }
-	
+
 	/**
 	 * Sets the ID of the Ensemble that the time series is linked to. The ID of
      * the time series is invalidated if the ID of the Ensemble it is linked
@@ -193,7 +199,7 @@ public class TimeSeries
 	 */
     private void save() throws SQLException
 	{
-        DataScripter script = new DataScripter(  );
+        DataScripter script = new DataScripter( this.database );
 
         // Scale information, missing by default
         Integer scalePeriod = null;

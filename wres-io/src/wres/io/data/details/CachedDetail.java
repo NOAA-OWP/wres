@@ -6,16 +6,13 @@ import org.slf4j.Logger;
 
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
+import wres.io.utilities.Database;
 
 /**
  * Describes detail about data from the database that may be accessed through a global cache
  * @author Christopher Tubbs
  */
 public abstract class CachedDetail<U, V extends Comparable<V>> implements Comparable<U> {
-    /**
-     * System independent definition for a newline string
-     */
-	static final String NEWLINE = System.lineSeparator();
 	
 	/**
 	 * @return The key for the value used to access the value
@@ -39,11 +36,12 @@ public abstract class CachedDetail<U, V extends Comparable<V>> implements Compar
 	protected abstract void setID( Integer id );
 
     /**
+	 * @param database The database to use.
      * @return A statement that can be used to safely execute an insert and select query
      * @throws SQLException Thrown if the connection and query cannot be used
      * to create the statement
      */
-	protected abstract DataScripter getInsertSelect() throws SQLException;
+	protected abstract DataScripter getInsertSelect( Database database ) throws SQLException;
 
 	protected abstract Object getSaveLock();
 
@@ -72,14 +70,16 @@ public abstract class CachedDetail<U, V extends Comparable<V>> implements Compar
 	CachedDetail(){}
 
     /**
+	 * @param database The database to use.
 	 * Saves the ID of the detail from the database based on the result of the of the insert/select statement
 	 * @throws SQLException if the save failed
 	 */
-	public void save() throws SQLException
+	public void save( Database database ) throws SQLException
 	{
 		synchronized ( this.getSaveLock() )
 		{
-			try (DataProvider results = this.getInsertSelect().getData())
+			try ( DataProvider results = this.getInsertSelect( database )
+											 .getData() )
 			{
                 if (results.isEmpty())
                 {

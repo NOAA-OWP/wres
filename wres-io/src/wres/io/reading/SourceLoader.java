@@ -35,10 +35,15 @@ import wres.io.concurrency.IngestSaver;
 import wres.io.config.ConfigHelper;
 import wres.io.config.LeftOrRightOrBaseline;
 import wres.io.data.caching.DataSources;
+import wres.io.data.caching.Ensembles;
+import wres.io.data.caching.Features;
+import wres.io.data.caching.MeasurementUnits;
+import wres.io.data.caching.Variables;
 import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
 import wres.io.reading.nwm.NWMReader;
 import wres.io.removal.IncompleteIngest;
+import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
 import wres.util.NetCDF;
@@ -54,6 +59,15 @@ public class SourceLoader
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(SourceLoader.class);
     private static final int KEY_NOT_FOUND = Integer.MIN_VALUE;
+
+    private final SystemSettings systemSettings;
+    private final Executor executor;
+    private final Database database;
+    private final DataSources dataSourcesCache;
+    private final Features featuresCache;
+    private final Variables variablesCache;
+    private final Ensembles ensemblesCache;
+    private final MeasurementUnits measurementUnitsCache;
 
     /**
      * The project configuration indicating what data to use
@@ -78,14 +92,98 @@ public class SourceLoader
     }
 
     /**
+     * @param systemSettings The system settings to use.
+     * @param executor The executor to use.
+     * @param database The database to use.
+     * @param dataSourcesCache The data sources cache to use.
+     * @param featuresCache The features cache to use.
+     * @param variablesCache The variables cache to use.
+     * @param ensemblesCache The ensembles cache to use.
+     * @param measurementUnitsCache The measurement units cache to use.
      * @param projectConfig the project configuration
      * @param lockManager the tool to manage ingest locks, shared per ingest
      */
-    public SourceLoader( ProjectConfig projectConfig,
+    public SourceLoader( SystemSettings systemSettings,
+                         Executor executor,
+                         Database database,
+                         DataSources dataSourcesCache,
+                         Features featuresCache,
+                         Variables variablesCache,
+                         Ensembles ensemblesCache,
+                         MeasurementUnits measurementUnitsCache,
+                         ProjectConfig projectConfig,
                          DatabaseLockManager lockManager )
     {
+        Objects.requireNonNull( systemSettings );
+        Objects.requireNonNull( executor );
+        Objects.requireNonNull( database );
+        Objects.requireNonNull( dataSourcesCache );
+        Objects.requireNonNull( featuresCache );
+        Objects.requireNonNull( variablesCache );
+        Objects.requireNonNull( ensemblesCache );
+        Objects.requireNonNull( measurementUnitsCache );
+        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( lockManager );
+        this.systemSettings = systemSettings;
+        this.executor = executor;
+        this.database = database;
+        this.dataSourcesCache = dataSourcesCache;
+        this.featuresCache = featuresCache;
+        this.variablesCache = variablesCache;
+        this.ensemblesCache = ensemblesCache;
+        this.measurementUnitsCache = measurementUnitsCache;
         this.projectConfig = projectConfig;
         this.lockManager = lockManager;
+    }
+
+    private SystemSettings getSystemSettings()
+    {
+        return this.systemSettings;
+    }
+
+    private Executor getExecutor()
+    {
+        return this.executor;
+    }
+
+    private Database getDatabase()
+    {
+        return this.database;
+    }
+
+    private DataSources getDataSourcesCache()
+    {
+        return this.dataSourcesCache;
+    }
+
+    private Features getFeaturesCache()
+    {
+        return this.featuresCache;
+    }
+
+    private Variables getVariablesCache()
+    {
+        return this.variablesCache;
+    }
+
+    private Ensembles getEnsemblesCache()
+    {
+        return this.ensemblesCache;
+    }
+
+    private MeasurementUnits getMeasurementUnitsCache()
+    {
+        return this.measurementUnitsCache;
+    }
+
+    private ProjectConfig getProjectConfig()
+    {
+        return this.projectConfig;
+    }
+
+    private DatabaseLockManager getLockManager()
+    {
+        return this.lockManager;
     }
 
     /**
@@ -97,14 +195,15 @@ public class SourceLoader
     public List<Future<List<IngestResult>>> load() throws IOException
     {
         LOGGER.info( "Parsing files. Only {} files may be parsed at once.",
-                     SystemSettings.maximumThreadCount() + 1);
+                     systemSettings.maximumThreadCount() + 1);
         List<Future<List<IngestResult>>> savingSources = new ArrayList<>();
 
         // Create the sources for which ingest should be attempted, together with
         // any required links. A link is an additional entry in wres.ProjectSource.
         // A link is required for each context in which the source appears within
         // a project. A context means LeftOrRightOrBaseline.
-        Set<DataSource> sources = SourceLoader.createSourcesToLoadAndLink( projectConfig );
+        Set<DataSource> sources = SourceLoader.createSourcesToLoadAndLink( this.systemSettings,
+                                                                           this.projectConfig );
 
         LOGGER.debug( "Created these sources to load and link: {}", sources );
 
@@ -168,9 +267,9 @@ public class SourceLoader
         else if ( sourceFile.isFile() )
         {
             List<Future<List<IngestResult>>> futureResults =
-                    SourceLoader.ingestFile( source,
-                                             this.projectConfig,
-                                             this.lockManager );
+                    this.ingestFile( source,
+                                     this.getProjectConfig(),
+                                     this.getLockManager() );
             savingFiles.addAll( futureResults );
         }
         else
@@ -209,18 +308,33 @@ public class SourceLoader
                  || interfaceShortHand.equals( InterfaceShortHand.USGS_NWIS )
                  || interfaceShortHand.equals( InterfaceShortHand.WRDS_NWM ) )
             {
-                WebSource webSource = WebSource.of( projectConfig,
+                WebSource webSource = WebSource.of( this.getSystemSettings(),
+                                                    this.getDatabase(),
+                                                    this.getDataSourcesCache(),
+                                                    this.getFeaturesCache(),
+                                                    this.getVariablesCache(),
+                                                    this.getEnsemblesCache(),
+                                                    this.getMeasurementUnitsCache(),
+                                                    this.getProjectConfig(),
                                                     source,
-                                                    this.lockManager );
-                return Executor.submit( webSource );
+                                                    this.getLockManager() );
+                Executor executor = this.getExecutor();
+                return executor.submit( webSource );
             }
             else
             {
                 // Must be NWM, right?
-                NWMReader nwmReader = new NWMReader( projectConfig,
+                NWMReader nwmReader = new NWMReader( this.getSystemSettings(),
+                                                     this.getDatabase(),
+                                                     this.getFeaturesCache(),
+                                                     this.getVariablesCache(),
+                                                     this.getEnsemblesCache(),
+                                                     this.getMeasurementUnitsCache(),
+                                                     this.getProjectConfig(),
                                                      source,
-                                                     this.lockManager );
-                return Executor.submit( nwmReader );
+                                                     this.getLockManager() );
+                Executor executor = this.getExecutor();
+                return executor.submit( nwmReader );
             }
         }
 
@@ -240,26 +354,18 @@ public class SourceLoader
              && sourceUri.getScheme() != null
              && sourceUri.getHost() != null )
         {
-            WebSource webSource = WebSource.of( projectConfig,
+            WebSource webSource = WebSource.of( this.getSystemSettings(),
+                                                this.getDatabase(),
+                                                this.getDataSourcesCache(),
+                                                this.getFeaturesCache(),
+                                                this.getVariablesCache(),
+                                                this.getEnsemblesCache(),
+                                                this.getMeasurementUnitsCache(),
+                                                this.getProjectConfig(),
                                                 source,
-                                                this.lockManager );
-            return Executor.submit( webSource );
-        }
-        else if ( source.getSource().getFormat() == Format.S_3 )
-        {
-            // Should use the uri containing usgs.gov instead of faking a name
-            DataSource fakeDataSource = DataSource.of( source.getSource(),
-                                                       source.getContext(),
-                                                       source.getLinks(),
-                                                       URI.create( "s3" ) );
-            return Executor.submit(
-                    IngestSaver.createTask()
-                               .withProject( this.projectConfig )
-                               .withDataSource( fakeDataSource )
-                               .withLockManager( this.lockManager )
-                               .withoutHash()
-                               .build()
-            );
+                                                this.getLockManager() );
+            Executor executor = this.getExecutor();
+            return executor.submit( webSource );
         }
         else
         {
@@ -288,10 +394,10 @@ public class SourceLoader
      * @return a list of future lists of ingest results, possibly empty
      */
 
-    private static List<Future<List<IngestResult>>> ingestData( DataSource source,
-                                                                ProjectConfig projectConfig,
-                                                                DatabaseLockManager lockManager,
-                                                                String hash )
+    private List<Future<List<IngestResult>>> ingestData( DataSource source,
+                                                         ProjectConfig projectConfig,
+                                                         DatabaseLockManager lockManager,
+                                                         String hash )
     {
         Objects.requireNonNull( source );
         Objects.requireNonNull( projectConfig );
@@ -310,13 +416,20 @@ public class SourceLoader
                       source, hash );
         List<Future<List<IngestResult>>> tasks = new ArrayList<>();
         IngestSaver ingestSaver = IngestSaver.createTask()
+                                             .withSystemSettings( this.getSystemSettings() )
+                                             .withDatabase( this.getDatabase() )
+                                             .withDataSourcesCache( this.getDataSourcesCache() )
+                                             .withFeaturesCache( this.getFeaturesCache() )
+                                             .withVariablesCache( this.getVariablesCache() )
+                                             .withEnsemblesCache( this.getEnsemblesCache() )
+                                             .withMeasurementUnitsCache( this.getMeasurementUnitsCache() )
                                              .withProject( projectConfig )
                                              .withDataSource( source )
                                              .withHash( hash )
                                              .withProgressMonitoring()
                                              .withLockManager( lockManager )
                                              .build();
-        Future<List<IngestResult>> task = Executor.submit( ingestSaver );
+        Future<List<IngestResult>> task = executor.submit( ingestSaver );
         tasks.add( task );
         return Collections.unmodifiableList( tasks );
     }
@@ -332,9 +445,9 @@ public class SourceLoader
      * @param lockManager the lock manager to use
      * @return a list of future lists of ingest results, possibly empty
      */
-    private static List<Future<List<IngestResult>>> ingestFile( DataSource source,
-                                                                ProjectConfig projectConfig,
-                                                                DatabaseLockManager lockManager )
+    private List<Future<List<IngestResult>>> ingestFile( DataSource source,
+                                                         ProjectConfig projectConfig,
+                                                         DatabaseLockManager lockManager )
     {
         Objects.requireNonNull( source );
         Objects.requireNonNull( projectConfig );
@@ -357,23 +470,30 @@ public class SourceLoader
             // source identities are what is important, and those inner sources
             // will be hashed later in the process.
             IngestSaver ingestSaver = IngestSaver.createTask()
+                                                 .withSystemSettings( this.getSystemSettings() )
+                                                 .withDatabase( this.getDatabase() )
+                                                 .withDataSourcesCache( this.getDataSourcesCache() )
+                                                 .withFeaturesCache( this.getFeaturesCache() )
+                                                 .withVariablesCache( this.getVariablesCache() )
+                                                 .withEnsemblesCache( this.getEnsemblesCache() )
+                                                 .withMeasurementUnitsCache( this.getMeasurementUnitsCache() )
                                                  .withProject( projectConfig )
                                                  .withDataSource( source )
                                                  .withoutHash()
                                                  .withProgressMonitoring()
                                                  .withLockManager( lockManager )
                                                  .build();
-            Future<List<IngestResult>> future = Executor.submit( ingestSaver );
+            Future<List<IngestResult>> future = executor.submit( ingestSaver );
             tasks.add( future );
         }
         else if ( sourceStatus.equals( SourceStatus.INCOMPLETE_WITH_NO_TASK_CLAIMING_AND_NO_TASK_CURRENTLY_INGESTING )
                   || sourceStatus.equals( SourceStatus.INCOMPLETE_WITH_TASK_CLAIMING_AND_TASK_CURRENTLY_INGESTING ) )
         {
                 List<Future<List<IngestResult>>> futureList =
-                        SourceLoader.ingestData( source,
-                                                 projectConfig,
-                                                 lockManager,
-                                                 checkIngest.getHash() );
+                        this.ingestData( source,
+                                         projectConfig,
+                                         lockManager,
+                                         checkIngest.getHash() );
                 tasks.addAll( futureList );
         }
         else if ( sourceStatus.equals( SourceStatus.INCOMPLETE_WITH_TASK_CLAIMING_AND_NO_TASK_CURRENTLY_INGESTING ) )
@@ -387,13 +507,15 @@ public class SourceLoader
                     "Another WRES instance started to ingest a source like '{}' identified by '{}' but did not finish, cleaning up...",
                     sourceUri,
                     surrogateKey );
-            IncompleteIngest.removeSourceDataSafely( surrogateKey,
+            IncompleteIngest.removeSourceDataSafely( this.getDatabase(),
+                                                     this.getDataSourcesCache(),
+                                                     surrogateKey,
                                                      lockManager );
             List<Future<List<IngestResult>>> futureList =
-                    SourceLoader.ingestData( source,
-                                             projectConfig,
-                                             lockManager,
-                                             hash );
+                    this.ingestData( source,
+                                     projectConfig,
+                                     lockManager,
+                                     hash );
             tasks.addAll( futureList );
         }
         else if ( sourceStatus.equals( SourceStatus.COMPLETED ) )
@@ -440,10 +562,10 @@ public class SourceLoader
      * @return Whether or not data within the file should be ingested (and hash)
      * @throws PreIngestException when hashing or id lookup cause some exception
      */
-    private static FileEvaluation shouldIngest( final URI filePath,
-                                                final DataSourceConfig.Source source,
-                                                final String variableName,
-                                                DatabaseLockManager lockManager )
+    private FileEvaluation shouldIngest( final URI filePath,
+                                         final DataSourceConfig.Source source,
+                                         final String variableName,
+                                         DatabaseLockManager lockManager )
     {
         Objects.requireNonNull( filePath );
         Objects.requireNonNull( source );
@@ -529,10 +651,11 @@ public class SourceLoader
         // Get the surrogate key if it exists
         int surrogateKey = KEY_NOT_FOUND;
         Integer dataSourceKey = null;
+        DataSources dataSourcesCache = this.getDataSourcesCache();
 
         try
         {
-            dataSourceKey = DataSources.getActiveSourceID( hash );
+            dataSourceKey = dataSourcesCache.getActiveSourceID( hash );
         }
         catch ( SQLException se )
         {
@@ -563,11 +686,12 @@ public class SourceLoader
      * @return true if a task is detected to be ingesting, false otherwise
      * @throws SQLException When communication with the database fails.
      */
-    private static boolean ingestInProgress( String hash,
-                                             DatabaseLockManager lockManager )
+    private boolean ingestInProgress( String hash,
+                                      DatabaseLockManager lockManager )
             throws SQLException
     {
-        SourceDetails sourceDetails = DataSources.getExistingSource( hash );
+        DataSources dataSourcesCache = this.getDataSourcesCache();
+        SourceDetails sourceDetails = dataSourcesCache.getExistingSource( hash );
         Integer sourceId = sourceDetails.getId();
         return lockManager.isSourceLocked( sourceId );
     }
@@ -579,10 +703,11 @@ public class SourceLoader
      * @throws SQLException Thrown if communcation with the database failed in
      * some way
      */
-    private static boolean anotherTaskIsResponsibleForSource( String hash )
+    private boolean anotherTaskIsResponsibleForSource( String hash )
             throws SQLException
     {
-        return DataSources.hasSource( hash );
+        DataSources dataSourcesCache = this.getDataSourcesCache();
+        return dataSourcesCache.hasSource( hash );
     }
 
 
@@ -595,11 +720,14 @@ public class SourceLoader
      * task already claimed the hash passed in by calling
      * anotherTaskIsResponsibleForSource()
      */
-    private static boolean wasSourceCompleted( String hash )
+    private boolean wasSourceCompleted( String hash )
             throws SQLException
     {
-        SourceDetails details = DataSources.getExistingSource( hash );
-        SourceCompletedDetails completedDetails = new SourceCompletedDetails( details );
+        DataSources dataSourcesCache = this.getDataSourcesCache();
+        SourceDetails details = dataSourcesCache.getExistingSource( hash );
+        Database database = this.getDatabase();
+        SourceCompletedDetails completedDetails = new SourceCompletedDetails( database,
+                                                                              details );
         return completedDetails.wasCompleted();
     }
 
@@ -627,7 +755,8 @@ public class SourceLoader
         // Admittedly not optimal to alternate between hash and key, but other
         // places are using querySourceStatus with the hash.
         int surrogateKey = ingestResult.getSurrogateKey();
-        String hash = SourceLoader.getHashFromSurrogateKey( surrogateKey );
+        DataSources dataSourcesCache = this.getDataSourcesCache();
+        String hash = SourceLoader.getHashFromSurrogateKey( dataSourcesCache, surrogateKey );
         SourceStatus sourceStatus = querySourceStatus( hash,
                                                        this.lockManager );
 
@@ -652,16 +781,18 @@ public class SourceLoader
             // Need the hash but we only have a surrogate key. Get the hash.
 
             // First, try to safely remove it:
-            boolean removed = IncompleteIngest.removeSourceDataSafely( ingestResult.getSurrogateKey(),
+            boolean removed = IncompleteIngest.removeSourceDataSafely( this.getDatabase(),
+                                                                       this.getDataSourcesCache(),
+                                                                       ingestResult.getSurrogateKey(),
                                                                        this.lockManager );
             if ( removed )
             {
                 LOGGER.debug( "Successfully removed abandoned data source {}, creating new ingest task.",
                               ingestResult );
-                return SourceLoader.ingestData( ingestResult.getDataSource(),
-                                                this.projectConfig,
-                                                this.lockManager,
-                                                hash );
+                return this.ingestData( ingestResult.getDataSource(),
+                                        this.projectConfig,
+                                        this.lockManager,
+                                        hash );
             }
             else
             {
@@ -752,7 +883,8 @@ public class SourceLoader
      * @throws NullPointerException if the input is null
      */
 
-    private static Set<DataSource> createSourcesToLoadAndLink( ProjectConfig projectConfig )
+    private static Set<DataSource> createSourcesToLoadAndLink( SystemSettings systemSettings,
+                                                               ProjectConfig projectConfig )
     {
         Objects.requireNonNull( projectConfig );
 
@@ -781,7 +913,7 @@ public class SourceLoader
         for ( Map.Entry<DataSourceConfig.Source, Pair<DataSourceConfig, Set<LeftOrRightOrBaseline>>> nextSource : sources.entrySet() )
         {
             // Evaluate the path, which is null for a source that is not file-like
-            Path path = SourceLoader.evaluatePath( nextSource.getKey() );
+            Path path = SourceLoader.evaluatePath( systemSettings, nextSource.getKey() );
 
             // If there is a file-like source, test for a directory and decompose it as required
             if( Objects.nonNull( path ) )
@@ -908,7 +1040,8 @@ public class SourceLoader
      * @return the path of a file-like source or null
      */
     
-    private static Path evaluatePath( DataSourceConfig.Source source )
+    private static Path evaluatePath( SystemSettings systemSettings,
+                                      DataSourceConfig.Source source )
     {
         LOGGER.trace( "Called evaluatePath with source {}", source );
         URI uri = source.getValue();
@@ -943,7 +1076,7 @@ public class SourceLoader
         // the specified source is not absolute.
         if ( !uri.isAbsolute() )
         {
-            sourcePath = SystemSettings.getDataDirectory()
+            sourcePath = systemSettings.getDataDirectory()
                                        .resolve( uri.getPath() );
             LOGGER.debug( "Transformed relative URI {} to Path {}.",
                           uri,
@@ -1019,7 +1152,7 @@ public class SourceLoader
      * @throws PreIngestException When communication with the database fails.
      */
 
-    static SourceStatus querySourceStatus( String hash, DatabaseLockManager lockManager )
+    SourceStatus querySourceStatus( String hash, DatabaseLockManager lockManager )
     {
         boolean anotherTaskStartedIngest = false;
         boolean ingestMarkedComplete = false;
@@ -1075,13 +1208,14 @@ public class SourceLoader
      * @throws PreIngestException When database calls fail or cache fails.
      */
 
-    private static String getHashFromSurrogateKey( int surrogateKey )
+    private static String getHashFromSurrogateKey( DataSources dataSourcesCache,
+                                                   int surrogateKey )
     {
         SourceDetails details;
 
         try
         {
-            details = DataSources.getFromCacheOrDatabaseByIdThenCache( surrogateKey );
+            details = dataSourcesCache.getFromCacheOrDatabaseByIdThenCache( surrogateKey );
         }
         catch ( SQLException se )
         {

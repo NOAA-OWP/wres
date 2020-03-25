@@ -9,6 +9,7 @@ import java.util.concurrent.ExecutionException;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import org.mockito.Mock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,10 +18,13 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 
 import wres.datamodel.time.TimeSeries;
+import wres.system.SystemSettings;
 
 public class NWMTimeSeriesTest
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( NWMTimeSeriesTest.class );
+
+    @Mock SystemSettings mockSystemSettings;
 
     @Test
     public void generateFakeNwmForecastNames()
@@ -177,7 +181,8 @@ public class NWMTimeSeriesTest
                                                 Duration.ofHours( 1 ),
                                                 false );
 
-        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
+        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( this.mockSystemSettings,
+                                                               nwmProfile,
                                                                Instant.parse( "2019-10-23T02:00:00Z" ),
                                                                URI.create( "https://nomads.ncep.***REMOVED***/pub/data/nccf/com/nwm/prod/" ) ) )
         {
@@ -208,7 +213,8 @@ public class NWMTimeSeriesTest
 
         LOGGER.info( "Opening a forecast based on {}", nwmProfile );
 
-        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
+        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( this.mockSystemSettings,
+                                                               nwmProfile,
                                                                Instant.parse( "2019-10-22T02:00:00Z" ),
                                                                URI.create( "https://nomads.ncep.***REMOVED***/pub/data/nccf/com/nwm/prod/" ) ) )
         {
@@ -244,7 +250,8 @@ public class NWMTimeSeriesTest
 
         LOGGER.info( "Opening a forecast based on {}", nwmProfile );
 
-        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
+        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( this.mockSystemSettings,
+                                                               nwmProfile,
                                                                Instant.parse( "2019-10-06T02:00:00Z" ),
                                                                URI.create( "https://dstore-fqdn/nwm/2.0/" ) ) )
         {
@@ -279,7 +286,8 @@ public class NWMTimeSeriesTest
 
         LOGGER.info( "Opening a forecast based on {}", nwmProfile );
 
-        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
+        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( this.mockSystemSettings,
+                                                               nwmProfile,
                                                                Instant.parse( "2018-05-06T04:00:00Z" ),
                                                                URI.create( "https://dstore-fqdn/nwm/1.2/" ) ) )
         {
@@ -314,7 +322,8 @@ public class NWMTimeSeriesTest
                                                 false );
 
         LOGGER.info( "Opening a forecast based on {}", nwmProfile );
-        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
+        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( this.mockSystemSettings,
+                                                               nwmProfile,
                                                                Instant.parse( "2017-10-06T17:00:00Z" ),
                                                                URI.create( "https://dstore-fqdn/nwm/1.1/" ) ) )
         {
@@ -348,7 +357,8 @@ public class NWMTimeSeriesTest
                                                 false );
         LOGGER.info( "Opening a forecast based on {}", nwmProfile );
 
-        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
+        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( this.mockSystemSettings,
+                                                               nwmProfile,
                                                                Instant.parse( "2016-10-18T17:00:00Z" ),
                                                                URI.create( "https://dstore-fqdn/nwm/1.0/" ) ) )
         {
@@ -381,7 +391,8 @@ public class NWMTimeSeriesTest
                                                 false );
 
         LOGGER.info( "Opening a forecast based on {}", nwmProfile );
-        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
+        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( this.mockSystemSettings,
+                                                               nwmProfile,
                                                                Instant.parse( "2019-10-06T02:00:00Z" ),
                                                                URI.create( "H:/netcdf_data/" ) ) )
         {
@@ -418,7 +429,8 @@ public class NWMTimeSeriesTest
 
         LOGGER.info( "Opening a forecast based on {}", nwmProfile );
 
-        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
+        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( this.mockSystemSettings,
+                                                               nwmProfile,
                                                                Instant.parse( "2019-10-21T06:00:00Z" ),
                                                                URI.create( "https://dstore-fqdn/nwm/2.0/" ) ) )
         {
@@ -463,7 +475,8 @@ public class NWMTimeSeriesTest
 
         LOGGER.info( "Opening a forecast based on {}", nwmProfile );
 
-        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
+        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( this.mockSystemSettings,
+                                                               nwmProfile,
                                                                Instant.parse( "2019-10-21T06:00:00Z" ),
                                                                URI.create( "C:/nwm_data/" ) ) )
         {

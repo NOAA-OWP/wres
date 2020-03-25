@@ -35,11 +35,15 @@ import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.time.TimeSeries;
 import wres.io.concurrency.TimeSeriesIngester;
+import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
+import wres.io.data.caching.MeasurementUnits;
+import wres.io.data.caching.Variables;
 import wres.io.data.details.FeatureDetails;
 import wres.io.reading.DataSource;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
+import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
 
@@ -96,6 +100,12 @@ public class NWMReader implements Callable<List<IngestResult>>
             + " as a source, which will be used to find data falling within "
             +"those valid datetimes.";
 
+    private final SystemSettings systemSettings;
+    private final Database database;
+    private final Features featuresCache;
+    private final Variables variablesCache;
+    private final Ensembles ensemblesCache;
+    private final MeasurementUnits measurementUnitsCache;
     private final ProjectConfig projectConfig;
     private final DataSource dataSource;
     private final DatabaseLockManager lockManager;
@@ -107,16 +117,35 @@ public class NWMReader implements Callable<List<IngestResult>>
     private final CountDownLatch startGettingResults;
     private final URI baseUri;
 
-    public NWMReader( ProjectConfig projectConfig,
+    public NWMReader( SystemSettings systemSettings,
+                      Database database,
+                      Features featuresCache,
+                      Variables variablesCache,
+                      Ensembles ensemblesCache,
+                      MeasurementUnits measurementUnitsCache,
+                      ProjectConfig projectConfig,
                       DataSource dataSource,
                       DatabaseLockManager lockManager )
     {
+        Objects.requireNonNull( systemSettings );
+        Objects.requireNonNull( database );
+        Objects.requireNonNull( featuresCache );
+        Objects.requireNonNull( variablesCache );
+        Objects.requireNonNull( ensemblesCache );
+        Objects.requireNonNull( measurementUnitsCache );
         Objects.requireNonNull( projectConfig );
         Objects.requireNonNull( dataSource );
         Objects.requireNonNull( lockManager );
         Objects.requireNonNull( dataSource.getSource() );
         Objects.requireNonNull( dataSource.getSource().getInterface() );
         Objects.requireNonNull( dataSource.getSource().getValue() );
+
+        this.systemSettings = systemSettings;
+        this.database = database;
+        this.featuresCache = featuresCache;
+        this.variablesCache = variablesCache;
+        this.ensemblesCache = ensemblesCache;
+        this.measurementUnitsCache = measurementUnitsCache;
 
         URI literalUri = dataSource.getSource()
                                    .getValue();
@@ -127,7 +156,7 @@ public class NWMReader implements Callable<List<IngestResult>>
         }
         else
         {
-            URI resolvedUri = SystemSettings.getDataDirectory()
+            URI resolvedUri = systemSettings.getDataDirectory()
                                             .resolve( literalUri.getPath() )
                                             .toUri();
             LOGGER.debug( "Transformed relative URI {} to URI {}.",
@@ -231,17 +260,47 @@ public class NWMReader implements Callable<List<IngestResult>>
         // See comments in WebSource class regarding the setup of the executor,
         // queue, and latch.
         BlockingQueue<Runnable>
-                nwmReaderQueue = new ArrayBlockingQueue<>( SystemSettings.getMaxiumNwmIngestThreads() );
-        this.executor = new ThreadPoolExecutor( SystemSettings.getMaxiumNwmIngestThreads(),
-                                                SystemSettings.getMaxiumNwmIngestThreads(),
-                                                SystemSettings.poolObjectLifespan(),
+                nwmReaderQueue = new ArrayBlockingQueue<>( systemSettings.getMaxiumNwmIngestThreads() );
+        this.executor = new ThreadPoolExecutor( systemSettings.getMaxiumNwmIngestThreads(),
+                                                systemSettings.getMaxiumNwmIngestThreads(),
+                                                systemSettings.poolObjectLifespan(),
                                                 TimeUnit.MILLISECONDS,
                                                 nwmReaderQueue,
                                                 nwmReaderThreadFactory );
 
         this.executor.setRejectedExecutionHandler( new ThreadPoolExecutor.AbortPolicy() );
-        this.ingests = new ArrayBlockingQueue<>( SystemSettings.getMaxiumNwmIngestThreads() );
-        this.startGettingResults = new CountDownLatch( SystemSettings.getMaxiumNwmIngestThreads() );
+        this.ingests = new ArrayBlockingQueue<>( systemSettings.getMaxiumNwmIngestThreads() );
+        this.startGettingResults = new CountDownLatch( systemSettings.getMaxiumNwmIngestThreads() );
+    }
+
+    private SystemSettings getSystemSettings()
+    {
+        return this.systemSettings;
+    }
+
+    private Database getDatabase()
+    {
+        return this.database;
+    }
+
+    private Features getFeaturesCache()
+    {
+        return this.featuresCache;
+    }
+
+    private Variables getVariablesCache()
+    {
+        return this.variablesCache;
+    }
+
+    private Ensembles getEnsemblesCache()
+    {
+        return this.ensemblesCache;
+    }
+
+    private MeasurementUnits getMeasurementUnitsCache()
+    {
+        return this.measurementUnitsCache;
     }
 
     private ProjectConfig getProjectConfig()
@@ -279,11 +338,12 @@ public class NWMReader implements Callable<List<IngestResult>>
     {
         List<IngestResult> ingestResults = new ArrayList<>();
         Set<FeatureDetails> features;
+        Features featuresCache = this.getFeaturesCache();
 
         // Calling getAllDetails limits reading to only hardcoded wres.features.
         try
         {
-            features = Features.getAllDetails( this.getProjectConfig() );
+            features = featuresCache.getAllDetails( this.getProjectConfig() );
         }
         catch ( SQLException se )
         {
@@ -391,7 +451,8 @@ public class NWMReader implements Callable<List<IngestResult>>
             for ( Instant referenceDatetime : referenceDatetimes )
             {
                 try( NWMTimeSeries nwmTimeSeries =
-                             new NWMTimeSeries( this.getNwmProfile(),
+                             new NWMTimeSeries( this.getSystemSettings(),
+                                                this.getNwmProfile(),
                                                 referenceDatetime,
                                                 this.getUri() ) )
                 {
@@ -475,7 +536,13 @@ public class NWMReader implements Callable<List<IngestResult>>
                             // that must deal with the wres.source table. Use the identifier
                             // of the timeseries data as if it were a wres.source.
                             TimeSeriesIngester ingester =
-                                    new TimeSeriesIngester( this.getProjectConfig(),
+                                    new TimeSeriesIngester( this.getSystemSettings(),
+                                                            this.getDatabase(),
+                                                            this.getFeaturesCache(),
+                                                            this.getVariablesCache(),
+                                                            this.getEnsemblesCache(),
+                                                            this.getMeasurementUnitsCache(),
+                                                            this.getProjectConfig(),
                                                             innerDataSource,
                                                             this.getLockManager(),
                                                             entry.getValue(),

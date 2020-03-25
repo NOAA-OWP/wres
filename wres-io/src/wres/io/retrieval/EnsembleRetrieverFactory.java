@@ -25,6 +25,7 @@ import wres.io.config.ConfigHelper;
 import wres.io.config.LeftOrRightOrBaseline;
 import wres.io.project.Project;
 import wres.io.retrieval.EnsembleForecastRetriever.Builder;
+import wres.io.utilities.Database;
 
 /**
  * <p>A factory class that creates retrievers for the single-valued left and ensemble right datasets associated with one 
@@ -53,6 +54,8 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
      */
 
     private static final String AND_TIME_WINDOW_MESSAGE = " and time window ";
+
+    private final Database database;
 
     /**
      * The project.
@@ -113,10 +116,16 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
      */
 
     private final RetrieverFactory<Double,Double> leftFactory;
-    
+
+    private Database getDatabase()
+    {
+        return this.database;
+    }
+
     /**
      * Returns an instance.
-     * 
+     *
+     * @param database The database to use.
      * @param project the project
      * @param feature a feature to evaluate
      * @param unitMapper the unit mapper
@@ -124,9 +133,9 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
      * @throws NullPointerException if any input is null
      */
 
-    public static EnsembleRetrieverFactory of( Project project, Feature feature, UnitMapper unitMapper )
+    public static EnsembleRetrieverFactory of( Database database, Project project, Feature feature, UnitMapper unitMapper )
     {
-        return new EnsembleRetrieverFactory( project, feature, unitMapper );
+        return new EnsembleRetrieverFactory( database, project, feature, unitMapper );
     }
 
     @Override
@@ -166,6 +175,7 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
                        .setEnsembleIdsToInclude( ensembleIdsToInclude )
                        .setEnsembleIdsToExclude( ensembleIdsToExclude )
                        .setHasMultipleSourcesPerSeries( hasMultipleSourcesPerSeries )
+                       .setDatabase( this.getDatabase()  )
                        .setProjectId( this.project.getId() )
                        .setVariableFeatureId( rightVariableFeatureId )
                        .setLeftOrRightOrBaseline( LeftOrRightOrBaseline.RIGHT )
@@ -220,6 +230,7 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
                                .setEnsembleIdsToInclude( ensembleIdsToInclude )
                                .setEnsembleIdsToExclude( ensembleIdsToExclude )
                                .setHasMultipleSourcesPerSeries( hasMultipleSourcesPerSeries )
+                               .setDatabase( this.getDatabase() )
                                .setProjectId( this.project.getId() )
                                .setVariableFeatureId( baselineVariableFeatureId )
                                .setLeftOrRightOrBaseline( LeftOrRightOrBaseline.BASELINE )
@@ -268,12 +279,17 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
      * @throws NullPointerException if any input is null
      */
 
-    private EnsembleRetrieverFactory( Project project, Feature feature, UnitMapper unitMapper )
+    private EnsembleRetrieverFactory( Database database,
+                                      Project project,
+                                      Feature feature,
+                                      UnitMapper unitMapper )
     {
+        Objects.requireNonNull( database );
         Objects.requireNonNull( project );
         Objects.requireNonNull( unitMapper );
         Objects.requireNonNull( feature );
 
+        this.database = database;
         this.project = project;
         this.feature = feature;
         this.unitMapper = unitMapper;
@@ -294,7 +310,7 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
         this.desiredTimeScale = ConfigHelper.getDesiredTimeScale( pairConfig );
         
         // Create a factory for the left-ish data
-        this.leftFactory = SingleValuedRetrieverFactory.of( project, feature, unitMapper );
+        this.leftFactory = SingleValuedRetrieverFactory.of( database, project, feature, unitMapper );
     }
 
     /**

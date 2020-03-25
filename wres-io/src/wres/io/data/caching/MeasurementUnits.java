@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 import wres.io.data.details.MeasurementDetails;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
-import wres.util.Collections;
+import wres.io.utilities.Database;
 
 /**
  * Caches details mapping units of measurements to their IDs
@@ -20,37 +20,31 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String>
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MeasurementUnits.class);
 
-	private static final Object CACHE_LOCK = new Object();
+    private final Object detailLock = new Object();
+    private final Object keyLock = new Object();
+    private final Database database;
 
-    private static final Object DETAIL_LOCK = new Object();
-    private static final Object KEY_LOCK = new Object();
-
-    /**
-     *  Internal, Global cache of measurement details
-     */
-    private static final MeasurementUnits INSTANCE = new MeasurementUnits();
-
-    /**
-     * <p>Invalidates the global cache of the singleton associated with this class, {@link #INSTANCE}.
-     * 
-     * <p>See #61206.
-     */
-    
-    public static void invalidateGlobalCache()
+    public MeasurementUnits( Database database )
     {
-        MeasurementUnits.INSTANCE.invalidate();
+        this.database = database;
     }
-    
+
+    @Override
+    protected Database getDatabase()
+    {
+        return this.database;
+    }
+
     @Override
     protected Object getDetailLock()
     {
-        return MeasurementUnits.DETAIL_LOCK;
+        return this.detailLock;
     }
 
     @Override
     protected Object getKeyLock()
     {
-        return MeasurementUnits.KEY_LOCK;
+        return this.keyLock;
     }
 
     private void populate(DataProvider data)
@@ -64,45 +58,29 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String>
         }
     }
 
-    private static MeasurementUnits getCache()
-    {
-        synchronized (CACHE_LOCK)
-        {
-            if ( INSTANCE.isEmpty() )
-            {
-                MeasurementUnits.initialize();
-            }
-            return INSTANCE;
-        }
-    }
-	
+
 	/**
 	 * Returns the ID of a unit of measurement from the global cache based on the name of the measurement
 	 * @param unit The name of the unit of measurement
 	 * @return The ID of the unit of measurement
 	 * @throws SQLException Thrown if the ID could not be retrieved from the database 
 	 */
-	public static Integer getMeasurementUnitID(String unit) throws SQLException {
+	public Integer getMeasurementUnitID(String unit) throws SQLException {
         Integer id = null;
         if (unit != null && !unit.trim().isEmpty())
         {
-            id = getCache().getID(unit.toLowerCase());
+            id = this.getID(unit.toLowerCase());
         }
 
         if (id == null)
         {
             MeasurementDetails details = new MeasurementDetails();
             details.setUnit( unit );
-            id = getCache().getID(details);
+            id = this.getID(details);
         }
 
 	    return id;
 	}
-
-	static String getNameByID(Integer id)
-    {
-        return Collections.getKeyByValue(MeasurementUnits.getCache().getKeyIndex(), id);
-    }
 
 	@Override
 	protected int getMaxDetails() {
@@ -112,11 +90,12 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String>
 	/**
 	 * Loads all pre-existing data into the instance cache
 	 */
-    private static synchronized void initialize()
+    private synchronized void initialize()
 	{
         try
         {
-            DataScripter script = new DataScripter(  );
+            Database database = this.getDatabase();
+            DataScripter script = new DataScripter( database );
             script.setHighPriority( true );
 
             script.addLine("SELECT measurementunit_id, unit_name");
@@ -125,7 +104,7 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String>
 
             try (DataProvider data = script.getData())
             {
-                INSTANCE.populate( data );
+                this.populate( data );
             }
             LOGGER.debug( "Finished populating the MeasurementUnit details." );
         }

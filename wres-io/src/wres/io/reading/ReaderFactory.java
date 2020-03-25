@@ -5,14 +5,20 @@ import java.net.URI;
 
 import wres.config.generated.Format;
 import wres.config.generated.ProjectConfig;
+import wres.io.data.caching.DataSources;
+import wres.io.data.caching.Ensembles;
+import wres.io.data.caching.Features;
+import wres.io.data.caching.MeasurementUnits;
+import wres.io.data.caching.Variables;
 import wres.io.reading.commaseparated.CSVSource;
 import wres.io.reading.datacard.DatacardSource;
 import wres.io.reading.fews.FEWSSource;
 import wres.io.reading.nwm.NWMSource;
-import wres.io.reading.s3.S3Reader;
 import wres.io.reading.waterml.WaterMLBasicSource;
 import wres.io.reading.wrds.WRDSSource;
+import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
+import wres.system.SystemSettings;
 import wres.util.NetCDF;
 import wres.util.Strings;
 
@@ -23,7 +29,14 @@ import wres.util.Strings;
 public class ReaderFactory {
     private ReaderFactory(){}
 
-    public static BasicSource getReader( ProjectConfig projectConfig,
+    public static BasicSource getReader( SystemSettings systemSettings,
+                                         Database database,
+                                         DataSources dataSourcesCache,
+                                         Features featuresCache,
+                                         Variables variablesCache,
+                                         Ensembles ensemblesCache,
+                                         MeasurementUnits measurementUnitsCache,
+                                         ProjectConfig projectConfig,
                                          DataSource dataSource,
                                          DatabaseLockManager lockManager )
             throws IOException
@@ -35,42 +48,80 @@ public class ReaderFactory {
 		switch (typeOfFile)
         {
 			case DATACARD:
-                source = new DatacardSource( projectConfig,
+                source = new DatacardSource( systemSettings,
+                                             database,
+                                             dataSourcesCache,
+                                             featuresCache,
+                                             variablesCache,
+                                             measurementUnitsCache,
+                                             projectConfig,
                                              dataSource,
                                              lockManager );
 				break;
             case ARCHIVE:
-                source = new ZippedSource( projectConfig,
+                source = new ZippedSource( systemSettings,
+                                           database,
+                                           dataSourcesCache,
+                                           featuresCache,
+                                           variablesCache,
+                                           ensemblesCache,
+                                           measurementUnitsCache,
+                                           projectConfig,
                                            dataSource,
                                            lockManager );
 				break;
             case NET_CDF:
-                source = new NWMSource( projectConfig,
+                source = new NWMSource( systemSettings,
+                                        database,
+                                        dataSourcesCache,
+                                        projectConfig,
                                         dataSource,
                                         lockManager );
 				break;
 			case PI_XML:
-                source = new FEWSSource( projectConfig,
+                source = new FEWSSource( systemSettings,
+                                         database,
+                                         dataSourcesCache,
+                                         featuresCache,
+                                         variablesCache,
+                                         ensemblesCache,
+                                         measurementUnitsCache,
+                                         projectConfig,
                                          dataSource,
                                          lockManager );
 				break;
-            case S_3:
-                source = S3Reader.getReader( projectConfig,
-                                             dataSource,
-                                             lockManager );
-                break;
             case WRDS:
-                source = new WRDSSource( projectConfig,
+                source = new WRDSSource( systemSettings,
+                                         database,
+                                         dataSourcesCache,
+                                         featuresCache,
+                                         variablesCache,
+                                         ensemblesCache,
+                                         measurementUnitsCache,
+                                         projectConfig,
                                          dataSource,
                                          lockManager );
                 break;
             case CSV:
-                source = new CSVSource( projectConfig,
+                source = new CSVSource( systemSettings,
+                                        database,
+                                        dataSourcesCache,
+                                        featuresCache,
+                                        variablesCache,
+                                        ensemblesCache,
+                                        measurementUnitsCache,
+                                        projectConfig,
                                         dataSource,
                                         lockManager );
                 break;
             case WATERML:
-                source = new WaterMLBasicSource( projectConfig,
+                source = new WaterMLBasicSource( systemSettings,
+                                                 database,
+                                                 featuresCache,
+                                                 variablesCache,
+                                                 ensemblesCache,
+                                                 measurementUnitsCache,
+                                                 projectConfig,
                                                  dataSource,
                                                  lockManager );
                 break;
@@ -113,10 +164,6 @@ public class ReaderFactory {
 		{
             type = Format.PI_XML;
 		}
-        else if (filename.equals( URI.create( "s3" ) ) )
-        {
-            type = Format.S_3;
-        }
         else if ( NetCDF.isNetCDFFile(pathName ) )
         {
             type = Format.NET_CDF;

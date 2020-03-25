@@ -27,6 +27,7 @@ import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindow;
 import wres.io.config.ConfigHelper;
+import wres.system.SystemSettings;
 import wres.vis.ChartEngineFactory;
 
 /**
@@ -43,7 +44,8 @@ public class PNGDiagramWriter extends PNGWriter
 
     /**
      * Returns an instance of a writer.
-     * 
+     *
+     * @param systemSettings The system settings to use.
      * @param projectConfigPlus the project configuration
      * @param durationUnits the time units for durations
      * @param outputDirectory the directory into which to write
@@ -52,11 +54,12 @@ public class PNGDiagramWriter extends PNGWriter
      * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
-    public static PNGDiagramWriter of( ProjectConfigPlus projectConfigPlus,
+    public static PNGDiagramWriter of( SystemSettings systemSettings,
+                                       ProjectConfigPlus projectConfigPlus,
                                        ChronoUnit durationUnits,
                                        Path outputDirectory )
     {
-        return new PNGDiagramWriter( projectConfigPlus, durationUnits, outputDirectory );
+        return new PNGDiagramWriter( systemSettings, projectConfigPlus, durationUnits, outputDirectory );
     }
 
     /**
@@ -84,7 +87,8 @@ public class PNGDiagramWriter extends PNGWriter
             for ( MetricConstants next : metrics )
             {
                 Set<Path> innerPathsWrittenTo =
-                        PNGDiagramWriter.writeMultiVectorCharts( super.getOutputDirectory(),
+                        PNGDiagramWriter.writeMultiVectorCharts( super.getSystemSettings(),
+                                                                 super.getOutputDirectory(),
                                                                  super.getProjectConfigPlus(),
                                                                  destinationConfig,
                                                                  Slicer.filter( output, next ),
@@ -119,7 +123,8 @@ public class PNGDiagramWriter extends PNGWriter
      * @return the paths actually written to
      */
 
-    private static Set<Path> writeMultiVectorCharts( Path outputDirectory,
+    private static Set<Path> writeMultiVectorCharts( SystemSettings systemSettings,
+                                                     Path outputDirectory,
                                                      ProjectConfigPlus projectConfigPlus,
                                                      DestinationConfig destinationConfig,
                                                      ListOfStatistics<DiagramStatistic> output,
@@ -168,7 +173,7 @@ public class PNGDiagramWriter extends PNGWriter
                     throw new UnsupportedOperationException( "Unexpected situation where WRES could not create outputImage path" );
                 }
 
-                PNGWriter.writeChart( outputImage, nextEntry.getValue(), destinationConfig );
+                PNGWriter.writeChart( systemSettings, outputImage, nextEntry.getValue(), destinationConfig );
                 // Only if writeChart succeeded do we assume that it was written
                 pathsWrittenTo.add( outputImage );
             }
@@ -191,11 +196,12 @@ public class PNGDiagramWriter extends PNGWriter
      * @throws NullPointerException if either input is null
      */
 
-    private PNGDiagramWriter( ProjectConfigPlus projectConfigPlus,
+    private PNGDiagramWriter( SystemSettings systemSettings,
+                              ProjectConfigPlus projectConfigPlus,
                               ChronoUnit durationUnits,
                               Path outputDirectory )
     {
-        super( projectConfigPlus, durationUnits, outputDirectory );
+        super( systemSettings, projectConfigPlus, durationUnits, outputDirectory );
     }
 
 }

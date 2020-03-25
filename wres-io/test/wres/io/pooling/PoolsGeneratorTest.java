@@ -6,13 +6,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
+import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PowerMockIgnore;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.mockito.MockitoAnnotations;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
@@ -26,24 +24,31 @@ import wres.config.generated.ProjectConfig;
 import wres.config.generated.DataSourceConfig.Variable;
 import wres.datamodel.Ensemble;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
-import wres.io.config.ConfigHelper;
 import wres.io.project.Project;
 import wres.io.retrieval.UnitMapper;
+import wres.io.utilities.Database;
+import wres.system.SystemSettings;
 
 /**
  * Tests the {@link PoolsGenerator}.
  * 
  * @author james.brown@hydrosolved.com
  */
-@RunWith( PowerMockRunner.class )
-@PrepareForTest( { UnitMapper.class, ConfigHelper.class } )
-@PowerMockIgnore( { "javax.management.*", "java.io.*", "javax.xml.*", "com.sun.*", "org.xml.*" } )
 public class PoolsGeneratorTest
 {
 
     private static final String GET_VARIABLE_ID_FROM_PROJECT_CONFIG = "getVariableIdFromProjectConfig";
 
     private static final String STREAMFLOW = "STREAMFLOW";
+
+    private @Mock Database wresDatabase;
+    private @Mock UnitMapper unitMapper;
+
+    @Before
+    public void setup()
+    {
+        MockitoAnnotations.initMocks( this );
+    }
 
     /**
      * Tests {@link PoolsGenerator#get()} using project declaration that is representative of system test
@@ -122,15 +127,12 @@ public class PoolsGeneratorTest
         Mockito.when( project.hasBaseline() ).thenReturn( false );
         Mockito.when( project.usesProbabilityThresholds() ).thenReturn( false );
 
-        // Mock the unit mapper
-        UnitMapper mapper = Mockito.mock( UnitMapper.class );
-        PowerMockito.mockStatic( UnitMapper.class );
-        PowerMockito.when( UnitMapper.class, "of", "CFS" )
-                    .thenReturn( mapper );
-
         // Create the actual output
         List<Supplier<PoolOfPairs<Double, Double>>> actual =
-                PoolFactory.getSingleValuedPools( project, feature, mapper );
+                PoolFactory.getSingleValuedPools( this.wresDatabase,
+                                                  project,
+                                                  feature,
+                                                  this.unitMapper );
 
         // Assert expected number of suppliers
         assertEquals( 18, actual.size() );
@@ -215,17 +217,12 @@ public class PoolsGeneratorTest
         Mockito.when( project.hasBaseline() ).thenReturn( false );
         Mockito.when( project.usesProbabilityThresholds() ).thenReturn( false );
 
-        // Mock the unit mapper
-        UnitMapper mapper = Mockito.mock( UnitMapper.class );
-        PowerMockito.mockStatic( UnitMapper.class );
-        PowerMockito.when( UnitMapper.class, "of", "CFS" )
-                    .thenReturn( mapper );
-
-        PowerMockito.spy( ConfigHelper.class );
-        PowerMockito.when( ConfigHelper.class, GET_VARIABLE_ID_FROM_PROJECT_CONFIG, projectConfig, false )
-                    .thenReturn( STREAMFLOW );
         // Create the actual output
-        List<Supplier<PoolOfPairs<Double, Ensemble>>> actual = PoolFactory.getEnsemblePools( project, feature, mapper );
+        List<Supplier<PoolOfPairs<Double, Ensemble>>> actual =
+                PoolFactory.getEnsemblePools( this.wresDatabase,
+                                              project,
+                                              feature,
+                                              this.unitMapper );
 
         // Assert expected number of suppliers
         assertEquals( 18, actual.size() );

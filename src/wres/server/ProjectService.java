@@ -25,6 +25,9 @@ import wres.config.ProjectConfigPlus;
 import wres.control.Control;
 import wres.control.InternalWresException;
 import wres.control.UserInputException;
+import wres.io.concurrency.Executor;
+import wres.io.utilities.Database;
+import wres.system.SystemSettings;
 
 
 /**
@@ -36,6 +39,10 @@ import wres.control.UserInputException;
 public class ProjectService
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( ProjectService.class );
+
+    private static final SystemSettings SYSTEM_SETTINGS = SystemSettings.fromDefaultClasspathXmlFile();
+    private static final Database DATABASE = new Database( SYSTEM_SETTINGS );
+    private static final Executor EXECUTOR = new Executor( SYSTEM_SETTINGS );
 
     private static final Random RANDOM =
             new Random( System.currentTimeMillis() );
@@ -67,7 +74,9 @@ public class ProjectService
             // on StackOverflow question id 5827023.
             projectId = RANDOM.nextLong() & Long.MAX_VALUE;
 
-            Control control = new Control();
+            Control control = new Control( SYSTEM_SETTINGS,
+                                           DATABASE,
+                                           EXECUTOR );
             control.accept( projectPlus );
             Set<java.nio.file.Path> outputPaths = control.get();
             OUTPUTS.put( projectId, outputPaths );

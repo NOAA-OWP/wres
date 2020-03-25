@@ -25,6 +25,7 @@ import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.io.config.ConfigHelper;
+import wres.system.SystemSettings;
 import wres.vis.ChartEngineFactory;
 
 /**
@@ -41,7 +42,8 @@ public class PNGPairedWriter extends PNGWriter
 
     /**
      * Returns an instance of a writer.
-     * 
+     *
+     * @param systemSettings The system settings to use.
      * @param projectConfigPlus the project configuration
      * @param durationUnits the time units for durations
      * @param outputDirectory the directory into which to write
@@ -50,11 +52,12 @@ public class PNGPairedWriter extends PNGWriter
      * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
-    public static PNGPairedWriter of( ProjectConfigPlus projectConfigPlus,
+    public static PNGPairedWriter of( SystemSettings systemSettings,
+                                      ProjectConfigPlus projectConfigPlus,
                                       ChronoUnit durationUnits,
                                       Path outputDirectory )
     {
-        return new PNGPairedWriter( projectConfigPlus, durationUnits, outputDirectory );
+        return new PNGPairedWriter( systemSettings, projectConfigPlus, durationUnits, outputDirectory );
     }
 
     /**
@@ -83,7 +86,8 @@ public class PNGPairedWriter extends PNGWriter
             for ( MetricConstants next : metrics )
             {
                 Set<Path> innerPathsWrittenTo =
-                        PNGPairedWriter.writePairedOutputByInstantDurationCharts( super.getOutputDirectory(),
+                        PNGPairedWriter.writePairedOutputByInstantDurationCharts( super.getSystemSettings(),
+                                                                                  super.getOutputDirectory(),
                                                                                   super.getProjectConfigPlus(),
                                                                                   destinationConfig,
                                                                                   Slicer.filter( output, next ),
@@ -110,6 +114,7 @@ public class PNGPairedWriter extends PNGWriter
      * Writes a set of charts associated with {@link PairedStatistic} for a single metric and time window,
      * stored in a {@link ListOfStatistics}.
      *
+     * @param systemSettings The system settings to use.
      * @param outputDirectory the directory into which to write
      * @param projectConfigPlus the project configuration
      * @param destinationConfig the destination configuration for the written output
@@ -119,7 +124,8 @@ public class PNGPairedWriter extends PNGWriter
      * @return the paths actually written to
      */
 
-    private static Set<Path> writePairedOutputByInstantDurationCharts( Path outputDirectory,
+    private static Set<Path> writePairedOutputByInstantDurationCharts( SystemSettings systemSettings,
+                                                                       Path outputDirectory,
                                                                        ProjectConfigPlus projectConfigPlus,
                                                                        DestinationConfig destinationConfig,
                                                                        ListOfStatistics<PairedStatistic<Instant, Duration>> output,
@@ -146,7 +152,7 @@ public class PNGPairedWriter extends PNGWriter
                                                                   destinationConfig,
                                                                   meta );
 
-            PNGWriter.writeChart( outputImage, engine, destinationConfig );
+            PNGWriter.writeChart( systemSettings, outputImage, engine, destinationConfig );
             // Only if writeChart succeeded do we assume that it was written
             pathsWrittenTo.add( outputImage );
         }
@@ -168,11 +174,12 @@ public class PNGPairedWriter extends PNGWriter
      * @throws NullPointerException if either input is null
      */
 
-    private PNGPairedWriter( ProjectConfigPlus projectConfigPlus,
+    private PNGPairedWriter( SystemSettings systemSettings,
+                             ProjectConfigPlus projectConfigPlus,
                              ChronoUnit durationUnits,
                              Path outputDirectory )
     {
-        super( projectConfigPlus, durationUnits, outputDirectory );
+        super( systemSettings, projectConfigPlus, durationUnits, outputDirectory );
     }
 
 }

@@ -39,6 +39,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.scale.TimeScale;
+import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
@@ -54,8 +55,10 @@ import wres.io.reading.IngestedValues;
 import wres.io.reading.PreIngestException;
 import wres.io.reading.SourceCompleter;
 import wres.io.reading.WebClient;
+import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
 import wres.system.SSLStuffThatTrustsOneCertificate;
+import wres.system.SystemSettings;
 import wres.util.TimeHelper;
 
 public class ReadValueManager
@@ -68,18 +71,74 @@ public class ReadValueManager
 
     private static final String MD5SUM_OF_EMPTY_STRING = "68b329da9893e34099c7d8ad5cb9c940";
 
+    private final SystemSettings systemSettings;
+    private final Database database;
+    private final DataSources dataSourcesCache;
+    private final Features featuresCache;
+    private final Variables variablesCache;
+    private final Ensembles ensemblesCache;
+    private final MeasurementUnits measurementUnitsCache;
     private final ProjectConfig projectConfig;
     private final DataSource dataSource;
     private final DatabaseLockManager lockManager;
     private final Set<Pair<CountDownLatch,CountDownLatch>> latches = new HashSet<>();
 
-    ReadValueManager( final ProjectConfig projectConfig,
+    ReadValueManager( SystemSettings systemSettings,
+                      Database database,
+                      DataSources dataSourcesCache,
+                      Features featuresCache,
+                      Variables variablesCache,
+                      Ensembles ensemblesCache,
+                      MeasurementUnits measurementUnitsCache,
+                      final ProjectConfig projectConfig,
                       final DataSource datasource,
                       DatabaseLockManager lockManager )
     {
+        this.systemSettings = systemSettings;
+        this.database = database;
+        this.dataSourcesCache = dataSourcesCache;
+        this.featuresCache = featuresCache;
+        this.variablesCache = variablesCache;
+        this.ensemblesCache = ensemblesCache;
+        this.measurementUnitsCache = measurementUnitsCache;
         this.projectConfig = projectConfig;
         this.dataSource = datasource;
         this.lockManager = lockManager;
+    }
+
+    private SystemSettings getSystemSettings()
+    {
+        return this.systemSettings;
+    }
+
+    private Database getDatabase()
+    {
+        return this.database;
+    }
+
+    private DataSources getDataSourcesCache()
+    {
+        return this.dataSourcesCache;
+    }
+
+    private Features getFeaturesCache()
+    {
+        return this.featuresCache;
+    }
+
+    private Variables getVariablesCache()
+    {
+        return this.variablesCache;
+    }
+
+    private Ensembles getEnsemblesCache()
+    {
+        return this.ensemblesCache;
+    }
+
+    private MeasurementUnits getMeasurementUnitsCache()
+    {
+        return this.measurementUnitsCache;
     }
 
     public List<IngestResult> save() throws IOException
@@ -119,7 +178,8 @@ public class ReadValueManager
                                                          MD5SUM_OF_EMPTY_STRING.toUpperCase() );
 
                     SourceDetails details = this.createSourceDetails( sourceKey );
-                    details.save();
+                    Database database = this.getDatabase();
+                    details.save( database );
                     boolean foundAlready = !details.performedInsert();
 
                     LOGGER.debug( "Found {}? {}", details, foundAlready );
@@ -128,7 +188,7 @@ public class ReadValueManager
                     {
                         this.lockManager.lockSource( details.getId() );
                         SourceCompletedDetails completedDetails =
-                                createSourceCompletedDetails( details );
+                                createSourceCompletedDetails( database, details );
                         completedDetails.markCompleted();
                         // A special case here, where we don't use
                         // source completer because we know there are no data
@@ -242,7 +302,8 @@ public class ReadValueManager
         try
         {
             source = this.createSourceDetails( sourceKey );
-            source.save();
+            Database database = this.getDatabase();
+            source.save( database );
             foundAlready = !source.performedInsert();
         }
         catch ( SQLException e )
@@ -294,7 +355,9 @@ public class ReadValueManager
                                            e );
             }
 
-            SourceCompleter completer = createSourceCompleter( source.getId(),
+            Database database = this.getDatabase();
+            SourceCompleter completer = createSourceCompleter( database,
+                                                               source.getId(),
                                                                this.lockManager );
 
             // See #64922, there are two special cases where "read()" will
@@ -327,8 +390,8 @@ public class ReadValueManager
         else
         {
             LOGGER.debug( "{} yields for source {}", this, hash );
-
-            completedDetails = new SourceCompletedDetails( source.getId() );
+            Database database = this.getDatabase();
+            completedDetails = new SourceCompletedDetails( database, source.getId() );
 
             try
             {
@@ -419,7 +482,9 @@ public class ReadValueManager
             try
             {
                 Pair<CountDownLatch,CountDownLatch> synchronizer =
-                        IngestedValues.addTimeSeriesValue( timeSeries.getTimeSeriesID(),
+                        IngestedValues.addTimeSeriesValue( this.getSystemSettings(),
+                                                           this.getDatabase(),
+                                                           timeSeries.getTimeSeriesID(),
                                                            lead,
                                                            dataPoint.getValue() );
                 this.latches.add( synchronizer );
@@ -486,7 +551,7 @@ public class ReadValueManager
     {
         LocationNames locationDescription = forecast.getLocation().getNames();
 
-        FeatureDetails details = new FeatureDetails(  );
+        FeatureDetails details = this.createFeatureDetails();
         details.setFeatureName( locationDescription.getNwsName() );
 
         // Tolerate missing comid
@@ -497,15 +562,17 @@ public class ReadValueManager
 
         details.setGageID( locationDescription.getUsgsSiteCode() );
         details.setLid( locationDescription.getNwsLid() );
-        details.save();
+        Database database = this.getDatabase();
+        details.save( database );
+        Variables variables = this.getVariablesCache();
+        Features features = this.getFeaturesCache();
 
         // Use the Physical Element code as the variable name because AHPS
         // forecasts have QR vs QI vs HG which represent different variables.
         // See redmine issue #61535 for details.
-        int variableId = Variables.getVariableID( forecast.getParameterCodes()
+        int variableId = variables.getVariableID( forecast.getParameterCodes()
                                                           .getPhysicalElement() );
-
-        return Features.getVariableFeatureByFeature( details, variableId );
+        return features.getVariableFeatureByFeature( details, variableId );
     }
 
     private TimeSeries getTimeSeries(
@@ -516,9 +583,10 @@ public class ReadValueManager
     ) throws SQLException
     {
         String startTime = TimeHelper.convertDateToString( startDate );
-
-        TimeSeries timeSeries = new TimeSeries( sourceId, startTime);
-        timeSeries.setEnsembleID( Ensembles.getDefaultEnsembleID() );
+        Database database = this.getDatabase();
+        TimeSeries timeSeries = this.createTimeSeries( database, sourceId, startTime);
+        Ensembles ensembles = this.getEnsemblesCache();
+        timeSeries.setEnsembleID( ensembles.getDefaultEnsembleID() );
         timeSeries.setMeasurementUnitID( this.getMeasurementUnitId( forecast ) );
         timeSeries.setVariableFeatureID( this.getVariableFeatureId( forecast ) );
         timeSeries.setTimeScale( timeScale );
@@ -537,7 +605,8 @@ public class ReadValueManager
 
     private int getMeasurementUnitId(final Forecast forecast) throws SQLException
     {
-        return MeasurementUnits.getMeasurementUnitID(forecast.getUnits().getUnitName());
+        MeasurementUnits measurementUnits = this.getMeasurementUnitsCache();
+        return measurementUnits.getMeasurementUnitID(forecast.getUnits().getUnitName());
     }
 
     private InputStream getFromFile( URI uri ) throws FileNotFoundException
@@ -568,25 +637,52 @@ public class ReadValueManager
     /**
      * This method facilitates testing, Pattern 1 at
      * https://github.com/mockito/mockito/wiki/Mocking-Object-Creation
+     * @param database The database to use.
      * @param sourceId the first arg to SourceCompleter
      * @param lockManager the second arg to SourceCompleter
      * @return a SourceCompleter
      */
-    SourceCompleter createSourceCompleter( int sourceId,
+    SourceCompleter createSourceCompleter( Database database,
+                                           int sourceId,
                                            DatabaseLockManager lockManager )
     {
-        return new SourceCompleter( sourceId, lockManager );
+        return new SourceCompleter( database, sourceId, lockManager );
     }
 
     /**
      * This method facilitates testing, Pattern 1 at
      * https://github.com/mockito/mockito/wiki/Mocking-Object-Creation
+     * @param database The database to use.
      * @param sourceDetails the first arg to SourceCompletedDetails
      * @return a SourceCompleter
      */
-    SourceCompletedDetails createSourceCompletedDetails( SourceDetails sourceDetails )
+    SourceCompletedDetails createSourceCompletedDetails( Database database,
+                                                         SourceDetails sourceDetails )
     {
-        return new SourceCompletedDetails( sourceDetails );
+        return new SourceCompletedDetails( database, sourceDetails );
+    }
+
+
+    /**
+     * This method facilitates testing, Pattern 1 at
+     * https://github.com/mockito/mockito/wiki/Mocking-Object-Creation
+     * @return a fresh FeatureDetails
+     */
+
+    FeatureDetails createFeatureDetails()
+    {
+        return new FeatureDetails();
+    }
+
+    /**
+     * This method facilitates testing, Pattern 1 at
+     * https://github.com/mockito/mockito/wiki/Mocking-Object-Creation
+     * @return a fresh TimeSeries
+     */
+
+    TimeSeries createTimeSeries( Database database, Integer sourceId, String startTime )
+    {
+        return new TimeSeries( database, sourceId, startTime );
     }
 
     private URI getLocation()

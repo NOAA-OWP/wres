@@ -26,6 +26,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.control.Control;
+import wres.io.concurrency.Executor;
+import wres.io.utilities.Database;
+import wres.system.SystemSettings;
 
 /**
  * A class to be used when setting up system test scenarios of the WRES for 
@@ -46,6 +49,9 @@ public class ScenarioHelper
     private static final Logger LOGGER = LoggerFactory.getLogger( ScenarioHelper.class );
 
     private static final String USUAL_EVALUATION_FILE_NAME = "project_config.xml";
+    private static final SystemSettings SYSTEM_SETTINGS = SystemSettings.fromDefaultClasspathXmlFile();
+    private static final Database DATABASE = new Database( SYSTEM_SETTINGS );
+    private static final Executor EXECUTOR = new Executor( SYSTEM_SETTINGS );
 
     private ScenarioHelper()
     {
@@ -81,7 +87,9 @@ public class ScenarioHelper
         LOGGER.info( "Beginning test execution through JUnit for scenario: " + scenarioInfo.getName());
         Path config = scenarioInfo.getScenarioDirectory().resolve( ScenarioHelper.USUAL_EVALUATION_FILE_NAME );
         String args[] = { config.toString() };
-        Control wresEvaluation = new Control();
+        Control wresEvaluation = new Control( SYSTEM_SETTINGS,
+                                              DATABASE,
+                                              EXECUTOR );
         int exitCode = wresEvaluation.apply( args );
         assertEquals( "Execution of WRES failed with exit code " + exitCode
                       + "; see log for more information!",

@@ -10,7 +10,7 @@ import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
-import com.mchange.v2.c3p0.ComboPooledDataSource;
+import com.zaxxer.hikari.HikariDataSource;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.slf4j.Logger;
@@ -24,30 +24,12 @@ import wres.util.Strings;
  * The cache for all configured system settings
  * @author Christopher Tubbs
  */
-public final class SystemSettings extends XMLReader
+public class SystemSettings extends XMLReader
 {
 	private static final Logger LOGGER = LoggerFactory.getLogger(SystemSettings.class);
 
-    // The static path to the configuration path
-    private static final String CONFIG_PATH = "wresconfig.xml";
-
-    // The global, static system configuration
-    private static SystemSettings instance;
-
-	static
-	{
-		try
-        {
-            instance = new SystemSettings( URI.create( CONFIG_PATH ) );
-        }
-		catch (IOException ioe)
-		{
-			LOGGER.warn("Using default system settings due to problem reading config:", ioe);
-            instance = new SystemSettings();
-        }
-
-		LOGGER.info( "{}", instance );
-	}
+    // The static path to the configuration path (on the classpath)
+    private static final URI DEFAULT_CONFIG_PATH = URI.create( "wresconfig.xml" );
 
     private DatabaseSettings databaseConfiguration = null;
     private int maximumThreadCount = 10;
@@ -66,14 +48,30 @@ public final class SystemSettings extends XMLReader
 	private int maximumNwmIngestThreads = 6;
 	private Path dataDirectory = Paths.get( System.getProperty( "user.dir" ) );
 
+    public static SystemSettings fromDefaultClasspathXmlFile()
+    {
+        try
+        {
+            return new SystemSettings( DEFAULT_CONFIG_PATH );
+        }
+        catch ( IOException ioe )
+        {
+            throw new IllegalStateException( "Could not read system settings from the classpath at "
+                                             + DEFAULT_CONFIG_PATH, ioe );
+        }
+    }
+
+    public static SystemSettings withDefaults()
+    {
+        return new SystemSettings();
+    }
+
 	/**
 	 * The Default constructor
 	 * 
 	 * Creates a new XMLReader and parses the System Configuration document
 	 * Looks on the classpath for the default filename
 	 * <br/><br/>
-	 * Private because only one SystemSettings should exist as it is the global cache
-	 * of configured system settings
 	 */
     private SystemSettings( URI configPath ) throws IOException
     {
@@ -354,148 +352,148 @@ public final class SystemSettings extends XMLReader
     /**
      * @return The path where the system should store NetCDF files internally
      */
-	public static String getNetCDFStorePath()
+    public String getNetCDFStorePath()
     {
-        return instance.netcdfStorePath;
+        return this.netcdfStorePath;
     }
 
 	/**
 	 * @return The number of allowable threads
 	 */
-	public static int maximumThreadCount()
+    public int maximumThreadCount()
     {
-        return instance.maximumThreadCount;
+        return this.maximumThreadCount;
     }
 
-    public static int maximumArchiveThreads()
+    public int maximumArchiveThreads()
     {
-        if (instance.maximumArchiveThreads == null)
+        if (this.maximumArchiveThreads == null)
         {
             int threadCount = ((Double)Math.ceil(
-                    SystemSettings.maximumThreadCount() / 10F)).intValue();
+                    this.maximumThreadCount() / 10F)).intValue();
             return Math.max(threadCount, 2);
         }
 
-        return instance.maximumArchiveThreads;
+        return this.maximumArchiveThreads;
     }
 
-    public static int getMaximumWebClientThreads()
+    public int getMaximumWebClientThreads()
     {
-        return instance.maximumWebClientThreads;
+        return this.maximumWebClientThreads;
     }
 
-    public static int getMaxiumNwmIngestThreads()
+    public int getMaxiumNwmIngestThreads()
     {
-        return instance.maximumNwmIngestThreads;
+        return this.maximumNwmIngestThreads;
     }
 
 	/**
 	 * @return The maximum life span for an object in an object pool
 	 */
-	public static int poolObjectLifespan()
+    public int poolObjectLifespan()
     {
-        return instance.poolObjectLifespan;
+        return this.poolObjectLifespan;
     }
 
 	/**
 	 * @return The maximum number of rows to retrieve
 	 */
-	public static int fetchSize()
+    public int fetchSize()
     {
-        return instance.fetchSize;
+        return this.fetchSize;
     }
 
 	/**
 	 * @return The maximum number of values that may be copied into the database at once
 	 */
-	public static int getMaximumCopies() {
-        return instance.maximumCopies;
+    public int getMaximumCopies() {
+        return this.maximumCopies;
     }
 
     /**
      * @return The default to use for chart width
      */
-    public static int getDefaultChartWidth()
+    public int getDefaultChartWidth()
     {
-        return instance.defaultChartWidth;
+        return this.defaultChartWidth;
     }
 
 	/**
 	 * @return The default to use for chart height
 	 */
-	public static int getDefaultChartHeight()
+    public int getDefaultChartHeight()
     {
-        return instance.defaultChartHeight;
+        return this.defaultChartHeight;
     }
 
     /**
      * @return the amount of NetcdfDatasets that may be cached before the
      * calling thread is responsible for closing datasets
      */
-    public static int getHardNetcdfCacheLimit()
+    public int getHardNetcdfCacheLimit()
     {
-        return instance.hardNetcdfCacheLimit;
+        return this.hardNetcdfCacheLimit;
     }
 
     /**
      * @return The amount of seconds a NetcdfDataset cache should wait before
      * looking for cached files to close
      */
-    public static int getNetcdfCachePeriod()
+    public int getNetcdfCachePeriod()
     {
-        return instance.netcdfCachePeriod;
+        return this.netcdfCachePeriod;
     }
 
     /**
      * @return The minimum number of cached NetCDFDatasets to persist
      */
-    public static int getMinimumCachedNetcdf()
+    public int getMinimumCachedNetcdf()
     {
-        return instance.minimumCachedNetcdf;
+        return this.minimumCachedNetcdf;
     }
 
     /**
      * @return The maximum number of cached NetCDFDatasets to persist before
      * attempting to close files to make room
      */
-    public static int getMaximumCachedNetcdf()
+    public int getMaximumCachedNetcdf()
     {
-        return instance.maximumCachedNetcdf;
+        return this.maximumCachedNetcdf;
     }
 
     /**
      * @return The (file) source directory prefix to use when loading source
      * files that are not absolute
      */
-    public static Path getDataDirectory()
+    public Path getDataDirectory()
     {
-        return instance.dataDirectory;
+        return this.dataDirectory;
     }
 
 	/**
 	 * @return A new instance of a connection pool that is built for the system wide configuration
 	 */
-	public static ComboPooledDataSource getConnectionPool()
+    public HikariDataSource getConnectionPool()
     {
-        return instance.databaseConfiguration.createDatasource();
+        return this.databaseConfiguration.createDatasource();
     }
 
-	public static ComboPooledDataSource getHighPriorityConnectionPool()
+    public HikariDataSource getHighPriorityConnectionPool()
     {
-        return instance.databaseConfiguration.createHighPriorityDataSource();
+        return this.databaseConfiguration.createHighPriorityDataSource();
     }
 
     /**
      * @return Returns the number of seconds that should elapse before a database query should timeout
      */
-    public static int getQueryTimeout()
+    public int getQueryTimeout()
     {
-        return SystemSettings.instance.databaseConfiguration.getQueryTimeout();
+        return this.databaseConfiguration.getQueryTimeout();
     }
 
-    static Connection getRawDatabaseConnection() throws SQLException
+    Connection getRawDatabaseConnection() throws SQLException
     {
-        return instance.databaseConfiguration.getRawConnection(null);
+        return this.databaseConfiguration.getRawConnection(null);
     }
 
     private void applySystemPropertyOverrides()

@@ -161,7 +161,8 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         String script = scripter.toString();
 
         // Acquire the time-series identifiers
-        DataScripter dataScripter = new DataScripter( script );
+        DataScripter dataScripter = new DataScripter( super.getDatabase(),
+                                                      script );
 
         if ( LOGGER.isDebugEnabled() )
         {

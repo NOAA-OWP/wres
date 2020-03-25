@@ -12,6 +12,7 @@ import java.util.Set;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 
 import wres.config.ProjectConfigException;
@@ -36,6 +37,7 @@ import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.time.TimeWindow;
 import wres.io.writing.WriterTestHelper;
+import wres.system.SystemSettings;
 
 /**
  * Tests the {@link PNGBoxPlotWriter}. There are not checks on the content of the PNG outputs,
@@ -60,6 +62,8 @@ public class PNGBoxPlotWriterTest
 
     private static final String LOCATION_ID = "JUNP1";
 
+    @Mock private SystemSettings mockSystemSettings;
+
     /**
      * Tests the writing of {@link BoxPlotStatistics} to file.
      * 
@@ -80,7 +84,8 @@ public class PNGBoxPlotWriterTest
         Mockito.when( projectConfigPlus.getProjectConfig() ).thenReturn( projectConfig );
 
         // Begin the actual test now that we have constructed dependencies.
-        PNGBoxPlotWriter writer = PNGBoxPlotWriter.of( projectConfigPlus,
+        PNGBoxPlotWriter writer = PNGBoxPlotWriter.of( this.mockSystemSettings,
+                                                       projectConfigPlus,
                                                        ChronoUnit.SECONDS,
                                                        this.outputDirectory );
 
@@ -121,7 +126,8 @@ public class PNGBoxPlotWriterTest
         Mockito.when( projectConfigPlus.getProjectConfig() ).thenReturn( projectConfig );
 
         // Begin the actual test now that we have constructed dependencies.
-        PNGBoxPlotWriter writer = PNGBoxPlotWriter.of( projectConfigPlus,
+        PNGBoxPlotWriter writer = PNGBoxPlotWriter.of( this.mockSystemSettings,
+                                                       projectConfigPlus,
                                                        ChronoUnit.SECONDS,
                                                        this.outputDirectory );
 
@@ -193,7 +199,8 @@ public class PNGBoxPlotWriterTest
                 ListOfStatistics.of( Collections.singletonList( emptyFakeStatistics ) );
 
         // Begin the actual test now that we have the dependencies.
-        PNGBoxPlotWriter writer = PNGBoxPlotWriter.of( projectConfigPlus,
+        PNGBoxPlotWriter writer = PNGBoxPlotWriter.of( this.mockSystemSettings,
+                                                       projectConfigPlus,
                                                        ChronoUnit.SECONDS,
                                                        this.outputDirectory );
 

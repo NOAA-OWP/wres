@@ -21,7 +21,6 @@ import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 import wres.system.SystemSettings;
-import wres.util.FutureQueue;
 import wres.util.NetCDF;
 
 /**
@@ -35,9 +34,12 @@ class GridManager
     private static final Object PROJECTION_LOCK = new Object();
     private static final Map<GridMetadata, Integer> ENCOUNTERED_PROJECTIONS = new HashMap<>();
 
-    static int addGrid(final NetcdfFile file) throws SQLException
+    static int addGrid( SystemSettings systemSettings,
+                        Database database,
+                        final NetcdfFile file ) throws SQLException
     {
-        GridMetadata metadata = new GridMetadata( file );
+        GridMetadata metadata = new GridMetadata( database,
+                                                  file );
 
         synchronized ( PROJECTION_LOCK )
         {
@@ -52,8 +54,10 @@ class GridManager
             }
             else
             {
-                WRESRunnable ingestor = new CoordinateIngestor( metadata );
-                Database.ingest(ingestor);
+                WRESRunnable ingestor = new CoordinateIngestor( systemSettings,
+                                                                database,
+                                                                metadata );
+                database.ingest(ingestor);
                 GridManager.ENCOUNTERED_PROJECTIONS.put( metadata, metadata.getGridProjectionId() );
             }
 
@@ -63,8 +67,12 @@ class GridManager
 
     private static class GridMetadata
     {
-        private GridMetadata(final NetcdfFile file)
+        private final Database database;
+
+        private GridMetadata( Database database,
+                              final NetcdfFile file )
         {
+            this.database = database;
             this.path = file.getLocation();
 
             Variable xCoordinates = NetCDF.getVariable( file, "x" );
@@ -87,9 +95,15 @@ class GridManager
             this.yType = yCoordinates.findAttValueIgnoreCase( "_CoordinateAxisType", "GeoY" );
         }
 
+        private Database getDatabase()
+        {
+            return this.database;
+        }
+
         private void loadMetadata() throws SQLException
         {
-            DataScripter script = new DataScripter();
+            Database database = this.getDatabase();
+            DataScripter script = new DataScripter( database );
             script.addLine( "WITH new_projection AS" );
             script.addLine( "(" );
             script.addTab().addLine( "INSERT INTO wres.GridProjection (" );
@@ -217,7 +231,8 @@ class GridManager
         {
             if (!this.loadComplete)
             {
-                DataScripter script = new DataScripter();
+                Database database = this.getDatabase();
+                DataScripter script = new DataScripter( database );
 
                 script.addLine( "UPDATE wres.GridProjection" );
                 script.addTab().addLine( "SET load_complete = true" );
@@ -288,9 +303,26 @@ class GridManager
 
     private static class CoordinateIngestor extends WRESRunnable
     {
-        private CoordinateIngestor(final GridMetadata metadata)
+        private final SystemSettings systemSettings;
+        private final Database database;
+
+        private CoordinateIngestor( SystemSettings systemSettings,
+                                    Database database,
+                                    final GridMetadata metadata )
         {
+            this.systemSettings = systemSettings;
+            this.database = database;
             this.metadata = metadata;
+        }
+
+        private SystemSettings getSystemSettings()
+        {
+            return this.systemSettings;
+        }
+
+        private Database getDatabase()
+        {
+            return this.database;
         }
 
         @Override
@@ -309,7 +341,8 @@ class GridManager
         private void removePreexistingCoordinates() throws SQLException
         {
             LOGGER.trace("Removing previous entries for the grid: {}", this.metadata);
-            DataScripter clearScript = new DataScripter(  );
+            Database database = this.getDatabase();
+            DataScripter clearScript = new DataScripter( database );
 
             clearScript.addLine( "DELETE FROM wres.NetCDFCoordinate" );
             clearScript.addLine( "WHERE gridprojection_id = ?;");
@@ -352,15 +385,17 @@ class GridManager
                         this.addY(builder, yCoordinates, yIndex);
 
                         builder.set( "geographic_coordinate", "(" + point.getLongitude() + "," + point.getLatitude() + ")");
-                        final int MAX_COPIES = SystemSettings.getMaximumCopies();
+                        SystemSettings systemSettings = this.getSystemSettings();
+                        final int MAX_COPIES = systemSettings.getMaximumCopies();
 
                         if ( builder.getRowCount() >= MAX_COPIES )
                         {
                             LOGGER.trace( "Began to copy {} coordinates for {}.",
                                           MAX_COPIES,
                                           this.metadata );
+                            Database database = this.getDatabase();
                             builder.build()
-                                   .copy( "wres.NetcdfCoordinate", true );
+                                   .copy( database, "wres.NetcdfCoordinate", true );
                             LOGGER.trace( "Finished copying {} coordinates for {}.",
                                           MAX_COPIES,
                                           this.metadata );
@@ -374,8 +409,9 @@ class GridManager
                 {
                     LOGGER.trace( "Began to copy the last {} coordinates for {}.",
                                   rowsRemaining, this.metadata );
+                    Database database = this.getDatabase();
                     builder.build()
-                           .copy( "wres.NetcdfCoordinate", true );
+                           .copy( database, "wres.NetcdfCoordinate", true );
                     LOGGER.trace( "Finished copying the last {} coordinates for {}.",
                                   rowsRemaining, this.metadata );
                 }

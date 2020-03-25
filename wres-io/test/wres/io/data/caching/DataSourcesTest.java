@@ -10,90 +10,66 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Random;
 
-import com.mchange.v2.c3p0.ComboPooledDataSource;
+import com.zaxxer.hikari.HikariDataSource;
 import liquibase.database.Database;
 import liquibase.exception.LiquibaseException;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PowerMockIgnore;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
-import org.powermock.reflect.Whitebox;
+import org.mockito.MockitoAnnotations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.io.data.details.SourceDetails;
 import wres.io.utilities.DataBuilder;
 import wres.io.utilities.DataProvider;
-import wres.system.DatabaseConnectionSupplier;
 import wres.io.utilities.TestDatabase;
 import wres.system.SystemSettings;
 
-@RunWith( PowerMockRunner.class )
-@PrepareForTest( { SystemSettings.class } )
-@PowerMockIgnore( { "javax.management.*", "java.io.*", "javax.xml.*", "com.sun.*", "org.xml.*" } ) // thanks https://stackoverflow.com/questions/16520699/mockito-powermock-linkageerror-while-mocking-system-class#21268013
 public class DataSourcesTest
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( DataSourcesTest.class );
+    private static final Random RANDOM = new Random( 523 );
 
-    private static TestDatabase testDatabase;
-    private static ComboPooledDataSource dataSource;
+    private TestDatabase testDatabase;
+    private HikariDataSource dataSource;
+
+    private @Mock SystemSettings mockSystemSettings;
+    private wres.io.utilities.Database wresDatabase;
 
     private Connection rawConnection;
-    private @Mock DatabaseConnectionSupplier mockConnectionSupplier;
     private Database liquibaseDatabase;
-
-    @BeforeClass
-    public static void setup()
-    {
-        LOGGER.debug( "'@BeforeClass' started" );
-        DataSourcesTest.testDatabase = new TestDatabase( "DataSourcesTest" );
-        DataSourcesTest.dataSource = DataSourcesTest.testDatabase.getNewComboPooledDataSource();
-        LOGGER.debug( "'@BeforeClass' ended with {}", DataSourcesTest.dataSource );
-    }
 
     @Before
     public void beforeEachTest() throws Exception
     {
         LOGGER.debug( "'@Before' started" );
-        this.rawConnection = DriverManager.getConnection( DataSourcesTest.testDatabase.getJdbcString() );
-
-        // Set up a bare bones database with only the schema
-        DataSourcesTest.testDatabase.createWresSchema( this.rawConnection );
-
-        // Set up a mock for wherever raw connections are used.
-        Mockito.when( this.mockConnectionSupplier.get() ).thenReturn( this.rawConnection );
-
-        // Substitute raw connection where needed:
-        PowerMockito.mockStatic( SystemSettings.class );
-        PowerMockito.when( SystemSettings.class, "getRawDatabaseConnection" )
-                    .thenReturn( this.rawConnection );
-
-        PowerMockito.whenNew( DatabaseConnectionSupplier.class )
-                    .withNoArguments()
-                    .thenReturn( this.mockConnectionSupplier );
-
-        // Substitute our H2 connection pool for both pools:
-        PowerMockito.when( SystemSettings.class, "getConnectionPool" )
-                    .thenReturn( DataSourcesTest.dataSource );
-        PowerMockito.when( SystemSettings.class, "getHighPriorityConnectionPool" )
-                    .thenReturn( DataSourcesTest.dataSource );
+        MockitoAnnotations.initMocks(  this );
+        this.testDatabase = new TestDatabase( "DataSourcesTest"
+                                              + RANDOM.nextLong() );
+        this.dataSource = this.testDatabase.getNewHikariDataSource();
+        this.rawConnection = DriverManager.getConnection( this.testDatabase.getJdbcString() );
 
         // Set up a liquibase database to run migrations against.
-        this.liquibaseDatabase = DataSourcesTest.testDatabase.createNewLiquibaseDatabase( this.rawConnection );
+        this.liquibaseDatabase = this.testDatabase.createNewLiquibaseDatabase( this.rawConnection );
+        // Set up a bare bones database with only the schema
+        this.testDatabase.createWresSchema( this.rawConnection );
+
+        Mockito.when( this.mockSystemSettings.getConnectionPool() )
+               .thenReturn( this.dataSource );
+        Mockito.when( this.mockSystemSettings.getHighPriorityConnectionPool() )
+               .thenReturn( this.dataSource );
+
+        this.wresDatabase = new wres.io.utilities.Database( this.mockSystemSettings );
         LOGGER.debug( "'@Before' ended" );
     }
 
-    private static void initializeDataSources() throws Exception
+    private DataSources initializeDataSources()
     {
         LOGGER.debug( "initializeDataSources started" );
         DataProvider data = DataBuilder.with( "output_time", "path", "hash", "is_point_data", "source_id" )
@@ -113,11 +89,10 @@ public class DataSourcesTest
                                                 false,
                                                 3 )
                                        .build();
-        DataSources dataSources = new DataSources();
-        Whitebox.invokeMethod( dataSources, "populate", data );
-
-        Whitebox.setInternalState( DataSources.class, "INSTANCE", dataSources );
+        DataSources dataSources = new DataSources( this.wresDatabase );
+        dataSources.populate( data );
         LOGGER.debug( "initializeDataSources ended" );
+        return dataSources;
     }
 
     @Test
@@ -127,17 +102,18 @@ public class DataSourcesTest
         LOGGER.debug( "getTwiceFromDataSources began" );
 
         // Add the source table
-        DataSourcesTest.testDatabase.createSourceTable( this.liquibaseDatabase );
+        this.testDatabase.createSourceTable( this.liquibaseDatabase );
 
         final URI path = new URI( "/this/is/just/a/test" );
         final String time = "2017-06-16 11:13:00";
 
-        Integer result = DataSources.getSourceID(path, time, null, "deadbeef");
+        DataSources dataSourcesCache = new DataSources( this.wresDatabase );
+        Integer result = dataSourcesCache.getSourceID( path, time, null, "deadbeef" );
 
         assertTrue("The id should be an integer greater than zero.",
                    result > 0);
 
-        Integer result2 = DataSources.getSourceID(path, time, null, "deadbeef");
+        Integer result2 = dataSourcesCache.getSourceID(path, time, null, "deadbeef");
 
         assertEquals("Getting an id with the same path and time should yield the same result.",
                      result2, result);
@@ -155,8 +131,8 @@ public class DataSourcesTest
                      1, countOfRows);
 
         // Remove the source table etc. now that assertions have finished.
-        DataSourcesTest.testDatabase.dropSourceTable( this.rawConnection );
-        DataSourcesTest.testDatabase.dropLiquibaseChangeTables( this.rawConnection );
+        this.testDatabase.dropSourceTable( this.rawConnection );
+        this.testDatabase.dropLiquibaseChangeTables( this.rawConnection );
 
         LOGGER.debug( "getTwiceFromDataSources ended" );
     }
@@ -168,17 +144,17 @@ public class DataSourcesTest
         LOGGER.debug( "initializeCacheWithExistingData began" );
 
         // Add the source table
-        DataSourcesTest.testDatabase.createSourceTable( this.liquibaseDatabase );
+        this.testDatabase.createSourceTable( this.liquibaseDatabase );
 
         // Create one cache that inserts data to set us up for 2nd cache init.
-        DataSources sc = new DataSources();
+        DataSources sc = new DataSources( this.wresDatabase );
 
         final URI path = new URI( "/this/is/just/a/test" );
         final String time = "2017-06-20 16:55:00";
         Integer firstId = sc.getID(path, time, null, "deadbeef");
 
         // Initialize a second cache, it should find the same data already present
-        DataSources scTwo = new DataSources();
+        DataSources scTwo = new DataSources( this.wresDatabase );
 
         Integer secondId = scTwo.getID(path, time, null, "deadbeef");
 
@@ -186,8 +162,8 @@ public class DataSourcesTest
                     firstId, secondId);
 
         // Remove the source table now that assertions have finished.
-        DataSourcesTest.testDatabase.dropSourceTable( this.rawConnection );
-        DataSourcesTest.testDatabase.dropLiquibaseChangeTables( this.rawConnection );
+        this.testDatabase.dropSourceTable( this.rawConnection );
+        this.testDatabase.dropLiquibaseChangeTables( this.rawConnection );
 
         LOGGER.debug( "initializeCacheWithExistingData ended" );
     }
@@ -195,8 +171,11 @@ public class DataSourcesTest
     @Test
     public void testAccess() throws Exception
     {
-        DataSourcesTest.initializeDataSources();
-        SourceDetails firstDetails = DataSources.getById( 1 );
+        DataSources dataSourcesCache = this.initializeDataSources();
+
+        // Add the source table
+        this.testDatabase.createSourceTable( this.liquibaseDatabase );
+        SourceDetails firstDetails = dataSourcesCache.getById( 1 );
 
         Assert.assertNotEquals( firstDetails, null );
 
@@ -215,7 +194,7 @@ public class DataSourcesTest
 
         try
         {
-            secondDetails = DataSources.get(
+            secondDetails = dataSourcesCache.get(
                     new URI( "/somewhere/somewhere/1.ext" ),
                     "2018-08-08T00:00:00Z",
                     null,
@@ -245,7 +224,7 @@ public class DataSourcesTest
 
         Assert.assertEquals(firstDetails, secondDetails);
 
-        SourceDetails thirdDetails = DataSources.getById( 3 );
+        SourceDetails thirdDetails = dataSourcesCache.getById( 3 );
 
         Assert.assertNotEquals( thirdDetails, null );
 
@@ -279,19 +258,13 @@ public class DataSourcesTest
     public void afterEachTest() throws SQLException
     {
         LOGGER.debug( "'@After' began" );
-        DataSourcesTest.testDatabase.dropWresSchema( this.rawConnection );
+        this.wresDatabase.shutdown();
+        this.testDatabase.dropWresSchema( this.rawConnection );
         this.rawConnection.close();
         this.rawConnection = null;
+        this.dataSource.close();
+        this.dataSource = null;
+        this.testDatabase = null;
         LOGGER.debug( "'@After' ended" );
-    }
-
-    @AfterClass
-    public static void tearDown()
-    {
-        LOGGER.debug( "'@AfterClass' began" );
-        DataSourcesTest.dataSource.close();
-        DataSourcesTest.dataSource = null;
-        DataSourcesTest.testDatabase = null;
-        LOGGER.debug( "'@AfterClass' ended" );
     }
 }

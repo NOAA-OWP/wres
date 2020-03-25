@@ -70,6 +70,7 @@ import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
 import wres.io.retrieval.UnitMapper;
 import wres.io.writing.WriteException;
+import wres.system.SystemSettings;
 import wres.util.FutureQueue;
 import wres.util.Strings;
 
@@ -84,6 +85,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
     private static final int VALUE_SAVE_LIMIT = 500;
     private static final ZonedDateTime ANALYSIS_TIME = ZonedDateTime.now( ZoneId.of( "UTC" ) );
 
+    private final SystemSettings systemSettings;
+    private final Executor executor;
     private final Object windowLock = new Object();
 
     private final DestinationConfig destinationConfig;
@@ -121,7 +124,9 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
     
     /**
      * Returns an instance of the writer. 
-     * 
+     *
+     * @param systemSettings The system settings to use.
+     * @param executor The executor to use.
      * @param projectConfig the project configuration
      * @param durationUnits the time units for durations
      * @param outputDirectory the directory into which to write
@@ -130,12 +135,16 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
      * @throws IOException if the blobs could not be created for any reason
      */
 
-    public static NetcdfOutputWriter of( ProjectConfig projectConfig,
+    public static NetcdfOutputWriter of( SystemSettings systemSettings,
+                                         Executor executor,
+                                         ProjectConfig projectConfig,
                                          ChronoUnit durationUnits,
                                          UnitMapper unitMapper,
                                          Path outputDirectory) throws IOException
     {
-        return new NetcdfOutputWriter( projectConfig,
+        return new NetcdfOutputWriter( systemSettings,
+                                       executor,
+                                       projectConfig,
                                        durationUnits,
                                        unitMapper,
                                        outputDirectory );
@@ -152,16 +161,22 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
         return this.durationUnits;
     }    
 
-    private NetcdfOutputWriter( ProjectConfig projectConfig,
+    private NetcdfOutputWriter( SystemSettings systemSettings,
+                                Executor executor,
+                                ProjectConfig projectConfig,
                                 ChronoUnit durationUnits,
                                 UnitMapper unitMapper,
                                 Path outputDirectory ) throws IOException
     {
+        Objects.requireNonNull( systemSettings );
+        Objects.requireNonNull( executor );
         Objects.requireNonNull( projectConfig, "Specify non-null project config." );
         Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
         Objects.requireNonNull( outputDirectory, "Specify non-null output directory." );
 
         LOGGER.debug( "Created NetcdfOutputWriter {}", this );
+        this.systemSettings = systemSettings;
+        this.executor = executor;
         this.destinationConfig = ConfigHelper.getDestinationsOfType( projectConfig, DestinationType.NETCDF ).get( 0 );
         this.netcdfConfiguration = this.destinationConfig.getNetcdf();
         this.durationUnits = durationUnits;
@@ -182,10 +197,20 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
         Objects.requireNonNull( this.destinationConfig, "The NetcdfOutputWriter wasn't properly initialized." );
     }
 
+    private SystemSettings getSystemSettings()
+    {
+        return this.systemSettings;
+    }
+
+    private Executor getExecutor()
+    {
+        return this.executor;
+    }
+
     /**
      * Creates the blobs into which outputs will be written.
-     * 
-     * @param ProjectConfig projectConfig the project configuration
+     *
+     * @param projectConfig The project configuration.
      * @param unitMapper a measurement unit mapper
      * @throws IOException if the blobs could not be created for any reason
      * @return the paths written
@@ -197,9 +222,12 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
         PairConfig pairConfig = projectConfig.getPair();
         Set<TimeWindow> timeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairConfig );
 
+        SystemSettings systemSettings = this.getSystemSettings();
         // External thresholds, if any
         Map<FeaturePlus, ThresholdsByMetric> externalThresholds =
-                ConfigHelper.readExternalThresholdsFromProjectConfig( projectConfig, unitMapper );
+                ConfigHelper.readExternalThresholdsFromProjectConfig( systemSettings,
+                                                                      projectConfig,
+                                                                      unitMapper );
 
         // Find the feature with the maximum number of thresholds        
         Comparator<ThresholdsByMetric> byCount = ( ThresholdsByMetric o1, ThresholdsByMetric o2 ) -> {
@@ -510,7 +538,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                 }.initialize( timeWindow, scores );
 
                 LOGGER.debug( "Submitting a task to write to a netcdf file." );
-                Future<Set<Path>> taskFuture = Executor.submit( writerTask );
+                Executor executor = this.getExecutor();
+                Future<Set<Path>> taskFuture = executor.submit( writerTask );
                 this.writingTasksSubmitted.add( taskFuture );
             }
         }

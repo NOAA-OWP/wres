@@ -19,7 +19,7 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.mchange.v2.c3p0.ComboPooledDataSource;
+import com.zaxxer.hikari.HikariDataSource;
 import liquibase.database.Database;
 import liquibase.exception.LiquibaseException;
 
@@ -27,15 +27,11 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PowerMockIgnore;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.mockito.MockitoAnnotations;
 
-import wres.system.DatabaseConnectionSupplier;
+import wres.io.concurrency.Executor;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.scale.TimeScale.TimeScaleFunction;
@@ -61,9 +57,6 @@ import wres.system.SystemSettings;
  * @author james.brown@hydrosolved.com
  */
 
-@RunWith( PowerMockRunner.class )
-@PrepareForTest( { SystemSettings.class } )
-@PowerMockIgnore( { "javax.management.*", "java.io.*", "javax.xml.*", "com.sun.*", "org.xml.*" } )
 public class AnalysisRetrieverTest
 {
     private static final Instant T2023_04_01T00_00_00Z = Instant.parse( "2023-04-01T00:00:00Z" );
@@ -75,10 +68,13 @@ public class AnalysisRetrieverTest
                          .get( ReferenceTimeType.ANALYSIS_START_TIME )
                          .compareTo( b.getReferenceTimes()
                                       .get( ReferenceTimeType.ANALYSIS_START_TIME ) );
+    @Mock private SystemSettings mockSystemSettings;
+    private wres.io.utilities.Database wresDatabase;
+    @Mock private Executor mockExecutor;
+    private Features featuresCache;
     private TestDatabase testDatabase;
-    private ComboPooledDataSource dataSource;
+    private HikariDataSource dataSource;
     private Connection rawConnection;
-    private @Mock DatabaseConnectionSupplier mockConnectionSupplier;
 
     /**
      * A project_id for testing;
@@ -120,12 +116,24 @@ public class AnalysisRetrieverTest
     @Before
     public void setup() throws Exception
     {
+        MockitoAnnotations.initMocks( this );
+
         // Create the database and connection pool
         this.testDatabase = new TestDatabase( "SingleValuedForecastRetrieverTest" );
-        this.dataSource = this.testDatabase.getNewComboPooledDataSource();
+        this.dataSource = this.testDatabase.getNewHikariDataSource();
 
-        // Create the connection and schema
-        this.createTheConnectionAndSchema();
+        // Create the connection and schema, set up mock system settings
+        this.rawConnection = DriverManager.getConnection( this.testDatabase.getJdbcString() );
+        this.testDatabase.createWresSchema( this.rawConnection );
+
+        // Substitute our H2 connection pool for both pools:
+        Mockito.when( this.mockSystemSettings.getConnectionPool() )
+               .thenReturn( this.dataSource );
+        Mockito.when( this.mockSystemSettings.getHighPriorityConnectionPool() )
+               .thenReturn( this.dataSource );
+
+        this.wresDatabase = new wres.io.utilities.Database( this.mockSystemSettings );
+        this.featuresCache = new Features( this.wresDatabase );
 
         // Create the tables
         this.addTheDatabaseAndTables();
@@ -134,7 +142,7 @@ public class AnalysisRetrieverTest
         this.addTwoForecastTimeSeriesEachWithFiveEventsToTheDatabase();
 
         // Create the unit mapper
-        this.unitMapper = UnitMapper.of( UNITS );
+        this.unitMapper = UnitMapper.of( this.wresDatabase, UNITS );
     }
 
     @Test
@@ -143,7 +151,10 @@ public class AnalysisRetrieverTest
         // Build the retriever
         Retriever<TimeSeries<Double>> analysisRetriever =
                 new AnalysisRetriever.Builder().setDuplicatePolicy( DuplicatePolicy.KEEP_LATEST_REFERENCE_TIME )
-                                               .setProjectId( PROJECT_ID )
+                                               // Weird that I cannot set this
+                                               // before setDuplicatePolicy.
+                                               // Composition over inheritance?
+                                               .setDatabase( this.wresDatabase ).setProjectId( PROJECT_ID )
                                                .setVariableFeatureId( this.variableFeatureId )
                                                .setUnitMapper( this.unitMapper )
                                                .setLeftOrRightOrBaseline( LRB )
@@ -213,6 +224,7 @@ public class AnalysisRetrieverTest
         // Build the retriever
         Retriever<TimeSeries<Double>> analysisRetriever =
                 new AnalysisRetriever.Builder().setLatestAnalysisDuration( Duration.ofHours( 1 ) )
+                                               .setDatabase( this.wresDatabase )
                                                .setProjectId( PROJECT_ID )
                                                .setVariableFeatureId( this.variableFeatureId )
                                                .setUnitMapper( this.unitMapper )
@@ -275,6 +287,7 @@ public class AnalysisRetrieverTest
         Retriever<TimeSeries<Double>> analysisRetriever =
                 new AnalysisRetriever.Builder().setEarliestAnalysisDuration( Duration.ofHours( 0 ) )
                                                .setLatestAnalysisDuration( Duration.ofHours( 2 ) )
+                                               .setDatabase( this.wresDatabase )
                                                .setProjectId( PROJECT_ID )
                                                .setVariableFeatureId( this.variableFeatureId )
                                                .setUnitMapper( this.unitMapper )
@@ -370,42 +383,14 @@ public class AnalysisRetrieverTest
     public void tearDown() throws SQLException
     {
         this.dropTheTablesAndSchema();
+        this.testDatabase.shutdown( this.rawConnection );
         this.rawConnection.close();
         this.rawConnection = null;
         this.testDatabase = null;
+        this.dataSource.close();
         this.dataSource = null;
     }
 
-    /**
-     * Does the basic set-up work to create a connection and schema.
-     * 
-     * @throws Exception if the set-up failed
-     */
-
-    private void createTheConnectionAndSchema() throws Exception
-    {
-        // Also mock a plain datasource (which works per test unlike c3p0)
-        this.rawConnection = DriverManager.getConnection( this.testDatabase.getJdbcString() );
-        Mockito.when( this.mockConnectionSupplier.get() ).thenReturn( this.rawConnection );
-
-        // Set up a bare bones database with only the schema
-        this.testDatabase.createWresSchema( this.rawConnection );
-
-        // Substitute raw connection where needed:
-        PowerMockito.mockStatic( SystemSettings.class );
-        PowerMockito.when( SystemSettings.class, "getRawDatabaseConnection" )
-                    .thenReturn( this.rawConnection );
-
-        PowerMockito.whenNew( DatabaseConnectionSupplier.class )
-                    .withNoArguments()
-                    .thenReturn( this.mockConnectionSupplier );
-
-        // Substitute our H2 connection pool for both pools:
-        PowerMockito.when( SystemSettings.class, "getConnectionPool" )
-                    .thenReturn( this.dataSource );
-        PowerMockito.when( SystemSettings.class, "getHighPriorityConnectionPool" )
-                    .thenReturn( this.dataSource );
-    }
 
     /**
      * Adds the required tables for the tests presented here, which is a subset of all tables.
@@ -459,7 +444,7 @@ public class AnalysisRetrieverTest
 
         SourceDetails sourceDetails = new SourceDetails( sourceKey );
 
-        sourceDetails.save();
+        sourceDetails.save( this.wresDatabase );
 
         assertTrue( sourceDetails.performedInsert() );
 
@@ -469,7 +454,10 @@ public class AnalysisRetrieverTest
 
         // Add a project 
         Project project =
-                new Project( new ProjectConfig( null, null, null, null, null, "test_project" ), PROJECT_ID );
+                new Project( this.mockSystemSettings,
+                             this.wresDatabase,
+                             this.mockExecutor,
+                             new ProjectConfig( null, null, null, null, null, "test_project" ), PROJECT_ID );
         project.save();
 
         assertTrue( project.performedInsert() );
@@ -487,7 +475,8 @@ public class AnalysisRetrieverTest
                                                     sourceId,
                                                     LRB.value() );
 
-        DataScripter script = new DataScripter( projectSourceInsert );
+        DataScripter script = new DataScripter( this.wresDatabase,
+                                                projectSourceInsert );
         int rows = script.execute();
 
         assertEquals( 1, rows );
@@ -495,20 +484,20 @@ public class AnalysisRetrieverTest
         // Add a feature
         FeatureDetails feature = new FeatureDetails();
         feature.setLid( "FEAT" );
-        feature.save();
+        feature.save( this.wresDatabase );
 
         assertNotNull( feature.getId() );
 
         // Add a variable
         VariableDetails variable = new VariableDetails();
         variable.setVariableName( "VAR" );
-        variable.save();
+        variable.save( this.wresDatabase );
 
         assertNotNull( variable.getId() );
 
         // Get (and add) a variablefeature
         // There is no wres abstraction to help with this, but there is a static helper
-        this.variableFeatureId = Features.getVariableFeatureByFeature( feature, variable.getId() );
+        this.variableFeatureId = this.featuresCache.getVariableFeatureByFeature( feature, variable.getId() );
 
         assertNotNull( this.variableFeatureId );
 
@@ -516,7 +505,7 @@ public class AnalysisRetrieverTest
         MeasurementDetails measurement = new MeasurementDetails();
 
         measurement.setUnit( UNITS );
-        measurement.save();
+        measurement.save( this.wresDatabase );
         Integer measurementUnitId = measurement.getId();
 
         assertNotNull( measurementUnitId );
@@ -524,7 +513,7 @@ public class AnalysisRetrieverTest
         EnsembleDetails ensemble = new EnsembleDetails();
         ensemble.setEnsembleName( "ENS" );
         ensemble.setEnsembleMemberIndex( 123 );
-        ensemble.save();
+        ensemble.save( this.wresDatabase );
         Integer ensembleId = ensemble.getId();
 
         assertNotNull( ensembleId );
@@ -556,7 +545,8 @@ public class AnalysisRetrieverTest
                                   + "?,"
                                   + "? )";
 
-        DataScripter seriesOneScript = new DataScripter( timeSeriesInsert );
+        DataScripter seriesOneScript = new DataScripter( this.wresDatabase,
+                                                         timeSeriesInsert );
 
         int rowAdded = seriesOneScript.execute( this.variableFeatureId,
                                                 ensembleId,
@@ -575,7 +565,8 @@ public class AnalysisRetrieverTest
         Integer firstSeriesId = seriesOneScript.getInsertedIds().get( 0 ).intValue();
 
         // Add the second series
-        DataScripter seriesTwoScript = new DataScripter( timeSeriesInsert );
+        DataScripter seriesTwoScript = new DataScripter( this.wresDatabase,
+                                                         timeSeriesInsert );
 
         int rowAddedTwo = seriesTwoScript.execute( this.variableFeatureId,
                                                    ensembleId,
@@ -595,7 +586,8 @@ public class AnalysisRetrieverTest
 
 
         // Add the third series
-        DataScripter seriesThreeScript = new DataScripter( timeSeriesInsert );
+        DataScripter seriesThreeScript = new DataScripter( this.wresDatabase,
+                                                           timeSeriesInsert );
 
         int rowAddedThree = seriesThreeScript.execute( this.variableFeatureId,
                                                        ensembleId,
@@ -648,7 +640,8 @@ public class AnalysisRetrieverTest
                                                       lead,
                                                       analysisValue );
 
-                DataScripter forecastScript = new DataScripter( insert );
+                DataScripter forecastScript = new DataScripter( this.wresDatabase,
+                                                                insert );
 
                 int row = forecastScript.execute();
 
