@@ -682,43 +682,12 @@ public class SQLDataProvider implements DataProvider
                 resultSet.next();
             }
 
-            // Timestamps are interpreted as strings in order to avoid the 'help'
-            // that JDBC provides by converting timestamps to local times and
-            // applying daylight savings changes
-            if ( resultSet.getObject( columnName ) instanceof String ||
-                 resultSet.getObject( columnName ) instanceof Timestamp )
-            {
-                String stringRepresentation = resultSet.getString( columnName );
-                stringRepresentation = stringRepresentation.replace( " ", "T" );
-
-                if ( !stringRepresentation.endsWith( "Z" ) )
-                {
-                    stringRepresentation += "Z";
-                }
-
-                result = Instant.parse( stringRepresentation );
-            }
-            else if ( resultSet.getObject( columnName ) instanceof Integer )
-            {
-                result = Instant.ofEpochSecond( resultSet.getInt( columnName ) );
-            }
-            else if ( resultSet.getObject( columnName ) instanceof Long )
-            {
-                result = Instant.ofEpochSecond( resultSet.getLong( columnName ) );
-            }
-            else if ( resultSet.getObject( columnName ) instanceof Double )
-            {
-                Double epochSeconds = ( Double ) resultSet.getObject( columnName );
-                result = Instant.ofEpochSecond( epochSeconds.longValue() );
-            }
-            else
-            {
-                throw new IllegalStateException( "The column type for '" +
-                                                 columnName +
-                                                 "' (value = " +
-                                                 resultSet.getObject( columnName ).toString() +
-                                                 ") cannot be converted into an Instant." );
-            }
+            // OffsetDateTime gives consistent results for both h2 and postgres.
+            OffsetDateTime resultObject = resultSet.getObject( columnName,
+                                                               OffsetDateTime.class );
+            result = resultObject.toInstant();
+            LOGGER.debug( "getInstant( '{}' ) turned OffsetDateTime '{}' into Instant '{}'",
+                          columnName, resultObject, result );
         }
         catch (SQLException e)
         {
