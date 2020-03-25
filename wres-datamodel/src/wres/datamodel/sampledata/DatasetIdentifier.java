@@ -29,11 +29,10 @@ public class DatasetIdentifier
     final String scenarioID;
 
     /**
-     * Scenario identifier for a baseline.
+     * Scenario identifier for a baseline (e.g., when this dataset represents a statistic for a skill score).
      */
-
     final String baselineScenarioID;
-
+    
     /**
      * Returns an instance from the inputs.
      * 
