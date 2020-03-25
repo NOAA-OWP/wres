@@ -23,6 +23,7 @@ import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.io.config.ConfigHelper;
+import wres.system.SystemSettings;
 import wres.vis.ChartEngineFactory;
 
 /**
@@ -39,7 +40,8 @@ public class PNGDurationScoreWriter extends PNGWriter
 
     /**
      * Returns an instance of a writer.
-     * 
+     *
+     * @param systemSettings The system settings to use.
      * @param projectConfigPlus the project configuration
      * @param durationUnits the time units for durations
      * @param outputDirectory the directory into which to write
@@ -48,11 +50,13 @@ public class PNGDurationScoreWriter extends PNGWriter
      * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
-    public static PNGDurationScoreWriter of( ProjectConfigPlus projectConfigPlus,
+    public static PNGDurationScoreWriter of( SystemSettings systemSettings,
+                                             ProjectConfigPlus projectConfigPlus,
                                              ChronoUnit durationUnits,
                                              Path outputDirectory )
     {
-        return new PNGDurationScoreWriter( projectConfigPlus,
+        return new PNGDurationScoreWriter( systemSettings,
+                                           projectConfigPlus,
                                            durationUnits,
                                            outputDirectory );
     }
@@ -82,7 +86,8 @@ public class PNGDurationScoreWriter extends PNGWriter
             for ( MetricConstants next : metrics )
             {
                 Set<Path> innerPathsWrittenTo =
-                        PNGDurationScoreWriter.writeScoreCharts( super.getOutputDirectory(),
+                        PNGDurationScoreWriter.writeScoreCharts( super.getSystemSettings(),
+                                                                 super.getOutputDirectory(),
                                                                  super.getProjectConfigPlus(),
                                                                  destinationConfig,
                                                                  Slicer.filter( output, next ),
@@ -108,6 +113,7 @@ public class PNGDurationScoreWriter extends PNGWriter
      * Writes a set of charts associated with {@link DurationScoreStatistic} for a single metric and time window,
      * stored in a {@link ListOfStatistics}.
      *
+     * @param systemSettings The system settings to use.
      * @param outputDirectory the directory into which to write
      * @param projectConfigPlus the project configuration
      * @param destinationConfig the destination configuration for the written output
@@ -117,7 +123,8 @@ public class PNGDurationScoreWriter extends PNGWriter
      * @return the paths actually written to
      */
 
-    private static Set<Path> writeScoreCharts( Path outputDirectory,
+    private static Set<Path> writeScoreCharts( SystemSettings systemSettings,
+                                               Path outputDirectory,
                                                ProjectConfigPlus projectConfigPlus,
                                                DestinationConfig destinationConfig,
                                                ListOfStatistics<DurationScoreStatistic> output,
@@ -145,7 +152,7 @@ public class PNGDurationScoreWriter extends PNGWriter
                                                                   destinationConfig,
                                                                   meta );
 
-            PNGWriter.writeChart( outputImage, engine, destinationConfig );
+            PNGWriter.writeChart( systemSettings, outputImage, engine, destinationConfig );
             // Only if writeChart succeeded do we assume that it was written
             pathsWrittenTo.add( outputImage );
         }
@@ -167,11 +174,12 @@ public class PNGDurationScoreWriter extends PNGWriter
      * @throws NullPointerException if either input is null
      */
 
-    private PNGDurationScoreWriter( ProjectConfigPlus projectConfigPlus,
+    private PNGDurationScoreWriter( SystemSettings systemSettings,
+                                    ProjectConfigPlus projectConfigPlus,
                                     ChronoUnit durationUnits,
                                     Path outputDirectory )
     {
-        super( projectConfigPlus, durationUnits, outputDirectory );
+        super( systemSettings, projectConfigPlus, durationUnits, outputDirectory );
     }
 
 }

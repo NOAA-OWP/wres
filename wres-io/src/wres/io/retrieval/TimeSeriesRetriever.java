@@ -30,6 +30,7 @@ import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 import wres.io.config.LeftOrRightOrBaseline;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
+import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
 
 /**
@@ -66,6 +67,8 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      */
 
     private static final Logger LOGGER = LoggerFactory.getLogger( TimeSeriesRetriever.class );
+
+    private final Database database;
 
     /**
      * Time window filter.
@@ -165,6 +168,11 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     abstract boolean isForecast();
 
+    protected Database getDatabase()
+    {
+        return this.database;
+    }
+
     /**
      * Creates one or more {@link TimeSeries} from a script that retrieves time-series data.
      * 
@@ -177,8 +185,9 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     <S> Stream<TimeSeries<S>> getTimeSeriesFromScript( String script, Function<DataProvider, S> mapper )
     {
+        Database database = this.getDatabase();
         // Acquire the raw time-series data from the db for the input time-series identifier
-        DataScripter scripter = new DataScripter( script );
+        DataScripter scripter = new DataScripter( database, script );
 
         try ( DataProvider provider = scripter.buffer() )
         {
@@ -627,14 +636,14 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * so, returns the valid time scale, which is obtained from the input period and function, possibly augmented by
      * any declared time scale information attached to this instance on construction. In using an existing time scale 
      * from the project declaration, the principle is to augment, but not override, because the source is canonical 
-     * on its own time scale. The only exception is the function {@link TimeScaleFunction.UNKNOWN}, which can be 
+     * on its own time scale. The only exception is the function {@link TimeScaleFunction.UNKNOWN}, which can be
      * overridden.
      * 
      * @param <S> the event value type
      * @param lastScale the last scale information retrieved
      * @param period the period of ther current time scale to be retrieved
      * @param functionString the function string for the current time scale to be retrieved
-     * @param the event whose time scale is to be determined, which helps with messaging
+     * @param event the event whose time scale is to be determined, which helps with messaging
      * @return the current time scale
      * @throws DataAccessException if the current time scale is inconsistent with the last time scale
      */
@@ -1107,6 +1116,12 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     abstract static class TimeSeriesRetrieverBuilder<S>
     {
         /**
+         * The database used to retrieve data.
+         */
+
+        private Database database;
+
+        /**
          * Time window filter.
          */
 
@@ -1174,7 +1189,13 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
          */
         
         private ReferenceTimeType referenceTimeType = ReferenceTimeType.UNKNOWN;
-        
+
+        TimeSeriesRetrieverBuilder<S> setDatabase( Database database )
+        {
+            this.database = database;
+            return this;
+        }
+
         /**
          * Sets the <code>wres.Project.project_id</code>.
          * 
@@ -1341,6 +1362,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     {
         Objects.requireNonNull( builder );
 
+        this.database = builder.database;
         this.projectId = builder.projectId;
         this.variableFeatureId = builder.variableFeatureId;
         this.lrb = builder.lrb;
@@ -1357,6 +1379,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
         // Validate
         String validationStart = "Cannot build a time-series retriever without a ";
+        Objects.requireNonNull( this.database, "database instance."  );
         Objects.requireNonNull( this.getTimeColumnName(), validationStart + "time column name." );
 
         Objects.requireNonNull( this.getMeasurementUnitMapper(), validationStart + "measurement unit mapper." );

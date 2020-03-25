@@ -10,65 +10,45 @@ import wres.config.generated.DataSourceConfig;
 import wres.io.data.details.VariableDetails;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
+import wres.io.utilities.Database;
 
 /**
  * @author Christopher Tubbs
  *
  * Manages the retrieval of variable information that may be shared across threads
  */
-public final class Variables extends Cache<VariableDetails, String>
+public class Variables extends Cache<VariableDetails, String>
 {
     private static final int MAX_DETAILS = 30;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Variables.class);
-	private static final Object CACHE_LOCK = new Object();
 
-	private static final Object DETAIL_LOCK = new Object();
-	private static final Object KEY_LOCK = new Object();
+    private final Object detailLock = new Object();
+    private final Object keyLock = new Object();
+    private final Database database;
 
-    /**
-     * The cache of variables whose details may be accessed through static methods
-     */
-    private static final Variables INSTANCE = new Variables();
-    
-    /**
-     * <p>Invalidates the global cache of the singleton associated with this class, {@link #INSTANCE}.
-     * 
-     * <p>See #61206.
-     */
-    
-    public static void invalidateGlobalCache()
+    public Variables( Database database )
     {
-        Variables.INSTANCE.invalidate();
+        this.database = database;
+        this.initializeDetails();
+    }
+
+    @Override
+    protected Database getDatabase()
+    {
+        return this.database;
     }
 
 	@Override
 	protected Object getDetailLock()
 	{
-		return Variables.DETAIL_LOCK;
+        return this.detailLock;
 	}
 
 	@Override
 	protected Object getKeyLock()
 	{
-		return Variables.KEY_LOCK;
-	}
-
-	private static Variables getCache()
-	{
-	    synchronized (CACHE_LOCK)
-		{
-		    if ( INSTANCE.isEmpty())
-			{
-			    Variables.initialize();
-			}
-			return INSTANCE;
-		}
-	}
-
-	private Variables()
-    {
-        this.initializeDetails();
+        return this.keyLock;
     }
 
     /**
@@ -93,8 +73,8 @@ public final class Variables extends Cache<VariableDetails, String>
      * @return A list of all of the names of variables in forecasts that may be evaluated for the project
      * @throws SQLException Thrown if an error was encountered while communicating with the database
      */
-	public static List<String> getAvailableForecastVariables(final Integer projectID,
-                                                             final String projectMember)
+    public List<String> getAvailableForecastVariables(final Integer projectID,
+                                                      final String projectMember)
             throws SQLException
     {
         String member = projectMember;
@@ -109,7 +89,8 @@ public final class Variables extends Cache<VariableDetails, String>
             member += "'";
         }
 
-        DataScripter script = new DataScripter(  );
+        Database database = this.getDatabase();
+        DataScripter script = new DataScripter( database );
 
         script.addLine("SELECT variable_name");
         script.addLine("FROM wres.Variable V");
@@ -145,7 +126,7 @@ public final class Variables extends Cache<VariableDetails, String>
      * @return A list of all of the names of variables in observations that may be evaluated for the project
      * @throws SQLException Thrown if an error was encountered while communicating with the database
      */
-    public static List<String> getAvailableObservationVariables(
+    public List<String> getAvailableObservationVariables(
             final Integer projectID,
             final String projectMember)
             throws SQLException
@@ -162,7 +143,8 @@ public final class Variables extends Cache<VariableDetails, String>
             member += "'";
         }
 
-        DataScripter script = new DataScripter();
+        Database database = this.getDatabase();
+        DataScripter script = new DataScripter( database );
 
         script.addLine("SELECT variable_name");
         script.addLine("FROM wres.Variable V");
@@ -196,9 +178,9 @@ public final class Variables extends Cache<VariableDetails, String>
 	 * @return Whether or not there is any forecast data for the variable within the project
 	 * @throws SQLException Thrown if a database operation fails
 	 */
-	public static boolean isForecastValid(final Integer projectID,
-                                          final String projectMember,
-                                          final Integer variableID)
+    public boolean isForecastValid( final Integer projectID,
+                                    final String projectMember,
+                                    final Integer variableID )
             throws SQLException
 	{
 		String member = projectMember;
@@ -213,7 +195,8 @@ public final class Variables extends Cache<VariableDetails, String>
 			member += "'";
 		}
 
-        DataScripter script = new DataScripter(  );
+        Database database = this.getDatabase();
+        DataScripter script = new DataScripter( database );
 
 		script.addLine("SELECT EXISTS (");
 		script.addTab().addLine("SELECT 1");
@@ -255,9 +238,9 @@ public final class Variables extends Cache<VariableDetails, String>
 	 * @return Whether or not there is any observed data for the variable within the project
 	 * @throws SQLException Thrown if a database operation fails
 	 */
-	public static boolean isObservationValid(final Integer projectID,
-											 final String projectMember,
-											 final Integer variableID)
+    public boolean isObservationValid( final Integer projectID,
+                                       final String projectMember,
+                                       final Integer variableID )
 			throws SQLException
 	{
 		String member = projectMember;
@@ -272,7 +255,8 @@ public final class Variables extends Cache<VariableDetails, String>
 			member += "'";
 		}
 
-        DataScripter script = new DataScripter();
+        Database database = this.getDatabase();
+        DataScripter script = new DataScripter( database );
 
 		script.addLine("SELECT EXISTS (");
 		script.addTab().addLine("SELECT 1");
@@ -300,8 +284,8 @@ public final class Variables extends Cache<VariableDetails, String>
 	 * @return The ID of the variable
 	 * @throws SQLException if the ID could not be retrieved
 	 */
-	public static Integer getVariableID(String variableName) throws SQLException {
-		return getCache().getID(variableName);
+    public Integer getVariableID(String variableName) throws SQLException {
+        return this.getID(variableName);
 	}
 
     /**
@@ -310,9 +294,9 @@ public final class Variables extends Cache<VariableDetails, String>
      * @return The ID of the variable
      * @throws SQLException if the ID could not be retrieved
      */
-	public static Integer getVariableID( DataSourceConfig dataSourceConfig) throws SQLException
+    public Integer getVariableID( DataSourceConfig dataSourceConfig) throws SQLException
 	{
-		return Variables.getVariableID(dataSourceConfig.getVariable().getValue());
+        return this.getVariableID(dataSourceConfig.getVariable().getValue());
 	}
 	
 	/**
@@ -337,9 +321,9 @@ public final class Variables extends Cache<VariableDetails, String>
      * @param variableId The id for the variable of interest
      * @return The name of the variable, like 'streamflow' or 'QINE'
      */
-	public static String getName(Integer variableId)
+    public String getName(Integer variableId)
 	{
-		return getCache().getKey(variableId);
+        return this.getKey(variableId);
 	}
 
     /**
@@ -367,11 +351,12 @@ public final class Variables extends Cache<VariableDetails, String>
     /**
      * Loads all variables into the cache
      */
-	private static void initialize()
+    private void initialize()
     {
         try
         {
-            DataScripter script = new DataScripter(  );
+            Database database = this.getDatabase();
+            DataScripter script = new DataScripter( database );
             script.setHighPriority( true );
 
             script.addLine("SELECT variable_id, variable_name");
@@ -379,7 +364,7 @@ public final class Variables extends Cache<VariableDetails, String>
 
             try (DataProvider data = script.getData())
             {
-                INSTANCE.populate( data );
+                this.populate( data );
             }
             
             LOGGER.debug( "Finished populating the Variables details." );

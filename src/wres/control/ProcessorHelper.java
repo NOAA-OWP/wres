@@ -41,9 +41,11 @@ import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
 import wres.io.Operations;
+import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
 import wres.io.project.Project;
 import wres.io.retrieval.UnitMapper;
+import wres.io.utilities.Database;
 import wres.io.writing.SharedSampleDataWriters;
 import wres.io.writing.SharedStatisticsWriters;
 import wres.io.writing.SharedStatisticsWriters.SharedWritersBuilder;
@@ -51,6 +53,7 @@ import wres.io.writing.commaseparated.pairs.PairsWriter;
 import wres.io.writing.netcdf.NetcdfOutputWriter;
 import wres.system.DatabaseLockManager;
 import wres.system.ProgressMonitor;
+import wres.system.SystemSettings;
 
 /**
  * Class with functions to help in generating metrics and processing metric products.
@@ -77,7 +80,10 @@ class ProcessorHelper
      * @return the paths to which outputs were written
      */
 
-    static Set<Path> processProjectConfig( final ProjectConfigPlus projectConfigPlus,
+    static Set<Path> processProjectConfig( SystemSettings systemSettings,
+                                           Database database,
+                                           Executor executor,
+                                           final ProjectConfigPlus projectConfigPlus,
                                            final ExecutorServices executors,
                                            DatabaseLockManager lockManager )
             throws IOException
@@ -92,7 +98,7 @@ class ProcessorHelper
         // Get a unit mapper for the declared measurement units
         PairConfig pairConfig = projectConfig.getPair();
         String desiredMeasurementUnit = pairConfig.getUnit();
-        UnitMapper unitMapper = UnitMapper.of( desiredMeasurementUnit );
+        UnitMapper unitMapper = UnitMapper.of( database, desiredMeasurementUnit );
         
         // Read external thresholds from the configuration, per feature
         // Compare on locationId only. TODO: consider how better to transmit these thresholds
@@ -101,12 +107,20 @@ class ProcessorHelper
         // wres-control, since they make processing decisions, or passing ResolvedProject onwards
         final Map<FeaturePlus, ThresholdsByMetric> thresholds =
                 new TreeMap<>( FeaturePlus::compareByLocationId );
-        thresholds.putAll( ConfigHelper.readExternalThresholdsFromProjectConfig( projectConfig, unitMapper ) );
+        Map<FeaturePlus,ThresholdsByMetric> thresholdsFromProjectConfig =
+                ConfigHelper.readExternalThresholdsFromProjectConfig( systemSettings,
+                                                                      projectConfig,
+                                                                      unitMapper );
+        thresholds.putAll( thresholdsFromProjectConfig );
 
         LOGGER.debug( "Beginning ingest for project {}...", projectConfigPlus );
 
         // Need to ingest first
-        Project project = Operations.ingest( projectConfig, lockManager );
+        Project project = Operations.ingest( systemSettings,
+                                             database,
+                                             executor,
+                                             projectConfig,
+                                             lockManager );
         Operations.prepareForExecution( project );
 
         LOGGER.debug( "Finished ingest for project {}...", projectConfigPlus );
@@ -159,7 +173,9 @@ class ProcessorHelper
                                                                                            metricsForSharedWriting ) );
             */
             // Use the gridded netcdf writer
-            sharedWritersBuilder.setNetcdfOutputWriter( NetcdfOutputWriter.of( projectConfig,
+            sharedWritersBuilder.setNetcdfOutputWriter( NetcdfOutputWriter.of( systemSettings,
+                                                                               executor,
+                                                                               projectConfig,
                                                                                durationUnits,
                                                                                unitMapper,
                                                                                outputDirectory ) );

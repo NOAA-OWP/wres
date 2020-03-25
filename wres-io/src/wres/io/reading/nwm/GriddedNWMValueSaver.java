@@ -24,6 +24,7 @@ import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
 import wres.io.reading.DataSource;
 import wres.io.reading.IngestResult;
+import wres.io.utilities.Database;
 import wres.system.SystemSettings;
 import wres.util.NetCDF;
 import wres.util.TimeHelper;
@@ -36,6 +37,8 @@ public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(GriddedNWMValueSaver.class);
 
+    private SystemSettings systemSettings;
+    private Database database;
     private ProjectConfig projectConfig;
     private DataSource dataSource;
     private URI fileName;
@@ -43,19 +46,35 @@ public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
     private final String hash;
     private final int gridProjectionId;
 
-	GriddedNWMValueSaver( ProjectConfig projectConfig,
+	GriddedNWMValueSaver( SystemSettings systemSettings,
+                          Database database,
+                          ProjectConfig projectConfig,
                           DataSource dataSource,
                           final String hash,
                           final int gridProjectionId )
     {
+        Objects.requireNonNull( systemSettings );
+        Objects.requireNonNull( database );
         Objects.requireNonNull( projectConfig );
         Objects.requireNonNull( dataSource );
         Objects.requireNonNull( hash );
+        this.systemSettings = systemSettings;
+        this.database = database;
         this.projectConfig = projectConfig;
         this.dataSource = dataSource;
         this.fileName = dataSource.getUri();
         this.hash = hash;
         this.gridProjectionId = gridProjectionId;
+    }
+
+    private SystemSettings getSystemSettings()
+    {
+        return this.systemSettings;
+    }
+
+    private Database getDatabase()
+    {
+        return this.database;
     }
 
 	@Override
@@ -76,7 +95,8 @@ public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
 			griddedSource.setHash( this.hash );
 			griddedSource.setIsPointData( false );
 
-			griddedSource.save();
+			Database database = this.getDatabase();
+			griddedSource.save( database );
 
 			if ( griddedSource.getId() == null)
             {
@@ -85,7 +105,8 @@ public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
             }
 
             SourceCompletedDetails completedDetails =
-                    new SourceCompletedDetails( griddedSource );
+                    new SourceCompletedDetails( this.getDatabase(),
+                                                griddedSource );
 			boolean complete;
 
 			if ( griddedSource.performedInsert() )
@@ -158,8 +179,9 @@ public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
 
         final URI originalPath = this.fileName;
 
+        SystemSettings systemSettings = this.getSystemSettings();
         this.fileName = Paths.get(
-                SystemSettings.getNetCDFStorePath(),
+                systemSettings.getNetCDFStorePath(),
                 path.subpath( firstNameIndex, nameCount ).toString()
         ).toUri();
 

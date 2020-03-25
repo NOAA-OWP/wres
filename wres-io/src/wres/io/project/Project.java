@@ -27,6 +27,7 @@ import wres.config.generated.MetricsConfig;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ThresholdType;
+import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
 import wres.io.config.LeftOrRightOrBaseline;
 import wres.io.data.caching.Ensembles;
@@ -35,7 +36,9 @@ import wres.io.data.caching.Variables;
 import wres.io.data.details.FeatureDetails;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
+import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
+import wres.system.SystemSettings;
 import wres.util.CalculationException;
 
 /**
@@ -76,6 +79,12 @@ public class Project
 
     private Integer projectID = null;
     private final ProjectConfig projectConfig;
+    private final SystemSettings systemSettings;
+    private final Database database;
+    private final Executor executor;
+    private final Variables variablesCache;
+    private final Features featuresCache;
+    private final Ensembles ensemblesCache;
 
     /**
      * The set of all features pertaining to the project
@@ -112,13 +121,39 @@ public class Project
     private Boolean rightUsesGriddedData = null;
     private Boolean baselineUsesGriddedData = null;
 
-    public Project( ProjectConfig projectConfig,
+    public Project( SystemSettings systemSettings,
+                    Database database,
+                    Executor executor,
+                    ProjectConfig projectConfig,
                     Integer inputCode )
     {
+        Objects.requireNonNull( systemSettings );
+        Objects.requireNonNull( database );
+        Objects.requireNonNull( executor );
         Objects.requireNonNull( projectConfig );
         Objects.requireNonNull( inputCode );
+        this.systemSettings = systemSettings;
+        this.database = database;
+        this.executor = executor;
         this.projectConfig = projectConfig;
         this.inputCode = inputCode;
+        this.variablesCache = new Variables( database );
+        this.featuresCache = new Features( database );
+        this.ensemblesCache = new Ensembles( database );
+    }
+
+    public SystemSettings getSystemSettings()
+    {
+        return this.systemSettings;
+    }
+    public Database getDatabase()
+    {
+        return this.database;
+    }
+
+    public Executor getExecutor()
+    {
+        return this.executor;
     }
 
     public ProjectConfig getProjectConfig()
@@ -126,17 +161,32 @@ public class Project
         return this.projectConfig;
     }
 
+    public Variables getVariablesCache()
+    {
+        return this.variablesCache;
+    }
+
+    private Features getFeaturesCache()
+    {
+        return this.featuresCache;
+    }
+
+    private Ensembles getEnsemblesCache()
+    {
+        return this.ensemblesCache;
+    }
+
     /**
      * Performs operations that are needed for the project to run between ingest and evaluation.
      * 
      * @throws SQLException if retrieval of data from the database fails
-     * @throws IOException if loading fails
      * @throws CalculationException if required calculations could not be completed
      * @throws NoDataException if zero features have intersecting data
      */
-    public void prepareForExecution() throws SQLException, IOException
+    public void prepareForExecution() throws SQLException
     {
         LOGGER.trace( "prepareForExecution() entered" );
+        Database database = this.getDatabase();
 
         // Check for features that potentially have intersecting values.
         // The query in getIntersectingFeatures checks that there is some
@@ -144,7 +194,7 @@ public class Project
         synchronized ( this.featureLock )
         {
             LOGGER.debug( "Features so far: {}", this.features );
-            this.features = this.getIntersectingFeatures();
+            this.features = this.getIntersectingFeatures( database );
             LOGGER.debug( "Features after getting intersecting features: {}",
                           this.features );
         }
@@ -160,26 +210,29 @@ public class Project
      * Get a set of features for this project with intersecting data.
      * Does not check if the data is pairable, simply checks that there is data
      * on each of the left and right for this variable at a given feature.
+     * @param database The database to use.
      * @return The Set of FeatureDetails with some data on each side
      */
 
-    private Set<FeatureDetails> getIntersectingFeatures() throws SQLException
+    private Set<FeatureDetails> getIntersectingFeatures( Database database )
+            throws SQLException
     {
         Set<FeatureDetails> intersectingFeatures;
+        Features featuresCache = this.getFeaturesCache();
 
         // Gridded features? #74266
         // Yes
         if ( this.usesGriddedData( this.getRight() ) )
         {
             LOGGER.debug( "Getting details of intersecting features for gridded data." );
-
-            intersectingFeatures = Features.getGriddedDetails( this );
+            intersectingFeatures = featuresCache.getGriddedDetails( this );
         }
         // No
         else
         {
             intersectingFeatures = new HashSet<>();
-            DataScripter script = ProjectScriptGenerator.createIntersectingFeaturesScript( this );
+            DataScripter script = ProjectScriptGenerator.createIntersectingFeaturesScript( database,
+                                                                                           this );
 
             LOGGER.debug( "getIntersectingFeatures will run: {}", script );
 
@@ -189,7 +242,7 @@ public class Project
                 {
                     int featureId = dataProvider.getInt( "feature_id" );
                     FeatureDetails.FeatureKey key =
-                            Features.getFeatureKey( featureId );
+                            featuresCache.getFeatureKey( featureId );
                     FeatureDetails featureDetail = new FeatureDetails( key );
                     intersectingFeatures.add( featureDetail );
                 }
@@ -216,12 +269,14 @@ public class Project
      */
     public Set<FeatureDetails> getFeatures() throws SQLException
     {
+        Database database = this.getDatabase();
+
         synchronized ( this.featureLock )
         {
             if ( this.features == null )
             {
                 LOGGER.debug( "getFeatures(): no features found, populating." );
-                this.features = this.getIntersectingFeatures();
+                this.features = this.getIntersectingFeatures( database );
             }
         }
 
@@ -267,12 +322,13 @@ public class Project
         if ( Objects.nonNull( config ) && !config.getEnsemble().isEmpty() )
         {
             List<EnsembleCondition> conditions = config.getEnsemble();
+            Ensembles ensemblesCache = this.getEnsemblesCache();
 
             for ( EnsembleCondition condition : conditions )
             {
                 if ( condition.isExclude() != include )
                 {
-                    returnMe.addAll( Ensembles.getEnsembleIDs( condition ) );
+                    returnMe.addAll( ensemblesCache.getEnsembleIDs( condition ) );
                 }
             }
         }
@@ -313,7 +369,8 @@ public class Project
     {
         if ( this.leftVariableID == null )
         {
-            this.leftVariableID = Variables.getVariableID( this.getLeftVariableName() );
+            Variables variablesCache = this.getVariablesCache();
+            this.leftVariableID = variablesCache.getVariableID( this.getLeftVariableName() );
         }
 
         return this.leftVariableID;
@@ -336,7 +393,8 @@ public class Project
     {
         if ( this.rightVariableID == null )
         {
-            this.rightVariableID = Variables.getVariableID( this.getRightVariableName() );
+            Variables variablesCache = this.getVariablesCache();
+            this.rightVariableID = variablesCache.getVariableID( this.getRightVariableName() );
         }
 
         return this.rightVariableID;
@@ -359,7 +417,8 @@ public class Project
     {
         if ( this.hasBaseline() && this.baselineVariableID == null )
         {
-            this.baselineVariableID = Variables.getVariableID( this.getBaselineVariableName() );
+            Variables variablesCache = this.getVariablesCache();
+            this.baselineVariableID = variablesCache.getVariableID( this.getBaselineVariableName() );
         }
 
         return this.baselineVariableID;
@@ -390,7 +449,8 @@ public class Project
         Objects.requireNonNull( feature );
 
         Integer variableId = this.getLeftVariableID();
-        return Features.getVariableFeatureID( feature, variableId );
+        Features featuresCache = this.getFeaturesCache();
+        return featuresCache.getVariableFeatureID( feature, variableId );
     }
 
     /**
@@ -405,7 +465,8 @@ public class Project
         Objects.requireNonNull( feature );
 
         Integer variableId = this.getRightVariableID();
-        return Features.getVariableFeatureID( feature, variableId );
+        Features featuresCache = this.getFeaturesCache();
+        return featuresCache.getVariableFeatureID( feature, variableId );
     }
 
     /**
@@ -424,7 +485,8 @@ public class Project
         if ( this.hasBaseline() )
         {
             Integer variableId = this.getBaselineVariableID();
-            returnMe = Features.getVariableFeatureID( feature, variableId );
+            Features featuresCache = this.getFeaturesCache();
+            returnMe = featuresCache.getVariableFeatureID( feature, variableId );
         }
 
         return returnMe;
@@ -442,9 +504,11 @@ public class Project
     public Integer getVariableFeatureId( String variableName, Feature feature )
             throws SQLException
     {
-        int variableId = Variables.getVariableID( variableName );
-        return Features.getVariableFeatureID( feature,
-                                              variableId );
+        Variables variablesCache = this.getVariablesCache();
+        int variableId = variablesCache.getVariableID( variableName );
+        Features featuresCache = this.getFeaturesCache();
+        return featuresCache.getVariableFeatureID( feature,
+                                                   variableId );
     }
 
     /**
@@ -574,7 +638,8 @@ public class Project
 
         if ( usesGriddedData == null )
         {
-            DataScripter script = new DataScripter();
+            Database database = this.getDatabase();
+            DataScripter script = new DataScripter( database );
             script.addLine( "SELECT EXISTS (" );
             script.addTab().addLine( SELECT_1 );
             script.addTab().addLine( "FROM wres.ProjectSource PS" );
@@ -665,7 +730,8 @@ public class Project
 
     private DataScripter getInsertSelectStatement()
     {
-        DataScripter script = new DataScripter();
+        Database database = this.getDatabase();
+        DataScripter script = new DataScripter( database );
         script.setUseTransaction( true );
 
         script.retryOnSerializationFailure();
@@ -704,7 +770,8 @@ public class Project
         }
         else
         {
-            DataScripter scriptWithId = new DataScripter();
+            Database database = this.getDatabase();
+            DataScripter scriptWithId = new DataScripter( database );
             scriptWithId.setHighPriority( true );
             scriptWithId.setUseTransaction( false );
             scriptWithId.addLine( "SELECT project_id" );

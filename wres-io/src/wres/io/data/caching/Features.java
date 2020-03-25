@@ -19,6 +19,7 @@ import wres.io.data.details.FeatureDetails;
 import wres.io.project.Project;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
+import wres.io.utilities.Database;
 import wres.util.NotImplementedException;
 import wres.util.Strings;
 
@@ -31,56 +32,36 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
     private static final int MAX_DETAILS = 5000;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Features.class);
-    private static final Object CACHE_LOCK = new Object();
 
-    private static final Object DETAIL_LOCK = new Object();
-    private static final Object KEY_LOCK = new Object();
-    private static final Object POSITION_LOCK = new Object();
+    private final Object detailLock = new Object();
+    private final Object keyLock = new Object();
+    private final Object positionLock = new Object();
+    private final Database database;
+
+    public Features( Database database )
+    {
+        this.database = database;
+        this.initializeDetails();
+    }
 
     @Override
     protected Object getDetailLock()
     {
-        return Features.DETAIL_LOCK;
+        return this.detailLock;
     }
 
     @Override
     protected Object getKeyLock()
     {
-        return Features.KEY_LOCK;
+        return this.keyLock;
     }
 
-    /**
-     * <p>Invalidates the global cache of the singleton associated with this class, {@link #INSTANCE}.
-     * 
-     * <p>See #61206.
-     */
-    
-    public static void invalidateGlobalCache()
+    @Override
+    protected Database getDatabase()
     {
-        Features.INSTANCE.invalidate();
-    }
-    
-    /**
-     *  Global cache for all Features
-     */
-	private static final Features INSTANCE = new Features();
-
-	private Features()
-    {
-        this.initializeDetails();
+        return this.database;
     }
 
-	private static Features getCache ()
-	{
-		synchronized (CACHE_LOCK)
-		{
-			if ( INSTANCE.isEmpty() )
-			{
-                INSTANCE.initializeDetails();
-			}
-			return INSTANCE;
-		}
-	}
 
     @Override
     Map<FeatureDetails.FeatureKey, Integer> getKeyIndex()
@@ -93,15 +74,16 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         return this.keyIndex;
     }
 
-    public static boolean lidExists( String lid) throws SQLException
+    public boolean lidExists( String lid) throws SQLException
 	{
 		LOGGER.trace( "Checking if a location named '{}' has been defined...", lid );
 
-		boolean exists = Features.getCache().hasID( FeatureDetails.keyOfLid( lid ) );
+		boolean exists = this.hasID( FeatureDetails.keyOfLid( lid ) );
 
 		if (!exists)
 		{
-		    DataScripter script = new DataScripter(  );
+		    Database database = this.getDatabase();
+		    DataScripter script = new DataScripter( database );
 		    script.addLine("SELECT EXISTS (");
 		    script.addTab().addLine("SELECT 1");
 		    script.addTab().addLine("FROM wres.Feature");
@@ -120,34 +102,34 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 	 * @return The ID for the specified feature
 	 * @throws SQLException Thrown if the ID could not be retrieved from the Database
 	 */
-    public static Integer getFeatureID( FeatureDetails detail )
+    public Integer getFeatureID( FeatureDetails detail )
             throws SQLException
 	{
 	    LOGGER.trace("getFeatureID - args {}", detail);
-		return getCache().getID(detail);
+		return this.getID(detail);
 	}
 
-	private static Integer getFeatureID( FeatureDetails.FeatureKey key) throws SQLException
+	private Integer getFeatureID( FeatureDetails.FeatureKey key) throws SQLException
     {
         LOGGER.trace( "getFeatureID with FeatureKey arg {}", key );
         Integer result;
 
-        synchronized ( KEY_LOCK )
+        synchronized ( this.keyLock )
         {
-            if ( !Features.getCache().hasID( key ) )
+            if ( !this.hasID( key ) )
             {
                 LOGGER.trace( "getFeatureID with FeatureKey arg {} NOT in cache",
                               key );
                 FeatureDetails featureDetails = new FeatureDetails( key );
-                Features.getCache().addElement( featureDetails );
-                Integer fakeResultForLRUPurposes = Features.getCache().getID( key );
+                this.addElement( featureDetails );
+                Integer fakeResultForLRUPurposes = this.getID( key );
                 result = featureDetails.getId();
             }
             else
             {
                 LOGGER.trace( "getFeatureID with FeatureKey arg {} FOUND in cache",
                               key );
-                result = Features.getCache().getID( key );
+                result = this.getID( key );
             }
         }
 
@@ -156,15 +138,15 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         return result;
     }
 
-    private static Integer getFeatureID( Integer comid, String lid, String gageID, String huc)
+    private Integer getFeatureID( Integer comid, String lid, String gageID, String huc)
             throws SQLException
     {
         LOGGER.trace( "getFeatureID with 4-args: comid={}, lid={}, gageID={}, huc={}",
                       comid, lid, gageID, huc );
-        return Features.getFeatureID( new FeatureDetails.FeatureKey( comid, lid, gageID, huc, null, null ));
+        return this.getFeatureID( new FeatureDetails.FeatureKey( comid, lid, gageID, huc, null, null ));
     }
 
-    private static Integer getFeatureID( Feature feature ) throws SQLException
+    private Integer getFeatureID( Feature feature ) throws SQLException
     {
         LOGGER.trace( "getFeatureID with Feature: {}", feature );
         FeatureDetails details = new FeatureDetails(  );
@@ -191,12 +173,12 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
      * @throws SQLException when communication with the database fails.
      */
 
-    public static FeatureDetails.FeatureKey getFeatureKey( int featureId )
+    public FeatureDetails.FeatureKey getFeatureKey( int featureId )
             throws SQLException
     {
         LOGGER.trace( "getFeatureKey called with {}", featureId );
         for ( Map.Entry<FeatureDetails.FeatureKey,Integer> cacheEntry :
-                Features.getCache()
+                this
                         .getKeyIndex()
                         .entrySet() )
         {
@@ -211,7 +193,8 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         LOGGER.trace( "getFeatureKey is going to reach out to db for key {}",
                       featureId );
         // Not found above, gotta find it.
-        DataScripter dataScripter = new DataScripter();
+        Database database = this.getDatabase();
+        DataScripter dataScripter = new DataScripter( database );
         dataScripter.addLine( "SELECT lid, comid, huc, gage_id, longitude, latitude" );
         dataScripter.addLine( "FROM wres.Feature" );
         dataScripter.addLine( "WHERE feature_id = ?" );
@@ -230,10 +213,10 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
     }
 
 
-    public static FeatureDetails getDetails(Feature feature) throws SQLException
+    public FeatureDetails getDetails(Feature feature) throws SQLException
     {
         LOGGER.trace( "getDetails with Feature: {}", feature );
-        Integer id = Features.getFeatureID( feature );
+        Integer id = this.getFeatureID( feature );
 
         if (id == null)
         {
@@ -246,14 +229,14 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
                     feature.getComid());
         }
 
-        return Features.getCache().get( id );
+        return this.get( id );
     }
 
-    private static Set<FeatureDetails> getUnspecifiedDetails( ProjectConfig projectConfig )
+    private Set<FeatureDetails> getUnspecifiedDetails( ProjectConfig projectConfig )
             throws SQLException
     {
-
-        DataScripter script = new DataScripter(  );
+        Database database = this.getDatabase();
+        DataScripter script = new DataScripter( database );
         script.addLine("SELECT *");
         script.addLine("FROM wres.Feature");
         script.addLine("WHERE lid != ''");
@@ -274,29 +257,29 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         return features;
     }
 
-    public static Set<FeatureDetails> getAllDetails(ProjectConfig projectConfig) throws SQLException
+    public Set<FeatureDetails> getAllDetails(ProjectConfig projectConfig) throws SQLException
     {
         Set<FeatureDetails> features;
 
         if (projectConfig.getPair().getFeature() == null || projectConfig.getPair().getFeature().isEmpty())
         {
-            features = Features.getUnspecifiedDetails( projectConfig );
+            features = this.getUnspecifiedDetails( projectConfig );
         }
         else
         {
-            features = Features.getSpecifiedDetails(projectConfig);
+            features = this.getSpecifiedDetails(projectConfig);
         }
 
         return features;
     }
 
-    private static Set<FeatureDetails> getSpecifiedDetails( ProjectConfig projectConfig ) throws SQLException
+    private Set<FeatureDetails> getSpecifiedDetails( ProjectConfig projectConfig ) throws SQLException
     {
         Set<FeatureDetails> features = new HashSet<>();
 
         for ( Feature feature : projectConfig.getPair().getFeature() )
         {
-            for ( FeatureDetails details : Features.getAllDetails( feature ) )
+            for ( FeatureDetails details : this.getAllDetails( feature ) )
             {
                 features.add( details );
             }
@@ -305,20 +288,20 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         return features;
     }
 
-    private static Set<FeatureDetails> getAllDetails(Feature feature)
+    private Set<FeatureDetails> getAllDetails(Feature feature)
             throws SQLException
     {
         Set<FeatureDetails> details = new HashSet<>(  );
 
         if (Strings.hasValue( feature.getHuc() ))
         {
-            details.addAll( Features.getDetailsByHUC( feature.getHuc()) );
+            details.addAll( this.getDetailsByHUC( feature.getHuc()) );
         }
 
         if (feature.getCoordinate() != null)
         {
             details.addAll(
-                    Features.getDetailsByCoordinates(
+                    this.getDetailsByCoordinates(
                             feature.getCoordinate().getLongitude(),
                             feature.getCoordinate().getLatitude(),
                             feature.getCoordinate().getRange()
@@ -328,27 +311,27 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 
         if (Strings.hasValue(feature.getRfc()))
         {
-            details.addAll(Features.getDetailsByRegion( feature.getRfc().toUpperCase()));
+            details.addAll(this.getDetailsByRegion( feature.getRfc().toUpperCase()));
         }
 
         if (Strings.hasValue( feature.getState() ))
         {
-            details.addAll(Features.getDetailsByState( feature.getState().toUpperCase() ));
+            details.addAll(this.getDetailsByState( feature.getState().toUpperCase() ));
         }
 
         if (Strings.hasValue( feature.getLocationId() ))
         {
-            details.add( Features.getDetailsByLID( feature.getLocationId().toUpperCase() ) );
+            details.add( this.getDetailsByLID( feature.getLocationId().toUpperCase() ) );
         }
 
         if (Strings.hasValue( feature.getGageId() ))
         {
-            details.add( Features.getDetailsByGageID( feature.getGageId() ) );
+            details.add( this.getDetailsByGageID( feature.getGageId() ) );
         }
 
         if (feature.getComid() != null)
         {
-            details.add (Features.getDetails( feature.getComid().intValue(),
+            details.add (this.getDetails( feature.getComid().intValue(),
                                               null,
                                               null,
                                               null ));
@@ -356,7 +339,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 
         if (feature.getPolygon() != null || feature.getCircle() != null)
         {
-            details.addAll(Features.getDetailsByGeometry( feature ));
+            details.addAll(this.getDetailsByGeometry( feature ));
         }
 
         for (FeatureDetails detail : details)
@@ -367,18 +350,18 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         return details;
     }
 
-    public static Set<FeatureDetails> getGriddedDetails( Project details )
+    public Set<FeatureDetails> getGriddedDetails( Project details )
             throws SQLException
     {
         Set<FeatureDetails> features;
 
         if (details.getProjectConfig().getPair().getFeature().size() > 0)
         {
-            features = Features.getSpecifiedGriddedFeatures( details.getProjectConfig() );
+            features = this.getSpecifiedGriddedFeatures( details.getProjectConfig() );
         }
         else
         {
-            features = Features.getAllGriddedFeatures( details.getProjectConfig() );
+            features = this.getAllGriddedFeatures( details.getProjectConfig() );
         }
 
         return features;
@@ -403,10 +386,11 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
      * @return The list of feature details to use for evaluation
      * @throws SQLException Thrown if an issue is encountered while running the script in the database
      */
-    private static Set<FeatureDetails> getSpecifiedGriddedFeatures( ProjectConfig projectConfig )
+    private Set<FeatureDetails> getSpecifiedGriddedFeatures( ProjectConfig projectConfig )
             throws SQLException
     {
-        DataScripter script = new DataScripter(  );
+        Database database = this.getDatabase();
+        DataScripter script = new DataScripter( database );
 
         script.addLine("SELECT geographic_coordinate[0] AS longitude,");
         script.addTab().addLine("geographic_coordinate[1] AS latitude,");
@@ -476,15 +460,15 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
             }
         }
 
-        return Features.getDetailsFromDatabase( script );
+        return this.getDetailsFromDatabase( script );
     }
 
-    private static FeatureDetails getDetails(Integer comid, String lid, String gageID, String huc)
+    private FeatureDetails getDetails(Integer comid, String lid, String gageID, String huc)
             throws SQLException
     {
         LOGGER.trace( "getDetails with 4-args: comid={}, lid={}, gageID={}, huc={}",
                       comid, lid, gageID, huc );
-        Integer id = Features.getFeatureID( comid, lid, gageID, huc );
+        Integer id = this.getFeatureID( comid, lid, gageID, huc );
         if (id == null)
         {
             throw new NullPointerException(
@@ -495,24 +479,24 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
                     "', comid: '" +
                     comid );
         }
-        return Features.getCache().get( id );
+        return this.get( id );
     }
 
-    private static FeatureDetails getDetailsByLID(String lid) throws SQLException
+    private FeatureDetails getDetailsByLID(String lid) throws SQLException
     {
         LOGGER.trace( "getDetailsByLID lid={}", lid );
-        return Features.getDetails( null, lid, null, null );
+        return this.getDetails( null, lid, null, null );
     }
 
-    public static FeatureDetails getDetailsByGageID(String gageID) throws SQLException
+    public FeatureDetails getDetailsByGageID(String gageID) throws SQLException
     {
         LOGGER.trace( "getDetailsByGageID lid={}", gageID );
-        return Features.getDetails( null, null, gageID, null );
+        return this.getDetails( null, null, gageID, null );
     }
 
-    private static Set<FeatureDetails> getDetailsByCoordinates( Float longitude,
-                                                                Float latitude,
-                                                                Float range )
+    private Set<FeatureDetails> getDetailsByCoordinates( Float longitude,
+                                                         Float latitude,
+                                                         Float range )
             throws SQLException
     {
         Double radianLatitude = Math.toRadians( latitude );
@@ -531,7 +515,8 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         // spot on.
         Double rangeInDegrees = Math.max( range / distanceOfOneDegree, 0.00005);
 
-        DataScripter script = new DataScripter(  );
+        Database database = this.getDatabase();
+        DataScripter script = new DataScripter( database );
         script.addLine("WITH feature_and_distance AS");
         script.addLine("(");
         script.addTab().addLine("SELECT SQRT((", latitude, " - latitude)^2 + (", longitude, " - longitude)^2) AS distance");
@@ -545,14 +530,14 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         script.addLine("WHERE distance <= ", rangeInDegrees);
         script.addLine("ORDER BY feature_id;");
 
-        return Features.getDetailsFromDatabase( script );
+        return this.getDetailsFromDatabase( script );
     }
 
-    private static Set<FeatureDetails> getDetailsByGeometry( Feature feature )
+    private Set<FeatureDetails> getDetailsByGeometry( Feature feature )
             throws SQLException
     {
-        DataScripter script = new DataScripter(  );
-
+        Database database = this.getDatabase();
+        DataScripter script = new DataScripter( database );
         script.addLine("SELECT *");
         script.addLine("FROM wres.Feature F");
         script.addLine("WHERE F.latitude IS NOT NULL");
@@ -603,65 +588,68 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 
         script.addTab().add(");");
 
-        return Features.getDetailsFromDatabase( script );
+        return this.getDetailsFromDatabase( script );
     }
 
-    private static Set<FeatureDetails> getDetailsByHUC( String huc )
+    private Set<FeatureDetails> getDetailsByHUC( String huc )
             throws SQLException
     {
-        DataScripter script = new DataScripter(  );
+        Database database = this.getDatabase();
+        DataScripter script = new DataScripter( database );
         script.addLine("SELECT *");
         script.addLine("FROM wres.Feature");
         script.addLine("WHERE huc LIKE '", huc, "%'");
         script.addLine("ORDER BY feature_id;");
 
-        return Features.getDetailsFromDatabase( script );
+        return this.getDetailsFromDatabase( script );
     }
 
-    private static Set<FeatureDetails> getDetailsByRegion( String region )
+    private Set<FeatureDetails> getDetailsByRegion( String region )
             throws SQLException
     {
         LOGGER.trace( "getDetailsByRegion region={}", region );
-        DataScripter script = new DataScripter(  );
+        Database database = this.getDatabase();
+        DataScripter script = new DataScripter( database );
         script.addLine("SELECT *");
         script.addLine("FROM wres.Feature");
         script.addLine("WHERE region = '", region, "'");
         script.addLine("ORDER BY feature_id;");
 
-        return Features.getDetailsFromDatabase( script );
+        return this.getDetailsFromDatabase( script );
     }
 
-    private static Set<FeatureDetails> getDetailsByState( String state )
+    private Set<FeatureDetails> getDetailsByState( String state )
             throws SQLException
     {
-        DataScripter script = new DataScripter(  );
+        Database database = this.getDatabase();
+        DataScripter script = new DataScripter( database );
         script.addLine("SELECT *");
         script.addLine("FROM wres.Feature");
         script.addLine("WHERE state = '", state, "'");
         script.addLine("ORDER BY feature_id;");
 
-        return Features.getDetailsFromDatabase( script );
+        return this.getDetailsFromDatabase( script );
     }
 
-    private static Set<FeatureDetails> getDetailsFromDatabase( DataScripter script )
+    private Set<FeatureDetails> getDetailsFromDatabase( DataScripter script )
             throws SQLException
     {
         LOGGER.trace( "getDetailsFromDatabase( script={} )", script );
         List<FeatureDetails> features = script.interpret( FeatureDetails::new );
 
-        features.forEach( Features.getCache()::add );
+        features.forEach( this::add );
 
         LOGGER.trace( "getDetailsFromDatabase( script={} ) found features: {}",
                       script, features );
         return new HashSet<>( features );
     }
 
-    public static Integer getVariableFeatureIDByLID(String lid, Integer variableID)
+    public Integer getVariableFeatureIDByLID(String lid, Integer variableID)
             throws SQLException
     {
         LOGGER.trace( "getVariableFeatureIDByLID( lid={}, variableID={} )", lid, variableID );
-        FeatureDetails featureDetails = Features.getDetailsByLID( lid );
-        return Features.getVariableFeatureByFeature( featureDetails, variableID );
+        FeatureDetails featureDetails = this.getDetailsByLID( lid );
+        return this.getVariableFeatureByFeature( featureDetails, variableID );
     }
 
     @Override
@@ -746,24 +734,24 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         }
     }
 
-    public static Integer getVariableFeatureID( Feature feature, Integer variableID)
+    public Integer getVariableFeatureID( Feature feature, Integer variableID)
             throws SQLException
     {
-        FeatureDetails featureDetails = Features.getDetails( feature );
-        return Features.getVariableFeatureByFeature( featureDetails, variableID );
+        FeatureDetails featureDetails = this.getDetails( feature );
+        return this.getVariableFeatureByFeature( featureDetails, variableID );
     }
 
-    public static Integer getVariableFeatureByFeature(FeatureDetails featureDetails, Integer variableId) throws SQLException
+    public Integer getVariableFeatureByFeature(FeatureDetails featureDetails, Integer variableId) throws SQLException
     {
         LOGGER.trace( "getVariableFeatureByFeature( FeatureDetails={}, variableId={} )",
                       featureDetails, variableId );
-        synchronized ( Features.POSITION_LOCK )
+        synchronized ( this.positionLock )
         {
-            if (!Features.getCache().getKeyIndex().containsKey( featureDetails.getKey() ))
+            if (!this.getKeyIndex().containsKey( featureDetails.getKey() ))
             {
                 LOGGER.trace( "getVariableFeatureByFeature( FeatureDetails={}, variableId={} ) key not found, adding new featureDetails.",
                               featureDetails, variableId );
-                Features.getCache().add( featureDetails );
+                this.add( featureDetails );
             }
 
             Integer id = featureDetails.getVariableFeatureID( variableId );
@@ -772,7 +760,8 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
             {
                 LOGGER.trace( "getVariableFeatureByFeature( FeatureDetails={}, variableId={} ) getVariableFeatureID returned null, scripting...",
                               featureDetails, variableId );
-                DataScripter script = new DataScripter(  );
+                Database database = this.getDatabase();
+                DataScripter script = new DataScripter( database );
                 script.setHighPriority( true );
 
                 script.retryOnSerializationFailure();
@@ -801,7 +790,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
                 }
                 else if ( rowsModified < 1 )
                 {
-                    DataScripter scriptExistingId = new DataScripter();
+                    DataScripter scriptExistingId = new DataScripter( database );
                     scriptExistingId.addLine( "SELECT variablefeature_id" );
                     scriptExistingId.addLine( "FROM wres.VariableFeature VF" );
                     scriptExistingId.addLine( "WHERE VF.variable_id = ?" );
@@ -821,32 +810,6 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 
             return id;
         }
-    }
-
-    public static void addNHDPlusVariableFeatures(Integer variableId)
-            throws SQLException
-    {
-        DataScripter script = new DataScripter();
-
-        script.retryOnSerializationFailure();
-        script.retryOnUniqueViolation();
-
-        script.setUseTransaction( true );
-
-        script.addLine( "INSERT INTO wres.VariableFeature ( variable_id, feature_id )" );
-        script.addLine( "SELECT ?, F.feature_id" );
-        script.addArgument( variableId );
-        script.addLine( "FROM wres.Feature F" );
-        script.addLine( "WHERE F.comid IS NOT NULL" );
-        script.addTab().addLine( "AND F.comid != -999" );
-        script.addTab().addLine( "AND NOT EXISTS (" );
-        script.addTab(  2  ).addLine( "SELECT 1" );
-        script.addTab(  2  ).addLine( "FROM wres.VariableFeature VF" );
-        script.addTab(  2  ).addLine( "WHERE VF.variable_id = ?" );
-        script.addArgument( variableId );
-        script.addTab(   3   ).addLine( "AND VF.feature_id = F.feature_id" );
-        script.addTab().addLine(");");
-        script.execute();
     }
 
 	@Override

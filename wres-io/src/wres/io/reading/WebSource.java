@@ -53,10 +53,15 @@ import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.IngestSaver;
 import wres.io.config.ConfigHelper;
+import wres.io.data.caching.DataSources;
+import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
+import wres.io.data.caching.MeasurementUnits;
+import wres.io.data.caching.Variables;
 import wres.io.data.details.FeatureDetails;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
+import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
 
@@ -83,6 +88,13 @@ class WebSource implements Callable<List<IngestResult>>
             + "latest=\"2019-08-15T18:00:00Z\" />) "
             + "when using a web API as a source for observations.";
 
+    private final SystemSettings systemSettings;
+    private final Database database;
+    private final DataSources dataSourcesCache;
+    private final Features featuresCache;
+    private final Variables variablesCache;
+    private final Ensembles ensemblesCache;
+    private final MeasurementUnits measurementUnitsCache;
     private final ProjectConfig projectConfig;
     private final DataSource dataSource;
     private final DatabaseLockManager lockManager;
@@ -93,21 +105,49 @@ class WebSource implements Callable<List<IngestResult>>
     private final BlockingQueue<Future<List<IngestResult>>> ingests;
     private final CountDownLatch startGettingResults;
 
-    static WebSource of( ProjectConfig projectConfig,
+    static WebSource of( SystemSettings systemSettings,
+                         Database database,
+                         DataSources dataSourcesCache,
+                         Features featuresCache,
+                         Variables variablesCache,
+                         Ensembles ensemblesCache,
+                         MeasurementUnits measurementUnitsCache,
+                         ProjectConfig projectConfig,
                          DataSource dataSource,
                          DatabaseLockManager lockManager )
     {
-        return new WebSource( projectConfig,
+        return new WebSource( systemSettings,
+                              database,
+                              dataSourcesCache,
+                              featuresCache,
+                              variablesCache,
+                              ensemblesCache,
+                              measurementUnitsCache,
+                              projectConfig,
                               dataSource,
                               lockManager,
                               OffsetDateTime.now() );
     }
 
-    WebSource( ProjectConfig projectConfig,
+    WebSource( SystemSettings systemSettings,
+               Database database,
+               DataSources dataSourcesCache,
+               Features featuresCache,
+               Variables variablesCache,
+               Ensembles ensemblesCache,
+               MeasurementUnits measurementUnitsCache,
+               ProjectConfig projectConfig,
                DataSource dataSource,
                DatabaseLockManager lockManager,
                OffsetDateTime now )
     {
+        this.systemSettings = systemSettings;
+        this.database = database;
+        this.dataSourcesCache = dataSourcesCache;
+        this.featuresCache = featuresCache;
+        this.variablesCache = variablesCache;
+        this.ensemblesCache = ensemblesCache;
+        this.measurementUnitsCache = measurementUnitsCache;
         this.projectConfig = projectConfig;
         this.dataSource = dataSource;
         this.baseUri = dataSource.getSource()
@@ -125,14 +165,14 @@ class WebSource implements Callable<List<IngestResult>>
                 .namingPattern( "WebSource Ingest" )
                 .build();
 
-        int concurrentCount = SystemSettings.getMaximumWebClientThreads();
+        int concurrentCount = systemSettings.getMaximumWebClientThreads();
 
         // Because we use a latch and queue below, no need to make this queue
         // any larger than that queue and latch.
         BlockingQueue<Runnable> webClientQueue = new ArrayBlockingQueue<>( concurrentCount );
         this.ingestSaverExecutor = new ThreadPoolExecutor( concurrentCount,
                                                            concurrentCount,
-                                                           SystemSettings.poolObjectLifespan(),
+                                                           systemSettings.poolObjectLifespan(),
                                                            TimeUnit.MILLISECONDS,
                                                            webClientQueue,
                                                            webClientFactory );
@@ -148,6 +188,41 @@ class WebSource implements Callable<List<IngestResult>>
         this.startGettingResults = new CountDownLatch( concurrentCount );
         this.now = now;
         LOGGER.debug( "Created WebSource for {}", this.dataSource );
+    }
+
+    private SystemSettings getSystemSettings()
+    {
+        return this.systemSettings;
+    }
+
+    private Database getDatabase()
+    {
+        return this.database;
+    }
+
+    private DataSources getDataSourcesCache()
+    {
+        return this.dataSourcesCache;
+    }
+
+    private Features getFeaturesCache()
+    {
+        return this.featuresCache;
+    }
+
+    private Variables getVariablesCache()
+    {
+        return this.variablesCache;
+    }
+
+    private Ensembles getEnsemblesCache()
+    {
+        return this.ensemblesCache;
+    }
+
+    private MeasurementUnits getMeasurementUnitsCache()
+    {
+        return this.measurementUnitsCache;
     }
 
     private ProjectConfig getProjectConfig()
@@ -196,10 +271,11 @@ class WebSource implements Callable<List<IngestResult>>
         List<IngestResult> ingestResults = new ArrayList<>();
 
         Set<FeatureDetails> features;
+        Features featuresCache = this.getFeaturesCache();
 
         try
         {
-            features = Features.getAllDetails( this.getProjectConfig() );
+            features = featuresCache.getAllDetails( this.getProjectConfig() );
         }
         catch ( SQLException se )
         {
@@ -246,6 +322,13 @@ class WebSource implements Callable<List<IngestResult>>
 
                         IngestSaver ingestSaver =
                                 IngestSaver.createTask()
+                                           .withSystemSettings( this.getSystemSettings() )
+                                           .withDatabase( this.getDatabase() )
+                                           .withDataSourcesCache( this.getDataSourcesCache() )
+                                           .withFeaturesCache( this.getFeaturesCache() )
+                                           .withVariablesCache( this.getVariablesCache() )
+                                           .withEnsemblesCache( this.getEnsemblesCache() )
+                                           .withMeasurementUnitsCache( this.getMeasurementUnitsCache() )
                                            .withDataSource( dataSource )
                                            .withProject( this.getProjectConfig() )
                                            .withoutHash()
@@ -349,6 +432,13 @@ class WebSource implements Callable<List<IngestResult>>
 
                     IngestSaver ingestSaver =
                             IngestSaver.createTask()
+                                       .withSystemSettings( this.getSystemSettings() )
+                                       .withDatabase( this.getDatabase() )
+                                       .withDataSourcesCache( this.getDataSourcesCache() )
+                                       .withFeaturesCache( this.getFeaturesCache() )
+                                       .withVariablesCache( this.getVariablesCache() )
+                                       .withEnsemblesCache( this.getEnsemblesCache() )
+                                       .withMeasurementUnitsCache( this.getMeasurementUnitsCache() )
                                        .withDataSource( dataSource )
                                        .withProject( this.getProjectConfig() )
                                        .withoutHash()
@@ -1223,9 +1313,11 @@ class WebSource implements Callable<List<IngestResult>>
     private SortedSet<String> getAllKnownUsgsGageIds()
     {
         SortedSet<String> gageIds = new TreeSet<>();
+        Database database = this.getDatabase();
 
         // Avoiding regex in query due to dbms implementation differences.
-        DataScripter script = new DataScripter( "SELECT gage_id "
+        DataScripter script = new DataScripter( database,
+                                                "SELECT gage_id "
                                                 + "FROM wres.Feature "
                                                 + "WHERE CHARACTER_LENGTH( gage_id ) >= 8 " );
 

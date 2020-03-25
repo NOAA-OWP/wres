@@ -4,76 +4,55 @@ import java.net.URI;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Random;
 
-import com.mchange.v2.c3p0.ComboPooledDataSource;
+import com.zaxxer.hikari.HikariDataSource;
 import liquibase.database.Database;
 import liquibase.exception.LiquibaseException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PowerMockIgnore;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.mockito.MockitoAnnotations;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import wres.config.generated.ProjectConfig;
+import wres.io.concurrency.Executor;
 import wres.io.project.Project;
-import wres.system.DatabaseConnectionSupplier;
 import wres.io.utilities.TestDatabase;
 import wres.system.SystemSettings;
 
-@RunWith( PowerMockRunner.class)
-@PrepareForTest( { SystemSettings.class } )
-@PowerMockIgnore( { "javax.management.*", "java.io.*", "javax.xml.*", "com.sun.*", "org.xml.*" } )
 public class DetailsTest
 {
+    private static final Random random = new Random( 5 );
     private TestDatabase testDatabase;
-    private ComboPooledDataSource dataSource;
+    private HikariDataSource dataSource;
+    private @Mock SystemSettings mockSystemSettings;
+    private wres.io.utilities.Database wresDatabase;
+    private @Mock Executor mockExecutor;
     private Connection rawConnection;
-    private @Mock DatabaseConnectionSupplier mockConnectionSupplier;
     private Database liquibaseDatabase;
 
     @Before
     public void setup() throws Exception
     {
-        
-        // Previously, this used a test database and connection pool per class, 
-        // rather than per test. This was due to issues with one or more layers, 
-        // such as c3p0 or the H2 driver, but there were updates to these 
-        // dependencies after the earlier observations. As of this changeset, it 
-        // works. See #56214-92 ish for more
-        this.testDatabase = new TestDatabase( "DetailsTest" );
-        
-        this.dataSource = this.testDatabase.getNewComboPooledDataSource();
-        
-        // Also mock a plain datasource (which works per test unlike c3p0)
+        MockitoAnnotations.initMocks( this );
+        this.testDatabase = new TestDatabase( "DetailsTest" + random.nextLong() );
         this.rawConnection = DriverManager.getConnection( this.testDatabase.getJdbcString() );
-        Mockito.when( this.mockConnectionSupplier.get() ).thenReturn( this.rawConnection );
+        this.dataSource = this.testDatabase.getNewHikariDataSource();
 
         // Set up a bare bones database with only the schema
         this.testDatabase.createWresSchema( this.rawConnection );
 
-        // Substitute raw connection where needed:
-        PowerMockito.mockStatic( SystemSettings.class );
-        PowerMockito.when( SystemSettings.class, "getRawDatabaseConnection" )
-                    .thenReturn( this.rawConnection );
+        Mockito.when( mockSystemSettings.getConnectionPool() )
+               .thenReturn( this.dataSource );
+        Mockito.when( mockSystemSettings.getHighPriorityConnectionPool() )
+               .thenReturn( this.dataSource );
 
-        PowerMockito.whenNew( DatabaseConnectionSupplier.class )
-                    .withNoArguments()
-                    .thenReturn( this.mockConnectionSupplier );
-
-        // Substitute our H2 connection pool for both pools:
-        PowerMockito.when( SystemSettings.class, "getConnectionPool" )
-                    .thenReturn( this.dataSource );
-        PowerMockito.when( SystemSettings.class, "getHighPriorityConnectionPool" )
-                    .thenReturn( this.dataSource );
-
+        this.wresDatabase = new wres.io.utilities.Database( this.mockSystemSettings );
         // Set up a liquibase database to run migrations against.
         this.liquibaseDatabase = this.testDatabase.createNewLiquibaseDatabase( this.rawConnection );        
     }
@@ -89,7 +68,7 @@ public class DetailsTest
                                                                      null,
                                                                      "abc123" );
         SourceDetails sourceDetails = new SourceDetails( sourceKey );
-        sourceDetails.save();
+        sourceDetails.save( this.wresDatabase );
         assertTrue( "Expected source details to have performed insert.",
                     sourceDetails.performedInsert() );
         assertNotNull( "Expected the id of the source to be non-null",
@@ -106,7 +85,10 @@ public class DetailsTest
         // Add the project table
         this.testDatabase.createProjectTable( this.liquibaseDatabase );
 
-        Project project = new Project( new ProjectConfig( null, null, null, null, null, null ),
+        Project project = new Project( this.mockSystemSettings,
+                                       this.wresDatabase,
+                                       this.mockExecutor,
+                                       new ProjectConfig( null, null, null, null, null, null ),
                                                      321 );
         project.save();
         assertTrue( "Expected project details to have performed insert.",
@@ -125,6 +107,8 @@ public class DetailsTest
         this.testDatabase.dropWresSchema( this.rawConnection );
         this.rawConnection.close();
         this.rawConnection = null;
+        this.dataSource.close();
+        this.dataSource = null;
     }
 
 }

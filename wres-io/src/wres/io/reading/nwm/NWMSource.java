@@ -20,8 +20,10 @@ import wres.io.data.details.SourceDetails;
 import wres.io.reading.BasicSource;
 import wres.io.reading.DataSource;
 import wres.io.reading.IngestResult;
+import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
 import wres.system.ProgressMonitor;
+import wres.system.SystemSettings;
 import wres.util.NetCDF;
 
 /**
@@ -33,23 +35,50 @@ public class NWMSource extends BasicSource
     private static final Logger LOGGER = LoggerFactory.getLogger(NWMSource.class);
     private static final int MAXIMUM_OPEN_ATTEMPTS = 5;
 
+    private final SystemSettings systemSettings;
+    private final Database database;
+    private final DataSources dataSourcesCache;
     private final DatabaseLockManager lockManager;
 
     private boolean alreadyFound;
 
 	/**
      *
+     * @param systemSettings The system settings to use.
+     * @param database The database to use.
+     * @param dataSourcesCache The data sources cache to use.
      * @param projectConfig the ProjectConfig causing ingest
 	 * @param dataSource the data source information
      * @param lockManager The lock manager to use.
 	 */
-	public NWMSource( ProjectConfig projectConfig,
+	public NWMSource( SystemSettings systemSettings,
+                      Database database,
+                      DataSources dataSourcesCache,
+                      ProjectConfig projectConfig,
                       DataSource dataSource,
                       DatabaseLockManager lockManager )
     {
         super( projectConfig, dataSource );
+        this.systemSettings = systemSettings;
+        this.database = database;
+        this.dataSourcesCache = dataSourcesCache;
         this.lockManager = lockManager;
 	}
+
+	private SystemSettings getSystemSettings()
+    {
+        return this.systemSettings;
+    }
+
+	private Database getDatabase()
+    {
+        return this.database;
+    }
+
+    private DataSources getDataSourcesCache()
+    {
+        return this.dataSourcesCache;
+    }
 
 	@Override
 	public List<IngestResult> save() throws IOException
@@ -100,9 +129,13 @@ public class NWMSource extends BasicSource
 			if(NetCDF.isGridded( var ))
             {
                 Integer gridProjectionId;
+                SystemSettings systemSettings = this.getSystemSettings();
+                Database database = this.getDatabase();
                 try
                 {
-                    gridProjectionId = GridManager.addGrid( source );
+                    gridProjectionId = GridManager.addGrid( systemSettings,
+                                                            database,
+                                                            source );
                 }
                 catch ( SQLException e )
                 {
@@ -117,7 +150,8 @@ public class NWMSource extends BasicSource
 
                 try
                 {
-                    SourceDetails sourceDetails = DataSources.getExistingSource( hash );
+                    DataSources dataSources = this.getDataSourcesCache();
+                    SourceDetails sourceDetails = dataSources.getExistingSource( hash );
 
                     if(sourceDetails != null && Files.exists( Paths.get( sourceDetails.getSourcePath()) ))
                     {
@@ -126,7 +160,7 @@ public class NWMSource extends BasicSource
                         //this.setFilename( sourceDetails.getSourcePath() );
                         this.alreadyFound = true;
                         SourceCompletedDetails completedDetails =
-                                new SourceCompletedDetails( sourceDetails );
+                                new SourceCompletedDetails( database, sourceDetails );
                         boolean completed = completedDetails.wasCompleted();
                         return IngestResult.singleItemListFrom( this.getProjectConfig(),
                                                                 this.getDataSource(),
@@ -140,7 +174,9 @@ public class NWMSource extends BasicSource
                     throw new IOException( "Could not check to see if gridded data is already present.", e );
                 }
 
-                saver = new GriddedNWMValueSaver( this.getProjectConfig(),
+                saver = new GriddedNWMValueSaver( systemSettings,
+                                                  database,
+                                                  this.getProjectConfig(),
                                                   this.getDataSource(),
                                                   hash,
                                                   gridProjectionId );

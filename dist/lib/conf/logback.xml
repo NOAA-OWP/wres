@@ -49,10 +49,6 @@
         </encoder>
     </appender>
 
-    <!-- Quiet the connection pooling library with level "warn" or "error" -->
-    <logger name="com.mchange.v2">
-        <level value="error" />
-    </logger>
 
     <!-- Quiet the cdm hdf5 library until it is quieter by default -->
     <logger name="ucar.nc2.iosp.hdf5">
@@ -73,6 +69,11 @@
 
     <!-- Quiet liquibase with level "warn" or "error" -->
     <logger name="liquibase">
+        <level value="warn" />
+    </logger>
+
+    <!-- Quiet H2 logs with level "warn" or "error" -->
+    <logger name="h2database">
         <level value="warn" />
     </logger>
 

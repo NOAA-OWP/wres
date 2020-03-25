@@ -262,7 +262,8 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
 
     private Request getRequest() throws SQLException
     {
-        DataScripter scripter = new DataScripter( this.script );
+        DataScripter scripter = new DataScripter( this.getDatabase(),
+                                                  this.script );
 
         if ( LOGGER.isDebugEnabled() )
         {

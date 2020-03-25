@@ -134,7 +134,7 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
                       this.duplicatePolicy );
 
         this.individualAnalysisRetriever =
-                new SingleValuedForecastRetriever.Builder()
+                new SingleValuedForecastRetriever.Builder().setDatabase( super.getDatabase() )
                                                            .setProjectId( super.getProjectId() )
                                                            .setDeclaredExistingTimeScale( super.getDeclaredExistingTimeScale() )
                                                            .setDesiredTimeScale( super.getDesiredTimeScale() )

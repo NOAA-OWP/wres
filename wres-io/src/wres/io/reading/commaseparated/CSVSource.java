@@ -32,7 +32,9 @@ import wres.io.reading.IngestResult;
 import wres.io.reading.IngestedValues;
 import wres.io.reading.SourceCompleter;
 import wres.io.utilities.DataProvider;
+import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
+import wres.system.SystemSettings;
 import wres.util.LRUContainer;
 import wres.util.Strings;
 import wres.util.TimeHelper;
@@ -46,6 +48,13 @@ public class CSVSource extends BasicSource
 
     private static final int TIME_SERIES_LIMIT = 60;
 
+    private final SystemSettings systemSettings;
+    private final Database database;
+    private final DataSources dataSourcesCache;
+    private final Features featuresCache;
+    private final Variables variablesCache;
+    private final Ensembles ensemblesCache;
+    private final MeasurementUnits measurementUnitsCache;
     private final DatabaseLockManager lockManager;
     private final Set<Pair<CountDownLatch,CountDownLatch>> latches = new HashSet<>();
     private final Set<String> unconfiguredVariableNames = new HashSet<>( 1 );
@@ -58,16 +67,72 @@ public class CSVSource extends BasicSource
 
     /**
      * Constructor that sets the filename
+     * @param systemSettings The system settings to use.
+     * @param database The database to use.
+     * @param dataSourcesCache The data sources cache to use.
+     * @param featuresCache The features cache to use.
+     * @param variablesCache The variables cache to use.
+     * @param ensemblesCache The ensembles cache to use.
+     * @param measurementUnitsCache The measurement units cache to use.
      * @param projectConfig the ProjectConfig causing ingest
      * @param dataSource the data source information
      * @param lockManager The lock manager to use.
      */
-    public CSVSource( ProjectConfig projectConfig,
+    public CSVSource( SystemSettings systemSettings,
+                      Database database,
+                      DataSources dataSourcesCache,
+                      Features featuresCache,
+                      Variables variablesCache,
+                      Ensembles ensemblesCache,
+                      MeasurementUnits measurementUnitsCache,
+                      ProjectConfig projectConfig,
                       DataSource dataSource,
                       DatabaseLockManager lockManager )
     {
         super( projectConfig, dataSource );
+        this.systemSettings = systemSettings;
+        this.database = database;
+        this.dataSourcesCache = dataSourcesCache;
+        this.featuresCache = featuresCache;
+        this.variablesCache = variablesCache;
+        this.ensemblesCache = ensemblesCache;
+        this.measurementUnitsCache = measurementUnitsCache;
         this.lockManager = lockManager;
+    }
+
+    private SystemSettings getSystemSettings()
+    {
+        return this.systemSettings;
+    }
+
+    private Database getDatabase()
+    {
+        return this.database;
+    }
+
+    private DataSources getDataSourcesCache()
+    {
+        return this.dataSourcesCache;
+    }
+
+    private Features getFeaturesCache()
+    {
+        return this.featuresCache;
+    }
+
+    private Variables getVariablesCache()
+    {
+        return this.variablesCache;
+    }
+
+    private Ensembles getEnsemblesCache()
+    {
+        return this.ensemblesCache;
+    }
+
+    private MeasurementUnits getMeasurementUnitsCache()
+    {
+        return this.measurementUnitsCache;
     }
 
     @Override
@@ -82,6 +147,7 @@ public class CSVSource extends BasicSource
             throw new IOException( "Metadata about the file at '" + this.getFilename() + "' could not be created.", e );
         }
 
+        Database database = this.getDatabase();
         boolean sourceCompleted;
 
         if (sourceDetails.performedInsert())
@@ -117,14 +183,16 @@ public class CSVSource extends BasicSource
             }
 
             this.parseObservations( data );
-            SourceCompleter sourceCompleter = new SourceCompleter( sourceDetails.getId(),
+            SourceCompleter sourceCompleter = new SourceCompleter( this.getDatabase(),
+                                                                   sourceDetails.getId(),
                                                                    this.lockManager );
             sourceCompleter.complete( this.latches );
             sourceCompleted = true;
         }
         else
         {
-            sourceCompleted = this.wasCompleted( this.sourceDetails );
+            sourceCompleted = this.wasCompleted( database,
+                                                 this.sourceDetails );
         }
 
         if ( !this.unconfiguredVariableNames.isEmpty() )
@@ -160,6 +228,7 @@ public class CSVSource extends BasicSource
             throw new IOException( "Metadata about the file at '" + this.getFilename() + "' could not be created.", e );
         }
 
+        Database database = this.getDatabase();
         boolean sourceCompleted;
 
         if (sourceDetails.performedInsert())
@@ -199,14 +268,16 @@ public class CSVSource extends BasicSource
             }
 
             parseTimeSeries( data );
-            SourceCompleter sourceCompleter = new SourceCompleter( sourceDetails.getId(),
+            SourceCompleter sourceCompleter = new SourceCompleter( this.getDatabase(),
+                                                                   sourceDetails.getId(),
                                                                    this.lockManager );
             sourceCompleter.complete( this.latches );
             sourceCompleted = true;
         }
         else
         {
-            sourceCompleted = this.wasCompleted( this.sourceDetails );
+            sourceCompleted = this.wasCompleted( database,
+                                                 this.sourceDetails );
         }
 
         if ( !this.unconfiguredVariableNames.isEmpty() )
@@ -245,7 +316,9 @@ public class CSVSource extends BasicSource
                 currentTimeSeries = formTimeSeries( data, ensembleId);
 
                 Pair<CountDownLatch,CountDownLatch> synchronizer =
-                        IngestedValues.addTimeSeriesValue( currentTimeSeries.getTimeSeriesID(),
+                        IngestedValues.addTimeSeriesValue( this.getSystemSettings(),
+                                                           this.getDatabase(),
+                                                           currentTimeSeries.getTimeSeriesID(),
                                                            lead,
                                                            value );
                 this.latches.add( synchronizer );
@@ -278,7 +351,8 @@ public class CSVSource extends BasicSource
             ensembleMemberID = data.getInt("ensemblemember_id");
         }
 
-        return Ensembles.getEnsembleID(ensembleName, ensembleMemberID, qualifierID);
+        Ensembles ensembles = this.getEnsemblesCache();
+        return ensembles.getEnsembleID(ensembleName, ensembleMemberID, qualifierID);
     }
 
     private void parseObservations(final DataProvider data) throws IOException
@@ -294,10 +368,11 @@ public class CSVSource extends BasicSource
             String location = data.getString( "location" );
             String measurementUnit = data.getString( "measurement_unit" );
             Integer measurementUnitId;
+            MeasurementUnits measurementUnits = this.getMeasurementUnitsCache();
 
             try
             {
-                measurementUnitId = MeasurementUnits.getMeasurementUnitID( measurementUnit );
+                measurementUnitId = measurementUnits.getMeasurementUnitID( measurementUnit );
             }
             catch ( SQLException e )
             {
@@ -306,12 +381,14 @@ public class CSVSource extends BasicSource
             }
 
             Integer variableFeatureId;
+            Features features = this.getFeaturesCache();
+            Variables variables = this.getVariablesCache();
 
             try
             {
-                variableFeatureId = Features.getVariableFeatureIDByLID(
+                variableFeatureId = features.getVariableFeatureIDByLID(
                         location,
-                        Variables.getVariableID(variable)
+                        variables.getVariableID(variable)
                 );
             }
             catch ( SQLException e )
@@ -328,7 +405,7 @@ public class CSVSource extends BasicSource
                                   .measuredIn( measurementUnitId )
                                   .forVariableAndFeatureID( variableFeatureId )
                                   .inSource( this.sourceDetails.getId() )
-                                  .add();
+                                  .add( this.systemSettings, this.database );
             this.latches.add( synchronizer );
         }
     }
@@ -479,9 +556,12 @@ public class CSVSource extends BasicSource
         final String measurementUnit = data.getString( "measurement_unit" );
         final String startDate = data.getInstant( "start_date" ).toString();
 
-        final Integer variableFeatureId = Features.getVariableFeatureIDByLID(
+        Features features = this.getFeaturesCache();
+        Variables variables = this.getVariablesCache();
+
+        final Integer variableFeatureId = features.getVariableFeatureIDByLID(
                 location,
-                Variables.getVariableID(variable)
+                variables.getVariableID(variable)
         );
 
         TimeSeries timeSeries = this.encounteredTimeSeries.get(
@@ -496,14 +576,16 @@ public class CSVSource extends BasicSource
         }
 
         timeSeries = new TimeSeries(
+                database,
                 this.sourceDetails.getId(),
                 startDate
         );
 
         timeSeries.setEnsembleID(ensembleId);
 
+        MeasurementUnits measurementUnits = this.getMeasurementUnitsCache();
         timeSeries.setMeasurementUnitID(
-                MeasurementUnits.getMeasurementUnitID(measurementUnit)
+                measurementUnits.getMeasurementUnitID(measurementUnit)
         );
 
         timeSeries.setVariableFeatureID( variableFeatureId );
@@ -532,9 +614,11 @@ public class CSVSource extends BasicSource
                                                                          sourceTime.toString(),
                                                                          null,
                                                                          this.getHash() );
+        Database database = this.getDatabase();
+        DataSources dataSources = this.getDataSourcesCache();
 
         // Is it in the application cache?
-        boolean isInCache = DataSources.isCached( sourceKey );
+        boolean isInCache = dataSources.isCached( sourceKey );
 
         SourceDetails returnMe = null;
 
@@ -544,7 +628,7 @@ public class CSVSource extends BasicSource
             returnMe = new SourceDetails( sourceKey );
 
             // Attempt to save the source details to the database
-            returnMe.save();
+            returnMe.save( database );
 
             // If we saved, then we should update the application cache
             if ( returnMe.performedInsert() )
@@ -552,7 +636,7 @@ public class CSVSource extends BasicSource
                 LOGGER.trace( "Could not find CSV source '{}' in the cache. Adding...", returnMe );
 
                 // Cache
-                DataSources.put( returnMe );
+                dataSources.put( returnMe );
 
                 LOGGER.trace( "Added CSV source '{}' to the cache.", returnMe );
             }
@@ -560,7 +644,7 @@ public class CSVSource extends BasicSource
         // Yes, it's in the application cache, so return from there
         else
         {
-            returnMe = DataSources.get( this.getFilename(), sourceTime.toString(), null, this.getHash() );
+            returnMe = dataSources.get( this.getFilename(), sourceTime.toString(), null, this.getHash() );
         }
 
         return returnMe;
@@ -573,10 +657,12 @@ public class CSVSource extends BasicSource
      * @return true if the source has been marked as completed, false otherwise
      */
 
-    private boolean wasCompleted( SourceDetails sourceDetails )
+    private boolean wasCompleted( Database database,
+                                  SourceDetails sourceDetails )
             throws IngestException
     {
-        SourceCompletedDetails completed = new SourceCompletedDetails( sourceDetails );
+        SourceCompletedDetails completed = new SourceCompletedDetails( database,
+                                                                       sourceDetails );
 
         try
         {

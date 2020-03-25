@@ -5,29 +5,27 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Future;
 
+import com.zaxxer.hikari.HikariDataSource;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
+import org.mockito.Spy;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.model.HttpStatusCode;
 import org.mockserver.verify.VerificationTimes;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PowerMockIgnore;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -42,12 +40,14 @@ import wres.config.generated.Feature;
 import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
+import wres.io.concurrency.WRESCallable;
 import wres.io.config.LeftOrRightOrBaseline;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
+import wres.io.data.details.FeatureDetails;
 import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
 import wres.io.data.details.TimeSeries;
@@ -57,15 +57,9 @@ import wres.io.reading.PreIngestException;
 import wres.io.reading.SourceCompleter;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.Database;
-import wres.system.DatabaseConnectionSupplier;
 import wres.system.DatabaseLockManager;
+import wres.system.SystemSettings;
 
-
-@RunWith( PowerMockRunner.class )
-@PrepareForTest( { DataSources.class, Ensembles.class, MeasurementUnits.class,
-                         Database.class, Variables.class, Features.class, TimeSeries.class } )
-// See https://github.com/powermock/powermock/issues/864
-@PowerMockIgnore( {"javax.management.*", "com.sun.org.apache.xerces.*", "javax.xml.*", "org.xml.*", "javax.net.*" } )
 public class WRDSSourceTest
 {
     private static ClientAndServer mockServer;
@@ -3338,16 +3332,26 @@ public class WRDSSourceTest
     private static final int FAKE_VARIABLE_ID = 5171;
     private static final int FAKE_FEATURE_ID = 5351;
     private static final int FAKE_TIMESERIES_ID = 5507;
+    private static final int FAKE_VARIABLEFEATURE_ID = 5519;
+    private static final int FAKE_SOURCE_ID = 5521;
 
 
-    @Mock
-    DatabaseLockManager fakeLockManager;
-    @Mock
-    SourceCompletedDetails mockSourceCompletedDetails;
-    @Mock
-    SourceCompleter mockSourceCompleter;
-    @Mock
-    SourceDetails mockSourceDetails;
+    @Mock private SystemSettings mockSystemSettings;
+    @Mock private Database mockDatabase;
+    @Mock private DataSources mockDataSourcesCache;
+    @Mock private Features mockFeaturesCache;
+    @Mock private Variables mockVariablesCache;
+    @Mock private Ensembles mockEnsemblesCache;
+    @Mock private MeasurementUnits mockMeasurementUnitsCache;
+    @Mock private DatabaseLockManager fakeLockManager;
+    @Mock private Future<IngestResult> mockFutureIngestResult;
+    @Mock private IngestResult mockIngestResult;
+    @Mock private TimeSeries mockTimeSeries;
+    @Mock private SourceCompletedDetails mockSourceCompletedDetails;
+    @Mock private SourceCompleter mockSourceCompleter;
+    @Mock private SourceDetails mockSourceDetails;
+    @Spy private FeatureDetails spyFeatureDetails;
+    @Mock private HikariDataSource mockHikariDataSource;
 
     @BeforeClass
     public static void createFakeServer()
@@ -3358,20 +3362,26 @@ public class WRDSSourceTest
     @Before
     public void beforeTest() throws Exception
     {
+        MockitoAnnotations.initMocks( this );
         // Needed only if there are more @Tests added:
         //WRDSSourceTest.mockServer.reset();
 
         DataProvider mockDataProvider;
-        DatabaseConnectionSupplier mockDatabaseConnectionSupplier;
+
+        Mockito.doNothing()
+               .when( this.spyFeatureDetails )
+               .save( this.mockDatabase );
+
+        Mockito.doReturn( FAKE_FEATURE_ID )
+               .when( this.spyFeatureDetails )
+               .getId();
 
         when( mockSourceDetails.performedInsert() ).thenReturn( true );
-        PowerMockito.mockStatic( DataSources.class );
-        Mockito.when( DataSources.get( any( URI.class ),
-                                       anyString(),
-                                       any(),
-                                       anyString() ) )
+        Mockito.when( this.mockDataSourcesCache.get( any( URI.class ),
+                                                     anyString(),
+                                                     any(),
+                                                     anyString() ) )
                .thenReturn( mockSourceDetails );
-
 
         Mockito.doNothing()
                .when( this.mockSourceCompletedDetails )
@@ -3379,44 +3389,37 @@ public class WRDSSourceTest
         Mockito.when( this.mockSourceCompletedDetails.wasCompleted() )
                .thenReturn( true );
 
+        Mockito.when( this.mockSourceDetails.getId() )
+               .thenReturn( FAKE_SOURCE_ID );
 
-        PowerMockito.mockStatic( Ensembles.class );
-        Mockito.when( Ensembles.getDefaultEnsembleID() )
+        Mockito.when( this.mockEnsemblesCache.getDefaultEnsembleID() )
                .thenReturn( FAKE_ENSEMBLE_ID );
 
-        PowerMockito.mockStatic( MeasurementUnits.class );
-        Mockito.when( MeasurementUnits.getMeasurementUnitID( anyString() ) )
+        Mockito.when( this.mockMeasurementUnitsCache.getMeasurementUnitID( anyString() ) )
                .thenReturn( FAKE_MEASUREMENT_ID );
-
-        mockDatabaseConnectionSupplier = mock( DatabaseConnectionSupplier.class );
-        PowerMockito.whenNew( DatabaseConnectionSupplier.class )
-                    .withNoArguments()
-                    .thenReturn( mockDatabaseConnectionSupplier );
 
         mockDataProvider = mock( DataProvider.class );
         Mockito.when( mockDataProvider.isEmpty() )
                .thenReturn( false );
-        PowerMockito.mockStatic( Database.class );
+        Mockito.when( this.mockSystemSettings.getConnectionPool() )
+               .thenReturn( this.mockHikariDataSource );
+        Mockito.when( this.mockSystemSettings.getHighPriorityConnectionPool() )
+                    .thenReturn( this.mockHikariDataSource );
+        Mockito.when( this.mockHikariDataSource.getMaximumPoolSize() )
+               .thenReturn( 1 );
 
-        PowerMockito.when(
-                Database.class,
-                "getData",
-                any(),
-                anyBoolean()
-        ).thenReturn( mockDataProvider );
+        Mockito.when( this.mockDatabase.ingest( any( WRESCallable.class ) ) )
+               .thenReturn( this.mockFutureIngestResult );
+        Mockito.when( this.mockFutureIngestResult.get() )
+               .thenReturn( this.mockIngestResult );
+        Mockito.when( this.mockTimeSeries.getTimeSeriesID() )
+               .thenReturn( FAKE_TIMESERIES_ID );
 
-        PowerMockito.mock( TimeSeries.class );
-        PowerMockito.stub(
-                PowerMockito.method( TimeSeries.class, "getTimeSeriesID" )
-        ).toReturn( FAKE_TIMESERIES_ID );
-
-        PowerMockito.mockStatic( Variables.class );
-        Mockito.when( Variables.getVariableID( anyString() ) )
+        Mockito.when( this.mockVariablesCache.getVariableID( anyString() ) )
                .thenReturn( FAKE_VARIABLE_ID );
-
-        PowerMockito.mockStatic( Features.class );
-        Mockito.when( Features.getVariableFeatureByFeature( any(), eq( FAKE_VARIABLE_ID ) ) )
-               .thenReturn( FAKE_FEATURE_ID );
+        Mockito.when( this.mockFeaturesCache.getVariableFeatureByFeature( any(),
+                                                                          eq( FAKE_VARIABLE_ID ) ) )
+               .thenReturn( FAKE_VARIABLEFEATURE_ID );
     }
 
     @Test
@@ -3508,17 +3511,32 @@ public class WRDSSourceTest
         // Spy seems needed to make new instances within the classes under test.
         // See https://github.com/mockito/mockito/wiki/Mocking-Object-Creation
         WRDSSource wrdsSource = Mockito.spy(
-                new WRDSSource( projectConfig,
+                new WRDSSource( this.mockSystemSettings,
+                                this.mockDatabase,
+                                this.mockDataSourcesCache,
+                                this.mockFeaturesCache,
+                                this.mockVariablesCache,
+                                this.mockEnsemblesCache,
+                                this.mockMeasurementUnitsCache,
+                                projectConfig,
                                 dataSource,
                                 this.fakeLockManager ) );
 
         ReadValueManager readValueManager = Mockito.spy(
-                new ReadValueManager( projectConfig,
+                new ReadValueManager( this.mockSystemSettings,
+                                      this.mockDatabase,
+                                      this.mockDataSourcesCache,
+                                      this.mockFeaturesCache,
+                                      this.mockVariablesCache,
+                                      this.mockEnsemblesCache,
+                                      this.mockMeasurementUnitsCache,
+                                      projectConfig,
                                       dataSource,
                                       this.fakeLockManager ) );
         Mockito.doReturn( this.mockSourceCompleter )
                .when( readValueManager )
-               .createSourceCompleter( 0, this.fakeLockManager );
+               .createSourceCompleter( this.mockDatabase, FAKE_SOURCE_ID, this.fakeLockManager );
+
         Mockito.doReturn( this.mockSourceDetails )
                .when( readValueManager )
                .createSourceDetails( any( SourceDetails.SourceKey.class ) );
@@ -3527,6 +3545,13 @@ public class WRDSSourceTest
                .createReadValueManager( projectConfig,
                                         dataSource,
                                         this.fakeLockManager );
+
+        Mockito.doReturn( this.spyFeatureDetails )
+               .when( readValueManager )
+               .createFeatureDetails();
+        Mockito.doReturn( this.mockTimeSeries )
+               .when( readValueManager )
+               .createTimeSeries( any(), anyInt(), any() );
 
         List<IngestResult> ingestResults = wrdsSource.save();
 
@@ -3644,26 +3669,45 @@ public class WRDSSourceTest
         // Spy seems needed to make new instances within the classes under test.
         // See https://github.com/mockito/mockito/wiki/Mocking-Object-Creation
         WRDSSource wrdsSource = Mockito.spy(
-                new WRDSSource( projectConfig,
+                new WRDSSource( this.mockSystemSettings,
+                                this.mockDatabase,
+                                this.mockDataSourcesCache,
+                                this.mockFeaturesCache,
+                                this.mockVariablesCache,
+                                this.mockEnsemblesCache,
+                                this.mockMeasurementUnitsCache,
+                                projectConfig,
                                 dataSource,
                                 this.fakeLockManager ) );
 
         ReadValueManager readValueManager = Mockito.spy(
-                new ReadValueManager( projectConfig,
+                new ReadValueManager( this.mockSystemSettings,
+                                      this.mockDatabase,
+                                      this.mockDataSourcesCache,
+                                      this.mockFeaturesCache,
+                                      this.mockVariablesCache,
+                                      this.mockEnsemblesCache,
+                                      this.mockMeasurementUnitsCache,
+                                      projectConfig,
                                       dataSource,
                                       this.fakeLockManager ) );
         Mockito.doReturn( this.mockSourceCompleter )
                .when( readValueManager )
-               .createSourceCompleter( 0, this.fakeLockManager );
+               .createSourceCompleter( this.mockDatabase, FAKE_SOURCE_ID, this.fakeLockManager );
         Mockito.doReturn( this.mockSourceDetails )
                .when( readValueManager )
                .createSourceDetails( any( SourceDetails.SourceKey.class ) );
-
         Mockito.doReturn( readValueManager )
                .when( wrdsSource )
                .createReadValueManager( projectConfig,
                                         dataSource,
                                         this.fakeLockManager );
+        Mockito.doReturn( this.spyFeatureDetails )
+               .when( readValueManager )
+               .createFeatureDetails();
+        Mockito.doReturn( this.mockTimeSeries )
+               .when( readValueManager )
+               .createTimeSeries( any(), anyInt(), any() );
 
         List<IngestResult> ingestResults = wrdsSource.save();
 
@@ -3770,13 +3814,31 @@ public class WRDSSourceTest
                                                fakeAhpsUri );
 
         WRDSSource wrdsSource = Mockito.spy(
-                new WRDSSource( projectConfig,
+                new WRDSSource( this.mockSystemSettings,
+                                this.mockDatabase,
+                                this.mockDataSourcesCache,
+                                this.mockFeaturesCache,
+                                this.mockVariablesCache,
+                                this.mockEnsemblesCache,
+                                this.mockMeasurementUnitsCache,
+                                projectConfig,
                                 dataSource,
                                 this.fakeLockManager ) );
         ReadValueManager readValueManager = Mockito.spy(
-                new ReadValueManager( projectConfig,
+                new ReadValueManager( this.mockSystemSettings,
+                                      this.mockDatabase,
+                                      this.mockDataSourcesCache,
+                                      this.mockFeaturesCache,
+                                      this.mockVariablesCache,
+                                      this.mockEnsemblesCache,
+                                      this.mockMeasurementUnitsCache,
+                                      projectConfig,
                                       dataSource,
                                       this.fakeLockManager ) );
+
+        Mockito.doReturn( this.spyFeatureDetails )
+               .when( readValueManager )
+               .createFeatureDetails();
         Mockito.doReturn( this.mockSourceDetails )
                .when( readValueManager )
                .createSourceDetails( any( SourceDetails.SourceKey.class ) );
@@ -3884,20 +3946,37 @@ public class WRDSSourceTest
                                                        LeftOrRightOrBaseline.RIGHT ),
                                                fakeAhpsUri );
         ReadValueManager readValueManager = Mockito.spy(
-                new ReadValueManager( projectConfig,
+                new ReadValueManager( this.mockSystemSettings,
+                                      this.mockDatabase,
+                                      this.mockDataSourcesCache,
+                                      this.mockFeaturesCache,
+                                      this.mockVariablesCache,
+                                      this.mockEnsemblesCache,
+                                      this.mockMeasurementUnitsCache,
+                                      projectConfig,
                                       dataSource,
                                       this.fakeLockManager ) );
         Mockito.doReturn( this.mockSourceCompletedDetails )
                .when( readValueManager )
-               .createSourceCompletedDetails( any( SourceDetails.class ) );
+               .createSourceCompletedDetails( any( Database.class ),
+                                              any( SourceDetails.class ) );
         Mockito.doReturn( this.mockSourceCompleter )
                .when( readValueManager )
-               .createSourceCompleter( anyInt(), any( DatabaseLockManager.class ) );
+               .createSourceCompleter( any( Database.class ),
+                                       anyInt(),
+                                       any( DatabaseLockManager.class ) );
         Mockito.doReturn( this.mockSourceDetails )
                .when( readValueManager )
                .createSourceDetails( any( SourceDetails.SourceKey.class ) );
         WRDSSource wrdsSource = Mockito.spy(
-                new WRDSSource( projectConfig,
+                new WRDSSource( this.mockSystemSettings,
+                                this.mockDatabase,
+                                this.mockDataSourcesCache,
+                                this.mockFeaturesCache,
+                                this.mockVariablesCache,
+                                this.mockEnsemblesCache,
+                                this.mockMeasurementUnitsCache,
+                                projectConfig,
                                 dataSource,
                                 this.fakeLockManager ) );
         Mockito.doReturn( readValueManager )

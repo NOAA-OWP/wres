@@ -51,7 +51,6 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.scale.TimeScale;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
-import wres.io.config.ConfigHelper;
 import wres.system.SystemSettings;
 import wres.util.Collections;
 import wres.util.Strings;
@@ -102,11 +101,13 @@ public class Validation
      * for now, i.e. return false even on minor xml problems. Does not return on
      * first issue, tries to inform the user of all issues before returning.
      *
+     * @param systemSettings The system settings to use.
      * @param projectConfigPlus the project configuration
      * @return true if no issues were detected, false otherwise
      */
 
-    public static boolean isProjectValid( ProjectConfigPlus projectConfigPlus )
+    public static boolean isProjectValid( SystemSettings systemSettings,
+                                          ProjectConfigPlus projectConfigPlus )
     {
         // Assume valid until demonstrated otherwise
         boolean result = true;
@@ -147,7 +148,8 @@ public class Validation
         result = Validation.isPairConfigValid( projectConfigPlus ) && result;
         
         // Validate metrics section
-        result = Validation.isMetricsConfigValid( projectConfigPlus ) && result;        
+        result = Validation.isMetricsConfigValid( systemSettings,
+                                                  projectConfigPlus ) && result;
         
         // Validate outputs section
         result = Validation.isOutputConfigValid( projectConfigPlus ) && result;
@@ -167,7 +169,8 @@ public class Validation
      * @throws NullPointerException when projectConfigPlus is null
      */
 
-    private static boolean isMetricsConfigValid( ProjectConfigPlus projectConfigPlus )
+    private static boolean isMetricsConfigValid( SystemSettings systemSettings,
+                                                 ProjectConfigPlus projectConfigPlus )
     {
         Objects.requireNonNull( projectConfigPlus, NON_NULL );
 
@@ -178,7 +181,8 @@ public class Validation
         result = result && Validation.isAllMetricsConfigConsistentWithOtherConfig( projectConfigPlus );
 
         // Check that any external thresholds refer to readable files
-        result = result && Validation.areAllPathsToThresholdsReadable( projectConfigPlus );
+        result = result && Validation.areAllPathsToThresholdsReadable( systemSettings,
+                                                                       projectConfigPlus );
         
         return result;
     }    
@@ -450,7 +454,8 @@ public class Validation
      * @throws NullPointerException when projectConfigPlus is null
      */
 
-    private static boolean areAllPathsToThresholdsReadable( ProjectConfigPlus projectConfigPlus )
+    private static boolean areAllPathsToThresholdsReadable( SystemSettings systemSettings,
+                                                            ProjectConfigPlus projectConfigPlus )
     {
         Objects.requireNonNull( projectConfigPlus, NON_NULL);
 
@@ -483,8 +488,8 @@ public class Validation
                         // the specified source is not absolute.
                         if ( !thresholdData.isAbsolute() )
                         {
-                            destinationPath = SystemSettings.getDataDirectory()
-                                                           .resolve( thresholdData.getPath() );
+                            destinationPath = systemSettings.getDataDirectory()
+                                                            .resolve( thresholdData.getPath() );
                         }
                         else
                         {

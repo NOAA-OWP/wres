@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
+import wres.io.utilities.Database;
 
 /**
  * Details about a variable as defined in the Database
@@ -76,10 +77,9 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 	}
 
 	@Override
-	protected DataScripter getInsertSelect()
+	protected DataScripter getInsertSelect( Database database )
 	{
-        DataScripter script = new DataScripter();
-
+        DataScripter script = new DataScripter( database );
         script.setUseTransaction( true );
 
 		script.retryOnSerializationFailure();
@@ -106,10 +106,10 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 	}
 
     @Override
-    public void save() throws SQLException
+    public void save( Database database ) throws SQLException
     {
         LOGGER.trace( "save() started for {}.", this.variableName );
-        DataScripter script = this.getInsertSelect();
+        DataScripter script = this.getInsertSelect( database );
         this.performedInsert = script.execute() > 0;
 
         LOGGER.trace( "save() performed insert for {}? {}.",
@@ -124,7 +124,7 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
         }
         else
         {
-            DataScripter scriptWithId = new DataScripter();
+            DataScripter scriptWithId = new DataScripter( database );
             scriptWithId.setHighPriority( true );
             scriptWithId.setUseTransaction( false );
             scriptWithId.add( "SELECT " ).addLine( this.getIDName() );

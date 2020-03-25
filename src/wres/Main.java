@@ -13,6 +13,9 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import wres.io.Operations;
+import wres.io.concurrency.Executor;
+import wres.io.utilities.Database;
+import wres.system.SystemSettings;
 import wres.util.Collections;
 import wres.util.Strings;
 
@@ -62,14 +65,18 @@ public class Main {
 
         Instant beganExecution = Instant.now();
 
+        SystemSettings systemSettings = SystemSettings.fromDefaultClasspathXmlFile();
+        Database database = new Database( systemSettings );
+        Executor executor = new Executor( systemSettings );
+
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             if ( exitCode.get() == MainFunctions.SUCCESS )
             {
-                MainFunctions.shutdown();
+                MainFunctions.shutdown( database, executor );
             }
             else
             {
-                MainFunctions.forceShutdown( 6, TimeUnit.SECONDS );
+                MainFunctions.forceShutdown( database, executor,6, TimeUnit.SECONDS );
             }
 
             Instant endedExecution = Instant.now();
@@ -82,13 +89,15 @@ public class Main {
         process += processId;
         LOGGER.info(process);
 
-        LOGGER.info( "Beginning operation: '{}' at {}...",
-                     operation,
-                     Instant.now() );
+        MainFunctions.SharedResources sharedResources =
+                new MainFunctions.SharedResources( systemSettings,
+                                                   database,
+                                                   executor,
+                                                   cutArgs );
 
         try
         {
-            exitCode.set( MainFunctions.call( operation, cutArgs ) );
+            exitCode.set( MainFunctions.call( operation, sharedResources ) );
 
             if (exitCode.get() != MainFunctions.SUCCESS)
             {
@@ -99,7 +108,8 @@ public class Main {
             Instant endedExecution = Instant.now();
             Duration duration = Duration.between( beganExecution, endedExecution );
 
-            Operations.logExecution( args,
+            Operations.logExecution( sharedResources.getDatabase(),
+                                     args,
                                      beganExecution,
                                      duration,
                                      exitCode.get() == MainFunctions.FAILURE,
@@ -112,7 +122,8 @@ public class Main {
             Duration duration = Duration.between( beganExecution, endedExecution );
             String message = "Operation '" + operation + "' completed unsuccessfully";
             LOGGER.error( message, e );
-            Operations.logExecution( args,
+            Operations.logExecution( sharedResources.getDatabase(),
+                                     args,
                                      beganExecution,
                                      duration,
                                      exitCode.get() == MainFunctions.FAILURE,

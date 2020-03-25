@@ -5,6 +5,7 @@ import java.util.Objects;
 
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
+import wres.io.utilities.Database;
 
 /**
  * Helps caller determine whether a given source has completed ingest and/or to
@@ -13,26 +14,34 @@ import wres.io.utilities.DataScripter;
  */
 public class SourceCompletedDetails
 {
+    private final Database database;
     private final int sourceId;
     private boolean definitiveCompletedAnswerFound= false;
     private boolean wasCompleted = false;
 
     /**
+     * @param database The database to use.
      * @param sourceDetails an already existing source complete with non-null id
      * @throws NullPointerException when sourceDetails is null or has a null id
      */
-    public SourceCompletedDetails( SourceDetails sourceDetails )
+    public SourceCompletedDetails( Database database,
+                                   SourceDetails sourceDetails )
     {
+        Objects.requireNonNull( database );
         Objects.requireNonNull( sourceDetails );
         Objects.requireNonNull( sourceDetails.getId(), "Invalid SourceDetails!" );
+        this.database = database;
         this.sourceId = sourceDetails.getId();
     }
 
     /**
+     * @param database The database to use.
      * @param sourceId the raw source_id from the database instance
      */
-    public SourceCompletedDetails( int sourceId )
+    public SourceCompletedDetails( Database database,
+                                   int sourceId )
     {
+        this.database = database;
         this.sourceId = sourceId;
     }
 
@@ -49,7 +58,7 @@ public class SourceCompletedDetails
     public void markCompleted() throws SQLException
     {
         String insertStatement = "INSERT INTO wres.SourceCompleted ( source_id ) VALUES ( ? )";
-        DataScripter scripter = new DataScripter( insertStatement );
+        DataScripter scripter = new DataScripter( this.database, insertStatement );
         scripter.setHighPriority( true );
         int rowsModified = scripter.execute( this.sourceId );
 
@@ -83,7 +92,7 @@ public class SourceCompletedDetails
         }
 
         String selectStatement = "SELECT COUNT( source_id ) AS n FROM wres.SourceCompleted WHERE source_id = ?";
-        DataScripter scripter = new DataScripter( selectStatement );
+        DataScripter scripter = new DataScripter( this.database, selectStatement );
         scripter.setHighPriority( true );
 
         try ( DataProvider dataProvider = scripter.getData( this.sourceId ) )

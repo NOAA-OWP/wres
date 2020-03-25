@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 
-import com.mchange.v2.c3p0.ComboPooledDataSource;
+import com.zaxxer.hikari.HikariDataSource;
 import liquibase.database.Database;
 import liquibase.exception.LiquibaseException;
 
@@ -27,13 +27,14 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.ArgumentMatchers;
+import org.mockito.MockitoAnnotations;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.powermock.reflect.Whitebox;
 
-import wres.system.DatabaseConnectionSupplier;
+import wres.io.concurrency.Executor;
 import wres.config.generated.CoordinateSelection;
 import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
@@ -46,9 +47,6 @@ import wres.grid.reading.GriddedReader;
 import wres.io.config.LeftOrRightOrBaseline;
 import wres.io.data.details.SourceDetails;
 import wres.io.project.Project;
-import wres.io.retrieval.Retriever;
-import wres.io.retrieval.SingleValuedGriddedRetriever;
-import wres.io.retrieval.UnitMapper;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.TestDatabase;
 import wres.system.SystemSettings;
@@ -59,15 +57,17 @@ import wres.system.SystemSettings;
  */
 
 @RunWith( PowerMockRunner.class )
-@PrepareForTest( { SystemSettings.class, GriddedReader.class } )
+@PrepareForTest( { GriddedReader.class } )
 @PowerMockIgnore( { "javax.management.*", "java.io.*", "javax.xml.*", "com.sun.*", "org.xml.*" } )
 public class SingleValuedGriddedRetrieverTest
 {
 
+    @Mock private SystemSettings mockSystemSettings;
+    private wres.io.utilities.Database wresDatabase;
+    @Mock private Executor mockExecutor;
     private TestDatabase testDatabase;
-    private ComboPooledDataSource dataSource;
+    private HikariDataSource dataSource;
     private Connection rawConnection;
-    private @Mock DatabaseConnectionSupplier mockConnectionSupplier;
 
     /**
      * A project_id for testing;
@@ -121,25 +121,37 @@ public class SingleValuedGriddedRetrieverTest
     @Before
     public void setup() throws Exception
     {
+        MockitoAnnotations.initMocks( this );
         // Create the database and connection pool
         this.testDatabase = new TestDatabase( "SingleValuedGriddedRetriever" );
-        this.dataSource = this.testDatabase.getNewComboPooledDataSource();
+        this.dataSource = this.testDatabase.getNewHikariDataSource();
 
         // Create the connection and schema
-        this.createTheConnectionAndSchema();
+        this.rawConnection = DriverManager.getConnection( this.testDatabase.getJdbcString() );
+        this.testDatabase.createWresSchema( this.rawConnection );
+
+        // Substitute raw connection where needed:
+        // Substitute our H2 connection pool for both pools:
+        Mockito.when( this.mockSystemSettings.getConnectionPool() )
+               .thenReturn( this.dataSource );
+        Mockito.when( this.mockSystemSettings.getHighPriorityConnectionPool() )
+               .thenReturn( this.dataSource );
+
+        this.wresDatabase = new wres.io.utilities.Database( this.mockSystemSettings );
 
         // Create the tables
         this.addTheDatabaseAndTables();
 
         // Add some data for testing
         this.addFiveGriddedSourcesToTheDatabase();
+
     }
 
     @Test
     public void testGetFormsRequestForThreeOfFiveSources() throws Exception
     {
         // Desired units are the same as the existing units
-        UnitMapper mapper = UnitMapper.of( UNITS );
+        UnitMapper mapper = UnitMapper.of( this.wresDatabase, UNITS );
 
         // Set the time window filter, aka pool boundaries to select a subset of sources
 
@@ -166,6 +178,7 @@ public class SingleValuedGriddedRetrieverTest
                                                           .setLeftOrRightOrBaseline( SingleValuedGriddedRetrieverTest.LRB )
                                                           .setUnitMapper( mapper )
                                                           .setTimeWindow( timeWindow )
+                                                          .setDatabase( this.wresDatabase )
                                                           .build();
 
         // Return a fake response from wres.grid, as only interested in the request here
@@ -204,6 +217,7 @@ public class SingleValuedGriddedRetrieverTest
         this.rawConnection.close();
         this.rawConnection = null;
         this.testDatabase = null;
+        this.dataSource.close();
         this.dataSource = null;
     }
 
@@ -215,27 +229,6 @@ public class SingleValuedGriddedRetrieverTest
 
     private void createTheConnectionAndSchema() throws Exception
     {
-        // Also mock a plain datasource (which works per test unlike c3p0)
-        this.rawConnection = DriverManager.getConnection( this.testDatabase.getJdbcString() );
-        Mockito.when( this.mockConnectionSupplier.get() ).thenReturn( this.rawConnection );
-
-        // Set up a bare bones database with only the schema
-        this.testDatabase.createWresSchema( this.rawConnection );
-
-        // Substitute raw connection where needed:
-        PowerMockito.mockStatic( SystemSettings.class );
-        PowerMockito.when( SystemSettings.class, "getRawDatabaseConnection" )
-                    .thenReturn( this.rawConnection );
-
-        PowerMockito.whenNew( DatabaseConnectionSupplier.class )
-                    .withNoArguments()
-                    .thenReturn( this.mockConnectionSupplier );
-
-        // Substitute our H2 connection pool for both pools:
-        PowerMockito.when( SystemSettings.class, "getConnectionPool" )
-                    .thenReturn( this.dataSource );
-        PowerMockito.when( SystemSettings.class, "getHighPriorityConnectionPool" )
-                    .thenReturn( this.dataSource );
     }
 
     /**
@@ -278,7 +271,10 @@ public class SingleValuedGriddedRetrieverTest
 
         // Add a project 
         Project project =
-                new Project( new ProjectConfig( null, null, null, null, null, "test_gridded_project" ),
+                new Project( this.mockSystemSettings,
+                             this.wresDatabase,
+                             this.mockExecutor,
+                             new ProjectConfig( null, null, null, null, null, "test_gridded_project" ),
                              SingleValuedGriddedRetrieverTest.PROJECT_ID );
         project.save();
 
@@ -308,7 +304,7 @@ public class SingleValuedGriddedRetrieverTest
 
             SourceDetails sourceDetails = new SourceDetails( sourceKey );
             sourceDetails.setIsPointData( false );
-            sourceDetails.save();
+            sourceDetails.save( this.wresDatabase );
 
             assertTrue( sourceDetails.performedInsert() );
 
@@ -319,7 +315,7 @@ public class SingleValuedGriddedRetrieverTest
             // Add a project source
             String insert = MessageFormat.format( projectSourceInsert, sourceId );
 
-            DataScripter script = new DataScripter( insert );
+            DataScripter script = new DataScripter( this.wresDatabase, insert );
             int rows = script.execute();
 
             assertEquals( 1, rows );

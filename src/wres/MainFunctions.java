@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -32,10 +33,13 @@ import wres.config.Validation;
 import wres.config.generated.ProjectConfig;
 import wres.control.Control;
 import wres.io.Operations;
+import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
+import wres.io.utilities.Database;
 import wres.system.DatabaseConnectionSupplier;
 import wres.system.DatabaseLockManager;
 import wres.system.ProgressMonitor;
+import wres.system.SystemSettings;
 import wres.util.Strings;
 
 /**
@@ -51,22 +55,27 @@ final class MainFunctions
     private MainFunctions(){}
 
 	// Mapping of String names to corresponding methods
-	private static final Map<String, Function<String[], Integer>> FUNCTIONS = createMap();
+    private static final Map<String, Function<SharedResources, Integer>> FUNCTIONS = createMap();
 
-    static void shutdown()
+    static void shutdown( Database database, Executor executor )
 	{
 	    ProgressMonitor.deactivate();
 	    LOGGER.info("");
 		LOGGER.info("Shutting down the application...");
-		wres.io.Operations.shutdown();
+        wres.io.Operations.shutdown( database, executor );
 	}
 
-    static void forceShutdown( long timeOut, TimeUnit timeUnit )
+    static void forceShutdown( Database database,
+                               Executor executor,
+                               long timeOut,
+                               TimeUnit timeUnit )
     {
         ProgressMonitor.deactivate();
         LOGGER.info("");
         LOGGER.info( "Forcefully shutting down the application (you may see some errors)..." );
-        wres.io.Operations.forceShutdown( timeOut, timeUnit );
+        wres.io.Operations.forceShutdown( database,
+                                          executor,
+                                          timeOut, timeUnit );
     }
 
 	/**
@@ -86,14 +95,14 @@ final class MainFunctions
 	 * @param operation The name of the desired method to call
 	 * @param args      The desired arguments to use when calling the method
 	 */
-	static Integer call (String operation, final String[] args)
+    static Integer call (String operation, final SharedResources sharedResources )
     {
 	    Integer result = FAILURE;
 		operation = operation.toLowerCase();
 
 		if (MainFunctions.hasOperation(operation))
 		{
-            result = FUNCTIONS.get(operation).apply(args);
+            result = FUNCTIONS.get(operation).apply( sharedResources );
         }
 
 		return result;
@@ -102,16 +111,16 @@ final class MainFunctions
 	/**
 	 * Creates the mapping of operation names to their corresponding methods
 	 */
-	private static Map<String, Function<String[], Integer>> createMap ()
+    private static Map<String, Function<SharedResources, Integer>> createMap ()
     {
-		final Map<String, Function<String[], Integer>> functions = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        final Map<String, Function<SharedResources, Integer>> functions = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
 		functions.put("connecttodb", MainFunctions::connectToDB);
 		functions.put("commands", MainFunctions::printCommands);
 		functions.put("--help", MainFunctions::printCommands);
 		functions.put("-h", MainFunctions::printCommands);
 		functions.put("cleandatabase", MainFunctions::cleanDatabase);
-		functions.put("execute", new Control());
+        functions.put( "execute", MainFunctions::execute );
 		functions.put("refreshdatabase", MainFunctions::refreshDatabase);
 		functions.put("ingest", MainFunctions::ingest);
 		functions.put("createnetcdftemplate", MainFunctions::createNetCDFTemplate);
@@ -122,12 +131,20 @@ final class MainFunctions
 		return functions;
 	}
 
-	/**
+    private static Integer execute( SharedResources sharedResources )
+    {
+        Control control = new Control( sharedResources.getSystemSettings(),
+                                       sharedResources.getDatabase(),
+                                       sharedResources.getExecutor() );
+        return control.apply( sharedResources.getArguments() );
+    }
+
+    /**
 	 * Creates the "print_commands" method
 	 *
 	 * @return Method that prints all available commands by name
 	 */
-	private static Integer printCommands(final String[] args)
+    private static Integer printCommands( final SharedResources sharedResources )
 	{
 		LOGGER.info("Available commands are:");
         for (final String command : FUNCTIONS.keySet())
@@ -142,10 +159,11 @@ final class MainFunctions
 	 *
 	 * @return method that will attempt to connect to the database to prove that a connection is possible. The version of the connected database will be printed.
 	 */
-	private static Integer connectToDB(final String[] args){
+    private static Integer connectToDB(final SharedResources sharedResources ){
+
         try
         {
-            Operations.testConnection();
+            Operations.testConnection( sharedResources.getDatabase() );
             return SUCCESS;
         }
         catch ( SQLException se )
@@ -161,16 +179,17 @@ final class MainFunctions
 	 * @return A method that will remove all dynamic forecast, observation, and variable data from the database. Prepares the
 	 * database for a cold start.
 	 */
-	private static Integer cleanDatabase(final String[] args)
+    private static Integer cleanDatabase( final SharedResources sharedResources )
 	{
         Integer result;
-        Supplier<Connection> connectionSupplier = new DatabaseConnectionSupplier();
+        Supplier<Connection> connectionSupplier =
+                new DatabaseConnectionSupplier( sharedResources.getSystemSettings() );
         DatabaseLockManager lockManager = new DatabaseLockManager( connectionSupplier );
 
         try
         {
             lockManager.lockExclusive( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
-            Operations.cleanDatabase();
+            Operations.cleanDatabase( sharedResources.getDatabase() );
             result = SUCCESS;
             lockManager.unlockExclusive( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
         }
@@ -182,15 +201,18 @@ final class MainFunctions
         }
         finally
         {
+            sharedResources.getDatabase()
+                           .shutdown();
             lockManager.shutdown();
         }
 
         return result;
 	}
 
-	private static Integer validateNetcdfGrid(String[] args)
+    private static Integer validateNetcdfGrid( SharedResources sharedResources )
     {
         Integer result = FAILURE;
+        String[] args = sharedResources.getArguments();
 
         String path = args[0];
         String variableName = args[1];
@@ -222,17 +244,17 @@ final class MainFunctions
         return result;
     }
 
-	private static Integer refreshDatabase(final String[] args)
+    private static Integer refreshDatabase( final SharedResources sharedResources )
 	{
         Integer result = FAILURE;
-
-        Supplier<Connection> connectionSupplier = new DatabaseConnectionSupplier();
+        Supplier<Connection> connectionSupplier =
+                new DatabaseConnectionSupplier( sharedResources.getSystemSettings() );
         DatabaseLockManager lockManager = new DatabaseLockManager( connectionSupplier );
 
         try
         {
             lockManager.lockExclusive( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
-            Operations.refreshDatabase();
+            Operations.refreshDatabase( sharedResources.getDatabase() );
             result = SUCCESS;
             lockManager.unlockExclusive( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
         }
@@ -249,23 +271,29 @@ final class MainFunctions
         return result;
 	}
 
-    private static Integer ingest(String[] args)
+    private static Integer ingest( SharedResources sharedResources )
     {
         int result = FAILURE;
+        String[] args = sharedResources.getArguments();
 
-        if (args.length > 0)
+        if ( args.length > 0 )
         {
             String projectPath = args[0];
 
             ProjectConfig projectConfig;
-            Supplier<Connection> connectionSupplier = new DatabaseConnectionSupplier();
+            Supplier<Connection> connectionSupplier =
+                    new DatabaseConnectionSupplier( sharedResources.getSystemSettings() );
             DatabaseLockManager lockManager = new DatabaseLockManager( connectionSupplier );
 
             try
             {
                 lockManager.lockShared( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
                 projectConfig = ConfigHelper.read(projectPath);
-                Operations.ingest( projectConfig, lockManager );
+                Operations.ingest( sharedResources.getSystemSettings(),
+                                   sharedResources.getDatabase(),
+                                   sharedResources.getExecutor(),
+                                   projectConfig,
+                                   lockManager );
                 result = SUCCESS;
                 lockManager.unlockShared( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
             }
@@ -288,9 +316,10 @@ final class MainFunctions
         return result;
     }
 
-    private static Integer validate(String[] args)
+    private static Integer validate( SharedResources sharedResources )
     {
         int result = FAILURE;
+        String[] args = sharedResources.getArguments();
 
         if (args.length > 0)
         {
@@ -312,9 +341,11 @@ final class MainFunctions
                 return result; // Or return 400 - Bad Request (see #41467)
             }
 
+            SystemSettings systemSettings = SystemSettings.fromDefaultClasspathXmlFile();
+
             // Validate unmarshalled configurations
             final boolean validated =
-                    Validation.isProjectValid( projectConfigPlus );
+                    Validation.isProjectValid( systemSettings, projectConfigPlus );
 
             if ( validated )
             {
@@ -339,9 +370,10 @@ final class MainFunctions
         return result;
     }
 
-    private static Integer createNetCDFTemplate(String[] args)
+    private static Integer createNetCDFTemplate( SharedResources sharedResources )
     {
         int result = FAILURE;
+        String[] args = sharedResources.getArguments();
 
         if (args.length > 1)
         {
@@ -388,7 +420,7 @@ final class MainFunctions
         return result;
     }
 
-    private static Integer readHeader(String[] args)
+    private static Integer readHeader( SharedResources sharedResources )
     {
         Integer result = FAILURE;
         final String url = "http://***REMOVED***rgw.***REMOVED***.***REMOVED***:8080/nwm/nwm.20180515/analysis_assim/nwm.t00z.analysis_assim.channel_rt.tm00.conus.nc";
@@ -478,6 +510,49 @@ final class MainFunctions
             MainFunctions.encounteredExceptions.addAll( Control.getMostRecentException() );
 
             return Collections.unmodifiableList(MainFunctions.encounteredExceptions);
+        }
+    }
+
+    static final class SharedResources
+    {
+        private final SystemSettings systemSettings;
+        private final Database database;
+        private final Executor executor;
+        private final String[] arguments;
+
+        public SharedResources( SystemSettings systemSettings,
+                                Database database,
+                                Executor executor,
+                                String[] arguments )
+        {
+            Objects.requireNonNull( systemSettings );
+            Objects.requireNonNull( database );
+            Objects.requireNonNull( executor );
+            Objects.requireNonNull( arguments );
+            this.systemSettings = systemSettings;
+            this.database = database;
+            this.executor = executor;
+            this.arguments = arguments;
+        }
+
+        public SystemSettings getSystemSettings()
+        {
+            return this.systemSettings;
+        }
+
+        public Database getDatabase()
+        {
+            return this.database;
+        }
+
+        public Executor getExecutor()
+        {
+            return this.executor;
+        }
+
+        public String[] getArguments()
+        {
+            return this.arguments;
         }
     }
 }

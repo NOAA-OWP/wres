@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import wres.datamodel.MissingValues;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
+import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
 
 /**
@@ -61,16 +62,18 @@ public class UnitMapper
 
     /**
      * Returns an instance.
-     * 
+     *
+     * @param database The database to use.
      * @param desiredMeasurementUnit the desired units
      * @return an instance
      * @throws NullPointerException if the input is null
      * @throws DataAccessException if the data could not be accessed 
      */
 
-    public static UnitMapper of( String desiredMeasurementUnit )
+    public static UnitMapper of( Database database,
+                                 String desiredMeasurementUnit )
     {
-        return new UnitMapper( desiredMeasurementUnit );
+        return new UnitMapper( database, desiredMeasurementUnit );
     }
 
     /**
@@ -158,8 +161,9 @@ public class UnitMapper
      * @throws NoSuchUnitConversionException if no unit conversions were available
      */
 
-    private UnitMapper( String desiredMeasurementUnit )
+    private UnitMapper( Database database, String desiredMeasurementUnit )
     {
+        Objects.requireNonNull( database );
         Objects.requireNonNull( desiredMeasurementUnit,
                                 "Specify a desired measurement unit to create unit "
                                                         + "conversions." );
@@ -204,7 +208,7 @@ public class UnitMapper
                           script );
         }
 
-        DataScripter dataScripter = new DataScripter( script );
+        DataScripter dataScripter = new DataScripter( database, script );
 
         // Set high priority
         dataScripter.setHighPriority( true );

@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import wres.io.data.details.EnsembleDetails.EnsembleKey;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
+import wres.io.utilities.Database;
 
 /**
  * Describes basic information used to define an Ensemble from the database
@@ -194,9 +195,9 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 	}
 
 	@Override
-	protected DataScripter getInsertSelect()
+	protected DataScripter getInsertSelect( Database database )
 	{
-        DataScripter script = new DataScripter();
+        DataScripter script = new DataScripter( database );
 
         script.setUseTransaction( true );
 
@@ -265,9 +266,9 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 	}
 
     @Override
-    public void save() throws SQLException
+    public void save( Database database ) throws SQLException
     {
-        DataScripter script = this.getInsertSelect();
+        DataScripter script = this.getInsertSelect( database );
         boolean performedInsert = script.execute() > 0;
 
         if ( performedInsert )
@@ -278,7 +279,7 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
         }
         else
         {
-            DataScripter scriptWithId = new DataScripter();
+            DataScripter scriptWithId = new DataScripter( database );
             scriptWithId.setHighPriority( true );
             scriptWithId.setUseTransaction( false );
             scriptWithId.addLine( "SELECT ensemble_id" );

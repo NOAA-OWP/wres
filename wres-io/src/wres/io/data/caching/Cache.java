@@ -6,6 +6,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import wres.io.data.details.CachedDetail;
+import wres.io.utilities.Database;
 import wres.util.LRUMap;
 
 /**
@@ -15,11 +16,11 @@ import wres.util.LRUMap;
  * @param <U> The key for the type within the database
  */
 abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
-    static final String NEWLINE = System.lineSeparator();
 
 	Map<U, Integer> keyIndex;
 	private ConcurrentMap<Integer, T> details;
 
+	protected abstract Database getDatabase();
 	protected abstract Object getDetailLock();
 	protected abstract Object getKeyLock();
 
@@ -67,7 +68,7 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 	 * <p>See #61206.
 	 */
 	
-	void invalidate()
+	public void invalidate()
 	{
 	    synchronized ( this.getDetailLock() )
         {
@@ -124,7 +125,7 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 	 */
 	void addElement( T element ) throws SQLException
 	{
-		element.save();
+		element.save( getDatabase() );
 		add(element);
 	}
 	

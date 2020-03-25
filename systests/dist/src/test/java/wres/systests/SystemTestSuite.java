@@ -11,6 +11,8 @@ import java.time.Instant;
 import java.time.Duration;
 
 import wres.io.Operations;
+import wres.io.utilities.Database;
+import wres.system.SystemSettings;
 
 @RunWith( SystemTestsSuiteRunner.class )
 
@@ -104,11 +106,13 @@ public class SystemTestSuite
 	{
 		String dbName = System.getProperty( "wres.databaseName" );
 		LOGGER.info( "Cleaning the test database instance {}...", dbName );
-		
+        SystemSettings systemSettings = SystemSettings.fromDefaultClasspathXmlFile();
+        Database database = new Database( systemSettings );
 		Instant started = Instant.now();
-    	Operations.cleanDatabase();
+        Operations.cleanDatabase( database );
 		Instant stopped = Instant.now();
 		Duration duration = Duration.between( started, stopped );
+        database.shutdown();
 
 		LOGGER.info( "Finished cleaning the test database instance {}, which took {}.", 
                      dbName,

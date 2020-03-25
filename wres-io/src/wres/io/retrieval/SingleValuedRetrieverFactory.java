@@ -27,6 +27,7 @@ import wres.io.project.Project;
 import wres.io.retrieval.AnalysisRetriever.DuplicatePolicy;
 import wres.io.retrieval.SingleValuedGriddedRetriever.Builder;
 import wres.io.retrieval.TimeSeriesRetriever.TimeSeriesRetrieverBuilder;
+import wres.io.utilities.Database;
 
 /**
  * <p>A factory class that creates retrievers for the single-valued left and right datasets associated with one 
@@ -55,6 +56,8 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
      */
 
     private static final String AND_TIME_WINDOW_MESSAGE = " and time window ";
+
+    private final Database database;
 
     /**
      * The project.
@@ -116,9 +119,15 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
 
     private final String featureString;
 
+    private Database getDatabase()
+    {
+        return this.database;
+    }
+
     /**
      * Returns an instance.
-     * 
+     *
+     * @param database The database to use.
      * @param project the project
      * @param feature a feature to evaluate
      * @param unitMapper the unit mapper
@@ -126,9 +135,15 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
      * @throws NullPointerException if any input is null
      */
 
-    public static SingleValuedRetrieverFactory of( Project project, Feature feature, UnitMapper unitMapper )
+    public static SingleValuedRetrieverFactory of( Database database,
+                                                   Project project,
+                                                   Feature feature,
+                                                   UnitMapper unitMapper )
     {
-        return new SingleValuedRetrieverFactory( project, feature, unitMapper );
+        return new SingleValuedRetrieverFactory( database,
+                                                 project,
+                                                 feature,
+                                                 unitMapper );
     }
 
     @Override
@@ -224,7 +239,8 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
                                            e );
         }
 
-        builder.setProjectId( this.getProject().getId() )
+        builder.setDatabase( this.getDatabase() )
+               .setProjectId( this.getProject().getId() )
                .setLeftOrRightOrBaseline( leftOrRightOrBaseline )
                .setDeclaredExistingTimeScale( declaredExistingTimeScale )
                .setDesiredTimeScale( this.desiredTimeScale )
@@ -257,12 +273,17 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
      * @throws NullPointerException if any input is null
      */
 
-    private SingleValuedRetrieverFactory( Project project, Feature feature, UnitMapper unitMapper )
+    private SingleValuedRetrieverFactory( Database database,
+                                          Project project,
+                                          Feature feature,
+                                          UnitMapper unitMapper )
     {
+        Objects.requireNonNull( database );
         Objects.requireNonNull( project );
         Objects.requireNonNull( unitMapper );
         Objects.requireNonNull( feature );
 
+        this.database = database;
         this.project = project;
         this.feature = feature;
         this.unitMapper = unitMapper;

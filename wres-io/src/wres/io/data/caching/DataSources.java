@@ -11,6 +11,7 @@ import wres.io.data.details.SourceDetails;
 import wres.io.data.details.SourceDetails.SourceKey;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
+import wres.io.utilities.Database;
 import wres.util.Collections;
 
 /**
@@ -21,45 +22,36 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
 {
     private static final int MAX_DETAILS = 10000;
     private static final Logger LOGGER = LoggerFactory.getLogger(DataSources.class);
-    private static final Object CACHE_LOCK = new Object();
 
-    private static final Object DETAIL_LOCK = new Object();
-    private static final Object KEY_LOCK = new Object();
+    private final Object detailLock = new Object();
+    private final Object keyLock = new Object();
+    private final Database database;
+
+    public DataSources( Database database )
+    {
+        this.database = database;
+    }
+
+    @Override
+    protected Database getDatabase()
+    {
+        return this.database;
+    }
 
     @Override
     protected Object getDetailLock()
     {
-        return DataSources.DETAIL_LOCK;
+        return this.detailLock;
     }
 
     @Override
     protected Object getKeyLock()
     {
-        return DataSources.KEY_LOCK;
+        return this.keyLock;
     }
 
-    /**
-     * Cache of basic source data
-     */
-	private static final DataSources INSTANCE = new DataSources();
 
-	/**
-	 * <p>Invalidates the global cache of the singleton associated with this class, {@link #INSTANCE}.
-	 * 
-	 * <p>See #61206.
-	 */
-	   
-    public static void invalidateGlobalCache()
-    {
-        DataSources.INSTANCE.invalidate();
-    }
-	
-	public DataSources()
-    {
-        this.initializeDetails();
-    }
-
-    private void populate(final DataProvider data)
+    void populate(final DataProvider data)
     {
         if (data == null)
         {
@@ -83,17 +75,6 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
         }
     }
 
-	private static DataSources getCache()
-    {
-        synchronized (CACHE_LOCK)
-        {
-            if ( INSTANCE.isEmpty())
-            {
-                DataSources.initialize();
-            }
-            return INSTANCE;
-        }
-    }
 	
 	/**
 	 * Gets the ID of source metadata from the global cache based on a file path and the date of its output
@@ -104,35 +85,35 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
 	 * @return The ID of the source in the database
 	 * @throws SQLException Thrown when interaction with the database failed
 	 */
-	public static Integer getSourceID( URI path, String outputTime, Integer lead, String hash )
+	public Integer getSourceID( URI path, String outputTime, Integer lead, String hash )
             throws SQLException
     {
-		return getCache().getID(path, outputTime, lead, hash);
+		return this.getID(path, outputTime, lead, hash);
 	}
 
-	public static SourceDetails get( URI path, String outputTime, Integer lead, String hash )
+	public SourceDetails get( URI path, String outputTime, Integer lead, String hash )
             throws SQLException
     {
-        int id = DataSources.getCache().getID( path, outputTime, lead, hash );
-        return DataSources.getCache().get( id );
+        int id = this.getID( path, outputTime, lead, hash );
+        return this.get( id );
     }
 
-    public static SourceDetails getById(Integer id)
+    public SourceDetails getById(Integer id)
     {
-        return DataSources.getCache().get( id );
+        return this.get( id );
     }
 
-    public static SourceDetails getFromCacheOrDatabaseByIdThenCache( Integer id )
+    public SourceDetails getFromCacheOrDatabaseByIdThenCache( Integer id )
             throws SQLException
     {
-        SourceDetails foundInCache = DataSources.getCache()
-                                                .get( id );
+        SourceDetails foundInCache = this.get( id );
         if ( Objects.nonNull( foundInCache) )
         {
             return foundInCache;
         }
 
-        DataScripter script = new DataScripter();
+        Database database = this.getDatabase();
+        DataScripter script = new DataScripter( database );
         script.setHighPriority( true );
         script.addLine( "SELECT source_id, path, output_time::text, lead, hash, is_point_data" );
         script.addLine( "FROM wres.Source" );
@@ -153,7 +134,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
                 notFoundInCache.setID( data.getInt( "source_id" ) );
                 notFoundInCache.setIsPointData( data.getBoolean( "is_point_data" ) );
 
-                DataSources.getCache().addElement( notFoundInCache );
+                this.addElement( notFoundInCache );
             }
         }
 
@@ -167,22 +148,21 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
         return notFoundInCache;
     }
 
-    public static boolean isCached( SourceDetails.SourceKey key )
+    public boolean isCached( SourceDetails.SourceKey key )
     {
-        return DataSources.getCache()
-                          .hasID( key );
+        return this.hasID( key );
     }
 
-	public static boolean hasSource(String hash) throws SQLException
+	public boolean hasSource(String hash) throws SQLException
     {
-        return DataSources.getExistingSource( hash ) != null;
+        return this.getExistingSource( hash ) != null;
     }
 
-    public static String getHash(int sourceId)
+    public String getHash(int sourceId)
     {
         String hash = null;
 
-        SourceKey key = Collections.getKeyByValue( DataSources.getCache().getKeyIndex(), sourceId );
+        SourceKey key = Collections.getKeyByValue( this.getKeyIndex(), sourceId );
 
         if (key != null)
         {
@@ -192,7 +172,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
         return hash;
     }
 
-    public static SourceDetails getExistingSource(final String hash) throws SQLException
+    public SourceDetails getExistingSource(final String hash) throws SQLException
     {
         Objects.requireNonNull(hash, "A nonexistent hash was passed to DataSources#getExistingSource");
 
@@ -200,16 +180,17 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
 
         SourceKey key = new SourceKey( null, null, null, hash );
 
-        if (DataSources.getCache().hasID( key ))
+        if (this.hasID( key ))
         {
-            sourceDetails = DataSources.getCache().get(
-                    DataSources.getCache().getID( key )
+            sourceDetails = this.get(
+                    this.getID( key )
             );
         }
 
         if (sourceDetails == null)
         {
-            DataScripter script = new DataScripter(  );
+            Database database = this.getDatabase();
+            DataScripter script = new DataScripter( database );
             script.setHighPriority( true );
 
             script.addLine("SELECT source_id, path, output_time::text, lead, hash, is_point_data");
@@ -230,7 +211,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
                     sourceDetails.setID( data.getInt( "source_id" ) );
                     sourceDetails.setIsPointData( data.getBoolean( "is_point_data" ) );
 
-                    DataSources.getCache().addElement( sourceDetails );
+                    this.addElement( sourceDetails );
                 }
             }
         }
@@ -238,7 +219,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
         return sourceDetails;
     }
 
-    public static Integer getActiveSourceID(String hash)
+    public Integer getActiveSourceID(String hash)
             throws SQLException
     {
         Objects.requireNonNull(hash, "A nonexistent hash was passed to DataSources#getActiveSourceID");
@@ -247,14 +228,15 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
 
         SourceKey key = new SourceKey( null, null, null, hash );
 
-        if (DataSources.getCache().hasID( key ))
+        if (this.hasID( key ))
         {
-            id = DataSources.getCache().getID( key );
+            id = this.getID( key );
         }
 
         if (id == null)
         {
-            DataScripter script = new DataScripter(  );
+            Database database = this.getDatabase();
+            DataScripter script = new DataScripter( database );
             script.addLine("SELECT source_id, path, output_time::text, lead, hash, is_point_data");
             script.addLine("FROM wres.Source");
             script.addLine("WHERE hash = '", hash, "';");
@@ -267,7 +249,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
                 {
                     details = new SourceDetails(data);
 
-                    DataSources.getCache().addElement( details );
+                    this.addElement( details );
 
                     id = data.getInt( "source_id" );
                 }
@@ -277,9 +259,9 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
         return id;
     }
 
-    public static void put( SourceDetails sourceDetails )
+    public void put( SourceDetails sourceDetails )
     {
-        DataSources.getCache().add( sourceDetails );
+        this.add( sourceDetails );
     }
 	
 	/**
@@ -312,11 +294,11 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
 		return MAX_DETAILS;
 	}
 
-	private static void initialize()
+	private void initialize( Database database )
     {
         try
         {
-            DataScripter script = new DataScripter(  );
+            DataScripter script = new DataScripter( database );
 
             script.addLine("SELECT source_id,");
             script.addTab().addLine("path,");
@@ -328,7 +310,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
 
             try (DataProvider sources = script.getData())
             {
-                INSTANCE.populate( sources );
+                this.populate( sources );
             }
             
             LOGGER.debug( "Finished populating the DataSource details." );
@@ -340,4 +322,6 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
                          error );
         }
     }
+
+
 }

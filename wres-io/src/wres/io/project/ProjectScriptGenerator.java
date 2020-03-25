@@ -6,6 +6,7 @@ import java.util.StringJoiner;
 import wres.config.generated.Feature;
 import wres.config.generated.Polygon;
 import wres.io.utilities.DataScripter;
+import wres.io.utilities.Database;
 import wres.util.Strings;
 
 /**
@@ -23,7 +24,8 @@ final class ProjectScriptGenerator
      * @throws SQLException Thrown when the ID for the left or right variables cannot be loaded
      */
 
-    static DataScripter createIntersectingFeaturesScript( Project project )
+    static DataScripter createIntersectingFeaturesScript( Database database,
+                                                          Project project )
             throws SQLException
     {
         // First, select all forecasted variable feature IDs, feature IDs, and feature metadata
@@ -34,7 +36,7 @@ final class ProjectScriptGenerator
         //    feature specification that are used within this project
         // Then join the two resulting data sets based on their shared feature ids and return
         //    - Metadata about the shared feature that may be used for identification
-        DataScripter script = new DataScripter();
+        DataScripter script = new DataScripter( database );
 
         script.addLine( "WITH right_features AS" );
         script.addLine( "(");

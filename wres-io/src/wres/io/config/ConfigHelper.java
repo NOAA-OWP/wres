@@ -7,7 +7,6 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.SQLException;
 import java.text.DecimalFormat;
 import java.time.DateTimeException;
 import java.time.Duration;
@@ -70,11 +69,8 @@ import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.thresholds.ThresholdsByMetric.ThresholdsByMetricBuilder;
 import wres.datamodel.time.TimeWindow;
-import wres.io.data.caching.Features;
-import wres.io.project.Project;
 import wres.io.reading.commaseparated.CommaSeparatedReader;
 import wres.io.retrieval.UnitMapper;
-import wres.io.utilities.DataScripter;
 import wres.io.utilities.NoDataException;
 import wres.system.SystemSettings;
 import wres.util.Strings;
@@ -210,26 +206,6 @@ public class ConfigHelper
 
     }
 
-    public static String getVariableFeatureClause( Feature feature, int variableId, String alias )
-            throws SQLException
-    {
-        StringBuilder clause = new StringBuilder();
-
-        Integer variableFeatureId = Features.getVariableFeatureID( feature, variableId );
-
-        if ( variableFeatureId != null )
-        {
-            if ( Strings.hasValue( alias ) )
-            {
-                clause.append( alias ).append( "." );
-            }
-
-            clause.append( "variablefeature_id = " ).append( variableFeatureId );
-        }
-
-        return clause.toString();
-    }
-
     public static Comparator<Feature> getFeatureComparator()
     {
         return ( feature, t1 ) -> {
@@ -284,66 +260,6 @@ public class ConfigHelper
                          t1Description );
             return 1;
         };
-    }
-
-    public static int getValueCount( Project project,
-                                     DataSourceConfig dataSourceConfig,
-                                     Feature feature )
-            throws SQLException
-    {
-        Integer variableId;
-        String member;
-
-        if ( project.getRight().equals( dataSourceConfig ) )
-        {
-            variableId = project.getRightVariableID();
-            member = Project.RIGHT_MEMBER;
-        }
-        else if ( project.getLeft().equals( dataSourceConfig ) )
-        {
-            variableId = project.getLeftVariableID();
-            member = Project.LEFT_MEMBER;
-        }
-        else
-        {
-            variableId = project.getBaselineVariableID();
-            member = Project.BASELINE_MEMBER;
-        }
-
-        String variableFeatureClause = ConfigHelper.getVariableFeatureClause( feature, variableId, "" );
-
-        DataScripter script = new DataScripter();
-
-        script.addLine("SELECT COUNT(*)::int");
-        if ( ConfigHelper.isForecast( dataSourceConfig ) )
-        {
-            script.addLine( "FROM wres.TimeSeries TS" );
-            script.addLine( "INNER JOIN wres.TimeSeriesValue TSV" );
-            script.addTab().addLine("ON TS.timeseries_id = TSV.timeseries_id" );
-            script.addLine( "WHERE ", variableFeatureClause );
-            script.addTab().addLine( "AND EXISTS (" );
-            script.addTab(  2  ).addLine( "SELECT 1" );
-            script.addTab(  2  ).addLine( "FROM wres.ProjectSource PS" );
-            script.addTab(  2  ).addLine( "WHERE PS.project_id = ", project.getId() );
-            script.addTab(   3   ).addLine( "AND PS.member = ", member );
-            script.addTab(   3   ).addLine( "AND PS.timeseries_id = TS.timeseries_id" );
-            script.addTab(   3   ).addLine( "AND PS.source_id = TS.source_id" );
-            script.addTab(  2  ).addLine( ");" );
-        }
-        else
-        {
-            script.addLine( "FROM wres.Observation O" );
-            script.addLine( "WHERE ", variableFeatureClause );
-            script.addLine( "    AND EXISTS (" );
-            script.addLine( "        SELECT 1" );
-            script.addLine( "        FROM wres.ProjectSource PS" );
-            script.addLine( "        WHERE PS.project_id = ", project.getId() );
-            script.addLine( "            AND PS.member = ", member );
-            script.addLine( "            AND PS.source_id = O.source_id" );
-            script.addLine( "    );" );
-        }
-
-        return script.retrieve( "count" );
     }
 
     /**
@@ -1357,7 +1273,8 @@ public class ConfigHelper
      * Reads all external sources of thresholds from the input configuration and returns a map containing a set of 
      * {@link Threshold} for each {@link FeaturePlus} in the source. If no source is provided, an empty map is
      * returned.
-     * 
+     *
+     * @param systemSettings The system settings to use.
      * @param projectConfig the project configuration
      * @param unitMapper a measurement unit mapper
      * @return the thresholds associated with each feature obtained from a source in the project configuration
@@ -1365,7 +1282,9 @@ public class ConfigHelper
      */
 
     public static Map<FeaturePlus, ThresholdsByMetric>
-            readExternalThresholdsFromProjectConfig( ProjectConfig projectConfig, UnitMapper unitMapper )
+            readExternalThresholdsFromProjectConfig( SystemSettings systemSettings,
+                                                     ProjectConfig projectConfig,
+                                                     UnitMapper unitMapper )
     {
         Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
 
@@ -1403,7 +1322,8 @@ public class ConfigHelper
                 }
                 
                 // Add or append
-                ConfigHelper.addExternalThresholdsForOneMetricConfigGroup( projectConfig,
+                ConfigHelper.addExternalThresholdsForOneMetricConfigGroup( systemSettings,
+                                                                           projectConfig,
                                                                            returnMe,
                                                                            nextGroup,
                                                                            next,
@@ -1459,13 +1379,14 @@ public class ConfigHelper
      * @param group The group of metrics to add the threshold to
      * @param units the (optional) existing measurement units associated with the threshold values; if null, equal to 
      *            the evaluation units
-     * @param UnitMapper a measurement unit mapper
+     * @param unitMapper a measurement unit mapper
      * @throws MetricConfigException if the metric configuration is invalid
      * @throws NullPointerException if any input is null
      */
 
     private static void
-            addExternalThresholdsForOneMetricConfigGroup( ProjectConfig projectConfig,
+            addExternalThresholdsForOneMetricConfigGroup( SystemSettings systemSettings,
+                                                          ProjectConfig projectConfig,
                                                           Map<FeaturePlus, ThresholdsByMetric> mutate,
                                                           MetricsConfig group,
                                                           ThresholdsConfig thresholdsConfig,
@@ -1484,7 +1405,7 @@ public class ConfigHelper
 
         // Obtain the thresholds
         Map<FeaturePlus, ThresholdsByMetric> thresholdsByFeature =
-                ConfigHelper.readOneExternalThresholdFromProjectConfig( thresholdsConfig, metrics, units, unitMapper );
+                ConfigHelper.readOneExternalThresholdFromProjectConfig( systemSettings, thresholdsConfig, metrics, units, unitMapper );
 
         // Iterate the thresholds
         for ( Entry<FeaturePlus, ThresholdsByMetric> nextEntry : thresholdsByFeature.entrySet() )
@@ -1511,14 +1432,15 @@ public class ConfigHelper
      * @param metrics the metrics to which the threshold applies
      * @param units the (optional) existing measurement units associated with the threshold values; if null, equal to 
      *            the evaluation units
-     * @param UnitMapper a measurement unit mapper
+     * @param unitMapper a measurement unit mapper
      * @return a map of thresholds by feature
      * @throws MetricConfigException if the threshold could not be read
      * @throws NullPointerException if the threshold configuration is null or the metrics are null
      */
 
     private static Map<FeaturePlus, ThresholdsByMetric>
-            readOneExternalThresholdFromProjectConfig( ThresholdsConfig threshold,
+            readOneExternalThresholdFromProjectConfig( SystemSettings systemSettings,
+                                                       ThresholdsConfig threshold,
                                                        Set<MetricConstants> metrics,
                                                        MeasurementUnit units, 
                                                        UnitMapper unitMapper )
@@ -1563,7 +1485,7 @@ public class ConfigHelper
 
         if ( !uri.isAbsolute() )
         {
-            commaSeparated = SystemSettings.getDataDirectory()
+            commaSeparated = systemSettings.getDataDirectory()
                                            .resolve( uri.getPath() );
             LOGGER.debug( "Transformed relative URI {} to Path {}.",
                           uri,

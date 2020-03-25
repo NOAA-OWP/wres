@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import wres.io.data.details.SourceDetails.SourceKey;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
+import wres.io.utilities.Database;
 
 /**
  * Details about a source of observation or forecast data
@@ -152,9 +153,9 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
 	}
 
 	@Override
-	protected DataScripter getInsertSelect()
+	protected DataScripter getInsertSelect( Database database )
 	{
-        DataScripter script = new DataScripter();
+        DataScripter script = new DataScripter( database );
 
         script.setUseTransaction( true );
 
@@ -192,9 +193,9 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
 	}
 
 	@Override
-    public void save() throws SQLException
+    public void save( Database database ) throws SQLException
     {
-        DataScripter script = this.getInsertSelect();
+        DataScripter script = this.getInsertSelect( database );
         this.performedInsert = script.execute() > 0;
 
         if ( this.performedInsert )
@@ -205,7 +206,7 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
         }
         else
         {
-            DataScripter scriptWithId = new DataScripter();
+            DataScripter scriptWithId = new DataScripter( database );
             scriptWithId.setHighPriority( true );
             scriptWithId.setUseTransaction( false );
             scriptWithId.add( "SELECT " ).addLine( this.getIDName() );

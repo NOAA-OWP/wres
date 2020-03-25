@@ -7,7 +7,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.mchange.v2.c3p0.ComboPooledDataSource;
+import com.zaxxer.hikari.HikariDataSource;
 import liquibase.exception.DatabaseException;
 import liquibase.exception.LiquibaseException;
 import org.junit.After;
@@ -19,13 +19,16 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.system.SystemSettings;
+
 public class QueryTest
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( QueryTest.class);
 
+    private SystemSettings systemSettings;
     // We need a way to control faked out database connections
     private static TestDatabase testDatabase;
-    private static ComboPooledDataSource dataSource;
+    private static HikariDataSource dataSource;
 
     // We need a raw connection to use to run setup/teardown operations on.
     private Connection rawConnection;
@@ -39,7 +42,7 @@ public class QueryTest
         LOGGER.trace( "@BeforeClass began" );
         // We need to create a test database so we aren't trying to reach out to a real, deployed database
         QueryTest.testDatabase = new TestDatabase( "QueryTest" );
-        QueryTest.dataSource = QueryTest.testDatabase.getNewComboPooledDataSource();
+        QueryTest.dataSource = QueryTest.testDatabase.getNewHikariDataSource();
         LOGGER.trace( "@BeforeClass ended" );
     }
 
@@ -47,6 +50,7 @@ public class QueryTest
     public void beforeEachTest() throws SQLException, DatabaseException
     {
         LOGGER.trace( "@Before began" );
+        this.systemSettings = SystemSettings.withDefaults();
         this.rawConnection = DriverManager.getConnection( QueryTest.testDatabase.getJdbcString() );
 
         // Set up a bare bones database with only the schema
@@ -72,7 +76,8 @@ public class QueryTest
         String script = "SELECT 1 AS one;";
 
         try ( Connection connection = QueryTest.dataSource.getConnection();
-              ResultSet results = Query.withScript( script ).call( connection ) )
+              ResultSet results = new Query( this.systemSettings, script )
+                      .call( connection ) )
         {
             // False means that nothing was retrieved
             Assert.assertTrue( results.isBeforeFirst() );
@@ -103,7 +108,8 @@ public class QueryTest
         // "?" is a placeholder for a parameter
         String script = "Select ? as one;";
 
-        Query testQuery = Query.withScript( script ).setParameters( 1 );
+        Query testQuery = new Query( this.systemSettings, script )
+                .setParameters( 1 );
 
         try ( Connection connection = QueryTest.dataSource.getConnection();
               ResultSet results = testQuery.call( connection ) )
@@ -139,7 +145,7 @@ public class QueryTest
 
         String script = "INSERT INTO wres.Project(input_code, project_name) VALUES (0, 'zero');";
 
-        Query testQuery = Query.withScript( script );
+        Query testQuery = new Query( this.systemSettings, script );
 
         try ( Connection connection = QueryTest.dataSource.getConnection() )
         {
@@ -151,7 +157,8 @@ public class QueryTest
             Assert.assertEquals( 1, insertedRows );
 
             // To check to see if we've added anything
-            testQuery = Query.withScript( "SELECT input_code, project_name FROM wres.Project;" );
+            testQuery = new Query( this.systemSettings,
+                                   "SELECT input_code, project_name FROM wres.Project;" );
 
             try (ResultSet projects = testQuery.call( connection ))
             {
@@ -207,7 +214,8 @@ public class QueryTest
         arguments.add(new Object[]{4, "four"});
         arguments.add(new Object[]{5, null});
 
-        Query testQuery = Query.withScript( script ).setBatchParameters( arguments );
+        Query testQuery = new Query( this.systemSettings, script )
+                .setBatchParameters( arguments );
 
         try ( Connection connection = QueryTest.dataSource.getConnection() )
         {
@@ -219,7 +227,8 @@ public class QueryTest
             Assert.assertEquals( 6, insertedRows );
 
             // To check to see if we've added anything,
-            testQuery = Query.withScript( "SELECT input_code, project_name FROM wres.Project;" );
+            testQuery = new Query( this.systemSettings,
+                                   "SELECT input_code, project_name FROM wres.Project;" );
 
             try (ResultSet projects = testQuery.call( connection ))
             {
@@ -266,7 +275,8 @@ public class QueryTest
 
         String script = "INSERT INTO wres.Project(input_code, project_name) VALUES (?, ?);";
 
-        Query testQuery = Query.withScript( script ).setParameters(0, "zero");
+        Query testQuery = new Query( this.systemSettings, script )
+                .setParameters( 0, "zero" );
 
         try ( Connection connection = QueryTest.dataSource.getConnection() )
         {
@@ -279,7 +289,8 @@ public class QueryTest
 
             // To check to see if we've added anything, we can go ahead and do that by removing everything.
             // This will remove everything and select it all at the same time
-            testQuery = Query.withScript( "SELECT input_code, project_name FROM wres.Project;" );
+            testQuery = new Query( this.systemSettings,
+                                   "SELECT input_code, project_name FROM wres.Project;" );
 
             try (ResultSet projects = testQuery.call( connection ))
             {
@@ -317,7 +328,8 @@ public class QueryTest
     @Test
     public void maintainAutoCommitTest() throws SQLException
     {
-        Query testQuery = Query.withScript( "SELECT 1;" ).inTransaction( true );
+        Query testQuery = new Query( this.systemSettings, "SELECT 1;" )
+                .inTransaction( true );
 
         try ( Connection connection = dataSource.getConnection() )
         {

@@ -29,6 +29,10 @@ import static wres.io.concurrency.TimeSeriesIngester.GEO_ID_TYPE.GAGE_ID;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.time.TimeSeries;
 import wres.io.concurrency.TimeSeriesIngester;
+import wres.io.data.caching.Ensembles;
+import wres.io.data.caching.Features;
+import wres.io.data.caching.MeasurementUnits;
+import wres.io.data.caching.Variables;
 import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
 import wres.io.reading.BasicSource;
@@ -37,7 +41,9 @@ import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.reading.PreIngestException;
 import wres.io.reading.WebClient;
+import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
+import wres.system.SystemSettings;
 import wres.util.Strings;
 
 /**
@@ -53,15 +59,74 @@ public class WaterMLBasicSource extends BasicSource
                               .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true );
 
     private static final String MD5SUM_OF_EMPTY_STRING = "68b329da9893e34099c7d8ad5cb9c940";
+    private final SystemSettings systemSettings;
+    private final Database database;
+    private final Features featuresCache;
+    private final Variables variablesCache;
+    private final Ensembles ensemblesCache;
+    private final MeasurementUnits measurementUnitsCache;
     private final DatabaseLockManager lockManager;
 
-    public WaterMLBasicSource( ProjectConfig projectConfig,
+    public WaterMLBasicSource( SystemSettings systemSettings,
+                               Database database,
+                               Features featuresCache,
+                               Variables variablesCache,
+                               Ensembles ensemblesCache,
+                               MeasurementUnits measurementUnitsCache,
+                               ProjectConfig projectConfig,
                                DataSource dataSource,
                                DatabaseLockManager lockManager )
     {
         super( projectConfig, dataSource );
+        Objects.requireNonNull( systemSettings );
+        Objects.requireNonNull( database );
+        Objects.requireNonNull( featuresCache );
+        Objects.requireNonNull( variablesCache );
+        Objects.requireNonNull( ensemblesCache );
+        Objects.requireNonNull( measurementUnitsCache );
         Objects.requireNonNull( lockManager );
+        this.systemSettings = systemSettings;
+        this.database = database;
+        this.featuresCache = featuresCache;
+        this.variablesCache = variablesCache;
+        this.ensemblesCache = ensemblesCache;
+        this.measurementUnitsCache = measurementUnitsCache;
         this.lockManager = lockManager;
+    }
+
+    private SystemSettings getSystemSettings()
+    {
+        return this.systemSettings;
+    }
+
+    private Database getDatabase()
+    {
+        return this.database;
+    }
+
+    private Features getFeaturesCache()
+    {
+        return this.featuresCache;
+    }
+
+    private Variables getVariablesCache()
+    {
+        return this.variablesCache;
+    }
+
+    private Ensembles getEnsemblesCache()
+    {
+        return this.ensemblesCache;
+    }
+
+    private MeasurementUnits getMeasurementUnitsCache()
+    {
+        return this.measurementUnitsCache;
+    }
+
+    private DatabaseLockManager getLockManager()
+    {
+        return this.lockManager;
     }
 
     @Override
@@ -107,7 +172,8 @@ public class WaterMLBasicSource extends BasicSource
                                                          MD5SUM_OF_EMPTY_STRING.toUpperCase() );
 
                     SourceDetails details = this.createSourceDetails( sourceKey );
-                    details.save();
+                    Database database = this.getDatabase();
+                    details.save( database );
                     boolean foundAlready = !details.performedInsert();
 
                     LOGGER.debug( "Found {}? {}", details, foundAlready );
@@ -116,7 +182,7 @@ public class WaterMLBasicSource extends BasicSource
                     {
                         this.lockManager.lockSource( details.getId() );
                         SourceCompletedDetails completedDetails =
-                                createSourceCompletedDetails( details );
+                                createSourceCompletedDetails( database, details );
                         completedDetails.markCompleted();
                         // A special case here, where we don't use
                         // source completer because we know there are no data
@@ -193,9 +259,15 @@ public class WaterMLBasicSource extends BasicSource
 
             for ( TimeSeries<Double> timeSeries : transformed )
             {
-                TimeSeriesIngester ingester = TimeSeriesIngester.of( this.projectConfig,
-                                                                     this.dataSource,
-                                                                     this.lockManager,
+                TimeSeriesIngester ingester = TimeSeriesIngester.of( this.getSystemSettings(),
+                                                                     this.getDatabase(),
+                                                                     this.getFeaturesCache(),
+                                                                     this.getVariablesCache(),
+                                                                     this.getEnsemblesCache(),
+                                                                     this.getMeasurementUnitsCache(),
+                                                                     this.getProjectConfig(),
+                                                                     this.getDataSource(),
+                                                                     this.getLockManager(),
                                                                      timeSeries,
                                                                      GAGE_ID );
                 List<IngestResult> result = ingester.call();
@@ -284,9 +356,10 @@ public class WaterMLBasicSource extends BasicSource
      * @param sourceDetails the first arg to SourceCompletedDetails
      * @return a SourceCompleter
      */
-    SourceCompletedDetails createSourceCompletedDetails( SourceDetails sourceDetails )
+    SourceCompletedDetails createSourceCompletedDetails( Database database,
+                                                         SourceDetails sourceDetails )
     {
-        return new SourceCompletedDetails( sourceDetails );
+        return new SourceCompletedDetails( database, sourceDetails );
     }
 
     @Override

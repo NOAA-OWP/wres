@@ -6,12 +6,19 @@ import java.util.function.Supplier;
 
 public class DatabaseConnectionSupplier implements Supplier<Connection>
 {
+    private final SystemSettings systemSettings;
+
+    public DatabaseConnectionSupplier( SystemSettings systemSettings )
+    {
+        this.systemSettings = systemSettings;
+    }
+
     @Override
     public Connection get()
     {
         try
         {
-            return SystemSettings.getRawDatabaseConnection();
+            return systemSettings.getRawDatabaseConnection();
         }
         catch ( SQLException se )
         {

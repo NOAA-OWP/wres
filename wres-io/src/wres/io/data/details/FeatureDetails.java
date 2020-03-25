@@ -14,13 +14,14 @@ import wres.config.generated.CoordinateSelection;
 import wres.config.generated.Feature;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
+import wres.io.utilities.Database;
 import wres.util.Strings;
 
 /**
  * Defines the important details of a feature as stored in the database
  * @author Christopher Tubbs
  */
-public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDetails.FeatureKey>
+public class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDetails.FeatureKey>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureDetails.class);
 
@@ -379,9 +380,9 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
     }
 
     @Override
-    protected DataScripter getInsertSelect()
+    protected DataScripter getInsertSelect( Database database )
     {
-        DataScripter script = new DataScripter();
+        DataScripter script = new DataScripter( database );
         this.addInsert( script );
         script.setUseTransaction( true );
 
@@ -799,9 +800,9 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
     }
 
     @Override
-    public void save() throws SQLException
+    public void save( Database database ) throws SQLException
     {
-        DataScripter script = this.getInsertSelect();
+        DataScripter script = this.getInsertSelect( database );
         boolean performedInsert = script.execute() > 0;
 
         if ( performedInsert )
@@ -812,7 +813,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
         }
         else
         {
-            DataScripter scriptWithId = new DataScripter();
+            DataScripter scriptWithId = new DataScripter( database );
             scriptWithId.setHighPriority( true );
             scriptWithId.setUseTransaction( false );
             this.addSelect( scriptWithId );

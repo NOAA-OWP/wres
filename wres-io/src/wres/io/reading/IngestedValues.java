@@ -17,6 +17,7 @@ import wres.datamodel.scale.TimeScale;
 import wres.io.data.details.TimeSeries;
 import wres.io.utilities.CopyException;
 import wres.io.utilities.DataBuilder;
+import wres.io.utilities.Database;
 import wres.system.SystemSettings;
 import wres.util.TimeHelper;
 
@@ -71,6 +72,8 @@ public final class IngestedValues
     /**
      * Add an observation with possibly missing time scale information.
      *
+     * @param systemSettings The system settings to use.
+     * @param database THe database to use.
      * @param variableFeatureID the variableFeature identifier
      * @param observationTime the observation time
      * @param observedValue the observed value
@@ -82,6 +85,8 @@ public final class IngestedValues
      */
 
     static Pair<CountDownLatch,CountDownLatch> addObservation(
+            SystemSettings systemSettings,
+            Database database,
             final int variableFeatureID,
             final TemporalAccessor observationTime,
             final Double observedValue,
@@ -162,7 +167,7 @@ public final class IngestedValues
 
 
             int rowCount = dataBuilderToUse.getRowCount();
-            int maximumCount = SystemSettings.getMaximumCopies();
+            int maximumCount = systemSettings.getMaximumCopies();
 
             if ( rowCount >= maximumCount )
             {
@@ -231,7 +236,7 @@ public final class IngestedValues
                 // leave Thread C to do other things. Even better might be to
                 // let Thread A do the ingest since it is the one waiting.
                 removedDataBuilder.build()
-                                  .copy( OBSERVATION_TABLE_NAME );
+                                  .copy( database, OBSERVATION_TABLE_NAME );
             }
             catch( CopyException ce )
             {
@@ -265,6 +270,8 @@ public final class IngestedValues
      * Stores a time series value so that it may be copied to the database,
      * potentially later, but potentially in this Thread, especially if some
      * other Thread awaits it.
+     * @param systemSettings The system settings to use.
+     * @param database The database to use.
      * @param timeSeriesID The ID of the time series that the value belongs to
      * @param lead The lead time for the value
      * @param value The value itself
@@ -272,7 +279,9 @@ public final class IngestedValues
      * @throws IngestException when the proper partition could not be retrieved
      *                         or when the ingest fails.
      */
-    public static Pair<CountDownLatch,CountDownLatch> addTimeSeriesValue( int timeSeriesID,
+    public static Pair<CountDownLatch,CountDownLatch> addTimeSeriesValue( SystemSettings systemSettings,
+                                                                          Database database,
+                                                                          int timeSeriesID,
                                                                           int lead,
                                                                           Double value )
             throws IngestException
@@ -335,7 +344,7 @@ public final class IngestedValues
             }
 
             int rowCount = dataBuilderToUse.getRowCount();
-            int maximumCount = SystemSettings.getMaximumCopies();
+            int maximumCount = systemSettings.getMaximumCopies();
 
             // If the maximum number of values to copy has been reached, copy the
             // values
@@ -401,7 +410,7 @@ public final class IngestedValues
                 // leave Thread C to do other things. Even better might be to
                 // let Thread A do the ingest since it is the one waiting.
                 removedDataBuilder.build()
-                                  .copy( partitionName );
+                                  .copy( database, partitionName );
             }
             catch( CopyException ce )
             {
@@ -435,10 +444,12 @@ public final class IngestedValues
      * Call this when you are an ingester waiting to mark "completed" but no
      * other Thread has helped you out.
      *
+     * @param database The database to use.
      * @param synchronizer the handle returned by this class to the ingester,
      *                     representing a superset of data the ingester sent.
      */
-    static boolean flush( Pair<CountDownLatch,CountDownLatch> synchronizer )
+    static boolean flush( Database database,
+                          Pair<CountDownLatch,CountDownLatch> synchronizer )
             throws IngestException
     {
         LOGGER.trace( "Began flush for synchronizer {}...", synchronizer );
@@ -513,7 +524,7 @@ public final class IngestedValues
             // leave Thread C to do other things. Even better might be to
             // let Thread A do the ingest since it is the one waiting.
             removedDataBuilder.build()
-                              .copy( partitionName );
+                              .copy( database, partitionName );
         }
         catch( CopyException ce )
         {
@@ -594,9 +605,12 @@ public final class IngestedValues
             return this;
         }
 
-        public Pair<CountDownLatch,CountDownLatch> add() throws IngestException
+        public Pair<CountDownLatch,CountDownLatch> add( SystemSettings systemSettings,
+                                                        Database database ) throws IngestException
         {
             return IngestedValues.addObservation(
+                    systemSettings,
+                    database,
                     this.variableFeatureId,
                     this.observationTime,
                     this.value,

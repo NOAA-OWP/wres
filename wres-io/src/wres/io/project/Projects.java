@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.ProjectConfig;
+import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
 import static wres.io.config.LeftOrRightOrBaseline.*;
 
@@ -28,6 +29,7 @@ import wres.io.reading.PreIngestException;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
+import wres.system.SystemSettings;
 
 /**
  * Create or find existing wres.project rows in the database, represented by
@@ -38,12 +40,18 @@ public class Projects
     private static final String NEWLINE = System.lineSeparator();
     private static final Logger LOGGER = LoggerFactory.getLogger(Projects.class);
 
-    private static Pair<Project,Boolean> getProject( ProjectConfig projectConfig,
+    private static Pair<Project,Boolean> getProject( SystemSettings systemSettings,
+                                                     Database database,
+                                                     Executor executor,
+                                                     ProjectConfig projectConfig,
                                                      List<String> leftHashes,
                                                      List<String> rightHashes,
                                                      List<String> baselineHashes )
             throws SQLException
     {
+        Objects.requireNonNull( systemSettings );
+        Objects.requireNonNull( database );
+        Objects.requireNonNull( executor );
         Objects.requireNonNull( projectConfig );
         Objects.requireNonNull( leftHashes );
         Objects.requireNonNull( rightHashes );
@@ -55,7 +63,10 @@ public class Projects
                 baselineHashes
         );
 
-        Project details = new Project( projectConfig,
+        Project details = new Project( systemSettings,
+                                       database,
+                                       executor,
+                                       projectConfig,
                                        inputCode );
         details.save();
         boolean thisCallCausedInsert = details.performedInsert();
@@ -67,6 +78,9 @@ public class Projects
 
     /**
      * Convert a projectConfig and a raw list of IngestResult into ProjectDetails
+     * @param systemSettings The system settings to use.
+     * @param database The database to use.
+     * @param executor The executor to use.
      * @param projectConfig the config that produced the ingest results
      * @param ingestResults the ingest results
      * @return the ProjectDetails to use
@@ -74,7 +88,10 @@ public class Projects
      * @throws IllegalArgumentException when an IngestResult does not have left/right/baseline information
      * @throws IOException when a source identifier cannot be determined
      */
-    public static Project getProjectFromIngest( ProjectConfig projectConfig,
+    public static Project getProjectFromIngest( SystemSettings systemSettings,
+                                                Database database,
+                                                Executor executor,
+                                                ProjectConfig projectConfig,
                                                 List<IngestResult> ingestResults )
             throws SQLException, IOException
     {
@@ -157,7 +174,7 @@ public class Projects
                        + "FROM wres.Source "
                        + "WHERE source_id in "
                        + idJoiner.toString();
-        DataScripter script = new DataScripter( query );
+        DataScripter script = new DataScripter( database, query );
         Map<Integer,String> idsToHashes = new HashMap<>( countOfUniqueHashes );
 
         try ( DataProvider dataProvider = script.getData() )
@@ -253,7 +270,10 @@ public class Projects
         }
 
         Pair<Project,Boolean> detailsResult =
-                Projects.getProject( projectConfig,
+                Projects.getProject( systemSettings,
+                                     database,
+                                     executor,
+                                     projectConfig,
                                      finalLeftHashes,
                                      finalRightHashes,
                                      finalBaselineHashes );
@@ -290,14 +310,14 @@ public class Projects
 
             String allCopyValues = copyStatement.toString();
             LOGGER.trace( "Full copy statement: {}", allCopyValues );
-            Database.copy( copyHeader, allCopyValues, delimiter );
+            database.copy( copyHeader, allCopyValues, delimiter );
         }
         else
         {
             LOGGER.debug( "Found that this Thread is NOT responsible for "
                           + "wres.ProjectSource rows for project {}",
                           detailsId );
-            DataScripter scripter = new DataScripter();
+            DataScripter scripter = new DataScripter( database );
             scripter.addLine( "SELECT COUNT( source_id )" );
             scripter.addLine( "FROM wres.ProjectSource" );
             scripter.addLine( "WHERE project_id = ?" );

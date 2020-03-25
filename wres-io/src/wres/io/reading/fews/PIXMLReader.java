@@ -44,7 +44,9 @@ import wres.io.reading.SourceCompleter;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestedValues;
 import wres.io.reading.InvalidInputDataException;
+import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
+import wres.system.SystemSettings;
 import wres.system.xml.XMLHelper;
 import wres.system.xml.XMLReader;
 import wres.util.Strings;
@@ -67,6 +69,13 @@ public final class PIXMLReader extends XMLReader
             = DateTimeFormatter.ofPattern( "yyyy-MM-dd HH:mm:ss", Locale.US )
                                .withZone( ZoneId.of( "UTC" ) );
 
+    private final SystemSettings systemSettings;
+    private final Database database;
+    private final DataSources dataSourcesCache;
+    private final Features featuresCache;
+    private final Variables variablesCache;
+    private final Ensembles ensemblesCache;
+    private final MeasurementUnits measurementUnitsCache;
     private DataSourceConfig.Source sourceConfig;
     private final DatabaseLockManager lockManager;
     private final Set<Pair<CountDownLatch,CountDownLatch>> latches = new HashSet<>();
@@ -83,26 +92,89 @@ public final class PIXMLReader extends XMLReader
 	 * @param lockManager The lock manager to use.
      * @throws IOException when an attempt to get the file from classpath fails.
 	 */
-    PIXMLReader( URI filename,
+    PIXMLReader( SystemSettings systemSettings,
+                 Database database,
+                 DataSources dataSourcesCache,
+                 Features featuresCache,
+                 Variables variablesCache,
+                 Ensembles ensemblesCache,
+                 MeasurementUnits measurementUnitsCache,
+                 URI filename,
                  String hash,
                  DatabaseLockManager lockManager )
             throws IOException
 	{
 		super(filename);
+		this.systemSettings = systemSettings;
+        this.database = database;
+        this.dataSourcesCache = dataSourcesCache;
+        this.featuresCache = featuresCache;
+        this.variablesCache = variablesCache;
+        this.ensemblesCache = ensemblesCache;
+        this.measurementUnitsCache = measurementUnitsCache;
 		this.hash = hash;
         this.lockManager = lockManager;
 	}
 
-    public PIXMLReader( URI filename,
+    public PIXMLReader( SystemSettings systemSettings,
+                        Database database,
+                        DataSources dataSourcesCache,
+                        Features featuresCache,
+                        Variables variablesCache,
+                        Ensembles ensemblesCache,
+                        MeasurementUnits measurementUnitsCache,
+                        URI filename,
                         InputStream inputStream,
                         String hash,
                         DatabaseLockManager lockManager )
             throws IOException
 	{
 		super(filename, inputStream);
+		this.systemSettings = systemSettings;
+        this.database = database;
+        this.dataSourcesCache = dataSourcesCache;
+        this.featuresCache = featuresCache;
+        this.variablesCache = variablesCache;
+        this.ensemblesCache = ensemblesCache;
+        this.measurementUnitsCache = measurementUnitsCache;
 		this.hash = hash;
         this.lockManager = lockManager;
 	}
+
+	private SystemSettings getSystemSettings()
+    {
+        return this.systemSettings;
+    }
+
+    private Database getDatabase()
+    {
+        return this.database;
+    }
+
+    private DataSources getDataSourcesCache()
+    {
+        return this.dataSourcesCache;
+    }
+
+    private Features getFeaturesCache()
+    {
+        return this.featuresCache;
+    }
+
+    private Variables getVariablesCache()
+    {
+        return this.variablesCache;
+    }
+
+    private Ensembles getEnsemblesCache()
+    {
+        return this.ensemblesCache;
+    }
+
+    private MeasurementUnits getMeasurementUnitsCache()
+    {
+        return this.measurementUnitsCache;
+    }
 
 	@Override
 	protected void parseElement( XMLStreamReader reader )
@@ -344,7 +416,9 @@ public final class PIXMLReader extends XMLReader
             if ( this.inChargeOfIngest  )
             {
                 Pair<CountDownLatch,CountDownLatch> synchronizer =
-                        IngestedValues.addTimeSeriesValue( timeseriesID,
+                        IngestedValues.addTimeSeriesValue( this.getSystemSettings(),
+                                                           this.getDatabase(),
+                                                           timeseriesID,
                                                            leadTimeInHours,
                                                            this.getValueToSave( value )
                 );
@@ -392,7 +466,8 @@ public final class PIXMLReader extends XMLReader
                              .inSource( this.getSourceID() )
                              .scaleOf( this.scalePeriod )
                              .scaledBy( this.scaleFunction )
-                             .add();
+                             .add( this.getSystemSettings(),
+                                   this.getDatabase() );
     }
 
 
@@ -452,8 +527,9 @@ public final class PIXMLReader extends XMLReader
 					if (currentLID.length() > 5)
 					{
 					    String shortendID = currentLID.substring(0, 5);
+					    Features features = this.getFeaturesCache();
 
-					    if (Features.lidExists( shortendID ))
+					    if ( features.lidExists( shortendID ) )
 						{
 							this.currentLID = shortendID;
 						}
@@ -461,7 +537,8 @@ public final class PIXMLReader extends XMLReader
 				}
 				else if(localName.equalsIgnoreCase("units"))
 				{
-					currentMeasurementUnitID = MeasurementUnits.getMeasurementUnitID(XMLHelper.getXMLText(reader));
+				    MeasurementUnits measurementUnits = this.getMeasurementUnitsCache();
+					currentMeasurementUnitID = measurementUnits.getMeasurementUnitID(XMLHelper.getXMLText(reader));
 				}
 				else if(localName.equalsIgnoreCase("missVal"))
 				{
@@ -485,7 +562,8 @@ public final class PIXMLReader extends XMLReader
 				else if (localName.equalsIgnoreCase("parameterId"))
 				{
 					currentVariableName = XMLHelper.getXMLText(reader);
-					currentVariableID = Variables.getVariableID(currentVariableName);
+					Variables variables = this.getVariablesCache();
+					currentVariableID = variables.getVariableID(currentVariableName);
 				}
 				else if ( localName.equalsIgnoreCase("forecastDate") )
 				{
@@ -632,7 +710,8 @@ public final class PIXMLReader extends XMLReader
 	 */
 	private int getEnsembleID() throws SQLException {
 		if (currentEnsembleID == null) {
-			currentEnsembleID = Ensembles.getEnsembleID(currentEnsembleName,
+		    Ensembles ensembles = this.getEnsemblesCache();
+			currentEnsembleID = ensembles.getEnsembleID(currentEnsembleName,
 														currentEnsembleMemberID,
 														currentQualifierID);
 		}
@@ -654,11 +733,13 @@ public final class PIXMLReader extends XMLReader
 	{
 		if (currentVariableFeatureID == null)
 		{
+            Features features = this.getFeaturesCache();
+
 		    // TODO: This needs to rely on a FeatureDetails object, not an LID
             //       If we store additional information, new values become easier
             //       to use
-			currentVariableFeatureID = Features.getVariableFeatureIDByLID( currentLID,
-                                                                             getVariableID());
+			currentVariableFeatureID = features.getVariableFeatureIDByLID( currentLID,
+                                                                           getVariableID());
 		}
 		return currentVariableFeatureID;
 	}
@@ -689,8 +770,10 @@ public final class PIXMLReader extends XMLReader
             OffsetDateTime forecastFullDateTime
                     = OffsetDateTime.of( this.getForecastDate(),
                                          this.getZoneOffset() );
+            Database database = this.getDatabase();
             this.currentTimeSeries =
-                    new TimeSeries( this.getSourceID(),
+                    new TimeSeries( database,
+                                    this.getSourceID(),
                                     forecastFullDateTime.format( FORMATTER ) );
 
             // Set the time scale information
@@ -714,7 +797,8 @@ public final class PIXMLReader extends XMLReader
     {
 		if (currentVariableID == null)
 		{
-			this.currentVariableID = Variables.getVariableID(currentVariableName);
+		    Variables variables = this.getVariablesCache();
+			this.currentVariableID = variables.getVariableID(currentVariableName);
 		}
 		return this.currentVariableID;
 	}
@@ -753,7 +837,8 @@ public final class PIXMLReader extends XMLReader
                                                  this.getHash() );
 
             // Ask the cache "do you have this source?"
-            boolean wasInCache = DataSources.isCached( sourceKey );
+            DataSources dataSources = this.getDataSourcesCache();
+            boolean wasInCache = dataSources.isCached( sourceKey );
             boolean wasThisReaderTheOneThatInserted = false;
             SourceDetails sourceDetails;
 
@@ -761,7 +846,8 @@ public final class PIXMLReader extends XMLReader
             {
                 // We *might* be the one in charge of doing this source ingest.
                 sourceDetails = new SourceDetails( sourceKey );
-                sourceDetails.save();
+                Database database = this.getDatabase();
+                sourceDetails.save( database );
                 if ( sourceDetails.performedInsert() )
                 {
                     // Now we have the definitive answer from the database.
@@ -771,14 +857,14 @@ public final class PIXMLReader extends XMLReader
                     this.lockManager.lockSource( sourceDetails.getId() );
 
                     // Now that ball is in our court we should put in cache
-                    DataSources.put( sourceDetails );
+                    dataSources.put( sourceDetails );
                     // // Older, implicit way:
                     // DataSources.hasSource( this.getHash() );
                 }
             }
 
             // Regardless of whether we were the ones or not, get it from cache
-            currentSourceID = DataSources.getActiveSourceID( this.getHash() );
+            currentSourceID = dataSources.getActiveSourceID( this.getHash() );
 
 			// Mark whether this reader is the one to perform ingest or yield.
             inChargeOfIngest = wasThisReaderTheOneThatInserted;
@@ -863,12 +949,14 @@ public final class PIXMLReader extends XMLReader
     protected void completeParsing() throws IngestException
     {
         URI uri = this.getFilename();
+        Database database = this.getDatabase();
 
         if ( this.inChargeOfIngest )
         {
             LOGGER.debug( "Because this task is in charge of ingest, mark source complete for {}.",
                           this );
-            SourceCompleter sourceCompleter = new SourceCompleter( this.currentSourceID,
+            SourceCompleter sourceCompleter = new SourceCompleter( database,
+                                                                   this.currentSourceID,
                                                                    this.lockManager );
             // Unsafe publication?
             sourceCompleter.complete( this.latches );
@@ -882,7 +970,8 @@ public final class PIXMLReader extends XMLReader
             try
             {
                 SourceCompletedDetails completedDetails =
-                        new SourceCompletedDetails( this.currentSourceID );
+                        new SourceCompletedDetails( database,
+                                                    this.currentSourceID );
                 this.ingestFullyCompleted = completedDetails.wasCompleted();
             }
             catch ( SQLException se )

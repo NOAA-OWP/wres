@@ -3,8 +3,6 @@ package wres.io.utilities;
 import java.io.IOException;
 import java.io.PushbackReader;
 import java.io.StringReader;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -21,13 +19,11 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import com.zaxxer.hikari.HikariDataSource;
 import org.postgresql.PGConnection;
 import org.postgresql.copy.CopyManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.mchange.v2.c3p0.C3P0ProxyConnection;
-import com.mchange.v2.c3p0.ComboPooledDataSource;
 
 import wres.io.concurrency.WRESCallable;
 import wres.io.concurrency.WRESRunnable;
@@ -44,31 +40,29 @@ import wres.util.functional.ExceptionalFunction;
  * An Interface structure used for organizing database operations and providing
  * common database operations
  */
-public final class Database {
-    
-    private Database(){}
+public class Database {
+
+    private final SystemSettings systemSettings;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Database.class);
 
 	/**
 	 * The standard priority set of connections to the database
 	 */
-	private static final ComboPooledDataSource CONNECTION_POOL =
-			SystemSettings.getConnectionPool();
+    private final HikariDataSource connectionPool;
 
 	/**
 	 * A higher priority set of connections to the database used for operations
 	 * that absolutely need to operate within the database with little to no
 	 * competition for resources. Should be used sparingly
 	 */
-    private static final ComboPooledDataSource HIGH_PRIORITY_CONNECTION_POOL =
-			SystemSettings.getHighPriorityConnectionPool();
+    private final HikariDataSource highPriorityConnectionPool;
 
 	/**
 	 * A separate thread executor used to schedule database communication
 	 * outside of other threads
 	 */
-	private static ThreadPoolExecutor SQL_TASKS = createService();
+    private ThreadPoolExecutor sqlTasks;
 
 	/**
 	 * System agnostic newline character used to make generated queries human
@@ -77,42 +71,29 @@ public final class Database {
     private static final String NEWLINE = System.lineSeparator();
 
 	/**
-	 * The function used to copy data to the database
-	 */
-	private static Method copyAPI = null;
-
-	/**
-	 * @return The function used within the given implementation of the
-	 * JDBC PostgreSQL driver to copy values directly into the database rather
-	 * than inserting them
-	 * @throws NoSuchMethodException Thrown if the current implementation of
-	 * the JDBC PostgreSQL driver does not have the ability to copy values
-	 */
-    private static Method getCopyAPI() throws NoSuchMethodException
-    {
-		if (copyAPI == null)
-		{
-			copyAPI = PGConnection.class.getMethod("getCopyAPI");
-		}
-		return copyAPI;
-	}
-
-	/**
 	 * A queue containing tasks used to ingest data into the database
      * <br><br>
      * TODO: Make this a collection of futures, not future lists of ingest results.
      * Other things need to occupy this collection that don't contain ingest results
 	 */
-    private static final LinkedBlockingQueue<Future<List<IngestResult>>> storedIngestTasks =
+    private final LinkedBlockingQueue<Future<List<IngestResult>>> storedIngestTasks =
 			new LinkedBlockingQueue<>();
 
-	/**
+    public Database( SystemSettings systemSettings )
+    {
+        this.systemSettings = systemSettings;
+        this.connectionPool = systemSettings.getConnectionPool();
+        this.highPriorityConnectionPool = systemSettings.getHighPriorityConnectionPool();
+        this.sqlTasks = createService();
+    }
+
+    /**
 	 * Adds a task to the ingest queue
 	 * @param task The ingest task to add to the queue
 	 */
-	private static void storeIngestTask(Future task)
+    private void storeIngestTask(Future task)
 	{
-		Database.storedIngestTasks.add(task);
+        this.storedIngestTasks.add(task);
 	}
 
     /**
@@ -121,10 +102,10 @@ public final class Database {
      * @param ingestTask A task that will ingest source data into the database
      * @return The future result of the task
      */
-	public static Future<?> ingest(WRESRunnable ingestTask)
+    public Future<?> ingest(WRESRunnable ingestTask)
 	{
-		Future<?> result = Database.execute( ingestTask );
-		Database.storeIngestTask( result );
+        Future<?> result = this.execute( ingestTask );
+        this.storeIngestTask( result );
 		return result;
 	}
 
@@ -135,10 +116,10 @@ public final class Database {
      * @param ingestTask A task that will ingest source data into the database
      * @return The future result of the task
      */
-	public static <U> Future<U> ingest(WRESCallable<U> ingestTask)
+    public <U> Future<U> ingest(WRESCallable<U> ingestTask)
 	{
-		Future<U> result = Database.submit( ingestTask );
-		Database.storeIngestTask( result );
+        Future<U> result = this.submit( ingestTask );
+        this.storeIngestTask( result );
 		return result;
 	}
 
@@ -147,16 +128,18 @@ public final class Database {
 	 * Creates a new thread executor
 	 * @return A new thread executor that may run the maximum number of configured threads
 	 */
-	private static ThreadPoolExecutor createService()
+    private ThreadPoolExecutor createService()
 	{
 		// Ensures that all created threads will be labeled "Database Thread"
 		ThreadFactory factory = runnable -> new Thread(runnable, "Database Thread");
-		ThreadPoolExecutor executor = new ThreadPoolExecutor(CONNECTION_POOL.getMaxPoolSize(),
-                                                             CONNECTION_POOL.getMaxPoolSize(),
-                                                             SystemSettings.poolObjectLifespan(),
-                                                             TimeUnit.MILLISECONDS,
-															 new ArrayBlockingQueue<>(CONNECTION_POOL.getMaxPoolSize() * 5),
-															 factory
+        ThreadPoolExecutor executor = new ThreadPoolExecutor( connectionPool.getMaximumPoolSize(),
+                                                              connectionPool.getMaximumPoolSize(),
+                                                              systemSettings.poolObjectLifespan(),
+                                                              TimeUnit.MILLISECONDS,
+                                                              new ArrayBlockingQueue<>(
+                                                                      connectionPool
+                                                                              .getMaximumPoolSize() * 5),
+                                                              factory
 		);
 
 		// Ensures that the calling thread runs the new thread logic itself if
@@ -170,7 +153,7 @@ public final class Database {
 	 * @return the list of resulting ingested file identifiers
      * @throws IngestException if the ingest fails
      */
-    public static List<IngestResult> completeAllIngestTasks() throws IngestException
+    public List<IngestResult> completeAllIngestTasks() throws IngestException
     {
         LOGGER.trace( "Now completing all issued ingest tasks..." );
 
@@ -182,7 +165,7 @@ public final class Database {
             ProgressMonitor.setShouldUpdate( true );
 
             // Process every stored task
-            for ( Future<List<IngestResult>> task : Database.storedIngestTasks )
+            for ( Future<List<IngestResult>> task : this.storedIngestTasks )
             {
                 // Tell the client that we're moving on to the next part of work
                 ProgressMonitor.increment();
@@ -235,14 +218,14 @@ public final class Database {
 	 * @param task The thread whose task to execute
 	 * @return the result of the execution wrapped in a {@link Future}
 	 */
-	public static Future<?> execute(final Runnable task)
+    public Future<?> execute(final Runnable task)
 	{
-		if (SQL_TASKS == null || SQL_TASKS.isShutdown())
+        if ( sqlTasks == null || sqlTasks.isShutdown())
 		{
-			SQL_TASKS = createService();
+            sqlTasks = createService();
 		}
 
-		return SQL_TASKS.submit(task);
+        return sqlTasks.submit( task);
 	}
 
     /**
@@ -251,31 +234,31 @@ public final class Database {
      * @param <V> The return type encompassed by the future result
      * @return The future result of the passed in logic
      */
-	public static <V> Future<V> submit(Callable<V> task)
+    public <V> Future<V> submit(Callable<V> task)
 	{
-		if (SQL_TASKS == null || SQL_TASKS.isShutdown())
+        if ( sqlTasks == null || sqlTasks.isShutdown())
 		{
-			SQL_TASKS = createService();
+            sqlTasks = createService();
 		}
-		return SQL_TASKS.submit(task);
+        return sqlTasks.submit( task);
 	}
 	
 	/**
 	 * Waits until all passed in jobs have executed.
 	 */
-	public static void shutdown()
+    public void shutdown()
 	{
-		if (!SQL_TASKS.isShutdown())
+        if (!sqlTasks.isShutdown())
 		{
-			SQL_TASKS.shutdown();
+            sqlTasks.shutdown();
 
 			// The wait functions for the executor aren't 100% reliable, so we spin until it's done
-			while (!SQL_TASKS.isTerminated());
+            while (!sqlTasks.isTerminated());
         }
 
 		// Close out our database connection pools
-        CONNECTION_POOL.close();
-        HIGH_PRIORITY_CONNECTION_POOL.close();
+        connectionPool.close();
+        highPriorityConnectionPool.close();
 	}
 
 
@@ -287,30 +270,30 @@ public final class Database {
      * @return the list of abandoned tasks
      */
 
-    public static List<Runnable> forceShutdown( long timeOut,
-                                                TimeUnit timeUnit )
+    public List<Runnable> forceShutdown( long timeOut,
+                                         TimeUnit timeUnit )
     {
         List<Runnable> abandoned = new ArrayList<>();
 
-        SQL_TASKS.shutdown();
+        sqlTasks.shutdown();
         try
         {
-            SQL_TASKS.awaitTermination( timeOut, timeUnit );
+            sqlTasks.awaitTermination( timeOut, timeUnit );
         }
         catch ( InterruptedException ie )
         {
             LOGGER.warn( "Database forceShutdown interrupted.", ie );
-            List<Runnable> abandonedDbTasks = SQL_TASKS.shutdownNow();
+            List<Runnable> abandonedDbTasks = sqlTasks.shutdownNow();
             abandoned.addAll( abandonedDbTasks );
-            CONNECTION_POOL.close();
-            HIGH_PRIORITY_CONNECTION_POOL.close();
+            connectionPool.close();
+            highPriorityConnectionPool.close();
             Thread.currentThread().interrupt();
         }
 
-        List<Runnable> abandonedMore = SQL_TASKS.shutdownNow();
+        List<Runnable> abandonedMore = sqlTasks.shutdownNow();
         abandoned.addAll( abandonedMore );
-        CONNECTION_POOL.close();
-        HIGH_PRIORITY_CONNECTION_POOL.close();
+        connectionPool.close();
+        highPriorityConnectionPool.close();
         return abandoned;
     }
 
@@ -319,9 +302,9 @@ public final class Database {
      * @return A database connection from the standard connection pool
      * @throws SQLException Thrown if a connection could not be retrieved
      */
-	public static Connection getConnection() throws SQLException
+    public Connection getConnection() throws SQLException
 	{
-		return CONNECTION_POOL.getConnection();
+        return connectionPool.getConnection();
 	}
 
     /**
@@ -329,10 +312,10 @@ public final class Database {
      * @return A database connection that should have little to no contention
      * @throws SQLException Thrown if a connection could not be retrieved
      */
-	public static Connection getHighPriorityConnection() throws SQLException
+    public Connection getHighPriorityConnection() throws SQLException
     {
         LOGGER.debug("Retrieving a high priority database connection...");
-        return HIGH_PRIORITY_CONNECTION_POOL.getConnection();
+        return highPriorityConnectionPool.getConnection();
     }
 
 	/**
@@ -401,28 +384,22 @@ public final class Database {
      * @throws CopyException Thrown if an error was encountered when trying to
      * copy data to the database.
      */
-	public static void copy(final String table_definition,
-                            final String values,
-                            String delimiter)
+    public void copy( final String table_definition,
+                      final String values,
+                      String delimiter )
             throws CopyException
 	{
 	    // TODO: This is Postgres specific; this needs to either come from a different source or switch
         //  to an insert statement if the database is non-postgresql (i.e. H2)
 
-		Connection connection = null;
-		PushbackReader reader = null;
-		final String copyAPIMethodName = "getCopyAPI";
-
-		try
+        try ( Connection connection = this.getConnection();
+              PushbackReader reader = new PushbackReader(new StringReader(""), values.length() + 1000) )
 		{
-			connection = getConnection();
-			C3P0ProxyConnection proxy = (C3P0ProxyConnection)connection;
-			Object[] arg = new Object[]{};
+            PGConnection pgConnection = connection.unwrap( PGConnection.class );
 
 			// We need specialized functionality to copy, so we need to create a manager object that will
             // handle the copy operation from the postgresql driver
-			CopyManager manager = (CopyManager)proxy.rawConnectionOperation(getCopyAPI(),
-																			C3P0ProxyConnection.RAW_CONNECTION, arg);
+            CopyManager manager = pgConnection.getCopyAPI();
 
 			// The format of the copy statement needs to be of the format
             // "COPY wres.Observation FROM STDIN WITH DELIMITER '|'"
@@ -443,32 +420,15 @@ public final class Database {
 			// Add the delimiter to finish the definition
 			copy_definition += delimiter;
 
-
 			// Create the reader that we'll feed the data through; make sure there is plenty of space to help
             // ensure that all of the data makes it through
-			reader = new PushbackReader(new StringReader(""), values.length() + 1000);
+
 			reader.unread(values.toCharArray());
 
 			// Use the manager to stream the data through to the database
 			manager.copyIn(copy_definition, reader);
-
 		}
-		catch (NoSuchMethodException noMethod)
-		{
-		    // We want to make sure we record the incorrect API name so that we can cross-reference it for debugging
-		    String message = "The method used to create the copy manager ('" +
-                    copyAPIMethodName +
-                    "') could not be retrieved from the PostgreSQL connection class.";
-			throw new CopyException(message, noMethod);
-		}
-        catch (InvocationTargetException e)
-        {
-            // While similar to the above, we want to know for sure that we were at least able to access the method
-            String message = "The dynamically retrieved method '" + copyAPIMethodName +
-                             "' threw an exception upon execution.";
-            throw new CopyException(message, e);
-        }
-		catch (SQLException | IOException | IllegalAccessException error)
+        catch ( SQLException | IOException e )
 		{
 		    // If we are in a non-production environment, it would help to see the format of the data
             // that couldn't be added
@@ -478,29 +438,7 @@ public final class Database {
                               Strings.truncate( values ), NEWLINE );
             }
 			throw new CopyException( "Data could not be copied to the database.",
-                                     error);
-		}
-        finally
-		{
-		    // If we managed to create the reader, we need to close it so we don't have a memory leak
-			if (reader != null)
-			{
-				try
-                {
-					reader.close();
-				}
-				catch (IOException e)
-                {
-                    // While it isn't optimal that we couldn't close the reader, it's not necessarily a showstopper
-					LOGGER.warn("The reader for copy values could not be properly closed.");
-				}
-			}
-
-			// If we did indeed get a connection, we need to make sure it ends up returning to the pool
-			if (connection != null)
-			{
-				Database.returnConnection(connection);
-			}
+                                     e );
 		}
 	}
 
@@ -513,7 +451,7 @@ public final class Database {
      *               values as well
      * @throws SQLException when refresh or adding indices goes wrong
      */
-	public static void refreshStatistics(boolean vacuum)
+    public void refreshStatistics(boolean vacuum)
             throws SQLException
 	{
         List<String> sql = new ArrayList<>();
@@ -543,8 +481,8 @@ public final class Database {
                 + NEWLINE +
                 "     AND relkind = 'r';";
 
-        Database.consume(
-                Query.withScript(script),
+        this.consume(
+                new Query( this.systemSettings, script),
                 provider -> sql.add(optionalVacuum + provider.getString( "alyze" )),
                 false
         );
@@ -560,7 +498,8 @@ public final class Database {
 
         for (String statement : sql)
         {
-            queries.add( Database.issue( Query.withScript( statement ), false ) );
+            Query query = new Query( this.systemSettings, statement );
+            queries.add( this.issue( query, false ) );
         }
 
         boolean analyzeFailed = true;
@@ -623,7 +562,7 @@ public final class Database {
      * @return The number of rows modified or returned by the query
      * @throws SQLException Thrown if an issue was encountered while communicating with the database
      */
-    static int execute( final Query query, final boolean isHighPriority) throws SQLException
+    int execute( final Query query, final boolean isHighPriority) throws SQLException
     {
         int modifiedRows = 0;
         Connection connection = null;
@@ -632,11 +571,11 @@ public final class Database {
         {
             if (isHighPriority)
             {
-                connection = Database.getHighPriorityConnection();
+                connection = this.getHighPriorityConnection();
             }
             else
             {
-                connection = Database.getConnection();
+                connection = this.getConnection();
             }
 
             modifiedRows = query.execute( connection );
@@ -666,11 +605,11 @@ public final class Database {
      * @return A record of the results of the database call
      * @throws SQLException Thrown if there was an error when connecting to the database
      */
-    static DataProvider getData( final Query query, final boolean isHighPriority) throws SQLException
+    DataProvider getData( final Query query, final boolean isHighPriority) throws SQLException
     {
         // Since Database.buffer performs all the heavy lifting, we can just rely on that. Setting that
         // call in the try statement ensures that it is closed once the in-memory results are created
-        try (DataProvider rawProvider = Database.buffer(query, isHighPriority))
+        try ( DataProvider rawProvider = this.buffer(query, isHighPriority) )
         {
             return DataSetProvider.from(rawProvider);
         }
@@ -689,17 +628,17 @@ public final class Database {
      * @return A record of the results of the database call
      * @throws SQLException Thrown if there was an error when connecting to the database
      */
-    static DataProvider buffer(final Query query, final boolean isHighPriority) throws SQLException
+    DataProvider buffer(final Query query, final boolean isHighPriority) throws SQLException
     {
         Connection connection;
 
         if (isHighPriority)
         {
-            connection = Database.getHighPriorityConnection();
+            connection = this.getHighPriorityConnection();
         }
         else
         {
-            connection = Database.getConnection();
+            connection = this.getConnection();
         }
 
         return new SQLDataProvider( connection, query.call( connection ) );
@@ -714,9 +653,9 @@ public final class Database {
      * @return null if no data could be loaded, the value of the retrieved field otherwise
      * @throws SQLException Thrown if an issue was encountered while communicating with the database
      */
-    static <V> V retrieve( final Query query, final String label, final boolean isHighPriority) throws SQLException
+    <V> V retrieve( final Query query, final String label, final boolean isHighPriority) throws SQLException
     {
-        try(DataProvider data = Database.buffer( query, isHighPriority ))
+        try( DataProvider data = this.buffer( query, isHighPriority ) )
         {
             if (data.isEmpty())
             {
@@ -733,13 +672,13 @@ public final class Database {
      * @param isHighPriority Whether or not to run the query on a high priority connection
      * @throws SQLException Thrown if an error was encountered while communicating with the database
      */
-    static void consume(
+    void consume(
             final Query query,
             ExceptionalConsumer<DataProvider, SQLException> consumer,
             final boolean isHighPriority)
             throws SQLException
     {
-        try (DataProvider data = Database.buffer( query, isHighPriority))
+        try ( DataProvider data = this.buffer( query, isHighPriority) )
         {
             data.consume( consumer );
         }
@@ -754,11 +693,11 @@ public final class Database {
      * @return A list of the transformed items
      * @throws SQLException Thrown if the query encounters an error while communicating with the database
      */
-    static <U> List<U> interpret( final Query query, ExceptionalFunction<DataProvider, U, SQLException> interpretor, final boolean isHighPriority) throws SQLException
+    <U> List<U> interpret( final Query query, ExceptionalFunction<DataProvider, U, SQLException> interpretor, final boolean isHighPriority) throws SQLException
     {
         List<U> result;
 
-        try (DataProvider data = Database.buffer( query, isHighPriority))
+        try ( DataProvider data = this.buffer( query, isHighPriority) )
         {
             result = new ArrayList<>( data.interpret( interpretor ) );
         }
@@ -774,13 +713,14 @@ public final class Database {
      * @param <V> The type of value to return
      * @return A scheduled task that will return the value from the named field
      */
-    static <V> Future<V> submit( final Query query, final String label, final boolean isHighPriority)
+    <V> Future<V> submit( final Query query, final String label, final boolean isHighPriority)
     {
+        Database database = this;
         WRESCallable<V> queryToSubmit = new WRESCallable<V>() {
             @Override
             protected V execute() throws SQLException
             {
-                return Database.retrieve( this.query, this.label, this.isHighPriority );
+                return database.retrieve( this.query, this.label, this.isHighPriority );
             }
 
             @Override
@@ -789,20 +729,23 @@ public final class Database {
                 return LOGGER;
             }
 
-            private WRESCallable<V> init(final Query query, final boolean isHighPriority, final String label)
+            private WRESCallable<V> init( Database database,
+                                          final Query query, final boolean isHighPriority, final String label)
             {
+                this.database = database;
                 this.query = query;
                 this.isHighPriority = isHighPriority;
                 this.label = label;
                 return this;
             }
 
+            private Database database;
             private Query query;
             private boolean isHighPriority;
             private String label;
-        }.init( query, isHighPriority, label );
+        }.init( database, query, isHighPriority, label );
 
-        return Database.submit( queryToSubmit );
+        return this.submit( queryToSubmit );
     }
 
     /**
@@ -811,13 +754,14 @@ public final class Database {
      * @param isHighPriority Whether or not the query should be run on a high priority connection
      * @return The record for the scheduled task
      */
-    static Future issue(final Query query, final boolean isHighPriority)
+    Future issue(final Query query, final boolean isHighPriority)
     {
+        Database database = this;
         WRESRunnable queryToIssue = new WRESRunnable() {
             @Override
             protected void execute() throws SQLException
             {
-                Database.execute( this.query, this.isHighPriority );
+                database.execute( this.query, this.isHighPriority );
             }
 
             @Override
@@ -826,18 +770,21 @@ public final class Database {
                 return LOGGER;
             }
 
-            WRESRunnable init(final Query query, final boolean isHighPriority)
+            WRESRunnable init( Database database,
+                               final Query query, final boolean isHighPriority)
             {
+                this.database = database;
                 this.query = query;
                 this.isHighPriority = isHighPriority;
                 return this;
             }
 
+            private Database database;
             private Query query;
             private boolean isHighPriority;
-        }.init(query, isHighPriority);
+        }.init( database, query, isHighPriority);
 
-        return Database.execute( queryToIssue );
+        return this.execute( queryToIssue );
     }
 
     /**
@@ -847,7 +794,7 @@ public final class Database {
      * @throws SQLException Thrown if successful communication with the
      * database could not be established
      */
-    public static void clean() throws SQLException
+    public void clean() throws SQLException
     {
 		StringBuilder builder = new StringBuilder();
 
@@ -874,7 +821,7 @@ public final class Database {
 
 		try
         {
-            Database.execute( Query.withScript( builder.toString() ), false );
+            this.execute( new Query( this.systemSettings, builder.toString() ), false );
 		}
 		catch (final SQLException e)
         {
@@ -889,9 +836,9 @@ public final class Database {
     /**
      * @return A reference to the standard connection pool
      */
-    static ComboPooledDataSource getPool()
+    HikariDataSource getPool()
     {
-        return Database.CONNECTION_POOL;
+        return this.connectionPool;
     }
 
 
@@ -901,14 +848,23 @@ public final class Database {
      * @return the count of tasks waiting to be performed by the db workers.
      */
 
-    public static int getDatabaseQueueTaskCount()
+    public int getDatabaseQueueTaskCount()
     {
-        if ( Database.SQL_TASKS != null
-             && Database.SQL_TASKS.getQueue() != null )
+        if ( this.sqlTasks != null
+             && this.sqlTasks.getQueue() != null )
         {
-            return Database.SQL_TASKS.getQueue().size();
+            return this.sqlTasks.getQueue().size();
         }
 
         return 0;
+    }
+
+    /**
+     * Expose SystemSettings for the sake of DataScripter
+     * @return the system settings this database instance uses.
+     */
+    SystemSettings getSystemSettings()
+    {
+        return this.systemSettings;
     }
 }

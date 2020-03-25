@@ -13,20 +13,23 @@ import wres.util.functional.ExceptionalFunction;
 
 public class DataScripter extends ScriptBuilder
 {
+    private final Database database;
     private boolean isHighPriority = false;
     private final List<Object> arguments = new ArrayList<>(  );
     private boolean useTransaction;
     private Set<String> sqlStatesToRetry = Collections.emptySet();
     private List<Long> insertedIds;
 
-    public DataScripter()
+    public DataScripter( Database database )
     {
         super();
+        this.database = database;
     }
 
-    public DataScripter(final String beginning)
+    public DataScripter( Database database, final String beginning )
     {
         super(beginning);
+        this.database = database;
     }
 
     /**
@@ -102,7 +105,7 @@ public class DataScripter extends ScriptBuilder
     {
         Query query = this.formQuery()
                           .setParameters( parameters );
-        int rowsModified = Database.execute( query, this.isHighPriority );
+        int rowsModified = database.execute( query, this.isHighPriority );
         this.insertedIds = query.getInsertedIds();
         return rowsModified;
     }
@@ -118,7 +121,7 @@ public class DataScripter extends ScriptBuilder
     {
         Query query = this.formQuery()
                           .setBatchParameters( parameters );
-        int rowsModified = Database.execute( query, this.isHighPriority );
+        int rowsModified = database.execute( query, this.isHighPriority );
         this.insertedIds = query.getInsertedIds();
         return rowsModified;
     }
@@ -131,7 +134,7 @@ public class DataScripter extends ScriptBuilder
     public int execute() throws SQLException
     {
         Query query = this.formQuery();
-        int rowsModified = Database.execute( query, this.isHighPriority );
+        int rowsModified = database.execute( query, this.isHighPriority );
         this.insertedIds = query.getInsertedIds();
         return rowsModified;
     }
@@ -145,7 +148,7 @@ public class DataScripter extends ScriptBuilder
      */
     public <V> V retrieve(String label) throws SQLException
     {
-        return Database.retrieve( this.formQuery(), label, this.isHighPriority );
+        return database.retrieve( this.formQuery(), label, this.isHighPriority );
     }
 
     /**
@@ -156,7 +159,7 @@ public class DataScripter extends ScriptBuilder
      */
     public DataProvider getData(Object... parameters) throws SQLException
     {
-        return Database.getData( this.formQuery().setParameters( parameters ), this.isHighPriority );
+        return database.getData( this.formQuery().setParameters( parameters ), this.isHighPriority );
     }
 
     /**
@@ -168,7 +171,7 @@ public class DataScripter extends ScriptBuilder
      */
     public <V> Future<V> submit(final String label)
     {
-        return Database.submit( this.formQuery(), label, this.isHighPriority );
+        return database.submit( this.formQuery(), label, this.isHighPriority );
     }
 
     /**
@@ -177,7 +180,7 @@ public class DataScripter extends ScriptBuilder
      */
     public Future issue()
     {
-        return Database.issue( this.formQuery(), this.isHighPriority );
+        return database.issue( this.formQuery(), this.isHighPriority );
     }
 
     /**
@@ -187,7 +190,7 @@ public class DataScripter extends ScriptBuilder
      */
     public DataProvider getData() throws SQLException
     {
-        return Database.getData( this.formQuery(), this.isHighPriority );
+        return database.getData( this.formQuery(), this.isHighPriority );
     }
 
     /**
@@ -199,7 +202,7 @@ public class DataScripter extends ScriptBuilder
     {
         Query query = this.formQuery()
                           .useCursor( true );
-        return Database.buffer( query, this.isHighPriority );
+        return database.buffer( query, this.isHighPriority );
     }
 
     /**
@@ -214,7 +217,7 @@ public class DataScripter extends ScriptBuilder
      */
     public void consume(ExceptionalConsumer<DataProvider, SQLException> consumer) throws SQLException
     {
-        Database.consume( this.formQuery( ), consumer, this.isHighPriority );
+        database.consume( this.formQuery( ), consumer, this.isHighPriority );
     }
 
     /**
@@ -231,7 +234,7 @@ public class DataScripter extends ScriptBuilder
      */
     public <U> List<U> interpret( ExceptionalFunction<DataProvider, U, SQLException> interpretor) throws SQLException
     {
-        return Database.interpret( this.formQuery(), interpretor, this.isHighPriority );
+        return database.interpret( this.formQuery(), interpretor, this.isHighPriority );
     }
 
 
@@ -252,8 +255,8 @@ public class DataScripter extends ScriptBuilder
      */
     private Query formQuery()
     {
-        Query query = Query.withScript( this.toString() )
-                           .inTransaction( this.useTransaction );
+        Query query = new Query( database.getSystemSettings(), this.toString() )
+                .inTransaction( this.useTransaction );
 
         if (!this.arguments.isEmpty())
         {
