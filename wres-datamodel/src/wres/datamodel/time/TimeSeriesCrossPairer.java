@@ -117,13 +117,23 @@ public class TimeSeriesCrossPairer<L, R>
         // Log the pairs removed
         if ( LOGGER.isDebugEnabled() )
         {
-            int mainRemoved = mainPairs.size() - filteredMain.size();
-            int baselineRemoved = baselinePairs.size() - filteredBaseline.size();
+            int mainTotal = mainPairs.stream().mapToInt( a -> a.getEvents().size() ).sum();
+            int baselineTotal = baselinePairs.stream().mapToInt( a -> a.getEvents().size() ).sum();
+            int mainFiltered = filteredMain.stream().mapToInt( a -> a.getEvents().size() ).sum();
+            int baseFiltered = filteredBaseline.stream().mapToInt( a -> a.getEvents().size() ).sum();
 
-            LOGGER.debug( "Finished cross-pairing the right and baseline inputs, which removed {} pairs from the right "
-                          + "inputs and {} pairs from the baseline inputs.",
-                          mainRemoved,
-                          baselineRemoved );
+            LOGGER.debug( "Finished cross-pairing the right inputs, which contained {} pairs across {} time-series, "
+                          + "with the baseline inputs, which contained {} pairs across {} time-series. Removed {} pairs "
+                          + "across {} time-series from the right inputs and {} pairs across {} time-series from the "
+                          + "baseline inputs.",
+                          mainTotal,
+                          mainPairs.size(),
+                          baselineTotal,
+                          baselinePairs.size(),
+                          mainTotal - mainFiltered,
+                          mainPairs.size(),
+                          baselineTotal - baseFiltered,
+                          baselinePairs.size() );
         }
 
         return CrossPairs.of( filteredMain, filteredBaseline );
@@ -175,6 +185,23 @@ public class TimeSeriesCrossPairer<L, R>
                                                          .stream()
                                                          .filter( nextEvent -> validTimesToCheck.contains( nextEvent.getTime() ) )
                                                          .collect( Collectors.toCollection( TreeSet::new ) );
+
+            if ( LOGGER.isTraceEnabled() )
+            {
+                LOGGER.trace( "While cross-pairing a list of time-series with identity {} against another list of "
+                              + "time-series with identity {}, inspected time-series {}, which contains {} events, and "
+                              + "discovered the nearest time-series by reference time was {}, which contains {} "
+                              + "events. Found {} events at common valid times, which were retained in the "
+                              + "cross-paired time-series. These valid times were: {}",
+                              filterThese.hashCode(),
+                              againstThese.hashCode(),
+                              next.getMetadata(),
+                              next.getEvents().size(),
+                              nearest.getMetadata(),
+                              nearest.getEvents().size(),
+                              events.size(),
+                              events.stream().map( nxt -> nxt.getTime() ).collect( Collectors.toSet() ) );
+            }
 
             if ( !events.isEmpty() )
             {
