@@ -201,8 +201,6 @@ final class MainFunctions
         }
         finally
         {
-            sharedResources.getDatabase()
-                           .shutdown();
             lockManager.shutdown();
         }
 
