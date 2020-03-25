@@ -52,6 +52,8 @@ import wres.system.SystemSettings;
 /**
  * @author Christopher Tubbs
  * Reads source files from an archived and saves their data to the database
+ *
+ * One-shot save. Closes internal executors at the end of first save() call.
  */
 public class ZippedSource extends BasicSource {
 
@@ -108,7 +110,14 @@ public class ZippedSource extends BasicSource {
     @Override
     public List<IngestResult> save()
     {
-        return issue();
+        try
+        {
+            return issue();
+        }
+        finally
+        {
+            this.shutdownNow();
+        }
     }
 
     @Override
@@ -391,5 +400,18 @@ public class ZippedSource extends BasicSource {
     private DatabaseLockManager getLockManager()
     {
         return this.lockManager;
+    }
+
+    private void shutdownNow()
+    {
+        List<Runnable> incompleteTasks = this.readerService.shutdownNow();
+
+        // An exception should already be propagating if the following is true.
+        if ( !incompleteTasks.isEmpty() && LOGGER.isWarnEnabled() )
+        {
+            LOGGER.warn( "Failed to complete {} ingest tasks associated with {}",
+                         incompleteTasks.size(),
+                         this.getDataSource().getUri() );
+        }
     }
 }
