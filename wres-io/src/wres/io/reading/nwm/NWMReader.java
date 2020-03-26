@@ -368,21 +368,16 @@ public class NWMReader implements Callable<List<IngestResult>>
         // to create blocks of sequential NWM ids.
         List<Integer> featureNwmIds = new ArrayList<>( features.size() );
 
-//As of #76490, this code does not appear to be necessary since the map isn't used.
-//        // A map from featureId back to the database feature row to get names.
-//        Map<Integer,FeatureDetails> featuresByNwmId = new HashMap<>( features.size() );
-//
-//        for ( FeatureDetails feature : features )
-//        {
-//            Integer id = feature.getComid();
-//
-//            // Skip features without a comid.
-//            if ( !Objects.isNull( id ) )
-//            {
-//                featureNwmIds.add( id );
-//                featuresByNwmId.put( id, feature );
-//            }
-//        }
+        for ( FeatureDetails feature : features )
+        {
+            Integer id = feature.getComid();
+
+            // Skip features without a comid.
+            if ( !Objects.isNull( id ) )
+            {
+                featureNwmIds.add( id );
+            }
+        }
 
         featureNwmIds.sort( null );
         LOGGER.debug( "Sorted featureNwmIds: {}", featureNwmIds );
