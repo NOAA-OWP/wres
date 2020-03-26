@@ -577,6 +577,36 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                         timeSeries );
     }
 
+    String getWresFeatureNameFromNwmFeatureId( Features featuresCache,
+                                               int rawLocationId )
+    {
+        FeatureDetails featureDetailsFromKey;
+        Feature featureWithComid =  new Feature( null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 ( long ) rawLocationId,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null );
+        try
+        {
+            featureDetailsFromKey = featuresCache.getDetails( featureWithComid );
+        }
+        catch ( SQLException se )
+        {
+            throw new PreIngestException( "Unable to transform raw NWM feature "
+                                          + " id " + rawLocationId
+                                          + " into WRES Feature:", se );
+        }
+        return featureDetailsFromKey.getLid();
+    }
+
     /**
      * This method facilitates testing, Pattern 1 at
      * https://github.com/mockito/mockito/wiki/Mocking-Object-Creation
