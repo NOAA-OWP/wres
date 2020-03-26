@@ -35,7 +35,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static wres.io.concurrency.TimeSeriesIngester.GEO_ID_TYPE.LID;
+import static wres.io.concurrency.TimeSeriesIngester.GEO_ID_TYPE;
 
 import wres.config.generated.DatasourceType;
 import wres.config.generated.Feature;
@@ -443,8 +443,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
         int rawLocationId = feature.getLocation()
                                    .getNwmLocationNames()
                                    .getNwmFeatureId();
-        String wresGenericFeatureName = this.getWresFeatureNameFromNwmFeatureId( this.getFeaturesCache(),
-                                                                                 rawLocationId );
+        String wresGenericFeatureName = "" + rawLocationId; 
         NwmMember[] members = feature.getMembers();
         TimeSeries<?> timeSeries;
 
@@ -578,37 +577,6 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                         timeSeries );
     }
 
-    String getWresFeatureNameFromNwmFeatureId( Features featuresCache,
-                                               int rawLocationId )
-    {
-        FeatureDetails featureDetailsFromKey;
-        Feature featureWithComid =  new Feature( null,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 ( long ) rawLocationId,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null );
-        try
-        {
-            featureDetailsFromKey = featuresCache.getDetails( featureWithComid );
-        }
-        catch ( SQLException se )
-        {
-            throw new PreIngestException( "Unable to transform raw NWM feature "
-                                          + " id " + rawLocationId
-                                          + " into WRES Feature:", se );
-        }
-
-        return featureDetailsFromKey.getLid();
-    }
-
     /**
      * This method facilitates testing, Pattern 1 at
      * https://github.com/mockito/mockito/wiki/Mocking-Object-Creation
@@ -640,7 +608,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                                        lockManager,
                                        timeSeries,
                                        locationName,
-                                       LID,
+                                       GEO_ID_TYPE.COMID,
                                        variableName,
                                        measurementUnit );
     }

@@ -29,7 +29,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static wres.io.concurrency.TimeSeriesIngester.GEO_ID_TYPE.LID;
+import static wres.io.concurrency.TimeSeriesIngester.GEO_ID_TYPE;
 
 import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.ProjectConfig;
@@ -368,20 +368,24 @@ public class NWMReader implements Callable<List<IngestResult>>
         // to create blocks of sequential NWM ids.
         List<Integer> featureNwmIds = new ArrayList<>( features.size() );
 
-        // A map from featureId back to the database feature row to get names.
-        Map<Integer,FeatureDetails> featuresByNwmId = new HashMap<>( features.size() );
-
-        for ( FeatureDetails feature : features )
-        {
-            Integer id = feature.getComid();
-
-            // Skip features without a comid.
-            if ( !Objects.isNull( id ) )
-            {
-                featureNwmIds.add( id );
-                featuresByNwmId.put( id, feature );
-            }
-        }
+// For #76490, we no longer need to use this map to identify a LID to pass into the 
+// TimeSeriesIngester.  As such, I think this can be removed.  For now, however,
+// I'm commenting it out in case we need to resurrect this code in the future.
+//
+//        // A map from featureId back to the database feature row to get names.
+//        Map<Integer,FeatureDetails> featuresByNwmId = new HashMap<>( features.size() );
+//
+//        for ( FeatureDetails feature : features )
+//        {
+//            Integer id = feature.getComid();
+//
+//            // Skip features without a comid.
+//            if ( !Objects.isNull( id ) )
+//            {
+//                featureNwmIds.add( id );
+//                featuresByNwmId.put( id, feature );
+//            }
+//        }
 
         featureNwmIds.sort( null );
         LOGGER.debug( "Sorted featureNwmIds: {}", featureNwmIds );
@@ -543,8 +547,7 @@ public class NWMReader implements Callable<List<IngestResult>>
                                                    uri );
 
                             // Find the feature name (use lid as substitute)
-                            String featureName = featuresByNwmId.get( entry.getKey() )
-                                                                .getLid();
+                            String featureName = entry.getKey().toString(); 
 
                             // While wres.source table is used, it is the reader level code
                             // that must deal with the wres.source table. Use the identifier
@@ -561,7 +564,7 @@ public class NWMReader implements Callable<List<IngestResult>>
                                                             this.getLockManager(),
                                                             entry.getValue(),
                                                             featureName,
-                                                            LID,
+                                                            GEO_ID_TYPE.COMID,
                                                             variableName,
                                                             unitName );
                             Future<List<IngestResult>> future =
