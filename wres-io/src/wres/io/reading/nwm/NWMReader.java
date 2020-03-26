@@ -368,24 +368,20 @@ public class NWMReader implements Callable<List<IngestResult>>
         // to create blocks of sequential NWM ids.
         List<Integer> featureNwmIds = new ArrayList<>( features.size() );
 
-// For #76490, we no longer need to use this map to identify a LID to pass into the 
-// TimeSeriesIngester.  As such, I think this can be removed.  For now, however,
-// I'm commenting it out in case we need to resurrect this code in the future.
-//
-//        // A map from featureId back to the database feature row to get names.
-//        Map<Integer,FeatureDetails> featuresByNwmId = new HashMap<>( features.size() );
-//
-//        for ( FeatureDetails feature : features )
-//        {
-//            Integer id = feature.getComid();
-//
-//            // Skip features without a comid.
-//            if ( !Objects.isNull( id ) )
-//            {
-//                featureNwmIds.add( id );
-//                featuresByNwmId.put( id, feature );
-//            }
-//        }
+        // A map from featureId back to the database feature row to get names.
+        Map<Integer,FeatureDetails> featuresByNwmId = new HashMap<>( features.size() );
+
+        for ( FeatureDetails feature : features )
+        {
+            Integer id = feature.getComid();
+
+            // Skip features without a comid.
+            if ( !Objects.isNull( id ) )
+            {
+                featureNwmIds.add( id );
+                featuresByNwmId.put( id, feature );
+            }
+        }
 
         featureNwmIds.sort( null );
         LOGGER.debug( "Sorted featureNwmIds: {}", featureNwmIds );
