@@ -32,6 +32,7 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
 import wres.io.concurrency.Executor;
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.scale.TimeScale.TimeScaleFunction;
@@ -39,7 +40,6 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
-import wres.io.config.LeftOrRightOrBaseline;
 import wres.io.data.caching.Features;
 import wres.io.data.details.EnsembleDetails;
 import wres.io.data.details.FeatureDetails;

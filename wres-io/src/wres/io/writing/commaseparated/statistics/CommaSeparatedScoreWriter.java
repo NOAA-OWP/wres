@@ -20,6 +20,7 @@ import java.util.function.Supplier;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
@@ -33,6 +34,7 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.time.TimeWindow;
 import wres.io.config.ConfigHelper;
+import wres.io.writing.WriterHelper;
 import wres.io.writing.commaseparated.CommaSeparatedUtilities;
 
 /**
@@ -105,13 +107,22 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
             // Write per time-window
             try
             {
-                Set<Path> innerPathsWrittenTo =
-                        CommaSeparatedScoreWriter.writeOneScoreOutputType( super.getOutputDirectory(),
-                                                                           destinationConfig,
-                                                                           output,
-                                                                           formatter,
-                                                                           this.getDurationUnits() );
-                this.pathsWrittenTo.addAll( innerPathsWrittenTo );
+                // Group the statistics by the LRB context in which they appear. There will be one path written
+                // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
+                // each window with LeftOrRightOrBaseline.BASELINE data): #48287
+                Map<LeftOrRightOrBaseline, List<T>> groups =
+                        WriterHelper.getStatisticsGroupedByContext( output.getData() );
+
+                for ( List<T> nextGroup : groups.values() )
+                {
+                    Set<Path> innerPathsWrittenTo =
+                            CommaSeparatedScoreWriter.writeOneScoreOutputType( super.getOutputDirectory(),
+                                                                               destinationConfig,
+                                                                               ListOfStatistics.of( nextGroup ),
+                                                                               formatter,
+                                                                               this.getDurationUnits() );
+                    this.pathsWrittenTo.addAll( innerPathsWrittenTo );
+                }
             }
             catch ( IOException e )
             {
@@ -199,7 +210,7 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
                                                                                        durationUnits );
 
                 headerRow.merge( timeWindowHeader );
-                
+
                 List<RowCompareByLeft> rows =
                         CommaSeparatedScoreWriter.getRowsForOneScore( m,
                                                                       nextOutput,

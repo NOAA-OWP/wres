@@ -298,13 +298,14 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
      */
 
     private Set<Path> createBlobsAndBlobWriters( DatasetIdentifier identifier,
-                                            Set<TimeWindow> timeWindows,
-                                            ThresholdsByMetric thresholds,
-                                            String units,
-                                            TimeScale desiredTimeScale ) throws IOException
+                                                 Set<TimeWindow> timeWindows,
+                                                 ThresholdsByMetric thresholds,
+                                                 String units,
+                                                 TimeScale desiredTimeScale )
+            throws IOException
     {
         Set<Path> returnMe = new TreeSet<>();
-        
+
         // One blob and blob writer per time window      
         for ( TimeWindow nextWindow : timeWindows )
         {
@@ -313,7 +314,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                                                                                             thresholds,
                                                                                             units,
                                                                                             desiredTimeScale );
-            
+
             // Create the blob path
             Path targetPath = ConfigHelper.getOutputPathToWriteForOneTimeWindow( this.getOutputDirectory(),
                                                                                  this.getDestinationConfig(),
@@ -331,7 +332,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                                                                          this.getDurationUnits() );
 
             returnMe.add( targetPath );
-            
+
             // Create the blob writer
             TimeWindowWriter writer = new TimeWindowWriter( this,
                                                             pathActuallyWritten,
@@ -340,7 +341,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
             // Add the blob writer to the writer cache
             this.writersMap.put( nextWindow, writer );
         }
-        
+
         return Collections.unmodifiableSet( returnMe );
     }  
 

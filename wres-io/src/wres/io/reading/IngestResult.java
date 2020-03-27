@@ -11,7 +11,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.io.config.LeftOrRightOrBaseline;
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
 

@@ -49,10 +49,10 @@ public class SampleMetadataTest
     private static final String THIRD_TIME = "2000-02-02T00:00:00Z";
     private static final String SECOND_TIME = "1986-01-01T00:00:00Z";
     private static final String FIRST_TIME = "1985-01-01T00:00:00Z";
-    
+
     @Rule
     public final ExpectedException exception = ExpectedException.none();
-    
+
     /**
      * Tests the {@link SampleMetadata#unionOf(java.util.List)} against a benchmark.
      */
@@ -147,8 +147,8 @@ public class SampleMetadataTest
                 SampleMetadata.of( MeasurementUnit.of(), DatasetIdentifier.of( Location.of( "A" ), "B" ) );
 
         SampleMetadata.unionOf( Arrays.asList( failOne, failTwo ) );
-    }    
-    
+    }
+
     /**
      * Tests construction of the {@link SampleMetadata} using the various construction options.
      */
@@ -617,7 +617,9 @@ public class SampleMetadataTest
     public void testToString()
     {
         // Simplest case
-        assertEquals( "(DIMENSIONLESS)", SampleMetadata.of().toString() );
+        assertEquals( "SampleMetadata[datasetIdentifier=<null>,timeWindow=<null>,"
+                      + "thresholds=<null>,timeScale=<null>,measurementUnit=DIMENSIONLESS]",
+                      SampleMetadata.of().toString() );
 
         // Most complex case
         DatasetIdentifier identifier = DatasetIdentifier.of( Location.of( "A" ), "B" );
@@ -643,9 +645,12 @@ public class SampleMetadataTest
                                                                                       TimeScaleFunction.MEAN ) )
                                                          .build();
 
-        assertEquals( meta.toString(),
-                      "(A,B,[2000-02-02T00:00:00Z,2000-02-02T00:00:00Z,2000-02-02T00:00:00Z,2000-02-02T00:00:00Z"
-                      + ",PT0S,PT0S],= 1.0,[PT24H,MEAN],DIMENSIONLESS)" );
+        assertEquals( "SampleMetadata[datasetIdentifier=DatasetIdentifier[geospatialId=A,variableId=B,"
+                      + "scenarioId=<null>,baselineScenarioId=<null>,pairContext=<null>],"
+                      + "timeWindow=[2000-02-02T00:00:00Z,2000-02-02T00:00:00Z,2000-02-02T00:00:00Z,"
+                      + "2000-02-02T00:00:00Z,PT0S,PT0S],thresholds== 1.0,timeScale=[PT24H,MEAN],"
+                      + "measurementUnit=DIMENSIONLESS]",
+                      meta.toString() );
 
     }
 

@@ -31,9 +31,11 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
 import wres.io.concurrency.Executor;
+import wres.config.generated.DataSourceBaselineConfig;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.Feature;
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.DataSourceConfig.Variable;
@@ -44,7 +46,6 @@ import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 import wres.datamodel.time.TimeWindow;
-import wres.io.config.LeftOrRightOrBaseline;
 import wres.io.data.caching.Features;
 import wres.io.data.details.EnsembleDetails;
 import wres.io.data.details.FeatureDetails;
@@ -377,15 +378,17 @@ public class SingleValuedRetrieverFactoryTest
                                                       null );
 
         // Same right and baseline
-        DataSourceConfig rightAndBaseline = new DataSourceConfig( DatasourceType.fromValue( "single valued forecasts" ),
-                                                                  sourceList,
-                                                                  new Variable( STREAMFLOW, null, null ),
-                                                                  null,
-                                                                  null,
-                                                                  null,
-                                                                  null,
-                                                                  null,
-                                                                  null );
+        DataSourceBaselineConfig rightAndBaseline =
+                new DataSourceBaselineConfig( DatasourceType.fromValue( "single valued forecasts" ),
+                                              sourceList,
+                                              new Variable( STREAMFLOW, null, null ),
+                                              null,
+                                              null,
+                                              null,
+                                              null,
+                                              null,
+                                              null,
+                                              false );
 
         ProjectConfig.Inputs inputsConfig = new ProjectConfig.Inputs( left,
                                                                       rightAndBaseline,

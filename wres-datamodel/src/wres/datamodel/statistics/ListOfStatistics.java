@@ -134,7 +134,7 @@ public class ListOfStatistics<T extends Statistic<?>> implements Iterable<T>
         private Comparator<? super T> sorter;
 
         /**
-         * Adds an statistic to the list.
+         * Adds a statistic to the list.
          * 
          * @param statistic the statistic to add
          * @return the builder

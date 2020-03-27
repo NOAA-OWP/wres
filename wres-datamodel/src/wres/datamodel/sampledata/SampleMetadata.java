@@ -5,6 +5,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
+
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -337,34 +340,18 @@ public class SampleMetadata implements Comparable<SampleMetadata>
     @Override
     public String toString()
     {
-        final StringBuilder b = new StringBuilder();
-        if ( hasIdentifier() )
-        {
-            String appendMe = this.identifier.toString();
-            appendMe = appendMe.replaceAll( "\\]", "," );
-            appendMe = appendMe.replaceAll( "\\[", "(" );
-            b.append( appendMe );
-        }
-        else
-        {
-            b.append( "(" );
-        }
-        if ( this.hasTimeWindow() )
-        {
-            b.append( this.getTimeWindow() ).append( "," );
-        }
-        if ( this.hasThresholds() )
-        {
-            b.append( this.getThresholds() ).append( "," );
-        }
-        if ( this.hasTimeScale() )
-        {
-            b.append( this.getTimeScale() ).append( "," );
-        }
-
-        b.append( this.getMeasurementUnit() ).append( ")" );
-
-        return b.toString();
+        return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
+                                                                            .append( "datasetIdentifier",
+                                                                                     this.getIdentifier() )
+                                                                            .append( "timeWindow",
+                                                                                     this.getTimeWindow() )
+                                                                            .append( "thresholds",
+                                                                                     this.getThresholds() )
+                                                                            .append( "timeScale",
+                                                                                     this.getTimeScale() )
+                                                                            .append( "measurementUnit",
+                                                                                     this.getMeasurementUnit() )
+                                                                            .build();
     }
 
     /**

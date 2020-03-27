@@ -19,6 +19,7 @@ import ohd.hseb.charter.ChartEngineException;
 import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
 import wres.datamodel.statistics.ListOfStatistics;
@@ -27,6 +28,7 @@ import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindow;
 import wres.io.config.ConfigHelper;
+import wres.io.writing.WriterHelper;
 import wres.system.SystemSettings;
 import wres.vis.ChartEngineFactory;
 
@@ -86,14 +88,25 @@ public class PNGDiagramWriter extends PNGWriter
             SortedSet<MetricConstants> metrics = Slicer.discover( output, meta -> meta.getMetadata().getMetricID() );
             for ( MetricConstants next : metrics )
             {
-                Set<Path> innerPathsWrittenTo =
-                        PNGDiagramWriter.writeMultiVectorCharts( super.getSystemSettings(),
-                                                                 super.getOutputDirectory(),
-                                                                 super.getProjectConfigPlus(),
-                                                                 destinationConfig,
-                                                                 Slicer.filter( output, next ),
-                                                                 super.getDurationUnits() );
-                this.pathsWrittenTo.addAll( innerPathsWrittenTo );
+                ListOfStatistics<DiagramStatistic> filtered = Slicer.filter( output, next );
+
+                // Group the statistics by the LRB context in which they appear. There will be one path written
+                // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
+                // each window with LeftOrRightOrBaseline.BASELINE data): #48287
+                Map<LeftOrRightOrBaseline, List<DiagramStatistic>> groups =
+                        WriterHelper.getStatisticsGroupedByContext( filtered.getData() );
+
+                for ( List<DiagramStatistic> nextGroup : groups.values() )
+                {
+                    Set<Path> innerPathsWrittenTo =
+                            PNGDiagramWriter.writeMultiVectorCharts( super.getSystemSettings(),
+                                                                     super.getOutputDirectory(),
+                                                                     super.getProjectConfigPlus(),
+                                                                     destinationConfig,
+                                                                     ListOfStatistics.of( nextGroup ),
+                                                                     super.getDurationUnits() );
+                    this.pathsWrittenTo.addAll( innerPathsWrittenTo );
+                }
             }
         }
     }

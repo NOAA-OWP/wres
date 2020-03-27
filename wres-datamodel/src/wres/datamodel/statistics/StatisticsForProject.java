@@ -6,7 +6,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -63,6 +65,7 @@ public class StatisticsForProject
 
     private final List<Future<ListOfStatistics<PairedStatistic<Instant, Duration>>>> paired = new ArrayList<>();
 
+
     /**
      * Returns a {@link ListOfStatistics} of {@link DoubleScoreStatistic} or null if no output exists.
      * 
@@ -74,7 +77,7 @@ public class StatisticsForProject
     public ListOfStatistics<DoubleScoreStatistic> getDoubleScoreStatistics()
             throws InterruptedException
     {
-        return this.unwrap( StatisticType.DOUBLE_SCORE, doubleScore );
+        return this.unwrap( StatisticType.DOUBLE_SCORE, this.doubleScore );
     }
 
     /**
@@ -88,7 +91,7 @@ public class StatisticsForProject
     public ListOfStatistics<DurationScoreStatistic> getDurationScoreStatistics()
             throws InterruptedException
     {
-        return this.unwrap( StatisticType.DURATION_SCORE, durationScore );
+        return this.unwrap( StatisticType.DURATION_SCORE, this.durationScore );
     }
 
     /**
@@ -102,7 +105,7 @@ public class StatisticsForProject
     public ListOfStatistics<DiagramStatistic> getMultiVectorStatistics()
             throws InterruptedException
     {
-        return this.unwrap( StatisticType.MULTIVECTOR, multiVector );
+        return this.unwrap( StatisticType.MULTIVECTOR, this.multiVector );
     }
 
     /**
@@ -116,7 +119,7 @@ public class StatisticsForProject
 
     public ListOfStatistics<BoxPlotStatistics> getBoxPlotStatisticsPerPair() throws InterruptedException
     {
-        return this.unwrap( StatisticType.BOXPLOT_PER_PAIR, boxplotPerPair );
+        return this.unwrap( StatisticType.BOXPLOT_PER_PAIR, this.boxplotPerPair );
     }
 
     /**
@@ -130,7 +133,7 @@ public class StatisticsForProject
 
     public ListOfStatistics<BoxPlotStatistics> getBoxPlotStatisticsPerPool() throws InterruptedException
     {
-        return this.unwrap( StatisticType.BOXPLOT_PER_POOL, boxplotPerPool );
+        return this.unwrap( StatisticType.BOXPLOT_PER_POOL, this.boxplotPerPool );
     }
 
     /**
@@ -144,7 +147,7 @@ public class StatisticsForProject
     public ListOfStatistics<PairedStatistic<Instant, Duration>> getPairedStatistics()
             throws InterruptedException
     {
-        return this.unwrap( StatisticType.PAIRED, paired );
+        return this.unwrap( StatisticType.PAIRED, this.paired );
     }
 
     /**
@@ -159,17 +162,17 @@ public class StatisticsForProject
         switch ( outGroup )
         {
             case DOUBLE_SCORE:
-                return !doubleScore.isEmpty();
+                return !this.doubleScore.isEmpty();
             case DURATION_SCORE:
-                return !durationScore.isEmpty();
+                return !this.durationScore.isEmpty();
             case MULTIVECTOR:
-                return !multiVector.isEmpty();
+                return !this.multiVector.isEmpty();
             case BOXPLOT_PER_PAIR:
-                return !boxplotPerPair.isEmpty();
+                return !this.boxplotPerPair.isEmpty();
             case BOXPLOT_PER_POOL:
-                return !boxplotPerPool.isEmpty();
+                return !this.boxplotPerPool.isEmpty();
             case PAIRED:
-                return !paired.isEmpty();
+                return !this.paired.isEmpty();
             default:
                 return false;
         }
@@ -276,7 +279,7 @@ public class StatisticsForProject
          */
 
         public StatisticsForProjectBuilder
-                addDoubleScoreOutput( Future<ListOfStatistics<DoubleScoreStatistic>> result )
+                addDoubleScoreStatistics( Future<ListOfStatistics<DoubleScoreStatistic>> result )
         {
             doubleScoreInternal.add( result );
 
@@ -359,6 +362,52 @@ public class StatisticsForProject
                 addPairedStatistics( Future<ListOfStatistics<PairedStatistic<Instant, Duration>>> result )
         {
             pairedInternal.add( result );
+
+            return this;
+        }
+
+        /**
+         * Adds a an existing set of statistics to the builder.
+         * 
+         * @param project the statistics
+         * @return the builder
+         * @throws InterruptedException if the retrieval of the inputs was interrupted
+         * @throws NullPointerException if the input is null
+         */
+
+        public StatisticsForProjectBuilder addStatistics( StatisticsForProject project ) throws InterruptedException
+        {
+            Objects.requireNonNull( project );
+
+            if ( project.hasStatistic( StatisticType.DOUBLE_SCORE ) )
+            {
+                this.addDoubleScoreStatistics( CompletableFuture.completedFuture( project.getDoubleScoreStatistics() ) );
+            }
+
+            if ( project.hasStatistic( StatisticType.DURATION_SCORE ) )
+            {
+                this.addDurationScoreStatistics( CompletableFuture.completedFuture( project.getDurationScoreStatistics() ) );
+            }
+
+            if ( project.hasStatistic( StatisticType.MULTIVECTOR ) )
+            {
+                this.addMultiVectorStatistics( CompletableFuture.completedFuture( project.getMultiVectorStatistics() ) );
+            }
+
+            if ( project.hasStatistic( StatisticType.BOXPLOT_PER_PAIR ) )
+            {
+                this.addBoxPlotStatisticsPerPair( CompletableFuture.completedFuture( project.getBoxPlotStatisticsPerPair() ) );
+            }
+
+            if ( project.hasStatistic( StatisticType.BOXPLOT_PER_POOL ) )
+            {
+                this.addBoxPlotStatisticsPerPool( CompletableFuture.completedFuture( project.getBoxPlotStatisticsPerPool() ) );
+            }
+
+            if ( project.hasStatistic( StatisticType.PAIRED ) )
+            {
+                this.addPairedStatistics( CompletableFuture.completedFuture( project.getPairedStatistics() ) );
+            }
 
             return this;
         }

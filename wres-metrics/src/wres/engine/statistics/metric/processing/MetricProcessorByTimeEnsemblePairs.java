@@ -1,6 +1,7 @@
 package wres.engine.statistics.metric.processing;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -458,6 +459,11 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
             {
                 baselineMeta = SampleMetadata.of( input.getBaselineData().getMetadata(), oneOrTwo );
             }
+            else
+            {
+                ignoreTheseMetrics = this.addMetricsToIgnoreWhenBaselineUnavailable( ignoreTheseMetrics, 
+                                                                                     input.getMetadata() );
+            }
 
             //Filter the pairs if required
             SampleData<Pair<Double, Ensemble>> pairs = input;
@@ -777,6 +783,34 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
                 this.processDichotomousPairs( dichotomous, futures, outGroup, unionToIgnore );
             }
         }
+    }
+
+    /**
+     * Allows for some metrics to be ignored that require a baseline when the baseline is unavailable.
+     * 
+     * @param metricsToIgnore the existing set of metrics to ignore in a particular context
+     * @param metadata metadata to assist in messaging
+     * @return the metrics to ignore, augmented to include any that require an explicit baseline
+     */
+
+    private Set<MetricConstants> addMetricsToIgnoreWhenBaselineUnavailable( Set<MetricConstants> metricsToIgnore,
+                                                                            SampleMetadata metadata )
+    {
+        Set<MetricConstants> returnMe = new HashSet<>( metricsToIgnore );
+
+        if ( this.metrics.contains( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE ) )
+        {
+            if ( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( "Skipping metric {} for pool {} because no baseline was available and this metric requires "
+                              + "an explicit baseline.",
+                              MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
+                              metadata );
+            }
+            returnMe.add( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE );
+        }
+
+        return Collections.unmodifiableSet( returnMe );
     }
 
     /**
