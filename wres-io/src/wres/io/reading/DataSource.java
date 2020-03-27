@@ -7,7 +7,7 @@ import java.util.Set;
 import java.util.StringJoiner;
 
 import wres.config.generated.DataSourceConfig;
-import wres.io.config.LeftOrRightOrBaseline;
+import wres.config.generated.LeftOrRightOrBaseline;
 
 public class DataSource
 {

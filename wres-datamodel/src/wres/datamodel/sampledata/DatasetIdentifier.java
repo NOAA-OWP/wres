@@ -1,8 +1,11 @@
 package wres.datamodel.sampledata;
 
 import java.util.Objects;
-import java.util.StringJoiner;
 
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
+
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.statistics.Statistic;
 
 /**
@@ -16,57 +19,84 @@ public class DatasetIdentifier
     /**
      * Geospatial identifier.
      */
-    final Location geospatialID;
+    final Location geospatialId;
 
     /**
      * variable identifier.
      */
-    final String variableID;
+    final String variableId;
 
     /**
      * Scenario identifier.
      */
-    final String scenarioID;
+    final String scenarioId;
 
     /**
      * Scenario identifier for a baseline (e.g., when this dataset represents a statistic for a skill score).
      */
-    final String baselineScenarioID;
-    
+    final String baselineScenarioId;
+
+    /**
+     * Context for the dataset within the project declaration. For example, {@link LeftOrRightOrBaseline#RIGHT} would
+     * represent a <code>right</right> dataset or pairs or statistics derived with a <code>right</code> dataset.
+     */
+    final LeftOrRightOrBaseline leftOrRightOrBaseline;
+
     /**
      * Returns an instance from the inputs.
      * 
-     * @param geospatialID the optional geospatial identifier
-     * @param variableID the optional variable identifier
-     * @param scenarioID the optional scenario identifier
-     * @param baselineScenarioID the optional baseline scenario identifier
+     * @param geospatialId the optional geospatial identifier
+     * @param variableId the optional variable identifier
+     * @param scenarioId the optional scenario identifier
+     * @param baselineScenarioId the optional baseline scenario identifier
+     * @param leftOrRightOrBaseline the context for the dataset as it relates to the declaration
      * @return a dataset identifier
      * @throws NullPointerException if the geospatialID, variableID and scenarioID are all null
      */
 
-    public static DatasetIdentifier of( Location geospatialID,
-                                        String variableID,
-                                        String scenarioID,
-                                        String baselineScenarioID )
+    public static DatasetIdentifier of( Location geospatialId,
+                                        String variableId,
+                                        String scenarioId,
+                                        String baselineScenarioId,
+                                        LeftOrRightOrBaseline leftOrRightOrBaseline )
     {
-        return new DatasetIdentifier( geospatialID, variableID, scenarioID, baselineScenarioID );
+        return new DatasetIdentifier( geospatialId, variableId, scenarioId, baselineScenarioId, leftOrRightOrBaseline );
+    }
+
+    /**
+     * Returns an instance from the inputs.
+     * 
+     * @param geospatialId the optional geospatial identifier
+     * @param variableId the optional variable identifier
+     * @param scenarioId the optional scenario identifier
+     * @param baselineScenarioId the optional baseline scenario identifier
+     * @return a dataset identifier
+     * @throws NullPointerException if the geospatialID, variableID and scenarioID are all null
+     */
+
+    public static DatasetIdentifier of( Location geospatialId,
+                                        String variableId,
+                                        String scenarioId,
+                                        String baselineScenarioId )
+    {
+        return new DatasetIdentifier( geospatialId, variableId, scenarioId, baselineScenarioId, null );
     }
 
     /**
      * Returns a new dataset identifier with an override for the {@link DatasetIdentifier#getScenarioIDForBaseline()}.
      * 
      * @param identifier the dataset identifier
-     * @param baselineScenarioID a scenario identifier for a baseline dataset
+     * @param baselineScenarioId a scenario identifier for a baseline dataset
      * @return a dataset identifier
      */
 
-    public static DatasetIdentifier of( DatasetIdentifier identifier, String baselineScenarioID )
+    public static DatasetIdentifier of( DatasetIdentifier identifier, String baselineScenarioId )
     {
-        final String baselineScenarioID1 = baselineScenarioID;
         return DatasetIdentifier.of( identifier.getGeospatialID(),
                                      identifier.getVariableID(),
                                      identifier.getScenarioID(),
-                                     baselineScenarioID1 );
+                                     baselineScenarioId,
+                                     identifier.getLeftOrRightOrBaseline() );
     }
 
     /**
@@ -106,7 +136,7 @@ public class DatasetIdentifier
 
     public Location getGeospatialID()
     {
-        return geospatialID;
+        return this.geospatialId;
     }
 
     /**
@@ -117,7 +147,7 @@ public class DatasetIdentifier
 
     public String getVariableID()
     {
-        return variableID;
+        return this.variableId;
     }
 
     /**
@@ -129,7 +159,7 @@ public class DatasetIdentifier
 
     public String getScenarioID()
     {
-        return scenarioID;
+        return this.scenarioId;
     }
 
     /**
@@ -141,7 +171,18 @@ public class DatasetIdentifier
 
     public String getScenarioIDForBaseline()
     {
-        return baselineScenarioID;
+        return this.baselineScenarioId;
+    }
+
+    /**
+     * Optional {@link LeftOrRightOrBaseline} identifier for the dataset, whether for input data, pairs or statistics.
+     * 
+     * @return the context for the dataset within the declaration
+     */
+
+    public LeftOrRightOrBaseline getLeftOrRightOrBaseline()
+    {
+        return this.leftOrRightOrBaseline;
     }
 
     /**
@@ -152,7 +193,7 @@ public class DatasetIdentifier
 
     public boolean hasGeospatialID()
     {
-        return Objects.nonNull( getGeospatialID() );
+        return Objects.nonNull( this.getGeospatialID() );
     }
 
     /**
@@ -163,7 +204,7 @@ public class DatasetIdentifier
 
     public boolean hasVariableID()
     {
-        return Objects.nonNull( getVariableID() );
+        return Objects.nonNull( this.getVariableID() );
     }
 
     /**
@@ -174,7 +215,7 @@ public class DatasetIdentifier
 
     public boolean hasScenarioID()
     {
-        return Objects.nonNull( getScenarioID() );
+        return Objects.nonNull( this.getScenarioID() );
     }
 
     /**
@@ -185,67 +226,67 @@ public class DatasetIdentifier
 
     public boolean hasScenarioIDForBaseline()
     {
-        return Objects.nonNull( getScenarioIDForBaseline() );
+        return Objects.nonNull( this.getScenarioIDForBaseline() );
+    }
+
+    /**
+     * Returns true if a {@link #getLeftOrRightOrBaseline()} returns non-null, false otherwise.
+     * 
+     * @return true if {@link #getLeftOrRightOrBaseline()} returns non-null, false otherwise.
+     */
+
+    public boolean hasLeftOrRightOrBaseline()
+    {
+        return Objects.nonNull( this.getLeftOrRightOrBaseline() );
     }
 
     @Override
     public String toString()
     {
-        final StringJoiner b = new StringJoiner( ",", "[", "]" );
-        if ( hasGeospatialID() )
-        {
-            b.add( getGeospatialID().toString() );
-        }
-        if ( hasVariableID() )
-        {
-            b.add( getVariableID() );
-        }
-        if ( hasScenarioID() )
-        {
-            b.add( getScenarioID() );
-        }
-        if ( hasScenarioIDForBaseline() )
-        {
-            b.add( getScenarioIDForBaseline() );
-        }
-        return b.toString();
+        return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
+                                                                            .append( "geospatialId",
+                                                                                     this.getGeospatialID() )
+                                                                            .append( "variableId",
+                                                                                     this.getVariableID() )
+                                                                            .append( "scenarioId",
+                                                                                     this.getScenarioID() )
+                                                                            .append( "baselineScenarioId",
+                                                                                     this.getScenarioIDForBaseline() )
+                                                                            .append( "pairContext",
+                                                                                     this.getLeftOrRightOrBaseline() )
+                                                                            .build();
     }
 
     @Override
-    public boolean equals( final Object o )
+    public boolean equals( Object o )
     {
         if ( ! ( o instanceof DatasetIdentifier ) )
         {
             return false;
         }
-        final DatasetIdentifier check = (DatasetIdentifier) o;
-        boolean returnMe = hasGeospatialID() == check.hasGeospatialID()
-                           && hasVariableID() == check.hasVariableID()
-                           && hasScenarioID() == check.hasScenarioID()
-                           && hasScenarioIDForBaseline() == check.hasScenarioIDForBaseline();
-        if ( hasGeospatialID() )
+
+        if ( o == this )
         {
-            returnMe = returnMe && getGeospatialID().equals( check.getGeospatialID() );
+            return true;
         }
-        if ( hasVariableID() )
-        {
-            returnMe = returnMe && getVariableID().equals( check.getVariableID() );
-        }
-        if ( hasScenarioID() )
-        {
-            returnMe = returnMe && getScenarioID().equals( check.getScenarioID() );
-        }
-        if ( hasScenarioIDForBaseline() )
-        {
-            returnMe = returnMe && getScenarioIDForBaseline().equals( check.getScenarioIDForBaseline() );
-        }
-        return returnMe;
+
+        DatasetIdentifier check = (DatasetIdentifier) o;
+
+        return Objects.equals( this.getGeospatialID(), check.getGeospatialID() )
+               && Objects.equals( this.getLeftOrRightOrBaseline(), check.getLeftOrRightOrBaseline() )
+               && Objects.equals( this.getVariableID(), check.getVariableID() )
+               && Objects.equals( this.getScenarioID(), check.getScenarioID() )
+               && Objects.equals( this.getScenarioIDForBaseline(), check.getScenarioIDForBaseline() );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( getGeospatialID(), getVariableID(), getScenarioID(), getScenarioIDForBaseline() );
+        return Objects.hash( this.getGeospatialID(),
+                             this.getVariableID(),
+                             this.getScenarioID(),
+                             this.getScenarioIDForBaseline(),
+                             this.getLeftOrRightOrBaseline() );
     }
 
     /**
@@ -255,23 +296,26 @@ public class DatasetIdentifier
      * @param variableID the variable identifier
      * @param scenarioID the scenario identifier
      * @param baselineScenarioID the baseline scenario identifier
+     * @param leftOrRightOrBaseline the context for the dataset as it relates to the declaration
      * @throws NullPointerException if the geospatialID, variableID and scenarioID are all null
      */
 
     private DatasetIdentifier( Location geospatialID,
                                String variableID,
                                String scenarioID,
-                               String baselineScenarioID )
+                               String baselineScenarioID,
+                               LeftOrRightOrBaseline leftOrRightOrBaseline )
     {
         if ( Objects.isNull( geospatialID ) && Objects.isNull( variableID ) && Objects.isNull( scenarioID ) )
         {
             throw new NullPointerException( "One of the location, variable and scenario identifiers must be non-null." );
         }
 
-        this.geospatialID = geospatialID;
-        this.variableID = variableID;
-        this.scenarioID = scenarioID;
-        this.baselineScenarioID = baselineScenarioID;
+        this.geospatialId = geospatialID;
+        this.variableId = variableID;
+        this.scenarioId = scenarioID;
+        this.baselineScenarioId = baselineScenarioID;
+        this.leftOrRightOrBaseline = leftOrRightOrBaseline;
     }
 
 

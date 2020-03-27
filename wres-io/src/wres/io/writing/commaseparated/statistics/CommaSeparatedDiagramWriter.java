@@ -20,6 +20,7 @@ import java.util.function.Supplier;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
@@ -33,6 +34,7 @@ import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindow;
 import wres.io.config.ConfigHelper;
+import wres.io.writing.WriterHelper;
 import wres.io.writing.commaseparated.CommaSeparatedUtilities;
 
 /**
@@ -94,14 +96,23 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
             // Default, per time-window
             try
             {
-                Set<Path> innerPathsWrittenTo =
-                        CommaSeparatedDiagramWriter.writeOneDiagramOutputType( super.getOutputDirectory(),
-                                                                               super.getProjectConfig(),
-                                                                               destinationConfig,
-                                                                               output,
-                                                                               formatter,
-                                                                               super.getDurationUnits() );
-                this.pathsWrittenTo.addAll( innerPathsWrittenTo );
+                // Group the statistics by the LRB context in which they appear. There will be one path written
+                // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
+                // each window with LeftOrRightOrBaseline.BASELINE data): #48287
+                Map<LeftOrRightOrBaseline, List<DiagramStatistic>> groups =
+                        WriterHelper.getStatisticsGroupedByContext( output.getData() );
+
+                for ( List<DiagramStatistic> nextGroup : groups.values() )
+                {
+                    Set<Path> innerPathsWrittenTo =
+                            CommaSeparatedDiagramWriter.writeOneDiagramOutputType( super.getOutputDirectory(),
+                                                                                   super.getProjectConfig(),
+                                                                                   destinationConfig,
+                                                                                   ListOfStatistics.of( nextGroup ),
+                                                                                   formatter,
+                                                                                   super.getDurationUnits() );
+                    this.pathsWrittenTo.addAll( innerPathsWrittenTo );
+                }
             }
             catch ( IOException e )
             {

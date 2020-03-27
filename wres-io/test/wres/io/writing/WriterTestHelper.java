@@ -14,6 +14,7 @@ import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.Feature;
 import wres.config.generated.GraphicalType;
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
@@ -148,7 +149,7 @@ public class WriterTestHelper
         // which requires a datasetidentifier..
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP" );
+                DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
 
         StatisticMetadata fakeMetadataOne =
                 StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
@@ -227,7 +228,7 @@ public class WriterTestHelper
         // which requires a datasetidentifier..
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP" );
+                DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
 
         StatisticMetadata fakeMetadata =
                 StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
@@ -295,7 +296,7 @@ public class WriterTestHelper
         // which requires a datasetidentifier..
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP" );
+                DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
 
         StatisticMetadata fakeMetadata =
                 StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
@@ -349,7 +350,7 @@ public class WriterTestHelper
         // which requires a datasetidentifier..
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP" );
+                DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
 
         StatisticMetadata fakeMetadata =
                 StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
@@ -394,7 +395,7 @@ public class WriterTestHelper
                                                      ThresholdDataType.LEFT ) );
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP" );
+                DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
 
         StatisticMetadata fakeMetadataA =
                 StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
@@ -462,7 +463,7 @@ public class WriterTestHelper
                                                      ThresholdDataType.LEFT ) );
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP" );
+                DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
 
         StatisticMetadata fakeMetadata =
                 StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
@@ -509,7 +510,7 @@ public class WriterTestHelper
                                                      ThresholdDataType.LEFT ) );
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP" );
+                DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
 
         StatisticMetadata fakeMetadataA =
                 StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),

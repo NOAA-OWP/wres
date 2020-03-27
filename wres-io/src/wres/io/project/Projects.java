@@ -1,5 +1,7 @@
 package wres.io.project;
 
+import static wres.config.generated.LeftOrRightOrBaseline.*;
+
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.Duration;
@@ -17,12 +19,10 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
-import static wres.io.config.LeftOrRightOrBaseline.*;
-
-import wres.io.config.LeftOrRightOrBaseline;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.reading.PreIngestException;

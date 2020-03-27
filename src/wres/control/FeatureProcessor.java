@@ -36,7 +36,6 @@ import wres.io.config.ConfigHelper;
 import wres.io.pooling.PoolFactory;
 import wres.io.project.Project;
 import wres.io.retrieval.UnitMapper;
-import wres.io.utilities.Database;
 import wres.system.SystemSettings;
 import wres.util.IterationFailedException;
 import wres.io.writing.commaseparated.pairs.PairsWriter;
@@ -428,7 +427,32 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                 return builder.build();
             }
 
-            return processor.apply( pool );
+            StatisticsForProject statistics = processor.apply( pool );
+
+            // Compute separate statistics for the baseline?
+            if ( pool.hasBaseline()
+                 && pool.getMetadata().getProjectConfig().getInputs().getBaseline().isSeparateMetrics() )
+            {
+                LOGGER.debug( "Computing separate statistics for the baseline pairs associated with pool {}.",
+                              pool.getMetadata() );
+
+                StatisticsForProject baselineStatistics = processor.apply( pool.getBaselineData() );
+
+                try
+                {
+                    statistics = new StatisticsForProjectBuilder().addStatistics( statistics )
+                                                                  .addStatistics( baselineStatistics )
+                                                                  .build();
+                }
+                catch ( InterruptedException e )
+                {
+                    Thread.currentThread().interrupt();
+
+                    throw new WresProcessingException( this.errorMessage, e );
+                }
+            }
+
+            return statistics;
         };
     }
 

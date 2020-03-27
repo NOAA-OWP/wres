@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
@@ -20,6 +21,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
@@ -29,6 +31,7 @@ import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.io.config.ConfigHelper;
+import wres.io.writing.WriterHelper;
 import wres.io.writing.commaseparated.CommaSeparatedUtilities;
 
 /**
@@ -96,14 +99,23 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedStatisticsWr
             // Write per time-window
             try
             {
-                Set<Path> innerPathsWrittenTo =
-                        CommaSeparatedPairedWriter.writeOnePairedOutputType( super.getOutputDirectory(),
-                                                                             destinationConfig,
-                                                                             output,
-                                                                             formatter,
-                                                                             super.getDurationUnits() );
+                // Group the statistics by the LRB context in which they appear. There will be one path written
+                // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
+                // each window with LeftOrRightOrBaseline.BASELINE data): #48287
+                Map<LeftOrRightOrBaseline, List<PairedStatistic<S, T>>> groups =
+                        WriterHelper.getStatisticsGroupedByContext( output.getData() );
 
-                this.pathsWrittenTo.addAll( innerPathsWrittenTo );
+                for ( List<PairedStatistic<S, T>> nextGroup : groups.values() )
+                {
+                    Set<Path> innerPathsWrittenTo =
+                            CommaSeparatedPairedWriter.writeOnePairedOutputType( super.getOutputDirectory(),
+                                                                                 destinationConfig,
+                                                                                 ListOfStatistics.of( nextGroup ),
+                                                                                 formatter,
+                                                                                 super.getDurationUnits() );
+
+                    this.pathsWrittenTo.addAll( innerPathsWrittenTo );
+                }
             }
             catch ( IOException e )
             {

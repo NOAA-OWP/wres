@@ -8,6 +8,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
@@ -19,12 +20,14 @@ import ohd.hseb.charter.ChartEngineException;
 import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.io.config.ConfigHelper;
+import wres.io.writing.WriterHelper;
 import wres.system.SystemSettings;
 import wres.vis.ChartEngineFactory;
 
@@ -85,14 +88,25 @@ public class PNGPairedWriter extends PNGWriter
             SortedSet<MetricConstants> metrics = Slicer.discover( output, meta -> meta.getMetadata().getMetricID() );
             for ( MetricConstants next : metrics )
             {
-                Set<Path> innerPathsWrittenTo =
-                        PNGPairedWriter.writePairedOutputByInstantDurationCharts( super.getSystemSettings(),
-                                                                                  super.getOutputDirectory(),
-                                                                                  super.getProjectConfigPlus(),
-                                                                                  destinationConfig,
-                                                                                  Slicer.filter( output, next ),
-                                                                                  super.getDurationUnits() );
-                this.pathsWrittenTo.addAll( innerPathsWrittenTo );
+                ListOfStatistics<PairedStatistic<Instant, Duration>> filtered = Slicer.filter( output, next );
+
+                // Group the statistics by the LRB context in which they appear. There will be one path written
+                // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
+                // each window with LeftOrRightOrBaseline.BASELINE data): #48287
+                Map<LeftOrRightOrBaseline, List<PairedStatistic<Instant, Duration>>> groups =
+                        WriterHelper.getStatisticsGroupedByContext( filtered.getData() );
+
+                for ( List<PairedStatistic<Instant, Duration>> nextGroup : groups.values() )
+                {
+                    Set<Path> innerPathsWrittenTo =
+                            PNGPairedWriter.writePairedOutputByInstantDurationCharts( super.getSystemSettings(),
+                                                                                      super.getOutputDirectory(),
+                                                                                      super.getProjectConfigPlus(),
+                                                                                      destinationConfig,
+                                                                                      ListOfStatistics.of( nextGroup ),
+                                                                                      super.getDurationUnits() );
+                    this.pathsWrittenTo.addAll( innerPathsWrittenTo );
+                }
             }
 
         }

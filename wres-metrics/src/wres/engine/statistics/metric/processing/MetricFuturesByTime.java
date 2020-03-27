@@ -84,7 +84,7 @@ class MetricFuturesByTime
                 DataFactory.ofMetricOutputForProjectByTimeAndThreshold();
 
         //Add outputs for current futures
-        doubleScore.forEach( builder::addDoubleScoreOutput );
+        doubleScore.forEach( builder::addDoubleScoreStatistics );
         durationScore.forEach( builder::addDurationScoreStatistics );
         multiVector.forEach( builder::addMultiVectorStatistics );
         boxplotPerPair.forEach( builder::addBoxPlotStatisticsPerPair );

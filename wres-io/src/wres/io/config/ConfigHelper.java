@@ -47,6 +47,7 @@ import wres.config.generated.DestinationType;
 import wres.config.generated.EnsembleCondition;
 import wres.config.generated.Feature;
 import wres.config.generated.Format;
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
@@ -54,6 +55,7 @@ import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.SourceTransformationType;
+import wres.config.generated.ProjectConfig.Inputs;
 import wres.config.generated.ProjectConfig.Outputs;
 import wres.config.generated.ThresholdFormat;
 import wres.config.generated.ThresholdsConfig;
@@ -1150,13 +1152,25 @@ public class ConfigHelper
 
         // Build the path 
         StringJoiner joinElements = new StringJoiner( "_" );
-        joinElements.add( meta.getSampleMetadata().getIdentifier().getGeospatialID().toString() )
-                    .add( meta.getSampleMetadata().getIdentifier().getVariableID() );
+        DatasetIdentifier identifier = meta.getSampleMetadata().getIdentifier();
+        ProjectConfig projectConfig = meta.getSampleMetadata().getProjectConfig();
+        
+        joinElements.add( identifier.getGeospatialID().toString() )
+                    .add( identifier.getVariableID() );
 
         // Add optional scenario identifier
-        if ( meta.getSampleMetadata().getIdentifier().hasScenarioID() )
+        if ( identifier.hasScenarioID() )
         {
-            joinElements.add( meta.getSampleMetadata().getIdentifier().getScenarioID() );
+            joinElements.add( identifier.getScenarioID() );
+        }
+        // If there are metrics for both the RIGHT and BASELINE, then additionally qualify if the scenario identifier 
+        // is not available to qualify them
+        else if ( identifier.hasLeftOrRightOrBaseline()
+                  && Objects.nonNull( projectConfig.getInputs() )
+                  && Objects.nonNull( projectConfig.getInputs().getBaseline() )
+                  && projectConfig.getInputs().getBaseline().isSeparateMetrics() )
+        {
+            joinElements.add( identifier.getLeftOrRightOrBaseline().toString() );
         }
 
         // Add the metric name()

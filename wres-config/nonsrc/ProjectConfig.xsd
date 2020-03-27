@@ -45,6 +45,19 @@
         </xs:restriction>
     </xs:simpleType>
 
+    <xs:simpleType name="leftOrRightOrBaseline">
+        <xs:annotation>
+            <xs:documentation>
+                An enumerated position within a pairing.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="left" />
+            <xs:enumeration value="right" />
+            <xs:enumeration value="baseline" />
+        </xs:restriction>
+    </xs:simpleType>
+
     <xs:simpleType name="sourceTransformationType">
         <xs:annotation>
             <xs:documentation>This is only useful currently in one circumstance:
@@ -374,6 +387,25 @@
             <xs:enumeration value="csv" />
         </xs:restriction>
     </xs:simpleType>
+
+    <xs:complexType name="datasourceBaseline">
+
+        <!-- for class naming using xjc-->
+        <xs:annotation>
+            <xs:appinfo>
+                <jaxb:class name="DataSourceBaselineConfig" />
+            </xs:appinfo>
+            <xs:documentation>Provides information necessary for WRES to load
+                data from baseline data sources.
+            </xs:documentation>
+        </xs:annotation>
+
+        <xs:complexContent>
+            <xs:extension base="datasource">
+                <xs:attribute name="separateMetrics" type="xs:boolean" default="false" />
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
 
     <!-- An enum to specify the scope of the thresholds when filtering paired data. -->
     <xs:simpleType name="thresholdDataType">
@@ -921,7 +953,7 @@ time scale within a single class, rather than two classes.
                         <xs:sequence>
                             <xs:element name="left" type="datasource" />
                             <xs:element name="right" type="datasource" />
-                            <xs:element name="baseline" type="datasource" minOccurs="0" maxOccurs="1" />
+                            <xs:element name="baseline" type="datasourceBaseline" minOccurs="0" maxOccurs="1" />
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>

@@ -48,10 +48,10 @@ import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesUpscaler;
 import wres.datamodel.time.TimeWindow;
 import wres.io.config.ConfigHelper;
-import wres.io.config.LeftOrRightOrBaseline;
 import wres.io.retrieval.DataAccessException;
 import wres.io.retrieval.NoSuchUnitConversionException;
 import wres.config.generated.DesiredTimeScaleConfig;
+import wres.config.generated.LeftOrRightOrBaseline;
 
 /**
  * <p>Supplies a {@link PoolOfPairs}, which is used to compute one or more verification statistics. The overall 

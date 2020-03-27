@@ -18,6 +18,7 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DoubleBoundsType;
 import wres.config.generated.Feature;
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.SourceTransformationType;
@@ -152,7 +153,8 @@ public class PoolFactory
                                                                   variableId,
                                                                   scenarioId,
                                                                   desiredMeasurementUnit,
-                                                                  desiredTimeScale );
+                                                                  desiredTimeScale,
+                                                                  LeftOrRightOrBaseline.RIGHT );
 
         // Create the basic metadata for the baseline pools, if any
         // Also, create a baseline generator function (e.g., persistence), if required
@@ -172,7 +174,8 @@ public class PoolFactory
                                                            baselineVariableId,
                                                            baselineScenarioId,
                                                            desiredMeasurementUnit,
-                                                           desiredTimeScale );
+                                                           desiredTimeScale,
+                                                           LeftOrRightOrBaseline.BASELINE );
 
             // Generated baseline declared?
             if ( ConfigHelper.hasGeneratedBaseline( baselineConfig ) )
@@ -210,6 +213,7 @@ public class PoolFactory
     /**
      * Create pools for ensemble data from a prescribed {@link Project} and {@link Feature}.
      * 
+     * @param database The database to use.
      * @param project the project for which pools are required
      * @param feature the feature for which pools are required
      * @param unitMapper the mapper to convert measurement units
@@ -282,7 +286,8 @@ public class PoolFactory
                                                                   variableId,
                                                                   scenarioId,
                                                                   desiredMeasurementUnit,
-                                                                  desiredTimeScale );
+                                                                  desiredTimeScale,
+                                                                  LeftOrRightOrBaseline.RIGHT );
 
         // Create the basic metadata for the baseline pools, if any
         SampleMetadata baselineMetadata = null;
@@ -300,7 +305,8 @@ public class PoolFactory
                                                            baselineVariableId,
                                                            baselineScenarioId,
                                                            desiredMeasurementUnit,
-                                                           desiredTimeScale );
+                                                           desiredTimeScale,
+                                                           LeftOrRightOrBaseline.BASELINE );
         }
 
         // Create any required transformers for value constraints
@@ -338,12 +344,8 @@ public class PoolFactory
         CrossPair crossPair = pairConfig.getCrossPair();
         if ( Objects.nonNull( crossPair ) )
         {
-            MatchMode matchMode = MatchMode.EXACT;
-            if ( Objects.nonNull( crossPair ) )
-            {
-                matchMode = crossPair.isExact() ? MatchMode.EXACT : MatchMode.FUZZY;
-                crossPairer = TimeSeriesCrossPairer.of( matchMode );
-            }
+            MatchMode matchMode = crossPair.isExact() ? MatchMode.EXACT : MatchMode.FUZZY;
+            crossPairer = TimeSeriesCrossPairer.of( matchMode );
         }
 
         return crossPairer;
@@ -358,6 +360,7 @@ public class PoolFactory
      * @param scenarioId the scenario identifier
      * @param measurementUnitString the measurement units string
      * @param desiredTimeScale the desired time scale
+     * @param leftOrRightOrBaseline the context for the data as it relates to the declaration
      * @return the metadata
      */
 
@@ -366,7 +369,8 @@ public class PoolFactory
                                                   String variableId,
                                                   String scenarioId,
                                                   String measurementUnitString,
-                                                  TimeScale desiredTimeScale )
+                                                  TimeScale desiredTimeScale,
+                                                  LeftOrRightOrBaseline leftOrRightOrBaseline )
     {
         Float longitude = null;
         Float latitude = null;
@@ -383,7 +387,11 @@ public class PoolFactory
                                          latitude,
                                          feature.getGageId() );
 
-        DatasetIdentifier identifier = DatasetIdentifier.of( location, variableId, scenarioId );
+        DatasetIdentifier identifier = DatasetIdentifier.of( location,
+                                                             variableId,
+                                                             scenarioId,
+                                                             null,
+                                                             leftOrRightOrBaseline );
 
         MeasurementUnit measurementUnit = MeasurementUnit.of( measurementUnitString );
 

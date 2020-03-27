@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
@@ -23,6 +24,7 @@ import ohd.hseb.charter.ChartEngineException;
 import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.OutputTypeSelection;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
@@ -31,6 +33,7 @@ import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.Threshold;
 import wres.io.config.ConfigHelper;
+import wres.io.writing.WriterHelper;
 import wres.system.SystemSettings;
 import wres.vis.ChartEngineFactory;
 
@@ -47,7 +50,7 @@ public class PNGDoubleScoreWriter extends PNGWriter
     private Set<Path> pathsWrittenTo = new HashSet<>();
 
     private static final Logger LOGGER = LoggerFactory.getLogger( PNGDoubleScoreWriter.class );
-    
+
     /**
      * Returns an instance of a writer.
      *
@@ -99,14 +102,25 @@ public class PNGDoubleScoreWriter extends PNGWriter
                 }
                 else
                 {
-                    Set<Path> innerPathsWrittenTo =
-                            PNGDoubleScoreWriter.writeScoreCharts( super.getSystemSettings(),
-                                                                   super.getOutputDirectory(),
-                                                                   super.getProjectConfigPlus(),
-                                                                   destinationConfig,
-                                                                   Slicer.filter( output, next ),
-                                                                   super.getDurationUnits() );
-                    this.pathsWrittenTo.addAll( innerPathsWrittenTo );
+                    ListOfStatistics<DoubleScoreStatistic> filtered = Slicer.filter( output, next );
+
+                    // Group the statistics by the LRB context in which they appear. There will be one path written
+                    // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
+                    // each window with LeftOrRightOrBaseline.BASELINE data): #48287
+                    Map<LeftOrRightOrBaseline, List<DoubleScoreStatistic>> groups =
+                            WriterHelper.getStatisticsGroupedByContext( filtered.getData() );
+
+                    for ( List<DoubleScoreStatistic> nextGroup : groups.values() )
+                    {
+                        Set<Path> innerPathsWrittenTo =
+                                PNGDoubleScoreWriter.writeScoreCharts( super.getSystemSettings(),
+                                                                       super.getOutputDirectory(),
+                                                                       super.getProjectConfigPlus(),
+                                                                       destinationConfig,
+                                                                       ListOfStatistics.of( nextGroup ),
+                                                                       super.getDurationUnits() );
+                        this.pathsWrittenTo.addAll( innerPathsWrittenTo );
+                    }
                 }
             }
         }

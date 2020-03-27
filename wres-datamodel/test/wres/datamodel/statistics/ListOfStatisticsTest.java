@@ -342,18 +342,22 @@ public final class ListOfStatisticsTest
                                                                                                    MetricConstants.MAIN ) ) ) );
 
         StringBuilder expected = new StringBuilder();
-        
-        String start = "{([-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
-                + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT0S,";
-        
+
+        String start = "{SampleMetadata[datasetIdentifier=<null>,timeWindow=[-1000000000-01-01T00:00:00Z,"
+                       + "+1000000000-12-31T23:59:59.999999999Z,-1000000000-01-01T00:00:00Z,"
+                       + "+1000000000-12-31T23:59:59.999999999Z,PT0S,PT0S],thresholds=";
+
         expected.append( start
-                         + "PT0S],> 1.0,DIMENSIONLESS,DIMENSIONLESS,0,BIAS FRACTION,MAIN): 0.1}" )
+                         + "> 1.0,timeScale=<null>,"
+                         + "measurementUnit=DIMENSIONLESS,DIMENSIONLESS,0,BIAS FRACTION,MAIN): 0.1}" )
                 .append( System.lineSeparator() )
                 .append( start
-                         + "PT0S],> 2.0,DIMENSIONLESS,DIMENSIONLESS,0,BIAS FRACTION,MAIN): 0.2}" )
+                         + "> 2.0,timeScale=<null>,"
+                         + "measurementUnit=DIMENSIONLESS,DIMENSIONLESS,0,BIAS FRACTION,MAIN): 0.2}" )
                 .append( System.lineSeparator() )
                 .append( start
-                         + "PT0S],> 3.0,DIMENSIONLESS,DIMENSIONLESS,0,BIAS FRACTION,MAIN): 0.3}" );
+                         + "> 3.0,timeScale=<null>,"
+                         + "measurementUnit=DIMENSIONLESS,DIMENSIONLESS,0,BIAS FRACTION,MAIN): 0.3}" );
 
         assertEquals( expected.toString(), listOfOutputs.toString() );
 
