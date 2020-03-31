@@ -44,17 +44,20 @@ import ucar.ma2.InvalidRangeException;
 import ucar.nc2.Dimension;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.NetcdfFileWriter;
+import ucar.nc2.NetcdfFiles;
 import ucar.nc2.Variable;
 import ucar.nc2.dt.GridDatatype;
 import ucar.nc2.dt.grid.GridDataset;
 import wres.config.FeaturePlus;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.NetcdfType;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
+import wres.config.generated.ProjectConfig.Inputs;
+import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.scale.TimeScale;
@@ -222,10 +225,10 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
         PairConfig pairConfig = projectConfig.getPair();
         Set<TimeWindow> timeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairConfig );
 
-        SystemSettings systemSettings = this.getSystemSettings();
+        SystemSettings localSettings = this.getSystemSettings();
         // External thresholds, if any
         Map<FeaturePlus, ThresholdsByMetric> externalThresholds =
-                ConfigHelper.readExternalThresholdsFromProjectConfig( systemSettings,
+                ConfigHelper.readExternalThresholdsFromProjectConfig( localSettings,
                                                                       projectConfig,
                                                                       unitMapper );
 
@@ -274,21 +277,18 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
             desiredTimeScale = TimeScale.of( pairConfig.getDesiredTimeScale() );
         }
         
-        // Dataset identifier, without a feature/location identifier
-        String variableId = ConfigHelper.getVariableIdFromProjectConfig( projectConfig, false );
-        String scenarioId = projectConfig.getInputs()
-                                         .getRight()
-                                         .getLabel();
-        
-        DatasetIdentifier identifier = DatasetIdentifier.of( null, variableId, scenarioId );
-        
         // Create blobs from components
-        return this.createBlobsAndBlobWriters( identifier, timeWindows, thresholds, units, desiredTimeScale );
+        return this.createBlobsAndBlobWriters( projectConfig.getInputs(),
+                                               timeWindows,
+                                               thresholds,
+                                               units,
+                                               desiredTimeScale );
     }
     
     /**
      * Creates the blobs into which outputs will be written.
      * 
+     * @param inputs the inputs declaration
      * @param timeWindows the time windows
      * @param thresholds the thresholds
      * @param units the measurement units, if available
@@ -297,7 +297,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
      * @return the paths written
      */
 
-    private Set<Path> createBlobsAndBlobWriters( DatasetIdentifier identifier,
+    private Set<Path> createBlobsAndBlobWriters( Inputs inputs,
                                                  Set<TimeWindow> timeWindows,
                                                  ThresholdsByMetric thresholds,
                                                  String units,
@@ -310,7 +310,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
         for ( TimeWindow nextWindow : timeWindows )
         {
 
-            Collection<MetricVariable> variables = this.getMetricVariablesForOneTimeWindow( nextWindow,
+            Collection<MetricVariable> variables = this.getMetricVariablesForOneTimeWindow( inputs,
+                                                                                            nextWindow,
                                                                                             thresholds,
                                                                                             units,
                                                                                             desiredTimeScale );
@@ -318,7 +319,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
             // Create the blob path
             Path targetPath = ConfigHelper.getOutputPathToWriteForOneTimeWindow( this.getOutputDirectory(),
                                                                                  this.getDestinationConfig(),
-                                                                                 identifier,
+                                                                                 this.getIdentifierForBlob( inputs ),
                                                                                  nextWindow,
                                                                                  this.getDurationUnits() );
 
@@ -344,6 +345,30 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
 
         return Collections.unmodifiableSet( returnMe );
     }  
+
+    /**
+     * Returns an identifier to be used in naming a blob.
+     * 
+     * @param inputs the inputs declaration
+     * @return an identifier
+     */
+    
+    private DatasetIdentifier getIdentifierForBlob( Inputs inputs )
+    {
+        
+        // Dataset identifier, without a feature/location identifier
+        // Use the main variable identifier in case there is a different one for the baseline
+        String variableId = ConfigHelper.getVariableIdFromProjectConfig( inputs, false );
+        // Use the scenarioId for the right, unless there is a baseline that requires separate metrics
+        // in which case, do not use a scenarioId
+        String scenarioId = inputs.getRight().getLabel();
+        if ( Objects.nonNull( inputs.getBaseline() ) && inputs.getBaseline().isSeparateMetrics() )
+        {
+            scenarioId = null;
+        }
+
+        return DatasetIdentifier.of( null, variableId, scenarioId );
+    }
 
     private String getTemplatePath()
     {
@@ -385,21 +410,74 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
      * @param timeWindow the time windows
      * @param thresholds the thresholds
      * @param units the measurement units, if available
-     * @param desiredTimeScale the desired time scale, if available 
+     * @param desiredTimeScale the desired time scale, if available
+     * @param optional context for the variable
+     * @return the metric variables
+     */
+
+    private Collection<MetricVariable> getMetricVariablesForOneTimeWindow( Inputs inputs,
+                                                                           TimeWindow timeWindow,
+                                                                           ThresholdsByMetric thresholds,
+                                                                           String units,
+                                                                           TimeScale desiredTimeScale )
+    {
+        // Statistics for a separate baseline? If no, there's a single set of variables
+        if ( Objects.isNull( inputs.getBaseline() ) || !inputs.getBaseline().isSeparateMetrics() )
+        {
+            return this.getMetricVariablesForOneTimeWindow( timeWindow, thresholds, units, desiredTimeScale, null );
+        }
+
+        // Two sets of variables, one for the right and one for the baseline with separate metrics
+        // FOr backwards compatibility, only clarify the baseline variable
+        Collection<MetricVariable> right = this.getMetricVariablesForOneTimeWindow( timeWindow,
+                                                                                    thresholds,
+                                                                                    units,
+                                                                                    desiredTimeScale,
+                                                                                    null );
+
+        Collection<MetricVariable> baseline = this.getMetricVariablesForOneTimeWindow( timeWindow,
+                                                                                       thresholds,
+                                                                                       units,
+                                                                                       desiredTimeScale,
+                                                                                       LeftOrRightOrBaseline.BASELINE );
+
+        Collection<MetricVariable> merged = new ArrayList<>( right );
+        merged.addAll( baseline );
+
+        return Collections.unmodifiableCollection( merged );
+    }
+    
+    /**
+     * Creates a collection of {@link MetricVariable} for one time window.
+     * 
+     * @param timeWindow the time windows
+     * @param thresholds the thresholds
+     * @param units the measurement units, if available
+     * @param desiredTimeScale the desired time scale, if available
+     * @param optional context for the variable
      * @return the metric variables
      */
 
     private Collection<MetricVariable> getMetricVariablesForOneTimeWindow( TimeWindow timeWindow,
                                                                            ThresholdsByMetric thresholds,
                                                                            String units,
-                                                                           TimeScale desiredTimeScale )
+                                                                           TimeScale desiredTimeScale,
+                                                                           LeftOrRightOrBaseline context )
     {
 
         Map<MetricConstants, SortedSet<OneOrTwoThresholds>> thresholdMap = thresholds.getOneOrTwoThresholds();
 
-        Map<String, SortedSet<OneOrTwoThresholds>> decomposed = this.decomposeThresholdsByMetricForBlobCreation( thresholdMap );
+        Map<String, SortedSet<OneOrTwoThresholds>> decomposed =
+                this.decomposeThresholdsByMetricForBlobCreation( thresholdMap );
 
         Collection<MetricVariable> returnMe = new ArrayList<>();
+
+        // Context to append?
+        String append = "";
+        if ( Objects.nonNull( context ) )
+        {
+            append = "_" + context.name();
+        }
 
         // One variable for each combination of metric and threshold
         for ( Map.Entry<String, SortedSet<OneOrTwoThresholds>> nextEntry : decomposed.entrySet() )
@@ -407,22 +485,22 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
             String nextMetric = nextEntry.getKey();
             Set<OneOrTwoThresholds> nextThresholds = nextEntry.getValue();
             int thresholdNumber = 1;
-            
-            Map<String,OneOrTwoThresholds> nextMap = this.standardThresholdNames.get( nextMetric );
-            if( Objects.isNull( nextMap ) )
+
+            Map<String, OneOrTwoThresholds> nextMap = this.standardThresholdNames.get( nextMetric );
+            if ( Objects.isNull( nextMap ) )
             {
                 nextMap = new HashMap<>();
                 this.standardThresholdNames.put( nextMetric, nextMap );
             }
-            
+
             for ( OneOrTwoThresholds nextThreshold : nextThresholds )
             {
                 String thresholdName = "THRESHOLD_" + thresholdNumber;
-                
+
                 // Add to the cache of standard threshold names
                 nextMap.put( thresholdName, nextThreshold );
-                
-                String variableName = nextMetric + "_" + thresholdName;
+
+                String variableName = nextMetric + "_" + thresholdName + append;
 
                 MetricVariable nextVariable = new MetricVariable( variableName,
                                                                   timeWindow,
@@ -539,8 +617,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                 }.initialize( timeWindow, scores );
 
                 LOGGER.debug( "Submitting a task to write to a netcdf file." );
-                Executor executor = this.getExecutor();
-                Future<Set<Path>> taskFuture = executor.submit( writerTask );
+                Executor writerExecutor = this.getExecutor();
+                Future<Set<Path>> taskFuture = writerExecutor.submit( writerTask );
                 this.writingTasksSubmitted.add( taskFuture );
             }
         }
@@ -736,7 +814,6 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                     }
 
                     Double actualValue = componentScore.getData();
-
                     this.saveValues( name, origin, actualValue );
                 }
             }
@@ -772,11 +849,6 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                     
                     try
                     {
-//                        LOGGER.debug( "Writing data value {} with variable name {} to index {} within file {}",
-//                                      key.getValue(),
-//                                      key.getVariableName(),
-//                                      Arrays.toString( key.getOrigin() ),
-//                                      this.outputPath );
                         writer.write( key.getVariableName(), key.getOrigin(), netcdfValue );
                     }
                     catch ( NullPointerException | IOException | InvalidRangeException e )
@@ -820,6 +892,12 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
             {
                 metricName = metricName + "_" + metricComponentId.name();
             }
+            
+            String append = "";
+            if( LeftOrRightOrBaseline.BASELINE.equals( sampleMetadata.getIdentifier().getLeftOrRightOrBaseline() ) )
+            {
+                append = "_" + LeftOrRightOrBaseline.BASELINE.name();
+            }
 
             // Look for a threshold with a standard name that is like the threshold associated with this score
             // Only use this technique when the thresholds are named
@@ -847,7 +925,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                     if ( thresholdWithValuesOne.equals( thresholdWithValuesTwo )
                          && ( !hasSecond || secondEqual ) )
                     {
-                        return metricName + "_" + nextName;
+                        return metricName + "_" + nextName + append;
                     }
                 }
             }
@@ -877,7 +955,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                                                     + statistics );
             }
 
-            return metricName + "_THRESHOLD_" + thresholdNumber;
+            return metricName + "_THRESHOLD_" + thresholdNumber + append;
         }
 
         private void saveValues( String name, int[] origin, double value )
@@ -977,7 +1055,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
             {
                 if (vectorCoordinatesMap.size() == 0)
                 {
-                    try( NetcdfFile outputFile = NetcdfFile.open(this.outputPath)) {
+                    try( NetcdfFile outputFile = NetcdfFiles.open(this.outputPath)) {
                         Variable coordinate = outputFile.findVariable(vectorVariableName);
                         Array values = coordinate.read();
 

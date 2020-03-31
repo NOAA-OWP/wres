@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNotEquals;
 import org.junit.Test;
 
 import wres.config.generated.LeftOrRightOrBaseline;
+import wres.datamodel.DatasetIdentifier;
 
 /**
  * Tests the {@link DatasetIdentifier}.

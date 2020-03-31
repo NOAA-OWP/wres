@@ -1,4 +1,4 @@
-package wres.datamodel.sampledata;
+package wres.datamodel;
 
 import java.util.Objects;
 
@@ -6,6 +6,8 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
 import wres.config.generated.LeftOrRightOrBaseline;
+import wres.datamodel.sampledata.Location;
+import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.statistics.Statistic;
 
 /**

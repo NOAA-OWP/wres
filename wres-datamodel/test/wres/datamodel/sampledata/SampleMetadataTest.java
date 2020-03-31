@@ -22,6 +22,7 @@ import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
+import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
 import wres.datamodel.scale.TimeScale;
