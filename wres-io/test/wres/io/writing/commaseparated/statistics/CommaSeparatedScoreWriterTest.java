@@ -65,7 +65,7 @@ public class CommaSeparatedScoreWriterTest
 
         Optional<Path> pathToFirstFile =
                 pathsToFile.stream()
-                           .filter( next -> next.endsWith( "DRRC2_SQIN_HEFS_MEAN_ABSOLUTE_ERROR.csv" ) )
+                           .filter( next -> next.endsWith( "DRRC2_SQIN_MEAN_ABSOLUTE_ERROR.csv" ) )
                            .findAny();
 
         // Check the expected path: #61841
@@ -82,7 +82,7 @@ public class CommaSeparatedScoreWriterTest
 
         Optional<Path> pathToSecondFile =
                 pathsToFile.stream()
-                           .filter( next -> next.endsWith( "DRRC2_SQIN_HEFS_MEAN_ERROR.csv" ) )
+                           .filter( next -> next.endsWith( "DRRC2_SQIN_MEAN_ERROR.csv" ) )
                            .findAny();
 
         // Check the expected path: #61841
@@ -99,7 +99,7 @@ public class CommaSeparatedScoreWriterTest
 
         Optional<Path> pathToThirdFile =
                 pathsToFile.stream()
-                           .filter( next -> next.endsWith( "DRRC2_SQIN_HEFS_MEAN_SQUARE_ERROR.csv" ) )
+                           .filter( next -> next.endsWith( "DRRC2_SQIN_MEAN_SQUARE_ERROR.csv" ) )
                            .findAny();
 
         // Check the expected path: #61841
@@ -156,7 +156,7 @@ public class CommaSeparatedScoreWriterTest
         Path pathToFile = pathsToFile.iterator().next();
 
         // Check the expected path: #61841
-        assertTrue( pathToFile.endsWith( "DOLC2_SQIN_HEFS_TIME_TO_PEAK_ERROR_STATISTIC.csv" ) );
+        assertTrue( pathToFile.endsWith( "DOLC2_SQIN_TIME_TO_PEAK_ERROR_STATISTIC.csv" ) );
 
         List<String> result = Files.readAllLines( pathToFile );
 
@@ -207,7 +207,7 @@ public class CommaSeparatedScoreWriterTest
         Path pathToFile = pathsToFile.iterator().next();
 
         // Check the expected path: #61841
-        assertTrue( pathToFile.endsWith( "FTSC1_SQIN_HEFS_MEAN_SQUARE_ERROR.csv" ) );
+        assertTrue( pathToFile.endsWith( "FTSC1_SQIN_MEAN_SQUARE_ERROR.csv" ) );
 
         List<String> firstResult = Files.readAllLines( pathToFile );
 

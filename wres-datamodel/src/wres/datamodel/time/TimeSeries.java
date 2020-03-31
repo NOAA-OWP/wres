@@ -397,7 +397,7 @@ public class TimeSeries<T>
         {
             if ( this.events.contains( event ) )
             {
-                throw new IllegalArgumentException( "Attemped to add an event at the same valid datetime as an "
+                throw new IllegalArgumentException( "Attempted to add an event at the same valid datetime as an "
                                                     + "existing event, which is not allowed. The duplicate event "
                                                     + "by time is '"
                                                     + event

@@ -314,9 +314,9 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         leftData = this.snip( leftData, rightData );
 
         // Consolidate any observation-like time-series as these values can be shared/combined (w.g., when rescaling)
-        leftData = this.consolidateObservationLikeTimeSeries( leftData );
-        rightData = this.consolidateObservationLikeTimeSeries( rightData );
-        baselineData = this.consolidateObservationLikeTimeSeries( baselineData );
+        leftData = this.consolidateTimeSeriesWithZeroReferenceTimes( leftData );
+        rightData = this.consolidateTimeSeriesWithZeroReferenceTimes( rightData );
+        baselineData = this.consolidateTimeSeriesWithZeroReferenceTimes( baselineData );
 
         // Get the paired frequency
         Duration pairedFrequency = this.getPairedFrequency();
@@ -1254,8 +1254,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
             }
 
             TimeSeriesBuilder<Pair<L, R>> filteredSeries = new TimeSeriesBuilder<>();
-            filteredSeries.addReferenceTimes( toFilter.getReferenceTimes() )
-                          .setTimeScale( toFilter.getTimeScale() );
+            filteredSeries.setMetadata( toFilter.getMetadata() );
 
             List<Event<Pair<L, R>>> events = new ArrayList<>( toFilter.getEvents() );
 
@@ -1470,13 +1469,14 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
      * @return any time-series that were consolidated plus any time -series that were not consolidated
      */
 
-    private <T> List<TimeSeries<T>> consolidateObservationLikeTimeSeries( List<TimeSeries<T>> timeSeries )
+    private <T> List<TimeSeries<T>> consolidateTimeSeriesWithZeroReferenceTimes( List<TimeSeries<T>> timeSeries )
     {
         List<TimeSeries<T>> returnMe = new ArrayList<>();
 
         // Tolerate null input (e.g., for a baseline)
         if ( Objects.nonNull( timeSeries ) )
         {
+            
             TimeSeriesBuilder<T> consolidatedbuilder = new TimeSeriesBuilder<>();
 
             for ( TimeSeries<T> next : timeSeries )
@@ -1484,9 +1484,9 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
                 // No reference times? Then consolidate into one series
                 Map<ReferenceTimeType, Instant> referenceTimes = next.getReferenceTimes();
                 if ( referenceTimes.isEmpty() )
-                {
+                {                    
                     consolidatedbuilder.addEvents( next.getEvents() )
-                                       .setTimeScale( next.getTimeScale() );
+                                       .setMetadata( next.getMetadata() );
                 }
                 // Some reference times: do not consolidate these time-series
                 else
@@ -1497,6 +1497,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
 
             // Consolidated series with some events?
             TimeSeries<T> consolidated = consolidatedbuilder.build();
+
             if ( !consolidated.getEvents().isEmpty() )
             {
                 returnMe.add( consolidated );

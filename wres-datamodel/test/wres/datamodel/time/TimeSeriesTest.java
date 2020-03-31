@@ -230,7 +230,7 @@ public class TimeSeriesTest
         IllegalArgumentException exception =
                 assertThrows( IllegalArgumentException.class, () -> builder.addEvent( Event.of( Instant.MIN, 2.0 ) ) );
 
-        assertEquals( "Attemped to add an event at the same valid datetime as an existing event, which is not allowed. "
+        assertEquals( "Attempted to add an event at the same valid datetime as an existing event, which is not allowed. "
                       + "The duplicate event by time is '"
                       + Event.of( Instant.MIN, 2.0 )
                       + "'.",

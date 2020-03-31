@@ -4,10 +4,10 @@ import java.util.Objects;
 
 import org.apache.commons.lang3.tuple.Pair;
 
+import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Probability;
 import wres.datamodel.Slicer;
-import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DoubleScoreStatistic;

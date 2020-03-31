@@ -64,7 +64,7 @@ public class CommaSeparatedBoxPlotWriterTest
         Path pathToFile = pathsToFile.iterator().next();
 
         // Check the expected path: #61841
-        assertTrue( pathToFile.endsWith( "JUNP1_SQIN_HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE_86400_SECONDS.csv" ) );
+        assertTrue( pathToFile.endsWith( "JUNP1_SQIN_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE_86400_SECONDS.csv" ) );
 
         List<String> result = Files.readAllLines( pathToFile );
 
@@ -124,7 +124,7 @@ public class CommaSeparatedBoxPlotWriterTest
         Path pathToFile = pathsToFile.iterator().next();
 
         // Check the expected path: #61841
-        assertTrue( pathToFile.endsWith( "JUNP1_SQIN_HEFS_BOX_PLOT_OF_ERRORS.csv" ) );
+        assertTrue( pathToFile.endsWith( "JUNP1_SQIN_BOX_PLOT_OF_ERRORS.csv" ) );
 
         List<String> result = Files.readAllLines( pathToFile );
 

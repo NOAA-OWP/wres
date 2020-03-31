@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 import wres.config.ProjectConfigException;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.sampledata.DatasetIdentifier;
+import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.statistics.Statistic;
 import wres.io.config.ConfigHelper;
 
@@ -45,6 +45,7 @@ public class WriterHelper
     /**
      * Returns a map of statistics grouped by the {@link DatasetIdentifier#getLeftOrRightOrBaseline()}.
      * 
+     * @param <T> the type of statistic
      * @param input the input list of statistics
      * @return the statistics grouped by context
      */

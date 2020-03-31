@@ -69,7 +69,7 @@ public class CommaSeparatedPairedWriterTest
         Path pathToFile = pathsToFile.iterator().next();
 
         // Check the expected path: #61841
-        assertTrue( pathToFile.endsWith( "FTSC1_SQIN_HEFS_TIME_TO_PEAK_ERROR.csv" ) );
+        assertTrue( pathToFile.endsWith( "FTSC1_SQIN_TIME_TO_PEAK_ERROR.csv" ) );
 
         List<String> result = Files.readAllLines( pathToFile );
 

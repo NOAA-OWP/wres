@@ -10,7 +10,7 @@ import java.util.StringJoiner;
 import org.junit.Before;
 import org.junit.Test;
 
-import wres.datamodel.sampledata.DatasetIdentifier;
+import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;

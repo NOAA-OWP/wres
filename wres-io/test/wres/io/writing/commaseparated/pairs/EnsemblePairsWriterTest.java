@@ -26,8 +26,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.Ensemble;
-import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;

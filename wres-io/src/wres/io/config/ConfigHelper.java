@@ -60,8 +60,8 @@ import wres.config.generated.ProjectConfig.Outputs;
 import wres.config.generated.ThresholdFormat;
 import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.DataFactory;
+import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.statistics.StatisticMetadata;
@@ -970,7 +970,7 @@ public class ConfigHelper
     }
 
     /**
-     * <p>Returns the variable identifier from the project configuration. The identifier is one of the following in 
+     * <p>Returns the variable identifier from the inputs configuration. The identifier is one of the following in 
      * order of precedent:</p>
      * 
      * <p>If the variable identifier is required for the left and right:</p>
@@ -988,44 +988,47 @@ public class ConfigHelper
      * 
      * <p>In both cases, the last declaration is always present.</p>
      * 
-     * @param projectConfig the project configuration
+     * @param inputs the inputs configuration
      * @param isBaseline is true if the variable name is required for the baseline
      * @return the variable identifier
      * @throws IllegalArgumentException if the baseline variable is requested and the input does not contain 
      *            a baseline source
+     * @throws NullPointerException if the input is null
      */
 
-    public static String getVariableIdFromProjectConfig( ProjectConfig projectConfig, boolean isBaseline )
+    public static String getVariableIdFromProjectConfig( Inputs inputs, boolean isBaseline )
     {
+        Objects.requireNonNull( inputs );
+        
         // Baseline required?
         if ( isBaseline )
         {
             // Has a baseline source
-            if ( Objects.nonNull( projectConfig.getInputs().getBaseline() ) )
+            if ( Objects.nonNull( inputs.getBaseline() ) )
             {
                 // Has a baseline source with a label
-                if ( Objects.nonNull( projectConfig.getInputs().getBaseline().getLabel() ) )
+                if ( Objects.nonNull( inputs.getBaseline().getVariable().getLabel() ) )
                 {
-                    return projectConfig.getInputs().getBaseline().getVariable().getLabel();
+                    return inputs.getBaseline().getVariable().getLabel();
                 }
                 // Only has a baseline source with a variable value
-                return projectConfig.getInputs().getBaseline().getVariable().getValue();
+                return inputs.getBaseline().getVariable().getValue();
             }
             throw new IllegalArgumentException( "Cannot identify the variable for the baseline as the input project "
                                                 + "does not contain a baseline source." );
         }
         // Has a left source with a label 
-        if ( Objects.nonNull( projectConfig.getInputs().getLeft().getVariable().getLabel() ) )
+        if ( Objects.nonNull( inputs.getLeft().getVariable().getLabel() ) )
         {
-            return projectConfig.getInputs().getLeft().getVariable().getLabel();
+            return inputs.getLeft().getVariable().getLabel();
         }
         // Has a right source with a label
-        else if ( Objects.nonNull( projectConfig.getInputs().getRight().getVariable().getLabel() ) )
+        else if ( Objects.nonNull( inputs.getRight().getVariable().getLabel() ) )
         {
-            return projectConfig.getInputs().getRight().getVariable().getLabel();
+            return inputs.getRight().getVariable().getLabel();
         }
         // Has a left source with a variable value
-        return projectConfig.getInputs().getLeft().getVariable().getValue();
+        return inputs.getLeft().getVariable().getValue();
     }
 
     /**
@@ -1154,21 +1157,39 @@ public class ConfigHelper
         StringJoiner joinElements = new StringJoiner( "_" );
         DatasetIdentifier identifier = meta.getSampleMetadata().getIdentifier();
         ProjectConfig projectConfig = meta.getSampleMetadata().getProjectConfig();
+        Inputs inputs = null;
+        if( Objects.nonNull( projectConfig ) )
+        {
+            inputs = projectConfig.getInputs();
+        }
         
         joinElements.add( identifier.getGeospatialID().toString() )
                     .add( identifier.getVariableID() );
-
-        // Add optional scenario identifier
-        if ( identifier.hasScenarioID() )
+        
+        // Baseline scenarioId
+        String configuredScenarioId = null;
+        String configuredBaselineScenarioId = null;
+        if( Objects.nonNull( inputs ) )
+        {
+            configuredScenarioId = inputs.getRight().getLabel();
+        }
+        
+        boolean baseline = Objects.nonNull( inputs ) && Objects.nonNull( inputs.getBaseline() );
+        if( baseline )
+        {
+            configuredBaselineScenarioId = inputs.getBaseline().getLabel();
+        }
+        
+        // Add optional scenario identifier unless the configured identifiers cannot discriminate between 
+        // RIGHT and BASELINE 
+        if ( identifier.hasScenarioID() && !Objects.equals( configuredScenarioId, configuredBaselineScenarioId ) )
         {
             joinElements.add( identifier.getScenarioID() );
         }
-        // If there are metrics for both the RIGHT and BASELINE, then additionally qualify if the scenario identifier 
-        // is not available to qualify them
+        // If there are metrics for both the RIGHT and BASELINE, then additionally qualify the context
         else if ( identifier.hasLeftOrRightOrBaseline()
-                  && Objects.nonNull( projectConfig.getInputs() )
-                  && Objects.nonNull( projectConfig.getInputs().getBaseline() )
-                  && projectConfig.getInputs().getBaseline().isSeparateMetrics() )
+                  && baseline
+                  && inputs.getBaseline().isSeparateMetrics() )
         {
             joinElements.add( identifier.getLeftOrRightOrBaseline().toString() );
         }

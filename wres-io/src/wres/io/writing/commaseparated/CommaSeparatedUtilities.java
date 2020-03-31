@@ -4,7 +4,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import java.util.StringJoiner;
 
-import wres.datamodel.sampledata.DatasetIdentifier;
+import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.scale.TimeScale;

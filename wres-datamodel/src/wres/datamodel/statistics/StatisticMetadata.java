@@ -3,8 +3,8 @@ package wres.datamodel.statistics;
 import java.util.Comparator;
 import java.util.Objects;
 
+import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.sampledata.DatasetIdentifier;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleMetadata;
