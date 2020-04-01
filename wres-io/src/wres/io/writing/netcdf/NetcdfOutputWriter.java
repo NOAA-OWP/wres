@@ -1048,7 +1048,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
             return origin;
         }
 
-        private Integer getVectorCoordinate( Location location, String vectorVariableName) throws IOException
+        private Integer getVectorCoordinate( Location location, String vectorVariableName )
+                throws IOException, CoordinateNotFoundException
         {
             synchronized ( vectorCoordinatesMap )
             {
@@ -1092,19 +1093,66 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                     }
                 }
 
-                if (this.useLidForLocationIdentifier)
+                if ( this.useLidForLocationIdentifier )
                 {
-                    return vectorCoordinatesMap.get(location.getLocationName());
+                    this.checkForCoordinateAndThrowExceptionIfNotFound( location, true );
+
+                    return vectorCoordinatesMap.get( location.getLocationName() );
                 }
                 else
                 {
-                    return this.vectorCoordinatesMap.get(location.getVectorIdentifier().intValue());
+                    this.checkForCoordinateAndThrowExceptionIfNotFound( location, false );
+
+                    return this.vectorCoordinatesMap.get( location.getVectorIdentifier().intValue() );
                 }
             }
             
         }
 
+        /**
+         * Checks for the presence of a coordinate corresponding to the prescribed location and throws an exception
+         * if the coordinate cannot be found.
+         * 
+         * @param location the location to check
+         * @param isLocationName is true to use the location name as the identifier, false for the NWM identifier
+         * @throws CoordinateNotFoundException if a coordinate could not be found
+         */
 
+        private void checkForCoordinateAndThrowExceptionIfNotFound( Location location, boolean isLocationName )
+                throws CoordinateNotFoundException
+        {
+
+            // Location name is the glue
+            if ( isLocationName )
+            {
+                if ( !this.vectorCoordinatesMap.containsKey( location.getLocationName() ) )
+                {
+                    throw new CoordinateNotFoundException( "While attempting to write statistics to "
+                                                           + this.outputPath
+                                                           + ", failed to identify a coordinate for location "
+                                                           + location
+                                                           + " using the location name "
+                                                           + location.getLocationName()
+                                                           + "." );
+                }
+            }
+            // Comid is the glue
+            else
+            {
+                if ( !this.vectorCoordinatesMap.containsKey( location.getVectorIdentifier().intValue() ) )
+                {
+
+                    throw new CoordinateNotFoundException( "While attempting to write statistics to "
+                                                           + this.outputPath
+                                                           + ", failed to identify a coordinate for location "
+                                                           + location
+                                                           + " using the NWM location identifier (comid) "
+                                                           + location.getVectorIdentifier().intValue()
+                                                           + "." );
+                }
+            }
+        }
+        
         @Override
         public String toString()
         {
