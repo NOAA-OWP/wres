@@ -6,6 +6,7 @@ import static org.junit.Assert.assertThrows;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -53,10 +54,42 @@ public class TimeSeriesPairerByExactTimeTest
     private static final String SAUCE = "sauce";
     private static final String APPLE = "apple";
 
+    private static final String VARIABLE_NAME = "Fruit";
+    private static final String FEATURE_NAME = "Tropics";
+    private static final String UNIT = "kg/h";
+
+    private static TimeSeriesMetadata getBoilerplateMetadata()
+    {
+        return TimeSeriesMetadata.of( Collections.emptyMap(),
+                                      TimeScale.of( Duration.ofHours( 1 ) ),
+                                      VARIABLE_NAME,
+                                      FEATURE_NAME,
+                                      UNIT );
+    }
+
+    private static TimeSeriesMetadata getBoilerplateMetadataWithT0( Instant t0 )
+    {
+        return TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, t0 ),
+                                      TimeScale.of( Duration.ofHours( 1 ) ),
+                                      VARIABLE_NAME,
+                                      FEATURE_NAME,
+                                      UNIT );
+    }
+
+    private static TimeSeriesMetadata getBoilerplateMetadataWithTimeScale( Duration timeScale )
+    {
+        return TimeSeriesMetadata.of( Collections.emptyMap(),
+                                      TimeScale.of( timeScale ),
+                                      VARIABLE_NAME,
+                                      FEATURE_NAME,
+                                      UNIT );
+    }
+
     @Test
     public void testPairObservationsCreatesFivePairs()
     {
         // Create a left series
+        TimeSeriesMetadata metadata = getBoilerplateMetadata();
         SortedSet<Event<String>> leftEvents = new TreeSet<>();
         leftEvents.add( Event.of( FIRST_TIME, APPLE ) );
         leftEvents.add( Event.of( T2039_01_12T03_00_00Z, "banana" ) );
@@ -66,7 +99,7 @@ public class TimeSeriesPairerByExactTimeTest
         leftEvents.add( Event.of( T2039_01_12T11_00_00Z, "orange" ) );
         leftEvents.add( Event.of( T2039_01_12T18_00_00Z, "guava" ) );
 
-        TimeSeries<String> left = TimeSeries.of( leftEvents );
+        TimeSeries<String> left = TimeSeries.of( metadata, leftEvents );
 
         SortedSet<Event<String>> rightEvents = new TreeSet<>();
         rightEvents.add( Event.of( FIRST_TIME, SAUCE ) );
@@ -77,7 +110,7 @@ public class TimeSeriesPairerByExactTimeTest
         rightEvents.add( Event.of( T2039_01_12T11_00_00Z, "juice" ) );
         rightEvents.add( Event.of( T2039_01_12T19_00_00Z, "chunks" ) );
 
-        TimeSeries<String> right = TimeSeries.of( rightEvents );
+        TimeSeries<String> right = TimeSeries.of( metadata, rightEvents );
 
         TimeSeriesPairer<String, String> pairer = TimeSeriesPairerByExactTime.of();
 
@@ -92,7 +125,8 @@ public class TimeSeriesPairerByExactTimeTest
         expectedEvents.add( Event.of( T2039_01_12T10_00_00Z, Pair.of( "tangerine", "spritzer" ) ) );
         expectedEvents.add( Event.of( T2039_01_12T11_00_00Z, Pair.of( "orange", "juice" ) ) );
 
-        TimeSeries<Pair<String, String>> expectedPairs = TimeSeries.of( expectedEvents );
+        TimeSeries<Pair<String, String>> expectedPairs = TimeSeries.of( metadata,
+                                                                        expectedEvents );
 
         assertEquals( 5, expectedPairs.getEvents().size() );
 
@@ -103,15 +137,16 @@ public class TimeSeriesPairerByExactTimeTest
     public void testPairObservationsCreatesZeroPairs()
     {
         // Create a left series
+        TimeSeriesMetadata metadata = getBoilerplateMetadata();
         SortedSet<Event<String>> leftEvents = new TreeSet<>();
         leftEvents.add( Event.of( FIRST_TIME, APPLE ) );
 
-        TimeSeries<String> left = TimeSeries.of( leftEvents );
+        TimeSeries<String> left = TimeSeries.of( metadata, leftEvents );
 
         SortedSet<Event<String>> rightEvents = new TreeSet<>();
         rightEvents.add( Event.of( T2039_01_12T06_00_00Z, SAUCE ) );
 
-        TimeSeries<String> right = TimeSeries.of( rightEvents );
+        TimeSeries<String> right = TimeSeries.of( metadata, rightEvents );
 
         TimeSeriesPairer<String, String> pairer = TimeSeriesPairerByExactTime.of();
 
@@ -120,7 +155,7 @@ public class TimeSeriesPairerByExactTimeTest
 
         // Created the expected time-series
         TimeSeries<Pair<String, String>> expectedPairs =
-                TimeSeries.of();
+                TimeSeries.of( metadata );
 
         assertEquals( 0, expectedPairs.getEvents().size() );
 
@@ -131,6 +166,7 @@ public class TimeSeriesPairerByExactTimeTest
     public void testPairObservationsAndSingleValuedForecastsCreatesThreePairs()
     {
         // Create a left series
+        TimeSeriesMetadata leftMetadata = getBoilerplateMetadata();
         SortedSet<Event<Double>> leftEvents = new TreeSet<>();
         leftEvents.add( Event.of( FIRST_TIME, 1.0 ) );
         leftEvents.add( Event.of( T2039_01_12T03_00_00Z, 3.0 ) );
@@ -140,7 +176,8 @@ public class TimeSeriesPairerByExactTimeTest
         leftEvents.add( Event.of( T2039_01_12T11_00_00Z, 80.0 ) );
         leftEvents.add( Event.of( T2039_01_12T18_00_00Z, 93.0 ) );
 
-        TimeSeries<Double> left = TimeSeries.of( leftEvents );
+        TimeSeries<Double> left = TimeSeries.of( leftMetadata,
+                                                 leftEvents );
 
         SortedSet<Event<Double>> rightEvents = new TreeSet<>();
         rightEvents.add( Event.of( FIRST_TIME, 1.0 ) );
@@ -152,8 +189,8 @@ public class TimeSeriesPairerByExactTimeTest
         rightEvents.add( Event.of( T2039_01_12T19_00_00Z, 93.0 ) );
 
         Instant referenceTime = Instant.parse( "2039-01-01T00:00:00Z" );
-
-        TimeSeries<Double> right = TimeSeries.of( referenceTime, rightEvents );
+        TimeSeriesMetadata rightMetadata = getBoilerplateMetadataWithT0( referenceTime );
+        TimeSeries<Double> right = TimeSeries.of( rightMetadata, rightEvents );
 
         TimeSeriesPairer<Double, Double> pairer = TimeSeriesPairerByExactTime.of();
 
@@ -166,7 +203,7 @@ public class TimeSeriesPairerByExactTimeTest
         expectedEvents.add( Event.of( T2039_01_12T08_00_00Z, Pair.of( 15.0, 15.0 ) ) );
         expectedEvents.add( Event.of( T2039_01_12T11_00_00Z, Pair.of( 80.0, 80.0 ) ) );
 
-        TimeSeries<Pair<Double, Double>> expectedPairs = TimeSeries.of( referenceTime, expectedEvents );
+        TimeSeries<Pair<Double, Double>> expectedPairs = TimeSeries.of( rightMetadata, expectedEvents );
 
         assertEquals( 3, expectedPairs.getEvents().size() );
 
@@ -188,7 +225,8 @@ public class TimeSeriesPairerByExactTimeTest
         leftEvents.add( Event.of( T2039_01_12T11_00_00Z, 80.0 ) );
         leftEvents.add( Event.of( T2039_01_12T18_00_00Z, 93.0 ) );
 
-        TimeSeries<Double> left = TimeSeries.of( leftEvents );
+        TimeSeries<Double> left = TimeSeries.of( getBoilerplateMetadata(),
+                                                 leftEvents );
 
         SortedSet<Event<Double>> rightEvents = new TreeSet<>();
         rightEvents.add( Event.of( FIRST_TIME, 1.0 ) );
@@ -200,8 +238,8 @@ public class TimeSeriesPairerByExactTimeTest
         rightEvents.add( Event.of( T2039_01_12T19_00_00Z, 93.0 ) );
 
         Instant referenceTime = Instant.parse( "2039-01-01T00:00:00Z" );
-
-        TimeSeries<Double> right = TimeSeries.of( referenceTime, rightEvents );
+        TimeSeriesMetadata rightMetadata = getBoilerplateMetadataWithT0( referenceTime );
+        TimeSeries<Double> right = TimeSeries.of( rightMetadata, rightEvents );
 
         // Do not admit values unless they are finite
         TimeSeriesPairer<Double, Double> pairer = TimeSeriesPairerByExactTime.of( Double::isFinite, Double::isFinite );
@@ -213,7 +251,7 @@ public class TimeSeriesPairerByExactTimeTest
         SortedSet<Event<Pair<Double, Double>>> expectedEvents = new TreeSet<>();
         expectedEvents.add( Event.of( T2039_01_12T11_00_00Z, Pair.of( 80.0, 80.0 ) ) );
 
-        TimeSeries<Pair<Double, Double>> expectedPairs = TimeSeries.of( referenceTime, expectedEvents );
+        TimeSeries<Pair<Double, Double>> expectedPairs = TimeSeries.of( rightMetadata, expectedEvents );
 
         assertEquals( 1, expectedPairs.getEvents().size() );
 
@@ -226,6 +264,12 @@ public class TimeSeriesPairerByExactTimeTest
         // Case described in #72042-12, based on system test scenario504
 
         // First time-series
+        TimeSeriesMetadata metadataOne = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
+                                                                        T2551_03_17T12_00_00Z ),
+                                                                TimeScale.of( Duration.ofHours( 3 ) ),
+                                                                "STREAMFLOW",
+                                                                "FAKE2",
+                                                                "CMS" );
         SortedSet<Event<Double>> firstEvents = new TreeSet<>();
         firstEvents.add( Event.of( T2551_03_17T15_00_00Z, 73.0 ) );
         firstEvents.add( Event.of( T2551_03_17T18_00_00Z, 79.0 ) );
@@ -239,9 +283,15 @@ public class TimeSeriesPairerByExactTimeTest
         firstEvents.add( Event.of( T2551_03_18T18_00_00Z, 113.0 ) );
         firstEvents.add( Event.of( T2551_03_18T21_00_00Z, 127.0 ) );
 
-        TimeSeries<Double> first = TimeSeries.of( T2551_03_17T12_00_00Z, firstEvents );
+        TimeSeries<Double> first = TimeSeries.of( metadataOne, firstEvents );
 
         // Second time-series
+        TimeSeriesMetadata metadataTwo = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
+                                                                        T2551_03_18T00_00_00Z ),
+                                                                TimeScale.of( Duration.ofHours( 3 ) ),
+                                                                "STREAMFLOW",
+                                                                "FAKE2",
+                                                                "CMS" );
         SortedSet<Event<Double>> secondEvents = new TreeSet<>();
         secondEvents.add( Event.of( T2551_03_18T03_00_00Z, 131.0 ) );
         secondEvents.add( Event.of( T2551_03_18T06_00_00Z, 137.0 ) );
@@ -255,7 +305,7 @@ public class TimeSeriesPairerByExactTimeTest
         secondEvents.add( Event.of( T2551_03_19T06_00_00Z, 179.0 ) );
         secondEvents.add( Event.of( T2551_03_19T09_00_00Z, 181.0 ) );
 
-        TimeSeries<Double> second = TimeSeries.of( T2551_03_18T00_00_00Z, secondEvents );
+        TimeSeries<Double> second = TimeSeries.of( metadataTwo, secondEvents );
 
         // Create the pairer
         TimeSeriesPairer<Double, Double> pairer = TimeSeriesPairerByExactTime.of( Double::isFinite, Double::isFinite );
@@ -263,7 +313,6 @@ public class TimeSeriesPairerByExactTimeTest
         // Intersect the matching time-series combinations first, then the non-matching combinations
         // First of four
         TimeSeries<Pair<Double, Double>> firstActual = pairer.pair( first, first );
-
         TimeSeries<Pair<Double, Double>> firstExpected =
                 new TimeSeriesBuilder<Pair<Double, Double>>().addEvent( Event.of( T2551_03_17T15_00_00Z,
                                                                                   Pair.of( 73.0, 73.0 ) ) )
@@ -287,8 +336,7 @@ public class TimeSeriesPairerByExactTimeTest
                                                                                   Pair.of( 113.0, 113.0 ) ) )
                                                              .addEvent( Event.of( T2551_03_18T21_00_00Z,
                                                                                   Pair.of( 127.0, 127.0 ) ) )
-                                                             .addReferenceTime( T2551_03_17T12_00_00Z,
-                                                                                ReferenceTimeType.UNKNOWN )
+                                                             .setMetadata( metadataOne )
                                                              .build();
 
         assertEquals( firstExpected, firstActual );
@@ -319,31 +367,31 @@ public class TimeSeriesPairerByExactTimeTest
                                                                                   Pair.of( 179.0, 179.0 ) ) )
                                                              .addEvent( Event.of( T2551_03_19T09_00_00Z,
                                                                                   Pair.of( 181.0, 181.0 ) ) )
-                                                             .addReferenceTime( T2551_03_18T00_00_00Z,
-                                                                                ReferenceTimeType.UNKNOWN )
+                                                             .setMetadata( metadataTwo )
                                                              .build();
 
         assertEquals( secondExpected, secondActual );
 
         // Third of four
         TimeSeries<Pair<Double, Double>> thirdActual = pairer.pair( first, second );
-        TimeSeries<Pair<Double, Double>> thirdExpected = TimeSeries.of();
+        TimeSeries<Pair<Double, Double>> thirdExpected = TimeSeries.of( metadataTwo );
 
-        assertEquals( thirdActual, thirdExpected );
+        assertEquals( thirdExpected, thirdActual );
 
         // Fourth of four
-        TimeSeries<Pair<Double, Double>> fourthActual = pairer.pair( first, second );
-        TimeSeries<Pair<Double, Double>> fourthExpected = TimeSeries.of();
+        TimeSeries<Pair<Double, Double>> fourthActual = pairer.pair( second, first );
+        TimeSeries<Pair<Double, Double>> fourthExpected = TimeSeries.of( metadataOne );
 
-        assertEquals( fourthActual, fourthExpected );
+        assertEquals( fourthExpected, fourthActual );
     }
 
     @Test
     public void testPairThrowsExceptionWhenNullLeftIsNull()
     {
         TimeSeriesPairer<Double, Double> pairer = TimeSeriesPairerByExactTime.of();
+        TimeSeriesMetadata metadata = getBoilerplateMetadata();
         TimeSeries<Double> series =
-                TimeSeries.of( new TreeSet<>( Collections.singleton( Event.of( Instant.now(), 1.0 ) ) ) );
+                TimeSeries.of( metadata, new TreeSet<>( Collections.singleton( Event.of( Instant.now(), 1.0 ) ) ) );
 
         NullPointerException exception = assertThrows( NullPointerException.class,
                                                        () -> pairer.pair( null, series ) );
@@ -355,8 +403,10 @@ public class TimeSeriesPairerByExactTimeTest
     public void testPairThrowsExceptionWhenRightIsNull()
     {
         TimeSeriesPairer<Double, Double> pairer = TimeSeriesPairerByExactTime.of();
+        TimeSeriesMetadata metadata = getBoilerplateMetadata();
         TimeSeries<Double> series =
-                TimeSeries.of( new TreeSet<>( Collections.singleton( Event.of( Instant.now(), 1.0 ) ) ) );
+                TimeSeries.of( metadata,
+                               new TreeSet<>( Collections.singleton( Event.of( Instant.now(), 1.0 ) ) ) );
 
         NullPointerException exception = assertThrows( NullPointerException.class,
                                                        () -> pairer.pair( series, null ) );
@@ -369,14 +419,13 @@ public class TimeSeriesPairerByExactTimeTest
     {
         TimeSeriesPairer<Object, Object> pairer = TimeSeriesPairerByExactTime.of();
 
+        TimeSeriesMetadata metadataOne = getBoilerplateMetadataWithTimeScale( Duration.ofMinutes( 1 ) );
         TimeSeries<Object> seriesOne =
-                new TimeSeries.TimeSeriesBuilder<>().setTimeScale( TimeScale.of() ).build();
+                new TimeSeries.TimeSeriesBuilder<>().setMetadata( metadataOne ).build();
 
+        TimeSeriesMetadata metadataTwo = getBoilerplateMetadataWithTimeScale( Duration.ofHours( 1 ) );
         TimeSeries<Object> seriesTwo =
-                new TimeSeries.TimeSeriesBuilder<>().setTimeScale( TimeScale.of( Duration.ofHours( 1 ) ) ).build();
-
-
-        TimeSeries.of( new TreeSet<>( Collections.singleton( Event.of( Instant.now(), 1.0 ) ) ) );
+                new TimeSeries.TimeSeriesBuilder<>().setMetadata( metadataTwo ).build();
 
         PairingException exception = assertThrows( PairingException.class,
                                                    () -> pairer.pair( seriesOne, seriesTwo ) );

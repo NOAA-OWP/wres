@@ -30,7 +30,6 @@ import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.time.Event;
-import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeWindow;
@@ -127,7 +126,8 @@ public final class BoxPlotErrorTest
             builder.setMetadata( input.getMetadata() );
             for ( Event<Pair<Double,Double>> next : events )
             {
-                builder.addTimeSeries( TimeSeries.of( new TreeSet<>( Collections.singleton( next ) ) ) );
+                builder.addTimeSeries( TimeSeries.of( MetricTestDataFactory.getBoilerplateMetadata(),
+                                                      new TreeSet<>( Collections.singleton( next ) ) ) );
             }
             actualRaw.addAll( this.boxPlotError.apply( builder.build() ).getData() );
         }

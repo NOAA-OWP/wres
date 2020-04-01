@@ -25,7 +25,6 @@ import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
-import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -179,8 +178,7 @@ public final class TimeSeriesSlicer
 
         TimeSeriesBuilder<T> builder = new TimeSeriesBuilder<>();
 
-        builder.setTimeScale( timeSeries.getTimeScale() )
-               .addReferenceTimes( timeSeries.getReferenceTimes() );
+        builder.setMetadata( timeSeries.getMetadata() );
 
         for ( Event<T> event : timeSeries.getEvents() )
         {
@@ -251,10 +249,9 @@ public final class TimeSeriesSlicer
         notConsideredOrWithinBounds.putAll( input.getReferenceTimes() );
         notConsideredOrWithinBounds.keySet().removeAll( subset.keySet() );
         notConsideredOrWithinBounds.putAll( referenceTimes );
-        
+
         TimeSeriesBuilder<T> builder = new TimeSeriesBuilder<>();
-        builder.addReferenceTimes( notConsideredOrWithinBounds )
-               .setTimeScale( input.getTimeScale() );
+        builder.setMetadata( input.getMetadata() );
 
         // Some reference times existed and none were within the filter bounds?
         if ( !input.getReferenceTimes().isEmpty() && notConsideredOrWithinBounds.isEmpty() )
@@ -317,8 +314,7 @@ public final class TimeSeriesSlicer
 
         TimeSeriesBuilder<T> builder = new TimeSeriesBuilder<>();
 
-        builder.setTimeScale( timeSeries.getTimeScale() )
-               .addReferenceTimes( timeSeries.getReferenceTimes() );
+        builder.setMetadata( timeSeries.getMetadata() );
 
         timeSeries.getEvents()
                   .stream()
@@ -565,8 +561,7 @@ public final class TimeSeriesSlicer
 
         if ( timeSeries.getEvents().isEmpty() )
         {
-            return List.of( new TimeSeriesBuilder<Double>().addReferenceTimes( timeSeries.getReferenceTimes() )
-                                                           .setTimeScale( timeSeries.getTimeScale() )
+            return List.of( new TimeSeriesBuilder<Double>().setMetadata( timeSeries.getMetadata() )
                                                            .build() );
         }
 
@@ -576,8 +571,7 @@ public final class TimeSeriesSlicer
         for ( Map.Entry<Object, SortedSet<Event<Double>>> next : withLabels.entrySet() )
         {
             TimeSeriesBuilder<Double> builder = new TimeSeriesBuilder<>();
-            TimeSeries<Double> series = builder.addReferenceTimes( timeSeries.getReferenceTimes() )
-                                               .setTimeScale( timeSeries.getTimeScale() )
+            TimeSeries<Double> series = builder.setMetadata( timeSeries.getMetadata() )
                                                .addEvents( next.getValue() )
                                                .build();
             returnMe.add( series );
@@ -616,8 +610,7 @@ public final class TimeSeriesSlicer
 
         // Valid times and ensemble values for composition   
         Map<Instant, List<Double>> ensembles = new TreeMap<>();
-        Map<ReferenceTimeType, Instant> referenceTimes = null;
-        TimeScale timeScale = null;
+        TimeSeriesMetadata metadata = null;
 
         for ( TimeSeries<Double> nextSeries : timeSeries )
         {
@@ -635,30 +628,20 @@ public final class TimeSeriesSlicer
             }
 
             // Set the reference times and time scale
-            if ( Objects.isNull( referenceTimes ) )
+            if ( Objects.isNull( metadata ) )
             {
-                referenceTimes = nextSeries.getReferenceTimes();
+                metadata = nextSeries.getMetadata();
             }
-            else if ( !nextSeries.getReferenceTimes().equals( referenceTimes ) )
+            else if ( !nextSeries.getMetadata()
+                                 .equals( metadata ) )
             {
-                throw new IllegalArgumentException( "One or more of the input series have different reference "
-                                                    + "times, which is not allowed when composing them into an "
+                throw new IllegalArgumentException( "One or more of the input series have different metadata,"
+                                                    + " which is not allowed when composing them into an "
                                                     + "ensemble." );
             }
-            // Unequal time scales
-            else if ( Objects.nonNull( timeScale ) != nextSeries.hasTimeScale()
-                      || ( nextSeries.hasTimeScale() && !nextSeries.getTimeScale().equals( timeScale ) ) )
-            {
-                throw new IllegalArgumentException( "One or more of the input series have different time scales, "
-                                                    + "which is not allowed when composing them into an "
-                                                    + "ensemble." );
-            }
-
-            // Set the time scale
-            timeScale = nextSeries.getTimeScale();
         }
 
-        return TimeSeriesSlicer.compose( ensembles, referenceTimes, timeScale, labels );
+        return TimeSeriesSlicer.compose( ensembles, metadata, labels );
     }
 
     /**
@@ -680,8 +663,7 @@ public final class TimeSeriesSlicer
 
         TimeSeriesBuilder<T> builder = new TimeSeriesBuilder<>();
 
-        builder.setTimeScale( timeSeries.getTimeScale() )
-               .addReferenceTimes( timeSeries.getReferenceTimes() );
+        builder.setMetadata( timeSeries.getMetadata() );
 
         for ( Event<S> event : timeSeries.getEvents() )
         {
@@ -886,7 +868,10 @@ public final class TimeSeriesSlicer
         // Empty series
         if ( collectedSeries.isEmpty() )
         {
-            return TimeSeries.of();
+            // TODO: restore empty timeseries capability after weeding out spots
+            // where some kind of metadata can be put in.
+            throw new IllegalStateException( "Cannot consolidate an empty timeseries" );
+            //return TimeSeries.of();
         }
         // Singleton series
         else if ( collectedSeries.size() == 1 )
@@ -899,8 +884,7 @@ public final class TimeSeriesSlicer
         for ( TimeSeries<T> next : collectedSeries )
         {
             builder.addEvents( next.getEvents() );
-            builder.addReferenceTimes( next.getReferenceTimes() );
-            builder.setTimeScale( next.getTimeScale() );
+            builder.setMetadata( next.getMetadata() );
         }
 
         return builder.build();
@@ -910,27 +894,22 @@ public final class TimeSeriesSlicer
      * <p>Composes an ensemble time-series from a map of values.
      *
      * @param ensembles the ensemble members per time
-     * @param referenceTimes the reference times
-     * @param timeScale the time scale
+     * @param metadata The time-series metadata
      * @param labels the member labels
      * @return an ensemble times-series
      * @throws NullPointerException if any input other than the time scale is null
      */
 
     private static TimeSeries<Ensemble> compose( Map<Instant, List<Double>> ensembles,
-                                                 Map<ReferenceTimeType, Instant> referenceTimes,
-                                                 TimeScale timeScale,
+                                                 TimeSeriesMetadata metadata,
                                                  SortedSet<String> labels )
     {
         Objects.requireNonNull( ensembles );
-
-        Objects.requireNonNull( referenceTimes );
-
+        Objects.requireNonNull( metadata );
         Objects.requireNonNull( labels );
 
         TimeSeriesBuilder<Ensemble> builder = new TimeSeriesBuilder<>();
-        builder.addReferenceTimes( referenceTimes )
-               .setTimeScale( timeScale );
+        builder.setMetadata( metadata );
 
         String[] labs = null;
 
@@ -997,8 +976,7 @@ public final class TimeSeriesSlicer
         }
 
         TimeSeriesBuilder<S> snippedSeries = new TimeSeriesBuilder<>();
-        snippedSeries.addReferenceTimes( toSnip.getReferenceTimes() )
-                     .setTimeScale( toSnip.getTimeScale() );
+        snippedSeries.setMetadata( toSnip.getMetadata() );
         for ( Event<S> next : toSnip.getEvents() )
         {
             Instant nextTime = next.getTime();
@@ -1046,8 +1024,7 @@ public final class TimeSeriesSlicer
         {
             SortedSet<Event<T>> events = toTransform.getEvents();
             TimeSeriesBuilder<T> timeTransformed = new TimeSeriesBuilder<>();
-            timeTransformed.addReferenceTimes( toTransform.getReferenceTimes() )
-                           .setTimeScale( toTransform.getTimeScale() );
+            timeTransformed.setMetadata( toTransform.getMetadata() );
 
             for ( Event<T> next : events )
             {

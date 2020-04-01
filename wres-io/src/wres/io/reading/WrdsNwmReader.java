@@ -317,8 +317,8 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
         String measurementUnit = document.getVariable()
                                          .get( "unit" );
         
-        // Time scale if available
-        TimeScale timeScale = null;
+        // Time scale if available, default to INSTANTANEOUS (this is NWM)
+        TimeScale timeScale = TimeScale.of();
  
         if( Objects.nonNull( document.getParameterCodes() ) )
         {
@@ -344,12 +344,12 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
             {
                 for ( NwmFeature nwmFeature : forecast.getFeatures() )
                 {
-                    Pair<String, TimeSeries<?>> transformed =
+                    TimeSeries<?> timeSeries =
                             this.transform( forecast.getReferenceDatetime(),
                                             nwmFeature,
-                                            timeScale );
-                    String locationName = transformed.getKey();
-                    TimeSeries<?> timeSeries = transformed.getValue();
+                                            timeScale,
+                                            variableName,
+                                            measurementUnit );
 
                     if ( !timeSeries.getEvents()
                                     .isEmpty() )
@@ -364,10 +364,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                                                                this.getProjectConfig(),
                                                                this.getDataSource(),
                                                                this.getLockManager(),
-                                                               timeSeries,
-                                                               locationName,
-                                                               variableName,
-                                                               measurementUnit );
+                                                               timeSeries );
 
                         Future<List<IngestResult>> futureIngestResult =
                                 this.ingestSaverExecutor.submit(
@@ -427,23 +424,29 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
 
     /**
      * Transform deserialized JSON document (now a POJO tree) to TimeSeries.
+     * @param referenceDatetime The reference datetime.
      * @param feature The POJO with a TimeSeries in it.
      * @param timeScale the time scale associated with the time series.
+     * @param variableName The name of the variable.
+     * @param measurementUnit The unit of the variable value.
      * @return The NWM location name (akd nwm feature id, comid) and TimeSeries.
      */
 
-    private Pair<String,TimeSeries<?>> transform( Instant referenceDatetime,
-                                                  NwmFeature feature,
-                                                  TimeScale timeScale )
+    private TimeSeries<?> transform( Instant referenceDatetime,
+                                     NwmFeature feature,
+                                     TimeScale timeScale,
+                                     String variableName,
+                                     String measurementUnit )
     {
         Objects.requireNonNull( feature );
         Objects.requireNonNull( feature.getLocation() );
         Objects.requireNonNull( feature.getLocation().getNwmLocationNames() );
+        Objects.requireNonNull( variableName );
+        Objects.requireNonNull( measurementUnit );
 
         int rawLocationId = feature.getLocation()
                                    .getNwmLocationNames()
                                    .getNwmFeatureId();
-        String wresGenericFeatureName = "" + rawLocationId; 
         NwmMember[] members = feature.getMembers();
         TimeSeries<?> timeSeries;
 
@@ -484,8 +487,10 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
             }
 
             TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of( referenceTimeType, referenceDatetime ),
-                                                                 timeScale );
-
+                                                                 timeScale,
+                                                                 variableName,
+                                                                 Integer.toString( rawLocationId ),
+                                                                 measurementUnit );
             timeSeries = new TimeSeriesBuilder<Double>().addEvents( Collections.unmodifiableSortedSet( events ) )
                                                         .setMetadata( metadata )
                                                         .build();
@@ -554,8 +559,10 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
 
             // Re-shape the data to match the WRES metrics/datamodel expectation
             TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, referenceDatetime ),
-                                                                 timeScale );
-
+                                                                 timeScale,
+                                                                 variableName,
+                                                                 Integer.toString( rawLocationId ),
+                                                                 measurementUnit );
             TimeSeriesBuilder<Ensemble> builder = new TimeSeriesBuilder<Ensemble>().setMetadata( metadata );
 
             for ( Map.Entry<Instant, double[]> row : primitiveData.entrySet() )
@@ -573,8 +580,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
             throw new PreIngestException( "No members found in WRDS NWM data" );
         }
 
-        return Pair.of( wresGenericFeatureName,
-                        timeSeries );
+        return timeSeries;
     }
 
     String getWresFeatureNameFromNwmFeatureId( Features featuresCache,
@@ -622,12 +628,9 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                                                  ProjectConfig projectConfig,
                                                  DataSource dataSource,
                                                  DatabaseLockManager lockManager,
-                                                 TimeSeries<?> timeSeries,
-                                                 String locationName,
-                                                 String variableName,
-                                                 String measurementUnit )
+                                                 TimeSeries<?> timeSeries )
     {
-        return new TimeSeriesIngester( systemSettings,
+        return TimeSeriesIngester.of( systemSettings,
                                        database,
                                        featuresCache,
                                        variablesCache,
@@ -637,10 +640,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                                        dataSource,
                                        lockManager,
                                        timeSeries,
-                                       locationName,
-                                       GEO_ID_TYPE.COMID,
-                                       variableName,
-                                       measurementUnit );
+                                       GEO_ID_TYPE.COMID );
     }
 
     /**

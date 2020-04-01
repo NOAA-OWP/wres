@@ -9,6 +9,7 @@ import java.time.Instant;
 
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -28,11 +29,17 @@ import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 public class TimeSeriesTest
 {
 
+    private static final String VARIABLE_NAME = "Chickens";
+    private static final String FEATURE_NAME = "Georgia";
+    private static final String UNIT = "kg/h";
+
     /**
      * Events.
      */
 
     private SortedSet<Event<Double>> events;
+
+    private TimeSeriesMetadata metadata;
 
     /**
      * A time-series.
@@ -61,11 +68,16 @@ public class TimeSeriesTest
 
         Iterator<Event<Double>> iterator = events.iterator();
 
-        testSeries = builder.addReferenceTime( this.referenceTime, ReferenceTimeType.T0 )
+        this.metadata =
+                TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, this.referenceTime),
+                                       TimeScale.of(),
+                                       VARIABLE_NAME,
+                                       FEATURE_NAME,
+                                       UNIT );
+        testSeries = builder.setMetadata( metadata )
                             .addEvent( iterator.next() )
                             .addEvent( iterator.next() )
                             .addEvent( iterator.next() )
-                            .setTimeScale( TimeScale.of() )
                             .build();
     }
 
@@ -112,13 +124,10 @@ public class TimeSeriesTest
 
         // Consistent when invoked multiple times
         TimeSeries<Double> test =
-                new TimeSeriesBuilder<Double>().addReferenceTime( this.referenceTime, ReferenceTimeType.T0 )
+                new TimeSeriesBuilder<Double>().setMetadata( this.metadata )
                                                .addEvents( this.events )
-                                               .setTimeScale( TimeScale.of() )
                                                .build();
-
-        TimeSeries.of( this.referenceTime,
-                       ReferenceTimeType.T0,
+        TimeSeries.of( this.metadata,
                        this.events );
         for ( int i = 0; i < 100; i++ )
         {
@@ -138,18 +147,16 @@ public class TimeSeriesTest
 
         // Symmetric
         TimeSeries<Double> anotherTestSeries =
-                new TimeSeriesBuilder<Double>().addReferenceTime( this.referenceTime, ReferenceTimeType.T0 )
+                new TimeSeriesBuilder<Double>().setMetadata( this.metadata )
                                                .addEvents( this.events )
-                                               .setTimeScale( TimeScale.of() )
                                                .build();
 
         assertTrue( anotherTestSeries.equals( this.testSeries ) && this.testSeries.equals( anotherTestSeries ) );
 
         // Transitive
         TimeSeries<Double> oneMoreTestSeries =
-                new TimeSeriesBuilder<Double>().addReferenceTime( this.referenceTime, ReferenceTimeType.T0 )
+                new TimeSeriesBuilder<Double>().setMetadata( this.metadata )
                                                .addEvents( this.events )
-                                               .setTimeScale( TimeScale.of() )
                                                .build();
 
         assertTrue( this.testSeries.equals( anotherTestSeries ) && anotherTestSeries.equals( oneMoreTestSeries )
@@ -166,13 +173,26 @@ public class TimeSeriesTest
         assertNotEquals( anotherTestSeries, null );
 
         // Check unequal cases
-        TimeSeries<Double> unequalOnReferenceTime = TimeSeries.of( Instant.parse( "1990-03-01T12:00:00Z" ),
-                                                                   ReferenceTimeType.T0,
+        TimeSeriesMetadata metadataWithOtherReferenceTime =
+                TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
+                                               Instant.parse( "1990-03-01T12:00:00Z" ) ),
+                                       TimeScale.of(),
+                                       VARIABLE_NAME,
+                                       FEATURE_NAME,
+                                       UNIT );
+        TimeSeries<Double> unequalOnReferenceTime = TimeSeries.of( metadataWithOtherReferenceTime,
                                                                    this.events );
 
         assertNotEquals( unequalOnReferenceTime, this.testSeries );
 
-        TimeSeries<Double> unequalOnReferenceTimeType = TimeSeries.of( this.referenceTime,
+        TimeSeriesMetadata metadataWithOtherReferenceTimeType =
+                TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ISSUED_TIME,
+                                               this.referenceTime ),
+                                       TimeScale.of(),
+                                       VARIABLE_NAME,
+                                       FEATURE_NAME,
+                                       UNIT );
+        TimeSeries<Double> unequalOnReferenceTimeType = TimeSeries.of( metadataWithOtherReferenceTimeType,
                                                                        this.events );
 
         assertNotEquals( unequalOnReferenceTimeType, this.testSeries );
@@ -180,26 +200,24 @@ public class TimeSeriesTest
         SortedSet<Event<Double>> otherEvents = new TreeSet<>();
         otherEvents.add( Event.of( Instant.parse( "1985-01-06T12:00:00Z" ), 1.2 ) );
 
-        TimeSeries<Double> unequalOnEvents = TimeSeries.of( this.referenceTime,
-                                                            ReferenceTimeType.T0,
+        TimeSeries<Double> unequalOnEvents = TimeSeries.of( this.metadata,
                                                             otherEvents );
 
         assertNotEquals( unequalOnEvents, this.testSeries );
 
-        TimeSeries<Double> unequalOnMultiple = TimeSeries.of( otherEvents );
+        TimeSeries<Double> unequalOnMultiple = TimeSeries.of( metadataWithOtherReferenceTimeType,
+                                                              otherEvents );
 
         assertNotEquals( unequalOnMultiple, this.testSeries );
 
         TimeSeries<Ensemble> theseEventValues =
-                new TimeSeriesBuilder<Ensemble>().addReferenceTime( Instant.parse( "2023-04-01T00:00:00Z" ),
-                                                                    ReferenceTimeType.UNKNOWN )
+                new TimeSeriesBuilder<Ensemble>().setMetadata( this.metadata )
                                                  .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ),
                                                                       Ensemble.of( 30.0, 65.0, 100.0 ) ) )
                                                  .build();
 
         TimeSeries<Ensemble> doNotEqualThese =
-                new TimeSeriesBuilder<Ensemble>().addReferenceTime( Instant.parse( "2023-04-01T00:00:00Z" ),
-                                                                    ReferenceTimeType.UNKNOWN )
+                new TimeSeriesBuilder<Ensemble>().setMetadata( this.metadata )
                                                  .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ),
                                                                       Ensemble.of( 30.0, 65.0, 93.0 ) ) )
                                                  .build();
@@ -213,7 +231,8 @@ public class TimeSeriesTest
     @Test
     public void assertThatATimeSeriesCanBeEmpty()
     {
-        assertEquals( Collections.emptySortedSet(), TimeSeries.of( Collections.emptySortedSet() ).getEvents() );
+        assertEquals( Collections.emptySortedSet(), TimeSeries.of( this.metadata,
+                                                                   Collections.emptySortedSet() ).getEvents() );
     }
 
     /**

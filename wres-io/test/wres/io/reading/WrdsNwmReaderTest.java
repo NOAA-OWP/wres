@@ -29,7 +29,6 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import static org.mockserver.model.HttpRequest.request;
 
@@ -253,10 +252,7 @@ public class WrdsNwmReaderTest
                                           any( ProjectConfig.class ),
                                           any( DataSource.class ),
                                           any( DatabaseLockManager.class ),
-                                          any( TimeSeries.class ),
-                                          anyString(),
-                                          anyString(),
-                                          anyString() );
+                                          any( TimeSeries.class ) );
 
 
         // Fake the database-dependent WRES feature name getter
@@ -285,10 +281,7 @@ public class WrdsNwmReaderTest
                                           any( ProjectConfig.class ),
                                           any( DataSource.class ),
                                           any( DatabaseLockManager.class ),
-                                          this.timeSeries.capture(),
-                                          anyString(),
-                                          anyString(),
-                                          anyString() );
+                                          this.timeSeries.capture() );
 
         // Verify that the reader requested analysis data path given to it once.
         WrdsNwmReaderTest.mockServer.verify( request().withMethod( "GET" )
@@ -453,10 +446,7 @@ public class WrdsNwmReaderTest
                                           any( ProjectConfig.class ),
                                           any( DataSource.class ),
                                           any( DatabaseLockManager.class ),
-                                          any( TimeSeries.class ),
-                                          anyString(),
-                                          anyString(),
-                                          anyString() );
+                                          any( TimeSeries.class ) );
 
 
         // Fake the database-dependent WRES feature name getter
@@ -485,10 +475,7 @@ public class WrdsNwmReaderTest
                                           any( ProjectConfig.class ),
                                           any( DataSource.class ),
                                           any( DatabaseLockManager.class ),
-                                          this.timeSeries.capture(),
-                                          anyString(),
-                                          anyString(),
-                                          anyString() );
+                                          this.timeSeries.capture() );
 
         // Verify that the reader requested thrice (2 times failed).
         WrdsNwmReaderTest.mockServer.verify( request().withMethod( "GET" )

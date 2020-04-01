@@ -31,7 +31,6 @@ import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.time.Event;
-import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeWindow;
@@ -130,7 +129,8 @@ public final class BoxPlotPercentageErrorTest
             builder.setMetadata( input.getMetadata() );
             for ( Event<Pair<Double, Double>> next : events )
             {
-                builder.addTimeSeries( TimeSeries.of( new TreeSet<>( Collections.singleton( next ) ) ) );
+                builder.addTimeSeries( TimeSeries.of( MetricTestDataFactory.getBoilerplateMetadata(),
+                                                      new TreeSet<>( Collections.singleton( next ) ) ) );
             }
             actualRaw.addAll( this.boxPlotPercentageError.apply( builder.build() ).getData() );
         }

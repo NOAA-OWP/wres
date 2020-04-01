@@ -15,6 +15,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -37,6 +38,7 @@ import wres.datamodel.scale.TimeScale.TimeScaleFunction;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeWindow;
 
 /**
@@ -65,6 +67,48 @@ public final class SingleValuedPairsWriterTest
 
     private static PoolOfPairs<Double, Double> pairsThree = null;
 
+    private static final String VARIABLE_NAME = "ARMS";
+    private static final String FEATURE_NAME = "FRUIT";
+    private static final String UNIT = "SCOOBIES";
+
+    private static TimeSeriesMetadata getBoilerplateMetadataWithT0( Instant t0 )
+    {
+        return TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, t0 ),
+                                      TimeScale.of( Duration.ofHours( 1 ) ),
+                                      VARIABLE_NAME,
+                                      FEATURE_NAME,
+                                      UNIT );
+    }
+
+    private static TimeSeriesMetadata getBoilerplateMetadata()
+    {
+        return TimeSeriesMetadata.of( Collections.emptyMap(),
+                                      TimeScale.of( Duration.ofHours( 1 ) ),
+                                      VARIABLE_NAME,
+                                      FEATURE_NAME,
+                                      UNIT );
+    }
+
+
+    private static TimeSeriesMetadata getBoilerplateMetadataWithTimeScale( TimeScale timeScale )
+    {
+        return TimeSeriesMetadata.of( Collections.emptyMap(),
+                                      timeScale,
+                                      VARIABLE_NAME,
+                                      FEATURE_NAME,
+                                      UNIT );
+    }
+
+    private static TimeSeriesMetadata getBoilerplateMetadataWithT0AndTimeScale( Instant t0,
+                                                                                TimeScale timeScale )
+    {
+        return TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, t0 ),
+                                      timeScale,
+                                      VARIABLE_NAME,
+                                      FEATURE_NAME,
+                                      UNIT );
+    }
+
     @BeforeClass
     public static void setUpBeforeAllTests()
     {
@@ -82,9 +126,9 @@ public final class SingleValuedPairsWriterTest
         SampleMetadata meta =
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
                                    DatasetIdentifier.of( Location.of( "PLUM" ), "RIFLE" ) );
-
+        TimeSeriesMetadata metadata = getBoilerplateMetadataWithT0( basisTime );
         TimeSeries<Pair<Double, Double>> timeSeriesOne =
-                TimeSeries.of( basisTime, ReferenceTimeType.UNKNOWN, setOfPairs );
+                TimeSeries.of( metadata, setOfPairs );
 
         pairs = tsBuilder.addTimeSeries( timeSeriesOne ).setMetadata( meta ).build();
 
@@ -102,9 +146,9 @@ public final class SingleValuedPairsWriterTest
         SampleMetadata metaTwo =
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
                                    DatasetIdentifier.of( Location.of( "ORANGE" ), "PISTOL" ) );
-
+        TimeSeriesMetadata metadataTwo = getBoilerplateMetadataWithT0( basisTimeTwo );
         TimeSeries<Pair<Double, Double>> timeSeriesTwo =
-                TimeSeries.of( basisTimeTwo, ReferenceTimeType.UNKNOWN, setOfPairsTwo );
+                TimeSeries.of( metadataTwo, setOfPairsTwo );
 
         pairsTwo = tsBuilderTwo.addTimeSeries( timeSeriesTwo ).setMetadata( metaTwo ).build();
 
@@ -123,9 +167,9 @@ public final class SingleValuedPairsWriterTest
         SampleMetadata metaThree =
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
                                    DatasetIdentifier.of( Location.of( "BANANA" ), "GRENADE" ) );
-
+        TimeSeriesMetadata metadataThree = getBoilerplateMetadataWithT0( basisTimeThree );
         TimeSeries<Pair<Double, Double>> timeSeriesThree =
-                TimeSeries.of( basisTimeThree, ReferenceTimeType.UNKNOWN, setOfPairsThree );
+                TimeSeries.of( metadataThree, setOfPairsThree );
 
         pairsThree = tsBuilderThree.addTimeSeries( timeSeriesThree ).setMetadata( metaThree ).build();
     }
@@ -158,7 +202,8 @@ public final class SingleValuedPairsWriterTest
                                                .build();
 
             PoolOfPairs<Double, Double> emptyPairs =
-                    tsBuilder.addTimeSeries( TimeSeries.of( Collections.emptySortedSet() ) )
+                    tsBuilder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
+                                                            Collections.emptySortedSet() ) )
                              .setMetadata( meta )
                              .build();
 

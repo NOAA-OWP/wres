@@ -6,7 +6,9 @@ import static org.junit.Assert.assertTrue;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -30,6 +32,28 @@ import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 
 public class TimeSeriesOfDoubleBasicUpscalerTest
 {
+    private static final String VARIABLE_NAME = "Fruit";
+    private static final String FEATURE_NAME = "Tropics";
+    private static final String UNIT = "kg/h";
+
+    private static TimeSeriesMetadata getBoilerplateMetadataWithT0AndTimeScale( Instant t0,
+                                                                                TimeScale timeScale )
+    {
+        return TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, t0 ),
+                                      timeScale,
+                                      VARIABLE_NAME,
+                                      FEATURE_NAME,
+                                      UNIT );
+    }
+
+    private static TimeSeriesMetadata getBoilerplateMetadataWithTimeScale( TimeScale timeScale )
+    {
+        return TimeSeriesMetadata.of( Collections.emptyMap(),
+                                      timeScale,
+                                      VARIABLE_NAME,
+                                      FEATURE_NAME,
+                                      UNIT );
+    }
 
     /**
      * Upscaler instance to test.
@@ -64,6 +88,8 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
         // Time scale of the event values: TOTAL over PT1H
         TimeScale existingScale = TimeScale.of( Duration.ofHours( 1 ), TimeScaleFunction.TOTAL );
 
+        TimeSeriesMetadata metadata = getBoilerplateMetadataWithTimeScale( existingScale );
+
         // Time-series to upscale
         TimeSeries<Double> timeSeries = new TimeSeriesBuilder<Double>().addEvent( one )
                                                                        .addEvent( two )
@@ -71,7 +97,7 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
                                                                        .addEvent( four )
                                                                        .addEvent( five )
                                                                        .addEvent( six )
-                                                                       .setTimeScale( existingScale )
+                                                                       .setMetadata( metadata )
                                                                        .build();
 
         // Where the upscaled values should end (e.g., forecast valid times)
@@ -87,10 +113,11 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
                                                  .getTimeSeries();
 
         // Create the expected series with the desired time scale
+        TimeSeriesMetadata expectedMetadata = getBoilerplateMetadataWithTimeScale( desiredTimeScale );
         TimeSeries<Double> expected = new TimeSeriesBuilder<Double>().addEvent( Event.of( second, 3.0 ) )
                                                                      .addEvent( Event.of( fourth, 7.0 ) )
                                                                      .addEvent( Event.of( sixth, 11.0 ) )
-                                                                     .setTimeScale( desiredTimeScale )
+                                                                     .setMetadata( expectedMetadata )
                                                                      .build();
 
         assertEquals( expected, actual );
@@ -123,6 +150,8 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
 
         // Time scale of the event values: instantaneous
         TimeScale existingScale = TimeScale.of( Duration.ofMinutes( 1 ), TimeScaleFunction.MEAN );
+        TimeSeriesMetadata existingMetadata =
+                getBoilerplateMetadataWithTimeScale( existingScale );
 
         // Time-series to upscale
         TimeSeries<Double> timeSeries = new TimeSeriesBuilder<Double>().addEvent( one )
@@ -131,7 +160,7 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
                                                                        .addEvent( four )
                                                                        .addEvent( five )
                                                                        .addEvent( six )
-                                                                       .setTimeScale( existingScale )
+                                                                       .setMetadata( existingMetadata )
                                                                        .build();
 
         // Where the upscaled values should end (e.g., forecast valid times)
@@ -147,10 +176,12 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
                                                  .getTimeSeries();
 
         // Create the expected series with the desired time scale
+        TimeSeriesMetadata expectedMetadata =
+                getBoilerplateMetadataWithTimeScale( desiredTimeScale );
         TimeSeries<Double> expected = new TimeSeriesBuilder<Double>().addEvent( Event.of( third, 9.0 ) )
                                                                      .addEvent( Event.of( sixth,
                                                                                           MissingValues.DOUBLE ) )
-                                                                     .setTimeScale( desiredTimeScale )
+                                                                     .setMetadata( expectedMetadata )
                                                                      .build();
 
         assertEquals( expected, actual );
@@ -196,6 +227,9 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
 
         // Forecast reference time
         Instant referenceTime = Instant.parse( "1985-01-01T12:00:00Z" );
+        TimeSeriesMetadata existingMetadata =
+                getBoilerplateMetadataWithT0AndTimeScale( referenceTime,
+                                                          existingScale );
 
         // Time-series to upscale
         TimeSeries<Double> forecast = new TimeSeriesBuilder<Double>().addEvent( one )
@@ -209,9 +243,7 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
                                                                      .addEvent( nine )
                                                                      .addEvent( ten )
                                                                      .addEvent( eleven )
-                                                                     .addReferenceTime( referenceTime,
-                                                                                        ReferenceTimeType.UNKNOWN )
-                                                                     .setTimeScale( existingScale )
+                                                                     .setMetadata( existingMetadata )
                                                                      .build();
 
         // Create an observed time-series for pairing
@@ -221,11 +253,13 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
         // Time scale of the event values: daily average
         TimeScale desiredTimeScale = TimeScale.of( Duration.ofHours( 24 ), TimeScaleFunction.MEAN );
 
+        TimeSeriesMetadata desiredMetadata =
+                getBoilerplateMetadataWithTimeScale( desiredTimeScale );
         TimeSeries<Double> observed = new TimeSeriesBuilder<Double>().addEvent( one )
                                                                      .addEvent( Event.of( third, 27.0 ) )
                                                                      .addEvent( Event.of( seventh, 2.0 ) )
                                                                      .addEvent( Event.of( eleventh, 111.0 ) )
-                                                                     .setTimeScale( desiredTimeScale )
+                                                                     .setMetadata( desiredMetadata )
                                                                      .build();
 
         // Upscaled forecasts must end at observed times, in order to allow pairing
@@ -237,12 +271,13 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
         TimeSeries<Double> actualForecast = this.upscaler.upscale( forecast, desiredTimeScale, endsAt )
                                                          .getTimeSeries();
 
+        TimeSeriesMetadata expectedMetadata =
+                getBoilerplateMetadataWithT0AndTimeScale( referenceTime,
+                                                          desiredTimeScale );
         // Create the expected series with the desired time scale
         TimeSeries<Double> expectedForecast = new TimeSeriesBuilder<Double>().addEvent( Event.of( seventh, 13.0 ) )
                                                                              .addEvent( Event.of( eleventh, 9.25 ) )
-                                                                             .setTimeScale( desiredTimeScale )
-                                                                             .addReferenceTime( referenceTime,
-                                                                                                ReferenceTimeType.UNKNOWN )
+                                                                             .setMetadata( expectedMetadata )
                                                                              .build();
 
         assertEquals( expectedForecast, actualForecast );
@@ -259,9 +294,7 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
         TimeSeries<Pair<Double, Double>> expectedPairs =
                 new TimeSeriesBuilder<Pair<Double, Double>>().addEvent( Event.of( seventh, pairOne ) )
                                                              .addEvent( Event.of( eleventh, pairTwo ) )
-                                                             .setTimeScale( desiredTimeScale )
-                                                             .addReferenceTime( referenceTime,
-                                                                                ReferenceTimeType.UNKNOWN )
+                                                             .setMetadata( expectedMetadata )
                                                              .build();
 
         assertEquals( expectedPairs, actualPairs );
@@ -322,6 +355,9 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
         Instant referenceTime = Instant.parse( "2017-01-02T12:00:00Z" );
 
         // Time-series to upscale
+        TimeSeriesMetadata existingMetadata =
+                getBoilerplateMetadataWithT0AndTimeScale( referenceTime,
+                                                          existingScale );
         TimeSeries<Double> forecast = new TimeSeriesBuilder<Double>().addEvent( one )
                                                                      .addEvent( two )
                                                                      .addEvent( three )
@@ -340,9 +376,7 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
                                                                      .addEvent( sixteen )
                                                                      .addEvent( seventeen )
                                                                      .addEvent( eighteen )
-                                                                     .addReferenceTime( referenceTime,
-                                                                                        ReferenceTimeType.UNKNOWN )
-                                                                     .setTimeScale( existingScale )
+                                                                     .setMetadata( existingMetadata )
                                                                      .build();
 
         TimeScale desiredTimeScale = TimeScale.of( Duration.ofHours( 96 ), TimeScaleFunction.MAXIMUM );
@@ -350,13 +384,13 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
         SortedSet<Instant> endsAt = new TreeSet<>( Set.of( eighteenth ) );
         TimeSeries<Double> actual = this.upscaler.upscale( forecast, desiredTimeScale, endsAt )
                                                  .getTimeSeries();
-
+        TimeSeriesMetadata expectedMetadata =
+                getBoilerplateMetadataWithT0AndTimeScale( referenceTime,
+                                                          desiredTimeScale );
         TimeSeries<Double> expected = new TimeSeriesBuilder<Double>()
                                                                      .addEvent( Event.of( eighteen.getTime(),
                                                                                           four.getValue() ) )
-                                                                     .addReferenceTime( referenceTime,
-                                                                                        ReferenceTimeType.UNKNOWN )
-                                                                     .setTimeScale( desiredTimeScale )
+                                                                     .setMetadata( expectedMetadata )
                                                                      .build();
 
         assertEquals( expected, actual );
@@ -408,6 +442,9 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
         Instant referenceTime = Instant.parse( "2020-01-14T12:00:00Z" );
 
         // Time-series to upscale
+        TimeSeriesMetadata existingMetadata =
+                getBoilerplateMetadataWithT0AndTimeScale( referenceTime,
+                                                          existingScale );
         TimeSeries<Double> forecast = new TimeSeriesBuilder<Double>().addEvent( one )
                                                                      .addEvent( two )
                                                                      .addEvent( three )
@@ -424,9 +461,7 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
                                                                      .addEvent( fourteen )
                                                                      .addEvent( fifteen )
                                                                      .addEvent( sixteen )
-                                                                     .addReferenceTime( referenceTime,
-                                                                                        ReferenceTimeType.T0 )
-                                                                     .setTimeScale( existingScale )
+                                                                     .setMetadata( existingMetadata )
                                                                      .build();
 
         TimeScale desiredTimeScale = TimeScale.of( Duration.ofHours( 24 ), TimeScaleFunction.MEAN );
@@ -451,7 +486,9 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
         TimeSeries<Double> actual = this.upscaler.upscale( forecast, desiredTimeScale, endsAt )
                                                  .getTimeSeries();
 
-
+        TimeSeriesMetadata expectedMetadata =
+                getBoilerplateMetadataWithT0AndTimeScale( referenceTime,
+                                                          desiredTimeScale );
         TimeSeries<Double> expected = new TimeSeriesBuilder<Double>()
                                                                      .addEvent( Event.of( eighth,
                                                                                           51.368748851818964 ) )
@@ -471,9 +508,7 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
                                                                                           53.9949987931177 ) )
                                                                      .addEvent( Event.of( sixteenth,
                                                                                           54.277498786803335 ) )
-                                                                     .addReferenceTime( referenceTime,
-                                                                                        ReferenceTimeType.T0 )
-                                                                     .setTimeScale( desiredTimeScale )
+                                                                     .setMetadata( expectedMetadata )
                                                                      .build();
 
         assertEquals( expected, actual );
@@ -488,7 +523,9 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
         TimeScale desiredTimeScale = TimeScale.of( Duration.ofMinutes( 1 ),
                                                    TimeScaleFunction.MEAN );
 
-        TimeSeries<Double> fake = new TimeSeriesBuilder<Double>().setTimeScale( existingTimeScale ).build();
+        TimeSeriesMetadata existingMetadata = getBoilerplateMetadataWithTimeScale( existingTimeScale );
+        TimeSeries<Double> fake = new TimeSeriesBuilder<Double>().setMetadata( existingMetadata )
+                                                                 .build();
 
         RescalingException exception =
                 assertThrows( RescalingException.class, () -> this.upscaler.upscale( fake, desiredTimeScale ) );
@@ -509,7 +546,9 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
         TimeScale desiredTimeScale = TimeScale.of( Duration.ofMinutes( 1 ),
                                                    TimeScaleFunction.UNKNOWN );
 
-        TimeSeries<Double> fake = new TimeSeriesBuilder<Double>().setTimeScale( existingTimeScale ).build();
+        TimeSeriesMetadata existingMetadata = getBoilerplateMetadataWithTimeScale( existingTimeScale );
+        TimeSeries<Double> fake = new TimeSeriesBuilder<Double>().setMetadata( existingMetadata )
+                                                                 .build();
 
         RescalingException exception =
                 assertThrows( RescalingException.class, () -> this.upscaler.upscale( fake, desiredTimeScale ) );
@@ -529,7 +568,9 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
         TimeScale desiredTimeScale = TimeScale.of( Duration.ofMinutes( 75 ),
                                                    TimeScaleFunction.MEAN );
 
-        TimeSeries<Double> fake = new TimeSeriesBuilder<Double>().setTimeScale( existingTimeScale ).build();
+        TimeSeriesMetadata existingMetadata = getBoilerplateMetadataWithTimeScale( existingTimeScale );
+        TimeSeries<Double> fake = new TimeSeriesBuilder<Double>().setMetadata( existingMetadata )
+                                                                 .build();
 
         RescalingException exception =
                 assertThrows( RescalingException.class, () -> this.upscaler.upscale( fake, desiredTimeScale ) );
@@ -551,8 +592,9 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
 
         TimeScale desiredTimeScale = TimeScale.of( Duration.ofHours( 1 ),
                                                    TimeScaleFunction.TOTAL );
-
-        TimeSeries<Double> fake = new TimeSeriesBuilder<Double>().setTimeScale( existingTimeScale ).build();
+        TimeSeriesMetadata existingMetadata = getBoilerplateMetadataWithTimeScale( existingTimeScale );
+        TimeSeries<Double> fake = new TimeSeriesBuilder<Double>().setMetadata( existingMetadata )
+                                                                 .build();
 
         RescalingException exception =
                 assertThrows( RescalingException.class, () -> this.upscaler.upscale( fake, desiredTimeScale ) );
@@ -574,8 +616,9 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
         TimeScale desiredTimeScale = TimeScale.of( Duration.ofHours( 1 ),
                                                    TimeScaleFunction.TOTAL );
 
-        TimeSeries<Double> fake = new TimeSeriesBuilder<Double>().setTimeScale( existingTimeScale ).build();
-
+        TimeSeriesMetadata existingMetadata = getBoilerplateMetadataWithTimeScale( existingTimeScale );
+        TimeSeries<Double> fake = new TimeSeriesBuilder<Double>().setMetadata( existingMetadata )
+                                                                 .build();
         RescalingException exception =
                 assertThrows( RescalingException.class, () -> this.upscaler.upscale( fake, desiredTimeScale ) );
 
@@ -595,8 +638,9 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
         TimeScale desiredTimeScale = TimeScale.of( Duration.ofHours( 2 ),
                                                    TimeScaleFunction.TOTAL );
 
-        TimeSeries<Double> fake = new TimeSeriesBuilder<Double>().setTimeScale( existingTimeScale ).build();
-
+        TimeSeriesMetadata existingMetadata = getBoilerplateMetadataWithTimeScale( existingTimeScale );
+        TimeSeries<Double> fake = new TimeSeriesBuilder<Double>().setMetadata( existingMetadata )
+                                                                 .build();
         RescalingException exception =
                 assertThrows( RescalingException.class, () -> this.upscaler.upscale( fake, desiredTimeScale ) );
 

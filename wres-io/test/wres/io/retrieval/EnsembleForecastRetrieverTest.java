@@ -33,6 +33,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
+import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.concurrency.Executor;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
@@ -189,9 +190,16 @@ public class EnsembleForecastRetrieverTest
         TimeSeries<Ensemble> actualSeries = actualCollection.get( 0 );
 
         // Create the expected series
+        TimeSeriesMetadata expectedMetadata =
+                TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
+                                               Instant.parse( "2023-04-01T00:00:00Z" ) ),
+                                       TimeScale.of(),
+                                       String.valueOf( this.variableFeatureId ),
+                                       String.valueOf( this.variableFeatureId ),
+                                       this.unitMapper.getDesiredMeasurementUnitName() );
         TimeSeriesBuilder<Ensemble> builder = new TimeSeriesBuilder<>();
         TimeSeries<Ensemble> expectedSeries =
-                builder.addReferenceTime( Instant.parse( "2023-04-01T00:00:00Z" ), ReferenceTimeType.UNKNOWN )
+                builder.setMetadata( expectedMetadata )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ),
                                             Ensemble.of( 30.0, 100.0, 65.0 ) ) )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T02:00:00Z" ),
@@ -202,7 +210,6 @@ public class EnsembleForecastRetrieverTest
                                             Ensemble.of( 51.0, 121.0, 86.0 ) ) )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T05:00:00Z" ),
                                             Ensemble.of( 58.0, 128.0, 93.0 ) ) )
-                       .setTimeScale( TimeScale.of() )
                        .build();
 
         // Actual series equals expected series
@@ -235,9 +242,16 @@ public class EnsembleForecastRetrieverTest
         TimeSeries<Ensemble> actualSeries = actualCollection.get( 0 );
 
         // Create the expected series
+        TimeSeriesMetadata expectedMetadata =
+                TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
+                                               Instant.parse( "2023-04-01T00:00:00Z" ) ),
+                                       TimeScale.of(),
+                                       String.valueOf( this.variableFeatureId ),
+                                       String.valueOf( this.variableFeatureId ),
+                                       this.unitMapper.getDesiredMeasurementUnitName() );
         TimeSeriesBuilder<Ensemble> builder = new TimeSeriesBuilder<>();
         TimeSeries<Ensemble> expectedSeries =
-                builder.addReferenceTime( Instant.parse( "2023-04-01T00:00:00Z" ), ReferenceTimeType.UNKNOWN )
+                builder.setMetadata( expectedMetadata )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ),
                                             Ensemble.of( 65.0 ) ) )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T02:00:00Z" ),
@@ -248,7 +262,6 @@ public class EnsembleForecastRetrieverTest
                                             Ensemble.of( 86.0 ) ) )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T05:00:00Z" ),
                                             Ensemble.of( 93.0 ) ) )
-                       .setTimeScale( TimeScale.of() )
                        .build();
 
         // Actual series equals expected series

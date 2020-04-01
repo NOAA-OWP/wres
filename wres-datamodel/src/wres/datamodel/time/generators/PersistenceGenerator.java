@@ -20,6 +20,7 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
+import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesUpscaler;
 
@@ -132,9 +133,9 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
 
         Optional<T> persist = this.getPersistence( template );
 
+        TimeSeriesMetadata templateMetadata = template.getMetadata();
         TimeSeriesBuilder<T> builder = new TimeSeriesBuilder<>();
-        builder.addReferenceTimes( template.getReferenceTimes() )
-               .setTimeScale( template.getTimeScale() );
+        builder.setMetadata( templateMetadata );
 
         // Persistence value available?
         if ( persist.isPresent() )

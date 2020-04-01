@@ -43,6 +43,7 @@ import wres.datamodel.time.RescaledTimeSeriesPlusValidation;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 import wres.datamodel.time.TimeSeriesCrossPairer;
+import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesPairer;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesUpscaler;
@@ -878,7 +879,6 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
     /**
      * Creates the climatological data as needed.
      * 
-     * @param desiredTimeScale the desired time scale
      * @return the climatological data or null if no climatology is defined
      */
 
@@ -968,7 +968,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
      * @param leftData the left data
      * @param rightData the right data
      * @param baselineData the baseline data
-     * @param input the input declaration
+     * @param inputDeclaration the input declaration
      * @return the desired time scale.
      */
 
@@ -1254,7 +1254,8 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
             }
 
             TimeSeriesBuilder<Pair<L, R>> filteredSeries = new TimeSeriesBuilder<>();
-            filteredSeries.setMetadata( toFilter.getMetadata() );
+            TimeSeriesMetadata metadata = toFilter.getMetadata();
+            filteredSeries.setMetadata( metadata );
 
             List<Event<Pair<L, R>>> events = new ArrayList<>( toFilter.getEvents() );
 
@@ -1314,7 +1315,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
     }
 
     /**
-     * Logs the validation events of type {@link ScaleValidationEvent#WARN} associated with rescaling.
+     * Logs the validation events of type ScaleValidationEvent WARN associated with rescaling.
      * 
      * TODO: these warnings could probably be consolidated and the context information improved. May need to add 
      * more complete metadata information to the times-series.
@@ -1476,17 +1477,35 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         // Tolerate null input (e.g., for a baseline)
         if ( Objects.nonNull( timeSeries ) )
         {
-            
             TimeSeriesBuilder<T> consolidatedbuilder = new TimeSeriesBuilder<>();
+            TimeSeriesMetadata previousMetadata = null;
+
+            int countAdded = 0;
 
             for ( TimeSeries<T> next : timeSeries )
             {
+                TimeSeriesMetadata metadata = next.getMetadata();
+                Map<ReferenceTimeType, Instant> referenceTimes = metadata.getReferenceTimes();
+
                 // No reference times? Then consolidate into one series
-                Map<ReferenceTimeType, Instant> referenceTimes = next.getReferenceTimes();
                 if ( referenceTimes.isEmpty() )
                 {                    
-                    consolidatedbuilder.addEvents( next.getEvents() )
-                                       .setMetadata( next.getMetadata() );
+                    consolidatedbuilder.addEvents( next.getEvents() );
+                    consolidatedbuilder.setMetadata( metadata );
+
+                    // Validate metadata is same.
+                    if ( Objects.nonNull( previousMetadata )
+                         && !metadata.equals( previousMetadata ) )
+                    {
+                        throw new IllegalArgumentException(
+                                "TimeSeries instances cannot be consolidated due to"
+                                + " non-homogenous metadata. One was "
+                                + previousMetadata.toString()
+                                + " and the other was "
+                                + metadata.toString() );
+                    }
+                    previousMetadata = metadata;
+                    countAdded++;
                 }
                 // Some reference times: do not consolidate these time-series
                 else
@@ -1496,11 +1515,19 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
             }
 
             // Consolidated series with some events?
-            TimeSeries<T> consolidated = consolidatedbuilder.build();
-
-            if ( !consolidated.getEvents().isEmpty() )
+            if ( countAdded > 0 )
             {
-                returnMe.add( consolidated );
+                TimeSeries<T> consolidated = consolidatedbuilder.build();
+
+                if ( !consolidated.getEvents().isEmpty() )
+                {
+                    returnMe.add( consolidated );
+                }
+            }
+            else if ( returnMe.isEmpty() )
+            {
+                // Nothing was added, no need for an empty TimeSeries.
+                return Collections.emptyList();
             }
         }
 

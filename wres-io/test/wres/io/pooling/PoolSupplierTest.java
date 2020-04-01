@@ -4,6 +4,8 @@ import static org.junit.Assert.assertEquals;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
+import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -28,7 +30,7 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
-import wres.io.pooling.PoolSupplier;
+import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.pooling.PoolSupplier.PoolOfPairsSupplierBuilder;
 import wres.io.retrieval.CachingRetriever;
 import wres.datamodel.time.TimeSeriesOfDoubleBasicUpscaler;
@@ -134,6 +136,39 @@ public class PoolSupplierTest
     private static final Instant T2551_03_17T01_00_00Z = Instant.parse( "2551-03-17T01:00:00Z" );
     private static final Instant T2551_03_17T00_00_00Z = Instant.parse( "2551-03-17T00:00:00Z" );
 
+    private static final String VARIABLE_NAME = "STREAMFLOW";
+    private static final String FEATURE_NAME = "FAKE2";
+    private static final String UNIT = "CMS";
+
+    private static TimeSeriesMetadata getBoilerplateMetadata()
+    {
+        return TimeSeriesMetadata.of( Collections.emptyMap(),
+                                      TimeScale.of( Duration.ofHours( 1 ) ),
+                                      VARIABLE_NAME,
+                                      FEATURE_NAME,
+                                      UNIT );
+    }
+
+
+    private static TimeSeriesMetadata getBoilerplateMetadataWithTimeScale( TimeScale timeScale )
+    {
+        return TimeSeriesMetadata.of( Collections.emptyMap(),
+                                      timeScale,
+                                      VARIABLE_NAME,
+                                      FEATURE_NAME,
+                                      UNIT );
+    }
+
+    private static TimeSeriesMetadata getBoilerplateMetadataWithT0AndTimeScale( Instant t0,
+                                                                                TimeScale timeScale )
+    {
+        return TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, t0 ),
+                                      timeScale,
+                                      VARIABLE_NAME,
+                                      FEATURE_NAME,
+                                      UNIT );
+    }
+
     /**
      * Retriever for observations.
      */
@@ -209,8 +244,11 @@ public class PoolSupplierTest
         TimeScale existingTimeScale = TimeScale.of( Duration.ofHours( 3 ), TimeScaleFunction.MEAN );
 
         // Observations: 25510317T00_FAKE2_observations.xml
+        TimeSeriesMetadata metadata = getBoilerplateMetadataWithTimeScale( TimeScale.of( Duration.ofHours( 1 ),
+                                                                                         TimeScaleFunction.MEAN ) );
         this.observations =
-                new TimeSeriesBuilder<Double>().addEvent( Event.of( T2551_03_17T00_00_00Z, 313.0 ) )
+                new TimeSeriesBuilder<Double>().setMetadata( metadata )
+                                               .addEvent( Event.of( T2551_03_17T00_00_00Z, 313.0 ) )
                                                .addEvent( Event.of( T2551_03_17T01_00_00Z, 317.0 ) )
                                                .addEvent( Event.of( T2551_03_17T02_00_00Z, 331.0 ) )
                                                .addEvent( Event.of( T2551_03_17T03_00_00Z, 347.0 ) )
@@ -295,13 +333,15 @@ public class PoolSupplierTest
                                                .addEvent( Event.of( T2551_03_20T10_00_00Z, 857.0 ) )
                                                .addEvent( Event.of( T2551_03_20T11_00_00Z, 859.0 ) )
                                                .addEvent( Event.of( T2551_03_20T12_00_00Z, 863.0 ) )
-                                               .setTimeScale( TimeScale.of( Duration.ofHours( 1 ),
-                                                                            TimeScaleFunction.MEAN ) )
                                                .build();
 
         // Forecast: 25510317T12_FAKE2_forecast.xml
+        TimeSeriesMetadata forecastOneMetadata =
+                getBoilerplateMetadataWithT0AndTimeScale( T2551_03_17T12_00_00Z,
+                                                          existingTimeScale );
         this.forecastOne =
-                new TimeSeriesBuilder<Double>().addEvent( Event.of( T2551_03_17T15_00_00Z, 73.0 ) )
+                new TimeSeriesBuilder<Double>().setMetadata( forecastOneMetadata )
+                                               .addEvent( Event.of( T2551_03_17T15_00_00Z, 73.0 ) )
                                                .addEvent( Event.of( T2551_03_17T18_00_00Z, 79.0 ) )
                                                .addEvent( Event.of( T2551_03_17T21_00_00Z, 83.0 ) )
                                                .addEvent( Event.of( T2551_03_18T00_00_00Z, 89.0 ) )
@@ -312,14 +352,15 @@ public class PoolSupplierTest
                                                .addEvent( Event.of( T2551_03_18T15_00_00Z, 109.0 ) )
                                                .addEvent( Event.of( T2551_03_18T18_00_00Z, 113.0 ) )
                                                .addEvent( Event.of( T2551_03_18T21_00_00Z, 127.0 ) )
-                                               .addReferenceTime( T2551_03_17T12_00_00Z,
-                                                                  ReferenceTimeType.T0 )
-                                               .setTimeScale( existingTimeScale )
                                                .build();
 
         // Forecast: 25510318T00_FAKE2_forecast.xml
+        TimeSeriesMetadata forecastTwoMetadata =
+                getBoilerplateMetadataWithT0AndTimeScale( T2551_03_18T00_00_00Z,
+                                                          existingTimeScale );
         this.forecastTwo =
-                new TimeSeriesBuilder<Double>().addEvent( Event.of( T2551_03_18T03_00_00Z, 131.0 ) )
+                new TimeSeriesBuilder<Double>().setMetadata( forecastTwoMetadata )
+                                               .addEvent( Event.of( T2551_03_18T03_00_00Z, 131.0 ) )
                                                .addEvent( Event.of( T2551_03_18T06_00_00Z, 137.0 ) )
                                                .addEvent( Event.of( T2551_03_18T09_00_00Z, 139.0 ) )
                                                .addEvent( Event.of( T2551_03_18T12_00_00Z, 149.0 ) )
@@ -330,14 +371,15 @@ public class PoolSupplierTest
                                                .addEvent( Event.of( T2551_03_19T03_00_00Z, 173.0 ) )
                                                .addEvent( Event.of( T2551_03_19T06_00_00Z, 179.0 ) )
                                                .addEvent( Event.of( T2551_03_19T09_00_00Z, 181.0 ) )
-                                               .addReferenceTime( T2551_03_18T00_00_00Z,
-                                                                  ReferenceTimeType.T0 )
-                                               .setTimeScale( existingTimeScale )
                                                .build();
 
         // Forecast: 25510318T12_FAKE2_forecast.xml
+        TimeSeriesMetadata forecastThreeMetadata =
+                getBoilerplateMetadataWithT0AndTimeScale( T2551_03_18T12_00_00Z,
+                                                          existingTimeScale );
         this.forecastThree =
-                new TimeSeriesBuilder<Double>().addEvent( Event.of( T2551_03_18T15_00_00Z, 191.0 ) )
+                new TimeSeriesBuilder<Double>().setMetadata( forecastThreeMetadata )
+                                               .addEvent( Event.of( T2551_03_18T15_00_00Z, 191.0 ) )
                                                .addEvent( Event.of( T2551_03_18T18_00_00Z, 193.0 ) )
                                                .addEvent( Event.of( T2551_03_18T21_00_00Z, 197.0 ) )
                                                .addEvent( Event.of( T2551_03_19T00_00_00Z, 199.0 ) )
@@ -348,14 +390,15 @@ public class PoolSupplierTest
                                                .addEvent( Event.of( T2551_03_19T15_00_00Z, 233.0 ) )
                                                .addEvent( Event.of( T2551_03_19T18_00_00Z, 239.0 ) )
                                                .addEvent( Event.of( T2551_03_19T21_00_00Z, 241.0 ) )
-                                               .addReferenceTime( T2551_03_18T12_00_00Z,
-                                                                  ReferenceTimeType.T0 )
-                                               .setTimeScale( existingTimeScale )
                                                .build();
 
         // Forecast: 25510319T00_FAKE2_forecast.xml
+        TimeSeriesMetadata forecastFourMetadata =
+                getBoilerplateMetadataWithT0AndTimeScale( T2551_03_19T00_00_00Z,
+                                                          existingTimeScale );
         this.forecastFour =
-                new TimeSeriesBuilder<Double>().addEvent( Event.of( T2551_03_19T03_00_00Z, 251.0 ) )
+                new TimeSeriesBuilder<Double>().setMetadata( forecastFourMetadata )
+                                               .addEvent( Event.of( T2551_03_19T03_00_00Z, 251.0 ) )
                                                .addEvent( Event.of( T2551_03_19T06_00_00Z, 257.0 ) )
                                                .addEvent( Event.of( T2551_03_19T09_00_00Z, 263.0 ) )
                                                .addEvent( Event.of( T2551_03_19T12_00_00Z, 269.0 ) )
@@ -366,9 +409,6 @@ public class PoolSupplierTest
                                                .addEvent( Event.of( T2551_03_20T03_00_00Z, 293.0 ) )
                                                .addEvent( Event.of( T2551_03_20T06_00_00Z, 307.0 ) )
                                                .addEvent( Event.of( T2551_03_20T09_00_00Z, 311.0 ) )
-                                               .addReferenceTime( T2551_03_19T00_00_00Z,
-                                                                  ReferenceTimeType.T0 )
-                                               .setTimeScale( existingTimeScale )
                                                .build();
 
         // Desired time scale
@@ -422,8 +462,12 @@ public class PoolSupplierTest
         PoolOfPairs<Double, Double> poolOneActual = poolOneSupplier.get();
 
         // Pool One expected
+        TimeSeriesMetadata poolOneTimeSeriesMetadata =
+                getBoilerplateMetadataWithT0AndTimeScale( T2551_03_17T12_00_00Z,
+                                                          this.desiredTimeScale );
         TimeSeries<Pair<Double, Double>> poolOneSeries =
-                new TimeSeriesBuilder<Pair<Double, Double>>().addEvent( Event.of( T2551_03_17T15_00_00Z,
+                new TimeSeriesBuilder<Pair<Double, Double>>().setMetadata( poolOneTimeSeriesMetadata )
+                                                             .addEvent( Event.of( T2551_03_17T15_00_00Z,
                                                                                   Pair.of( 409.6666666666667,
                                                                                            73.0 ) ) )
                                                              .addEvent( Event.of( T2551_03_17T18_00_00Z,
@@ -444,9 +488,6 @@ public class PoolSupplierTest
                                                              .addEvent( Event.of( T2551_03_18T09_00_00Z,
                                                                                   Pair.of( 517.6666666666666,
                                                                                            103.0 ) ) )
-                                                             .addReferenceTime( T2551_03_17T12_00_00Z,
-                                                                                ReferenceTimeType.T0 )
-                                                             .setTimeScale( this.desiredTimeScale )
                                                              .build();
 
         PoolOfPairs<Double, Double> poolOneExpected =
@@ -504,6 +545,9 @@ public class PoolSupplierTest
         PoolOfPairs<Double, Double> poolOneActual = poolOneSupplier.get().getBaselineData();
 
         // Pool One expected
+        TimeSeriesMetadata poolOneTimeSeriesMetadata =
+                getBoilerplateMetadataWithT0AndTimeScale( T2551_03_17T12_00_00Z,
+                                                          this.desiredTimeScale );
         TimeSeries<Pair<Double, Double>> poolOneSeries =
                 new TimeSeriesBuilder<Pair<Double, Double>>().addEvent( Event.of( T2551_03_17T15_00_00Z,
                                                                                   Pair.of( 409.6666666666667,
@@ -526,9 +570,7 @@ public class PoolSupplierTest
                                                              .addEvent( Event.of( T2551_03_18T09_00_00Z,
                                                                                   Pair.of( 517.6666666666666,
                                                                                            103.0 ) ) )
-                                                             .addReferenceTime( T2551_03_17T12_00_00Z,
-                                                                                ReferenceTimeType.UNKNOWN )
-                                                             .setTimeScale( this.desiredTimeScale )
+                                                             .setMetadata( poolOneTimeSeriesMetadata )
                                                              .build();
 
         double[] climatologyArray = this.observations.getEvents()
@@ -585,6 +627,9 @@ public class PoolSupplierTest
         PoolOfPairs<Double, Double> poolElevenActual = poolElevenSupplier.get();
 
         // Pool Eleven expected
+        TimeSeriesMetadata poolTimeSeriesMetadata =
+                getBoilerplateMetadataWithT0AndTimeScale( T2551_03_18T12_00_00Z,
+                                                          this.desiredTimeScale );
         TimeSeries<Pair<Double, Double>> poolElevenOneSeries =
                 new TimeSeriesBuilder<Pair<Double, Double>>().addEvent( Event.of( T2551_03_18T15_00_00Z,
                                                                                   Pair.of( 567.6666666666666,
@@ -606,11 +651,12 @@ public class PoolSupplierTest
                                                              .addEvent( Event.of( T2551_03_19T09_00_00Z,
                                                                                   Pair.of( 670.3333333333334,
                                                                                            227.0 ) ) )
-                                                             .addReferenceTime( T2551_03_18T12_00_00Z,
-                                                                                ReferenceTimeType.UNKNOWN )
-                                                             .setTimeScale( this.desiredTimeScale )
+                                                             .setMetadata( poolTimeSeriesMetadata )
                                                              .build();
 
+        TimeSeriesMetadata poolTimeSeriesTwoMetadata =
+                getBoilerplateMetadataWithT0AndTimeScale( T2551_03_19T00_00_00Z,
+                                                          this.desiredTimeScale );
         TimeSeries<Pair<Double, Double>> poolElevenTwoSeries =
                 new TimeSeriesBuilder<Pair<Double, Double>>().addEvent( Event.of( T2551_03_19T03_00_00Z,
                                                                                   Pair.of( 638.3333333333334,
@@ -632,9 +678,7 @@ public class PoolSupplierTest
                                                              .addEvent( Event.of( T2551_03_19T21_00_00Z,
                                                                                   Pair.of( 756.3333333333334,
                                                                                            281.0 ) ) )
-                                                             .addReferenceTime( T2551_03_19T00_00_00Z,
-                                                                                ReferenceTimeType.UNKNOWN )
-                                                             .setTimeScale( this.desiredTimeScale )
+                                                             .setMetadata( poolTimeSeriesTwoMetadata )
                                                              .build();
 
         PoolOfPairs<Double, Double> poolElevenExpected =
@@ -685,7 +729,7 @@ public class PoolSupplierTest
 
         // Pool Eighteen expected
         TimeSeries<Pair<Double, Double>> poolEighteenSeries =
-                new TimeSeriesBuilder<Pair<Double, Double>>().setTimeScale( this.desiredTimeScale )
+                new TimeSeriesBuilder<Pair<Double, Double>>().setMetadata( getBoilerplateMetadata() )
                                                              .build();
 
         PoolOfPairs<Double, Double> poolEighteenExpected =
