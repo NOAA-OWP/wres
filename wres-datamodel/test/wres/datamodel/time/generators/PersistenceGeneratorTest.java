@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import org.junit.Before;
@@ -14,6 +15,7 @@ import wres.datamodel.scale.TimeScale.TimeScaleFunction;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesOfDoubleBasicUpscaler;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 
@@ -158,7 +160,15 @@ public class PersistenceGeneratorTest
     @Before
     public void runBeforeEachTest()
     {
+
         // Observations: 25510317T00_FAKE2_observations.xml
+        TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
+                                                                     T2551_03_17T12_00_00Z ),
+                                                             TimeScale.of( Duration.ofHours( 1 ),
+                                                                           TimeScaleFunction.MEAN ),
+                                                             "DISCHARGE",
+                                                             "FAKE2",
+                                                             "CMS" );
         this.observations =
                 new TimeSeriesBuilder<Double>().addEvent( Event.of( T2551_03_17T00_00_00Z, 313.0 ) )
                                                .addEvent( Event.of( T2551_03_17T01_00_00Z, 317.0 ) )
@@ -245,13 +255,17 @@ public class PersistenceGeneratorTest
                                                .addEvent( Event.of( T2551_03_20T10_00_00Z, 857.0 ) )
                                                .addEvent( Event.of( T2551_03_20T11_00_00Z, 859.0 ) )
                                                .addEvent( Event.of( T2551_03_20T12_00_00Z, 863.0 ) )
-                                               .setTimeScale( TimeScale.of( Duration.ofHours( 1 ),
-                                                                            TimeScaleFunction.MEAN ) )
+                                               .setMetadata( metadata )
                                                .build();
 
         // Forecast time scale
         TimeScale existingTimeScale = TimeScale.of( Duration.ofHours( 3 ), TimeScaleFunction.MEAN );
-        
+        TimeSeriesMetadata metadataOne = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
+                                                                        T2551_03_17T12_00_00Z ),
+                                                                existingTimeScale,
+                                                                "STREAMFLOW",
+                                                                "FAKE2",
+                                                                "CMS" );
         // Forecast: 25510317T12_FAKE2_forecast.xml
         this.forecastOne =
                 new TimeSeriesBuilder<Double>().addEvent( Event.of( T2551_03_17T15_00_00Z, 73.0 ) )
@@ -265,11 +279,15 @@ public class PersistenceGeneratorTest
                                                .addEvent( Event.of( T2551_03_18T15_00_00Z, 109.0 ) )
                                                .addEvent( Event.of( T2551_03_18T18_00_00Z, 113.0 ) )
                                                .addEvent( Event.of( T2551_03_18T21_00_00Z, 127.0 ) )
-                                               .addReferenceTime( T2551_03_17T12_00_00Z,
-                                                                  ReferenceTimeType.UNKNOWN )
-                                               .setTimeScale( existingTimeScale )
+                                               .setMetadata( metadataOne )
                                                .build();
 
+        TimeSeriesMetadata metadataTwo = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
+                                                                        T2551_03_18T00_00_00Z ),
+                                                                existingTimeScale,
+                                                                "STREAMFLOW",
+                                                                "FAKE2",
+                                                                "CMS" );
         // Forecast: 25510318T00_FAKE2_forecast.xml
         this.forecastTwo =
                 new TimeSeriesBuilder<Double>().addEvent( Event.of( T2551_03_18T03_00_00Z, 131.0 ) )
@@ -283,11 +301,15 @@ public class PersistenceGeneratorTest
                                                .addEvent( Event.of( T2551_03_19T03_00_00Z, 173.0 ) )
                                                .addEvent( Event.of( T2551_03_19T06_00_00Z, 179.0 ) )
                                                .addEvent( Event.of( T2551_03_19T09_00_00Z, 181.0 ) )
-                                               .addReferenceTime( T2551_03_18T00_00_00Z,
-                                                                  ReferenceTimeType.UNKNOWN )
-                                               .setTimeScale( existingTimeScale )
+                                               .setMetadata( metadataTwo )
                                                .build();
 
+        TimeSeriesMetadata metadataThree = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
+                                                                          T2551_03_18T12_00_00Z ),
+                                                                  existingTimeScale,
+                                                                  "STREAMFLOW",
+                                                                  "FAKE2",
+                                                                  "CMS" );
         // Forecast: 25510318T12_FAKE2_forecast.xml
         this.forecastThree =
                 new TimeSeriesBuilder<Double>().addEvent( Event.of( T2551_03_18T15_00_00Z, 191.0 ) )
@@ -301,11 +323,15 @@ public class PersistenceGeneratorTest
                                                .addEvent( Event.of( T2551_03_19T15_00_00Z, 233.0 ) )
                                                .addEvent( Event.of( T2551_03_19T18_00_00Z, 239.0 ) )
                                                .addEvent( Event.of( T2551_03_19T21_00_00Z, 241.0 ) )
-                                               .addReferenceTime( T2551_03_18T12_00_00Z,
-                                                                  ReferenceTimeType.UNKNOWN )
-                                               .setTimeScale( existingTimeScale )
+                                               .setMetadata( metadataThree )
                                                .build();
 
+        TimeSeriesMetadata metadataFour = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
+                                                                         T2551_03_19T00_00_00Z ),
+                                                                 existingTimeScale,
+                                                                 "STREAMFLOW",
+                                                                 "FAKE2",
+                                                                 "CMS" );
         // Forecast: 25510319T00_FAKE2_forecast.xml
         this.forecastFour =
                 new TimeSeriesBuilder<Double>().addEvent( Event.of( T2551_03_19T03_00_00Z, 251.0 ) )
@@ -319,9 +345,7 @@ public class PersistenceGeneratorTest
                                                .addEvent( Event.of( T2551_03_20T03_00_00Z, 293.0 ) )
                                                .addEvent( Event.of( T2551_03_20T06_00_00Z, 307.0 ) )
                                                .addEvent( Event.of( T2551_03_20T09_00_00Z, 311.0 ) )
-                                               .addReferenceTime( T2551_03_19T00_00_00Z,
-                                                                  ReferenceTimeType.UNKNOWN )
-                                               .setTimeScale( existingTimeScale )
+                                               .setMetadata( metadataFour )
                                                .build();
 
         // Desired time scale
@@ -345,6 +369,12 @@ public class PersistenceGeneratorTest
         TimeSeries<Double> actual = this.generator.apply( this.forecastOne );
 
         // Expected persistence forecast
+        TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
+                                                                     T2551_03_17T12_00_00Z ),
+                                                             this.desiredTimeScale,
+                                                             "STREAMFLOW",
+                                                             "FAKE2",
+                                                             "CMS" );
         TimeSeries<Double> expected =
                 new TimeSeriesBuilder<Double>().addEvent( Event.of( T2551_03_17T15_00_00Z, 383.6666666666667 ) )
                                                .addEvent( Event.of( T2551_03_17T18_00_00Z, 383.6666666666667 ) )
@@ -357,9 +387,7 @@ public class PersistenceGeneratorTest
                                                .addEvent( Event.of( T2551_03_18T15_00_00Z, 383.6666666666667 ) )
                                                .addEvent( Event.of( T2551_03_18T18_00_00Z, 383.6666666666667 ) )
                                                .addEvent( Event.of( T2551_03_18T21_00_00Z, 383.6666666666667 ) )
-                                               .addReferenceTime( T2551_03_17T12_00_00Z,
-                                                                  ReferenceTimeType.UNKNOWN )
-                                               .setTimeScale( this.desiredTimeScale )
+                                               .setMetadata( metadata )
                                                .build();
 
         assertEquals( actual, expected );
@@ -377,6 +405,12 @@ public class PersistenceGeneratorTest
         TimeSeries<Double> actual = this.generator.apply( this.forecastTwo );
 
         // Expected persistence forecast
+        TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
+                                                                     T2551_03_18T00_00_00Z ),
+                                                             this.desiredTimeScale,
+                                                             "STREAMFLOW",
+                                                             "FAKE2",
+                                                             "CMS" );
         TimeSeries<Double> expected =
                 new TimeSeriesBuilder<Double>().addEvent( Event.of( T2551_03_18T03_00_00Z, 455.6666666666667 ) )
                                                .addEvent( Event.of( T2551_03_18T06_00_00Z, 455.6666666666667 ) )
@@ -389,9 +423,7 @@ public class PersistenceGeneratorTest
                                                .addEvent( Event.of( T2551_03_19T03_00_00Z, 455.6666666666667 ) )
                                                .addEvent( Event.of( T2551_03_19T06_00_00Z, 455.6666666666667 ) )
                                                .addEvent( Event.of( T2551_03_19T09_00_00Z, 455.6666666666667 ) )
-                                               .addReferenceTime( T2551_03_18T00_00_00Z,
-                                                                  ReferenceTimeType.UNKNOWN )
-                                               .setTimeScale( this.desiredTimeScale )
+                                               .setMetadata( metadata )
                                                .build();
 
         assertEquals( actual, expected );
@@ -409,6 +441,12 @@ public class PersistenceGeneratorTest
         TimeSeries<Double> actual = this.generator.apply( this.forecastThree );
 
         // Expected persistence forecast
+        TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
+                                                                     T2551_03_18T12_00_00Z ),
+                                                             this.desiredTimeScale,
+                                                             "STREAMFLOW",
+                                                             "FAKE2",
+                                                             "CMS" );
         TimeSeries<Double> expected =
                 new TimeSeriesBuilder<Double>().addEvent( Event.of( T2551_03_18T15_00_00Z, 537.0 ) )
                                                .addEvent( Event.of( T2551_03_18T18_00_00Z, 537.0 ) )
@@ -421,9 +459,7 @@ public class PersistenceGeneratorTest
                                                .addEvent( Event.of( T2551_03_19T15_00_00Z, 537.0 ) )
                                                .addEvent( Event.of( T2551_03_19T18_00_00Z, 537.0 ) )
                                                .addEvent( Event.of( T2551_03_19T21_00_00Z, 537.0 ) )
-                                               .addReferenceTime( T2551_03_18T12_00_00Z,
-                                                                  ReferenceTimeType.UNKNOWN )
-                                               .setTimeScale( this.desiredTimeScale )
+                                               .setMetadata( metadata )
                                                .build();
 
         assertEquals( actual, expected );
@@ -441,6 +477,12 @@ public class PersistenceGeneratorTest
         TimeSeries<Double> actual = this.generator.apply( this.forecastFour );
 
         // Expected persistence forecast
+        TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
+                                                                     T2551_03_19T00_00_00Z ),
+                                                             this.desiredTimeScale,
+                                                             "STREAMFLOW",
+                                                             "FAKE2",
+                                                             "CMS" );
         TimeSeries<Double> expected =
                 new TimeSeriesBuilder<Double>().addEvent( Event.of( T2551_03_19T03_00_00Z, 612.3333333333334 ) )
                                                .addEvent( Event.of( T2551_03_19T06_00_00Z, 612.3333333333334 ) )
@@ -453,9 +495,7 @@ public class PersistenceGeneratorTest
                                                .addEvent( Event.of( T2551_03_20T03_00_00Z, 612.3333333333334 ) )
                                                .addEvent( Event.of( T2551_03_20T06_00_00Z, 612.3333333333334 ) )
                                                .addEvent( Event.of( T2551_03_20T09_00_00Z, 612.3333333333334 ) )
-                                               .addReferenceTime( T2551_03_19T00_00_00Z,
-                                                                  ReferenceTimeType.UNKNOWN )
-                                               .setTimeScale( this.desiredTimeScale )
+                                               .setMetadata( metadata )
                                                .build();
 
         assertEquals( actual, expected );

@@ -4,7 +4,9 @@ import static org.junit.Assert.assertEquals;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.junit.Before;
@@ -23,6 +25,19 @@ import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 
 public class TimeSeriesOfEnsembleUpscalerTest
 {
+    private static final String VARIABLE_NAME = "Fruit";
+    private static final String FEATURE_NAME = "Tropics";
+    private static final String UNIT = "kg/h";
+
+    private static TimeSeriesMetadata getBoilerplateMetadataWithT0AndTimeScale( Instant t0,
+                                                                                TimeScale timeScale )
+    {
+        return TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, t0 ),
+                                      timeScale,
+                                      VARIABLE_NAME,
+                                      FEATURE_NAME,
+                                      UNIT );
+    }
 
     /**
      * Upscaler instance to test.
@@ -57,13 +72,14 @@ public class TimeSeriesOfEnsembleUpscalerTest
         Instant referenceTime = Instant.parse( "1985-01-01T12:00:00Z" );
 
         // Time-series to upscale
+        TimeSeriesMetadata existingMetadata =
+                getBoilerplateMetadataWithT0AndTimeScale( referenceTime,
+                                                          existingScale );
         TimeSeries<Ensemble> forecast = new TimeSeriesBuilder<Ensemble>().addEvent( one )
                                                                          .addEvent( two )
                                                                          .addEvent( three )
                                                                          .addEvent( four )
-                                                                         .addReferenceTime( referenceTime,
-                                                                                            ReferenceTimeType.UNKNOWN )
-                                                                         .setTimeScale( existingScale )
+                                                                         .setMetadata( existingMetadata )
                                                                          .build();
 
         // Upscaled forecasts must end at these times
@@ -79,13 +95,13 @@ public class TimeSeriesOfEnsembleUpscalerTest
         // Create the expected series with the desired time scale
         Ensemble expectedOne = Ensemble.of( 7, 8, 9, 10 );
         Ensemble expectedTwo = Ensemble.of( 15, 16, 17, 18 );
-
+        TimeSeriesMetadata expectedMetadata =
+                getBoilerplateMetadataWithT0AndTimeScale( referenceTime,
+                                                          desiredTimeScale );
         TimeSeries<Ensemble> expectedForecast =
                 new TimeSeriesBuilder<Ensemble>().addEvent( Event.of( second, expectedOne ) )
                                                  .addEvent( Event.of( fourth, expectedTwo ) )
-                                                 .setTimeScale( desiredTimeScale )
-                                                 .addReferenceTime( referenceTime,
-                                                                    ReferenceTimeType.UNKNOWN )
+                                                 .setMetadata( expectedMetadata )
                                                  .build();
 
         assertEquals( expectedForecast, actualForecast );

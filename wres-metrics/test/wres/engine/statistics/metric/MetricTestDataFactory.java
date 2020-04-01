@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -30,9 +31,11 @@ import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
+import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeWindow;
 
 /**
@@ -144,6 +147,34 @@ public final class MetricTestDataFactory
 
     private static final String FIRST_TIME = "1985-01-01T00:00:00Z";
 
+    /** Variable name for boilerplate metadata */
+    private static final String VARIABLE_NAME = "SQIN";
+
+    /** Feature name for boilerplate metadata */
+    private static final String FEATURE_NAME = DRRC2;
+
+    /** Unit name for boilerplate metadata */
+    private static final String UNIT = "CMS";
+
+    public static TimeSeriesMetadata getBoilerplateMetadataWithT0( Instant t0 )
+    {
+        return TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, t0 ),
+                                      TimeScale.of( Duration.ofHours( 1 ) ),
+                                      VARIABLE_NAME,
+                                      FEATURE_NAME,
+                                      UNIT );
+    }
+
+    public static TimeSeriesMetadata getBoilerplateMetadata()
+    {
+        return TimeSeriesMetadata.of( Collections.emptyMap(),
+                                      TimeScale.of( Duration.ofHours( 1 ) ),
+                                      VARIABLE_NAME,
+                                      FEATURE_NAME,
+                                      UNIT );
+    }
+
+
     /**
      * Returns a set of single-valued pairs without a baseline.
      * 
@@ -169,7 +200,8 @@ public final class MetricTestDataFactory
         events.add( Event.of( start.plus( Duration.ofHours( 10 ) ), Pair.of( 93.0, 94.0 ) ) );
 
         PoolOfPairsBuilder<Double, Double> builder = new PoolOfPairsBuilder<>();
-        builder.addTimeSeries( TimeSeries.of( events ) ).setMetadata( SampleMetadata.of() );
+        builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
+                                              events ) ).setMetadata( SampleMetadata.of() );
 
         return builder.build();
     }
@@ -220,9 +252,11 @@ public final class MetricTestDataFactory
                                                                              "ESP" ) );
 
         PoolOfPairsBuilder<Double, Double> builder = new PoolOfPairsBuilder<>();
-        return builder.addTimeSeries( TimeSeries.of( events ) )
+        return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
+                                                     events ) )
                       .setMetadata( main )
-                      .addTimeSeriesForBaseline( TimeSeries.of( baseline ) )
+                      .addTimeSeriesForBaseline( TimeSeries.of( getBoilerplateMetadata(),
+                                                                baseline ) )
                       .setMetadataForBaseline( base )
                       .build();
     }
@@ -256,7 +290,8 @@ public final class MetricTestDataFactory
                                                                        "HEFS" ) );
 
         PoolOfPairsBuilder<Double, Double> builder = new PoolOfPairsBuilder<>();
-        return builder.addTimeSeries( TimeSeries.of( events ) )
+        return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
+                                                     events ) )
                       .setMetadata( meta )
                       .build();
     }
@@ -298,7 +333,8 @@ public final class MetricTestDataFactory
                                                                .build();
 
         PoolOfPairsBuilder<Double, Double> builder = new PoolOfPairsBuilder<>();
-        return builder.addTimeSeries( TimeSeries.of( events ) )
+        return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
+                                                     events ) )
                       .setMetadata( meta )
                       .build();
     }
@@ -375,7 +411,8 @@ public final class MetricTestDataFactory
                                                          .build();
 
         PoolOfPairsBuilder<Double, Double> builder = new PoolOfPairsBuilder<>();
-        return builder.addTimeSeries( TimeSeries.of( events ) )
+        return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
+                                                     events ) )
                       .setMetadata( meta )
                       .build();
     }
@@ -399,9 +436,11 @@ public final class MetricTestDataFactory
                                                                        "ESP" ) );
 
         PoolOfPairsBuilder<Double, Double> builder = new PoolOfPairsBuilder<>();
-        return builder.addTimeSeries( TimeSeries.of( Collections.emptySortedSet() ) )
+        return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
+                                                     Collections.emptySortedSet() ) )
                       .setMetadata( main )
-                      .addTimeSeriesForBaseline( TimeSeries.of( Collections.emptySortedSet() ) )
+                      .addTimeSeriesForBaseline( TimeSeries.of( getBoilerplateMetadata(),
+                                                                Collections.emptySortedSet() ) )
                       .setMetadataForBaseline( base )
                       .build();
     }
@@ -434,7 +473,8 @@ public final class MetricTestDataFactory
         events.add( Event.of( start.plus( Duration.ofHours( 13 ) ), Pair.of( Double.NaN, Double.NaN ) ) );
 
         PoolOfPairsBuilder<Double, Double> builder = new PoolOfPairsBuilder<>();
-        return builder.addTimeSeries( TimeSeries.of( events ) )
+        return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
+                                                     events ) )
                       .setMetadata( SampleMetadata.of() )
                       .build();
     }
@@ -572,10 +612,10 @@ public final class MetricTestDataFactory
 
         tsBuilder.setMetadata( metaData );
 
-        return tsBuilder.addTimeSeries( TimeSeries.of( basisTimeOne, ReferenceTimeType.UNKNOWN, first ) )
-                        .addTimeSeries( TimeSeries.of( basisTimeTwo, ReferenceTimeType.UNKNOWN, second ) )
-                        .addTimeSeries( TimeSeries.of( basisTimeThree, ReferenceTimeType.UNKNOWN, third ) )
-                        .addTimeSeries( TimeSeries.of( basisTimeFour, ReferenceTimeType.UNKNOWN, fourth ) )
+        return tsBuilder.addTimeSeries( TimeSeries.of( getBoilerplateMetadataWithT0( basisTimeOne ), first ) )
+                        .addTimeSeries( TimeSeries.of( getBoilerplateMetadataWithT0( basisTimeTwo ), second ) )
+                        .addTimeSeries( TimeSeries.of( getBoilerplateMetadataWithT0( basisTimeThree ), third ) )
+                        .addTimeSeries( TimeSeries.of( getBoilerplateMetadataWithT0( basisTimeFour ), fourth ) )
                         .build();
     }
 
@@ -634,9 +674,11 @@ public final class MetricTestDataFactory
 
         PoolOfPairsBuilder<Double, Ensemble> builder = new PoolOfPairsBuilder<>();
 
-        return builder.addTimeSeries( TimeSeries.of( values ) )
+        return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
+                                                     values ) )
                       .setMetadata( meta )
-                      .addTimeSeriesForBaseline( TimeSeries.of( values ) )
+                      .addTimeSeriesForBaseline( TimeSeries.of( getBoilerplateMetadata(),
+                                                                values ) )
                       .setMetadataForBaseline( baseMeta )
                       .setClimatology( clim )
                       .build();
@@ -705,9 +747,11 @@ public final class MetricTestDataFactory
 
         PoolOfPairsBuilder<Double, Ensemble> builder = new PoolOfPairsBuilder<>();
 
-        return builder.addTimeSeries( TimeSeries.of( values ) )
+        return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
+                                                     values ) )
                       .setMetadata( meta )
-                      .addTimeSeriesForBaseline( TimeSeries.of( values ) )
+                      .addTimeSeriesForBaseline( TimeSeries.of( getBoilerplateMetadata(),
+                                                                values ) )
                       .setMetadataForBaseline( baseMeta )
                       .setClimatology( clim )
                       .build();
@@ -762,7 +806,8 @@ public final class MetricTestDataFactory
 
         PoolOfPairsBuilder<Double, Ensemble> builder = new PoolOfPairsBuilder<>();
 
-        return builder.addTimeSeries( TimeSeries.of( values ) )
+        return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
+                                                     values ) )
                       .setMetadata( meta )
                       .setClimatology( clim )
                       .build();
@@ -791,7 +836,8 @@ public final class MetricTestDataFactory
                                                                .build();
         PoolOfPairsBuilder<Double, Ensemble> builder = new PoolOfPairsBuilder<>();
 
-        return builder.addTimeSeries( TimeSeries.of( values ) )
+        return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
+                                                     values ) )
                       .setMetadata( meta )
                       .build();
     }
@@ -816,9 +862,11 @@ public final class MetricTestDataFactory
 
         PoolOfPairsBuilder<Double, Ensemble> builder = new PoolOfPairsBuilder<>();
 
-        return builder.addTimeSeries( TimeSeries.of( Collections.emptySortedSet() ) )
+        return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
+                                                     Collections.emptySortedSet() ) )
                       .setMetadata( meta )
-                      .addTimeSeriesForBaseline( TimeSeries.of( Collections.emptySortedSet() ) )
+                      .addTimeSeriesForBaseline( TimeSeries.of( getBoilerplateMetadata(),
+                                                                Collections.emptySortedSet() ) )
                       .setMetadataForBaseline( meta )
                       .build();
     }
@@ -1429,11 +1477,9 @@ public final class MetricTestDataFactory
                                                                    .setTimeWindow( window )
                                                                    .build();
         // Build the time-series
-        return builder.addTimeSeries( TimeSeries.of( firstId,
-                                                     ReferenceTimeType.UNKNOWN,
+        return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadataWithT0( firstId ),
                                                      firstValues ) )
-                      .addTimeSeries( TimeSeries.of( secondId,
-                                                     ReferenceTimeType.UNKNOWN,
+                      .addTimeSeries( TimeSeries.of( getBoilerplateMetadataWithT0( secondId ),
                                                      secondValues ) )
                       .setMetadata( metaData )
                       .build();
@@ -1469,8 +1515,7 @@ public final class MetricTestDataFactory
                                                                    .setTimeWindow( window )
                                                                    .build();
         // Build the time-series
-        return builder.addTimeSeries( TimeSeries.of( firstId,
-                                                     ReferenceTimeType.UNKNOWN,
+        return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadataWithT0( firstId ),
                                                      firstValues ) )
                       .setMetadata( metaData )
                       .build();
@@ -1510,8 +1555,7 @@ public final class MetricTestDataFactory
                                                                    .setTimeWindow( window )
                                                                    .build();
         // Build the time-series
-        return builder.addTimeSeries( TimeSeries.of( secondId,
-                                                     ReferenceTimeType.UNKNOWN,
+        return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadataWithT0( secondId ),
                                                      secondValues ) )
                       .setMetadata( metaData )
                       .build();
@@ -1578,8 +1622,7 @@ public final class MetricTestDataFactory
                                                                    .setTimeWindow( window )
                                                                    .build();
         // Build the time-series
-        return builder.addTimeSeries( TimeSeries.of( secondId,
-                                                     ReferenceTimeType.UNKNOWN,
+        return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadataWithT0( secondId ),
                                                      secondValues ) )
                       .setMetadata( metaData )
                       .build();

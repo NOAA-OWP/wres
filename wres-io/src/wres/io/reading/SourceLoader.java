@@ -24,6 +24,7 @@ import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.xml.sax.helpers.AttributesImpl;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
@@ -33,6 +34,7 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.IngestSaver;
+import wres.io.concurrency.TimeSeriesIngester;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
@@ -48,6 +50,8 @@ import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
 import wres.util.NetCDF;
 import wres.util.Strings;
+
+import static wres.io.concurrency.TimeSeriesIngester.GEO_ID_TYPE;
 
 /**
  * Evaluates datasources specified within a project configuration and determines
@@ -415,21 +419,94 @@ public class SourceLoader
         LOGGER.debug( "ingestData() with hash known in advance: {}, {}",
                       source, hash );
         List<Future<List<IngestResult>>> tasks = new ArrayList<>();
-        IngestSaver ingestSaver = IngestSaver.createTask()
-                                             .withSystemSettings( this.getSystemSettings() )
-                                             .withDatabase( this.getDatabase() )
-                                             .withDataSourcesCache( this.getDataSourcesCache() )
-                                             .withFeaturesCache( this.getFeaturesCache() )
-                                             .withVariablesCache( this.getVariablesCache() )
-                                             .withEnsemblesCache( this.getEnsemblesCache() )
-                                             .withMeasurementUnitsCache( this.getMeasurementUnitsCache() )
-                                             .withProject( projectConfig )
-                                             .withDataSource( source )
-                                             .withHash( hash )
-                                             .withProgressMonitoring()
-                                             .withLockManager( lockManager )
-                                             .build();
-        Future<List<IngestResult>> task = executor.submit( ingestSaver );
+        Future<List<IngestResult>> task;
+
+        // When the TimeSeries is present, bypass IngestSaver route, use a
+        // TimeSeriesIngester instead.
+        if ( Objects.nonNull( source.getTimeSeries() ) )
+        {
+            GEO_ID_TYPE geoIdType = null;
+
+            // Use the interface to discover GEO_ID_TYPE.
+            if ( Objects.nonNull( source.getSource()
+                                        .getInterface() ) )
+            {
+                InterfaceShortHand shortHand = source.getSource()
+                                                     .getInterface();
+
+                if ( shortHand.toString()
+                              .toLowerCase()
+                              .startsWith( "nwm_" ) )
+                {
+                    geoIdType = GEO_ID_TYPE.COMID;
+                }
+                else if ( shortHand.equals( InterfaceShortHand.USGS_NWIS ) )
+                {
+                    geoIdType = GEO_ID_TYPE.GAGE_ID;
+                }
+                else if ( shortHand.equals( InterfaceShortHand.WRDS_NWM ) )
+                {
+                    geoIdType = GEO_ID_TYPE.COMID;
+                }
+            }
+            else if ( source.getUri()
+                            .toString()
+                            .toLowerCase()
+                            .contains( "usgs.gov" ) )
+            {
+                LOGGER.warn( "Deprecated USGS source found, please declare interface short-hand in {}.",
+                             source );
+                geoIdType = GEO_ID_TYPE.GAGE_ID;
+            }
+            else if ( source.getUri()
+                            .toString()
+                            .toLowerCase()
+                            .contains( "ahps" ) )
+            {
+                LOGGER.warn( "Deprecated AHPS source found, please declare interface short-hand in {}.",
+                             source );
+                geoIdType = GEO_ID_TYPE.LID;
+            }
+            else
+            {
+                throw new IllegalStateException( "Unable to determine type of geographic ID for ingest of this timeseries: "
+                                                 + source.getTimeSeries() );
+            }
+
+            TimeSeriesIngester ingester =
+                    TimeSeriesIngester.of( this.getSystemSettings(),
+                                           this.getDatabase(),
+                                           this.getFeaturesCache(),
+                                           this.getVariablesCache(),
+                                           this.getEnsemblesCache(),
+                                           this.getMeasurementUnitsCache(),
+                                           this.getProjectConfig(),
+                                           source,
+                                           this.getLockManager(),
+                                           source.getTimeSeries(),
+                                           geoIdType );
+            task = executor.submit( ingester );
+        }
+        else
+        {
+            IngestSaver ingestSaver =
+                    IngestSaver.createTask()
+                               .withSystemSettings( this.getSystemSettings() )
+                               .withDatabase( this.getDatabase() )
+                               .withDataSourcesCache( this.getDataSourcesCache() )
+                               .withFeaturesCache( this.getFeaturesCache() )
+                               .withVariablesCache( this.getVariablesCache() )
+                               .withEnsemblesCache( this.getEnsemblesCache() )
+                               .withMeasurementUnitsCache( this.getMeasurementUnitsCache() )
+                               .withProject( projectConfig )
+                               .withDataSource( source )
+                               .withHash( hash )
+                               .withProgressMonitoring()
+                               .withLockManager( lockManager )
+                               .build();
+            task = executor.submit( ingestSaver );
+        }
+
         tasks.add( task );
         return Collections.unmodifiableList( tasks );
     }

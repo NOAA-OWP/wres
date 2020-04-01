@@ -8,7 +8,6 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -488,13 +487,15 @@ public class NWMReader implements Callable<List<IngestResult>>
                                  .getMemberCount() == 1 )
                         {
                             values = nwmTimeSeries.readTimeSerieses( featureBlock,
-                                                                     variableName );
+                                                                     variableName,
+                                                                     unitName );
                         }
                         else if ( this.getNwmProfile()
                                       .getMemberCount() > 1 )
                         {
                             values = nwmTimeSeries.readEnsembleTimeSerieses( featureBlock,
-                                                                             variableName );
+                                                                             variableName,
+                                                                             unitName );
                         }
                         else
                         {
@@ -538,27 +539,21 @@ public class NWMReader implements Callable<List<IngestResult>>
                                                        .getLinks(),
                                                    uri );
 
-                            // Find the feature name (use lid as substitute)
-                            String featureName = entry.getKey().toString(); 
-
                             // While wres.source table is used, it is the reader level code
                             // that must deal with the wres.source table. Use the identifier
                             // of the timeseries data as if it were a wres.source.
                             TimeSeriesIngester ingester =
-                                    new TimeSeriesIngester( this.getSystemSettings(),
-                                                            this.getDatabase(),
-                                                            this.getFeaturesCache(),
-                                                            this.getVariablesCache(),
-                                                            this.getEnsemblesCache(),
-                                                            this.getMeasurementUnitsCache(),
-                                                            this.getProjectConfig(),
-                                                            innerDataSource,
-                                                            this.getLockManager(),
-                                                            entry.getValue(),
-                                                            featureName,
-                                                            GEO_ID_TYPE.COMID,
-                                                            variableName,
-                                                            unitName );
+                                    TimeSeriesIngester.of( this.getSystemSettings(),
+                                                           this.getDatabase(),
+                                                           this.getFeaturesCache(),
+                                                           this.getVariablesCache(),
+                                                           this.getEnsemblesCache(),
+                                                           this.getMeasurementUnitsCache(),
+                                                           this.getProjectConfig(),
+                                                           innerDataSource,
+                                                           this.getLockManager(),
+                                                           entry.getValue(),
+                                                           GEO_ID_TYPE.COMID );
                             Future<List<IngestResult>> future =
                                     this.getExecutor().submit( ingester );
                             this.ingests.add( future );

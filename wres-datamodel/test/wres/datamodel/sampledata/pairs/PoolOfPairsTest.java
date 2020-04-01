@@ -8,7 +8,9 @@ import static org.junit.Assert.assertTrue;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.StreamSupport;
@@ -22,6 +24,7 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
+import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeWindow;
 
@@ -45,6 +48,28 @@ public final class PoolOfPairsTest
     private static final String SECOND_TIME = "1985-01-01T01:00:00Z";
     private static final String FIRST_TIME = "1985-01-01T00:00:00Z";
 
+    private static final String VARIABLE_NAME = "Fruit";
+    private static final String FEATURE_NAME = "Tropics";
+    private static final String UNIT = "kg/h";
+
+    private static TimeSeriesMetadata getBoilerplateMetadataWithT0( Instant t0 )
+    {
+        return TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, t0 ),
+                                      TimeScale.of( Duration.ofHours( 1 ) ),
+                                      VARIABLE_NAME,
+                                      FEATURE_NAME,
+                                      UNIT );
+    }
+
+    private static TimeSeriesMetadata getBoilerplateMetadata()
+    {
+        return TimeSeriesMetadata.of( Collections.emptyMap(),
+                                      TimeScale.of( Duration.ofHours( 1 ) ),
+                                      VARIABLE_NAME,
+                                      FEATURE_NAME,
+                                      UNIT );
+    }
+
     @Test
     public void testGetBaselineData()
     {
@@ -57,8 +82,8 @@ public final class PoolOfPairsTest
         values.add( Event.of( Instant.parse( THIRD_TIME ), Pair.of( 2.0, 2.0 ) ) );
         values.add( Event.of( Instant.parse( FOURTH_TIME ), Pair.of( 3.0, 3.0 ) ) );
         SampleMetadata meta = SampleMetadata.of();
-
-        TimeSeries<Pair<Double, Double>> timeSeries = TimeSeries.of( basisTime,
+        TimeSeriesMetadata metadata = getBoilerplateMetadataWithT0( basisTime );
+        TimeSeries<Pair<Double, Double>> timeSeries = TimeSeries.of( metadata,
                                                                      values );
         b.addTimeSeries( timeSeries ).setMetadata( meta );
 
@@ -87,8 +112,8 @@ public final class PoolOfPairsTest
         first.add( Event.of( Instant.parse( SECOND_TIME ), Pair.of( 1.0, 1.0 ) ) );
         first.add( Event.of( Instant.parse( THIRD_TIME ), Pair.of( 2.0, 2.0 ) ) );
         first.add( Event.of( Instant.parse( FOURTH_TIME ), Pair.of( 3.0, 3.0 ) ) );
-
-        TimeSeries<Pair<Double, Double>> firstSeries = TimeSeries.of( basisTime,
+        TimeSeriesMetadata metadata = getBoilerplateMetadataWithT0( basisTime );
+        TimeSeries<Pair<Double, Double>> firstSeries = TimeSeries.of( metadata,
                                                                       first );
 
         //Add the first time-series and then append a second and third
@@ -103,10 +128,10 @@ public final class PoolOfPairsTest
         third.add( Event.of( Instant.parse( THIRD_TIME ), Pair.of( 8.0, 8.0 ) ) );
         third.add( Event.of( Instant.parse( FOURTH_TIME ), Pair.of( 9.0, 9.0 ) ) );
 
-        TimeSeries<Pair<Double, Double>> secondSeries = TimeSeries.of( basisTime,
+        TimeSeries<Pair<Double, Double>> secondSeries = TimeSeries.of( metadata,
                                                                        second );
 
-        TimeSeries<Pair<Double, Double>> thirdSeries = TimeSeries.of( basisTime,
+        TimeSeries<Pair<Double, Double>> thirdSeries = TimeSeries.of( metadata,
                                                                       third );
 
         SampleMetadata meta = SampleMetadata.of();
@@ -152,9 +177,9 @@ public final class PoolOfPairsTest
         first.add( Event.of( Instant.parse( THIRD_TIME ), Pair.of( 2.0, 2.0 ) ) );
         first.add( Event.of( Instant.parse( FOURTH_TIME ), Pair.of( 3.0, 3.0 ) ) );
         final SampleMetadata meta = SampleMetadata.of();
-
+        TimeSeriesMetadata metadata = getBoilerplateMetadataWithT0( firstBasisTime );
         PoolOfPairsBuilder<Double, Double> d = new PoolOfPairsBuilder<>();
-        TimeSeries<Pair<Double, Double>> firstSeries = TimeSeries.of( firstBasisTime,
+        TimeSeries<Pair<Double, Double>> firstSeries = TimeSeries.of( metadata,
                                                                       first );
         PoolOfPairs<Double, Double> ts =
                 d.addTimeSeries( firstSeries )
@@ -184,22 +209,22 @@ public final class PoolOfPairsTest
                                  Pair.of( 1.0, 1.0 ) ) );
         }
 
+        TimeSeriesMetadata metadata = getBoilerplateMetadataWithT0( basisTime );
         TimeSeries<Pair<Double, Double>> firstSeries =
-                new TimeSeriesBuilder<Pair<Double, Double>>().addReferenceTime( basisTime, ReferenceTimeType.UNKNOWN )
+                new TimeSeriesBuilder<Pair<Double, Double>>().setMetadata( metadata )
                                                              .addEvents( first )
-                                                             .setTimeScale( TimeScale.of() )
                                                              .build();
 
 
         b.addTimeSeries( firstSeries ).setMetadata( meta );
 
-        String expectedOne = "UNKNOWN=1985-01-01T00:00:00Z";
+        String expectedOne = "T0=1985-01-01T00:00:00Z";
         String expectedTwo = "(1985-01-01T00:00:00Z,(1.0,1.0))";
         String expectedThree = "(1985-01-01T01:00:00Z,(1.0,1.0))";
         String expectedFour = "(1985-01-01T02:00:00Z,(1.0,1.0))";
         String expectedFive = "(1985-01-01T03:00:00Z,(1.0,1.0))";
         String expectedSix = "(1985-01-01T04:00:00Z,(1.0,1.0))";
-        String expectedSeven = "INSTANTANEOUS";
+        String expectedSeven = "PT1H";
 
         String bToString = b.build()
                             .toString();
@@ -222,19 +247,18 @@ public final class PoolOfPairsTest
                                   Pair.of( 1.0, 1.0 ) ) );
         }
 
+        TimeSeriesMetadata secondMetadata = getBoilerplateMetadataWithT0( nextBasisTime );
         TimeSeries<Pair<Double, Double>> secondSeries =
-                new TimeSeriesBuilder<Pair<Double, Double>>().addReferenceTime( nextBasisTime,
-                                                                                ReferenceTimeType.UNKNOWN )
+                new TimeSeriesBuilder<Pair<Double, Double>>().setMetadata( secondMetadata )
                                                              .addEvents( second )
-                                                             .setTimeScale( TimeScale.of() )
                                                              .build();
 
         b.addTimeSeries( secondSeries );
 
-        String expectedFirstOne = "UNKNOWN=1985-01-01T00:00:00Z";
+        String expectedFirstOne = "T0=1985-01-01T00:00:00Z";
         String expectedFirstTwo = "(1985-01-01T00:00:00Z,(1.0,1.0))";
 
-        String expectedSecondOne = "UNKNOWN=1985-01-02T00:00:00Z";
+        String expectedSecondOne = "T0=1985-01-02T00:00:00Z";
         String expectedSecondTwo = "(1985-01-02T00:00:00Z,(1.0,1.0)";
 
         String bToStringAgain = b.build()
@@ -258,18 +282,22 @@ public final class PoolOfPairsTest
         PoolOfPairsBuilder<Double, Double> b = new PoolOfPairsBuilder<>();
 
         Instant firstBasisTime = Instant.parse( FIRST_TIME );
+        TimeSeriesMetadata firstMetadata = getBoilerplateMetadataWithT0( firstBasisTime );
         first.add( Event.of( Instant.parse( SECOND_TIME ), Pair.of( 1.0, 1.0 ) ) );
         first.add( Event.of( Instant.parse( "1985-01-01T08:00:00Z" ), Pair.of( 2.0, 2.0 ) ) );
         first.add( Event.of( Instant.parse( "1985-01-01T09:00:00Z" ), Pair.of( 3.0, 3.0 ) ) );
         Instant secondBasisTime = Instant.parse( FIFTH_TIME );
+        TimeSeriesMetadata secondMetadata = getBoilerplateMetadataWithT0( secondBasisTime );
         second.add( Event.of( Instant.parse( SIXTH_TIME ), Pair.of( 4.0, 4.0 ) ) );
         second.add( Event.of( Instant.parse( "1985-01-02T04:00:00Z" ), Pair.of( 5.0, 5.0 ) ) );
         second.add( Event.of( Instant.parse( "1985-01-02T06:00:00Z" ), Pair.of( 6.0, 6.0 ) ) );
         Instant thirdBasisTime = Instant.parse( SEVENTH_TIME );
+        TimeSeriesMetadata thirdMetadata = getBoilerplateMetadataWithT0( thirdBasisTime );
         third.add( Event.of( Instant.parse( EIGHTH_TIME ), Pair.of( 7.0, 7.0 ) ) );
         third.add( Event.of( Instant.parse( "1985-01-03T08:00:00Z" ), Pair.of( 8.0, 8.0 ) ) );
         third.add( Event.of( Instant.parse( "1985-01-03T09:00:00Z" ), Pair.of( 9.0, 9.0 ) ) );
         Instant fourthBasisTime = Instant.parse( "1985-01-04T00:00:00Z" );
+        TimeSeriesMetadata fourthMetadata = getBoilerplateMetadataWithT0( fourthBasisTime );
         fourth.add( Event.of( Instant.parse( "1985-01-04T02:00:00Z" ),
                               Pair.of( 10.0, 10.0 ) ) );
         fourth.add( Event.of( Instant.parse( "1985-01-04T04:00:00Z" ),
@@ -279,13 +307,13 @@ public final class PoolOfPairsTest
         SampleMetadata meta = SampleMetadata.of();
         //Add the time-series, with only one for baseline
         PoolOfPairs<Double, Double> ts =
-                b.addTimeSeries( TimeSeries.of( firstBasisTime,
+                b.addTimeSeries( TimeSeries.of( firstMetadata,
                                                 first ) )
-                 .addTimeSeries( TimeSeries.of( secondBasisTime,
+                 .addTimeSeries( TimeSeries.of( secondMetadata,
                                                 second ) )
-                 .addTimeSeries( TimeSeries.of( thirdBasisTime,
+                 .addTimeSeries( TimeSeries.of( thirdMetadata,
                                                 third ) )
-                 .addTimeSeries( TimeSeries.of( fourthBasisTime,
+                 .addTimeSeries( TimeSeries.of( fourthMetadata,
                                                 fourth ) )
                  .setMetadata( meta )
                  .build();
@@ -340,10 +368,11 @@ public final class PoolOfPairsTest
         data.add( Event.of( Instant.parse( "1985-01-01T09:00:00Z" ), Pair.of( 9.0, 9.0 ) ) );
 
         SampleMetadata meta = SampleMetadata.of();
+        TimeSeriesMetadata metadata = getBoilerplateMetadata();
 
         //Add the time-series, with only one for baseline
         PoolOfPairs<Double, Double> ts =
-                b.addTimeSeries( TimeSeries.of( data ) )
+                b.addTimeSeries( TimeSeries.of( metadata, data ) )
                  .setMetadata( meta )
                  .build();
 
@@ -389,8 +418,9 @@ public final class PoolOfPairsTest
         data.add( Event.of( Instant.parse( FOURTH_TIME ), Pair.of( 3.0, 3.0 ) ) );
 
         SampleMetadata meta = SampleMetadata.of();
-
-        PoolOfPairs<Double, Double> one = b.addTimeSeries( TimeSeries.of( data ) )
+        TimeSeriesMetadata metadata = getBoilerplateMetadata();
+        PoolOfPairs<Double, Double> one = b.addTimeSeries( TimeSeries.of( metadata,
+                                                                          data ) )
                                            .setMetadata( meta )
                                            .build();
 

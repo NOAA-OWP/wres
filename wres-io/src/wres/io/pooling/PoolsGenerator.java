@@ -14,6 +14,7 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import ohd.hseb.util.fews.xmlconfigfiles.TimeSeriesReadWriteModeEnumStringType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +27,7 @@ import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesCrossPairer;
+import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesPairer;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesUpscaler;
@@ -146,7 +148,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
     }
 
     /**
-     * A builder for the {@link PoolGenerator}.
+     * A builder for the {@link PoolsGenerator}.
      */
 
     static class Builder<L, R>
@@ -390,9 +392,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
     /**
      * Hidden constructor.
      * 
-     * @param projectthe project
-     * @param feature the feature
-     * @param unitMapper the unit mapper
+     * @param builder a builder
      * @throws NullPointerException if any input is null
      * @throws IllegalArgumentException if the declaration is inconsistent with the type of pool expected
      */
@@ -447,7 +447,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
      * Produces a collection of pools.
      * 
      * @return a collection of pools
-     * @throws NullPointerExecption if any input is null
+     * @throws NullPointerException if any input is null
      * @throws PoolCreationException if the pools cannot be created for any other reason
      */
 
@@ -767,13 +767,12 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
                                                           .collect( Collectors.toList() );
 
         TimeSeriesBuilder<L> builder = new TimeSeriesBuilder<>();
-        builder.setTimeScale( desiredTimeScale );
 
         for ( TimeSeries<L> next : climData )
         {
             TimeSeries<L> nextSeries = next;
-
-            TimeScale nextScale = nextSeries.getTimeScale();
+            TimeScale nextScale = nextSeries.getMetadata()
+                                            .getTimeScale();
 
             // Upscale? A difference in period is the minimum needed
             if ( Objects.nonNull( desiredTimeScale )
@@ -811,6 +810,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
             // non-finite values
             nextSeries = TimeSeriesSlicer.filter( nextSeries, admissibleValue );
 
+            builder.setMetadata( nextSeries.getMetadata() );
             builder.addEvents( nextSeries.getEvents() );
         }
 

@@ -9,9 +9,9 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
+import wres.datamodel.time.TimeSeriesMetadata;
 import wres.grid.client.Request;
 import wres.grid.client.SingleValuedTimeSeriesResponse;
-import wres.system.SystemSettings;
 import wres.util.NetCDF;
 
 import java.io.IOException;
@@ -146,7 +146,10 @@ public class GriddedReader
             Stream<TimeSeries<Double>> timeSeries =
                     GriddedReader.getTimeSeriesFromListOfEvents( nextPair.getValue(), 
                                                                  request.getTimeScale(),
-                                                                 request.isForecast() )
+                                                                 request.isForecast(),
+                                                                 request.getVariableName(),
+                                                                 nextPair.getKey(),
+                                                                 measurementUnit )
                                  .stream();
             seriesPerFeature.put( nextPair.getKey(), timeSeries );
         }
@@ -172,7 +175,10 @@ public class GriddedReader
 
     static <T> List<TimeSeries<T>> getTimeSeriesFromListOfEvents( List<Pair<Instant, Event<T>>> events,
                                                                   TimeScale timeScale,
-                                                                  boolean isForecast )
+                                                                  boolean isForecast,
+                                                                  String variableName,
+                                                                  FeaturePlus featurePlus,
+                                                                  String unit )
     {
         Objects.requireNonNull( events );
 
@@ -222,15 +228,23 @@ public class GriddedReader
         for ( Map.Entry<Instant, SortedSet<Event<T>>> nextEntry : eventsByReferenceTime.entrySet() )
         {
             TimeSeriesBuilder<T> builder =
-                    new TimeSeriesBuilder<T>().setTimeScale( timeScale )
-                                              .addEvents( nextEntry.getValue() );
-            
+                    new TimeSeriesBuilder<T>().addEvents( nextEntry.getValue() );
+            Map<ReferenceTimeType,Instant> referenceTimes = Collections.emptyMap();
+
             // Add the reference time for forecasts
             if( isForecast )
             {
-                builder.addReferenceTime( nextEntry.getKey(), ReferenceTimeType.UNKNOWN );               
+                referenceTimes = Map.of( ReferenceTimeType.T0, nextEntry.getKey() );
             }
 
+            TimeSeriesMetadata metadata =
+                    TimeSeriesMetadata.of( referenceTimes,
+                                           timeScale,
+                                           variableName,
+                                           String.valueOf( featurePlus.getFeature()
+                                                                      .getComid() ),
+                                           unit );
+            builder.setMetadata( metadata );
             returnMe.add( builder.build() );
         }
 
@@ -238,7 +252,12 @@ public class GriddedReader
         // until no duplicates are left
         if ( !duplicates.isEmpty() )
         {
-            returnMe.addAll( GriddedReader.getTimeSeriesFromListOfEvents( duplicates, timeScale, isForecast ) );
+            returnMe.addAll( GriddedReader.getTimeSeriesFromListOfEvents( duplicates,
+                                                                          timeScale,
+                                                                          isForecast,
+                                                                          variableName,
+                                                                          featurePlus,
+                                                                          unit ) );
         }
 
         return Collections.unmodifiableList( returnMe );

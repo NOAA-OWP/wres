@@ -45,9 +45,11 @@ import ucar.nc2.Variable;
 
 import wres.datamodel.Ensemble;
 import wres.datamodel.MissingValues;
+import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.reading.PreIngestException;
 import wres.system.SystemSettings;
 
@@ -391,7 +393,8 @@ class NWMTimeSeries implements Closeable
 
 
     Map<Integer,TimeSeries<?>> readEnsembleTimeSerieses( int[] featureIds,
-                                                         String variableName )
+                                                         String variableName,
+                                                         String unitName )
             throws InterruptedException, ExecutionException
     {
 
@@ -480,8 +483,14 @@ class NWMTimeSeries implements Closeable
                 sortedEvents.add( ensembleEvent );
             }
 
+            TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, this.getReferenceDatetime() ),
+                                                                 null,
+                                                                 variableName,
+                                                                 entriesForOne.getKey()
+                                                                              .toString(),
+                                                                 unitName );
             // Create the TimeSeries for the current Feature
-            TimeSeries<?> timeSeries = TimeSeries.of( this.getReferenceDatetime(),
+            TimeSeries<?> timeSeries = TimeSeries.of( metadata,
                                                       sortedEvents );
 
             // Store this TimeSeries in the collection to be returned.
@@ -701,12 +710,14 @@ class NWMTimeSeries implements Closeable
      * Read TimeSerieses from across several netCDF single-validdatetime files.
      * @param featureIds The NWM feature IDs to read.
      * @param variableName The NWM variable name.
+     * @param unitName The unit of all variable values.
      * @return a map of feature id to TimeSeries containing the events, may be
      * empty when no feature ids given were found in the NWM Data.
      */
 
     Map<Integer,TimeSeries<?>> readTimeSerieses( int[] featureIds,
-                                                 String variableName )
+                                                 String variableName,
+                                                 String unitName )
             throws InterruptedException, ExecutionException
     {
         BlockingQueue<Future<NWMDoubleReadOutcome>> reads =
@@ -778,8 +789,13 @@ class NWMTimeSeries implements Closeable
         // Create each TimeSeries
         for ( Map.Entry<Integer,SortedSet<Event<Double>>> series : events.entrySet() )
         {
-            TimeSeries<Double> timeSeries = TimeSeries.of( this.getReferenceDatetime(),
-                                                           ReferenceTimeType.T0,
+            TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, this.getReferenceDatetime() ),
+                                                                 null,
+                                                                 variableName,
+                                                                 series.getKey()
+                                                                       .toString(),
+                                                                 unitName );
+            TimeSeries<Double> timeSeries = TimeSeries.of( metadata,
                                                            series.getValue() );
             allTimeSerieses.put( series.getKey(), timeSeries );
         }

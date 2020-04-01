@@ -146,7 +146,7 @@ public class TimeSeriesPairerByExactTime<L, R> implements TimeSeriesPairer<L, R>
                           right.hashCode(),
                           TimePairingType.REFERENCE_TIME_AND_VALID_TIME );
 
-            return new TimeSeriesBuilder<Pair<L, R>>().setTimeScale( left.getTimeScale() )
+            return new TimeSeriesBuilder<Pair<L, R>>().setMetadata( right.getMetadata() )
                                                       .build();
         }
 
@@ -191,10 +191,18 @@ public class TimeSeriesPairerByExactTime<L, R> implements TimeSeriesPairer<L, R>
 
         // Log inadmissible cases
         this.logInadmissibleCases( left, right, leftInadmissible, rightInadmissible );
+        TimeSeriesMetadata metadata = TimeSeriesMetadata.of( referenceTimes,
+                                                             right.getMetadata()
+                                                                  .getTimeScale(),
+                                                             right.getMetadata()
+                                                                  .getVariableName(),
+                                                             right.getMetadata()
+                                                                  .getFeatureName(),
+                                                             right.getMetadata()
+                                                                  .getUnit() );
 
-        return new TimeSeriesBuilder<Pair<L, R>>().addReferenceTimes( referenceTimes )
+        return new TimeSeriesBuilder<Pair<L, R>>().setMetadata( metadata )
                                                   .addEvents( pairs )
-                                                  .setTimeScale( left.getTimeScale() )
                                                   .build();
     }
 

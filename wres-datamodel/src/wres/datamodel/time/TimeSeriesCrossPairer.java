@@ -288,7 +288,11 @@ public class TimeSeriesCrossPairer<L, R>
                               this.matchMode,
                               durationError );
             }
-            return TimeSeries.of();
+
+            // Use the "near to me" metadata for the empty timeseries, though we
+            // usually would want the "look in here" metadata. There may be no
+            // timeseries in the latter and metadata is required in timeseries.
+            return TimeSeries.of( lookNearToMe.getMetadata() );
         }
 
         return nearest;

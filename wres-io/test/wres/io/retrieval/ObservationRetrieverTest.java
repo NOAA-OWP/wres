@@ -12,6 +12,7 @@ import java.sql.SQLException;
 import java.text.MessageFormat;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
@@ -30,6 +31,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
+import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.concurrency.Executor;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
@@ -163,9 +165,16 @@ public class ObservationRetrieverTest
         TimeSeries<Double> actualSeries = actualCollection.get( 0 );
 
         // Create the expected series
+        TimeSeriesMetadata expectedMetadata =
+                TimeSeriesMetadata.of( Collections.emptyMap(),
+                                       TimeScale.of(),
+                                       String.valueOf( this.variableFeatureId ),
+                                       String.valueOf( this.variableFeatureId ),
+                                       "CFS" );
         TimeSeriesBuilder<Double> builder = new TimeSeriesBuilder<>();
         TimeSeries<Double> expectedSeries =
-                builder.addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ), 30.0 ) )
+                builder.setMetadata( expectedMetadata )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ), 30.0 ) )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T02:00:00Z" ), 37.0 ) )
                        .addEvent( Event.of( Instant.parse( FIRST_TIME ), 44.0 ) )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T04:00:00Z" ), 51.0 ) )
@@ -175,7 +184,6 @@ public class ObservationRetrieverTest
                        .addEvent( Event.of( Instant.parse( "2023-04-01T08:00:00Z" ), 79.0 ) )
                        .addEvent( Event.of( Instant.parse( SECOND_TIME ), 86.0 ) )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T10:00:00Z" ), 93.0 ) )
-                       .setTimeScale( TimeScale.of() )
                        .build();
 
         // Actual series equals expected series
@@ -213,16 +221,22 @@ public class ObservationRetrieverTest
         assertEquals( 7, actualSeries.getEvents().size() );
 
         // Create the expected series
+        TimeSeriesMetadata expectedMetadata =
+                TimeSeriesMetadata.of( Collections.emptyMap(),
+                                       TimeScale.of(),
+                                       String.valueOf( this.variableFeatureId ),
+                                       String.valueOf( this.variableFeatureId ),
+                                       "CFS" );
         TimeSeriesBuilder<Double> builder = new TimeSeriesBuilder<>();
         TimeSeries<Double> expectedSeries =
-                builder.addEvent( Event.of( Instant.parse( FIRST_TIME ), 44.0 ) )
+                builder.setMetadata( expectedMetadata )
+                       .addEvent( Event.of( Instant.parse( FIRST_TIME ), 44.0 ) )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T04:00:00Z" ), 51.0 ) )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T05:00:00Z" ), 58.0 ) )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T06:00:00Z" ), 65.0 ) )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T07:00:00Z" ), 72.0 ) )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T08:00:00Z" ), 79.0 ) )
                        .addEvent( Event.of( Instant.parse( SECOND_TIME ), 86.0 ) )
-                       .setTimeScale( TimeScale.of() )
                        .build();
 
         // Actual series equals expected series

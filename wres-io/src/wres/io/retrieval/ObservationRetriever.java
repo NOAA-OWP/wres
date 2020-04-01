@@ -38,7 +38,7 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
     private static final String LOG_SCRIPT = "Built retriever {} for the retrieval of observations:{}{}";
 
     /**
-     * Template script for the {@link #getAll()}.
+     * Template script for the getAll().
      */
 
     private static final String GET_ALL_DATA_FROM_OBSERVATIONS_TABLE_SCRIPT =

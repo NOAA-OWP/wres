@@ -52,14 +52,14 @@ public class TimeSeriesMetadata
 
     /**
      * Create an instance.
-     * 
-     * @param referenceTimes the reference times
-     * @param timeScale the time scale
-     * @param variableName the variable name
-     * @param featureName the feature name
-     * @param unit the measurement unit
+     *
+     * @param referenceTimes The reference times, non-null
+     * @param timeScale The time scale if available, or null if not.
+     * @param variableName The variable name, non-null.
+     * @param featureName The feature name, non-null.
+     * @param unit The measurement unit name, non-null.
      * @return an instance
-     * @throws NullPointerException if the map of reference times is null (may be empty)
+     * @throws NullPointerException if any arg besides timeScale is null
      */
 
     public static TimeSeriesMetadata of( Map<ReferenceTimeType, Instant> referenceTimes,
@@ -75,49 +75,16 @@ public class TimeSeriesMetadata
                                        unit );
     }
 
-    /**
-     * Create an instance.
-     * 
-     * @param referenceTimes the reference times
-     * @return an instance
-     * @throws NullPointerException if the map of reference times is null (may be empty)
-     */
-
-    public static TimeSeriesMetadata of( Map<ReferenceTimeType, Instant> referenceTimes )
-    {
-        return new TimeSeriesMetadata( referenceTimes,
-                                       null,
-                                       null,
-                                       null,
-                                       null );
-    }
-
-    /**
-     * Create an instance.
-     * 
-     * @param referenceTimes the reference times
-     * @param timeScale the time scale
-     * @return an instance
-     * @throws NullPointerException if the map of reference times is null (may be empty)
-     */
-
-    public static TimeSeriesMetadata of( Map<ReferenceTimeType, Instant> referenceTimes, TimeScale timeScale )
-    {
-        return new TimeSeriesMetadata( referenceTimes,
-                                       timeScale,
-                                       null,
-                                       null,
-                                       null );
-    }
 
     /**
      * Hidden constructor.
      * 
-     * @param referenceTimes the reference times
-     * @param timeScale the time scale
-     * @param variableName the variable name
-     * @param featureName the feature name
-     * @param unit the measurement unit
+     * @param referenceTimes The reference times, non-null
+     * @param timeScale The time scale if available, or null if not.
+     * @param variableName The variable name, non-null.
+     * @param featureName The feature name, non-null.
+     * @param unit The measurement unit name, non-null.
+     * @throws NullPointerException if any arg besides timeScale is null
      */
 
     private TimeSeriesMetadata( Map<ReferenceTimeType, Instant> referenceTimes,
@@ -127,6 +94,10 @@ public class TimeSeriesMetadata
                                 String unit )
     {
         Objects.requireNonNull( referenceTimes );
+        // Often the timescale is not available: in that case valid to use null.
+        Objects.requireNonNull( variableName );
+        Objects.requireNonNull( featureName );
+        Objects.requireNonNull( unit );
         this.referenceTimes = Collections.unmodifiableMap( referenceTimes );
         this.timeScale = timeScale;
         this.variableName = variableName;
@@ -172,22 +143,22 @@ public class TimeSeriesMetadata
             return false;
         }
 
-        TimeSeriesMetadata metadata = (TimeSeriesMetadata) o;
-        return Objects.equals( this.timeScale, metadata.timeScale ) &&
-               this.referenceTimes.equals( metadata.referenceTimes )
-               && Objects.equals( this.variableName, metadata.variableName )
-               && Objects.equals( this.featureName, metadata.featureName )
-               && Objects.equals( this.unit, metadata.unit );
+        TimeSeriesMetadata metadata = ( TimeSeriesMetadata ) o;
+        return Objects.equals( timeScale, metadata.timeScale ) &&
+               referenceTimes.equals( metadata.referenceTimes ) &&
+               variableName.equals( metadata.variableName ) &&
+               featureName.equals( metadata.featureName ) &&
+               unit.equals( metadata.unit );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( this.timeScale,
-                             this.referenceTimes,
-                             this.variableName,
-                             this.featureName,
-                             this.unit );
+        return Objects.hash( timeScale,
+                             referenceTimes,
+                             variableName,
+                             featureName,
+                             unit );
     }
 
     @Override

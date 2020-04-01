@@ -8,6 +8,7 @@ import java.util.StringJoiner;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
+import wres.datamodel.time.TimeSeries;
 
 public class DataSource
 {
@@ -37,6 +38,12 @@ public class DataSource
     private final URI uri;
 
     /**
+     * A raw TimeSeries when the source has already been read, null otherwise.
+     */
+
+    private final TimeSeries<?> timeSeries;
+
+    /**
      * Create a data source to load into <code>wres.Source</code>, with optional links to
      * create in <code>wres.ProjectSource</code>. If the source is used only once in the
      * declaration, there will be no additional links and the set of links should be empty.
@@ -59,7 +66,39 @@ public class DataSource
                                  Set<LeftOrRightOrBaseline> links,
                                  URI uri )
     {
-        return new DataSource( source, context, links, uri );
+        return new DataSource( source, context, links, uri, null );
+    }
+
+    /**
+     * Create a data source to load into <code>wres.Source</code> with an
+     * already-read {@link TimeSeries}, with optional links to create in
+     * <code>wres.ProjectSource</code>. If the source is used only once in the
+     * declaration, there will be no additional links and the set of links
+     * should be empty. The evaluated path to the source may not match the URI
+     * within the source, because the path has been evaluated. For example,
+     * evaluation means to decompose a source directory into separate paths to
+     * each file that must be loaded. Each file has a separate
+     * {@link DataSource}. For each of those decomposed paths, there is only one
+     * {@link DataSourceConfig.Source}.
+     *
+     * When there is no
+     *
+     * @param source the source to load
+     * @param context the context in which the source appears
+     * @param links the optional links to create
+     * @param uri the uri for the source
+     * @param timeSeries The {@link TimeSeries} already-read from the source.
+     * @throws NullPointerException When source, context, links, or uri are null
+     * @return The newly created DataSource.
+     */
+
+    public static DataSource of( DataSourceConfig.Source source,
+                                 DataSourceConfig context,
+                                 Set<LeftOrRightOrBaseline> links,
+                                 URI uri,
+                                 TimeSeries<?> timeSeries )
+    {
+        return new DataSource( source, context, links, uri, timeSeries );
     }
 
     /**
@@ -73,7 +112,8 @@ public class DataSource
     private DataSource( DataSourceConfig.Source source,
                         DataSourceConfig context,
                         Set<LeftOrRightOrBaseline> links,
-                        URI uri )
+                        URI uri,
+                        TimeSeries<?> timeSeries )
     {
         Objects.requireNonNull( source );
         Objects.requireNonNull( context );
@@ -84,6 +124,7 @@ public class DataSource
         this.context = context;
         this.links = Collections.unmodifiableSet( links );
         this.uri = uri;
+        this.timeSeries = timeSeries;
     }
 
     /**
@@ -145,6 +186,16 @@ public class DataSource
     }
 
     /**
+     * Returns the {@link TimeSeries} that was already read from the source.
+     * @return The timeseries or null if none was provided on construction.
+     */
+    public TimeSeries<?> getTimeSeries()
+    {
+        return this.timeSeries;
+    }
+
+
+    /**
      * Returns the variable specified for this source, null if unspecified
      * @return the variable
      */
@@ -157,23 +208,27 @@ public class DataSource
     @Override
     public boolean equals( Object o )
     {
-        if ( ! ( o instanceof DataSource ) )
+        if ( this == o )
+        {
+            return true;
+        }
+
+        if ( o == null || getClass() != o.getClass() )
         {
             return false;
         }
-
-        DataSource in = (DataSource) o;
-
-        return in.source.equals( this.source )
-               && in.getLinks().equals( this.getLinks() )
-               && in.getContext().equals( this.getContext() )
-               && in.getUri().equals( this.getUri() );
+        DataSource that = ( DataSource ) o;
+        return context.equals( that.context ) &&
+               source.equals( that.source ) &&
+               links.equals( that.links ) &&
+               uri.equals( that.uri ) &&
+               Objects.equals( timeSeries, that.timeSeries );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( this.source, this.getLinks(), this.getContext(), this.getUri() );
+        return Objects.hash( context, source, links, uri, timeSeries );
     }
 
     @Override
@@ -194,6 +249,11 @@ public class DataSource
         if ( !this.getLinks().isEmpty() )
         {
             joiner.add( " Links to other contexts: " + this.getLinks() );
+        }
+
+        if ( Objects.nonNull( this.getTimeSeries() ) )
+        {
+            joiner.add( " TimeSeries: " + this.getTimeSeries() );
         }
 
         return joiner.toString();

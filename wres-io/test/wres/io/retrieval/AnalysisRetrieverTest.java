@@ -31,6 +31,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
+import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.concurrency.Executor;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
@@ -175,42 +176,57 @@ public class AnalysisRetrieverTest
         TimeSeries<Double> actualSeriesThree = actualCollection.get( 2 );
 
         // Create the first expected series
+        TimeSeriesMetadata metadata =
+                TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
+                                               T2023_04_01T00_00_00Z ),
+                                       TimeScale.of(),
+                                       Integer.toString( this.variableFeatureId ),
+                                       Integer.toString( this.variableFeatureId ),
+                                       "CFS" );
         TimeSeries<Double> expectedSeriesOne =
-                new TimeSeriesBuilder<Double>().addReferenceTime( T2023_04_01T00_00_00Z,
-                                                                  ReferenceTimeType.ANALYSIS_START_TIME )
+                new TimeSeriesBuilder<Double>().setMetadata( metadata )
                                                .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ), 30.0 ) )
                                                .addEvent( Event.of( Instant.parse( "2023-04-01T02:00:00Z" ), 37.0 ) )
                                                .addEvent( Event.of( Instant.parse( "2023-04-01T03:00:00Z" ), 44.0 ) )
-                                               .setTimeScale( TimeScale.of() )
                                                .build();
 
         // Actual series equals expected series
         assertEquals( expectedSeriesOne, actualSeriesOne );
 
         // Create the second expected series
+        TimeSeriesMetadata metadataTwo =
+                TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
+                                               T2023_04_01T03_00_00Z ),
+                                       TimeScale.of(),
+                                       Integer.toString( this.variableFeatureId ),
+                                       Integer.toString( this.variableFeatureId ),
+                                       "CFS" );
         TimeSeries<Double> expectedSeriesTwo =
-                new TimeSeriesBuilder<Double>().addReferenceTime( T2023_04_01T03_00_00Z,
-                                                                  ReferenceTimeType.ANALYSIS_START_TIME )
+                new TimeSeriesBuilder<Double>().setMetadata( metadataTwo )
                                                .addEvent( Event.of( Instant.parse( "2023-04-01T04:00:00Z" ), 72.0 ) )
                                                .addEvent( Event.of( Instant.parse( "2023-04-01T05:00:00Z" ), 79.0 ) )
                                                .addEvent( Event.of( Instant.parse( "2023-04-01T06:00:00Z" ), 86.0 ) )
-                                               .setTimeScale( TimeScale.of() )
                                                .build();
 
         // Actual series equals expected series
         assertEquals( expectedSeriesTwo, actualSeriesTwo );
 
         // Create the third expected series
+        TimeSeriesMetadata metadataThree =
+                TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
+                                               T2023_04_01T06_00_00Z ),
+                                       TimeScale.of(),
+                                       Integer.toString( this.variableFeatureId ),
+                                       Integer.toString( this.variableFeatureId ),
+                                       "CFS" );
         TimeSeries<Double> expectedSeriesThree =
-                new TimeSeriesBuilder<Double>().addReferenceTime( T2023_04_01T06_00_00Z,
-                                                                  ReferenceTimeType.ANALYSIS_START_TIME )
+                new TimeSeriesBuilder<Double>().setMetadata( metadataThree )
                                                .addEvent( Event.of( Instant.parse( "2023-04-01T07:00:00Z" ), 114.0 ) )
                                                .addEvent( Event.of( Instant.parse( "2023-04-01T08:00:00Z" ), 121.0 ) )
                                                .addEvent( Event.of( Instant.parse( "2023-04-01T09:00:00Z" ), 128.0 ) )
                                                .addEvent( Event.of( Instant.parse( "2023-04-01T10:00:00Z" ), 135.0 ) )
                                                .addEvent( Event.of( Instant.parse( "2023-04-01T11:00:00Z" ), 142.0 ) )
                                                .addEvent( Event.of( Instant.parse( "2023-04-01T12:00:00Z" ), 149.0 ) )
-                                               .setTimeScale( TimeScale.of() )
                                                .build();
 
         // Actual series equals expected series
@@ -246,33 +262,48 @@ public class AnalysisRetrieverTest
         TimeSeries<Double> actualSeriesThree = actualCollection.get( 2 );
 
         // Create the first expected series
+        TimeSeriesMetadata metadata =
+                TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
+                                               T2023_04_01T00_00_00Z ),
+                                       TimeScale.of(),
+                                       Integer.toString( this.variableFeatureId ),
+                                       Integer.toString( this.variableFeatureId ),
+                                       "CFS" );
         TimeSeries<Double> expectedSeriesOne =
-                new TimeSeriesBuilder<Double>().addReferenceTime( T2023_04_01T00_00_00Z,
-                                                                  ReferenceTimeType.ANALYSIS_START_TIME )
+                new TimeSeriesBuilder<Double>().setMetadata( metadata )
                                                .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ), 30.0 ) )
-                                               .setTimeScale( TimeScale.of() )
                                                .build();
 
         // Actual series equals expected series
         assertEquals( expectedSeriesOne, actualSeriesOne );
 
         // Create the second expected series
+        TimeSeriesMetadata metadataTwo =
+                TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
+                                               T2023_04_01T03_00_00Z ),
+                                       TimeScale.of(),
+                                       Integer.toString( this.variableFeatureId ),
+                                       Integer.toString( this.variableFeatureId ),
+                                       "CFS" );
         TimeSeries<Double> expectedSeriesTwo =
-                new TimeSeriesBuilder<Double>().addReferenceTime( T2023_04_01T03_00_00Z,
-                                                                  ReferenceTimeType.ANALYSIS_START_TIME )
+                new TimeSeriesBuilder<Double>().setMetadata( metadataTwo )
                                                .addEvent( Event.of( Instant.parse( "2023-04-01T04:00:00Z" ), 72.0 ) )
-                                               .setTimeScale( TimeScale.of() )
                                                .build();
 
         // Actual series equals expected series
         assertEquals( expectedSeriesTwo, actualSeriesTwo );
 
         // Create the third expected series
+        TimeSeriesMetadata metadataThree =
+                TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
+                                               T2023_04_01T06_00_00Z ),
+                                       TimeScale.of(),
+                                       Integer.toString( this.variableFeatureId ),
+                                       Integer.toString( this.variableFeatureId ),
+                                       "CFS" );
         TimeSeries<Double> expectedSeriesThree =
-                new TimeSeriesBuilder<Double>().addReferenceTime( T2023_04_01T06_00_00Z,
-                                                                  ReferenceTimeType.ANALYSIS_START_TIME )
+                new TimeSeriesBuilder<Double>().setMetadata( metadataThree )
                                                .addEvent( Event.of( Instant.parse( "2023-04-01T07:00:00Z" ), 114.0 ) )
-                                               .setTimeScale( TimeScale.of() )
                                                .build();
 
         // Actual series equals expected series
@@ -312,66 +343,96 @@ public class AnalysisRetrieverTest
         TimeSeries<Double> actualSeriesSix = actualCollection.get( 5 );
 
         // Create the first expected series
+        TimeSeriesMetadata metadata =
+                TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
+                                               T2023_04_01T00_00_00Z ),
+                                       TimeScale.of(),
+                                       Integer.toString( this.variableFeatureId ),
+                                       Integer.toString( this.variableFeatureId ),
+                                       "CFS" );
         TimeSeries<Double> expectedSeriesOne =
-                new TimeSeriesBuilder<Double>().addReferenceTime( T2023_04_01T00_00_00Z,
-                                                                  ReferenceTimeType.ANALYSIS_START_TIME )
+                new TimeSeriesBuilder<Double>().setMetadata( metadata )
                                                .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ), 30.0 ) )
-                                               .setTimeScale( TimeScale.of() )
                                                .build();
 
         // Actual series equals expected series
         assertEquals( expectedSeriesOne, actualSeriesOne );
 
         // Create the second expected series
+        TimeSeriesMetadata metadataTwo =
+                TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
+                                               T2023_04_01T00_00_00Z ),
+                                       TimeScale.of(),
+                                       Integer.toString( this.variableFeatureId ),
+                                       Integer.toString( this.variableFeatureId ),
+                                       "CFS" );
         TimeSeries<Double> expectedSeriesTwo =
-                new TimeSeriesBuilder<Double>().addReferenceTime( T2023_04_01T00_00_00Z,
-                                                                  ReferenceTimeType.ANALYSIS_START_TIME )
+                new TimeSeriesBuilder<Double>().setMetadata( metadataTwo )
                                                .addEvent( Event.of( Instant.parse( "2023-04-01T02:00:00Z" ), 37.0 ) )
-                                               .setTimeScale( TimeScale.of() )
                                                .build();
 
         // Actual series equals expected series
         assertEquals( expectedSeriesTwo, actualSeriesTwo );
 
         // Create the third expected series
+        TimeSeriesMetadata metadataThree =
+                TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
+                                               T2023_04_01T03_00_00Z ),
+                                       TimeScale.of(),
+                                       Integer.toString( this.variableFeatureId ),
+                                       Integer.toString( this.variableFeatureId ),
+                                       "CFS" );
         TimeSeries<Double> expectedSeriesThree =
-                new TimeSeriesBuilder<Double>().addReferenceTime( T2023_04_01T03_00_00Z,
-                                                                  ReferenceTimeType.ANALYSIS_START_TIME )
+                new TimeSeriesBuilder<Double>().setMetadata( metadataThree )
                                                .addEvent( Event.of( Instant.parse( "2023-04-01T04:00:00Z" ), 72.0 ) )
-                                               .setTimeScale( TimeScale.of() )
                                                .build();
 
         // Actual series equals expected series
         assertEquals( expectedSeriesThree, actualSeriesThree );
 
         // Create the fourth expected series
+        TimeSeriesMetadata metadataFour =
+                TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
+                                               T2023_04_01T03_00_00Z ),
+                                       TimeScale.of(),
+                                       Integer.toString( this.variableFeatureId ),
+                                       Integer.toString( this.variableFeatureId ),
+                                       "CFS" );
         TimeSeries<Double> expectedSeriesFour =
-                new TimeSeriesBuilder<Double>().addReferenceTime( T2023_04_01T03_00_00Z,
-                                                                  ReferenceTimeType.ANALYSIS_START_TIME )
+                new TimeSeriesBuilder<Double>().setMetadata( metadataFour )
                                                .addEvent( Event.of( Instant.parse( "2023-04-01T05:00:00Z" ), 79.0 ) )
-                                               .setTimeScale( TimeScale.of() )
                                                .build();
 
         // Actual series equals expected series
         assertEquals( expectedSeriesFour, actualSeriesFour );
 
         // Create the fifth expected series
+        TimeSeriesMetadata metadataFive =
+                TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
+                                               T2023_04_01T06_00_00Z ),
+                                       TimeScale.of(),
+                                       Integer.toString( this.variableFeatureId ),
+                                       Integer.toString( this.variableFeatureId ),
+                                       "CFS" );
         TimeSeries<Double> expectedSeriesFive =
-                new TimeSeriesBuilder<Double>().addReferenceTime( T2023_04_01T06_00_00Z,
-                                                                  ReferenceTimeType.ANALYSIS_START_TIME )
+                new TimeSeriesBuilder<Double>().setMetadata( metadataFive )
                                                .addEvent( Event.of( Instant.parse( "2023-04-01T07:00:00Z" ), 114.0 ) )
-                                               .setTimeScale( TimeScale.of() )
                                                .build();
 
         // Actual series equals expected series
         assertEquals( expectedSeriesFive, actualSeriesFive );
 
         // Create the sixth expected series
+        TimeSeriesMetadata metadataSix =
+                TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
+                                               T2023_04_01T06_00_00Z ),
+                                       TimeScale.of(),
+                                       Integer.toString( this.variableFeatureId ),
+                                       Integer.toString( this.variableFeatureId ),
+                                       "CFS" );
         TimeSeries<Double> expectedSeriesSix =
-                new TimeSeriesBuilder<Double>().addReferenceTime( T2023_04_01T06_00_00Z,
-                                                                  ReferenceTimeType.ANALYSIS_START_TIME )
+                new TimeSeriesBuilder<Double>().setMetadata( metadataSix )
                                                .addEvent( Event.of( Instant.parse( "2023-04-01T08:00:00Z" ), 121.0 ) )
-                                               .setTimeScale( TimeScale.of() )
                                                .build();
 
         // Actual series equals expected series

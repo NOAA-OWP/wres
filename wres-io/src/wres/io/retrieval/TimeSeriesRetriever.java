@@ -26,6 +26,7 @@ import wres.datamodel.scale.TimeScale.TimeScaleFunction;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeWindow;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 import wres.io.utilities.DataProvider;
@@ -223,11 +224,13 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                 // Get the valid time
                 Instant validTime = provider.getInstant( "valid_time" );
 
+                Map<ReferenceTimeType,Instant> referenceTimes = Collections.emptyMap();
+
                 // Add the explicit reference time
                 if ( provider.hasColumn( "reference_time" ) && !provider.isNull( "reference_time" ) )
                 {
                     Instant referenceTime = provider.getInstant( "reference_time" );
-                    builder.addReferenceTime( referenceTime, this.getReferenceTimeType() );
+                    referenceTimes = Map.of( this.getReferenceTimeType(), referenceTime );
                 }
 
                 // Add the event     
@@ -240,7 +243,15 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                 Duration period = provider.getDuration( "scale_period" );
 
                 TimeScale latestScale = this.checkAndGetLatestScale( lastScale, period, functionString, event );
-                builder.setTimeScale( latestScale );
+
+                // TODO use actual variable, feature in TimeSeriesMetadata.
+                TimeSeriesMetadata metadata =
+                        TimeSeriesMetadata.of( referenceTimes,
+                                               latestScale,
+                                               Integer.toString( this.variableFeatureId ),
+                                               Integer.toString( this.variableFeatureId ),
+                                               this.unitMapper.getDesiredMeasurementUnitName() );
+                builder.setMetadata( metadata );
                 lastScale = latestScale;
             }
 

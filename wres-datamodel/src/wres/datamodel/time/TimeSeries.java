@@ -2,7 +2,6 @@ package wres.datamodel.time;
 
 import java.time.Instant;
 import java.util.Collections;
-import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -11,8 +10,6 @@ import java.util.TreeSet;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import wres.datamodel.scale.TimeScale;
 
@@ -31,13 +28,6 @@ import wres.datamodel.scale.TimeScale;
 
 public class TimeSeries<T>
 {
-
-    /**
-     * Logger.
-     */
-
-    private static final Logger LOGGER = LoggerFactory.getLogger( TimeSeries.class );
-
     /**
      * Any non-event-related metadata that apply to the time-series as a whole.
      */
@@ -56,85 +46,13 @@ public class TimeSeries<T>
      * Returns an empty {@link TimeSeries} with a <code>null</code> {@link TimeScale}.
      *
      * @param <T> the event type
+     * @param metadata The metadata for the empty timeseries.
      * @return an empty time-series
      */
 
-    public static <T> TimeSeries<T> of()
+    public static <T> TimeSeries<T> of( TimeSeriesMetadata metadata )
     {
-        return TimeSeries.of( Collections.emptyMap(), Collections.emptySortedSet() );
-    }
-
-    /**
-     * Returns a {@link TimeSeries} without any reference times. Assumes a <code>null</code> {@link TimeScale}.
-     *
-     * @param <T> the event type
-     * @param events the events
-     * @return a time-series
-     * @throws NullPointerException if the events are null or any one event is null
-     */
-
-    public static <T> TimeSeries<T> of( SortedSet<Event<T>> events )
-    {
-        return TimeSeries.of( Collections.emptyMap(), events );
-    }
-
-    /**
-     * Returns a {@link TimeSeries} with a reference time type of {@link ReferenceTimeType#UNKNOWN} and a 
-     * <code>null</code> {@link TimeScale}.
-     * 
-     * @param <T> the event type
-     * @param referenceTime the reference time
-     * @param events the events
-     * @return a time-series
-     * @throws NullPointerException if any input is null or any individual event is null
-     */
-
-    public static <T> TimeSeries<T> of( Instant referenceTime,
-                                        SortedSet<Event<T>> events )
-    {
-        return TimeSeries.of( Collections.singletonMap( ReferenceTimeType.UNKNOWN, referenceTime ), events );
-    }
-
-    /**
-     * Returns a {@link TimeSeries} with a <code>null</code> {@link TimeScale}.
-     * 
-     * @param <T> the event type
-     * @param referenceTime the reference time
-     * @param referenceTimeType the type of reference time
-     * @param events the events
-     * @return a time-series
-     * @throws NullPointerException if any input is null or any individual event is null
-     */
-
-    public static <T> TimeSeries<T> of( Instant referenceTime,
-                                        ReferenceTimeType referenceTimeType,
-                                        SortedSet<Event<T>> events )
-    {
-        return TimeSeries.of( Collections.singletonMap( referenceTimeType, referenceTime ), events );
-    }
-
-    /**
-     * Returns a {@link TimeSeries} with a <code>null</code> {@link TimeScale}.
-     * 
-     * @param <T> the event type
-     * @param referenceTimes the reference times
-     * @param events the events
-     * @return a time-series
-     * @throws NullPointerException if any input is null or any individual event is null
-     */
-
-    public static <T> TimeSeries<T> of( Map<ReferenceTimeType, Instant> referenceTimes,
-                                        SortedSet<Event<T>> events )
-    {
-        Objects.requireNonNull( referenceTimes );
-
-        Objects.requireNonNull( events );
-
-        TimeSeriesBuilder<T> builder = new TimeSeriesBuilder<>();
-        events.forEach( builder::addEvent );
-        referenceTimes.forEach( ( type, time ) -> builder.addReferenceTime( time, type ) );
-
-        return builder.build();
+        return TimeSeries.of( metadata, Collections.emptySortedSet() );
     }
 
     /**
@@ -259,24 +177,6 @@ public class TimeSeries<T>
         localEvents.addAll( builder.events );
         this.events = Collections.unmodifiableSortedSet( localEvents );
 
-        Map<ReferenceTimeType, Instant> localMap = new EnumMap<>( ReferenceTimeType.class );
-        localMap.putAll( builder.referenceTimes );
-
-        TimeScale localTimeScale = null;
-
-        if ( Objects.isNull( builder.timeScale ) )
-        {
-            LOGGER.trace( "No time-scale information was provided in builder {} for time-series {}.",
-                          builder,
-                          this );
-        }
-        else
-        {
-            localTimeScale = builder.timeScale;
-        }
-
-        localMap = Collections.unmodifiableMap( localMap );
-
         TimeSeriesMetadata localMetadata = builder.metadata;
         if ( Objects.nonNull( localMetadata ) )
         {
@@ -286,8 +186,7 @@ public class TimeSeries<T>
         // Once removed, require metadata
         else
         {
-            this.metadata = TimeSeriesMetadata.of( localMap,
-                                                   localTimeScale );
+            throw new UnsupportedOperationException( "Use complete metadata in your TimeSeries instances." );
         }
 
         // All reference datetimes and types must be non-null
@@ -323,52 +222,6 @@ public class TimeSeries<T>
          */
 
         private TimeSeriesMetadata metadata;
-
-        /**
-         * The reference datetime associated with the time-series.
-         */
-
-        private final Map<ReferenceTimeType, Instant> referenceTimes = new EnumMap<>( ReferenceTimeType.class );
-
-        /**
-         * The time-scale associated with the events.
-         */
-
-        private TimeScale timeScale;
-
-        /**
-         * Adds a reference time.
-         * 
-         * @param referenceTime the reference time
-         * @param referenceTimeType the reference time type
-         * @return the builder
-         * @deprecated use {@link #setMetadata(TimeSeriesMetadata)} instead
-         */
-        @Deprecated( since = "4.0", forRemoval = true )
-        public TimeSeriesBuilder<T> addReferenceTime( Instant referenceTime, ReferenceTimeType referenceTimeType )
-        {
-            this.referenceTimes.put( referenceTimeType, referenceTime );
-
-            return this;
-        }
-
-        /**
-         * Adds a map of reference times.
-         * 
-         * @param referenceTimes the reference times
-         * @return the builder
-         * @throws NullPointerException if the input is null
-         * @deprecated use {@link #setMetadata(TimeSeriesMetadata)} instead
-         */
-        @Deprecated( since = "4.0", forRemoval = true )
-        public TimeSeriesBuilder<T> addReferenceTimes( Map<ReferenceTimeType, Instant> referenceTimes )
-        {
-            Objects.requireNonNull( referenceTimes );
-
-            this.referenceTimes.putAll( referenceTimes );
-
-            return this;
-        }
 
         /**
          * Adds several events to the time-series.
@@ -419,22 +272,6 @@ public class TimeSeries<T>
         public TimeSeriesBuilder<T> setMetadata( TimeSeriesMetadata metadata )
         {
             this.metadata = metadata;
-
-            return this;
-        }
-
-        /**
-         * Adds the time-scale information.
-         * 
-         * @param timeScale the time scale
-         * @return the builder
-         * @deprecated use {@link #setMetadata(TimeSeriesMetadata)} instead
-         */
-
-        @Deprecated( since = "4.0", forRemoval = true )
-        public TimeSeriesBuilder<T> setTimeScale( TimeScale timeScale )
-        {
-            this.timeScale = timeScale;
 
             return this;
         }

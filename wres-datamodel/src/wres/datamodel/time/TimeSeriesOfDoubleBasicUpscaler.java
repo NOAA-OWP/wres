@@ -129,7 +129,7 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
     private static final String SEVEN_MEMBER_MESSAGE = "{}{}{}{}{}";
 
     /**
-     * Lenient on values that match the {@link MissingValues.DOUBLE}? TODO: expose this to declaration.
+     * Lenient on values that match the {@link MissingValues#DOUBLE}? TODO: expose this to declaration.
      */
 
     private static final boolean LENIENT = false;
@@ -141,7 +141,7 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
     private static final Logger LOGGER = LoggerFactory.getLogger( TimeSeriesOfDoubleBasicUpscaler.class );
 
     /**
-     * Function that returns a double value or {@link MissingValues.MISSING_DOUBLE} if the 
+     * Function that returns a double value or {@link MissingValues#DOUBLE} if the
      * input is not finite. 
      */
 
@@ -234,10 +234,16 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
                           desiredTimeScale,
                           "." );
 
+            TimeSeriesMetadata existingMetadata = timeSeries.getMetadata();
             // Create new series in case the function differs
-            TimeSeries<Double> returnMe = new TimeSeriesBuilder<Double>().addEvents( timeSeries.getEvents() )
-                                                                         .addReferenceTimes( timeSeries.getReferenceTimes() )
-                                                                         .setTimeScale( desiredTimeScale )
+            TimeSeriesMetadata metadata =
+                    TimeSeriesMetadata.of( existingMetadata.getReferenceTimes(),
+                                           desiredTimeScale,
+                                           existingMetadata.getVariableName(),
+                                           existingMetadata.getFeatureName(),
+                                           existingMetadata.getUnit() );
+            TimeSeries<Double> returnMe = new TimeSeriesBuilder<Double>().setMetadata( metadata )
+                                                                         .addEvents( timeSeries.getEvents() )
                                                                          .build();
 
             return RescaledTimeSeriesPlusValidation.of( returnMe, validationEvents );
@@ -258,8 +264,6 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
 
         // Process the groups whose events are evenly-spaced and have no missing values, otherwise skip and log
         TimeSeriesBuilder<Double> builder = new TimeSeriesBuilder<>();
-        builder.addReferenceTimes( timeSeries.getReferenceTimes() );
-
         // Acquire the function for the desired scale
         TimeScaleFunction desiredFunction = desiredTimeScale.getFunction();
 
@@ -287,7 +291,13 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
         }
 
         // Set the upscaled scale
-        builder.setTimeScale( desiredTimeScale );
+        TimeSeriesMetadata templateMetadata = timeSeries.getMetadata();
+        TimeSeriesMetadata metadata = TimeSeriesMetadata.of( templateMetadata.getReferenceTimes(),
+                                                             desiredTimeScale,
+                                                             templateMetadata.getVariableName(),
+                                                             templateMetadata.getFeatureName(),
+                                                             templateMetadata.getUnit() );
+        builder.setMetadata( metadata );
 
         return RescaledTimeSeriesPlusValidation.of( builder.build(), Collections.unmodifiableList( validationEvents ) );
     }
@@ -374,7 +384,7 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
      * 
      * @param events the events
      * @param endsAt the end of the interval to aggregate, which is used for logging
-     * @param the period over which to upscale
+     * @param period The period over which to upscale
      * @return a list of scale validation events, empty if upscaling is possible
      * @throws NullPointerException if any input is null
      */
@@ -454,7 +464,7 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
      * Returns a function that corresponds to a {@link TimeScaleFunction}, additionally wrapped by 
      * {@link #RETURN_DOUBLE_OR_MISSING} so that missing input produces missing output.
      * 
-     * @param timeScaleFunction the nominated function
+     * @param function The nominated function
      * @return a function for upscaling
      * @throws UnsupportedOperationException if the nominated function is not recognized
      */
@@ -658,7 +668,7 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
      * Checks whether the desiredPeriod is an integer multiple of the existingPeriod. If not an integer multiple, 
      * returns a {@link ScaleValidationEvent} that is {@link EventType#ERROR}, otherwise {@link EventType#PASS}.  
      * 
-     * @param existingPeriod the existing period
+     * @param inputPeriod the existing period
      * @param desiredPeriod the desired period 
      * @return a validation event
      */
@@ -762,7 +772,7 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
      * then the total might be estimated as the average over the interval, multiplied by 
      * the number of seconds.
      * 
-     * @param existingFunction the existing function
+     * @param existingScale the existing scale and function
      * @param desiredFunction the desired function
      * @return a validation event
      */
@@ -788,19 +798,19 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
      * <p>Checks whether attempting to accumulate something that is not already an accumulation.
      * 
      * <ol>
-     * <li>If the desired function is a {@link TimeScaleFunction.TOTAL} and the existing function is a
-     * {@link TimeScaleFunction.UNKNOWN}, returns a {@link ScaleValidationEvent} that is 
+     * <li>If the desired function is a {@link TimeScaleFunction#TOTAL} and the existing function is a
+     * {@link TimeScaleFunction#UNKNOWN}, returns a {@link ScaleValidationEvent} that is
      * a {@link EventType#WARN}, which assumes, leniently, that the existing function is a 
-     * {@link TimeScaleFunction.TOTAL}.</li>
-     * <li>If the desired function is a {@link TimeScaleFunction.TOTAL} and the existing function is not
-     * {@link TimeScaleFunction.UNKNOWN}, returns a {@link ScaleValidationEvent} that is 
+     * {@link TimeScaleFunction#TOTAL}.</li>
+     * <li>If the desired function is a {@link TimeScaleFunction#TOTAL} and the existing function is not
+     * {@link TimeScaleFunction#UNKNOWN}, returns a {@link ScaleValidationEvent} that is
      * a {@link EventType#ERROR}.</li>
      * <li>Otherwise, returns a {@link ScaleValidationEvent} that is a {@link EventType#PASS}.</li>
      * </ol>
      * 
      * @param existingFunction the existing function
      * @param desiredFunction the desired function
-     * @returns a validation event
+     * @return a validation event
      */
 
     private static ScaleValidationEvent checkIfAccumulatingNonAccumulation( TimeScaleFunction existingFunction,

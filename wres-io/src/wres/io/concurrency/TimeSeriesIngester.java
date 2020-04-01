@@ -153,20 +153,20 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
         );
     }
 
-    public TimeSeriesIngester( SystemSettings systemSettings,
-                               Database database,
-                               Features featuresCache,
-                               Variables variablesCache,
-                               Ensembles ensemblesCache,
-                               MeasurementUnits measurementUnitsCache,
-                               ProjectConfig projectConfig,
-                               DataSource dataSource,
-                               DatabaseLockManager lockManager,
-                               TimeSeries<?> timeSeries,
-                               String locationName,
-                               GEO_ID_TYPE locationType,
-                               String variableName,
-                               String measurementUnit )
+    private TimeSeriesIngester( SystemSettings systemSettings,
+                                Database database,
+                                Features featuresCache,
+                                Variables variablesCache,
+                                Ensembles ensemblesCache,
+                                MeasurementUnits measurementUnitsCache,
+                                ProjectConfig projectConfig,
+                                DataSource dataSource,
+                                DatabaseLockManager lockManager,
+                                TimeSeries<?> timeSeries,
+                                String locationName,
+                                GEO_ID_TYPE locationType,
+                                String variableName,
+                                String measurementUnit )
     {
         Objects.requireNonNull( systemSettings );
         Objects.requireNonNull( database );
@@ -286,12 +286,31 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
                                               + source
                                               + " was already ingested.", se );
             }
-            // Already present.
-            return IngestResult.singleItemListFrom( this.projectConfig,
-                                                    this.dataSource,
-                                                    source.getId(),
-                                                    true,
-                                                    !completed );
+
+            if ( completed )
+            {
+                // Already present and completed
+                return IngestResult.singleItemListFrom( this.projectConfig,
+                                                        this.dataSource,
+                                                        source.getId(),
+                                                        true,
+                                                        false );
+            }
+            else
+            {
+                // Already started but not completed, include the TimeSeries.
+                DataSource dataSourceWithTimeSeries =
+                        DataSource.of( this.dataSource.getSource(),
+                                       this.dataSource.getContext(),
+                                       this.dataSource.getLinks(),
+                                       this.dataSource.getUri(),
+                                       this.timeSeries );
+                return IngestResult.singleItemListFrom( this.projectConfig,
+                                                        dataSourceWithTimeSeries,
+                                                        source.getId(),
+                                                        true,
+                                                        true );
+            }
         }
     }
 
