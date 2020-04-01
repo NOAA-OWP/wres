@@ -28,7 +28,6 @@ import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -44,7 +43,7 @@ import wres.io.writing.commaseparated.CommaSeparatedUtilities;
  */
 
 public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
-        implements Consumer<ListOfStatistics<DiagramStatistic>>, Supplier<Set<Path>>
+        implements Consumer<List<DiagramStatistic>>, Supplier<Set<Path>>
 {
     /**
      * Set of paths that this writer actually wrote to
@@ -78,7 +77,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
      */
 
     @Override
-    public void accept( final ListOfStatistics<DiagramStatistic> output )
+    public void accept( final List<DiagramStatistic> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
@@ -100,7 +99,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
                 // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
                 // each window with LeftOrRightOrBaseline.BASELINE data): #48287
                 Map<LeftOrRightOrBaseline, List<DiagramStatistic>> groups =
-                        WriterHelper.getStatisticsGroupedByContext( output.getData() );
+                        WriterHelper.getStatisticsGroupedByContext( output );
 
                 for ( List<DiagramStatistic> nextGroup : groups.values() )
                 {
@@ -108,7 +107,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
                             CommaSeparatedDiagramWriter.writeOneDiagramOutputType( super.getOutputDirectory(),
                                                                                    super.getProjectConfig(),
                                                                                    destinationConfig,
-                                                                                   ListOfStatistics.of( nextGroup ),
+                                                                                   nextGroup,
                                                                                    formatter,
                                                                                    super.getDurationUnits() );
                     this.pathsWrittenTo.addAll( innerPathsWrittenTo );
@@ -149,7 +148,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
     private static Set<Path> writeOneDiagramOutputType( Path outputDirectory,
                                                         ProjectConfig projectConfig,
                                                         DestinationConfig destinationConfig,
-                                                        ListOfStatistics<DiagramStatistic> output,
+                                                        List<DiagramStatistic> output,
                                                         Format formatter,
                                                         ChronoUnit durationUnits )
             throws IOException
@@ -164,8 +163,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
         for ( MetricConstants m : metrics )
         {
             StringJoiner headerRow =
-                    CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( output.getData()
-                                                                                         .get( 0 )
+                    CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( output.get( 0 )
                                                                                          .getMetadata()
                                                                                          .getSampleMetadata(),
                                                                                    durationUnits );
@@ -218,7 +216,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
 
     private static Set<Path> writeOneDiagramOutputTypePerTimeWindow( Path outputDirectory,
                                                                      DestinationConfig destinationConfig,
-                                                                     ListOfStatistics<DiagramStatistic> output,
+                                                                     List<DiagramStatistic> output,
                                                                      StringJoiner headerRow,
                                                                      Format formatter,
                                                                      ChronoUnit durationUnits )
@@ -231,10 +229,10 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
                 Slicer.discover( output, next -> next.getMetadata().getSampleMetadata().getTimeWindow() );
         for ( TimeWindow timeWindow : timeWindows )
         {
-            ListOfStatistics<DiagramStatistic> next =
+            List<DiagramStatistic> next =
                     Slicer.filter( output, data -> data.getSampleMetadata().getTimeWindow().equals( timeWindow ) );
 
-            StatisticMetadata meta = next.getData().get( 0 ).getMetadata();
+            StatisticMetadata meta = next.get( 0 ).getMetadata();
 
             List<RowCompareByLeft> rows = getRowsForOneDiagram( next, formatter, durationUnits );
 
@@ -275,7 +273,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
 
     private static Set<Path> writeOneDiagramOutputTypePerThreshold( Path outputDirectory,
                                                                     DestinationConfig destinationConfig,
-                                                                    ListOfStatistics<DiagramStatistic> output,
+                                                                    List<DiagramStatistic> output,
                                                                     StringJoiner headerRow,
                                                                     Format formatter,
                                                                     ChronoUnit durationUnits )
@@ -289,10 +287,10 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
         for ( OneOrTwoThresholds threshold : thresholds )
         {
 
-            ListOfStatistics<DiagramStatistic> next =
+            List<DiagramStatistic> next =
                     Slicer.filter( output, data -> data.getSampleMetadata().getThresholds().equals( threshold ) );
 
-            StatisticMetadata meta = next.getData().get( 0 ).getMetadata();
+            StatisticMetadata meta = next.get( 0 ).getMetadata();
 
             List<RowCompareByLeft> rows =
                     CommaSeparatedDiagramWriter.getRowsForOneDiagram( next, formatter, durationUnits );
@@ -328,7 +326,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
      */
 
     private static List<RowCompareByLeft>
-            getRowsForOneDiagram( ListOfStatistics<DiagramStatistic> output,
+            getRowsForOneDiagram( List<DiagramStatistic> output,
                                   Format formatter,
                                   ChronoUnit durationUnits )
     {
@@ -357,7 +355,6 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
                                                                      && data.getSampleMetadata()
                                                                             .getTimeWindow()
                                                                             .equals( timeWindow ) )
-                                                    .getData()
                                                     .get( 0 );
                 CommaSeparatedDiagramWriter.addRowsForOneDiagramAtOneTimeWindowAndThreshold( nextOutput, merge );
             }
@@ -451,7 +448,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
      * @return the mutated header
      */
 
-    private static StringJoiner getDiagramHeader( ListOfStatistics<DiagramStatistic> output,
+    private static StringJoiner getDiagramHeader( List<DiagramStatistic> output,
                                                   StringJoiner headerRow )
     {
         // Append to header
@@ -461,7 +458,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
         
         returnMe.merge( headerRow );
         // Discover first item to help
-        DiagramStatistic data = output.getData().get( 0 );
+        DiagramStatistic data = output.get( 0 );
         String metricName = data.getMetadata().getMetricID().toString();
 
         Set<MetricDimension> dimensions = data.getData().keySet();

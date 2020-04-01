@@ -4,6 +4,7 @@ import java.io.Closeable;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -14,7 +15,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import wres.config.generated.DestinationType;
 import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.statistics.DoubleScoreStatistic;
-import wres.datamodel.statistics.ListOfStatistics;
 import wres.io.writing.netcdf.NetcdfOutputWriter;
 
 /**
@@ -24,8 +24,8 @@ import wres.io.writing.netcdf.NetcdfOutputWriter;
  * @author james.brown@hydrosolved.com
  */
 public class SharedStatisticsWriters implements Closeable,
-                                      Consumer<ListOfStatistics<DoubleScoreStatistic>>,
-                                      Supplier<Set<Path>>
+        Consumer<List<DoubleScoreStatistic>>,
+        Supplier<Set<Path>>
 {
 
     private final NetcdfOutputWriter netcdfOutputWriter;
@@ -33,9 +33,9 @@ public class SharedStatisticsWriters implements Closeable,
     /**
      * Set of types for which writers are available.
      */
-    
-    private final Set<Pair<DestinationType,StatisticType>> storedTypes;
-    
+
+    private final Set<Pair<DestinationType, StatisticType>> storedTypes;
+
     /**
      * Returns <code>true</code> if a writer is available for the specified types, otherwise <code>false</code>.
      * 
@@ -45,12 +45,12 @@ public class SharedStatisticsWriters implements Closeable,
      * @throws NullPointerException if either input is null
      */
 
-    public boolean contains( StatisticType type, DestinationType format  )
+    public boolean contains( StatisticType type, DestinationType format )
     {
         Objects.requireNonNull( type, "Specify a non-null type to test." );
-        
+
         Objects.requireNonNull( format, "Specify a non-null format to test." );
-        
+
         return storedTypes.contains( Pair.of( format, type ) );
     }
 
@@ -63,8 +63,8 @@ public class SharedStatisticsWriters implements Closeable,
     /**
      * Use a builder to add writers.
      */
-    
-    public static class SharedWritersBuilder 
+
+    public static class SharedWritersBuilder
     {
 
         /**
@@ -85,14 +85,14 @@ public class SharedStatisticsWriters implements Closeable,
          * 
          * @return a container for sharing writers
          */
-        
+
         public SharedStatisticsWriters build()
         {
             return new SharedStatisticsWriters( this );
         }
     }
-    
-    
+
+
     /**
      * Hidden constructor.
      * 
@@ -103,15 +103,15 @@ public class SharedStatisticsWriters implements Closeable,
     {
         // Set
         this.netcdfOutputWriter = builder.netcdfOutputWriter;
-        
+
         // Register the stored types
-        Set<Pair<DestinationType,StatisticType>> localTypes = new HashSet<>();
-        
-        if( Objects.nonNull( this.getNetcdfOutputWriter() ) )
+        Set<Pair<DestinationType, StatisticType>> localTypes = new HashSet<>();
+
+        if ( Objects.nonNull( this.getNetcdfOutputWriter() ) )
         {
             localTypes.add( Pair.of( DestinationType.NETCDF, StatisticType.DOUBLE_SCORE ) );
         }
-        
+
         this.storedTypes = Collections.unmodifiableSet( localTypes );
     }
 
@@ -123,7 +123,7 @@ public class SharedStatisticsWriters implements Closeable,
      */
 
     @Override
-    public void accept( ListOfStatistics<DoubleScoreStatistic> metricOutput )
+    public void accept( List<DoubleScoreStatistic> metricOutput )
     {
         if ( Objects.nonNull( this.netcdfOutputWriter ) )
         {

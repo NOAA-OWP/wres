@@ -14,7 +14,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import wres.datamodel.MetricConstants.StatisticType;
-import wres.datamodel.statistics.ListOfStatistics.ListOfStatisticsBuilder;
 
 /**
  * <p>An immutable store of {@link Statistic} associated with a verification project.</p>
@@ -33,83 +32,83 @@ public class StatisticsForProject
      * Thread safe map for {@link DoubleScoreStatistic}.
      */
 
-    private final List<Future<ListOfStatistics<DoubleScoreStatistic>>> doubleScore = new ArrayList<>();
+    private final List<Future<List<DoubleScoreStatistic>>> doubleScore = new ArrayList<>();
 
     /**
      * Thread safe map for {@link DurationScoreStatistic}.
      */
 
-    private final List<Future<ListOfStatistics<DurationScoreStatistic>>> durationScore = new ArrayList<>();
+    private final List<Future<List<DurationScoreStatistic>>> durationScore = new ArrayList<>();
 
     /**
      * Thread safe map for {@link DiagramStatistic}.
      */
 
-    private final List<Future<ListOfStatistics<DiagramStatistic>>> multiVector = new ArrayList<>();
+    private final List<Future<List<DiagramStatistic>>> multiVector = new ArrayList<>();
 
     /**
      * Thread safe map for {@link BoxPlotStatistics} for each pair within a pool.
      */
 
-    private final List<Future<ListOfStatistics<BoxPlotStatistics>>> boxplotPerPair = new ArrayList<>();
+    private final List<Future<List<BoxPlotStatistics>>> boxplotPerPair = new ArrayList<>();
 
     /**
      * Thread safe map for {@link BoxPlotStatistics} for each pool.
      */
 
-    private final List<Future<ListOfStatistics<BoxPlotStatistics>>> boxplotPerPool = new ArrayList<>();
+    private final List<Future<List<BoxPlotStatistics>>> boxplotPerPool = new ArrayList<>();
 
     /**
      * Thread safe map for {@link PairedStatistic}.
      */
 
-    private final List<Future<ListOfStatistics<PairedStatistic<Instant, Duration>>>> paired = new ArrayList<>();
+    private final List<Future<List<PairedStatistic<Instant, Duration>>>> paired = new ArrayList<>();
 
 
     /**
-     * Returns a {@link ListOfStatistics} of {@link DoubleScoreStatistic} or null if no output exists.
+     * Returns a {@link List} of {@link DoubleScoreStatistic} or null if no output exists.
      * 
      * @return the scalar output or null
      * @throws StatisticException if the output could not be retrieved
      * @throws InterruptedException if the retrieval was interrupted
      */
 
-    public ListOfStatistics<DoubleScoreStatistic> getDoubleScoreStatistics()
+    public List<DoubleScoreStatistic> getDoubleScoreStatistics()
             throws InterruptedException
     {
         return this.unwrap( StatisticType.DOUBLE_SCORE, this.doubleScore );
     }
 
     /**
-     * Returns a {@link ListOfStatistics} of {@link DurationScoreStatistic} or null if no output exists.
+     * Returns a {@link List} of {@link DurationScoreStatistic} or null if no output exists.
      * 
      * @return the scalar output or null
      * @throws StatisticException if the output could not be retrieved
      * @throws InterruptedException if the retrieval was interrupted
      */
 
-    public ListOfStatistics<DurationScoreStatistic> getDurationScoreStatistics()
+    public List<DurationScoreStatistic> getDurationScoreStatistics()
             throws InterruptedException
     {
         return this.unwrap( StatisticType.DURATION_SCORE, this.durationScore );
     }
 
     /**
-     * Returns a {@link ListOfStatistics} of {@link DiagramStatistic} or null if no output exists.
+     * Returns a {@link List} of {@link DiagramStatistic} or null if no output exists.
      * 
      * @return the multi-vector output or null
      * @throws StatisticException if the output could not be retrieved
      * @throws InterruptedException if the retrieval was interrupted
      */
 
-    public ListOfStatistics<DiagramStatistic> getMultiVectorStatistics()
+    public List<DiagramStatistic> getMultiVectorStatistics()
             throws InterruptedException
     {
         return this.unwrap( StatisticType.MULTIVECTOR, this.multiVector );
     }
 
     /**
-     * Returns a {@link ListOfStatistics} of {@link BoxPlotStatistics} per pair or null if no 
+     * Returns a {@link List} of {@link BoxPlotStatistics} per pair or null if no 
      * output exists.
      * 
      * @return the box plot output or null
@@ -117,13 +116,13 @@ public class StatisticsForProject
      * @throws InterruptedException if the retrieval was interrupted
      */
 
-    public ListOfStatistics<BoxPlotStatistics> getBoxPlotStatisticsPerPair() throws InterruptedException
+    public List<BoxPlotStatistics> getBoxPlotStatisticsPerPair() throws InterruptedException
     {
         return this.unwrap( StatisticType.BOXPLOT_PER_PAIR, this.boxplotPerPair );
     }
 
     /**
-     * Returns a {@link ListOfStatistics} of {@link BoxPlotStatistics} for each pool or null if no 
+     * Returns a {@link List} of {@link BoxPlotStatistics} for each pool or null if no 
      * output exists.
      * 
      * @return the box plot output or null
@@ -131,20 +130,20 @@ public class StatisticsForProject
      * @throws InterruptedException if the retrieval was interrupted
      */
 
-    public ListOfStatistics<BoxPlotStatistics> getBoxPlotStatisticsPerPool() throws InterruptedException
+    public List<BoxPlotStatistics> getBoxPlotStatisticsPerPool() throws InterruptedException
     {
         return this.unwrap( StatisticType.BOXPLOT_PER_POOL, this.boxplotPerPool );
     }
 
     /**
-     * Returns a {@link ListOfStatistics} of {@link PairedStatistic} or null if no output exists.
+     * Returns a {@link List} of {@link PairedStatistic} or null if no output exists.
      * 
      * @return the matrix output or null
      * @throws StatisticException if the output could not be retrieved
      * @throws InterruptedException if the retrieval was interrupted
      */
 
-    public ListOfStatistics<PairedStatistic<Instant, Duration>> getPairedStatistics()
+    public List<PairedStatistic<Instant, Duration>> getPairedStatistics()
             throws InterruptedException
     {
         return this.unwrap( StatisticType.PAIRED, this.paired );
@@ -232,42 +231,42 @@ public class StatisticsForProject
          * Thread safe map for {@link DoubleScoreStatistic}.
          */
 
-        private final ConcurrentLinkedQueue<Future<ListOfStatistics<DoubleScoreStatistic>>> doubleScoreInternal =
+        private final ConcurrentLinkedQueue<Future<List<DoubleScoreStatistic>>> doubleScoreInternal =
                 new ConcurrentLinkedQueue<>();
 
         /**
          * Thread safe map for {@link DurationScoreStatistic}.
          */
 
-        private final ConcurrentLinkedQueue<Future<ListOfStatistics<DurationScoreStatistic>>> durationScoreInternal =
+        private final ConcurrentLinkedQueue<Future<List<DurationScoreStatistic>>> durationScoreInternal =
                 new ConcurrentLinkedQueue<>();
 
         /**
          * Thread safe map for {@link DiagramStatistic}.
          */
 
-        private final ConcurrentLinkedQueue<Future<ListOfStatistics<DiagramStatistic>>> multiVectorInternal =
+        private final ConcurrentLinkedQueue<Future<List<DiagramStatistic>>> multiVectorInternal =
                 new ConcurrentLinkedQueue<>();
 
         /**
          * Thread safe map for {@link BoxPlotStatistics} for each pair.
          */
 
-        private final ConcurrentLinkedQueue<Future<ListOfStatistics<BoxPlotStatistics>>> boxplotPerPairInternal =
+        private final ConcurrentLinkedQueue<Future<List<BoxPlotStatistics>>> boxplotPerPairInternal =
                 new ConcurrentLinkedQueue<>();
 
         /**
          * Thread safe map for {@link BoxPlotStatistics} for each pool.
          */
 
-        private final ConcurrentLinkedQueue<Future<ListOfStatistics<BoxPlotStatistics>>> boxplotPerPoolInternal =
+        private final ConcurrentLinkedQueue<Future<List<BoxPlotStatistics>>> boxplotPerPoolInternal =
                 new ConcurrentLinkedQueue<>();
 
         /**
          * Thread safe map for {@link PairedStatistic}.
          */
 
-        private final ConcurrentLinkedQueue<Future<ListOfStatistics<PairedStatistic<Instant, Duration>>>> pairedInternal =
+        private final ConcurrentLinkedQueue<Future<List<PairedStatistic<Instant, Duration>>>> pairedInternal =
                 new ConcurrentLinkedQueue<>();
 
         /**
@@ -279,7 +278,7 @@ public class StatisticsForProject
          */
 
         public StatisticsForProjectBuilder
-                addDoubleScoreStatistics( Future<ListOfStatistics<DoubleScoreStatistic>> result )
+                addDoubleScoreStatistics( Future<List<DoubleScoreStatistic>> result )
         {
             doubleScoreInternal.add( result );
 
@@ -295,7 +294,7 @@ public class StatisticsForProject
          */
 
         public StatisticsForProjectBuilder
-                addDurationScoreStatistics( Future<ListOfStatistics<DurationScoreStatistic>> result )
+                addDurationScoreStatistics( Future<List<DurationScoreStatistic>> result )
         {
             durationScoreInternal.add( result );
 
@@ -311,7 +310,7 @@ public class StatisticsForProject
          */
 
         public StatisticsForProjectBuilder
-                addMultiVectorStatistics( Future<ListOfStatistics<DiagramStatistic>> result )
+                addMultiVectorStatistics( Future<List<DiagramStatistic>> result )
         {
             multiVectorInternal.add( result );
 
@@ -327,7 +326,7 @@ public class StatisticsForProject
          */
 
         public StatisticsForProjectBuilder
-                addBoxPlotStatisticsPerPair( Future<ListOfStatistics<BoxPlotStatistics>> result )
+                addBoxPlotStatisticsPerPair( Future<List<BoxPlotStatistics>> result )
         {
             boxplotPerPairInternal.add( result );
 
@@ -343,7 +342,7 @@ public class StatisticsForProject
          */
 
         public StatisticsForProjectBuilder
-                addBoxPlotStatisticsPerPool( Future<ListOfStatistics<BoxPlotStatistics>> result )
+                addBoxPlotStatisticsPerPool( Future<List<BoxPlotStatistics>> result )
         {
             boxplotPerPoolInternal.add( result );
 
@@ -359,7 +358,7 @@ public class StatisticsForProject
          */
 
         public StatisticsForProjectBuilder
-                addPairedStatistics( Future<ListOfStatistics<PairedStatistic<Instant, Duration>>> result )
+                addPairedStatistics( Future<List<PairedStatistic<Instant, Duration>>> result )
         {
             pairedInternal.add( result );
 
@@ -453,8 +452,8 @@ public class StatisticsForProject
      * @throws StatisticException if the result could not be produced
      */
 
-    private <T extends Statistic<?>> ListOfStatistics<T> unwrap( StatisticType statsGroup,
-                                                                 List<Future<ListOfStatistics<T>>> wrapped )
+    private <T extends Statistic<?>> List<T> unwrap( StatisticType statsGroup,
+                                                     List<Future<List<T>>> wrapped )
             throws InterruptedException
     {
         if ( wrapped.isEmpty() )
@@ -462,18 +461,15 @@ public class StatisticsForProject
             return null;
         }
 
-        ListOfStatisticsBuilder<T> builder = new ListOfStatisticsBuilder<>();
+        List<T> returnMe = new ArrayList<>();
 
-        // Sort the output list in metadata order
-        builder.setSorter( ( first, second ) -> first.getMetadata().compareTo( second.getMetadata() ) );
-
-        for ( Future<ListOfStatistics<T>> next : wrapped )
+        for ( Future<List<T>> next : wrapped )
         {
             try
             {
-                ListOfStatistics<T> result = next.get();
+                List<T> result = next.get();
 
-                result.forEach( builder::addStatistic );
+                returnMe.addAll( result );
             }
             catch ( ExecutionException e )
             {
@@ -485,7 +481,10 @@ public class StatisticsForProject
             }
         }
 
-        return builder.build();
+        // Sort the output list in metadata order
+        returnMe.sort( ( first, second ) -> first.getMetadata().compareTo( second.getMetadata() ) );
+
+        return Collections.unmodifiableList( returnMe );
     }
 
 

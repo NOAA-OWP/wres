@@ -2,6 +2,7 @@ package wres.engine.statistics.metric.discreteprobability;
 
 import java.util.Arrays;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
@@ -18,7 +19,6 @@ import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DoubleScoreStatistic;
-import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Diagram;
@@ -104,12 +104,10 @@ public class RelativeOperatingCharacteristicDiagram
                         
                 // Transformed pairs
                 SampleData<Pair<Boolean, Boolean>> transformed = Slicer.transform( s, transformer );
-                ListOfStatistics<DoubleScoreStatistic> out =
-                        roc.apply( transformed );
+                List<DoubleScoreStatistic> out = roc.apply( transformed );
                 //Store
-                pOD[i] = Slicer.filter( out, MetricConstants.PROBABILITY_OF_DETECTION ).getData().get( 0 ).getData();
+                pOD[i] = Slicer.filter( out, MetricConstants.PROBABILITY_OF_DETECTION ).get( 0 ).getData();
                 pOFD[i] = Slicer.filter( out, MetricConstants.PROBABILITY_OF_FALSE_DETECTION )
-                                .getData()
                                 .get( 0 )
                                 .getData();
             }

@@ -10,13 +10,12 @@ import org.jfree.data.xy.AbstractXYDataset;
 
 import wres.datamodel.Slicer;
 import wres.datamodel.statistics.DoubleScoreStatistic;
-import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.time.TimeWindow;
 import wres.util.TimeHelper;
 
 /**
- * An {@link AbstractXYDataset} that wraps a {@link ListOfStatistics} which contains a set of
+ * An {@link AbstractXYDataset} that wraps a {@link List} which contains a set of
  * {@link ScoreStatistic} for a single verification metric, indexed by forecast lead time and threshold. Slices the data
  * by lead time to form plots by threshold on the domain axis.
  * 
@@ -24,7 +23,7 @@ import wres.util.TimeHelper;
  */
 
 public class ScoreOutputByThresholdAndLeadXYDataset extends
-        WRESAbstractXYDataset<List<ListOfStatistics<DoubleScoreStatistic>>, ListOfStatistics<DoubleScoreStatistic>>
+        WRESAbstractXYDataset<List<List<DoubleScoreStatistic>>, List<DoubleScoreStatistic>>
 {
     private static final long serialVersionUID = 1598160458133121056L;
 
@@ -42,7 +41,7 @@ public class ScoreOutputByThresholdAndLeadXYDataset extends
      * @throws NullPointerException if any input is null
      */
 
-    public ScoreOutputByThresholdAndLeadXYDataset( final ListOfStatistics<DoubleScoreStatistic> input,
+    public ScoreOutputByThresholdAndLeadXYDataset( final List<DoubleScoreStatistic> input,
                                                    final ChronoUnit durationUnits )
     {
         super( input );
@@ -70,14 +69,14 @@ public class ScoreOutputByThresholdAndLeadXYDataset extends
      * The legend names are handled here with calls to {@link #setOverrideLegendName(int, String)} because the first
      * keys (the thresholds) will otherwise be lost when the data is populated.
      * 
-     * @param rawData the input data must be of type {@link ListOfStatistics} with generic
+     * @param rawData the input data must be of type {@link List} with generic
      *            {@link DoubleScoreStatistic}.
      */
     @Override
-    protected void preparePlotData( final ListOfStatistics<DoubleScoreStatistic> rawData )
+    protected void preparePlotData( final List<DoubleScoreStatistic> rawData )
     {
         //Cast the raw data input and check the size.
-        final List<ListOfStatistics<DoubleScoreStatistic>> data = new ArrayList<>();
+        final List<List<DoubleScoreStatistic>> data = new ArrayList<>();
         SortedSet<TimeWindow> timeWindows =
                 Slicer.discover( rawData, next -> next.getMetadata().getSampleMetadata().getTimeWindow() );
         for ( final TimeWindow lead : timeWindows )
@@ -90,7 +89,7 @@ public class ScoreOutputByThresholdAndLeadXYDataset extends
     @Override
     public int getItemCount(final int series)
     {
-        return getPlotData().get(series).getData().size();
+        return getPlotData().get(series).size();
     }
 
     @Override
@@ -98,7 +97,6 @@ public class ScoreOutputByThresholdAndLeadXYDataset extends
     {
         //Cannot allow all data (infinite) threshold. Use lower bound if this is a "BETWEEN" threshold
         final double test = getPlotData().get( series )
-                                         .getData()
                                          .get( item )
                                          .getMetadata()
                                          .getSampleMetadata()
@@ -122,7 +120,7 @@ public class ScoreOutputByThresholdAndLeadXYDataset extends
         {
             return null;
         }
-        return getPlotData().get(series).getData().get(item).getData();
+        return getPlotData().get(series).get(item).getData();
     }
 
     @Override

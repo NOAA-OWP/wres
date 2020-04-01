@@ -49,7 +49,6 @@ import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
-import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.Statistic;
@@ -190,7 +189,7 @@ public abstract class ChartEngineFactory
      * @return The {@link OutputTypeSelection} specifying the output type for the plot.  
      */
     private static <T extends Statistic<?>> ChartType determineChartType( ProjectConfig config,
-                                                                          ListOfStatistics<T> input,
+                                                                          List<T> input,
                                                                           OutputTypeSelection userSpecifiedOutputType )
     {
         //Pooling window case.
@@ -204,8 +203,7 @@ public abstract class ChartEngineFactory
         //specified type.
         if ( ( userSpecifiedOutputType == null ) || ( userSpecifiedOutputType == OutputTypeSelection.DEFAULT ) )
         {
-            return metricOutputGroupToDefaultChartTypeMap.get( input.getData()
-                                                                    .get( 0 )
+            return metricOutputGroupToDefaultChartTypeMap.get( input.get( 0 )
                                                                     .getMetadata()
                                                                     .getMetricID()
                                                                     .getMetricOutputGroup() );
@@ -245,11 +243,11 @@ public abstract class ChartEngineFactory
      * @param usedPlotType The plot type.
      * @return A single input slice for use in drawing the diagram.
      */
-    private static ListOfStatistics<DiagramStatistic> sliceInputForDiagram( Object inputKeyInstance,
-                                                                               final ListOfStatistics<DiagramStatistic> input,
+    private static List<DiagramStatistic> sliceInputForDiagram( Object inputKeyInstance,
+                                                                               final List<DiagramStatistic> input,
                                                                                OutputTypeSelection usedPlotType )
     {
-        ListOfStatistics<DiagramStatistic> inputSlice;
+        List<DiagramStatistic> inputSlice;
         if ( usedPlotType == OutputTypeSelection.LEAD_THRESHOLD )
         {
             inputSlice =
@@ -277,7 +275,7 @@ public abstract class ChartEngineFactory
      * @return the argument processor
      */
     private static WRESArgumentProcessor constructDiagramArguments( Object inputKeyInstance,
-                                                                    ListOfStatistics<DiagramStatistic> inputSlice,
+                                                                    List<DiagramStatistic> inputSlice,
                                                                     ChartType usedPlotType,
                                                                     ChronoUnit durationUnits )
     {
@@ -315,7 +313,7 @@ public abstract class ChartEngineFactory
      */
     private static WRESChartEngine
             processReliabilityDiagram( Object inputKeyInstance,
-                                       ListOfStatistics<DiagramStatistic> input,
+                                       List<DiagramStatistic> input,
                                        ChartType usedPlotType,
                                        String templateName,
                                        String overrideParametersStr,
@@ -326,7 +324,7 @@ public abstract class ChartEngineFactory
         int[] diagonalDataSourceIndices = null;
         String axisToSquareAgainstDomain = null;
 
-        final ListOfStatistics<DiagramStatistic> inputSlice =
+        final List<DiagramStatistic> inputSlice =
                 sliceInputForDiagram( inputKeyInstance, input, usedPlotType.getBasis() );
         WRESArgumentProcessor arguments =
                 constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType, durationUnits );
@@ -383,7 +381,7 @@ public abstract class ChartEngineFactory
     private static WRESChartEngine
             processROCDiagram(
                                Object inputKeyInstance,
-                               ListOfStatistics<DiagramStatistic> input,
+                               List<DiagramStatistic> input,
                                ChartType usedPlotType,
                                String templateName,
                                String overrideParametersStr,
@@ -394,7 +392,7 @@ public abstract class ChartEngineFactory
         int[] diagonalDataSourceIndices = null;
         String axisToSquareAgainstDomain = null;
 
-        final ListOfStatistics<DiagramStatistic> inputSlice =
+        final List<DiagramStatistic> inputSlice =
                 sliceInputForDiagram( inputKeyInstance, input, usedPlotType.getBasis() );
         WRESArgumentProcessor arguments =
                 constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType, durationUnits );
@@ -440,7 +438,7 @@ public abstract class ChartEngineFactory
      */
     private static WRESChartEngine
             processQQDiagram( Object inputKeyInstance,
-                              ListOfStatistics<DiagramStatistic> input,
+                              List<DiagramStatistic> input,
                               ChartType usedPlotType,
                               String templateName,
                               String overrideParametersStr,
@@ -451,7 +449,7 @@ public abstract class ChartEngineFactory
         int[] diagonalDataSourceIndices = null;
         String axisToSquareAgainstDomain = null;
 
-        final ListOfStatistics<DiagramStatistic> inputSlice =
+        final List<DiagramStatistic> inputSlice =
                 sliceInputForDiagram( inputKeyInstance, input, usedPlotType.getBasis() );
         WRESArgumentProcessor arguments =
                 constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType, durationUnits );
@@ -499,7 +497,7 @@ public abstract class ChartEngineFactory
      */
     private static WRESChartEngine
             processRankHistogram( Object inputKeyInstance,
-                                  ListOfStatistics<DiagramStatistic> input,
+                                  List<DiagramStatistic> input,
                                   ChartType usedPlotType,
                                   String templateName,
                                   String overrideParametersStr,
@@ -510,7 +508,7 @@ public abstract class ChartEngineFactory
         int[] diagonalDataSourceIndices = null;
         String axisToSquareAgainstDomain = null;
 
-        final ListOfStatistics<DiagramStatistic> inputSlice =
+        final List<DiagramStatistic> inputSlice =
                 sliceInputForDiagram( inputKeyInstance, input, usedPlotType.getBasis() );
         WRESArgumentProcessor arguments =
                 constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType, durationUnits );
@@ -555,7 +553,7 @@ public abstract class ChartEngineFactory
      */
     public static ConcurrentMap<Object, ChartEngine>
             buildMultiVectorOutputChartEngine( final ProjectConfig config, 
-                                               final ListOfStatistics<DiagramStatistic> input,
+                                               final List<DiagramStatistic> input,
                                                final OutputTypeSelection userSpecifiedPlotType,
                                                final String userSpecifiedTemplateResourceName,
                                                final String overrideParametersStr,
@@ -568,7 +566,7 @@ public abstract class ChartEngineFactory
         ChartType usedPlotType = determineChartType( config, input, userSpecifiedPlotType );
         
         // Find the metadata for the first element, which is sufficient here
-        StatisticMetadata meta = input.getData().get( 0 ).getMetadata();
+        StatisticMetadata meta = input.get( 0 ).getMetadata();
         
         String templateName = determineTemplate( meta.getMetricID(),
                                                  usedPlotType );
@@ -702,7 +700,7 @@ public abstract class ChartEngineFactory
      */
     public static Map<Pair<TimeWindow, OneOrTwoThresholds>, ChartEngine>
             buildBoxPlotChartEnginePerPool( final ProjectConfig config,
-                                            final ListOfStatistics<BoxPlotStatistics> input,
+                                            final List<BoxPlotStatistics> input,
                                             final String userSpecifiedTemplateResourceName,
                                             final String overrideParametersStr,
                                             final ChronoUnit durationUnits )
@@ -714,7 +712,7 @@ public abstract class ChartEngineFactory
         ChartType usedPlotType = determineChartType( config, input, null );
 
         // Find the metadata for the first element, which is sufficient here
-        StatisticMetadata meta = input.getData().get( 0 ).getMetadata();
+        StatisticMetadata meta = input.get( 0 ).getMetadata();
 
         String templateName = determineTemplate( meta.getMetricID(),
                                                  usedPlotType );
@@ -784,7 +782,7 @@ public abstract class ChartEngineFactory
         }
         
         //Determine the output type
-        ChartType usedPlotType = ChartEngineFactory.determineChartType( config, input, null );
+        ChartType usedPlotType = ChartEngineFactory.determineChartType( config, List.of( input ), null );
 
         // Find the metadata for the first element, which is sufficient here
         StatisticMetadata meta = input.getData().get( 0 ).getMetadata();
@@ -820,7 +818,7 @@ public abstract class ChartEngineFactory
      */
     public static ConcurrentMap<MetricConstants, ChartEngine>
             buildScoreOutputChartEngine( final ProjectConfig config, 
-                                         final ListOfStatistics<DoubleScoreStatistic> input,
+                                         final List<DoubleScoreStatistic> input,
                                          final OutputTypeSelection userSpecifiedPlotType,
                                          final String userSpecifiedTemplateResourceName,
                                          final String overrideParametersStr,
@@ -829,9 +827,9 @@ public abstract class ChartEngineFactory
     {
         final ConcurrentMap<MetricConstants, ChartEngine> results = new ConcurrentSkipListMap<>();
 
-        final Map<MetricConstants, ListOfStatistics<DoubleScoreStatistic>> slicedInput =
+        final Map<MetricConstants, List<DoubleScoreStatistic>> slicedInput =
                 Slicer.filterByMetricComponent( input );
-        for ( final Map.Entry<MetricConstants, ListOfStatistics<DoubleScoreStatistic>> entry : slicedInput.entrySet() )
+        for ( final Map.Entry<MetricConstants, List<DoubleScoreStatistic>> entry : slicedInput.entrySet() )
         {
             final ChartEngine engine = buildScoreOutputChartEngineForOneComponent( config,
                                                                                    entry.getValue(),
@@ -863,7 +861,7 @@ public abstract class ChartEngineFactory
      */
     private static ChartEngine
             buildScoreOutputChartEngineForOneComponent( final ProjectConfig config,
-                                                        final ListOfStatistics<DoubleScoreStatistic> input,
+                                                        final List<DoubleScoreStatistic> input,
                                                         final OutputTypeSelection userSpecifiedPlotType,
                                                         final String userSpecifiedTemplateResourceName,
                                                         final String overrideParametersStr,
@@ -874,7 +872,7 @@ public abstract class ChartEngineFactory
         ChartType usedPlotType = determineChartType( config, input, userSpecifiedPlotType );
         
         // Find the metadata for the first element, which is sufficient here
-        StatisticMetadata meta = input.getData().get( 0 ).getMetadata();
+        StatisticMetadata meta = input.get( 0 ).getMetadata();
         
         String templateName = determineTemplate( meta.getMetricID(),
                                                  usedPlotType );
@@ -945,7 +943,7 @@ public abstract class ChartEngineFactory
      */
     public static ChartEngine
             buildPairedInstantDurationChartEngine( final ProjectConfig config,
-                                                   final ListOfStatistics<PairedStatistic<Instant, Duration>> input,
+                                                   final List<PairedStatistic<Instant, Duration>> input,
                                                    final String userSpecifiedTemplateResourceName,
                                                    final String overrideParametersStr,
                                                    final ChronoUnit durationUnits )
@@ -955,7 +953,7 @@ public abstract class ChartEngineFactory
         ChartType usedPlotType = determineChartType( config, input, null );
         
         // Find the metadata for the first element, which is sufficient here
-        StatisticMetadata meta = input.getData().get( 0 ).getMetadata();
+        StatisticMetadata meta = input.get( 0 ).getMetadata();
         
         String templateName = determineTemplate( meta.getMetricID(),
                                                  usedPlotType );
@@ -1003,7 +1001,7 @@ public abstract class ChartEngineFactory
      */
     public static ChartEngine
             buildCategoricalDurationScoreChartEngine( final ProjectConfig config,
-                                                      ListOfStatistics<DurationScoreStatistic> input,
+                                                      List<DurationScoreStatistic> input,
                                                       final String userSpecifiedTemplateResourceName,
                                                       final String overrideParametersStr,
                                                       final ChronoUnit durationUnits )
@@ -1013,7 +1011,7 @@ public abstract class ChartEngineFactory
         ChartType usedPlotType = determineChartType( config, input, null );
         
         // Find the metadata for the first element, which is sufficient here
-        StatisticMetadata meta = input.getData().get( 0 ).getMetadata();
+        StatisticMetadata meta = input.get( 0 ).getMetadata();
         
         String templateName = determineTemplate( meta.getMetricID(),
                                                  usedPlotType );

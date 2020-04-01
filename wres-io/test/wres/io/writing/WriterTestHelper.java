@@ -29,7 +29,6 @@ import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
-import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
@@ -123,12 +122,12 @@ public class WriterTestHelper
     }
 
     /**
-     * Returns a {@link ListOfStatistics} containing {@link BoxPlotStatistics} for two pools of data.
+     * Returns a {@link List} containing {@link BoxPlotStatistics} for two pools of data.
      * 
      * @return a box plot per pool for two pools
      */
 
-    public static ListOfStatistics<BoxPlotStatistics> getBoxPlotPerPoolForTwoPools()
+    public static List<BoxPlotStatistics> getBoxPlotPerPoolForTwoPools()
     {
         // location id
         String LID = "JUNP1";
@@ -193,21 +192,21 @@ public class WriterTestHelper
                                                                                                 fakeMetadataTwo ) );
 
         // Fake output wrapper.
-        ListOfStatistics<BoxPlotStatistics> fakeOutputData =
-                ListOfStatistics.of( Arrays.asList( BoxPlotStatistics.of( fakeOutputsOne,
-                                                                          fakeMetadataOne ),
-                                                    BoxPlotStatistics.of( fakeOutputsTwo,
-                                                                          fakeMetadataTwo ) ) );
+        List<BoxPlotStatistics> fakeOutputData =
+                Arrays.asList( BoxPlotStatistics.of( fakeOutputsOne,
+                                                     fakeMetadataOne ),
+                               BoxPlotStatistics.of( fakeOutputsTwo,
+                                                     fakeMetadataTwo ) );
         return fakeOutputData;
     }
 
     /**
-     * Returns a {@link ListOfStatistics} containing {@link BoxPlotStatistics} for several pairs.
+     * Returns a {@link List} containing {@link BoxPlotStatistics} for several pairs.
      * 
      * @return a box plot per pair
      */
 
-    public static ListOfStatistics<BoxPlotStatistics> getBoxPlotPerPairForOnePool()
+    public static List<BoxPlotStatistics> getBoxPlotPerPairForOnePool()
     {
         // location id
         String LID = "JUNP1";
@@ -260,21 +259,21 @@ public class WriterTestHelper
                                               MetricDimension.OBSERVED_VALUE ) );
 
         // Fake output wrapper.
-        ListOfStatistics<BoxPlotStatistics> fakeOutputData =
-                ListOfStatistics.of( Collections.singletonList( BoxPlotStatistics.of( fakeOutputs,
-                                                                                      fakeMetadata ) ) );
+        List<BoxPlotStatistics> fakeOutputData =
+                Collections.singletonList( BoxPlotStatistics.of( fakeOutputs,
+                                                                 fakeMetadata ) );
 
         return fakeOutputData;
     }
 
     /**
-     * Returns a {@link ListOfStatistics} containing a {@link DiagramStatistic} that 
+     * Returns a {@link List} containing a {@link DiagramStatistic} that 
      * represents the output of a reliability diagram for one pool.
      * 
      * @return a reliability diagram for one pool
      */
 
-    public static ListOfStatistics<DiagramStatistic> getReliabilityDiagramForOnePool()
+    public static List<DiagramStatistic> getReliabilityDiagramForOnePool()
     {
 
         // location id
@@ -316,20 +315,20 @@ public class WriterTestHelper
         fakeOutputs.put( MetricDimension.SAMPLE_SIZE, VectorOfDoubles.of( 5926, 371, 540, 650, 1501 ) );
 
         // Fake output wrapper.
-        ListOfStatistics<DiagramStatistic> fakeOutputData =
-                ListOfStatistics.of( Collections.singletonList( DiagramStatistic.of( fakeOutputs, fakeMetadata ) ) );
+        List<DiagramStatistic> fakeOutputData =
+                Collections.singletonList( DiagramStatistic.of( fakeOutputs, fakeMetadata ) );
 
         return fakeOutputData;
     }
 
     /**
-     * Returns a {@link ListOfStatistics} containing a {@link PairedStatistic} that 
+     * Returns a {@link List} containing a {@link PairedStatistic} that 
      * represents the output of time-to-peak error for each pair in a pool.
      * 
      * @return time time-to-peak errors for one pool
      */
 
-    public static ListOfStatistics<PairedStatistic<Instant, Duration>> getTimeToPeakErrorsForOnePool()
+    public static List<PairedStatistic<Instant, Duration>> getTimeToPeakErrorsForOnePool()
     {
 
         // location id
@@ -368,20 +367,17 @@ public class WriterTestHelper
         fakeOutputs.add( Pair.of( Instant.parse( "1985-01-03T00:00:00Z" ), Duration.ofHours( 3 ) ) );
 
         // Fake output wrapper.
-        ListOfStatistics<PairedStatistic<Instant, Duration>> fakeOutputData =
-                ListOfStatistics.of( Collections.singletonList( PairedStatistic.of( fakeOutputs, fakeMetadata ) ) );
-
-        return fakeOutputData;
+        return Collections.singletonList( PairedStatistic.of( fakeOutputs, fakeMetadata ) );
     }
 
     /**
-     * Returns a {@link ListOfStatistics} containing a {@link DoubleScoreStatistic} that 
+     * Returns a {@link List} containing a {@link DoubleScoreStatistic} that 
      * represents the output of several score statistics for one pool.
      * 
      * @return several score statistics for one pool
      */
 
-    public static ListOfStatistics<DoubleScoreStatistic> getScoreStatisticsForOnePool()
+    public static List<DoubleScoreStatistic> getScoreStatisticsForOnePool()
     {
 
         // location id
@@ -431,21 +427,17 @@ public class WriterTestHelper
         fakeOutputs.add( DoubleScoreStatistic.of( 2.0, fakeMetadataB ) );
         fakeOutputs.add( DoubleScoreStatistic.of( 3.0, fakeMetadataC ) );
 
-        // Fake output wrapper.
-        ListOfStatistics<DoubleScoreStatistic> fakeOutputData =
-                ListOfStatistics.of( fakeOutputs );
-
-        return fakeOutputData;
+        return Collections.unmodifiableList( fakeOutputs );
     }
 
     /**
-     * Returns a {@link ListOfStatistics} containing a {@link DurationScoreStatistic} that 
+     * Returns a {@link List} containing a {@link DurationScoreStatistic} that 
      * represents the summary statistics of the time-to-peak-errors for one pool.
      * 
      * @return the summary statistics of time-to-peak errors for one pool
      */
 
-    public static ListOfStatistics<DurationScoreStatistic> getDurationScoreStatisticsForOnePool()
+    public static List<DurationScoreStatistic> getDurationScoreStatisticsForOnePool()
     {
 
         // location id
@@ -481,22 +473,18 @@ public class WriterTestHelper
         fakeOutputs.put( MetricConstants.MAXIMUM, Duration.ofHours( 3 ) );
 
         // Fake output wrapper.
-        ListOfStatistics<DurationScoreStatistic> fakeOutputData =
-                ListOfStatistics.of( Collections.singletonList( DurationScoreStatistic.of( fakeOutputs,
-                                                                                           fakeMetadata ) ) );
-
-        return fakeOutputData;
+        return Collections.singletonList( DurationScoreStatistic.of( fakeOutputs, fakeMetadata ) );
     }
 
     /**
-     * Returns a {@link ListOfStatistics} containing a {@link DoubleScoreStatistic} that 
+     * Returns a {@link List} containing a {@link DoubleScoreStatistic} that 
      * represents the output of one score statistic for several pools of data, including
      * missing values for some pools.
      * 
      * @return one score statistics for several pools
      */
 
-    public static ListOfStatistics<DoubleScoreStatistic> getScoreStatisticsForThreePoolsWithMissings()
+    public static List<DoubleScoreStatistic> getScoreStatisticsForThreePoolsWithMissings()
     {
 
         // location id
@@ -558,10 +546,7 @@ public class WriterTestHelper
         DoubleScoreStatistic fakeOutputC = DoubleScoreStatistic.of( 1.0, fakeMetadataC );
 
         // Fake output wrapper.
-        ListOfStatistics<DoubleScoreStatistic> fakeOutputData =
-                ListOfStatistics.of( Arrays.asList( fakeOutputA, fakeOutputB, fakeOutputC ) );
-
-        return fakeOutputData;
+        return Arrays.asList( fakeOutputA, fakeOutputB, fakeOutputC );
     }
 
 }

@@ -23,7 +23,6 @@ import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.BoxPlotStatistics;
-import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -169,7 +168,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param durationUnits the time units for durations
      * @throws NullPointerException if the displayedPlotInput or the durationUnits are null
      */
-    public <T extends Statistic<?>> WRESArgumentProcessor( final ListOfStatistics<T> displayedPlotInput,
+    public <T extends Statistic<?>> WRESArgumentProcessor( final List<T> displayedPlotInput,
                                                            final ChartType plotType,
                                                            final ChronoUnit durationUnits )
     {
@@ -181,7 +180,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
 
         this.durationUnits = durationUnits;
 
-        StatisticMetadata meta = displayedPlotInput.getData().get( 0 ).getMetadata();
+        StatisticMetadata meta = displayedPlotInput.get( 0 ).getMetadata();
         extractStandardArgumentsFromMetadata( meta );
 
         // Assemble a collection of smaller time windows where necessary
@@ -304,10 +303,10 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param displayedPlotInput the plot input
      * @param plotTimeWindow the time window
      */
-    public <T extends Statistic<?>> void addLeadThresholdArguments( ListOfStatistics<T> displayedPlotInput,
+    public <T extends Statistic<?>> void addLeadThresholdArguments( List<T> displayedPlotInput,
                                            TimeWindow plotTimeWindow )
     {
-        final StatisticMetadata meta = displayedPlotInput.getData().get( 0 ).getMetadata();
+        final StatisticMetadata meta = displayedPlotInput.get( 0 ).getMetadata();
 
         final String legendTitle = "Threshold";
         String legendUnitsText = "";
@@ -340,7 +339,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param displayedPlotInput the plot input
      * @param threshold the threshold
      */
-    public <T extends Statistic<?>> void addThresholdLeadArguments( ListOfStatistics<T> displayedPlotInput,
+    public <T extends Statistic<?>> void addThresholdLeadArguments( List<T> displayedPlotInput,
                                            OneOrTwoThresholds threshold )
     {
 
@@ -374,9 +373,9 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param <T> the output type
      * @param displayedPlotInput the plot input
      */
-    public <T extends Statistic<?>> void addPoolingWindowArguments(ListOfStatistics<T> displayedPlotInput )
+    public <T extends Statistic<?>> void addPoolingWindowArguments(List<T> displayedPlotInput )
     {
-        final StatisticMetadata meta = displayedPlotInput.getData().get( 0 ).getMetadata();
+        final StatisticMetadata meta = displayedPlotInput.get( 0 ).getMetadata();
         
         String durationUnitsString = "[" + this.getDurationUnits().name().toUpperCase() + "]";
         
@@ -409,9 +408,9 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param <T> the output type
      * @param displayedPlotInput the plot input
      */
-    public <T extends Statistic<?>> void addTimeToPeakArguments(ListOfStatistics<T> displayedPlotInput )
+    public <T extends Statistic<?>> void addTimeToPeakArguments(List<T> displayedPlotInput )
     {
-        final StatisticMetadata meta = displayedPlotInput.getData().get( 0 ).getMetadata();
+        final StatisticMetadata meta = displayedPlotInput.get( 0 ).getMetadata();
         addArgument( "legendTitle", "Threshold " );
         addArgument( "legendUnitsText", "[" + meta.getSampleMetadata().getMeasurementUnit() + "]" );
     }

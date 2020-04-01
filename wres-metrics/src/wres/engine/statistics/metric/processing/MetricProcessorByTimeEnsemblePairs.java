@@ -3,6 +3,7 @@ package wres.engine.statistics.metric.processing;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -31,7 +32,6 @@ import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DoubleScoreStatistic;
-import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.statistics.Statistic;
@@ -667,7 +667,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
      * @return the future result
      */
 
-    private <T extends Statistic<?>> Future<ListOfStatistics<T>>
+    private <T extends Statistic<?>> Future<List<T>>
             processDiscreteProbabilityPairs( SampleData<Pair<Probability, Probability>> pairs,
                                              MetricCollection<SampleData<Pair<Probability, Probability>>, T, T> collection,
                                              Set<MetricConstants> ignoreTheseMetrics )
@@ -688,7 +688,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
      * @return the future result
      */
 
-    private <T extends Statistic<?>> Future<ListOfStatistics<T>>
+    private <T extends Statistic<?>> Future<List<T>>
             processEnsemblePairs( SampleData<Pair<Double, Ensemble>> pairs,
                                   MetricCollection<SampleData<Pair<Double, Ensemble>>, T, T> collection,
                                   Set<MetricConstants> ignoreTheseMetrics )

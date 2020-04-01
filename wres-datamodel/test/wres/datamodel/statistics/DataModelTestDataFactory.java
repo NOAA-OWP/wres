@@ -3,7 +3,10 @@ package wres.datamodel.statistics;
 import java.io.File;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 
 import org.junit.Assert;
 
@@ -21,7 +24,6 @@ import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.statistics.ListOfStatistics.ListOfStatisticsBuilder;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -39,27 +41,27 @@ public final class DataModelTestDataFactory
     /**
      * Second time for testing.
      */
-    
+
     private static final String SECOND_TIME = "2010-12-31T11:59:59Z";
-    
+
     /**
      * First time for testing.
      */
-    
+
     private static final String FIRST_TIME = "1985-01-01T00:00:00Z";
 
     /**
-     * Returns a {@link ListOfStatistics} of {@link ScoreStatistic} comprising the CRPSS for selected
+     * Returns a {@link List} of {@link ScoreStatistic} comprising the CRPSS for selected
      * thresholds and forecast lead times. Reads the input data from
      * testinput/wres/datamodel/metric/getScalarMetricOutputOne.xml.
      * 
      * @return an output map of verification scores
      */
 
-    public static ListOfStatistics<DoubleScoreStatistic> getScalarMetricOutputOne()
+    public static List<DoubleScoreStatistic> getScalarMetricOutputOne()
     {
 
-        ListOfStatisticsBuilder<DoubleScoreStatistic> builder = new ListOfStatisticsBuilder<>();
+        List<DoubleScoreStatistic> statistics = new ArrayList<>();
 
         try
         {
@@ -69,7 +71,7 @@ public final class DataModelTestDataFactory
             final MetricResultByLeadTime data = ProductFileIO.read( resultFile );
 
             final Iterator<MetricResultKey> d = data.getIterator();
-            
+
             //Source metadata
             final SampleMetadata source = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                              DatasetIdentifier.of( Location.of( "DRRC2" ),
@@ -113,7 +115,7 @@ public final class DataModelTestDataFactory
                                                                            MetricConstants.MAIN ) );
 
                     //Append result
-                    builder.addStatistic( value );
+                    statistics.add( value );
                 }
 
             }
@@ -123,20 +125,21 @@ public final class DataModelTestDataFactory
         {
             Assert.fail( "Test failed : " + e.getMessage() );
         }
-        return builder.build();
+        
+        return Collections.unmodifiableList( statistics );
     }
 
     /**
-     * Returns a {@link ListOfStatistics} of {@link ScoreStatistic} comprising the MAE for selected
+     * Returns a {@link List} of {@link ScoreStatistic} comprising the MAE for selected
      * thresholds and forecast lead times using fake data.
      * 
      * @return an output map of verification scores
      */
 
-    public static ListOfStatistics<DoubleScoreStatistic> getScalarMetricOutputTwo()
+    public static List<DoubleScoreStatistic> getScalarMetricOutputTwo()
     {
 
-        ListOfStatisticsBuilder<DoubleScoreStatistic> builder = new ListOfStatisticsBuilder<>();
+        List<DoubleScoreStatistic> statistics = new ArrayList<>();
 
         //Fake metadata
         final SampleMetadata source = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
@@ -165,13 +168,14 @@ public final class DataModelTestDataFactory
                                                          ThresholdDataType.LEFT ) );
 
             DoubleScoreStatistic firstValue =
-                    DoubleScoreStatistic.of( 66.0, StatisticMetadata.of( SampleMetadata.of( source, timeWindow, first ),
-                                                                         1000,
-                                                                         MeasurementUnit.of(),
-                                                                         MetricConstants.MEAN_ABSOLUTE_ERROR,
-                                                                         MetricConstants.MAIN ) );
+                    DoubleScoreStatistic.of( 66.0,
+                                             StatisticMetadata.of( SampleMetadata.of( source, timeWindow, first ),
+                                                                   1000,
+                                                                   MeasurementUnit.of(),
+                                                                   MetricConstants.MEAN_ABSOLUTE_ERROR,
+                                                                   MetricConstants.MAIN ) );
 
-            builder.addStatistic( firstValue );
+            statistics.add( firstValue );
 
 
             // Add second result
@@ -185,13 +189,14 @@ public final class DataModelTestDataFactory
                                                          ThresholdDataType.LEFT ) );
 
             DoubleScoreStatistic secondValue =
-                    DoubleScoreStatistic.of( 67.0, StatisticMetadata.of( SampleMetadata.of( source, timeWindow, second ),
-                                                                         1000,
-                                                                         MeasurementUnit.of(),
-                                                                         MetricConstants.MEAN_ABSOLUTE_ERROR,
-                                                                         MetricConstants.MAIN ) );
+                    DoubleScoreStatistic.of( 67.0,
+                                             StatisticMetadata.of( SampleMetadata.of( source, timeWindow, second ),
+                                                                   1000,
+                                                                   MeasurementUnit.of(),
+                                                                   MetricConstants.MEAN_ABSOLUTE_ERROR,
+                                                                   MetricConstants.MAIN ) );
 
-            builder.addStatistic( secondValue );
+            statistics.add( secondValue );
 
 
             // Add third result
@@ -206,31 +211,32 @@ public final class DataModelTestDataFactory
 
 
             DoubleScoreStatistic thirdValue =
-                    DoubleScoreStatistic.of( 68.0, StatisticMetadata.of( SampleMetadata.of( source, timeWindow, third ),
-                                                                         1000,
-                                                                         MeasurementUnit.of(),
-                                                                         MetricConstants.MEAN_ABSOLUTE_ERROR,
-                                                                         MetricConstants.MAIN ) );
+                    DoubleScoreStatistic.of( 68.0,
+                                             StatisticMetadata.of( SampleMetadata.of( source, timeWindow, third ),
+                                                                   1000,
+                                                                   MeasurementUnit.of(),
+                                                                   MetricConstants.MEAN_ABSOLUTE_ERROR,
+                                                                   MetricConstants.MAIN ) );
 
-            builder.addStatistic( thirdValue );
+            statistics.add( thirdValue );
 
         }
 
-        return builder.build();
+        return Collections.unmodifiableList( statistics );
     }
 
     /**
-     * Returns a {@link ListOfStatistics} of {@link DoubleScoreStatistic} comprising the CRPSS for selected
+     * Returns a {@link List} of {@link DoubleScoreStatistic} comprising the CRPSS for selected
      * thresholds and forecast lead times. Reads the input data from
      * testinput/wres/datamodel/metric/getVectorMetricOutputOne.xml.
      * 
      * @return an output map of verification scores
      */
 
-    public static ListOfStatistics<DoubleScoreStatistic> getVectorMetricOutputOne()
+    public static List<DoubleScoreStatistic> getVectorMetricOutputOne()
     {
 
-        final ListOfStatisticsBuilder<DoubleScoreStatistic> builder = new ListOfStatisticsBuilder<>();
+        final List<DoubleScoreStatistic> statistics = new ArrayList<>();
         try
         {
             //Create the input file
@@ -276,15 +282,15 @@ public final class DataModelTestDataFactory
                     final double[] res = ( (DoubleMatrix1DResult) result ).getResult().toArray();
                     final DoubleScoreStatistic value =
                             DoubleScoreStatistic.of( res,
-                                                  MetricGroup.CR_POT,
-                                                  StatisticMetadata.of( SampleMetadata.of( source, timeWindow, q ),
-                                                                        1000,
-                                                                        MeasurementUnit.of(),
-                                                                        MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
-                                                                        MetricConstants.CR_POT ) );
+                                                     MetricGroup.CR_POT,
+                                                     StatisticMetadata.of( SampleMetadata.of( source, timeWindow, q ),
+                                                                           1000,
+                                                                           MeasurementUnit.of(),
+                                                                           MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
+                                                                           MetricConstants.CR_POT ) );
 
                     //Append result
-                    builder.addStatistic( value );
+                    statistics.add( value );
                 }
 
             }
@@ -294,13 +300,16 @@ public final class DataModelTestDataFactory
         {
             Assert.fail( "Test failed : " + e.getMessage() );
         }
-        return builder.build();
+
+        return Collections.unmodifiableList( statistics );
     }
-    
+
     /**
      * Do not construct.
      */
-    
-    private DataModelTestDataFactory() {}
+
+    private DataModelTestDataFactory()
+    {
+    }
 
 }

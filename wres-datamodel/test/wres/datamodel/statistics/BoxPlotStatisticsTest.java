@@ -1,9 +1,9 @@
 package wres.datamodel.statistics;
 
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -257,7 +257,6 @@ public final class BoxPlotStatisticsTest
     public void testAccessors()
     {
         assertTrue( basic.getData().size() == 10 );
-        assertTrue( basic.iterator().hasNext() );
     }
 
 

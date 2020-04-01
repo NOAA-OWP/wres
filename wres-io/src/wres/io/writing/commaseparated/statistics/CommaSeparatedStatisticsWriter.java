@@ -19,7 +19,7 @@ import java.util.StringJoiner;
 import wres.config.ProjectConfigException;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.statistics.ListOfStatistics;
+import wres.datamodel.statistics.Statistic;
 import wres.datamodel.time.TimeWindow;
 import wres.io.writing.commaseparated.CommaSeparatedUtilities;
 import wres.util.TimeHelper;
@@ -223,21 +223,21 @@ abstract class CommaSeparatedStatisticsWriter
     /**
      * Returns the first instance of {@link SampleMetadata} discovered in the input or <code>null</code>.
      * 
+     * @param <T> the type of statistic
      * @param statistic the list of statistics
      * @return the first sample metadata or null
      * @throws NullPointerException if the input is null
      */
 
-    static SampleMetadata getSampleMetadataFromListOfStatistics( ListOfStatistics<?> statistic )
+    static <T extends Statistic<?>> SampleMetadata getSampleMetadataFromListOfStatistics( List<T> statistic )
     {
         Objects.requireNonNull( statistic );
 
         SampleMetadata returnMe = null;
 
-        if ( !statistic.getData().isEmpty() )
+        if ( !statistic.isEmpty() )
         {
-            returnMe = statistic.getData()
-                                .get( 0 )
+            returnMe = statistic.get( 0 )
                                 .getMetadata()
                                 .getSampleMetadata();
         }

@@ -23,7 +23,6 @@ import wres.config.generated.DestinationConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
-import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.io.config.ConfigHelper;
@@ -38,7 +37,7 @@ import wres.vis.ChartEngineFactory;
  */
 
 public class PNGPairedWriter extends PNGWriter
-        implements Consumer<ListOfStatistics<PairedStatistic<Instant, Duration>>>,
+        implements Consumer<List<PairedStatistic<Instant, Duration>>>,
         Supplier<Set<Path>>
 {
     private Set<Path> pathsWrittenTo = new HashSet<>();
@@ -72,7 +71,7 @@ public class PNGPairedWriter extends PNGWriter
      */
 
     @Override
-    public void accept( final ListOfStatistics<PairedStatistic<Instant, Duration>> output )
+    public void accept( final List<PairedStatistic<Instant, Duration>> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
@@ -88,13 +87,13 @@ public class PNGPairedWriter extends PNGWriter
             SortedSet<MetricConstants> metrics = Slicer.discover( output, meta -> meta.getMetadata().getMetricID() );
             for ( MetricConstants next : metrics )
             {
-                ListOfStatistics<PairedStatistic<Instant, Duration>> filtered = Slicer.filter( output, next );
+                List<PairedStatistic<Instant, Duration>> filtered = Slicer.filter( output, next );
 
                 // Group the statistics by the LRB context in which they appear. There will be one path written
                 // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
                 // each window with LeftOrRightOrBaseline.BASELINE data): #48287
                 Map<LeftOrRightOrBaseline, List<PairedStatistic<Instant, Duration>>> groups =
-                        WriterHelper.getStatisticsGroupedByContext( filtered.getData() );
+                        WriterHelper.getStatisticsGroupedByContext( filtered );
 
                 for ( List<PairedStatistic<Instant, Duration>> nextGroup : groups.values() )
                 {
@@ -103,7 +102,7 @@ public class PNGPairedWriter extends PNGWriter
                                                                                       super.getOutputDirectory(),
                                                                                       super.getProjectConfigPlus(),
                                                                                       destinationConfig,
-                                                                                      ListOfStatistics.of( nextGroup ),
+                                                                                      nextGroup,
                                                                                       super.getDurationUnits() );
                     this.pathsWrittenTo.addAll( innerPathsWrittenTo );
                 }
@@ -126,7 +125,7 @@ public class PNGPairedWriter extends PNGWriter
 
     /**
      * Writes a set of charts associated with {@link PairedStatistic} for a single metric and time window,
-     * stored in a {@link ListOfStatistics}.
+     * stored in a {@link List}.
      *
      * @param systemSettings The system settings to use.
      * @param outputDirectory the directory into which to write
@@ -142,7 +141,7 @@ public class PNGPairedWriter extends PNGWriter
                                                                        Path outputDirectory,
                                                                        ProjectConfigPlus projectConfigPlus,
                                                                        DestinationConfig destinationConfig,
-                                                                       ListOfStatistics<PairedStatistic<Instant, Duration>> output,
+                                                                       List<PairedStatistic<Instant, Duration>> output,
                                                                        ChronoUnit durationUnits )
     {
         Set<Path> pathsWrittenTo = new HashSet<>();
@@ -150,7 +149,7 @@ public class PNGPairedWriter extends PNGWriter
         // Build charts
         try
         {
-            StatisticMetadata meta = output.getData().get( 0 ).getMetadata();
+            StatisticMetadata meta = output.get( 0 ).getMetadata();
 
             GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, meta.getMetricID() );
 
