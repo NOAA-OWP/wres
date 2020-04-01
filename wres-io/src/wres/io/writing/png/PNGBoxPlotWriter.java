@@ -28,7 +28,6 @@ import wres.datamodel.Slicer;
 import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.BoxPlotStatistics;
-import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindow;
@@ -44,7 +43,7 @@ import wres.vis.ChartEngineFactory;
  */
 
 public class PNGBoxPlotWriter extends PNGWriter
-        implements Consumer<ListOfStatistics<BoxPlotStatistics>>,
+        implements Consumer<List<BoxPlotStatistics>>,
         Supplier<Set<Path>>
 {
     private Set<Path> pathsWrittenTo = new HashSet<>();
@@ -78,14 +77,14 @@ public class PNGBoxPlotWriter extends PNGWriter
      */
 
     @Override
-    public void accept( final ListOfStatistics<BoxPlotStatistics> output )
+    public void accept( final List<BoxPlotStatistics> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
-        
+
         this.writeBoxPlotsPerPair( output );
         this.writeBoxPlotsPerPool( output );
     }
-    
+
     /**
      * Writes all output for the {@link StatisticType#BOXPLOT_PER_PAIR}.
      *
@@ -94,7 +93,7 @@ public class PNGBoxPlotWriter extends PNGWriter
      * @throws PNGWriteException if the output cannot be written
      */
 
-    private void writeBoxPlotsPerPair( ListOfStatistics<BoxPlotStatistics> output )
+    private void writeBoxPlotsPerPair( List<BoxPlotStatistics> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
@@ -107,20 +106,20 @@ public class PNGBoxPlotWriter extends PNGWriter
         {
 
             // Iterate through types per pair
-            ListOfStatistics<BoxPlotStatistics> perPair =
+            List<BoxPlotStatistics> perPair =
                     Slicer.filter( output, meta -> meta.getMetricID().isInGroup( StatisticType.BOXPLOT_PER_PAIR ) );
 
             SortedSet<MetricConstants> metricsPerPair =
                     Slicer.discover( perPair, meta -> meta.getMetadata().getMetricID() );
             for ( MetricConstants next : metricsPerPair )
             {
-                ListOfStatistics<BoxPlotStatistics> filtered = Slicer.filter( perPair, next );
+                List<BoxPlotStatistics> filtered = Slicer.filter( perPair, next );
 
                 // Group the statistics by the LRB context in which they appear. There will be one path written
                 // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
                 // each window with LeftOrRightOrBaseline.BASELINE data): #48287
                 Map<LeftOrRightOrBaseline, List<BoxPlotStatistics>> groups =
-                        WriterHelper.getStatisticsGroupedByContext( filtered.getData() );
+                        WriterHelper.getStatisticsGroupedByContext( filtered );
 
                 for ( List<BoxPlotStatistics> nextGroup : groups.values() )
                 {
@@ -129,14 +128,14 @@ public class PNGBoxPlotWriter extends PNGWriter
                                                                                    super.getOutputDirectory(),
                                                                                    super.getProjectConfigPlus(),
                                                                                    destinationConfig,
-                                                                                   ListOfStatistics.of( nextGroup ),
+                                                                                   nextGroup,
                                                                                    super.getDurationUnits() );
                     this.pathsWrittenTo.addAll( innerPathsWrittenTo );
                 }
             }
         }
-    }    
-    
+    }
+
     /**
      * Writes all output for the {@link StatisticType#BOXPLOT_PER_POOL}.
      *
@@ -145,7 +144,7 @@ public class PNGBoxPlotWriter extends PNGWriter
      * @throws PNGWriteException if the output cannot be written
      */
 
-    private void writeBoxPlotsPerPool( ListOfStatistics<BoxPlotStatistics> output )
+    private void writeBoxPlotsPerPool( List<BoxPlotStatistics> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
@@ -158,20 +157,20 @@ public class PNGBoxPlotWriter extends PNGWriter
         {
 
             // Iterate through the pool types
-            ListOfStatistics<BoxPlotStatistics> perPool =
+            List<BoxPlotStatistics> perPool =
                     Slicer.filter( output, meta -> meta.getMetricID().isInGroup( StatisticType.BOXPLOT_PER_POOL ) );
 
             SortedSet<MetricConstants> metricsPerPool =
                     Slicer.discover( perPool, meta -> meta.getMetadata().getMetricID() );
             for ( MetricConstants next : metricsPerPool )
             {
-                ListOfStatistics<BoxPlotStatistics> filtered = Slicer.filter( perPool, next );
+                List<BoxPlotStatistics> filtered = Slicer.filter( perPool, next );
 
                 // Group the statistics by the LRB context in which they appear. There will be one path written
                 // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
                 // each window with LeftOrRightOrBaseline.BASELINE data): #48287
                 Map<LeftOrRightOrBaseline, List<BoxPlotStatistics>> groups =
-                        WriterHelper.getStatisticsGroupedByContext( filtered.getData() );
+                        WriterHelper.getStatisticsGroupedByContext( filtered );
 
                 for ( List<BoxPlotStatistics> nextGroup : groups.values() )
                 {
@@ -180,14 +179,14 @@ public class PNGBoxPlotWriter extends PNGWriter
                                                                             super.getOutputDirectory(),
                                                                             super.getProjectConfigPlus(),
                                                                             destinationConfig,
-                                                                            ListOfStatistics.of( nextGroup ),
+                                                                            nextGroup,
                                                                             super.getDurationUnits() );
                     this.pathsWrittenTo.addAll( innerPathsWrittenTo );
                 }
             }
         }
-    }      
-    
+    }
+
 
     /**
      * Return a snapshot of the paths written to (so far)
@@ -202,7 +201,7 @@ public class PNGBoxPlotWriter extends PNGWriter
     }
 
     /**
-     * Writes a separate box plot chart for each {@link BoxPlotStatistics} in the {@link ListOfStatistics}
+     * Writes a separate box plot chart for each {@link BoxPlotStatistics} in the {@link List}
      * provided. Each {@link BoxPlotStatistics} represents one metric result for one pool or 
      * {@link TimeWindow}.
      *
@@ -219,7 +218,7 @@ public class PNGBoxPlotWriter extends PNGWriter
                                                                    Path outputDirectory,
                                                                    ProjectConfigPlus projectConfigPlus,
                                                                    DestinationConfig destinationConfig,
-                                                                   ListOfStatistics<BoxPlotStatistics> output,
+                                                                   List<BoxPlotStatistics> output,
                                                                    ChronoUnit durationUnits )
     {
         Set<Path> pathsWrittenTo = new HashSet<>();
@@ -227,7 +226,7 @@ public class PNGBoxPlotWriter extends PNGWriter
         // Build charts
         try
         {
-            StatisticMetadata meta = output.getData().get( 0 ).getMetadata();
+            StatisticMetadata meta = output.get( 0 ).getMetadata();
 
             GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, meta.getMetricID() );
 
@@ -261,7 +260,7 @@ public class PNGBoxPlotWriter extends PNGWriter
     }
 
     /**
-     * Writes a single box plot chart for all {@link BoxPlotStatistics} in the {@link ListOfStatistics}
+     * Writes a single box plot chart for all {@link BoxPlotStatistics} in the {@link List}
      * provided.
      *
      * @param outputDirectory the directory into which to write
@@ -277,7 +276,7 @@ public class PNGBoxPlotWriter extends PNGWriter
                                                             Path outputDirectory,
                                                             ProjectConfigPlus projectConfigPlus,
                                                             DestinationConfig destinationConfig,
-                                                            ListOfStatistics<BoxPlotStatistics> output,
+                                                            List<BoxPlotStatistics> output,
                                                             ChronoUnit durationUnits )
     {
         Set<Path> pathsWrittenTo = new HashSet<>();
@@ -285,7 +284,7 @@ public class PNGBoxPlotWriter extends PNGWriter
         // Build chart
         try
         {
-            StatisticMetadata metadata = output.getData().get( 0 ).getMetadata();
+            StatisticMetadata metadata = output.get( 0 ).getMetadata();
 
             GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, metadata.getMetricID() );
 

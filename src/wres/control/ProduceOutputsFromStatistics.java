@@ -32,7 +32,6 @@ import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
-import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.Statistic;
@@ -102,42 +101,42 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
      * Store of consumers for processing {@link DoubleScoreStatistic} by {@link DestinationType} format.
      */
 
-    private final Map<DestinationType, Consumer<ListOfStatistics<DoubleScoreStatistic>>> doubleScoreConsumers =
+    private final Map<DestinationType, Consumer<List<DoubleScoreStatistic>>> doubleScoreConsumers =
             new EnumMap<>( DestinationType.class );
 
     /**
      * Store of consumers for processing {@link DurationScoreStatistic} by {@link DestinationType} format.
      */
 
-    private final Map<DestinationType, Consumer<ListOfStatistics<DurationScoreStatistic>>> durationScoreConsumers =
+    private final Map<DestinationType, Consumer<List<DurationScoreStatistic>>> durationScoreConsumers =
             new EnumMap<>( DestinationType.class );
 
     /**
      * Store of consumers for processing {@link DiagramStatistic} by {@link DestinationType} format.
      */
 
-    private final Map<DestinationType, Consumer<ListOfStatistics<DiagramStatistic>>> diagramConsumers =
+    private final Map<DestinationType, Consumer<List<DiagramStatistic>>> diagramConsumers =
             new EnumMap<>( DestinationType.class );
 
     /**
      * Store of consumers for processing {@link BoxPlotStatistics} by {@link DestinationType} format.
      */
 
-    private final Map<DestinationType, Consumer<ListOfStatistics<BoxPlotStatistics>>> boxPlotConsumersPerPair =
+    private final Map<DestinationType, Consumer<List<BoxPlotStatistics>>> boxPlotConsumersPerPair =
             new EnumMap<>( DestinationType.class );
 
     /**
      * Store of consumers for processing {@link BoxPlotStatistics} by {@link DestinationType} format.
      */
 
-    private final Map<DestinationType, Consumer<ListOfStatistics<BoxPlotStatistics>>> boxPlotConsumersPerPool =
+    private final Map<DestinationType, Consumer<List<BoxPlotStatistics>>> boxPlotConsumersPerPool =
             new EnumMap<>( DestinationType.class );
 
     /**
      * Store of consumers for processing {@link PairedStatistic} by {@link DestinationType} format.
      */
 
-    private final Map<DestinationType, Consumer<ListOfStatistics<PairedStatistic<Instant, Duration>>>> pairedConsumers =
+    private final Map<DestinationType, Consumer<List<PairedStatistic<Instant, Duration>>>> pairedConsumers =
             new EnumMap<>( DestinationType.class );
 
     /**
@@ -508,8 +507,8 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
                                                                            this.unitMapper,
                                                                            this.getResolvedProject()
                                                                                .getOutputDirectory() );
-            doubleScoreConsumers.put( DestinationType.NETCDF,
-                                      netcdfOutputWriter );
+            this.doubleScoreConsumers.put( DestinationType.NETCDF,
+                                           netcdfOutputWriter );
             this.writersToPaths.add( netcdfOutputWriter );
             this.resourcesToClose.add( netcdfOutputWriter );
         }
@@ -527,12 +526,12 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
      * @throws NullPointerException if the input is null
      */
 
-    private void processDiagramOutputs( ListOfStatistics<DiagramStatistic> outputs )
+    private void processDiagramOutputs( List<DiagramStatistic> outputs )
     {
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
         // Iterate through the consumers
-        for ( Entry<DestinationType, Consumer<ListOfStatistics<DiagramStatistic>>> next : this.diagramConsumers.entrySet() )
+        for ( Entry<DestinationType, Consumer<List<DiagramStatistic>>> next : this.diagramConsumers.entrySet() )
         {
             // Consume conditionally
             if ( this.writeWhenTrue.test( StatisticType.MULTIVECTOR, next.getKey() ) )
@@ -554,12 +553,12 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
      * @throws NullPointerException if the input is null
      */
 
-    private void processBoxPlotOutputsPerPair( ListOfStatistics<BoxPlotStatistics> outputs )
+    private void processBoxPlotOutputsPerPair( List<BoxPlotStatistics> outputs )
     {
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
         // Iterate through the consumers
-        for ( Entry<DestinationType, Consumer<ListOfStatistics<BoxPlotStatistics>>> next : this.boxPlotConsumersPerPair.entrySet() )
+        for ( Entry<DestinationType, Consumer<List<BoxPlotStatistics>>> next : this.boxPlotConsumersPerPair.entrySet() )
         {
             // Consume conditionally
             if ( this.writeWhenTrue.test( StatisticType.BOXPLOT_PER_PAIR, next.getKey() ) )
@@ -581,12 +580,12 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
      * @throws NullPointerException if the input is null
      */
 
-    private void processBoxPlotOutputsPerPool( ListOfStatistics<BoxPlotStatistics> outputs )
+    private void processBoxPlotOutputsPerPool( List<BoxPlotStatistics> outputs )
     {
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
         // Iterate through the consumers
-        for ( Entry<DestinationType, Consumer<ListOfStatistics<BoxPlotStatistics>>> next : this.boxPlotConsumersPerPool.entrySet() )
+        for ( Entry<DestinationType, Consumer<List<BoxPlotStatistics>>> next : this.boxPlotConsumersPerPool.entrySet() )
         {
             // Consume conditionally
             if ( this.writeWhenTrue.test( StatisticType.BOXPLOT_PER_POOL, next.getKey() ) )
@@ -608,12 +607,12 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
      * @throws NullPointerException if the input is null
      */
 
-    private void processDoubleScoreOutputs( ListOfStatistics<DoubleScoreStatistic> outputs )
+    private void processDoubleScoreOutputs( List<DoubleScoreStatistic> outputs )
     {
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
         // Iterate through the consumers
-        for ( Entry<DestinationType, Consumer<ListOfStatistics<DoubleScoreStatistic>>> next : this.doubleScoreConsumers.entrySet() )
+        for ( Entry<DestinationType, Consumer<List<DoubleScoreStatistic>>> next : this.doubleScoreConsumers.entrySet() )
         {
             // Consume conditionally
             if ( this.writeWhenTrue.test( StatisticType.DOUBLE_SCORE, next.getKey() ) )
@@ -636,12 +635,12 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
      * @throws NullPointerException if the input is null
      */
 
-    private void processDurationScoreOutputs( ListOfStatistics<DurationScoreStatistic> outputs )
+    private void processDurationScoreOutputs( List<DurationScoreStatistic> outputs )
     {
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
         // Iterate through the consumers
-        for ( Entry<DestinationType, Consumer<ListOfStatistics<DurationScoreStatistic>>> next : this.durationScoreConsumers.entrySet() )
+        for ( Entry<DestinationType, Consumer<List<DurationScoreStatistic>>> next : this.durationScoreConsumers.entrySet() )
         {
             // Consume conditionally
             if ( this.writeWhenTrue.test( StatisticType.DURATION_SCORE, next.getKey() ) )
@@ -664,12 +663,12 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
      */
 
     private void
-            processPairedOutputByInstantDuration( ListOfStatistics<PairedStatistic<Instant, Duration>> outputs )
+            processPairedOutputByInstantDuration( List<PairedStatistic<Instant, Duration>> outputs )
     {
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
         // Iterate through the consumers
-        for ( Entry<DestinationType, Consumer<ListOfStatistics<PairedStatistic<Instant, Duration>>>> next : this.pairedConsumers.entrySet() )
+        for ( Entry<DestinationType, Consumer<List<PairedStatistic<Instant, Duration>>>> next : this.pairedConsumers.entrySet() )
         {
             // Consume conditionally
             if ( this.writeWhenTrue.test( StatisticType.PAIRED, next.getKey() ) )
@@ -753,7 +752,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
      */
 
     private <T extends Statistic<?>> void
-            log( ListOfStatistics<T> output, DestinationType type, boolean startOfProcess )
+            log( List<T> output, DestinationType type, boolean startOfProcess )
     {
 
         String positionString = "Completed ";
@@ -762,14 +761,14 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
             positionString = "Started ";
         }
 
-        if ( !output.getData().isEmpty() )
+        if ( !output.isEmpty() )
         {
             LOGGER.debug( "{} processing of result type '{}' for '{}' "
                           + "at time window {}.",
                           positionString,
                           type,
-                          output.getData().get( 0 ).getMetadata().getSampleMetadata().getIdentifier(),
-                          output.getData().get( 0 ).getMetadata().getSampleMetadata().getTimeWindow() );
+                          output.get( 0 ).getMetadata().getSampleMetadata().getIdentifier(),
+                          output.get( 0 ).getMetadata().getSampleMetadata().getTimeWindow() );
         }
         else
         {

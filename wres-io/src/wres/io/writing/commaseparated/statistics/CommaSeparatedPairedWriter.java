@@ -26,7 +26,6 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -43,7 +42,7 @@ import wres.io.writing.commaseparated.CommaSeparatedUtilities;
  */
 
 public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedStatisticsWriter
-        implements Consumer<ListOfStatistics<PairedStatistic<S, T>>>, Supplier<Set<Path>>
+        implements Consumer<List<PairedStatistic<S, T>>>, Supplier<Set<Path>>
 {
 
     /**
@@ -81,7 +80,7 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedStatisticsWr
      */
 
     @Override
-    public void accept( final ListOfStatistics<PairedStatistic<S, T>> output )
+    public void accept( final List<PairedStatistic<S, T>> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing box plot outputs." );
 
@@ -103,14 +102,14 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedStatisticsWr
                 // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
                 // each window with LeftOrRightOrBaseline.BASELINE data): #48287
                 Map<LeftOrRightOrBaseline, List<PairedStatistic<S, T>>> groups =
-                        WriterHelper.getStatisticsGroupedByContext( output.getData() );
+                        WriterHelper.getStatisticsGroupedByContext( output );
 
                 for ( List<PairedStatistic<S, T>> nextGroup : groups.values() )
                 {
                     Set<Path> innerPathsWrittenTo =
                             CommaSeparatedPairedWriter.writeOnePairedOutputType( super.getOutputDirectory(),
                                                                                  destinationConfig,
-                                                                                 ListOfStatistics.of( nextGroup ),
+                                                                                 nextGroup,
                                                                                  formatter,
                                                                                  super.getDurationUnits() );
 
@@ -154,7 +153,7 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedStatisticsWr
 
     private static <S, T> Set<Path> writeOnePairedOutputType( Path outputDirectory,
                                                               DestinationConfig destinationConfig,
-                                                              ListOfStatistics<PairedStatistic<S, T>> output,
+                                                              List<PairedStatistic<S, T>> output,
                                                               Format formatter,
                                                               ChronoUnit durationUnits )
             throws IOException
@@ -170,14 +169,13 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedStatisticsWr
             headerRow.add( "FEATURE DESCRIPTION" );
 
             StringJoiner timeWindowHeader =
-                    CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( output.getData()
-                                                                                         .get( 0 )
+                    CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( output.get( 0 )
                                                                                          .getMetadata()
                                                                                          .getSampleMetadata(),
                                                                                    durationUnits );
             headerRow.merge( timeWindowHeader );
 
-            ListOfStatistics<PairedStatistic<S, T>> nextOutput = Slicer.filter( output, m );
+            List<PairedStatistic<S, T>> nextOutput = Slicer.filter( output, m );
 
             List<RowCompareByLeft> rows =
                     CommaSeparatedPairedWriter.getRowsForOnePairedOutput( m,
@@ -190,7 +188,7 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedStatisticsWr
             rows.add( RowCompareByLeft.of( HEADER_INDEX, headerRow ) );
 
             // Write the output
-            StatisticMetadata meta = nextOutput.getData().get( 0 ).getMetadata();
+            StatisticMetadata meta = nextOutput.get( 0 ).getMetadata();
 
             Path outputPath = ConfigHelper.getOutputPathToWrite( outputDirectory,
                                                                  destinationConfig,
@@ -222,7 +220,7 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedStatisticsWr
 
     private static <S, T> List<RowCompareByLeft>
             getRowsForOnePairedOutput( MetricConstants metricName,
-                                       ListOfStatistics<PairedStatistic<S, T>> output,
+                                       List<PairedStatistic<S, T>> output,
                                        StringJoiner headerRow,
                                        Format formatter,
                                        ChronoUnit durationUnits )
@@ -245,10 +243,10 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedStatisticsWr
             headerRow.add( outerName + "DURATION" + HEADER_DELIMITER + t );
 
             // Slice by threshold
-            ListOfStatistics<PairedStatistic<S, T>> sliced = Slicer.filter( output,
-                                                                            data -> data.getSampleMetadata()
-                                                                                        .getThresholds()
-                                                                                        .equals( t ) );
+            List<PairedStatistic<S, T>> sliced = Slicer.filter( output,
+                                                                data -> data.getSampleMetadata()
+                                                                            .getThresholds()
+                                                                            .equals( t ) );
 
             // Loop across the outputs
             for ( PairedStatistic<S, T> next : sliced )

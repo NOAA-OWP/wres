@@ -35,7 +35,6 @@ import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
-import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -196,7 +195,7 @@ public abstract class XYChartDataSourceFactory
      */
     public static DefaultXYChartDataSource
             ofPairedOutputInstantDuration( int orderIndex,
-                                           final ListOfStatistics<PairedStatistic<Instant, Duration>> input )
+                                           final List<PairedStatistic<Instant, Duration>> input )
     {
         DefaultXYChartDataSource source = new DefaultXYChartDataSource()
         {
@@ -223,7 +222,7 @@ public abstract class XYChartDataSourceFactory
                     TimeSeries next =
                             new TimeSeries( nextSeries.toStringWithoutUnits(), FixedMillisecond.class );
 
-                    ListOfStatistics<PairedStatistic<Instant, Duration>> filtered =
+                    List<PairedStatistic<Instant, Duration>> filtered =
                             Slicer.filter( input,
                                            data -> data.getSampleMetadata().getThresholds().equals( nextSeries ) );
                     
@@ -285,7 +284,7 @@ public abstract class XYChartDataSourceFactory
      * @return A data source that can be used to draw the diagram.
      */
     public static DefaultXYChartDataSource ofMultiVectorOutputDiagram( final int orderIndex,
-                                                                       final ListOfStatistics<DiagramStatistic> input,
+                                                                       final List<DiagramStatistic> input,
                                                                        final MetricDimension xConstant,
                                                                        final MetricDimension yConstant,
                                                                        final String domainTitle,
@@ -326,7 +325,7 @@ public abstract class XYChartDataSourceFactory
             }
         };
 
-        buildInitialParameters( source, orderIndex, input.getData().size() );
+        buildInitialParameters( source, orderIndex, input.size() );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultDomainAxisTitle( domainTitle );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultRangeAxisTitle( rangeTitle );
 
@@ -349,7 +348,7 @@ public abstract class XYChartDataSourceFactory
      */
     public static DefaultXYChartDataSource
             ofDoubleScoreOutputByPoolingWindow( final int orderIndex,
-                                                final ListOfStatistics<DoubleScoreStatistic> input,
+                                                final List<DoubleScoreStatistic> input,
                                                 final ChronoUnit durationUnits )
     {
         Objects.requireNonNull( input, "Specify non-null input." );
@@ -388,7 +387,7 @@ public abstract class XYChartDataSourceFactory
                 {
                     // Slice the data by the lead time in the window.  The resulting output will span
                     // multiple issued time windows and thresholds.
-                    ListOfStatistics<DoubleScoreStatistic> slice = Slicer.filter( input,
+                    List<DoubleScoreStatistic> slice = Slicer.filter( input,
                                                                                   next -> next.getSampleMetadata()
                                                                                               .getTimeWindow()
                                                                                               .getEarliestLeadDuration()
@@ -405,7 +404,7 @@ public abstract class XYChartDataSourceFactory
                     {
                         // Slice the data by threshold.  The resulting data will still contain potentially
                         // multiple issued time pooling windows.
-                        ListOfStatistics<DoubleScoreStatistic> finalSlice =
+                        List<DoubleScoreStatistic> finalSlice =
                                 Slicer.filter( slice,
                                                next -> next.getSampleMetadata()
                                                            .getThresholds()
@@ -477,7 +476,7 @@ public abstract class XYChartDataSourceFactory
      */
     public static DefaultXYChartDataSource
             ofDoubleScoreOutputByThresholdAndLead( final int orderIndex,
-                                                   final ListOfStatistics<DoubleScoreStatistic> input,
+                                                   final List<DoubleScoreStatistic> input,
                                                    final ChronoUnit durationUnits )
     {
         DefaultXYChartDataSource source = new DefaultXYChartDataSource()
@@ -522,7 +521,7 @@ public abstract class XYChartDataSourceFactory
      */
     public static DefaultXYChartDataSource
             ofDoubleScoreOutputByLeadAndThreshold( final int orderIndex,
-                                                   final ListOfStatistics<DoubleScoreStatistic> input,
+                                                   final List<DoubleScoreStatistic> input,
                                                    final ChronoUnit durationUnits )
     {
         Objects.requireNonNull( input, "Specify non-null input." );
@@ -569,7 +568,7 @@ public abstract class XYChartDataSourceFactory
      */
     public static CategoricalXYChartDataSource
             ofDurationScoreCategoricalOutput( int orderIndex,
-                                              ListOfStatistics<DurationScoreStatistic> input )
+                                              List<DurationScoreStatistic> input )
     {
         String[] xCategories = null;
         List<double[]> yAxisValuesBySeries = new ArrayList<>();

@@ -21,7 +21,6 @@ import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic.SampleDataBasicBuilder;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DoubleScoreStatistic;
-import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -352,7 +351,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
      * @return the future result
      */
 
-    private <T extends Statistic<?>> Future<ListOfStatistics<T>>
+    private <T extends Statistic<?>> Future<List<T>>
             processSingleValuedPairs( SampleData<Pair<Double, Double>> pairs,
                                       MetricCollection<SampleData<Pair<Double, Double>>, T, T> collection,
                                       Set<MetricConstants> ignoreTheseMetrics )
@@ -373,7 +372,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
      * @return true if the future was added successfully
      */
 
-    private <T extends Statistic<?>> Future<ListOfStatistics<T>>
+    private <T extends Statistic<?>> Future<List<T>>
             processDichotomousPairs( SampleData<Pair<Boolean, Boolean>> pairs,
                                      MetricCollection<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatistic, T> collection,
                                      Set<MetricConstants> ignoreTheseMetrics )

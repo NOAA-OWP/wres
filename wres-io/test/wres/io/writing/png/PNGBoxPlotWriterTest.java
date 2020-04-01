@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 import org.junit.Ignore;
@@ -29,7 +30,6 @@ import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.BoxPlotStatistics;
-import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
@@ -195,8 +195,7 @@ public class PNGBoxPlotWriterTest
                                                                                       VectorOfDoubles.of(),
                                                                                       fakeMetadata ) ),
                                       fakeMetadata );
-        ListOfStatistics<BoxPlotStatistics> fakeStatistics =
-                ListOfStatistics.of( Collections.singletonList( emptyFakeStatistics ) );
+        List<BoxPlotStatistics> fakeStatistics = Collections.singletonList( emptyFakeStatistics );
 
         // Begin the actual test now that we have the dependencies.
         PNGBoxPlotWriter writer = PNGBoxPlotWriter.of( this.mockSystemSettings,

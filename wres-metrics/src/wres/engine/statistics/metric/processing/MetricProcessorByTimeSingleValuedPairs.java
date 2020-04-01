@@ -35,7 +35,6 @@ import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
 import wres.datamodel.statistics.DurationScoreStatistic;
-import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -284,7 +283,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             for ( Entry<MetricConstants, TimingErrorDurationStatistics> nextStats : this.timingErrorDurationStatistics.entrySet() )
             {
                 // Obtain the output for the current statistic
-                ListOfStatistics<PairedStatistic<Instant, Duration>> output =
+                List<PairedStatistic<Instant, Duration>> output =
                         Slicer.filter( this.getCachedMetricOutputInternal().getPairedStatistics(), nextStats.getKey() );
 
                 // Compute the collection of statistics for the next timing error metric
@@ -297,22 +296,21 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                 for ( OneOrTwoThresholds threshold : thresholds )
                 {
                     // Filter by current threshold  
-                    ListOfStatistics<PairedStatistic<Instant, Duration>> sliced =
+                    List<PairedStatistic<Instant, Duration>> sliced =
                             Slicer.filter( output,
                                            next -> next.getSampleMetadata().getThresholds().equals( threshold ) );
 
                     // Find the union of the paired output
-                    PairedStatistic<Instant, Duration> union = DataFactory.unionOf( sliced.getData() );
+                    PairedStatistic<Instant, Duration> union = DataFactory.unionOf( sliced );
 
                     //Build the future result
-                    Supplier<ListOfStatistics<DurationScoreStatistic>> supplier = () -> {
+                    Supplier<List<DurationScoreStatistic>> supplier = () -> {
                         DurationScoreStatistic result = timeToPeakErrorStats.apply( union );
-                        List<DurationScoreStatistic> input = Collections.singletonList( result );
-                        return ListOfStatistics.of( input );
+                        return Collections.singletonList( result );
                     };
 
                     // Execute
-                    Future<ListOfStatistics<DurationScoreStatistic>> addMe =
+                    Future<List<DurationScoreStatistic>> addMe =
                             CompletableFuture.supplyAsync( supplier, thresholdExecutor );
 
                     // Add the future result to the store
@@ -467,7 +465,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
 
             // Build the future result
             final PoolOfPairs<Double, Double> finalPairs = pairs;
-            Future<ListOfStatistics<PairedStatistic<Instant, Duration>>> output =
+            Future<List<PairedStatistic<Instant, Duration>>> output =
                     CompletableFuture.supplyAsync( () -> timeSeries.apply( finalPairs, ignoreTheseMetrics ),
                                                    thresholdExecutor );
 

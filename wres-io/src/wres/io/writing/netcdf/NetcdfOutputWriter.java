@@ -62,7 +62,6 @@ import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.statistics.DoubleScoreStatistic;
-import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdsByMetric;
@@ -575,7 +574,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
     }
 
     @Override
-    public void accept( ListOfStatistics<DoubleScoreStatistic> output )
+    public void accept( List<DoubleScoreStatistic> output )
     {
         LOGGER.debug( "NetcdfOutputWriter {} accepted output {}.", this, output );
 

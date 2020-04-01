@@ -26,7 +26,6 @@ import org.slf4j.LoggerFactory;
 
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic.SampleDataBasicBuilder;
-import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.statistics.StatisticMetadata;
@@ -388,8 +387,8 @@ public final class Slicer
      * @throws NullPointerException if the input list is null or the predicate is null
      */
 
-    public static <T extends Statistic<?>> ListOfStatistics<T> filter( ListOfStatistics<T> outputs,
-                                                                       Predicate<StatisticMetadata> predicate )
+    public static <T extends Statistic<?>> List<T> filter( List<T> outputs,
+                                                           Predicate<StatisticMetadata> predicate )
     {
         Objects.requireNonNull( outputs, NULL_INPUT_EXCEPTION );
 
@@ -406,13 +405,12 @@ public final class Slicer
             }
         }
 
-        return ListOfStatistics.of( Collections.unmodifiableList( results ) );
+        return Collections.unmodifiableList( results );
     }
 
     /**
-     * <p>Discovers the unique instances of a given type associated with a {@link ListOfStatistics}. The mapper 
-     * function identifies the type to discover. For example, to discover the unique thresholds contained in the list of
-     * outputs:</p>
+     * <p>Discovers the unique instances of a given type of statistic. The mapper function identifies the type to 
+     * discover. For example, to discover the unique thresholds contained in the list of outputs:</p>
      * 
      * <p><code>Slicer.discover( outputs, next {@literal ->} 
      *                                         next.getMetadata().getSampleMetadata().getThresholds() );</code></p>
@@ -438,15 +436,14 @@ public final class Slicer
      * @throws NullPointerException if the input list is null or the mapper is null
      */
 
-    public static <S extends Statistic<?>, T extends Object> SortedSet<T> discover( ListOfStatistics<S> outputs,
+    public static <S extends Statistic<?>, T extends Object> SortedSet<T> discover( List<S> outputs,
                                                                                     Function<S, T> mapper )
     {
         Objects.requireNonNull( outputs, NULL_INPUT_EXCEPTION );
 
         Objects.requireNonNull( mapper, NULL_INPUT_EXCEPTION );
 
-        return Collections.unmodifiableSortedSet( outputs.getData()
-                                                         .stream()
+        return Collections.unmodifiableSortedSet( outputs.stream()
                                                          .map( mapper )
                                                          .filter( Objects::nonNull )
                                                          .collect( Collectors.toCollection( TreeSet::new ) ) );
@@ -465,8 +462,8 @@ public final class Slicer
      * @return the first available output that matches the input identifier or null if no such output is available
      */
 
-    public static <T extends Statistic<?>> ListOfStatistics<T> filter( ListOfStatistics<T> outputs,
-                                                                       MetricConstants metricIdentifier )
+    public static <T extends Statistic<?>> List<T> filter( List<T> outputs,
+                                                           MetricConstants metricIdentifier )
     {
         Objects.requireNonNull( outputs, NULL_INPUT_EXCEPTION );
 
@@ -504,12 +501,12 @@ public final class Slicer
      * @throws NullPointerException if the input is null
      */
 
-    public static <T extends ScoreStatistic<?, T>> Map<MetricConstants, ListOfStatistics<T>>
-            filterByMetricComponent( ListOfStatistics<T> input )
+    public static <T extends ScoreStatistic<?, T>> Map<MetricConstants, List<T>>
+            filterByMetricComponent( List<T> input )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
-        Map<MetricConstants, ListOfStatistics<T>> returnMe = new EnumMap<>( MetricConstants.class );
+        Map<MetricConstants, List<T>> returnMe = new EnumMap<>( MetricConstants.class );
 
         // Find the components
         SortedSet<MetricConstants> components = new TreeSet<>();
@@ -527,7 +524,7 @@ public final class Slicer
                     listOfComponent.add( nextItem.getComponent( nextComponent ) );
                 }
             }
-            returnMe.put( nextComponent, ListOfStatistics.of( listOfComponent ) );
+            returnMe.put( nextComponent, Collections.unmodifiableList( listOfComponent ) );
         }
 
         return Collections.unmodifiableMap( returnMe );
@@ -689,7 +686,7 @@ public final class Slicer
         {
             throw new IllegalArgumentException( "The input threshold must be a probability threshold." );
         }
-        
+
         if ( sorted.length == 0 )
         {
             // #65881
@@ -705,13 +702,13 @@ public final class Slicer
         }
         DoubleUnaryOperator qF = Slicer.getQuantileFunction( sorted );
         Double first = qF.applyAsDouble( threshold.getProbabilities().first() );
-        
+
         if ( Objects.nonNull( digits ) )
         {
             first = Slicer.rounder().apply( first, digits );
         }
         Double second = null;
-        
+
         if ( threshold.hasBetweenCondition() )
         {
             second = qF.applyAsDouble( threshold.getProbabilities().second() );
@@ -720,7 +717,7 @@ public final class Slicer
                 second = Slicer.rounder().apply( second, digits );
             }
         }
-        
+
         return Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( first, second ),
                                               threshold.getProbabilities(),
                                               threshold.getCondition(),
@@ -760,10 +757,10 @@ public final class Slicer
     public static DoubleUnaryOperator rounder( int decimalPlaces )
     {
         BiFunction<Double, Integer, Double> round = Slicer.rounder();
-        
+
         return in -> round.apply( in, decimalPlaces );
     }
-    
+
     /**
      * Rounds the input to the prescribed number of decimal places using {@link BigDecimal#ROUND_HALF_UP}.
      * 

@@ -1,6 +1,7 @@
 package wres.vis;
 
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Objects;
 import java.util.SortedSet;
 
@@ -8,7 +9,6 @@ import org.jfree.data.xy.XYDataset;
 
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.Slicer;
-import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindow;
@@ -20,7 +20,7 @@ import wres.util.TimeHelper;
  * @author Hank.Herr
  */
 public class DiagramStatisticXYDataset
-        extends WRESAbstractXYDataset<ListOfStatistics<DiagramStatistic>, ListOfStatistics<DiagramStatistic>>
+        extends WRESAbstractXYDataset<List<DiagramStatistic>, List<DiagramStatistic>>
 {
     private static final long serialVersionUID = 4254109136599641286L;
     private final MetricDimension xConstant;
@@ -42,7 +42,7 @@ public class DiagramStatisticXYDataset
      * @throws NullPointerException if any input is null
      */
 
-    public DiagramStatisticXYDataset( final ListOfStatistics<DiagramStatistic> input,
+    public DiagramStatisticXYDataset( final List<DiagramStatistic> input,
                                               final MetricDimension xConstant,
                                               final MetricDimension yConstant,
                                               final ChronoUnit durationUnits )
@@ -63,10 +63,10 @@ public class DiagramStatisticXYDataset
     }
 
     @Override
-    void preparePlotData(final ListOfStatistics<DiagramStatistic> rawData)
+    void preparePlotData(final List<DiagramStatistic> rawData)
     {
         //This check should not be necessary, since the conditions should be impossible.  I'll do it anyway just to be sure.
-        if ( rawData.getData().isEmpty() )
+        if ( rawData.isEmpty() )
         {
             throw new IllegalArgumentException( "Specify non-empty input." );
         }
@@ -77,8 +77,7 @@ public class DiagramStatisticXYDataset
     @Override
     public int getItemCount(final int series)
     {
-        return getPlotData().getData()
-                            .get(series)
+        return getPlotData().get(series)
                             .getData()
                             .get(xConstant)
                             .getDoubles().length;
@@ -87,8 +86,7 @@ public class DiagramStatisticXYDataset
     @Override
     public Number getX(final int series, final int item)
     {
-        return getPlotData().getData()
-                            .get(series)
+        return getPlotData().get(series)
                             .getData()
                             .get(xConstant)
                             .getDoubles()[item];
@@ -97,8 +95,7 @@ public class DiagramStatisticXYDataset
     @Override
     public Number getY(final int series, final int item)
     {
-        return getPlotData().getData()
-                            .get(series)
+        return getPlotData().get(series)
                             .getData()
                             .get(yConstant)
                             .getDoubles()[item];
@@ -107,7 +104,7 @@ public class DiagramStatisticXYDataset
     @Override
     public int getSeriesCount()
     {
-        return getPlotData().getData().size();
+        return getPlotData().size();
     }
 
     @Override
@@ -129,8 +126,7 @@ public class DiagramStatisticXYDataset
         }
         else if ( ( !timeWindows.isEmpty() ) && ( thresholds.size() == 1 ) )
         {
-            return Long.toString( TimeHelper.durationToLongUnits( getPlotData().getData()
-                                                                               .get( series )
+            return Long.toString( TimeHelper.durationToLongUnits( getPlotData().get( series )
                                                                                .getMetadata()
                                                                                .getSampleMetadata()
                                                                                .getTimeWindow()
@@ -139,8 +135,7 @@ public class DiagramStatisticXYDataset
         }
         else
         {
-            return getPlotData().getData()
-                                .get( series )
+            return getPlotData().get( series )
                                 .getMetadata()
                                 .getSampleMetadata()
                                 .getThresholds()

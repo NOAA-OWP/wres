@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleData;
-import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.Statistic;
 import wres.engine.statistics.metric.categorical.ContingencyTable;
 
@@ -57,7 +56,7 @@ import wres.engine.statistics.metric.categorical.ContingencyTable;
  */
 
 public class MetricCollection<S extends SampleData<?>, T extends Statistic<?>, U extends Statistic<?>>
-        implements BiFunction<S, Set<MetricConstants>, ListOfStatistics<U>>
+        implements BiFunction<S, Set<MetricConstants>, List<U>>
 {
 
     /**
@@ -93,7 +92,7 @@ public class MetricCollection<S extends SampleData<?>, T extends Statistic<?>, U
      * @throws MetricCalculationException if the calculation fails for any reason
      */
 
-    public ListOfStatistics<U> apply( final S input )
+    public List<U> apply( final S input )
     {
         return this.apply( input, Collections.emptySet() );
     }
@@ -107,7 +106,7 @@ public class MetricCollection<S extends SampleData<?>, T extends Statistic<?>, U
      */
 
     @Override
-    public ListOfStatistics<U> apply( final S input, final Set<MetricConstants> ignoreTheseMetrics )
+    public List<U> apply( final S input, final Set<MetricConstants> ignoreTheseMetrics )
     {
         try
         {
@@ -252,7 +251,7 @@ public class MetricCollection<S extends SampleData<?>, T extends Statistic<?>, U
      * @throws MetricCalculationException if one or more of the inputs is invalid
      */
 
-    private ListOfStatistics<U> applyInternal( final S input, final Set<MetricConstants> ignoreTheseMetrics )
+    private List<U> applyInternal( final S input, final Set<MetricConstants> ignoreTheseMetrics )
             throws InterruptedException, ExecutionException
     {
         //Bounds checks
@@ -321,7 +320,7 @@ public class MetricCollection<S extends SampleData<?>, T extends Statistic<?>, U
             unpacked.add( nextResult.get() ); //This is blocking
         }
 
-        ListOfStatistics<U> returnMe = ListOfStatistics.of( Collections.unmodifiableList( unpacked ) );
+        List<U> returnMe = Collections.unmodifiableList( unpacked );
 
         this.logEndOfCalculation( LOGGER, returnMe );
 
@@ -419,7 +418,7 @@ public class MetricCollection<S extends SampleData<?>, T extends Statistic<?>, U
      * @param results the results to log
      */
 
-    private void logEndOfCalculation( Logger logger, ListOfStatistics<U> results )
+    private void logEndOfCalculation( Logger logger, List<U> results )
     {
         if ( logger.isTraceEnabled() )
         {

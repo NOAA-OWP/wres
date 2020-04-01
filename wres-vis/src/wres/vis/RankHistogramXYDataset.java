@@ -1,9 +1,9 @@
 package wres.vis;
 
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.DiagramStatistic;
 
 public class RankHistogramXYDataset extends DiagramStatisticXYDataset
@@ -20,7 +20,7 @@ public class RankHistogramXYDataset extends DiagramStatisticXYDataset
      * @throws NullPointerException if any input is null
      */
 
-    public RankHistogramXYDataset( final ListOfStatistics<DiagramStatistic> input,
+    public RankHistogramXYDataset( final List<DiagramStatistic> input,
                                    final MetricDimension xConstant,
                                    final MetricDimension yConstant,
                                    final ChronoUnit durationUnits )
