@@ -191,15 +191,10 @@ public class TimeSeriesPairerByExactTime<L, R> implements TimeSeriesPairer<L, R>
 
         // Log inadmissible cases
         this.logInadmissibleCases( left, right, leftInadmissible, rightInadmissible );
-        TimeSeriesMetadata metadata = TimeSeriesMetadata.of( referenceTimes,
-                                                             right.getMetadata()
-                                                                  .getTimeScale(),
-                                                             right.getMetadata()
-                                                                  .getVariableName(),
-                                                             right.getMetadata()
-                                                                  .getFeatureName(),
-                                                             right.getMetadata()
-                                                                  .getUnit() );
+
+        TimeSeriesMetadata metadata = new TimeSeriesMetadata.Builder().setMetadata( right.getMetadata() )
+                                                                      .setReferenceTimes( referenceTimes )
+                                                                      .build();
 
         return new TimeSeriesBuilder<Pair<L, R>>().setMetadata( metadata )
                                                   .addEvents( pairs )

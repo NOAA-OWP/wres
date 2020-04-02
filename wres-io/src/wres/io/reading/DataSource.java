@@ -81,8 +81,6 @@ public class DataSource
      * {@link DataSource}. For each of those decomposed paths, there is only one
      * {@link DataSourceConfig.Source}.
      *
-     * When there is no
-     *
      * @param source the source to load
      * @param context the context in which the source appears
      * @param links the optional links to create
@@ -193,7 +191,6 @@ public class DataSource
     {
         return this.timeSeries;
     }
-
 
     /**
      * Returns the variable specified for this source, null if unspecified

@@ -105,24 +105,6 @@ public class EnsembleRetrieverFactoryTest
 
     private static final String STREAMFLOW = "streamflow";
 
-    /**
-     * Identifier of the first ensemble member.
-     */
-
-    private Integer firstMemberId;
-
-    /**
-     * Identifier of the second ensemble member.
-     */
-
-    private Integer secondMemberId;
-
-    /**
-     * Identifier of the third ensemble member.
-     */
-
-    private Integer thirdMemberId;
-
     // Times for re-use
     private static final String T2023_04_01T00_00_00Z = "2023-04-01T00:00:00Z";
     private static final String T2023_04_01T07_00_00Z = "2023-04-01T07:00:00Z";
@@ -152,7 +134,7 @@ public class EnsembleRetrieverFactoryTest
     }
 
     @Before
-    public void runBeforeEachTest() throws Exception
+    public void runBeforeEachTest() throws SQLException, LiquibaseException
     {
         MockitoAnnotations.initMocks( this );
 
@@ -351,11 +333,12 @@ public class EnsembleRetrieverFactoryTest
 
     /**
      * Does the basic set-up work to create a connection and schema.
+     * @throws SQLException 
      * 
-     * @throws Exception if the set-up failed
+     * @throws SQLException if the set-up failed
      */
 
-    private void createTheConnectionAndSchema() throws Exception
+    private void createTheConnectionAndSchema() throws SQLException
     {
         // Also mock a plain datasource (which works per test unlike c3p0)
         this.rawConnection = DriverManager.getConnection( this.testDatabase.getJdbcString() );
@@ -576,27 +559,27 @@ public class EnsembleRetrieverFactoryTest
         members.setEnsembleName( ensembleName );
         members.setEnsembleMemberIndex( firstMemberLabel );
         members.save( this.wresDatabase );
-        this.firstMemberId = members.getId();
+        Integer firstMemberId = members.getId();
 
-        assertNotNull( this.firstMemberId );
+        assertNotNull( firstMemberId );
 
         // Add second member
         int secondMemberLabel = 567;
         members.setEnsembleName( ensembleName );
         members.setEnsembleMemberIndex( secondMemberLabel );
         members.save( this.wresDatabase );
-        this.secondMemberId = members.getId();
+        Integer secondMemberId = members.getId();
 
-        assertNotNull( this.secondMemberId );
+        assertNotNull( secondMemberId );
 
         // Add third member
         int thirdMemberLabel = 456;
         members.setEnsembleName( ensembleName );
         members.setEnsembleMemberIndex( thirdMemberLabel );
         members.save( this.wresDatabase );
-        this.thirdMemberId = members.getId();
+        Integer thirdMemberId = members.getId();
 
-        assertNotNull( this.thirdMemberId );
+        assertNotNull( thirdMemberId );
 
         // Add each member in turn
         // There is an abstraction to help with this, namely wres.io.data.details.TimeSeries, but the resulting 
@@ -604,7 +587,7 @@ public class EnsembleRetrieverFactoryTest
         // although H2 reported the expected type. See #56214-102        
 
         // Two reference times, PT17H apart
-        Instant referenceTime = Instant.parse( "2023-04-01T00:00:00Z" );
+        Instant referenceTime = Instant.parse( T2023_04_01T00_00_00Z );
 
         TimeScale timeScale = TimeScale.of( Duration.ofMinutes( 1 ), TimeScaleFunction.UNKNOWN );
 
@@ -628,7 +611,7 @@ public class EnsembleRetrieverFactoryTest
                                                          timeSeriesInsert );
 
         int rowAdded = memberOneScript.execute( this.variableFeatureId,
-                                                this.firstMemberId,
+                                                firstMemberId,
                                                 measurementUnitId,
                                                 referenceTime.toString(),
                                                 timeScale.getPeriod().toMinutesPart(),
@@ -648,7 +631,7 @@ public class EnsembleRetrieverFactoryTest
                                                          timeSeriesInsert );
 
         int rowAddedTwo = memberTwoScript.execute( this.variableFeatureId,
-                                                   this.secondMemberId,
+                                                   secondMemberId,
                                                    measurementUnitId,
                                                    referenceTime.toString(),
                                                    timeScale.getPeriod().toMinutesPart(),
@@ -668,7 +651,7 @@ public class EnsembleRetrieverFactoryTest
                                                            timeSeriesInsert );
 
         int rowAddedThree = memberThreeScript.execute( this.variableFeatureId,
-                                                       this.thirdMemberId,
+                                                       thirdMemberId,
                                                        measurementUnitId,
                                                        referenceTime.toString(),
                                                        timeScale.getPeriod().toMinutesPart(),

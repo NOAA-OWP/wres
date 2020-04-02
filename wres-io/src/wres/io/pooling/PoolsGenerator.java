@@ -14,7 +14,6 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import ohd.hseb.util.fews.xmlconfigfiles.TimeSeriesReadWriteModeEnumStringType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -768,6 +767,8 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
 
         TimeSeriesBuilder<L> builder = new TimeSeriesBuilder<>();
 
+        TimeSeriesMetadata existingMetadata = null;
+        
         for ( TimeSeries<L> next : climData )
         {
             TimeSeries<L> nextSeries = next;
@@ -810,10 +811,15 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
             // non-finite values
             nextSeries = TimeSeriesSlicer.filter( nextSeries, admissibleValue );
 
-            builder.setMetadata( nextSeries.getMetadata() );
+            existingMetadata = nextSeries.getMetadata();
             builder.addEvents( nextSeries.getEvents() );
         }
 
+        TimeSeriesMetadata metadata = new TimeSeriesMetadata.Builder().setMetadata( existingMetadata )
+                                                                      .setTimeScale( desiredTimeScale )
+                                                                      .build();
+        builder.setMetadata( metadata );
+        
         TimeSeries<L> climatologyAtScale = builder.build();
 
         LOGGER.debug( "Created a new climatological time-series {} with {} climatological values.",

@@ -60,6 +60,10 @@ import wres.system.SystemSettings;
 
 public class AnalysisRetrieverTest
 {
+    private static final String T2023_04_01T07_00_00Z = "2023-04-01T07:00:00Z";
+    private static final String T2023_04_01T04_00_00Z = "2023-04-01T04:00:00Z";
+    private static final String T2023_04_01T01_00_00Z = "2023-04-01T01:00:00Z";
+    private static final String CFS = "CFS";
     private static final Instant T2023_04_01T00_00_00Z = Instant.parse( "2023-04-01T00:00:00Z" );
     private static final Instant T2023_04_01T03_00_00Z = Instant.parse( "2023-04-01T03:00:00Z" );
     private static final Instant T2023_04_01T06_00_00Z = Instant.parse( "2023-04-01T06:00:00Z" );
@@ -99,7 +103,7 @@ public class AnalysisRetrieverTest
      * The measurement units for testing.
      */
 
-    private static final String UNITS = "CFS";
+    private static final String UNITS = CFS;
 
     /**
      * The unit mapper.
@@ -115,7 +119,7 @@ public class AnalysisRetrieverTest
     }
 
     @Before
-    public void setup() throws Exception
+    public void setup() throws SQLException, LiquibaseException
     {
         MockitoAnnotations.initMocks( this );
 
@@ -182,10 +186,10 @@ public class AnalysisRetrieverTest
                                        TimeScale.of(),
                                        Integer.toString( this.variableFeatureId ),
                                        Integer.toString( this.variableFeatureId ),
-                                       "CFS" );
+                                       CFS );
         TimeSeries<Double> expectedSeriesOne =
                 new TimeSeriesBuilder<Double>().setMetadata( metadata )
-                                               .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ), 30.0 ) )
+                                               .addEvent( Event.of( Instant.parse( T2023_04_01T01_00_00Z ), 30.0 ) )
                                                .addEvent( Event.of( Instant.parse( "2023-04-01T02:00:00Z" ), 37.0 ) )
                                                .addEvent( Event.of( Instant.parse( "2023-04-01T03:00:00Z" ), 44.0 ) )
                                                .build();
@@ -200,10 +204,10 @@ public class AnalysisRetrieverTest
                                        TimeScale.of(),
                                        Integer.toString( this.variableFeatureId ),
                                        Integer.toString( this.variableFeatureId ),
-                                       "CFS" );
+                                       CFS );
         TimeSeries<Double> expectedSeriesTwo =
                 new TimeSeriesBuilder<Double>().setMetadata( metadataTwo )
-                                               .addEvent( Event.of( Instant.parse( "2023-04-01T04:00:00Z" ), 72.0 ) )
+                                               .addEvent( Event.of( Instant.parse( T2023_04_01T04_00_00Z ), 72.0 ) )
                                                .addEvent( Event.of( Instant.parse( "2023-04-01T05:00:00Z" ), 79.0 ) )
                                                .addEvent( Event.of( Instant.parse( "2023-04-01T06:00:00Z" ), 86.0 ) )
                                                .build();
@@ -218,10 +222,10 @@ public class AnalysisRetrieverTest
                                        TimeScale.of(),
                                        Integer.toString( this.variableFeatureId ),
                                        Integer.toString( this.variableFeatureId ),
-                                       "CFS" );
+                                       CFS );
         TimeSeries<Double> expectedSeriesThree =
                 new TimeSeriesBuilder<Double>().setMetadata( metadataThree )
-                                               .addEvent( Event.of( Instant.parse( "2023-04-01T07:00:00Z" ), 114.0 ) )
+                                               .addEvent( Event.of( Instant.parse( T2023_04_01T07_00_00Z ), 114.0 ) )
                                                .addEvent( Event.of( Instant.parse( "2023-04-01T08:00:00Z" ), 121.0 ) )
                                                .addEvent( Event.of( Instant.parse( "2023-04-01T09:00:00Z" ), 128.0 ) )
                                                .addEvent( Event.of( Instant.parse( "2023-04-01T10:00:00Z" ), 135.0 ) )
@@ -268,10 +272,10 @@ public class AnalysisRetrieverTest
                                        TimeScale.of(),
                                        Integer.toString( this.variableFeatureId ),
                                        Integer.toString( this.variableFeatureId ),
-                                       "CFS" );
+                                       CFS );
         TimeSeries<Double> expectedSeriesOne =
                 new TimeSeriesBuilder<Double>().setMetadata( metadata )
-                                               .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ), 30.0 ) )
+                                               .addEvent( Event.of( Instant.parse( T2023_04_01T01_00_00Z ), 30.0 ) )
                                                .build();
 
         // Actual series equals expected series
@@ -284,10 +288,10 @@ public class AnalysisRetrieverTest
                                        TimeScale.of(),
                                        Integer.toString( this.variableFeatureId ),
                                        Integer.toString( this.variableFeatureId ),
-                                       "CFS" );
+                                       CFS );
         TimeSeries<Double> expectedSeriesTwo =
                 new TimeSeriesBuilder<Double>().setMetadata( metadataTwo )
-                                               .addEvent( Event.of( Instant.parse( "2023-04-01T04:00:00Z" ), 72.0 ) )
+                                               .addEvent( Event.of( Instant.parse( T2023_04_01T04_00_00Z ), 72.0 ) )
                                                .build();
 
         // Actual series equals expected series
@@ -300,10 +304,10 @@ public class AnalysisRetrieverTest
                                        TimeScale.of(),
                                        Integer.toString( this.variableFeatureId ),
                                        Integer.toString( this.variableFeatureId ),
-                                       "CFS" );
+                                       CFS );
         TimeSeries<Double> expectedSeriesThree =
                 new TimeSeriesBuilder<Double>().setMetadata( metadataThree )
-                                               .addEvent( Event.of( Instant.parse( "2023-04-01T07:00:00Z" ), 114.0 ) )
+                                               .addEvent( Event.of( Instant.parse( T2023_04_01T07_00_00Z ), 114.0 ) )
                                                .build();
 
         // Actual series equals expected series
@@ -349,10 +353,10 @@ public class AnalysisRetrieverTest
                                        TimeScale.of(),
                                        Integer.toString( this.variableFeatureId ),
                                        Integer.toString( this.variableFeatureId ),
-                                       "CFS" );
+                                       CFS );
         TimeSeries<Double> expectedSeriesOne =
                 new TimeSeriesBuilder<Double>().setMetadata( metadata )
-                                               .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ), 30.0 ) )
+                                               .addEvent( Event.of( Instant.parse( T2023_04_01T01_00_00Z ), 30.0 ) )
                                                .build();
 
         // Actual series equals expected series
@@ -365,7 +369,7 @@ public class AnalysisRetrieverTest
                                        TimeScale.of(),
                                        Integer.toString( this.variableFeatureId ),
                                        Integer.toString( this.variableFeatureId ),
-                                       "CFS" );
+                                       CFS );
         TimeSeries<Double> expectedSeriesTwo =
                 new TimeSeriesBuilder<Double>().setMetadata( metadataTwo )
                                                .addEvent( Event.of( Instant.parse( "2023-04-01T02:00:00Z" ), 37.0 ) )
@@ -381,10 +385,10 @@ public class AnalysisRetrieverTest
                                        TimeScale.of(),
                                        Integer.toString( this.variableFeatureId ),
                                        Integer.toString( this.variableFeatureId ),
-                                       "CFS" );
+                                       CFS );
         TimeSeries<Double> expectedSeriesThree =
                 new TimeSeriesBuilder<Double>().setMetadata( metadataThree )
-                                               .addEvent( Event.of( Instant.parse( "2023-04-01T04:00:00Z" ), 72.0 ) )
+                                               .addEvent( Event.of( Instant.parse( T2023_04_01T04_00_00Z ), 72.0 ) )
                                                .build();
 
         // Actual series equals expected series
@@ -397,7 +401,7 @@ public class AnalysisRetrieverTest
                                        TimeScale.of(),
                                        Integer.toString( this.variableFeatureId ),
                                        Integer.toString( this.variableFeatureId ),
-                                       "CFS" );
+                                       CFS );
         TimeSeries<Double> expectedSeriesFour =
                 new TimeSeriesBuilder<Double>().setMetadata( metadataFour )
                                                .addEvent( Event.of( Instant.parse( "2023-04-01T05:00:00Z" ), 79.0 ) )
@@ -413,10 +417,10 @@ public class AnalysisRetrieverTest
                                        TimeScale.of(),
                                        Integer.toString( this.variableFeatureId ),
                                        Integer.toString( this.variableFeatureId ),
-                                       "CFS" );
+                                       CFS );
         TimeSeries<Double> expectedSeriesFive =
                 new TimeSeriesBuilder<Double>().setMetadata( metadataFive )
-                                               .addEvent( Event.of( Instant.parse( "2023-04-01T07:00:00Z" ), 114.0 ) )
+                                               .addEvent( Event.of( Instant.parse( T2023_04_01T07_00_00Z ), 114.0 ) )
                                                .build();
 
         // Actual series equals expected series
@@ -429,7 +433,7 @@ public class AnalysisRetrieverTest
                                        TimeScale.of(),
                                        Integer.toString( this.variableFeatureId ),
                                        Integer.toString( this.variableFeatureId ),
-                                       "CFS" );
+                                       CFS );
         TimeSeries<Double> expectedSeriesSix =
                 new TimeSeriesBuilder<Double>().setMetadata( metadataSix )
                                                .addEvent( Event.of( Instant.parse( "2023-04-01T08:00:00Z" ), 121.0 ) )

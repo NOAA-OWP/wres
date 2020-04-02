@@ -236,12 +236,10 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
 
             TimeSeriesMetadata existingMetadata = timeSeries.getMetadata();
             // Create new series in case the function differs
-            TimeSeriesMetadata metadata =
-                    TimeSeriesMetadata.of( existingMetadata.getReferenceTimes(),
-                                           desiredTimeScale,
-                                           existingMetadata.getVariableName(),
-                                           existingMetadata.getFeatureName(),
-                                           existingMetadata.getUnit() );
+            TimeSeriesMetadata metadata = new TimeSeriesMetadata.Builder().setMetadata( existingMetadata )
+                                                                          .setTimeScale( desiredTimeScale )
+                                                                          .build();
+
             TimeSeries<Double> returnMe = new TimeSeriesBuilder<Double>().setMetadata( metadata )
                                                                          .addEvents( timeSeries.getEvents() )
                                                                          .build();

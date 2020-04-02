@@ -754,6 +754,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
     private static class TimeWindowWriter implements Closeable
     {
 
+        private static final String WHILE_ATTEMPTING_TO_WRITE_STATISTICS_TO = "While attempting to write statistics to ";
+        private static final String FAILED_TO_IDENTIFY_A_COORDINATE_FOR_LOCATION = ", failed to identify a coordinate for location ";
         NetcdfOutputWriter outputWriter;
         private boolean useLidForLocationIdentifier;
         private final Map<Object, Integer> vectorCoordinatesMap = new ConcurrentHashMap<>();
@@ -1127,9 +1129,9 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
             {
                 if ( !this.vectorCoordinatesMap.containsKey( location.getLocationName() ) )
                 {
-                    throw new CoordinateNotFoundException( "While attempting to write statistics to "
+                    throw new CoordinateNotFoundException( WHILE_ATTEMPTING_TO_WRITE_STATISTICS_TO
                                                            + this.outputPath
-                                                           + ", failed to identify a coordinate for location "
+                                                           + FAILED_TO_IDENTIFY_A_COORDINATE_FOR_LOCATION
                                                            + location
                                                            + " using the location name "
                                                            + location.getLocationName()
@@ -1139,12 +1141,23 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
             // Comid is the glue
             else
             {
-                if ( !this.vectorCoordinatesMap.containsKey( location.getVectorIdentifier().intValue() ) )
+                Long coordinate = location.getVectorIdentifier();
+
+                if ( Objects.isNull( coordinate ) )
+                {
+                    throw new CoordinateNotFoundException( WHILE_ATTEMPTING_TO_WRITE_STATISTICS_TO
+                                                           + this.outputPath
+                                                           + FAILED_TO_IDENTIFY_A_COORDINATE_FOR_LOCATION
+                                                           + location
+                                                           + " because the NWM location identifier (comid) was absent." );
+                }
+
+                if ( !this.vectorCoordinatesMap.containsKey( coordinate.intValue() ) )
                 {
 
-                    throw new CoordinateNotFoundException( "While attempting to write statistics to "
+                    throw new CoordinateNotFoundException( WHILE_ATTEMPTING_TO_WRITE_STATISTICS_TO
                                                            + this.outputPath
-                                                           + ", failed to identify a coordinate for location "
+                                                           + FAILED_TO_IDENTIFY_A_COORDINATE_FOR_LOCATION
                                                            + location
                                                            + " using the NWM location identifier (comid) "
                                                            + location.getVectorIdentifier().intValue()
@@ -1152,7 +1165,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                 }
             }
         }
-        
+
         @Override
         public String toString()
         {

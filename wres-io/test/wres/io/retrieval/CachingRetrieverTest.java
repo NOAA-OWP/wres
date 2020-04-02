@@ -9,9 +9,6 @@ import java.util.stream.Stream;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import wres.io.retrieval.CachingRetriever;
-import wres.io.retrieval.Retriever;
-
 /**
  * Tests the {@link CachingRetriever}.
  * 

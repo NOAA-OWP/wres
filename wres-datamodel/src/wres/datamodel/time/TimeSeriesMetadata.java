@@ -68,41 +68,12 @@ public class TimeSeriesMetadata
                                          String featureName,
                                          String unit )
     {
-        return new TimeSeriesMetadata( referenceTimes,
-                                       timeScale,
-                                       variableName,
-                                       featureName,
-                                       unit );
-    }
-
-
-    /**
-     * Hidden constructor.
-     * 
-     * @param referenceTimes The reference times, non-null
-     * @param timeScale The time scale if available, or null if not.
-     * @param variableName The variable name, non-null.
-     * @param featureName The feature name, non-null.
-     * @param unit The measurement unit name, non-null.
-     * @throws NullPointerException if any arg besides timeScale is null
-     */
-
-    private TimeSeriesMetadata( Map<ReferenceTimeType, Instant> referenceTimes,
-                                TimeScale timeScale,
-                                String variableName,
-                                String featureName,
-                                String unit )
-    {
-        Objects.requireNonNull( referenceTimes );
-        // Often the timescale is not available: in that case valid to use null.
-        Objects.requireNonNull( variableName );
-        Objects.requireNonNull( featureName );
-        Objects.requireNonNull( unit );
-        this.referenceTimes = Collections.unmodifiableMap( referenceTimes );
-        this.timeScale = timeScale;
-        this.variableName = variableName;
-        this.featureName = featureName;
-        this.unit = unit;
+        return new Builder().setReferenceTimes( referenceTimes )
+                            .setTimeScale( timeScale )
+                            .setVariableName( variableName )
+                            .setFeatureName( featureName )
+                            .setUnit( unit )
+                            .build();
     }
 
     public TimeScale getTimeScale()
@@ -171,5 +142,178 @@ public class TimeSeriesMetadata
                                                                             .append( "featureName", featureName )
                                                                             .append( "unit", unit )
                                                                             .toString();
+    }
+    
+    /**
+     * Metadata builder.
+     */
+    
+    public static class Builder 
+    {
+        /**
+         * The {@link TimeScale} associated with the events in the time-series.
+         */
+
+        private TimeScale timeScale;
+
+        /**
+         * The zero or more reference datetimes associated with the time-series.
+         */
+
+        private Map<ReferenceTimeType, Instant> referenceTimes;
+
+
+        /**
+         * The name of the variable represented, as found in the original dataset.
+         */
+
+        private String variableName;
+
+
+        /**
+         * The name of the geographic feature.
+         */
+
+        private String featureName;
+
+
+        /**
+         * The name of the unit of measure.
+         */
+
+        private String unit;
+        
+        /**
+         * Sets the time-scale.
+         * 
+         * @param timeScale the time-scale
+         * @return the builder
+         */
+        
+        public Builder setTimeScale( TimeScale timeScale )
+        {
+            this.timeScale = timeScale;
+            
+            return this;
+        }
+        
+        /**
+         * Sets the time-scale.
+         * 
+         * @param referenceTimes the reference times (zero or more)
+         * @return the builder
+         */
+        
+        public Builder setReferenceTimes( Map<ReferenceTimeType,Instant> referenceTimes )
+        {
+            this.referenceTimes = referenceTimes;
+            
+            return this;
+        }
+        
+        /**
+         * Sets the variable name.
+         *
+         * @param variableName the variable name
+         * @return the builder
+         */
+        
+        public Builder setVariableName( String variableName )
+        {
+            this.variableName = variableName;
+            
+            return this;
+        }
+        
+        /**
+         * Sets the feature name.
+         *
+         * @param featureName the feature name
+         * @return the builder
+         */
+        
+        public Builder setFeatureName( String featureName )
+        {
+            this.featureName = featureName;
+            
+            return this;
+        }
+        
+        /**
+         * Sets the measurement unit.
+         * 
+         * @param unit the measurement unit
+         * @return the builder
+         */
+        
+        public Builder setUnit( String unit )
+        {
+            this.unit = unit;
+            
+            return this;
+        }
+        
+        /**
+         * Sets an existing source of metadata.
+         * 
+         * @param metadata the existing metadata
+         * @return the builder
+         */
+        
+        public Builder setMetadata( TimeSeriesMetadata metadata )
+        {
+            if( Objects.nonNull( metadata ) )
+            {
+                this.setFeatureName( metadata.getFeatureName() );
+                this.setVariableName( metadata.getVariableName() );
+                this.setReferenceTimes( metadata.getReferenceTimes() );
+                this.setTimeScale( metadata.getTimeScale() );
+                this.setUnit( metadata.getUnit() );
+            }
+            
+            return this;
+        }
+        
+        /**
+         * Builds an instance of the metadata.
+         * 
+         * @return the metadata
+         */
+        
+        public TimeSeriesMetadata build()
+        {
+            return new TimeSeriesMetadata( this );
+        }
+    }
+    
+    /**
+     * Hidden constructor.
+     * 
+     * @param builder the builder
+     * @throws NullPointerException if any arg besides timeScale is null
+     */
+
+    private TimeSeriesMetadata( Builder builder )
+    {
+        // Set then validate
+        Map<ReferenceTimeType,Instant> localTimes = builder.referenceTimes;
+        
+        if( Objects.nonNull( localTimes ) )
+        {
+            localTimes = Collections.unmodifiableMap( localTimes );
+        }
+        
+        this.referenceTimes = localTimes;
+        this.timeScale = builder.timeScale;
+        this.variableName = builder.variableName;
+        this.featureName = builder.featureName;
+        this.unit = builder.unit;
+        
+        Objects.requireNonNull( this.getReferenceTimes() );
+        // Often the timescale is not available: in that case valid to use null.
+        Objects.requireNonNull( this.getVariableName() );
+        Objects.requireNonNull( this.getFeatureName() );
+        Objects.requireNonNull( this.getUnit() );
+
     }
 }
