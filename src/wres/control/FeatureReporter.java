@@ -15,7 +15,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.ProjectConfigPlus;
-import wres.config.generated.DestinationType;
 import wres.config.generated.Feature;
 import wres.io.config.ConfigHelper;
 
@@ -67,13 +66,6 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
     private final ProjectConfigPlus projectConfigPlus;
 
     /**
-     * Is <code>true</code> if statistical outputs were requested as part of the declaration that are written per
-     * feature, <code>false</code> if no statistical outputs were requested in formats that are written per feature.
-     */
-
-    private final boolean statisticalOutputsRequestedPerFeature;
-
-    /**
      * The number of features processed so far.
      */
 
@@ -106,15 +98,6 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
         this.successfulFeatures = new ConcurrentLinkedQueue<>();
         this.processed = new AtomicInteger( 1 );
         this.pathsWrittenTo = new ConcurrentSkipListSet<>();
-
-        // Statistical outputs requested in a format that is written per feature?
-        this.statisticalOutputsRequestedPerFeature =
-                this.projectConfigPlus.getProjectConfig()
-                                      .getOutputs()
-                                      .getDestination()
-                                      .stream()
-                                      .anyMatch( next -> next.getType() != DestinationType.PAIRS
-                                                         && next.getType() != DestinationType.NETCDF );
     }
 
     /**
@@ -131,7 +114,7 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
         // Increment the feature count
         int currentFeature = this.processed.getAndIncrement();
 
-        if ( !result.hasStatistics() && this.statisticalOutputsRequestedPerFeature )
+        if ( !result.hasStatistics() )
         {
             LOGGER.warn( "[{}/{}] Completed feature '{}', but no statistics were produced. "
                          + "This probably occurred because no pools contained valid pairs.",
