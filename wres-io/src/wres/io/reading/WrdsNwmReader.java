@@ -317,8 +317,8 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
         String measurementUnit = document.getVariable()
                                          .get( "unit" );
         
-        // Time scale if available, default to INSTANTANEOUS (this is NWM)
-        TimeScale timeScale = TimeScale.of();
+        // Time scale if available
+        TimeScale timeScale = null;
  
         if( Objects.nonNull( document.getParameterCodes() ) )
         {
