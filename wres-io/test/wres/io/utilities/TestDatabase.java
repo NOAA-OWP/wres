@@ -66,6 +66,7 @@ public class TestDatabase
         String url = this.getJdbcString();
         poolConfig.setJdbcUrl( url );
         poolConfig.setMaximumPoolSize( 10 );
+        poolConfig.setConnectionTimeout( 0 );
         return new HikariDataSource( poolConfig );
     }
 

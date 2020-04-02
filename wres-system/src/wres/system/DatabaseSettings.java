@@ -423,6 +423,7 @@ final class DatabaseSettings
         poolConfig.setPassword( pass );
         int maxSize = this.maxPoolSize;
         poolConfig.setMaximumPoolSize( maxSize );
+        poolConfig.setConnectionTimeout( 0 );
         return new HikariDataSource( poolConfig );
 	}
 
@@ -443,6 +444,7 @@ final class DatabaseSettings
         poolConfig.setPassword( pass );
         int maxSize = 5;
         poolConfig.setMaximumPoolSize( maxSize );
+        poolConfig.setConnectionTimeout( 0 );
         return new HikariDataSource( poolConfig );
 	}
 
