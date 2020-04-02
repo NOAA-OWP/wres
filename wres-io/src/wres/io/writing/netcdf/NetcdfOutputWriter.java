@@ -805,13 +805,14 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                     }
                     catch ( CoordinateNotFoundException e )
                     {
-                        LOGGER.error( "There are no records for where to put results for " + location
-                                      +
-                                      ". Netcdf output for "
-                                      + location
-                                      + " cannot be written. If outputs are not "
-                                      + "written in other formats, you will not be able to view these results." );
-                        throw e;
+                        throw new CoordinateNotFoundException( "While trying to write the statistic " + componentScore
+                                                               + "to the variable "
+                                                               + name
+                                                               + " at path "
+                                                               + this.outputPath
+                                                               + ", failed to identify a required coordinate for one "
+                                                               + "or more features.",
+                                                               e );
                     }
 
                     Double actualValue = componentScore.getData();
