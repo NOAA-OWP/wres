@@ -25,6 +25,9 @@ import wres.datamodel.time.TimeSeriesCrossPairer.MatchMode;
 public final class TimeSeriesCrossPairerTest
 {
 
+    private static final String KG_H = "kg/h";
+    private static final String GEORGIA = "Georgia";
+    private static final String CHICKENS = "Chickens";
     private static final Instant ZEROTH = Instant.parse( "2123-12-01T00:00:00Z" );
     private static final Instant FIRST = Instant.parse( "2123-12-01T06:00:00Z" );
     private static final Instant SECOND = Instant.parse( "2123-12-01T12:00:00Z" );
@@ -65,9 +68,9 @@ public final class TimeSeriesCrossPairerTest
                 TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.T0,
                                                                  ZEROTH ),
                                        TimeScale.of(),
-                                       "Chickens",
-                                       "Georgia",
-                                       "kg/h" );
+                                       CHICKENS,
+                                       GEORGIA,
+                                       KG_H );
 
         TimeSeries<Pair<Integer, Integer>> firstSeries =
                 new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( metadata )
@@ -119,9 +122,9 @@ public final class TimeSeriesCrossPairerTest
                 TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.T0,
                                                                  ZEROTH ),
                                        TimeScale.of(),
-                                       "Chickens",
-                                       "Georgia",
-                                       "kg/h" );
+                                       CHICKENS,
+                                       GEORGIA,
+                                       KG_H );
         TimeSeries<Pair<Integer, Integer>> firstSeries =
                 new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( firstMetadata )
                                                                .addEvent( first )
@@ -133,9 +136,9 @@ public final class TimeSeriesCrossPairerTest
                 TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.T0,
                                                                  FIRST ),
                                        TimeScale.of(),
-                                       "Chickens",
-                                       "Georgia",
-                                       "kg/h" );
+                                       CHICKENS,
+                                       GEORGIA,
+                                       KG_H );
         TimeSeries<Pair<Integer, Integer>> secondSeries =
                 new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( secondMetadata )
                                                                .addEvent( second )
@@ -156,9 +159,9 @@ public final class TimeSeriesCrossPairerTest
                 TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.T0,
                                                                  SECOND ),
                                        TimeScale.of(),
-                                       "Chickens",
-                                       "Georgia",
-                                       "kg/h" );
+                                       CHICKENS,
+                                       GEORGIA,
+                                       KG_H );
         TimeSeries<Pair<Integer, Integer>> fourthSeries =
                 new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( fourthMetadata )
                                                                .addEvent( fourth )
@@ -181,9 +184,9 @@ public final class TimeSeriesCrossPairerTest
                 TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.T0,
                                                                  ZEROTH ),
                                        TimeScale.of(),
-                                       "Chickens",
-                                       "Georgia",
-                                       "kg/h" );
+                                       CHICKENS,
+                                       GEORGIA,
+                                       KG_H );
         TimeSeries<Pair<Integer, Integer>> firstSeries =
                 new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( firstMetadata )
                                                                .addEvent( first )
@@ -195,9 +198,9 @@ public final class TimeSeriesCrossPairerTest
                 TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.T0,
                                                                  FIRST ),
                                        TimeScale.of(),
-                                       "Chickens",
-                                       "Georgia",
-                                       "kg/h" );
+                                       CHICKENS,
+                                       GEORGIA,
+                                       KG_H );
         TimeSeries<Pair<Integer, Integer>> secondSeries =
                 new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( secondMetadata )
                                                                .addEvent( second )
@@ -222,9 +225,9 @@ public final class TimeSeriesCrossPairerTest
                 TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.T0,
                                                                  ZEROTH ),
                                        TimeScale.of(),
-                                       "Chickens",
-                                       "Georgia",
-                                       "kg/h" );
+                                       CHICKENS,
+                                       GEORGIA,
+                                       KG_H );
         TimeSeries<Pair<Integer, Integer>> firstSeries =
                 new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( firstMetadata )
                                                                .addEvent( first )
@@ -236,9 +239,9 @@ public final class TimeSeriesCrossPairerTest
                 TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.T0,
                                                                  ZEROTH ),
                                        TimeScale.of(),
-                                       "Chickens",
-                                       "Georgia",
-                                       "kg/h" );
+                                       CHICKENS,
+                                       GEORGIA,
+                                       KG_H );
         TimeSeries<Pair<Integer, Integer>> secondSeries =
                 new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( secondMetadata )
                                                                .addEvent( second )
@@ -263,9 +266,9 @@ public final class TimeSeriesCrossPairerTest
                 TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.T0,
                                                                  ZEROTH ),
                                        TimeScale.of(),
-                                       "Chickens",
-                                       "Georgia",
-                                       "kg/h" );
+                                       CHICKENS,
+                                       GEORGIA,
+                                       KG_H );
         TimeSeries<Pair<Integer, Integer>> firstSeries =
                 new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( firstMetadata )
                                                                .addEvent( first )
@@ -278,9 +281,9 @@ public final class TimeSeriesCrossPairerTest
                 TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.T0,
                                                                  FIRST ),
                                        TimeScale.of(),
-                                       "Chickens",
-                                       "Georgia",
-                                       "kg/h" );
+                                       CHICKENS,
+                                       GEORGIA,
+                                       KG_H );
         TimeSeries<Pair<Integer, Integer>> secondSeries =
                 new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( secondMetadata )
                                                                .addEvent( second )
@@ -312,9 +315,9 @@ public final class TimeSeriesCrossPairerTest
                 TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.T0,
                                                                  ZEROTH ),
                                        TimeScale.of(),
-                                       "Chickens",
-                                       "Georgia",
-                                       "kg/h" );
+                                       CHICKENS,
+                                       GEORGIA,
+                                       KG_H );
         TimeSeries<Pair<Integer, Integer>> firstSeries =
                 new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( firstMetadata )
                                                                .addEvent( first )
@@ -326,9 +329,9 @@ public final class TimeSeriesCrossPairerTest
                 TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.T0,
                                                                  FIRST ),
                                        TimeScale.of(),
-                                       "Chickens",
-                                       "Georgia",
-                                       "kg/h" );
+                                       CHICKENS,
+                                       GEORGIA,
+                                       KG_H );
         TimeSeries<Pair<Integer, Integer>> secondSeries =
                 new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( secondMetadata )
                                                                .addEvent( second )
@@ -351,9 +354,9 @@ public final class TimeSeriesCrossPairerTest
         TimeSeriesMetadata firstMetadata =
                 TimeSeriesMetadata.of( Collections.emptyMap(),
                                        TimeScale.of(),
-                                       "Chickens",
-                                       "Georgia",
-                                       "kg/h" );
+                                       CHICKENS,
+                                       GEORGIA,
+                                       KG_H );
         TimeSeries<Pair<Integer, Integer>> firstSeries =
                 new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( firstMetadata )
                                                                .addEvent( first )
@@ -363,9 +366,9 @@ public final class TimeSeriesCrossPairerTest
 
         TimeSeriesMetadata secondMetadata = TimeSeriesMetadata.of( Collections.emptyMap(),
                                                                    TimeScale.of(),
-                                                                   "Chickens",
-                                                                   "Georgia",
-                                                                   "kg/h" );
+                                                                   CHICKENS,
+                                                                   GEORGIA,
+                                                                   KG_H );
 
         TimeSeries<Pair<Integer, Integer>> secondSeries =
                 new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( secondMetadata )
@@ -390,9 +393,9 @@ public final class TimeSeriesCrossPairerTest
                 TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.T0,
                                                                  ZEROTH ),
                                        TimeScale.of(),
-                                       "Chickens",
-                                       "Georgia",
-                                       "kg/h" );
+                                       CHICKENS,
+                                       GEORGIA,
+                                       KG_H );
         TimeSeries<Pair<Integer, Integer>> firstSeries =
                 new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( firstMetadata )
                                                                .addEvent( first )
@@ -404,9 +407,9 @@ public final class TimeSeriesCrossPairerTest
                 TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.T0,
                                                                  FIRST ),
                                        TimeScale.of(),
-                                       "Chickens",
-                                       "Georgia",
-                                       "kg/h" );
+                                       CHICKENS,
+                                       GEORGIA,
+                                       KG_H );
 
         TimeSeries<Pair<Integer, Integer>> secondSeries =
                 new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( secondMetadata )
@@ -428,9 +431,9 @@ public final class TimeSeriesCrossPairerTest
                 TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.T0,
                                                                  SECOND ),
                                        TimeScale.of(),
-                                       "Chickens",
-                                       "Georgia",
-                                       "kg/h" );
+                                       CHICKENS,
+                                       GEORGIA,
+                                       KG_H );
 
         TimeSeries<Pair<Integer, Integer>> fourthSeries =
                 new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( fourthMetadata )
@@ -446,9 +449,9 @@ public final class TimeSeriesCrossPairerTest
                 TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.T0,
                                                                  nearToFirst ),
                                        TimeScale.of(),
-                                       "Chickens",
-                                       "Georgia",
-                                       "kg/h" );
+                                       CHICKENS,
+                                       GEORGIA,
+                                       KG_H );
 
         TimeSeries<Pair<Integer, Integer>> fifthSeries =
                 new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( fifthMetadata )
@@ -462,9 +465,9 @@ public final class TimeSeriesCrossPairerTest
                 TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.T0,
                                                                  THIRD ),
                                        TimeScale.of(),
-                                       "Chickens",
-                                       "Georgia",
-                                       "kg/h" );
+                                       CHICKENS,
+                                       GEORGIA,
+                                       KG_H );
 
         TimeSeries<Pair<Integer, Integer>> sixthSeries =
                 new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( sixthMetadata )
@@ -490,9 +493,9 @@ public final class TimeSeriesCrossPairerTest
                 TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.T0,
                                                                  ZEROTH ),
                                        TimeScale.of(),
-                                       "Chickens",
-                                       "Georgia",
-                                       "kg/h" );
+                                       CHICKENS,
+                                       GEORGIA,
+                                       KG_H );
 
         TimeSeries<Pair<Integer, Integer>> firstSeries =
                 new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( firstMetadata )
@@ -505,9 +508,9 @@ public final class TimeSeriesCrossPairerTest
                 TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.ANALYSIS_START_TIME,
                                                                  ZEROTH ),
                                        TimeScale.of(),
-                                       "Chickens",
-                                       "Georgia",
-                                       "kg/h" );
+                                       CHICKENS,
+                                       GEORGIA,
+                                       KG_H );
 
         TimeSeries<Pair<Integer, Integer>> secondSeries =
                 new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( secondMetadata )

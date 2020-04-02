@@ -37,6 +37,10 @@ import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 public final class TimeSeriesSlicerTest
 {
 
+    private static final String CFS = "CFS";
+    private static final String STREAMFLOW = "STREAMFLOW";
+    private static final String DRRC2 = "DRRC2";
+    private static final String T2010_01_01T16_00_00Z = "2010-01-01T16:00:00Z";
     private static final Instant T2010_01_01T15_00_00Z = Instant.parse( "2010-01-01T15:00:00Z" );
     private static final Instant T2010_01_01T12_00_00Z = Instant.parse( "2010-01-01T12:00:00Z" );
     private static final Instant T1985_01_01T00_00_00Z = Instant.parse( "1985-01-01T00:00:00Z" );
@@ -91,25 +95,39 @@ public final class TimeSeriesSlicerTest
                                                                         firstBasisTime ),
                                                                 TimeScale
                                                                         .of( Duration.ofHours( 1 ) ),
-                                                                "STREAMFLOW",
-                                                                "DRRC2",
-                                                                "CFS" );
+                                                                STREAMFLOW,
+                                                                DRRC2,
+                                                                CFS );
+        
+        TimeSeriesMetadata metadataOneNoRefTimes = TimeSeriesMetadata.of( Map.of(),
+                                                                TimeScale
+                                                                        .of( Duration.ofHours( 1 ) ),
+                                                                STREAMFLOW,
+                                                                DRRC2,
+                                                                CFS );
 
         TimeSeriesMetadata metadataTwo = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
                                                                         secondBasisTime ),
                                                                 TimeScale
                                                                         .of( Duration.ofHours( 1 ) ),
-                                                                "STREAMFLOW",
-                                                                "DRRC2",
-                                                                "CFS" );
+                                                                STREAMFLOW,
+                                                                DRRC2,
+                                                                CFS );
 
         TimeSeriesMetadata metadataThree = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
                                                                           thirdBasisTime ),
                                                                   TimeScale
                                                                           .of( Duration.ofHours( 1 ) ),
-                                                                  "STREAMFLOW",
-                                                                  "DRRC2",
-                                                                  "CFS" );
+                                                                  STREAMFLOW,
+                                                                  DRRC2,
+                                                                  CFS );
+        
+        TimeSeriesMetadata metadataThreeNoRefTimes = TimeSeriesMetadata.of( Map.of(),
+                                                                            TimeScale
+                                                                                     .of( Duration.ofHours( 1 ) ),
+                                                                            STREAMFLOW,
+                                                                            DRRC2,
+                                                                            CFS );
         //Add the time-series
         TimeSeries<Pair<Double, Double>> one = TimeSeries.of( metadataOne, first );
         TimeSeries<Pair<Double, Double>> two = TimeSeries.of( metadataTwo, second );
@@ -123,7 +141,7 @@ public final class TimeSeriesSlicerTest
                                                         TimeWindow.DURATION_MIN,
                                                         TimeWindow.DURATION_MAX ) );
 
-        assertEquals( TimeSeries.of( metadataOne ), filteredOne );
+        assertEquals( TimeSeries.of( metadataOneNoRefTimes ), filteredOne );
 
         TimeSeries<Pair<Double, Double>> filteredTwo =
                 TimeSeriesSlicer.filter( two,
@@ -141,7 +159,7 @@ public final class TimeSeriesSlicerTest
                                                         TimeWindow.DURATION_MIN,
                                                         TimeWindow.DURATION_MAX ) );
 
-        assertEquals( TimeSeries.of( metadataThree ), filteredThree );
+        assertEquals( TimeSeries.of( metadataThreeNoRefTimes ), filteredThree );
 
         //Check exceptional cases
         assertThrows( NullPointerException.class,
@@ -730,7 +748,7 @@ public final class TimeSeriesSlicerTest
         first.add( Event.of( Instant.parse( "2010-01-01T13:00:00Z" ), 1.0 ) );
         first.add( Event.of( Instant.parse( "2010-01-01T14:00:00Z" ), 2.0 ) );
         first.add( Event.of( T2010_01_01T15_00_00Z, 3.0 ) );
-        first.add( Event.of( Instant.parse( "2010-01-01T16:00:00Z" ), 4.0 ) );
+        first.add( Event.of( Instant.parse( T2010_01_01T16_00_00Z ), 4.0 ) );
         first.add( Event.of( Instant.parse( "2010-01-01T17:00:00Z" ), 5.0 ) );
         TimeSeriesMetadata metadata = getBoilerplateMetadataWithT0( T2010_01_01T12_00_00Z );
         TimeSeries<Double> toSnip = TimeSeries.of( metadata, first );
@@ -752,7 +770,7 @@ public final class TimeSeriesSlicerTest
 
         expectedEvents.add( Event.of( Instant.parse( "2010-01-01T14:00:00Z" ), 2.0 ) );
         expectedEvents.add( Event.of( T2010_01_01T15_00_00Z, 3.0 ) );
-        expectedEvents.add( Event.of( Instant.parse( "2010-01-01T16:00:00Z" ), 4.0 ) );
+        expectedEvents.add( Event.of( Instant.parse( T2010_01_01T16_00_00Z ), 4.0 ) );
 
         TimeSeries<Double> expected = TimeSeries.of( metadata, expectedEvents );
 
@@ -776,7 +794,7 @@ public final class TimeSeriesSlicerTest
 
         // Create the expected series
         SortedSet<Event<Double>> expectedEvents = new TreeSet<>();
-        expectedEvents.add( Event.of( Instant.parse( "2010-01-01T16:00:00Z" ), 3.0 ) );
+        expectedEvents.add( Event.of( Instant.parse( T2010_01_01T16_00_00Z ), 3.0 ) );
         TimeSeries<Double> expected = TimeSeries.of( metadata, expectedEvents );
 
         assertEquals( expected, actual );

@@ -22,6 +22,30 @@ import wres.system.SystemSettings;
 
 public class NWMTimeSeriesTest
 {
+    private static final String FINISHED_OPENING_FORECAST_FILES_NOW_READING = "Finished opening forecast files, now reading...";
+
+    private static final String T2019_10_06T02_00_00Z = "2019-10-06T02:00:00Z";
+
+    private static final String HERE_IS_THE_TIMESERIES = "Here is the timeseries: {}";
+
+    private static final String OPENING_A_FORECAST_BASED_ON = "Opening a forecast based on {}";
+
+    private static final String ANALYSIS_ASSIM = "analysis_assim";
+
+    private static final String LAND = "land";
+
+    private static final String MEDIUM_RANGE = "medium_range";
+
+    private static final String CONUS = "conus";
+
+    private static final String CHANNEL_RT = "channel_rt";
+
+    private static final String SHORT_RANGE = "short_range";
+
+    private static final String CMS = "CMS";
+
+    private static final String STREAMFLOW = "streamflow";
+
     private static final Logger LOGGER = LoggerFactory.getLogger( NWMTimeSeriesTest.class );
 
     @Mock SystemSettings mockSystemSettings;
@@ -34,7 +58,7 @@ public class NWMTimeSeriesTest
                                                 Duration.ofHours( 3 ),
                                                 true,
                                                 "fake_range",
-                                                "channel_rt",
+                                                CHANNEL_RT,
                                                 NWMProfile.TimeLabel.f,
                                                 "fake_dir_prefix",
                                                 "fake_location_label",
@@ -59,11 +83,11 @@ public class NWMTimeSeriesTest
                                                 1,
                                                 Duration.ofHours( 1 ),
                                                 true,
-                                                "short_range",
-                                                "channel_rt",
+                                                SHORT_RANGE,
+                                                CHANNEL_RT,
                                                 NWMProfile.TimeLabel.f,
-                                                "short_range",
-                                                "conus",
+                                                SHORT_RANGE,
+                                                CONUS,
                                                 Duration.ofHours( 1 ),
                                                 false );
         Set<URI> actual = NWMTimeSeries.getNetcdfUris( nwmProfile,
@@ -99,11 +123,11 @@ public class NWMTimeSeriesTest
                                                 3,
                                                 Duration.ofHours( 3 ),
                                                 false,
-                                                "medium_range",
-                                                "land",
+                                                MEDIUM_RANGE,
+                                                LAND,
                                                 NWMProfile.TimeLabel.f,
-                                                "medium_range",
-                                                "conus",
+                                                MEDIUM_RANGE,
+                                                CONUS,
                                                 Duration.ofHours( 6 ),
                                                 true );
         Set<URI> actual = NWMTimeSeries.getNetcdfUris( nwmProfile,
@@ -142,7 +166,7 @@ public class NWMTimeSeriesTest
                                                 1,
                                                 Duration.ofHours( 1 ),
                                                 false,
-                                                "analysis_assim",
+                                                ANALYSIS_ASSIM,
                                                 "reservoir",
                                                 NWMProfile.TimeLabel.tm,
                                                 "analysis_assim_hawaii",
@@ -151,7 +175,7 @@ public class NWMTimeSeriesTest
                                                 false );
         Set<URI> actual = NWMTimeSeries.getNetcdfUris( nwmProfile,
                                                        Instant.parse(
-                                                             "2019-10-06T02:00:00Z" ),
+                                                             T2019_10_06T02_00_00Z ),
                                                        URI.create( "file:///test/" ) );
 
         Set<URI> expected = Set.of( URI.create(
@@ -173,11 +197,11 @@ public class NWMTimeSeriesTest
                                                 1,
                                                 Duration.ofHours( 1 ),
                                                 false,
-                                                "analysis_assim",
+                                                ANALYSIS_ASSIM,
                                                 "reservoir",
                                                 NWMProfile.TimeLabel.tm,
-                                                "analysis_assim",
-                                                "conus",
+                                                ANALYSIS_ASSIM,
+                                                CONUS,
                                                 Duration.ofHours( 1 ),
                                                 false );
 
@@ -203,26 +227,26 @@ public class NWMTimeSeriesTest
                                                 1,
                                                 Duration.ofHours( 1 ),
                                                 true,
-                                                "short_range",
-                                                "channel_rt",
+                                                SHORT_RANGE,
+                                                CHANNEL_RT,
                                                 NWMProfile.TimeLabel.f,
-                                                "short_range",
-                                                "conus",
+                                                SHORT_RANGE,
+                                                CONUS,
                                                 Duration.ofHours( 1 ),
                                                 false );
 
-        LOGGER.info( "Opening a forecast based on {}", nwmProfile );
+        LOGGER.info( OPENING_A_FORECAST_BASED_ON, nwmProfile );
 
         try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( this.mockSystemSettings,
                                                                nwmProfile,
                                                                Instant.parse( "2019-10-22T02:00:00Z" ),
                                                                URI.create( "https://nomads.ncep.***REMOVED***/pub/data/nccf/com/nwm/prod/" ) ) )
         {
-            LOGGER.info( "Finished opening forecast files, now reading..." );
+            LOGGER.info( FINISHED_OPENING_FORECAST_FILES_NOW_READING );
             int featureId = 18384141;
-            TimeSeries<?> timeSeries = nwmTimeSeries.readTimeSerieses( new int[] { featureId }, "streamflow", "CMS" )
+            TimeSeries<?> timeSeries = nwmTimeSeries.readTimeSerieses( new int[] { featureId }, STREAMFLOW, CMS )
                                                     .get( featureId );
-            LOGGER.info( "Here is the timeseries: {}", timeSeries );
+            LOGGER.info( HERE_IS_THE_TIMESERIES, timeSeries );
             assertNotNull( timeSeries );
             assertNotEquals( 0, timeSeries.getEvents().size() );
         }
@@ -240,26 +264,26 @@ public class NWMTimeSeriesTest
                                                 1,
                                                 Duration.ofHours( 1 ),
                                                 true,
-                                                "short_range",
-                                                "channel_rt",
+                                                SHORT_RANGE,
+                                                CHANNEL_RT,
                                                 NWMProfile.TimeLabel.f,
-                                                "short_range",
-                                                "conus",
+                                                SHORT_RANGE,
+                                                CONUS,
                                                 Duration.ofHours( 1 ),
                                                 false );
 
-        LOGGER.info( "Opening a forecast based on {}", nwmProfile );
+        LOGGER.info( OPENING_A_FORECAST_BASED_ON, nwmProfile );
 
         try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( this.mockSystemSettings,
                                                                nwmProfile,
-                                                               Instant.parse( "2019-10-06T02:00:00Z" ),
+                                                               Instant.parse( T2019_10_06T02_00_00Z ),
                                                                URI.create( "https://dstore-fqdn/nwm/2.0/" ) ) )
         {
-            LOGGER.info( "Finished opening forecast files, now reading..." );
+            LOGGER.info( FINISHED_OPENING_FORECAST_FILES_NOW_READING );
             int featureId = 18384141;
-            TimeSeries<?> timeSeries = nwmTimeSeries.readTimeSerieses( new int[] { featureId }, "streamflow", "CMS" )
+            TimeSeries<?> timeSeries = nwmTimeSeries.readTimeSerieses( new int[] { featureId }, STREAMFLOW, CMS )
                                                     .get( featureId );
-            LOGGER.info( "Here is the timeseries: {}", timeSeries );
+            LOGGER.info( HERE_IS_THE_TIMESERIES, timeSeries );
             assertNotNull( timeSeries );
             assertNotEquals( 0, timeSeries.getEvents().size() );
         }
@@ -276,26 +300,26 @@ public class NWMTimeSeriesTest
                                                 1,
                                                 Duration.ofHours( 1 ),
                                                 true,
-                                                "short_range",
-                                                "channel_rt",
+                                                SHORT_RANGE,
+                                                CHANNEL_RT,
                                                 NWMProfile.TimeLabel.f,
-                                                "short_range",
-                                                "conus",
+                                                SHORT_RANGE,
+                                                CONUS,
                                                 Duration.ofHours( 1 ),
                                                 false );
 
-        LOGGER.info( "Opening a forecast based on {}", nwmProfile );
+        LOGGER.info( OPENING_A_FORECAST_BASED_ON, nwmProfile );
 
         try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( this.mockSystemSettings,
                                                                nwmProfile,
                                                                Instant.parse( "2018-05-06T04:00:00Z" ),
                                                                URI.create( "https://dstore-fqdn/nwm/1.2/" ) ) )
         {
-            LOGGER.info( "Finished opening forecast files, now reading..." );
+            LOGGER.info( FINISHED_OPENING_FORECAST_FILES_NOW_READING );
             int featureId = 18384141;
-            TimeSeries<?> timeSeries = nwmTimeSeries.readTimeSerieses( new int[] { featureId }, "streamflow", "CMS" )
+            TimeSeries<?> timeSeries = nwmTimeSeries.readTimeSerieses( new int[] { featureId }, STREAMFLOW, CMS )
                                                     .get( featureId );
-            LOGGER.info( "Here is the timeseries: {}", timeSeries );
+            LOGGER.info( HERE_IS_THE_TIMESERIES, timeSeries );
             assertNotNull( timeSeries );
             assertNotEquals( 0, timeSeries.getEvents().size() );
         }
@@ -313,23 +337,23 @@ public class NWMTimeSeriesTest
                                                 1,
                                                 Duration.ofHours( 1 ),
                                                 true,
-                                                "short_range",
-                                                "channel_rt",
+                                                SHORT_RANGE,
+                                                CHANNEL_RT,
                                                 NWMProfile.TimeLabel.f,
-                                                "short_range",
-                                                "conus",
+                                                SHORT_RANGE,
+                                                CONUS,
                                                 Duration.ofHours( 1 ),
                                                 false );
 
-        LOGGER.info( "Opening a forecast based on {}", nwmProfile );
+        LOGGER.info( OPENING_A_FORECAST_BASED_ON, nwmProfile );
         try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( this.mockSystemSettings,
                                                                nwmProfile,
                                                                Instant.parse( "2017-10-06T17:00:00Z" ),
                                                                URI.create( "https://dstore-fqdn/nwm/1.1/" ) ) )
         {
-            LOGGER.info( "Finished opening forecast files, now reading..." );
+            LOGGER.info( FINISHED_OPENING_FORECAST_FILES_NOW_READING );
             int featureId = 18384141;
-            TimeSeries<?> timeSeries = nwmTimeSeries.readTimeSerieses( new int[] { featureId }, "streamflow", "CMS" )
+            TimeSeries<?> timeSeries = nwmTimeSeries.readTimeSerieses( new int[] { featureId }, STREAMFLOW, CMS )
                                                     .get( featureId );
             assertNotNull( timeSeries );
             assertNotEquals( 0, timeSeries.getEvents().size() );
@@ -348,25 +372,25 @@ public class NWMTimeSeriesTest
                                                 1,
                                                 Duration.ofHours( 1 ),
                                                 true,
-                                                "short_range",
-                                                "channel_rt",
+                                                SHORT_RANGE,
+                                                CHANNEL_RT,
                                                 NWMProfile.TimeLabel.f,
-                                                "short_range",
-                                                "conus",
+                                                SHORT_RANGE,
+                                                CONUS,
                                                 Duration.ofHours( 1 ),
                                                 false );
-        LOGGER.info( "Opening a forecast based on {}", nwmProfile );
+        LOGGER.info( OPENING_A_FORECAST_BASED_ON, nwmProfile );
 
         try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( this.mockSystemSettings,
                                                                nwmProfile,
                                                                Instant.parse( "2016-10-18T17:00:00Z" ),
                                                                URI.create( "https://dstore-fqdn/nwm/1.0/" ) ) )
         {
-            LOGGER.info( "Finished opening forecast files, now reading..." );
+            LOGGER.info( FINISHED_OPENING_FORECAST_FILES_NOW_READING );
             int featureId = 18384141;
-            TimeSeries<?> timeSeries = nwmTimeSeries.readTimeSerieses( new int[] { featureId }, "streamflow", "CMS" )
+            TimeSeries<?> timeSeries = nwmTimeSeries.readTimeSerieses( new int[] { featureId }, STREAMFLOW, CMS )
                                                     .get( featureId );
-            LOGGER.info( "Here is the timeseries: {}", timeSeries );
+            LOGGER.info( HERE_IS_THE_TIMESERIES, timeSeries );
             assertNotNull( timeSeries );
             assertNotEquals( 0, timeSeries.getEvents().size() );
         }
@@ -382,25 +406,25 @@ public class NWMTimeSeriesTest
                                                 1,
                                                 Duration.ofHours( 1 ),
                                                 true,
-                                                "short_range",
-                                                "channel_rt",
+                                                SHORT_RANGE,
+                                                CHANNEL_RT,
                                                 NWMProfile.TimeLabel.f,
-                                                "short_range",
-                                                "conus",
+                                                SHORT_RANGE,
+                                                CONUS,
                                                 Duration.ofHours( 1 ),
                                                 false );
 
-        LOGGER.info( "Opening a forecast based on {}", nwmProfile );
+        LOGGER.info( OPENING_A_FORECAST_BASED_ON, nwmProfile );
         try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( this.mockSystemSettings,
                                                                nwmProfile,
-                                                               Instant.parse( "2019-10-06T02:00:00Z" ),
+                                                               Instant.parse( T2019_10_06T02_00_00Z ),
                                                                URI.create( "H:/netcdf_data/" ) ) )
         {
-            LOGGER.info( "Finished opening forecast files, now reading..." );
+            LOGGER.info( FINISHED_OPENING_FORECAST_FILES_NOW_READING );
             int featureId = 18384141;
-            TimeSeries<?> timeSeries = nwmTimeSeries.readTimeSerieses( new int[] { featureId }, "streamflow", "CMS" )
+            TimeSeries<?> timeSeries = nwmTimeSeries.readTimeSerieses( new int[] { featureId }, STREAMFLOW, CMS )
                                                     .get( featureId );
-            LOGGER.info( "Here is the timeseries: {}", timeSeries );
+            LOGGER.info( HERE_IS_THE_TIMESERIES, timeSeries );
             assertNotNull( timeSeries );
             assertNotEquals( 0, timeSeries.getEvents().size() );
         }
@@ -419,24 +443,24 @@ public class NWMTimeSeriesTest
                                                 7,
                                                 Duration.ofHours( 3 ),
                                                 true,
-                                                "medium_range",
-                                                "channel_rt",
+                                                MEDIUM_RANGE,
+                                                CHANNEL_RT,
                                                 NWMProfile.TimeLabel.f,
-                                                "medium_range",
-                                                "conus",
+                                                MEDIUM_RANGE,
+                                                CONUS,
                                                 Duration.ofHours( 6 ),
                                                 true );
 
-        LOGGER.info( "Opening a forecast based on {}", nwmProfile );
+        LOGGER.info( OPENING_A_FORECAST_BASED_ON, nwmProfile );
 
         try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( this.mockSystemSettings,
                                                                nwmProfile,
                                                                Instant.parse( "2019-10-21T06:00:00Z" ),
                                                                URI.create( "https://dstore-fqdn/nwm/2.0/" ) ) )
         {
-            LOGGER.info( "Finished opening forecast files, now reading..." );
+            LOGGER.info( FINISHED_OPENING_FORECAST_FILES_NOW_READING );
             int[] featureIds = new int[] { 18384141, 18696047, 942030011 };
-            Map<Integer,TimeSeries<?>> timeSerieses = nwmTimeSeries.readEnsembleTimeSerieses( featureIds, "streamflow", "CMS" );
+            Map<Integer,TimeSeries<?>> timeSerieses = nwmTimeSeries.readEnsembleTimeSerieses( featureIds, STREAMFLOW, CMS );
             TimeSeries<?> timeSeries1 = timeSerieses.get( featureIds[0] );
             LOGGER.info( "Here is timeSeries 1: {}", timeSeries1 );
             TimeSeries<?> timeSeries2 = timeSerieses.get( featureIds[1] );
@@ -465,24 +489,24 @@ public class NWMTimeSeriesTest
                                                 7,
                                                 Duration.ofHours( 3 ),
                                                 true,
-                                                "medium_range",
-                                                "channel_rt",
+                                                MEDIUM_RANGE,
+                                                CHANNEL_RT,
                                                 NWMProfile.TimeLabel.f,
-                                                "medium_range",
-                                                "conus",
+                                                MEDIUM_RANGE,
+                                                CONUS,
                                                 Duration.ofHours( 6 ),
                                                 true );
 
-        LOGGER.info( "Opening a forecast based on {}", nwmProfile );
+        LOGGER.info( OPENING_A_FORECAST_BASED_ON, nwmProfile );
 
         try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( this.mockSystemSettings,
                                                                nwmProfile,
                                                                Instant.parse( "2019-10-21T06:00:00Z" ),
                                                                URI.create( "C:/nwm_data/" ) ) )
         {
-            LOGGER.info( "Finished opening forecast files, now reading..." );
+            LOGGER.info( FINISHED_OPENING_FORECAST_FILES_NOW_READING );
             int[] featureIds = new int[] { 18384141, 18696047, 942030011 };
-            Map<Integer,TimeSeries<?>> timeSerieses = nwmTimeSeries.readEnsembleTimeSerieses( featureIds, "streamflow", "CMS" );
+            Map<Integer,TimeSeries<?>> timeSerieses = nwmTimeSeries.readEnsembleTimeSerieses( featureIds, STREAMFLOW, CMS );
             TimeSeries<?> timeSeries1 = timeSerieses.get( featureIds[0] );
             LOGGER.info( "Here is timeSeries 1: {}", timeSeries1 );
             TimeSeries<?> timeSeries2 = timeSerieses.get( featureIds[1] );

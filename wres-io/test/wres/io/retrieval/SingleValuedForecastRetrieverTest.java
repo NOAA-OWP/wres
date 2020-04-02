@@ -109,7 +109,7 @@ public class SingleValuedForecastRetrieverTest
     }
 
     @Before
-    public void setup() throws Exception
+    public void setup() throws SQLException, LiquibaseException
     {
         MockitoAnnotations.initMocks( this );
 

@@ -250,8 +250,12 @@ public final class TimeSeriesSlicer
         notConsideredOrWithinBounds.keySet().removeAll( subset.keySet() );
         notConsideredOrWithinBounds.putAll( referenceTimes );
 
-        TimeSeriesBuilder<T> builder = new TimeSeriesBuilder<>();
-        builder.setMetadata( input.getMetadata() );
+        TimeSeriesMetadata metadata = new TimeSeriesMetadata.Builder().setMetadata( input.getMetadata() )
+                                                                      .setReferenceTimes( notConsideredOrWithinBounds )
+                                                                      .build();
+
+        TimeSeriesBuilder<T> builder = new TimeSeriesBuilder<>();       
+        builder.setMetadata( metadata );
 
         // Some reference times existed and none were within the filter bounds?
         if ( !input.getReferenceTimes().isEmpty() && notConsideredOrWithinBounds.isEmpty() )

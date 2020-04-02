@@ -119,7 +119,7 @@ public class SingleValuedGriddedRetrieverTest
     }
 
     @Before
-    public void setup() throws Exception
+    public void setup() throws SQLException, LiquibaseException
     {
         MockitoAnnotations.initMocks( this );
         // Create the database and connection pool
@@ -219,16 +219,6 @@ public class SingleValuedGriddedRetrieverTest
         this.testDatabase = null;
         this.dataSource.close();
         this.dataSource = null;
-    }
-
-    /**
-     * Does the basic set-up work to create a connection and schema.
-     * 
-     * @throws Exception if the set-up failed
-     */
-
-    private void createTheConnectionAndSchema() throws Exception
-    {
     }
 
     /**

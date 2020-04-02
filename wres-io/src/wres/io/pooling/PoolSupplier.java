@@ -1254,8 +1254,8 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
             }
 
             TimeSeriesBuilder<Pair<L, R>> filteredSeries = new TimeSeriesBuilder<>();
-            TimeSeriesMetadata metadata = toFilter.getMetadata();
-            filteredSeries.setMetadata( metadata );
+            TimeSeriesMetadata localMetadata = toFilter.getMetadata();
+            filteredSeries.setMetadata( localMetadata );
 
             List<Event<Pair<L, R>>> events = new ArrayList<>( toFilter.getEvents() );
 
@@ -1315,7 +1315,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
     }
 
     /**
-     * Logs the validation events of type ScaleValidationEvent WARN associated with rescaling.
+     * Logs the validation events of type {@link EventType#WARN} associated with rescaling.
      * 
      * TODO: these warnings could probably be consolidated and the context information improved. May need to add 
      * more complete metadata information to the times-series.
@@ -1484,27 +1484,18 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
 
             for ( TimeSeries<T> next : timeSeries )
             {
-                TimeSeriesMetadata metadata = next.getMetadata();
-                Map<ReferenceTimeType, Instant> referenceTimes = metadata.getReferenceTimes();
+                TimeSeriesMetadata localMetadata = next.getMetadata();
+                Map<ReferenceTimeType, Instant> referenceTimes = localMetadata.getReferenceTimes();
 
                 // No reference times? Then consolidate into one series
                 if ( referenceTimes.isEmpty() )
                 {                    
                     consolidatedbuilder.addEvents( next.getEvents() );
-                    consolidatedbuilder.setMetadata( metadata );
+                    consolidatedbuilder.setMetadata( localMetadata );
 
-                    // Validate metadata is same.
-                    if ( Objects.nonNull( previousMetadata )
-                         && !metadata.equals( previousMetadata ) )
-                    {
-                        throw new IllegalArgumentException(
-                                "TimeSeries instances cannot be consolidated due to"
-                                + " non-homogenous metadata. One was "
-                                + previousMetadata.toString()
-                                + " and the other was "
-                                + metadata.toString() );
-                    }
-                    previousMetadata = metadata;
+                    this.validateMetadataMatchesForConsolidatedTimeSeries( previousMetadata, localMetadata );
+                    
+                    previousMetadata = localMetadata;
                     countAdded++;
                 }
                 // Some reference times: do not consolidate these time-series
@@ -1532,6 +1523,29 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         }
 
         return Collections.unmodifiableList( returnMe );
+    }
+    
+    /**
+     * Throws an exception if the metadata instances are both non-null and do not match.
+     * 
+     * @param previousMetadata the previous metadata 
+     * @param localMetadata the new local metadata 
+     * @throws an exception if the metadata instances do not match
+     */
+
+    private void validateMetadataMatchesForConsolidatedTimeSeries( TimeSeriesMetadata previousMetadata,
+                                                                   TimeSeriesMetadata localMetadata )
+    {
+        // Validate metadata is same.
+        if ( Objects.nonNull( previousMetadata )
+             && !localMetadata.equals( previousMetadata ) )
+        {
+            throw new IllegalArgumentException( "TimeSeries instances cannot be consolidated due to"
+                                                + " non-homogenous metadata. One was "
+                                                + previousMetadata.toString()
+                                                + " and the other was "
+                                                + localMetadata.toString() );
+        }
     }
 
     /**

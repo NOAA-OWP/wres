@@ -10,6 +10,8 @@ import java.util.TreeSet;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.datamodel.scale.TimeScale;
 
@@ -28,6 +30,13 @@ import wres.datamodel.scale.TimeScale;
 
 public class TimeSeries<T>
 {
+    
+    /**
+     * Logger.
+     */
+
+    private static final Logger LOGGER = LoggerFactory.getLogger( TimeSeries.class );    
+    
     /**
      * Any non-event-related metadata that apply to the time-series as a whole.
      */
@@ -176,15 +185,9 @@ public class TimeSeries<T>
         SortedSet<Event<T>> localEvents = new TreeSet<>();
         localEvents.addAll( builder.events );
         this.events = Collections.unmodifiableSortedSet( localEvents );
+        this.metadata = builder.metadata;
 
-        TimeSeriesMetadata localMetadata = builder.metadata;
-        if ( Objects.nonNull( localMetadata ) )
-        {
-            this.metadata = localMetadata;
-        }
-        // TODO: deprecated route, to remove
-        // Once removed, require metadata
-        else
+        if( Objects.isNull( this.metadata ) )
         {
             throw new UnsupportedOperationException( "Use complete metadata in your TimeSeries instances." );
         }
@@ -200,6 +203,13 @@ public class TimeSeries<T>
         // No null events
         this.getEvents().forEach( Objects::requireNonNull );
 
+        // Log absence of time scale
+        if ( Objects.isNull( this.getMetadata().getTimeScale() ) )
+        {
+            LOGGER.trace( "No time-scale information was provided in builder {} for time-series {}.",
+                          builder,
+                          this );
+        }        
     }
 
     /**

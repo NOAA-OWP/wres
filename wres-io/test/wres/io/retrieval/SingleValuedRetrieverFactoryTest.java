@@ -134,7 +134,7 @@ public class SingleValuedRetrieverFactoryTest
     }
 
     @Before
-    public void runBeforeEachTest() throws Exception
+    public void runBeforeEachTest() throws SQLException, LiquibaseException
     {
         MockitoAnnotations.initMocks( this );
 

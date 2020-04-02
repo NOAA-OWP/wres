@@ -62,6 +62,7 @@ import wres.system.SystemSettings;
 
 public class EnsembleForecastRetrieverTest
 {
+    private static final String T2023_04_01T00_00_00Z = "2023-04-01T00:00:00Z";
     @Mock private SystemSettings mockSystemSettings;
     private wres.io.utilities.Database wresDatabase;
     @Mock private Executor mockExecutor;
@@ -134,7 +135,7 @@ public class EnsembleForecastRetrieverTest
     }
 
     @Before
-    public void setup() throws Exception
+    public void setup() throws SQLException, LiquibaseException
     {
         MockitoAnnotations.initMocks( this );
 
@@ -192,7 +193,7 @@ public class EnsembleForecastRetrieverTest
         // Create the expected series
         TimeSeriesMetadata expectedMetadata =
                 TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
-                                               Instant.parse( "2023-04-01T00:00:00Z" ) ),
+                                               Instant.parse( T2023_04_01T00_00_00Z ) ),
                                        TimeScale.of(),
                                        String.valueOf( this.variableFeatureId ),
                                        String.valueOf( this.variableFeatureId ),
@@ -244,7 +245,7 @@ public class EnsembleForecastRetrieverTest
         // Create the expected series
         TimeSeriesMetadata expectedMetadata =
                 TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
-                                               Instant.parse( "2023-04-01T00:00:00Z" ) ),
+                                               Instant.parse( T2023_04_01T00_00_00Z ) ),
                                        TimeScale.of(),
                                        String.valueOf( this.variableFeatureId ),
                                        String.valueOf( this.variableFeatureId ),
@@ -281,7 +282,7 @@ public class EnsembleForecastRetrieverTest
                                                        .build();
 
         UnsupportedOperationException expected = assertThrows( UnsupportedOperationException.class,
-                                                               () -> forecastRetriever.getAllIdentifiers() );
+                                                               forecastRetriever::getAllIdentifiers );
 
         assertEquals( NO_IDENTIFIER_ERROR, expected.getMessage() );
     }
@@ -486,7 +487,7 @@ public class EnsembleForecastRetrieverTest
         // although H2 reported the expected type. See #56214-102        
 
         // Two reference times, PT17H apart
-        Instant referenceTime = Instant.parse( "2023-04-01T00:00:00Z" );
+        Instant referenceTime = Instant.parse( T2023_04_01T00_00_00Z );
 
         TimeScale timeScale = TimeScale.of( Duration.ofMinutes( 1 ), TimeScaleFunction.UNKNOWN );
 

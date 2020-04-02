@@ -256,7 +256,7 @@ public class ObservationRetrieverTest
                                                   .build();
 
         UnsupportedOperationException expected = assertThrows( UnsupportedOperationException.class,
-                                                               () -> forecastRetriever.getAllIdentifiers() );
+                                                               forecastRetriever::getAllIdentifiers );
 
         assertEquals( NO_IDENTIFIER_ERROR, expected.getMessage() );
     }
@@ -310,11 +310,10 @@ public class ObservationRetrieverTest
 
     /**
      * Does the basic set-up work to create a connection and schema.
-     * 
-     * @throws Exception if the set-up failed
+     * @throws SQLException if the set-up failed
      */
 
-    private void createTheConnectionAndSchema() throws Exception
+    private void createTheConnectionAndSchema() throws SQLException
     {
         // Also mock a plain datasource (which works per test unlike c3p0)
         this.rawConnection = DriverManager.getConnection( this.testDatabase.getJdbcString() );
