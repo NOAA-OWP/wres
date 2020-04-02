@@ -766,6 +766,12 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
         private final TimeWindow timeWindow;
         private final ReentrantLock writeLock;
 
+        /**
+         * A writer to be opened on first write, closed when the {@link NetcdfOutputWriter} that encloses this
+         * {@link TimeWindowWriter} is closed.
+         */
+        private NetcdfFileWriter writer;
+        
         TimeWindowWriter( NetcdfOutputWriter outputWriter,
                           String outputPath,
                           final TimeWindow timeWindow )
@@ -827,8 +833,16 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
 
             Array netcdfValue;
             Index ima;
+            
+            // Open a writer to write to the path. Must be closed when closing the overall NetcdfOutputWriter instance
+            if( Objects.isNull( this.writer ) )
+            {
+                this.writer = NetcdfFileWriter.openExisting( this.outputPath );
+                
+                LOGGER.trace( "Opened an underlying netcdf writer {} for pool {}.", this.writer, this.timeWindow );               
+            }
 
-            try ( NetcdfFileWriter writer = NetcdfFileWriter.openExisting( this.outputPath ) )
+            try
             {
                 for ( NetcdfValueKey key : this.valuesToSave )
                 {
@@ -1188,22 +1202,35 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
         public void close() throws IOException
         {
             LOGGER.trace( "Closing {}", this );
-            if ( !this.valuesToSave.isEmpty() )
-            {
-                try
-                {
-                    this.writeMetricResults();
-                }
-                catch ( InvalidRangeException e )
-                {
-                    throw new IOException(
-                                           "Lingering NetCDF results could not be written to disk.",
-                                           e );
-                }
 
-                // Compressing the output results in around a 95.33%
-                // decrease in file size. Early tests had files dropping
-                // from 135MB to 6.3MB
+            try
+            {
+                if ( !this.valuesToSave.isEmpty() )
+                {
+                    try
+                    {
+                        this.writeMetricResults();
+                    }
+                    catch ( InvalidRangeException e )
+                    {
+                        throw new IOException(
+                                               "Lingering NetCDF results could not be written to disk.",
+                                               e );
+                    }
+
+                    // Compressing the output results in around a 95.33%
+                    // decrease in file size. Early tests had files dropping
+                    // from 135MB to 6.3MB
+                }
+            }
+            finally
+            {
+                if ( Objects.nonNull( this.writer ) )
+                {
+                    LOGGER.trace( "Closing the underlying netcdf writer {} for pool {}.", this.writer, this.timeWindow );
+                    
+                    this.writer.close();
+                }
             }
         }
 
