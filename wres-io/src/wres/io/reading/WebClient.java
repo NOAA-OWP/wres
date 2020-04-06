@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.ConnectException;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.net.http.HttpTimeoutException;
@@ -383,6 +384,11 @@ public class WebClient
         }
 
         if ( t instanceof SocketException )
+        {
+            return true;
+        }
+
+        if ( t instanceof SocketTimeoutException )
         {
             return true;
         }
