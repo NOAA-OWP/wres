@@ -205,6 +205,19 @@ public class WaterMLBasicSource extends BasicSource
                 }
                 catch ( SQLException e )
                 {
+                    try
+                    {
+                        if ( Objects.nonNull( data ) )
+                        {
+                            data.close();
+                        }
+                    }
+                    catch ( IOException ioe )
+                    {
+                        LOGGER.warn( "Could not close response body from {}",
+                                     location );
+                    }
+
                     throw new IngestException( "Source metadata for '"
                                                + location +
                                                "' could not be stored in or retrieved from the database.",
@@ -225,10 +238,22 @@ public class WaterMLBasicSource extends BasicSource
                         }
                     }
                 }
-
             }
             else if ( ! (httpStatus >= 200 && httpStatus < 300) )
             {
+                try
+                {
+                    if ( Objects.nonNull( data ) )
+                    {
+                        data.close();
+                    }
+                }
+                catch ( IOException ioe )
+                {
+                    LOGGER.warn( "Could not close response body from {}",
+                                 location );
+                }
+
                 throw new PreIngestException( "Failed to get data from '"
                                               + location +
                                               "' due to HTTP status code "
