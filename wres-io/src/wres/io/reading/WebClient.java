@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.logging.Level;
 import java.util.zip.GZIPInputStream;
 
 import javax.net.ssl.SSLContext;
@@ -36,6 +37,14 @@ import org.slf4j.LoggerFactory;
 
 public class WebClient
 {
+    // Have OkHttpClient print stack traces where resources are not closed.
+    static
+    {
+        java.util.logging.Logger.getLogger( OkHttpClient.class
+                                                    .getName() )
+                                .setLevel( Level.FINE);
+    }
+
     private static final Logger LOGGER = LoggerFactory.getLogger( WebClient.class );
     private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds( 10 );
     private static final Duration REQUEST_TIMEOUT = Duration.ofMinutes( 10 );
@@ -204,6 +213,8 @@ public class WebClient
                 {
                     LOGGER.debug( "Got empty/not-found data from {} in {}", uri,
                                   duration );
+                    httpResponse.body()
+                                .close();
                     return Pair.of( httpStatus, InputStream.nullInputStream() );
                 }
                 else
