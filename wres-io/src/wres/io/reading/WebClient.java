@@ -23,7 +23,6 @@ import javax.net.ssl.X509TrustManager;
 
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
-import okhttp3.Protocol;
 import okhttp3.Request;
 import okhttp3.Response;
 import org.apache.commons.lang3.tuple.Pair;
@@ -69,7 +68,6 @@ public class WebClient
     public WebClient( boolean trackTimings )
     {
         this.httpClient = new OkHttpClient().newBuilder()
-                                            .protocols( List.of( Protocol.HTTP_1_1) )
                                             .followRedirects( true )
                                             .connectTimeout( CONNECT_TIMEOUT )
                                             .callTimeout( REQUEST_TIMEOUT )
@@ -82,7 +80,6 @@ public class WebClient
     {
         Objects.requireNonNull( sslGoo );
         this.httpClient = new OkHttpClient().newBuilder()
-                                            .protocols( List.of( Protocol.HTTP_1_1) )
                                             .followRedirects( true )
                                             .connectTimeout( CONNECT_TIMEOUT )
                                             .callTimeout( REQUEST_TIMEOUT )
