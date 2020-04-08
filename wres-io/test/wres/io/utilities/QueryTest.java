@@ -318,38 +318,60 @@ public class QueryTest
 
 
     /**
-     * The status of a connection's autocommit setting should be the same before and after the query
-     * execution/call, regardless of whether or not the query itself was supposed to run in a transaction
+     * The status of a connection's autocommit setting should be appropriate
+     * to whether the query itself was supposed to run in a transaction.
      * @throws SQLException Thrown when a connection could not be retrieved
      * @throws SQLException Thrown if the query could not use the connection to execute the script
      * @throws SQLException Thrown if the state of the connection's autocommit could not be evaluated
      */
 
     @Test
-    public void maintainAutoCommitTest() throws SQLException
+    public void disableAutoCommitWhenInTransaction() throws SQLException
     {
         Query testQuery = new Query( this.systemSettings, "SELECT 1;" )
-                .inTransaction( true );
+                .inTransaction( true )
+                .useCursor( false );
 
         try ( Connection connection = dataSource.getConnection() )
         {
-            // Call the query. It is supposed to run in a transaction, but the connection wasn't set to be in an open
-            // transaction. The connection should come back with autocommit active
+            // When connection autoCommit set to true, running a query with
+            // inTransaction=true should disable autoCommit.
+            connection.setAutoCommit( true );
             testQuery.call( connection );
 
-            Assert.assertTrue( "Autocommit should still be turned on, but the query "
-                               + "kept it off after its transaction.",
+            Assert.assertFalse( "Autocommit should have been switched "
+                                + "off, but the query may have been run with "
+                                + "autocommit on.",
                                connection.getAutoCommit() );
+        }
+    }
 
-            // If we set the connection to run in a transaction, it should come back without autocommit turned on
+    /**
+     * The status of a connection's autocommit setting should be appropriate
+     * to whether the query itself was supposed to run in a transaction.
+     * @throws SQLException Thrown when a connection could not be retrieved
+     * @throws SQLException Thrown if the query could not use the connection to execute the script
+     * @throws SQLException Thrown if the state of the connection's autocommit could not be evaluated
+     */
+
+    @Test
+    public void enableAutoCommitWhenNotInTransaction() throws SQLException
+    {
+        Query testQuery = new Query( this.systemSettings, "SELECT 1;" )
+                .inTransaction( false )
+                .useCursor( false );
+
+        try ( Connection connection = dataSource.getConnection() )
+        {
+            // When connection autoCommit set to false, running a query with
+            // inTransaction=false should enable it.
             connection.setAutoCommit( false );
-            testQuery.inTransaction( false );
-
             testQuery.call( connection );
 
-            Assert.assertFalse( "Autocommit was supposed to be turned off, but the query "
-                                + "somehow turned it back on.",
-                                connection.getAutoCommit() );
+            Assert.assertTrue( "Autocommit was supposed to be switched"
+                               + " on, but the query may have been run with "
+                               + "autocommit off.",
+                               connection.getAutoCommit() );
         }
     }
 

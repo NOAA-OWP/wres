@@ -216,42 +216,42 @@ public class Query
      */
     ResultSet call(final Connection connection) throws SQLException
     {
-        // Record the initial auto commit state. If we change this state, we want to
-        // ensure that it returns to it after we're done. If a transactional connection is passed in
-        // through multiple queries, we want to make sure the transaction doesn't close
-        final boolean initialAutoCommit = connection.getAutoCommit();
-        final int initialTransactionIsolation = connection.getTransactionIsolation();
+        // Avoid recording the initial state of connection: reduces round trips.
+        final boolean disableAutoCommit = this.forceTransaction || this.useCursor;
+        final boolean useSerializable = this.forceTransaction;
 
         // In the case of transactions that conflict, retries are needed.
         boolean completed = false;
 
         Timer timer = null;
 
-        // If we're in debug mode, we want to add any scripts that take longer than TIMER_DELAY ms to complete
-        if (LOGGER.isDebugEnabled())
+        connection.setAutoCommit( !disableAutoCommit );
+
+        if ( useSerializable )
         {
-            timer = new Timer( "Query Timer" );
-            timer.schedule( this.getTimerTask(), TIMER_DELAY );
+            connection.setTransactionIsolation( Connection.TRANSACTION_SERIALIZABLE );
+        }
+        else
+        {
+            connection.setTransactionIsolation( Connection.TRANSACTION_READ_COMMITTED );
         }
 
         ResultSet results = null;
 
         while ( !completed )
         {
+            // If we're in debug mode, we want to add any scripts that take longer than TIMER_DELAY ms to complete
+            if ( LOGGER.isDebugEnabled() )
+            {
+                timer = new Timer( "Query Timer" );
+                timer.schedule( this.getTimerTask(), TIMER_DELAY );
+            }
+
             try
             {
-                // If we're forcing a transation, we need to be absolutely sure we enter a transaction,
-                // even if it's already in one
-                if ( this.forceTransaction )
-                {
-                    connection.setAutoCommit( false );
-                    connection.setTransactionIsolation( Connection.TRANSACTION_SERIALIZABLE );
-                }
-
                 if ( this.useCursor )
                 {
                     LOGGER.debug( "Creating ResultSet using cursor {}", this );
-                    connection.setAutoCommit( false );
                 }
 
                 // If we don't need to add parameters, we can just call the script and get the results
@@ -268,7 +268,7 @@ public class Query
 
                 // If the connection can't commit without prompting, we need to go ahead and do so manually
                 // Except when leaving a ResultSet open, using a cursor.
-                if ( !connection.getAutoCommit() && !this.useCursor )
+                if ( disableAutoCommit && !this.useCursor )
                 {
                     connection.commit();
                 }
@@ -288,7 +288,7 @@ public class Query
                 // If the connection doesn't automatically rollback any changes, do so manually before
                 // rethrowing the error
                 if ( !connection.isClosed()
-                     && !connection.getAutoCommit() )
+                     && disableAutoCommit )
                 {
                     connection.rollback();
                 }
@@ -311,29 +311,8 @@ public class Query
             }
             finally
             {
-                // If the connection is in a transaction, we probably modified it, so we want to return it to
-                // the previous state, unless the ResultSet is still open, in
-                // that case there is an agreement that SQLDataProvider or the
-                // class reading the ResultSet will set autocommit to true.
-                if ( !connection.isClosed()
-                     && connection.getAutoCommit() != initialAutoCommit
-                     && !this.useCursor )
-                {
-                    LOGGER.trace( "Setting {} back to initialAutoCommit={}",
-                                  connection,
-                                  initialAutoCommit );
-                    connection.setAutoCommit( initialAutoCommit );
-                }
-
-                // Reset the transaction isolation level to its previous state
-                if ( !connection.isClosed()
-                     && connection.getTransactionIsolation() != initialTransactionIsolation )
-                {
-                    LOGGER.trace( "Setting {} back to initialTransactionIsolation={}",
-                                  connection,
-                                  initialTransactionIsolation );
-                    connection.setTransactionIsolation( initialTransactionIsolation );
-                }
+                // Instead of examining and resetting connection state with each
+                // query, always set the desired state before each query.
 
                 // If execution completed prior to the timer going off, we want to cancel it
                 if ( timer != null )
@@ -350,21 +329,37 @@ public class Query
      * Runs the script on the database without regard for results
      * @param connection The connection to run the script on
      * @throws SQLException Thrown if an unrecoverable error was encountered when interacting with the database
+     * @throws IllegalStateException When asked to use a cursor with this method.
      * @return the count of rows modified by this query's execution
      */
+
     public int execute(final Connection connection) throws SQLException
     {
-        // Record the initial auto commit state. If we change this state, we want to
-        // ensure that it returns to it after we're done. If a transactional connection is passed in
-        // through multiple queries, we want to make sure the transaction doesn't close
-        final boolean initialAutoCommit = connection.getAutoCommit();
-        final int initialTransactionIsolation = connection.getTransactionIsolation();
+        if ( this.useCursor )
+        {
+            throw new IllegalStateException( "It does not make sense to 'execute' with a cursor. Use 'call' instead." );
+        }
+
+        // Avoid recording the initial state of connection: reduces round trips.
+        final boolean disableAutoCommit = this.forceTransaction;
+        final boolean useSerializable = this.forceTransaction;
 
         // In the case of transactions that conflict, retries are needed.
         boolean completed = false;
 
         Timer timer = null;
         int rowsModified = 0;
+
+        connection.setAutoCommit( !disableAutoCommit );
+
+        if ( useSerializable )
+        {
+            connection.setTransactionIsolation( Connection.TRANSACTION_SERIALIZABLE );
+        }
+        else
+        {
+            connection.setTransactionIsolation( Connection.TRANSACTION_READ_COMMITTED );
+        }
 
         while ( !completed )
         {
@@ -377,14 +372,6 @@ public class Query
 
             try
             {
-                // If we're forcing a transation, we need to be absolutely sure we enter a transaction,
-                // even if it's already in one
-                if ( this.forceTransaction )
-                {
-                    connection.setAutoCommit( false );
-                    connection.setTransactionIsolation( Connection.TRANSACTION_SERIALIZABLE );
-                }
-
                 // If we have batch parameters, we need to call a specialized function that will form and attach
                 // them to the statement that is run in the database
                 if ( this.batchParameters != null )
@@ -408,7 +395,7 @@ public class Query
                 rowsModified = Math.max( rowsModified, 0 );
 
                 // If the connection can't commit without prompting, we need to go ahead and do so manually
-                if ( !connection.getAutoCommit() )
+                if ( disableAutoCommit )
                 {
                     connection.commit();
                 }
@@ -428,7 +415,7 @@ public class Query
                 // If the connection doesn't automatically rollback any changes, do so manually before
                 // rethrowing the error
                 if ( !connection.isClosed()
-                     && !connection.getAutoCommit() )
+                     && disableAutoCommit )
                 {
                     connection.rollback();
                 }
@@ -451,20 +438,8 @@ public class Query
             }
             finally
             {
-                // If the connection is in a transaction, we probably modified it, so we want to return it to
-                // the previous state
-                if ( !connection.isClosed()
-                     && connection.getAutoCommit() != initialAutoCommit )
-                {
-                    connection.setAutoCommit( initialAutoCommit );
-                }
-
-                // Reset the transaction isolation level to its previous state
-                if ( !connection.isClosed()
-                     && connection.getTransactionIsolation() != initialTransactionIsolation )
-                {
-                    connection.setTransactionIsolation( initialTransactionIsolation );
-                }
+                // Instead of examining and resetting connection state with each
+                // query, always set the desired state before each query.
 
                 // If execution completed prior to the timer going off, we want to cancel it
                 if ( timer != null )
