@@ -40,7 +40,6 @@ services:
         cpu_shares: 1025
         cap_drop:
          - ALL
-        read_only: true
     worker:
         image: "${DOCKER_REGISTRY}/wres/wres-worker:20200408-9541e15"
         restart: always
