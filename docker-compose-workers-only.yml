@@ -1,11 +1,11 @@
 version: '2.2'
 services:
     worker:
-        image: "${DOCKER_REGISTRY}/wres/wres-worker:20200316-43f027a"
+        image: "${DOCKER_REGISTRY}/wres/wres-worker:20200408-9541e15"
         restart: always
         volumes:
          - /mnt/wres_share:/mnt/wres_share
-         - /mnt/wres_secrets:/wres_secrets:ro
+         - /mnt/wres_keys:/wres_secrets:ro
          - /home:/home:ro
          - /container_home
         network_mode: "host"
@@ -19,6 +19,7 @@ services:
          - INNER_JAVA_OPTS=-Dwres.url=${WRES_DB_FQDN} -Dwres.databaseName=wres8 -Dwres.username=wres_user8 -Dwres.attemptToMigrate=false -XX:HeapDumpPath=/mnt/wres_share/ -XX:OnOutOfMemoryError='mv /mnt/wres_share/java_pid%p.hprof /mnt/wres_share/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/java_pid%p_`hostname`.hprof'
         # Shim JVM should have 32m max heap, core JVM should have 2180m max heap
         mem_limit: 2600m
-        cpu_percent: 100
+        cpu_share: 1024
         cap_drop:
          - ALL
+        read_only: true

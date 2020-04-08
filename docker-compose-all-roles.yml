@@ -3,13 +3,13 @@ services:
     tasker:
         ports:
          - "443:8443"
-        image: "${DOCKER_REGISTRY}/wres/wres-tasker:20200312-215a62a"
+        image: "${DOCKER_REGISTRY}/wres/wres-tasker:20200408-9541e15"
         restart: always
         depends_on:
          - "broker"
         volumes:
          # For certificates and keys that correspond to them:
-         - /mnt/wres_secrets:/wres_secrets:ro
+         - /mnt/wres_keys:/wres_secrets:ro
          # To read output data:
          - /mnt/wres_share:/mnt/wres_share
         environment:
@@ -18,27 +18,31 @@ services:
         # Tasker JVM should have 1305m max heap specified at launch
         # The total limit includes stack space which depends on Thread count
         mem_limit: 1880m
-        cpu_percent: 100
+        # Lower share than broker, higher share than worker.
+        cpu_shares: 1024
         cap_drop:
          - ALL
+        read_only: true
     broker:
         ports:
          - "5671:5671"
          - "15671:15671"
-        image: "${DOCKER_REGISTRY}/wres/wres-broker:20200312-d966c5d"
+        image: "${DOCKER_REGISTRY}/wres/wres-broker:20200408-9541e15"
         restart: always
         volumes:
          # For certificates and keys that correspond to them:
-         - /mnt/wres_secrets:/wres_secrets:ro
+         - /mnt/wres_keys:/wres_secrets:ro
         environment:
          - RABBITMQ_CONFIG_FILE=rabbitmq${WRES_ENV_SUFFIX}.config
         # rabbitmq.conf should have 360m specified as high watermark
         mem_limit: 720m
-        cpu_percent: 100
+        # Higher share than tasker, higher share than worker.
+        cpu_shares: 1025
         cap_drop:
          - ALL
+        read_only: true
     worker:
-        image: "${DOCKER_REGISTRY}/wres/wres-worker:20200316-43f027a"
+        image: "${DOCKER_REGISTRY}/wres/wres-worker:20200408-9541e15"
         restart: always
         depends_on:
          - "broker"
@@ -46,7 +50,7 @@ services:
          # For input and output data:
          - /mnt/wres_share:/mnt/wres_share
          # For certificates, keys that correspond to them, and .pgpass:
-         - /mnt/wres_secrets:/wres_secrets:ro
+         - /mnt/wres_keys:/wres_secrets:ro
          # For input data:
          - /home:/home:ro
          # For logs (inside container, avoid writing to read-only /home)
@@ -61,6 +65,8 @@ services:
          - INNER_JAVA_OPTS=-Dwres.url=${WRES_DB_FQDN} -Dwres.databaseName=wres8 -Dwres.username=wres_user8 -Dwres.attemptToMigrate=false -XX:HeapDumpPath=/mnt/wres_share/ -XX:OnOutOfMemoryError='mv /mnt/wres_share/java_pid%p.hprof /mnt/wres_share/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/java_pid%p_`hostname`.hprof'
         # Shim JVM should have 32m max heap, core JVM should have 2180m max heap
         mem_limit: 2600m
-        cpu_percent: 100
+        # Lower share than broker, lower share than tasker.
+        cpu_shares: 1023
         cap_drop:
          - ALL
+        read_only: true
