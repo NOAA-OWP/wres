@@ -673,6 +673,10 @@
                     </xs:sequence>
                 </xs:complexType>
             </xs:element>
+            <!-- Allow for metrics to be suppressed for this format -->
+            <xs:sequence>
+                <xs:element name="suppressMetric" type="metricConfigName" minOccurs="0" maxOccurs="unbounded" />
+            </xs:sequence>
         </xs:sequence>
 
         <!-- Image width. -->

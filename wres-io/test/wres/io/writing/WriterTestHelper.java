@@ -56,7 +56,7 @@ public class WriterTestHelper
     public static ProjectConfig getMockedProjectConfig( Feature feature, DestinationType destinationType )
     {
         // Use the system temp directory so that checks for writeability pass.
-        GraphicalType graphics = new GraphicalType( null, 800, 600, null );
+        GraphicalType graphics = new GraphicalType( null, null, 800, 600, null );
         DestinationConfig destinationConfig =
                 new DestinationConfig( null,
                                        graphics,
