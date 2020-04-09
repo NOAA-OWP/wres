@@ -5,8 +5,9 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -18,54 +19,68 @@ import org.mockito.Mockito;
 
 import wres.config.FeaturePlus;
 import wres.config.generated.Feature;
+import wres.config.generated.FeatureType;
+import wres.config.generated.ThresholdFormat;
+import wres.config.generated.ThresholdOperator;
+import wres.config.generated.ThresholdType;
+import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.io.retrieval.UnitMapper;
+import wres.system.SystemSettings;
 
 /**
- * Tests the {@link CommaSeparatedReader}.
+ * Tests the {@link ThresholdReader}.
  * 
  * @author james.brown@hydrosolved.com
  */
 
-public class CommaSeparatedReaderTest
+public class ThresholdReaderTest
 {
 
     private UnitMapper unitMapper;
 
     private MeasurementUnit units = MeasurementUnit.of( "CMS" );
 
+    private SystemSettings systemSettings;
+
     @Before
     public void runBeforeEachTest()
     {
         this.unitMapper = Mockito.mock( UnitMapper.class );
+        this.systemSettings = SystemSettings.withDefaults();
         Mockito.when( this.unitMapper.getUnitMapper( "CMS" ) ).thenReturn( in -> in );
         Mockito.when( this.unitMapper.getDesiredMeasurementUnitName() ).thenReturn( this.units.toString() );
     }
 
     /**
-     * Tests the {@link CommaSeparatedReader#readThresholds(java.net.URI, boolean, wres.datamodel.Threshold.Operator)}
+     * Tests the {@link ThresholdReader#readThresholds(java.net.URI, boolean, wres.datamodel.Threshold.Operator)}
      * using input from testinput/commaseparated/testProbabiiltyThresholdsWithLabels.csv.
      * 
      * @throws IOException if the test data could not be read
+     * @throws URISyntaxException if the URI to the thresholds could not be resolved
      */
 
     @Test
-    public void testProbabilityThresholdsWithLabels() throws IOException
+    public void testProbabilityThresholdsWithLabels() throws IOException, URISyntaxException
     {
-        Path commaSeparated = Paths.get( "testinput/commaseparated/testProbabilityThresholdsWithLabels.csv" );
+        String path = "testinput/commaseparated/testProbabilityThresholdsWithLabels.csv";
+        URI uri = new URI( path );
+        ThresholdsConfig.Source source =
+                new ThresholdsConfig.Source( uri, ThresholdFormat.CSV, "CMS", "-999", FeatureType.NWS_ID );
+        ThresholdsConfig thresholdConfig = new ThresholdsConfig( ThresholdType.PROBABILITY,
+                                                                 wres.config.generated.ThresholdDataType.LEFT,
+                                                                 source,
+                                                                 ThresholdOperator.GREATER_THAN );
 
         Map<FeaturePlus, Set<Threshold>> actual =
-                CommaSeparatedReader.readThresholds( commaSeparated,
-                                                     true,
-                                                     Operator.GREATER,
-                                                     ThresholdDataType.LEFT,
-                                                     null,
-                                                     null,
-                                                     this.unitMapper );
+                ThresholdReader.readThresholds( this.systemSettings,
+                                                thresholdConfig,
+                                                this.units,
+                                                this.unitMapper );
 
         // Compare to expected
         Map<FeaturePlus, Set<Threshold>> expected = new TreeMap<>();
@@ -118,27 +133,30 @@ public class CommaSeparatedReaderTest
     }
 
     /**
-     * Tests the {@link CommaSeparatedReader#readThresholds(java.net.URI, boolean, wres.datamodel.Threshold.Operator)}
+     * Tests the {@link ThresholdReader#readThresholds(java.net.URI, boolean, wres.datamodel.Threshold.Operator)}
      * using input from testinput/commaseparated/testValueThresholdsWithLabels.csv.
      * 
      * @throws IOException if the test data could not be read
+     * @throws URISyntaxException if the URI to the thresholds could not be resolved
      */
 
     @Test
-    public void testValueThresholdsWithLabels() throws IOException
+    public void testValueThresholdsWithLabels() throws IOException, URISyntaxException
     {
-        Path commaSeparated = Paths.get( "testinput/commaseparated/testValueThresholdsWithLabels.csv" );
-
-        MeasurementUnit dim = MeasurementUnit.of( "CMS" );
+        String path = "testinput/commaseparated/testValueThresholdsWithLabels.csv";
+        URI uri = new URI( path );
+        ThresholdsConfig.Source source =
+                new ThresholdsConfig.Source( uri, ThresholdFormat.CSV, "CMS", "-999", FeatureType.NWS_ID );
+        ThresholdsConfig thresholdConfig = new ThresholdsConfig( ThresholdType.VALUE,
+                                                                 wres.config.generated.ThresholdDataType.LEFT,
+                                                                 source,
+                                                                 ThresholdOperator.GREATER_THAN );
 
         Map<FeaturePlus, Set<Threshold>> actual =
-                CommaSeparatedReader.readThresholds( commaSeparated,
-                                                     false,
-                                                     Operator.GREATER,
-                                                     ThresholdDataType.LEFT,
-                                                     null,
-                                                     dim,
-                                                     this.unitMapper );
+                ThresholdReader.readThresholds( this.systemSettings,
+                                                thresholdConfig,
+                                                this.units,
+                                                this.unitMapper );
 
         // Compare to expected
         Map<FeaturePlus, Set<Threshold>> expected = new TreeMap<>();
@@ -148,17 +166,17 @@ public class CommaSeparatedReaderTest
                                  Operator.GREATER,
                                  ThresholdDataType.LEFT,
                                  "E",
-                                 dim ) );
+                                 this.units ) );
         first.add( Threshold.of( OneOrTwoDoubles.of( 7.0 ),
                                  Operator.GREATER,
                                  ThresholdDataType.LEFT,
                                  "F",
-                                 dim ) );
+                                 this.units ) );
         first.add( Threshold.of( OneOrTwoDoubles.of( 15.0 ),
                                  Operator.GREATER,
                                  ThresholdDataType.LEFT,
                                  "G",
-                                 dim ) );
+                                 this.units ) );
 
         Feature firstFeature =
                 new Feature( null, null, null, null, null, "DRRC2", null, null, null, null, null, null, null );
@@ -169,17 +187,17 @@ public class CommaSeparatedReaderTest
                                   Operator.GREATER,
                                   ThresholdDataType.LEFT,
                                   "E",
-                                  dim ) );
+                                  this.units ) );
         second.add( Threshold.of( OneOrTwoDoubles.of( 12.0 ),
                                   Operator.GREATER,
                                   ThresholdDataType.LEFT,
                                   "F",
-                                  dim ) );
+                                  this.units ) );
         second.add( Threshold.of( OneOrTwoDoubles.of( 99.7 ),
                                   Operator.GREATER,
                                   ThresholdDataType.LEFT,
                                   "G",
-                                  dim ) );
+                                  this.units ) );
 
         Feature secondFeature =
                 new Feature( null, null, null, null, null, "DOLC2", null, null, null, null, null, null, null );
@@ -191,25 +209,29 @@ public class CommaSeparatedReaderTest
     }
 
     /**
-     * Tests the {@link CommaSeparatedReader#readThresholds(java.net.URI, boolean, wres.datamodel.Threshold.Operator)}
+     * Tests the {@link ThresholdReader#readThresholds(java.net.URI, boolean, wres.datamodel.Threshold.Operator)}
      * using input from testinput/commaseparated/testProbabiiltyThresholdsWithoutLabels.csv.
      * 
      * @throws IOException if the test data could not be read
+     * @throws URISyntaxException if the URI to the thresholds could not be resolved
      */
 
     @Test
-    public void testProbabilityThresholdsWithoutLabels() throws IOException
+    public void testProbabilityThresholdsWithoutLabels() throws IOException, URISyntaxException
     {
-        Path commaSeparated = Paths.get( "testinput/commaseparated/testProbabilityThresholdsWithoutLabels.csv" );
-
+        String path = "testinput/commaseparated/testProbabilityThresholdsWithoutLabels.csv";
+        URI uri = new URI( path );
+        ThresholdsConfig.Source source =
+                new ThresholdsConfig.Source( uri, ThresholdFormat.CSV, "CMS", "-999", FeatureType.NWS_ID );
+        ThresholdsConfig thresholdConfig = new ThresholdsConfig( ThresholdType.PROBABILITY,
+                                                                 wres.config.generated.ThresholdDataType.LEFT,
+                                                                 source,
+                                                                 ThresholdOperator.GREATER_THAN );
         Map<FeaturePlus, Set<Threshold>> actual =
-                CommaSeparatedReader.readThresholds( commaSeparated,
-                                                     true,
-                                                     Operator.GREATER,
-                                                     ThresholdDataType.LEFT,
-                                                     null,
-                                                     null,
-                                                     this.unitMapper );
+                ThresholdReader.readThresholds( this.systemSettings,
+                                                thresholdConfig,
+                                                this.units,
+                                                this.unitMapper );
 
         // Compare to expected
         Map<FeaturePlus, Set<Threshold>> expected = new TreeMap<>();
@@ -256,25 +278,29 @@ public class CommaSeparatedReaderTest
     }
 
     /**
-     * Tests the {@link CommaSeparatedReader#readThresholds(java.net.URI, boolean, wres.datamodel.Threshold.Operator)}
+     * Tests the {@link ThresholdReader#readThresholds(java.net.URI, boolean, wres.datamodel.Threshold.Operator)}
      * using input from testinput/commaseparated/testValueThresholdsWithoutLabels.csv.
      * 
      * @throws IOException if the test data could not be read
+     * @throws URISyntaxException if the URI to the thresholds could not be resolved
      */
 
     @Test
-    public void testValueThresholdsWithoutLabels() throws IOException
+    public void testValueThresholdsWithoutLabels() throws IOException, URISyntaxException
     {
-        Path commaSeparated = Paths.get( "testinput/commaseparated/testValueThresholdsWithoutLabels.csv" );
-
+        String path = "testinput/commaseparated/testValueThresholdsWithoutLabels.csv";
+        URI uri = new URI( path );
+        ThresholdsConfig.Source source =
+                new ThresholdsConfig.Source( uri, ThresholdFormat.CSV, "CMS", "-999", FeatureType.NWS_ID );
+        ThresholdsConfig thresholdConfig = new ThresholdsConfig( ThresholdType.VALUE,
+                                                                 wres.config.generated.ThresholdDataType.LEFT,
+                                                                 source,
+                                                                 ThresholdOperator.GREATER_THAN );
         Map<FeaturePlus, Set<Threshold>> actual =
-                CommaSeparatedReader.readThresholds( commaSeparated,
-                                                     false,
-                                                     Operator.GREATER,
-                                                     ThresholdDataType.LEFT,
-                                                     null,
-                                                     null,
-                                                     this.unitMapper );
+                ThresholdReader.readThresholds( this.systemSettings,
+                                                thresholdConfig,
+                                                this.units,
+                                                this.unitMapper );
 
         // Compare to expected
         Map<FeaturePlus, Set<Threshold>> expected = new TreeMap<>();
@@ -321,25 +347,29 @@ public class CommaSeparatedReaderTest
     }
 
     /**
-     * Tests the {@link CommaSeparatedReader#readThresholds(java.net.URI, boolean, wres.datamodel.Threshold.Operator)}
+     * Tests the {@link ThresholdReader#readThresholds(java.net.URI, boolean, wres.datamodel.Threshold.Operator)}
      * using input from testinput/commaseparated/testValueThresholdsWithoutLabelsWithMissings.csv.
      * 
      * @throws IOException if the test data could not be read
+     * @throws URISyntaxException if the URI to the thresholds could not be resolved
      */
 
     @Test
-    public void testValueThresholdsWithoutLabelsWithMissings() throws IOException
+    public void testValueThresholdsWithoutLabelsWithMissings() throws IOException, URISyntaxException
     {
-        Path commaSeparated = Paths.get( "testinput/commaseparated/testValueThresholdsWithoutLabelsWithMissings.csv" );
-
+        String path = "testinput/commaseparated/testValueThresholdsWithoutLabelsWithMissings.csv";
+        URI uri = new URI( path );
+        ThresholdsConfig.Source source =
+                new ThresholdsConfig.Source( uri, ThresholdFormat.CSV, "CMS", "-999", FeatureType.NWS_ID );
+        ThresholdsConfig thresholdConfig = new ThresholdsConfig( ThresholdType.VALUE,
+                                                                 wres.config.generated.ThresholdDataType.LEFT,
+                                                                 source,
+                                                                 ThresholdOperator.GREATER_THAN );
         Map<FeaturePlus, Set<Threshold>> actual =
-                CommaSeparatedReader.readThresholds( commaSeparated,
-                                                     false,
-                                                     Operator.GREATER,
-                                                     ThresholdDataType.LEFT,
-                                                     -999.0,
-                                                     null,
-                                                     this.unitMapper );
+                ThresholdReader.readThresholds( this.systemSettings,
+                                                thresholdConfig,
+                                                this.units,
+                                                this.unitMapper );
 
         // Compare to expected
         Map<FeaturePlus, Set<Threshold>> expected = new TreeMap<>();
@@ -378,31 +408,37 @@ public class CommaSeparatedReaderTest
     }
 
     /**
-     * Tests the {@link CommaSeparatedReader#readThresholds(java.net.URI, boolean, wres.datamodel.Threshold.Operator)}
+     * Tests the {@link ThresholdReader#readThresholds(java.net.URI, boolean, wres.datamodel.Threshold.Operator)}
      * using input from testinput/commaseparated/testValueThresholdsWithLabels.csv.
      * 
      * @throws IOException if the test data could not be read
+     * @throws URISyntaxException if the URI to the thresholds could not be resolved
      */
 
     @Test
-    public void testProbabilityThresholdsWithLabelsThrowsExpectedExceptions() throws IOException
+    public void testProbabilityThresholdsWithLabelsThrowsExpectedExceptions() throws IOException, URISyntaxException
     {
-        Path commaSeparated =
-                Paths.get( "testinput/commaseparated/testProbabilityThresholdsWithLabelsThrowsException.csv" );
+        String path = "testinput/commaseparated/testProbabilityThresholdsWithLabelsThrowsException.csv";
+        URI uri = new URI( path );
+        ThresholdsConfig.Source source =
+                new ThresholdsConfig.Source( uri, ThresholdFormat.CSV, "CMS", "-999", FeatureType.NWS_ID );
+        ThresholdsConfig thresholdConfig = new ThresholdsConfig( ThresholdType.PROBABILITY,
+                                                                 wres.config.generated.ThresholdDataType.LEFT,
+                                                                 source,
+                                                                 ThresholdOperator.GREATER_THAN );
 
         Exception actualException = assertThrows( IllegalArgumentException.class,
-                                                  () -> CommaSeparatedReader.readThresholds( commaSeparated,
-                                                                                             true,
-                                                                                             Operator.GREATER,
-                                                                                             ThresholdDataType.LEFT,
-                                                                                             -999.0,
-                                                                                             null,
-                                                                                             this.unitMapper ) );
+                                                  () -> ThresholdReader.readThresholds( this.systemSettings,
+                                                                                        thresholdConfig,
+                                                                                        this.units,
+                                                                                        this.unitMapper ) );
 
         String nL = System.lineSeparator();
 
+        Path expectedPath = this.systemSettings.getDataDirectory().resolve( uri.getPath() );
+
         String expectedMessage = "When processing thresholds by feature, 7 of 8 features contained in '"
-                                 + commaSeparated
+                                 + expectedPath
                                  + "' failed with exceptions, as follows. "
                                  + nL
                                  + "     These features failed with an inconsistency between the number of labels and the number of thresholds: [LOCWITHWRONGCOUNT_A, LOCWITHWRONGCOUNT_B]. "
@@ -415,4 +451,5 @@ public class CommaSeparatedReaderTest
 
         assertEquals( expectedMessage, actualException.getMessage() );
     }
+
 }

@@ -3,7 +3,6 @@ package wres.io.config;
 import static wres.config.generated.SourceTransformationType.PERSISTENCE;
 
 import java.io.IOException;
-import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -57,7 +56,6 @@ import wres.config.generated.ProjectConfig;
 import wres.config.generated.SourceTransformationType;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.config.generated.ProjectConfig.Outputs;
-import wres.config.generated.ThresholdFormat;
 import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DatasetIdentifier;
@@ -71,7 +69,7 @@ import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.thresholds.ThresholdsByMetric.ThresholdsByMetricBuilder;
 import wres.datamodel.time.TimeWindow;
-import wres.io.reading.commaseparated.CommaSeparatedReader;
+import wres.io.reading.commaseparated.ThresholdReader;
 import wres.io.retrieval.UnitMapper;
 import wres.io.utilities.NoDataException;
 import wres.system.SystemSettings;
@@ -1483,67 +1481,9 @@ public class ConfigHelper
 
         Objects.requireNonNull( threshold, "Specify non-null threshold configuration." );
 
-        Objects.requireNonNull( threshold, "Specify non-null metrics." );
+        Objects.requireNonNull( metrics, "Specify non-null metrics." );
 
         Map<FeaturePlus, ThresholdsByMetric> returnMe = new TreeMap<>();
-
-        ThresholdsConfig.Source nextSource = (ThresholdsConfig.Source) threshold.getCommaSeparatedValuesOrSource();
-
-        // Pre-validate path
-        if ( Objects.isNull( nextSource.getValue() ) )
-        {
-            throw new MetricConfigException( threshold, "Specify a non-null path to read for the external "
-                                                        + "source of thresholds." );
-        }
-        // Validate format
-        if ( nextSource.getFormat() != ThresholdFormat.CSV )
-        {
-            throw new MetricConfigException( threshold,
-                                             "Unsupported source format for thresholds '"
-                                                        + nextSource.getFormat() + "'" );
-        }
-
-        // Missing value?
-        Double missing = null;
-
-        if ( Objects.nonNull( nextSource.getMissingValue() ) )
-        {
-            missing = Double.parseDouble( nextSource.getMissingValue() );
-        }
-
-        //Path TODO: permit web thresholds. 
-        // See #59422
-        // Construct a path using the SystemSetting wres.dataDirectory when
-        // the specified source is not absolute.
-        URI uri = nextSource.getValue();
-        Path commaSeparated;
-
-        if ( !uri.isAbsolute() )
-        {
-            commaSeparated = systemSettings.getDataDirectory()
-                                           .resolve( uri.getPath() );
-            LOGGER.debug( "Transformed relative URI {} to Path {}.",
-                          uri,
-                          commaSeparated );
-        }
-        else
-        {
-            commaSeparated = Paths.get( uri );
-        }
-
-        // Condition: default to greater
-        ThresholdConstants.Operator operator = ThresholdConstants.Operator.GREATER;
-        if ( Objects.nonNull( threshold.getOperator() ) )
-        {
-            operator = DataFactory.getThresholdOperator( threshold );
-        }
-
-        // Data type: default to left
-        ThresholdConstants.ThresholdDataType dataType = ThresholdConstants.ThresholdDataType.LEFT;
-        if ( Objects.nonNull( threshold.getApplyTo() ) )
-        {
-            dataType = DataFactory.getThresholdDataType( threshold.getApplyTo() );
-        }
         
         // Threshold type: default to probability
         ThresholdConstants.ThresholdGroup thresholdType = ThresholdConstants.ThresholdGroup.PROBABILITY;
@@ -1552,18 +1492,12 @@ public class ConfigHelper
             thresholdType = DataFactory.getThresholdGroup( threshold.getType() );
         }
 
-        // Default to probability
-        boolean isProbability = thresholdType == ThresholdConstants.ThresholdGroup.PROBABILITY;
-
         try
         {
-            Map<FeaturePlus, Set<Threshold>> read = CommaSeparatedReader.readThresholds( commaSeparated,
-                                                                                         isProbability,
-                                                                                         operator,
-                                                                                         dataType,
-                                                                                         missing,
-                                                                                         units,
-                                                                                         unitMapper );
+            Map<FeaturePlus, Set<Threshold>> read = ThresholdReader.readThresholds( systemSettings,
+                                                                                    threshold,
+                                                                                    units,
+                                                                                    unitMapper );
 
             // Add the thresholds for each feature
             for ( Entry<FeaturePlus, Set<Threshold>> nextEntry : read.entrySet() )
@@ -1583,10 +1517,7 @@ public class ConfigHelper
         }
         catch ( IOException e )
         {
-            throw new MetricConfigException( threshold,
-                                             "Failed to read the comma separated thresholds "
-                                                        + "from '" + commaSeparated + "'.",
-                                             e );
+            throw new MetricConfigException( threshold, "Failed to read the comma separated thresholds.", e );
         }
         
         return returnMe;

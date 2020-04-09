@@ -63,6 +63,27 @@ public class FeaturePlus implements Comparable<FeaturePlus>
     }
 
     /**
+     * Compares two {@link FeaturePlus} based on the {@link Feature#getGageId()} of their contained features only.
+     * 
+     * @param left the left feature
+     * @param right the right feature
+     * @return a negative integer, zero, or a positive integer as the left feature is less than, equal to, or greater 
+     *            than the right feature, based on gage identifier only
+     */
+
+    public static int compareByGageId( FeaturePlus left, FeaturePlus right )
+    {
+        Objects.requireNonNull( left, "Specify non-null left feature for comparison." );
+
+        Objects.requireNonNull( right, "Specify non-null right feature for comparison." );
+
+        // #74566
+        Comparator<String> nullFriendly = Comparator.nullsFirst( Comparator.naturalOrder() );
+        
+        return nullFriendly.compare( left.getFeature().getGageId(), right.getFeature().getGageId() );
+    }    
+    
+    /**
      * Returns the wrapped {@link Feature}.
      * 
      * @return the wrapped {@link Feature}
