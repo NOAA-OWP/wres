@@ -2,9 +2,11 @@ package wres.io.reading.commaseparated;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
@@ -14,14 +16,25 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.DoubleUnaryOperator;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import wres.config.FeaturePlus;
+import wres.config.MetricConfigException;
 import wres.config.generated.Feature;
+import wres.config.generated.FeatureType;
+import wres.config.generated.ThresholdFormat;
+import wres.config.generated.ThresholdType;
+import wres.config.generated.ThresholdsConfig;
+import wres.datamodel.DataFactory;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.io.retrieval.UnitMapper;
+import wres.system.SystemSettings;
 
 /**
  * Helps read files of Comma Separated Values (CSV).
@@ -29,18 +42,17 @@ import wres.io.retrieval.UnitMapper;
  * @author james.brown@hydrosolved.com
  */
 
-public class CommaSeparatedReader
+public class ThresholdReader
 {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger( ThresholdReader.class );
 
     /**
      * Reads a CSV source that contains one or more thresholds for each of several features. Places the results into 
      * a {@link Map} whose keys are {@link FeaturePlus} and whose values comprise a {@link Set} of {@link Threshold}. 
      * 
-     * @param commaSeparated the source of comma separated values
-     * @param isProbability is true to read probability thresholds
-     * @param condition the threshold condition
-     * @param dataType the threshold data type
-     * @param missingValue an optional missing value identifier to ignore (may be null)
+     * @param systemSettings the system settings used to help resolve a path to thresholds
+     * @param threshold the threshold configuration
      * @param units the (optional) existing measurement units associated with the threshold values; if null, equal to 
      *            the evaluation units
      * @param unitMapper a measurement unit mapper
@@ -52,21 +64,112 @@ public class CommaSeparatedReader
      *            are invalid (e.g. probability thresholds that are out-of-bounds). 
      */
 
-    public static Map<FeaturePlus, Set<Threshold>> readThresholds( Path commaSeparated,
-                                                                   boolean isProbability,
-                                                                   Operator condition,
-                                                                   ThresholdDataType dataType,
-                                                                   Double missingValue,
+    public static Map<FeaturePlus, Set<Threshold>> readThresholds( SystemSettings systemSettings,
+                                                                   ThresholdsConfig threshold,
                                                                    MeasurementUnit units,
                                                                    UnitMapper unitMapper )
             throws IOException
     {
-        Objects.requireNonNull( commaSeparated, "Specify a non-null source of comma separated thresholds to read." );
+        Objects.requireNonNull( threshold, "Specify a non-null source of thresholds to read." );
 
-        Objects.requireNonNull( condition, "Specify a non-null condition in order to read the thresholds." );
+        ThresholdsConfig.Source nextSource = (ThresholdsConfig.Source) threshold.getCommaSeparatedValuesOrSource();
 
-        Objects.requireNonNull( dataType, "Specify a non-null data type in order to read the thresholds." );
+        // Pre-validate path
+        if ( Objects.isNull( nextSource.getValue() ) )
+        {
+            throw new MetricConfigException( threshold,
+                                             "Specify a non-null path to read for the external "
+                                                        + "source of thresholds." );
+        }
+        // Validate format
+        if ( nextSource.getFormat() != ThresholdFormat.CSV )
+        {
+            throw new MetricConfigException( threshold,
+                                             "Unsupported source format for thresholds '"
+                                                        + nextSource.getFormat()
+                                                        + "'" );
+        }
 
+        // Missing value?
+        Double missingValue = null;
+
+        if ( Objects.nonNull( nextSource.getMissingValue() ) )
+        {
+            missingValue = Double.parseDouble( nextSource.getMissingValue() );
+        }
+
+        //Path TODO: permit web thresholds. 
+        // See #59422
+        // Construct a path using the SystemSetting wres.dataDirectory when
+        // the specified source is not absolute.
+        URI uri = nextSource.getValue();
+        Path commaSeparated;
+
+        if ( !uri.isAbsolute() )
+        {
+            commaSeparated = systemSettings.getDataDirectory()
+                                           .resolve( uri.getPath() );
+            LOGGER.debug( "Transformed relative URI {} to Path {}.",
+                          uri,
+                          commaSeparated );
+        }
+        else
+        {
+            commaSeparated = Paths.get( uri );
+        }
+
+        // Condition: default to greater
+        ThresholdConstants.Operator operator = ThresholdConstants.Operator.GREATER;
+        if ( Objects.nonNull( threshold.getOperator() ) )
+        {
+            operator = DataFactory.getThresholdOperator( threshold );
+        }
+
+        // Data type: default to left
+        ThresholdConstants.ThresholdDataType dataType = ThresholdConstants.ThresholdDataType.LEFT;
+        if ( Objects.nonNull( threshold.getApplyTo() ) )
+        {
+            dataType = DataFactory.getThresholdDataType( threshold.getApplyTo() );
+        }
+
+        // The type of feature
+        FeatureType featureType = nextSource.getFeatureType();
+
+        ThresholdDataTypes dataTypes = new ThresholdDataTypes( dataType, featureType, threshold.getType(), operator );
+
+        return ThresholdReader.readThresholds( commaSeparated,
+                                               dataTypes,
+                                               missingValue,
+                                               units,
+                                               unitMapper );
+    }
+
+    /**
+     * Reads a CSV source that contains one or more thresholds for each of several features. Places the results into 
+     * a {@link Map} whose keys are {@link FeaturePlus} and whose values comprise a {@link Set} of {@link Threshold}. 
+     * 
+     * @param commaSeparated the path to the comma separated values
+     * @param operator the threshold condition
+     * @param dataType the threshold data types
+     * @param missingValue an optional missing value identifier to ignore (may be null)
+     * @param units the (optional) existing measurement units associated with the threshold values; if null, equal to 
+     *            the evaluation units 
+     * @param unitMapper a measurement unit mapper
+     * @return a map of thresholds by feature
+     * @throws IOException if the source cannot be read or contains unexpected input
+     * @throws NullPointerException if the source is null or the condition is null
+     * @throws IllegalArgumentException if one or more features failed with expected problems, such as 
+     *            all thresholds missing, thresholds that contain non-numeric input and thresholds that 
+     *            are invalid (e.g. probability thresholds that are out-of-bounds). 
+     */
+
+    private static Map<FeaturePlus, Set<Threshold>> readThresholds( Path commaSeparated,
+                                                                    ThresholdDataTypes dataTypes,
+                                                                    Double missingValue,
+                                                                    MeasurementUnit units,
+                                                                    UnitMapper unitMapper )
+            throws IOException
+    {
         Map<FeaturePlus, Set<Threshold>> returnMe = new TreeMap<>();
 
         // Rather than drip-feeding failures, collect all expected failure types, which
@@ -121,33 +224,16 @@ public class CommaSeparatedReader
 
                 String locationId = featureThresholds[0];
 
-                // Feature maps on locationId only              
-                Feature feature = new Feature( null,
-                                               null,
-                                               null,
-                                               null,
-                                               null,
-                                               locationId,
-                                               null,
-                                               null,
-                                               null,
-                                               null,
-                                               null,
-                                               null,
-                                               null );
-                FeaturePlus nextFeature = FeaturePlus.of( feature );
-
+                FeaturePlus nextFeature = ThresholdReader.getFeature( locationId, dataTypes.getFeatureType() );
 
                 try
                 {
                     returnMe.put( nextFeature,
-                                  CommaSeparatedReader.getAllThresholdsForOneFeature( isProbability,
-                                                                                      condition,
-                                                                                      dataType,
-                                                                                      labels,
-                                                                                      featureThresholds,
-                                                                                      missingValue,
-                                                                                      innerUnitMapper ) );
+                                  ThresholdReader.getAllThresholdsForOneFeature( dataTypes,
+                                                                                 labels,
+                                                                                 featureThresholds,
+                                                                                 missingValue,
+                                                                                 innerUnitMapper ) );
                 }
                 // Catch expected exceptions and propagate finally to avoid drip-feeding
                 catch ( LabelInconsistencyException e )
@@ -176,22 +262,65 @@ public class CommaSeparatedReader
         }
 
         // Propagate any exceptions that were caught to avoid drip-feeding
-        CommaSeparatedReader.throwExceptionIfOneOrMoreFailed( totalFeatures,
-                                                              commaSeparated,
-                                                              featuresThatFailedWithLabelInconsistency,
-                                                              featuresThatFailedWithAllThresholdsMissing,
-                                                              featuresThatFailedWithNonNumericInput,
-                                                              featuresThatFailedWithOtherWrongInput );
+        ThresholdReader.throwExceptionIfOneOrMoreFailed( totalFeatures,
+                                                         commaSeparated,
+                                                         featuresThatFailedWithLabelInconsistency,
+                                                         featuresThatFailedWithAllThresholdsMissing,
+                                                         featuresThatFailedWithNonNumericInput,
+                                                         featuresThatFailedWithOtherWrongInput );
 
         return returnMe;
     }
 
     /**
+     * Returns a feature from the input.
+     * 
+     * @param name the feature name
+     * @param type the type of feature name
+     * @return a feature
+     */
+
+    private static FeaturePlus getFeature( String name, FeatureType type )
+    {
+        switch ( type )
+        {
+            case NWS_ID:
+                return FeaturePlus.of( new Feature( null,
+                                                    null,
+                                                    null,
+                                                    null,
+                                                    null,
+                                                    name,
+                                                    null,
+                                                    null,
+                                                    null,
+                                                    null,
+                                                    null,
+                                                    null,
+                                                    null ) );
+            case USGS_ID:
+                return FeaturePlus.of( new Feature( null,
+                                                    null,
+                                                    null,
+                                                    null,
+                                                    null,
+                                                    null,
+                                                    null,
+                                                    name,
+                                                    null,
+                                                    null,
+                                                    null,
+                                                    null,
+                                                    null ) );
+            default:
+                throw new IllegalArgumentException( "Unsupported feature type '" + type + "'." );
+        }
+    }
+
+    /**
      * Mutates the input map, reading all thresholds for one feature.
      * 
-     * @param isProbability is true to read probability thresholds, false for value thresholds
-     * @param condition the threshold condition
-     * @param dataType the threshold data type
+     * @param dataType the threshold data types
      * @param labels the optional labels (may be null)
      * @param featureThresholds the next set of thresholds to process for a given feature, including the feature label
      * @param missingValue an optional missing value identifier to ignore (may be null)
@@ -203,9 +332,7 @@ public class CommaSeparatedReader
      * @return the thresholds for one feature
      */
 
-    private static Set<Threshold> getAllThresholdsForOneFeature( boolean isProbability,
-                                                                 Operator condition,
-                                                                 ThresholdDataType dataType,
+    private static Set<Threshold> getAllThresholdsForOneFeature( ThresholdDataTypes dataType,
                                                                  String[] labels,
                                                                  String[] featureThresholds,
                                                                  Double missingValue,
@@ -214,22 +341,31 @@ public class CommaSeparatedReader
 
         Objects.requireNonNull( featureThresholds );
 
-
         if ( Objects.nonNull( labels ) && featureThresholds.length - 1 != labels.length )
         {
             throw new LabelInconsistencyException( "One or more lines contained a different number "
                                                    + "of thresholds than labels." );
         }
 
-        return CommaSeparatedReader.getThresholds( Arrays.copyOfRange( featureThresholds,
-                                                                       1,
-                                                                       featureThresholds.length ),
-                                                   labels,
-                                                   isProbability,
-                                                   condition,
-                                                   dataType,
-                                                   missingValue,
-                                                   unitMapper );
+        // Threshold type: default to probability
+        ThresholdConstants.ThresholdGroup thresholdType = ThresholdConstants.ThresholdGroup.PROBABILITY;
+        if ( Objects.nonNull( dataType.getThresholdType() ) )
+        {
+            thresholdType = DataFactory.getThresholdGroup( dataType.getThresholdType() );
+        }
+
+        // Default to probability
+        boolean isProbability = thresholdType == ThresholdConstants.ThresholdGroup.PROBABILITY;
+
+        return ThresholdReader.getThresholds( Arrays.copyOfRange( featureThresholds,
+                                                                  1,
+                                                                  featureThresholds.length ),
+                                              labels,
+                                              isProbability,
+                                              dataType.getOperator(),
+                                              dataType.getThresholdDataType(),
+                                              missingValue,
+                                              unitMapper );
     }
 
     /**
@@ -385,7 +521,7 @@ public class CommaSeparatedReader
                                   + pathToThresholds
                                   + "' failed with exceptions, as follows." );
             exceptionMessage.add( System.lineSeparator() );
-            
+
         }
 
         if ( !featuresThatFailedWithLabelInconsistency.isEmpty() )
@@ -395,7 +531,7 @@ public class CommaSeparatedReader
                                   + featuresThatFailedWithLabelInconsistency
                                   + "." );
             exceptionMessage.add( System.lineSeparator() );
-            
+
         }
 
         if ( !featuresThatFailedWithAllThresholdsMissing.isEmpty() )
@@ -404,7 +540,7 @@ public class CommaSeparatedReader
                                   + "all thresholds matched the missing value: "
                                   + featuresThatFailedWithAllThresholdsMissing
                                   + "." );
-            exceptionMessage.add( System.lineSeparator() );           
+            exceptionMessage.add( System.lineSeparator() );
         }
 
         if ( !featuresThatFailedWithNonNumericInput.isEmpty() )
@@ -413,14 +549,14 @@ public class CommaSeparatedReader
                                   + featuresThatFailedWithNonNumericInput
                                   + "." );
             exceptionMessage.add( System.lineSeparator() );
-            
+
         }
 
         if ( !featuresThatFailedWithOtherWrongInput.isEmpty() )
         {
             exceptionMessage.add( "    These features failed with invalid input for the threshold type: "
                                   + featuresThatFailedWithOtherWrongInput
-                                  + "." );        
+                                  + "." );
         }
 
         // Throw exception if required
@@ -516,10 +652,77 @@ public class CommaSeparatedReader
     }
 
     /**
+     * Package of threshold data types.
+     */
+
+    private static class ThresholdDataTypes
+    {
+        private final ThresholdDataType thresholdDataType;
+        private final ThresholdType thresholdType;
+        private final FeatureType featureType;
+        private final Operator operator;
+
+        /**
+         * Construct.
+         * 
+         * @param thresholdDataType the threshold data type
+         * @param featureType the feature type
+         * @param thresholdType the threshold type
+         * @param operator the threshold operator
+         */
+        private ThresholdDataTypes( ThresholdDataType thresholdDataType,
+                                    FeatureType featureType,
+                                    ThresholdType thresholdType,
+                                    Operator operator )
+        {
+            this.thresholdDataType = thresholdDataType;
+            this.featureType = featureType;
+            this.thresholdType = thresholdType;
+            this.operator = operator;
+        }
+
+        /**
+         * @return the threshold data type.
+         */
+
+        private ThresholdDataType getThresholdDataType()
+        {
+            return this.thresholdDataType;
+        }
+
+        /**
+         * @return the threshold type.
+         */
+
+        private ThresholdType getThresholdType()
+        {
+            return this.thresholdType;
+        }
+
+        /**
+         * @return the feature type.
+         */
+
+        private FeatureType getFeatureType()
+        {
+            return this.featureType;
+        }
+
+        /**
+         * @return the threshold operator.
+         */
+
+        private Operator getOperator()
+        {
+            return this.operator;
+        }
+    }
+
+    /**
      * Do not construct.
      */
 
-    private CommaSeparatedReader()
+    private ThresholdReader()
     {
     }
 

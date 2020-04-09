@@ -1,6 +1,5 @@
 package wres.io.project;
 
-import java.io.IOException;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.MonthDay;
@@ -15,7 +14,6 @@ import java.util.TreeSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.CrossPair;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
