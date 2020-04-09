@@ -50,15 +50,13 @@ import static wres.messages.generated.Job.job.Verb;
 public class WresJob
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( WresJob.class );
-
     private static final String SEND_QUEUE_NAME = "wres.job";
 
     // Using a member variable fails, make it same across instances.
     private static final ConnectionFactory CONNECTION_FACTORY = new ConnectionFactory();
-
     private static final Random RANDOM = new Random( System.currentTimeMillis() );
-
     private static final short MAXIMUM_EVALUATION_COUNT = 750;
+    private static final int MAXIMUM_PROJECT_DECLARATION_LENGTH = 6 * 1024 * 1024;
 
     static
     {
@@ -97,6 +95,22 @@ public class WresJob
                                  @Deprecated @FormParam( "userName" ) String wresUser,
                                  @FormParam( "verb" ) String verb )
     {
+        int lengthOfProjectDeclaration = projectConfig.length();
+
+        // Limit project config to 24MiB and less than 6MiCharacters
+        if ( lengthOfProjectDeclaration > MAXIMUM_PROJECT_DECLARATION_LENGTH )
+        {
+            String projectConfigFirstChars = projectConfig.substring( 0, 1000 );
+            LOGGER.warn( "Received a project declaration of length {} starting with {}",
+                         lengthOfProjectDeclaration, projectConfigFirstChars );
+            return WresJob.badRequest( "The project declaration has "
+                                       + lengthOfProjectDeclaration
+                                       + " characters, which is more than "
+                                       + MAXIMUM_PROJECT_DECLARATION_LENGTH
+                                       + ", please find a way to shrink the "
+                                       + " project declaration and re-send." );
+        }
+
         // Default to execute per tradition and majority case.
         Verb actualVerb = null;
 
