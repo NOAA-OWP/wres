@@ -26,9 +26,13 @@ import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
+import wres.config.generated.GraphicalType;
+import wres.config.generated.MetricConfigName;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Outputs;
+import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.StatisticType;
+import wres.datamodel.Slicer;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
@@ -36,6 +40,7 @@ import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.statistics.StatisticsForProject;
+import wres.engine.statistics.metric.config.MetricConfigHelper;
 import wres.io.concurrency.Executor;
 import wres.io.retrieval.UnitMapper;
 import wres.io.writing.SharedStatisticsWriters;
@@ -82,7 +87,16 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
 
     private static final String NULL_OUTPUT_STRING = "Specify non-null outputs for product generation.";
 
+    /**
+     * System settings.
+     */
+
     private final SystemSettings systemSettings;
+
+    /**
+     * Executor.
+     */
+
     private final Executor executor;
 
     /**
@@ -140,6 +154,12 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
             new EnumMap<>( DestinationType.class );
 
     /**
+     * A map of output formats for which specific metrics should not be written. 
+     */
+
+    private final Map<DestinationType, Set<MetricConstants>> suppressTheseDestinationsForTheseMetrics;
+
+    /**
      * List of resources that ProductProcessor opened that it needs to close
      */
     private final List<Closeable> resourcesToClose;
@@ -149,28 +169,18 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
      * a list of paths that those writers actually ended up writing to.
      */
     private final List<Supplier<Set<Path>>> writersToPaths;
-    
+
     /**
      * The duration units obtained from the {@link #resolvedProject} and stored here for convenience.
      */
 
     private final ChronoUnit durationUnits;
-    
+
     /**
      * Unit mapper.
      */
 
     private final UnitMapper unitMapper;
-
-    private SystemSettings getSystemSettings()
-    {
-        return this.systemSettings;
-    }
-
-    private Executor getExecutor()
-    {
-        return this.executor;
-    }
 
     /**
      * Build a product processor.
@@ -345,10 +355,10 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
                                                     this.getDurationUnits(),
                                                     outputDirectory );
             this.boxPlotConsumersPerPair.put( DestinationType.CSV,
-                                       boxPlotWriter );
+                                              boxPlotWriter );
             this.writersToPaths.add( boxPlotWriter );
         }
-        
+
         if ( this.writeWhenTrue.test( StatisticType.BOXPLOT_PER_POOL, DestinationType.CSV ) )
         {
             CommaSeparatedBoxPlotWriter boxPlotWriter =
@@ -356,7 +366,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
                                                     this.getDurationUnits(),
                                                     outputDirectory );
             this.boxPlotConsumersPerPool.put( DestinationType.CSV,
-                                       boxPlotWriter );
+                                              boxPlotWriter );
             this.writersToPaths.add( boxPlotWriter );
         }
 
@@ -424,10 +434,10 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
                                                                   this.getDurationUnits(),
                                                                   outputDirectory );
             this.boxPlotConsumersPerPair.put( DestinationType.PNG,
-                                       boxPlotWriter );
+                                              boxPlotWriter );
             this.writersToPaths.add( boxPlotWriter );
         }
-        
+
         if ( this.writeWhenTrue.test( StatisticType.BOXPLOT_PER_POOL, DestinationType.PNG ) )
         {
             PNGBoxPlotWriter boxPlotWriter = PNGBoxPlotWriter.of( this.getSystemSettings(),
@@ -482,7 +492,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
      * @throws ProjectConfigException if the project configuration is invalid for writing
      * @throws IOException if the initial blobs could not be written
      */
-    
+
     private void buildNetCDFConsumers( SharedStatisticsWriters sharedWriters ) throws IOException
     {
         ProjectConfig projectConfig = this.getProjectConfigPlus().getProjectConfig();
@@ -538,8 +548,11 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
             {
                 log( outputs, next.getKey(), true );
 
+                List<DiagramStatistic> filtered = this.getFilteredStatisticsForThisDestinationType( outputs,
+                                                                                                    next.getKey() );
+
                 // Consume the output
-                next.getValue().accept( outputs );
+                next.getValue().accept( filtered );
 
                 log( outputs, next.getKey(), false );
             }
@@ -565,8 +578,11 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
             {
                 log( outputs, next.getKey(), true );
 
+                List<BoxPlotStatistics> filtered = this.getFilteredStatisticsForThisDestinationType( outputs,
+                                                                                                     next.getKey() );
+
                 // Consume the output
-                next.getValue().accept( outputs );
+                next.getValue().accept( filtered );
 
                 log( outputs, next.getKey(), false );
             }
@@ -592,8 +608,11 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
             {
                 log( outputs, next.getKey(), true );
 
+                List<BoxPlotStatistics> filtered = this.getFilteredStatisticsForThisDestinationType( outputs,
+                                                                                                     next.getKey() );
+
                 // Consume the output
-                next.getValue().accept( outputs );
+                next.getValue().accept( filtered );
 
                 log( outputs, next.getKey(), false );
             }
@@ -619,8 +638,11 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
             {
                 log( outputs, next.getKey(), true );
 
+                List<DoubleScoreStatistic> filtered = this.getFilteredStatisticsForThisDestinationType( outputs,
+                                                                                                        next.getKey() );
+
                 // Consume the output
-                next.getValue().accept( outputs );
+                next.getValue().accept( filtered );
 
                 log( outputs, next.getKey(), false );
             }
@@ -647,8 +669,11 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
             {
                 log( outputs, next.getKey(), true );
 
+                List<DurationScoreStatistic> filtered = this.getFilteredStatisticsForThisDestinationType( outputs,
+                                                                                                          next.getKey() );
+
                 // Consume the output
-                next.getValue().accept( outputs );
+                next.getValue().accept( filtered );
 
                 log( outputs, next.getKey(), false );
             }
@@ -675,8 +700,11 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
             {
                 log( outputs, next.getKey(), true );
 
+                List<PairedStatistic<Instant, Duration>> filtered =
+                        this.getFilteredStatisticsForThisDestinationType( outputs, next.getKey() );
+
                 // Consume the output
-                next.getValue().accept( outputs );
+                next.getValue().accept( filtered );
 
                 log( outputs, next.getKey(), false );
             }
@@ -807,16 +835,147 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         return this.getResolvedProject()
                    .getProjectConfig();
     }
-    
+
     /**
      * @return the duration units
      */
-    
+
     private ChronoUnit getDurationUnits()
     {
         return this.durationUnits;
     }
-    
+
+    /**
+     * Suppress the prescribed output types for the metrics returned.
+     * 
+     * @param projectConfig the project declaration
+     * @param allMetrics the set of all metrics in the project
+     * @return the metrics for which particular output types should be suppressed.
+     * @throws NullPointerException if the input is null
+     */
+
+    private Map<DestinationType, Set<MetricConstants>>
+            getMetricsForWhichOutputsShouldBeSuppressed( ProjectConfig projectConfig, Set<MetricConstants> allMetrics )
+    {
+        Objects.requireNonNull( projectConfig );
+
+        Map<DestinationType, Set<MetricConstants>> returnMe = new EnumMap<>( DestinationType.class );
+
+        // Graphics
+        List<DestinationConfig> destinations = projectConfig.getOutputs().getDestination();
+        for ( DestinationConfig next : destinations )
+        {
+            // Graphical types
+            GraphicalType graphical = next.getGraphical();
+            if ( Objects.nonNull( graphical ) )
+            {
+                Set<MetricConstants> suppressMe = this.translate( graphical.getSuppressMetric(), allMetrics );
+                returnMe.put( DestinationType.GRAPHIC, suppressMe );
+                returnMe.put( DestinationType.PNG, suppressMe );
+            }
+
+        }
+
+        returnMe = Collections.unmodifiableMap( returnMe );
+
+        if ( LOGGER.isDebugEnabled() && !returnMe.isEmpty() )
+        {
+            LOGGER.debug( "Discovered a map of destination types for which metrics should be suppressed: {}.",
+                          returnMe );
+        }
+        
+        return returnMe;
+    }
+
+    /**
+     * Translates a list of {@link MetricConfigName} to a set of {@link MetricConstants}.
+     * 
+     * @param metrics a list of metrics by declared name
+     * @param allMetrics the set of all metrics in the project to use when encountering 
+     *            {@link MetricConfigName#ALL_VALID}
+     * @return a set of metrics by internal name
+     * @throws NullPointerException if any input is null
+     */
+
+    private Set<MetricConstants> translate( List<MetricConfigName> metrics, Set<MetricConstants> allMetrics )
+    {
+        Objects.requireNonNull( metrics );
+
+        Set<MetricConstants> returnMe = new HashSet<>();
+
+        for ( MetricConfigName next : metrics )
+        {
+            if ( MetricConfigName.ALL_VALID == next )
+            {
+                return allMetrics;
+            }
+
+            MetricConstants add = MetricConstants.valueOf( next.name() );
+
+            returnMe.add( add );
+        }
+
+        return Collections.unmodifiableSet( returnMe );
+    }
+
+    /**
+     * Filters the input statistics for the prescribed destination type relative to the output types that should be 
+     * suppressed for particular statistics. See {@link #getSuppressTheseMetricsForThisDestinationType()}.
+     * 
+     * @param statistics the statistics to filter
+     * @param the destination type by which to filter
+     * @return a filtered list of statistics, omitting those to be suppressed for the prescribed destination type
+     * @throws NullPointerException if any input is null
+     */
+
+    private <T extends Statistic<?>> List<T>
+            getFilteredStatisticsForThisDestinationType( List<T> statistics, DestinationType destinationType )
+    {
+        Objects.requireNonNull( statistics );
+
+        Objects.requireNonNull( destinationType );
+
+        Set<MetricConstants> suppress = this.getSuppressTheseMetricsForThisDestinationType( destinationType );
+
+        // Filter suppressed types
+        if ( Objects.nonNull( suppress ) )
+        {
+            return Slicer.filter( statistics, next -> !suppress.contains( next.getMetricID() ) );
+        }
+
+        // Nothing filtered
+        return statistics;
+    }
+
+    /**
+     * Returns the metrics that should be suppressed for the prescribed destination.
+     * 
+     * @return the map of destination types to statistics for suppression
+     */
+
+    private Set<MetricConstants> getSuppressTheseMetricsForThisDestinationType( DestinationType destinationType )
+    {
+        return this.suppressTheseDestinationsForTheseMetrics.get( destinationType );
+    }
+
+    /**
+     * @return the system settings.
+     */
+
+    private SystemSettings getSystemSettings()
+    {
+        return this.systemSettings;
+    }
+
+    /**
+     * @return the executor.
+     */
+
+    private Executor getExecutor()
+    {
+        return this.executor;
+    }
+
     /**
      * Build a product processor that writes conditionally.
      * 
@@ -830,10 +989,10 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
 
     private ProduceOutputsFromStatistics( SystemSettings systemSettings,
                                           Executor executor,
-                                          final ResolvedProject resolvedProject,
-                                          final BiPredicate<StatisticType, DestinationType> writeWhenTrue,
-                                          final SharedStatisticsWriters sharedWriters,
-                                          final UnitMapper unitMapper )
+                                          ResolvedProject resolvedProject,
+                                          BiPredicate<StatisticType, DestinationType> writeWhenTrue,
+                                          SharedStatisticsWriters sharedWriters,
+                                          UnitMapper unitMapper )
     {
         Objects.requireNonNull( systemSettings );
         Objects.requireNonNull( executor );
@@ -850,11 +1009,19 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         this.writeWhenTrue = writeWhenTrue;
         this.unitMapper = unitMapper;
 
+        ProjectConfig projectConfig = resolvedProject.getProjectConfig();
+        
+        // Could also be supplied on construction, but overhead is not too large
+        Set<MetricConstants> metrics = MetricConfigHelper.getMetricsFromConfig( projectConfig );
+        
+        this.suppressTheseDestinationsForTheseMetrics =
+                this.getMetricsForWhichOutputsShouldBeSuppressed( projectConfig, metrics );
+
         // Register the duration units
         String durationUnitsString =
                 resolvedProject.getProjectConfig().getOutputs().getDurationFormat().value().toUpperCase();
         this.durationUnits = ChronoUnit.valueOf( durationUnitsString );
-        
+
         // Register output consumers
         try
         {
@@ -866,5 +1033,5 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
             throw new WresProcessingException( "While processing the project configuration to write output:", e );
         }
     }
-    
+
 }

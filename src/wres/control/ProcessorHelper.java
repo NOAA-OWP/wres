@@ -163,21 +163,10 @@ class ProcessorHelper
         ChronoUnit durationUnits = ChronoUnit.valueOf( durationUnitsString );
 
         // Build any writers of incremental formats that are shared across features
-        /* skip the general-purpose incomplete netcdf writer
-        final Set<MetricConstants> metricsForSharedWriting = resolvedProject.getDoubleScoreMetrics();
-        final int thresholdCountForSharedWriting = resolvedProject.getThresholdCount( MetricOutputGroup.DOUBLE_SCORE );
-        */
         SharedWritersBuilder sharedWritersBuilder = new SharedWritersBuilder();
         if ( ConfigHelper.getIncrementalFormats( projectConfig )
                          .contains( DestinationType.NETCDF ) )
         {
-            /* skip the general-purpose incomplete netcdf writer
-            sharedWritersBuilder.setNetcdfDoublescoreWriter( ConfigHelper.getNetcdfWriter( projectIdentifier,
-                                                                                           projectConfig,
-                                                                                           resolvedProject.getFeatureCount(),
-                                                                                           thresholdCountForSharedWriting,
-                                                                                           metricsForSharedWriting ) );
-            */
             // Use the gridded netcdf writer
             sharedWritersBuilder.setNetcdfOutputWriter( NetcdfOutputWriter.of( systemSettings,
                                                                                executor,

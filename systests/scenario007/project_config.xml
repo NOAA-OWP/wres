@@ -50,7 +50,8 @@
                         </plotTitle>
                     </chartDrawingParameters>
                 </config>
-
+                <!-- Test the supression of graphical output for one metric -->
+                <suppressMetric>sample size</suppressMetric>
             </graphical>
         </destination>
     </outputs>
