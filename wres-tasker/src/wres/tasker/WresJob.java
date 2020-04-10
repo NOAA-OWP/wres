@@ -55,8 +55,19 @@ public class WresJob
     // Using a member variable fails, make it same across instances.
     private static final ConnectionFactory CONNECTION_FACTORY = new ConnectionFactory();
     private static final Random RANDOM = new Random( System.currentTimeMillis() );
-    private static final short MAXIMUM_EVALUATION_COUNT = 750;
-    private static final int MAXIMUM_PROJECT_DECLARATION_LENGTH = 6 * 1024 * 1024;
+
+    /**
+     * The count of evaluations combined with the maximum length below (which
+     * is around 4x the bytes) that could be handled by broker with current
+     * broker memory limits minus 100MiB usually used by broker.
+     */
+    private static final short MAXIMUM_EVALUATION_COUNT = 50;
+
+    /**
+     * A maximum length less than the largest-seen successful project sent
+     * to a worker-shim with the current worker-shim heap limits. E.g. no OOME.
+     */
+    private static final int MAXIMUM_PROJECT_DECLARATION_LENGTH = 1_600_000;
 
     static
     {
@@ -97,7 +108,7 @@ public class WresJob
     {
         int lengthOfProjectDeclaration = projectConfig.length();
 
-        // Limit project config to 24MiB and less than 6MiCharacters
+        // Limit project config to less than 1.6 million characters
         if ( lengthOfProjectDeclaration > MAXIMUM_PROJECT_DECLARATION_LENGTH )
         {
             String projectConfigFirstChars = projectConfig.substring( 0, 1000 );
