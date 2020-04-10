@@ -58,7 +58,7 @@ public class WresJob
 
     /**
      * The count of evaluations combined with the maximum length below (which
-     * is around 4x the bytes) that could be handled by broker with current
+     * is around 1x-2.5x the bytes) that could be handled by broker with current
      * broker memory limits minus 100MiB usually used by broker.
      */
     private static final short MAXIMUM_EVALUATION_COUNT = 50;
@@ -67,7 +67,7 @@ public class WresJob
      * A maximum length less than the largest-seen successful project sent
      * to a worker-shim with the current worker-shim heap limits. E.g. no OOME.
      */
-    private static final int MAXIMUM_PROJECT_DECLARATION_LENGTH = 1_600_000;
+    private static final int MAXIMUM_PROJECT_DECLARATION_LENGTH = 2_500_000;
 
     static
     {
