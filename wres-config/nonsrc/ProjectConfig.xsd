@@ -408,8 +408,15 @@
             <xs:appinfo>
                 <jaxb:class name="DataSourceBaselineConfig" />
             </xs:appinfo>
-            <xs:documentation>Provides information necessary for WRES to load
-                data from baseline data sources.
+            <xs:documentation>Provides information necessary for WRES to load 
+                data from baseline data sources. When declaring separateMetrics 
+                as "true", all possible metrics will be computed for the baseline 
+                pairs, as well as the right pairs. All possible metrics include 
+                skill scores that have a default baseline, such as climatology. 
+                For skill scores that do not have a default baseline, such as 
+                the continuous ranked probability skill score, statistics will 
+                only be computed for the pairs of left and right values, not 
+                for the pairs of left and baseline values.
             </xs:documentation>
         </xs:annotation>
 

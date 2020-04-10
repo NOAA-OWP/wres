@@ -38,10 +38,7 @@ import wres.config.generated.DestinationType;
 import wres.config.generated.FeatureType;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.thresholds.ThresholdsByMetric;
-import wres.engine.statistics.metric.config.MetricConfigHelper;
 import wres.io.Operations;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
@@ -142,13 +139,21 @@ class ProcessorHelper
         // Full representation of the FeaturePlus is used, as represented by decomposedFeatures above
         if ( !externalThresholds.isEmpty() )
         {
+            int thresholdCount = externalThresholds.size();
+
+            // Set the features with thresholds and matching features to evaluate
             externalThresholds = ProcessorHelper.reconcileFeaturesAndExternalThresholds( externalThresholds,
-                                                                                         decomposedFeatures,
-                                                                                         projectConfig );
+                                                                                         decomposedFeatures );
 
             decomposedFeatures = externalThresholds.keySet();
-        }        
-        
+
+            LOGGER.info( "Discovered {} features to evaluate for which external thresholds were available and {} "
+                         + "features with external thresholds that could not be evaluated (e.g., because there was "
+                         + "no data for these features).",
+                         decomposedFeatures.size(),
+                         thresholdCount - decomposedFeatures.size() );
+        }
+
         // The project code - ideally project hash
         String projectIdentifier = String.valueOf( project.getInputCode() );
 
@@ -378,8 +383,7 @@ class ProcessorHelper
      * <ol>
      * <li>Thresholds have been defined for one or more features individually; and</li>
      * <li>The list of features that require computation contains one or more features for which
-     * thresholds have not been defined; and</li>
-     * <li>The project declaration contains metrics that require thresholds.</li>
+     * thresholds have not been defined</li>
      * </ol>
      * 
      * <p>Returns a map with the fully qualified features from the <code>featuresToEvaluate</code> as keys. 
@@ -388,16 +392,20 @@ class ProcessorHelper
      * 
      * @param featuresWithThresholds the features with thresholds
      * @param featuresToEvaluate the features to evaluate
-     * @param projectConfig the project declaration
      * @return The map of filtered features to evaluate
      * @throws IllegalArgumentException if some expected thresholds are missing
      */
 
     private static Map<FeaturePlus, ThresholdsByMetric>
             reconcileFeaturesAndExternalThresholds( Map<FeaturePlus, ThresholdsByMetric> externalThresholds,
-                                                    Set<FeaturePlus> featuresToEvaluate,
-                                                    ProjectConfig projectConfig )
+                                                    Set<FeaturePlus> featuresToEvaluate )
     {
+        
+        LOGGER.debug( "Attempting to reconcile the {} features to evaluate with the {} features for which external "
+                      + "thresholds are available.",
+                      featuresToEvaluate.size(),
+                      externalThresholds.size() );
+        
         Map<FeaturePlus, ThresholdsByMetric> filteredFeatures = new TreeMap<>();
 
         // Get the thresholds indexed by canonical feature name only
@@ -421,34 +429,32 @@ class ProcessorHelper
 
         if ( !missingThresholds.isEmpty() && LOGGER.isWarnEnabled() )
         {
+            StringJoiner joiner = new StringJoiner( ", " );
 
-            // Determine whether any metrics require thresholds
-            Set<MetricConstants> metrics = MetricConfigHelper.getMetricsFromConfig( projectConfig );
-            boolean requiresThresholds = metrics.stream()
-                                                .anyMatch( nextMetric -> nextMetric.isInGroup( SampleDataGroup.DICHOTOMOUS )
-                                                                         || nextMetric.isInGroup( SampleDataGroup.DISCRETE_PROBABILITY )
-                                                                         || nextMetric.isInGroup( SampleDataGroup.MULTICATEGORY ) );
-
-            if ( requiresThresholds )
+            for ( FeaturePlus featurePlus : missingThresholds )
             {
-                StringJoiner joiner = new StringJoiner( ", " );
-
-                for ( FeaturePlus featurePlus : missingThresholds )
-                {
-                    String description = ConfigHelper.getFeatureDescription( featurePlus );
-                    joiner.add( description );
-                }
-
-                LOGGER.warn( "{}{}{}{}{}{}{}{}",
-                             "The project declaration contains some ",
-                             "metrics for which thresholds are required, ",
-                             "but some features for which thresholds are ",
-                             "not available. Found the following features ",
-                             "to evaluate in the project for which ",
-                             "thresholds were missing from an ",
-                             "external source of thresholds: ",
-                             joiner );
+                String description = ConfigHelper.getFeatureDescription( featurePlus );
+                joiner.add( description );
             }
+
+            LOGGER.warn( "{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}",
+                         "While attempting to reconcile the features to ",
+                         "evaluate with the features for which thresholds ",
+                         "are available, found ",
+                         featuresToEvaluate.size(),
+                         " features to evaluate and ",
+                         externalThresholds.size(),
+                         " features for which thresholds are available, but ",
+                         missingThresholds.size(),
+                         " features for which thresholds could not be ",
+                         "reconciled with features to evaluate. Features without ",
+                         "thresholds will be skipped. If the number of features ",
+                         "without thresholds is larger than expected, ensure ",
+                         "that the type of feature name (featureType) is properly ",
+                         "declared for the external source of thresholds. The ",
+                         "features without thresholds are: ",
+                         joiner,
+                         "." );
         }
 
         return Collections.unmodifiableMap( filteredFeatures );
