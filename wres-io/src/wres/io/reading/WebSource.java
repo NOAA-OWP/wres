@@ -392,19 +392,18 @@ class WebSource implements Callable<List<IngestResult>>
         {
             for ( FeatureDetails featureDetails : features )
             {
+                boolean shouldCreateUri = shouldCreateUri( this.getBaseUri(),
+                                                           featureDetails );
+
+                if ( !shouldCreateUri )
+                {
+                    LOGGER.warn( "Unable or unwilling to create a URI for feature {}, skipping it.",
+                                 featureDetails );
+                    continue;
+                }
+
                 for ( Pair<Instant, Instant> range : weekRanges )
                 {
-                    boolean shouldCreateUri = shouldCreateUri( this.getBaseUri(),
-                                                               range,
-                                                               featureDetails );
-
-                    if ( !shouldCreateUri )
-                    {
-                        LOGGER.warn( "Unable or unwilling to create a URI for feature {}, skipping it.",
-                                     featureDetails );
-                        continue;
-                    }
-
                     URI uri = createUri( this.getBaseUri(),
                                          this.getDataSource(),
                                          range,
@@ -791,16 +790,13 @@ class WebSource implements Callable<List<IngestResult>>
      * Tests if createUri call should succeed. Kind of awkward, but better than
      * having createUri() return null, allows createUri to guarantee a URI.
      * @param baseUri
-     * @param range
      * @param featureDetails
      * @return
      */
     private boolean shouldCreateUri( URI baseUri,
-                                     Pair<Instant,Instant> range,
                                      FeatureDetails featureDetails )
     {
         Objects.requireNonNull( baseUri );
-        Objects.requireNonNull( range );
         Objects.requireNonNull( featureDetails );
         InterfaceShortHand interfaceShortHand = this.getDataSource()
                                                     .getSource()

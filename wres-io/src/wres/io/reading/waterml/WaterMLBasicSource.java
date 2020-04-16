@@ -299,6 +299,12 @@ public class WaterMLBasicSource extends BasicSource
                 ingestResults.addAll( result );
             }
 
+            if ( LOGGER.isInfoEnabled() )
+            {
+                LOGGER.info( "{} USGS time series ingested from URL {}",
+                             ingestResults.size(), this.dataSource.getUri() );
+            }
+
             return Collections.unmodifiableList( ingestResults );
         }
         catch ( JsonMappingException jme )
