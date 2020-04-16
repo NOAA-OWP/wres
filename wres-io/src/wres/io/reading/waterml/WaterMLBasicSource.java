@@ -301,8 +301,11 @@ public class WaterMLBasicSource extends BasicSource
 
             if ( LOGGER.isInfoEnabled() )
             {
+                long countIngested = ingestResults.stream()
+                                                  .filter( f -> !f.requiresRetry() )
+                                                  .count();
                 LOGGER.info( "{} USGS time series ingested from URL {}",
-                             ingestResults.size(), this.dataSource.getUri() );
+                             countIngested, dataSource.getUri() );
             }
 
             return Collections.unmodifiableList( ingestResults );

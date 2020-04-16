@@ -250,7 +250,25 @@ public class DataSource
 
         if ( Objects.nonNull( this.getTimeSeries() ) )
         {
-            joiner.add( " TimeSeries: " + this.getTimeSeries() );
+            String timeseries =  " TimeSeries with ";
+
+            if ( Objects.nonNull( this.getTimeSeries().getEvents() ) )
+            {
+                timeseries += this.getTimeSeries()
+                                  .getEvents()
+                                  .size();
+            }
+            else
+            {
+                timeseries += " no ";
+            }
+
+            timeseries += " events: ";
+            timeseries +=  this.getTimeSeries()
+                               .getMetadata()
+                               .toString();
+
+            joiner.add( timeseries );
         }
 
         return joiner.toString();
