@@ -84,6 +84,12 @@ class WaterMLSource implements Callable<List<TimeSeries<Double>>>
             }
         }
 
+        if ( LOGGER.isInfoEnabled() )
+        {
+            LOGGER.info( "{} USGS time series parsed from URL {}",
+                         allTimeSeries.size(), this.dataSource.getUri() );
+        }
+
         return Collections.unmodifiableList( allTimeSeries );
     }
 
@@ -243,9 +249,6 @@ class WaterMLSource implements Callable<List<TimeSeries<Double>>>
                                                        rawTimeSeries );
             timeSerieses.add( timeSeries );
         }
-
-        LOGGER.info( "A USGS time series has been parsed for site number {}",
-                     usgsSiteCode );
 
         return Collections.unmodifiableList( timeSerieses );
     }
