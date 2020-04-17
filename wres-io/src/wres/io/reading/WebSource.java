@@ -1,4 +1,4 @@
-package wres.io.reading;
+ package wres.io.reading;
 
 import java.io.IOException;
 import java.net.URI;
@@ -390,24 +390,17 @@ class WebSource implements Callable<List<IngestResult>>
 
         try
         {
-            for ( FeatureDetails featureDetails : features )
+            List<String> featureNames = this.getFeatureStrings( features,
+                                                                this.getDataSource() );
+
+            for ( String featureName : featureNames )
             {
-                boolean shouldCreateUri = shouldCreateUri( this.getBaseUri(),
-                                                           featureDetails );
-
-                if ( !shouldCreateUri )
-                {
-                    LOGGER.warn( "Unable or unwilling to create a URI for feature {}, skipping it.",
-                                 featureDetails );
-                    continue;
-                }
-
                 for ( Pair<Instant, Instant> range : weekRanges )
                 {
                     URI uri = createUri( this.getBaseUri(),
                                          this.getDataSource(),
                                          range,
-                                         featureDetails,
+                                         featureName,
                                          allKnownUsgsGageIds );
 
                     if ( alreadySubmittedUris.contains( uri ) )
@@ -554,19 +547,30 @@ class WebSource implements Callable<List<IngestResult>>
         return this.isWrdsNwmSource( this.getDataSource() );
     }
 
+
     /**
-     * Depending on the source given, return the feature ids as Strings.
+     * Depending on the source type given, return the feature ids as Strings.
+     *
+     * Log a warning when there are features declared that get filtered out.
+     * The reason for this warning is the caller declared that this feature
+     * should be included but now it is being skipped. #72747 might help.
+     *
      * @param featureDetails The feature details to reduce.
      * @param source The source to use to decide how to reduce them.
      * @return The reduced feature list.
      */
+
     private List<String> getFeatureStrings( Set<FeatureDetails> featureDetails,
                                             DataSource source )
     {
         List<String> features = new ArrayList<>( featureDetails.size() );
+        List<FeatureDetails> featuresSkipped = new ArrayList<>( 1 );
+        String featureType;
 
         if ( this.isWrdsNwmSource( source ) )
         {
+            featureType = "NWM feature IDs";
+
             for ( FeatureDetails details : featureDetails )
             {
                 Integer comid = details.getComid();
@@ -575,10 +579,16 @@ class WebSource implements Callable<List<IngestResult>>
                 {
                     features.add( comid.toString() );
                 }
+                else
+                {
+                    featuresSkipped.add( details );
+                }
             }
         }
         else if ( this.isUsgsSource( source ) )
         {
+            featureType = "USGS site codes";
+
             for ( FeatureDetails details : featureDetails )
             {
                 String siteCode = details.getGageID();
@@ -588,10 +598,16 @@ class WebSource implements Callable<List<IngestResult>>
                 {
                     features.add( siteCode );
                 }
+                else
+                {
+                    featuresSkipped.add( details );
+                }
             }
         }
         else
         {
+            featureType = "NWS lids (or arbitrary ids)";
+
             for ( FeatureDetails details : featureDetails )
             {
                 String lid = details.getLid();
@@ -601,10 +617,21 @@ class WebSource implements Callable<List<IngestResult>>
                 {
                     features.add( lid );
                 }
+                else
+                {
+                    featuresSkipped.add( details );
+                }
             }
         }
 
         features.sort( null );
+
+        if ( !featuresSkipped.isEmpty() )
+        {
+            LOGGER.warn( "The project tried to include the following feature/features as if it/they had {}, but that type of id was unavailable to WRES: {}",
+                         featureType, featuresSkipped );
+        }
+
         return Collections.unmodifiableList( features );
     }
 
@@ -787,45 +814,12 @@ class WebSource implements Callable<List<IngestResult>>
 
 
     /**
-     * Tests if createUri call should succeed. Kind of awkward, but better than
-     * having createUri() return null, allows createUri to guarantee a URI.
-     * @param baseUri
-     * @param featureDetails
-     * @return
-     */
-    private boolean shouldCreateUri( URI baseUri,
-                                     FeatureDetails featureDetails )
-    {
-        Objects.requireNonNull( baseUri );
-        Objects.requireNonNull( featureDetails );
-        InterfaceShortHand interfaceShortHand = this.getDataSource()
-                                                    .getSource()
-                                                    .getInterface();
-
-        if ( ( baseUri.getHost()
-                      .toLowerCase()
-                      .contains( "usgs.gov" )
-               || ( Objects.nonNull( interfaceShortHand )
-                    && interfaceShortHand.equals( InterfaceShortHand.USGS_NWIS ) )
-             )
-            && ( Objects.isNull( featureDetails.getGageID() )
-                 || featureDetails.getGageID().isBlank() ) )
-        {
-            LOGGER.debug( "Avoiding null or blank usgs site code for feature {} when looking for USGS data: {}",
-                          featureDetails, this );
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
      * Create a uri for a single location. Older method than below createUri.
      * Used for USGS NWIS and WRDS AHPS services as of 2020-02-25.
      * @param baseUri The uri prefix.
      * @param dataSource The data source.
      * @param range The date range.
-     * @param featureDetails The individual feature.
+     * @param featureName The individual feature.
      * @param allKnownUsgsGageIds The list of all wres.Feature USGS site codes.
      * @return The URI to use to get data.
      */
@@ -833,16 +827,16 @@ class WebSource implements Callable<List<IngestResult>>
     private URI createUri( URI baseUri,
                            DataSource dataSource,
                            Pair<Instant,Instant> range,
-                           FeatureDetails featureDetails,
+                           String featureName,
                            SortedSet<String> allKnownUsgsGageIds )
     {
         if ( this.isUsgsSource( dataSource ) )
         {
-            return this.createUsgsNwisUri( baseUri, range, featureDetails, allKnownUsgsGageIds );
+            return this.createUsgsNwisUri( baseUri, range, featureName, allKnownUsgsGageIds );
         }
         else if ( this.isWrdsAhpsSource( dataSource ) )
         {
-            return this.createWrdsAhpsUri( baseUri, range, featureDetails );
+            return this.createWrdsAhpsUri( baseUri, range, featureName );
         }
         else
         {
@@ -895,18 +889,18 @@ class WebSource implements Callable<List<IngestResult>>
      * <p>Expecting a USGS URI like this:
      * https://nwis.waterservices.usgs.gov/nwis/iv/</p>
      * @param range the range of dates (from left to right)
-     * @param featureDetails the feature to request for
+     * @param featureName The feature to request for
      * @return a URI suitable to get the data from WRDS API
      */
 
     private URI createUsgsNwisUri( URI baseUri,
                                    Pair<Instant,Instant> range,
-                                   FeatureDetails featureDetails,
+                                   String featureName,
                                    SortedSet<String> allKnownUsgsGageIds )
     {
         Objects.requireNonNull( baseUri );
         Objects.requireNonNull( range );
-        Objects.requireNonNull( featureDetails );
+        Objects.requireNonNull( featureName );
         Objects.requireNonNull( allKnownUsgsGageIds );
         Objects.requireNonNull( range.getLeft() );
         Objects.requireNonNull( range.getRight() );
@@ -921,13 +915,8 @@ class WebSource implements Callable<List<IngestResult>>
                                                 + " but instead got " + baseUri.toString() );
         }
 
-        if ( Objects.isNull( featureDetails.getGageID() ) )
-        {
-            return URI.create( "" );
-        }
-
         Map<String, String> urlParameters = createUsgsUrlParameters( range,
-                                                                     featureDetails,
+                                                                     featureName,
                                                                      this.getDataSource(),
                                                                      allKnownUsgsGageIds );
         return getURIWithParameters( this.getBaseUri(),
@@ -941,13 +930,13 @@ class WebSource implements Callable<List<IngestResult>>
      * <p>Expecting a wrds URI like this:
      * http://***REMOVED***.***REMOVED***.***REMOVED***/api/v1/forecasts/streamflow/ahps</p>
      * @param issuedRange the range of issued dates (from left to right)
-     * @param featureDetails the feature to request for
+     * @param nwsLocationId The feature for which to get data.
      * @return a URI suitable to get the data from WRDS API
      */
 
     private URI createWrdsAhpsUri( URI baseUri,
                                    Pair<Instant,Instant> issuedRange,
-                                   FeatureDetails featureDetails )
+                                   String nwsLocationId )
     {
         if ( !baseUri.getPath()
                      .toLowerCase()
@@ -971,7 +960,7 @@ class WebSource implements Callable<List<IngestResult>>
 
         Map<String, String> wrdsParameters = createWrdsAhpsUrlParameters( issuedRange );
         String pathWithLocation = basePath + "nwsLocations/"
-                                  + featureDetails.getLid();
+                                  + nwsLocationId;
         URIBuilder uriBuilder = new URIBuilder( this.getBaseUri() );
         uriBuilder.setPath( pathWithLocation );
 
@@ -1073,27 +1062,29 @@ class WebSource implements Callable<List<IngestResult>>
     /**
      * Specific to USGS NWIS API, get date range url parameters
      * @param range the date range to set parameters for
+     * @param siteCode The USGS site code desired.
+     * @param dataSource The data source from which this request came.
+     * @param allKnownUsgsGageIds All known USGS gage ids.
      * @return the key/value parameters
      * @throws NullPointerException When arg or value enclosed inside arg is null
      */
 
     private Map<String,String> createUsgsUrlParameters( Pair<Instant,Instant> range,
-                                                        FeatureDetails featureDetails,
+                                                        String siteCode,
                                                         DataSource dataSource,
                                                         SortedSet<String> allKnownUsgsGageIds )
     {
         LOGGER.trace( "Called createUsgsUrlParameters with {}, {}, {}",
-                      range, featureDetails, dataSource );
+                      range, siteCode, dataSource );
         Objects.requireNonNull( range );
-        Objects.requireNonNull( featureDetails );
+        Objects.requireNonNull( siteCode );
         Objects.requireNonNull( dataSource );
         Objects.requireNonNull( range.getLeft() );
         Objects.requireNonNull( range.getRight() );
-        Objects.requireNonNull( featureDetails.getGageID() );
         Objects.requireNonNull( dataSource.getVariable() );
         Objects.requireNonNull( dataSource.getVariable().getValue() );
 
-        SortedSet<String> sites = this.getCompanionUsgsGageIds( featureDetails,
+        SortedSet<String> sites = this.getCompanionUsgsGageIds( siteCode,
                                                                 allKnownUsgsGageIds );
 
         StringJoiner siteJoiner = new StringJoiner( "," );
@@ -1227,7 +1218,7 @@ class WebSource implements Callable<List<IngestResult>>
      * into a request. But we also want to bundle the same gages because one
      * request will become one source, so that re-use across evaluations can
      * happen, slowing the growth of the database.</p>
-     * @param featureDetails The feature with a USGS gage id to find companions.
+     * @param siteCode The USGS site code for which to find companions.
      * @param allKnownUsgsGageIds A sorted set of all known USGS gage ids.
      * @return USGS gage ids that are companions to the passed featureDetails,
      * no more than 100 elements, includes the gage id passed in.
@@ -1235,14 +1226,11 @@ class WebSource implements Callable<List<IngestResult>>
      * @throws PreIngestException When md5sum is unavailable.
      */
 
-    private SortedSet<String> getCompanionUsgsGageIds( FeatureDetails featureDetails,
+    private SortedSet<String> getCompanionUsgsGageIds( String siteCode,
                                                        SortedSet<String> allKnownUsgsGageIds )
     {
-        Objects.requireNonNull( featureDetails );
+        Objects.requireNonNull( siteCode );
         Objects.requireNonNull( allKnownUsgsGageIds );
-        Objects.requireNonNull( featureDetails.getGageID() );
-
-        String gageId = featureDetails.getGageID();
 
         MessageDigest md5Name;
 
@@ -1256,15 +1244,15 @@ class WebSource implements Callable<List<IngestResult>>
         }
 
         DigestUtils digestUtils = new DigestUtils( md5Name );
-        byte[] hash = digestUtils.digest( gageId );
+        byte[] hash = digestUtils.digest( siteCode );
 
         if ( hash.length < 16 )
         {
-            throw new PreIngestException( "The MD5 sum of " + gageId
+            throw new PreIngestException( "The MD5 sum of " + siteCode
                                           + " was shorter than expected." );
         }
 
-        LOGGER.trace( "Hash of gageId {} is {}", gageId, hash );
+        LOGGER.trace( "Hash of USGS site code {} is {}", siteCode, hash );
 
         // This only happens to work because we have around 10,000 gages known.
         // This means we'll have around 30-50 gages per leading 256 bits.
@@ -1291,8 +1279,8 @@ class WebSource implements Callable<List<IngestResult>>
 
         if ( companions.size() > 100 && LOGGER.isWarnEnabled() )
         {
-            LOGGER.warn( "Expected 100 or fewer gages as companions of gage id {} but got {}. A request to NWIS may fail, sites: {}",
-                         gageId, companions.size(), companions );
+            LOGGER.warn( "Expected 100 or fewer site codes as companions of site code {} but got {}. A request to NWIS may fail, sites: {}",
+                         siteCode, companions.size(), companions );
         }
 
         return Collections.unmodifiableSortedSet( companions );
