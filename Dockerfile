@@ -12,15 +12,17 @@ RUN yum install -y \
     # Use ss to view socket states. See #69947
     iproute-4.11.0-25.el7_7.2 \
     # The following aren't direct dependencies of WRES, are updates post-7.7.1908
-    binutils-2.27-41.base.el7_7.1 \
+    binutils-2.27-41.base.el7_7.3 \
     ca-certificates-2019.2.32-76.el7_7 \
-    curl-7.29.0-54.el7_7.1 \
+    curl-7.29.0-54.el7_7.2 \
     device-mapper-event-1.02.158-2.el7_7.2 \
     device-mapper-libs-1.02.158-2.el7_7.2 \
     hostname-3.13-3.el7_7.1 \
+    kmod-20-25.el7_7.1 \
+    kmod-libs-20-25.el7_7.1 \
     krb5-libs-1.15.1-37.el7_7.2 \
     libblkid-2.23.2-61.el7_7.1 \
-    libcurl-7.29.0-54.el7_7.1 \
+    libcurl-7.29.0-54.el7_7.2 \
     libmount-2.23.2-61.el7_7.1 \
     libsmartcols-2.23.2-61.el7_7.1 \
     libuuid-2.23.2-61.el7_7.1 \
@@ -32,8 +34,8 @@ RUN yum install -y \
     nss-util-3.44.0-4.el7_7 \
     procps-ng-3.3.10-26.el7_7.1 \
     sqlite-3.7.17-8.el7_7.1 \
-    systemd-219-67.el7_7.3 \
-    systemd-libs-219-67.el7_7.3 \
+    systemd-219-67.el7_7.4 \
+    systemd-libs-219-67.el7_7.4 \
     tzdata-2019c-1.el7 \
     util-linux-2.23.2-61.el7_7.1 \
     && yum clean all
