@@ -25,7 +25,7 @@ import liquibase.database.DatabaseFactory;
 import liquibase.database.jvm.JdbcConnection;
 import liquibase.exception.DatabaseException;
 import liquibase.exception.LiquibaseException;
-import liquibase.resource.FileSystemResourceAccessor;
+import liquibase.resource.ClassLoaderResourceAccessor;
 
 class DatabaseSchema implements Closeable
 {
@@ -117,9 +117,19 @@ class DatabaseSchema implements Closeable
     // Left public for unit testing
     String getChangelogURL()
     {
-        URL changelogURL = this.getClass().getClassLoader().getResource( "database/db.changelog-master.xml" );
-        Objects.requireNonNull( changelogURL, "The definition for the WRES data model could not be found.");
-        return changelogURL.getPath();
+        String relativeToClasspath = "database/db.changelog-master.xml";
+
+        // Only to test that it is present:
+        URL changelogURL = this.getClass()
+                               .getClassLoader()
+                               .getResource( relativeToClasspath );
+        Objects.requireNonNull( changelogURL,
+                                "The definition for the WRES data model could not be found at classpath:'"
+                                + relativeToClasspath + "'" );
+
+        // Prevent inclusion of absolute paths in liquibase changelog by
+        // returning the path on the classpath only.
+        return relativeToClasspath;
     }
 
     void applySchema( final Connection connection )
@@ -143,7 +153,7 @@ class DatabaseSchema implements Closeable
         {
             Liquibase liquibase = new Liquibase(
                     this.getChangelogURL(),
-                    new FileSystemResourceAccessor(  ),
+                    new ClassLoaderResourceAccessor(),
                     database
             );
 
