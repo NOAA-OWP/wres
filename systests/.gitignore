@@ -11,3 +11,7 @@ wresSysTestResults*
 *.bmp
 *.tif
 *.tiff
+
+# Generated messages code
+../wres-messages/src/**/generated/**
+../wres-statistics/src/**/generated/**
