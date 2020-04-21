@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package wres.statistics.generated;
+
+import "google/protobuf/timestamp.proto";
+import "reference_time.proto";
+
+option java_package = "wres.statistics.generated";
+option java_outer_classname = "PairsProto";
+option java_multiple_files = true;
+
+/* A message that encapsulated pairs, which must be continuous numerical 
+(single-valued or ensemble). The time-series composition of the paired values is 
+respected by the message. */
+message Pairs
+{
+    // Zero or more time-series of pairs
+    repeated TimeSeriesOfPairs time_series = 1;
+
+    message TimeSeriesOfPairs
+    {
+        repeated ReferenceTime reference_times = 1;
+        repeated Pair pairs = 2;
+    }
+
+    // A single pair
+    message Pair 
+    {
+        google.protobuf.Timestamp valid_time = 1;
+        repeated double left = 3;
+        repeated double right = 4;
+    }
+
+}

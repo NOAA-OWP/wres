@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package wres.statistics.generated;
+
+import "google/protobuf/duration.proto";
+
+option java_package = "wres.statistics.generated";
+option java_outer_classname = "TimeScaleProto";
+option java_multiple_files = true;
+
+/* Message that encapsulates the time-scale at which an evaluation was 
+performed. */
+
+message TimeScale
+{
+    // An enumeration of functions used to distribute the value over the period
+    enum TimeScaleFunction
+    {
+           UNKNOWN = 0;
+           MEAN = 1;
+           TOTAL = 2;
+           MAXIMUM = 3;
+           MINIMUM = 4;
+    }
+
+    // The time-scale function
+    TimeScaleFunction function = 1;
+    
+    // Period in seconds
+    google.protobuf.Duration period = 2;
+}

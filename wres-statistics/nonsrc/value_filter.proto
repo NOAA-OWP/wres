@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package wres.statistics.generated;
+
+option java_package = "wres.statistics.generated";
+option java_outer_classname = "ValueFilterProto";
+option java_multiple_files = true;
+
+/* A message that represents a filter applied to (all sides of) the pairs 
+associated within an evaluation, prior to calculating statistics. */
+message ValueFilter
+{
+    // The smallest value that was considered, in evaluation measurement units
+    double minimum_inclusive_value = 1;
+    
+    // The largest value that was considered, in evaluation measurement units
+    double maximum_inclusive_value = 2;
+}
