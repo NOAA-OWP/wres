@@ -31,7 +31,7 @@ plugins
     id 'org.openrepose.gradle.plugins.jaxb' version '2.5.0'
 
     // For ability to use git ids for versioning jar files:
-    id 'org.ajoberstar.grgit' version '3.1.1'
+    id 'org.ajoberstar.grgit' version '4.0.2'
 
     // To compile user documentation (not working: blows up on compileMarkdown)
     //id 'org.uulib.gradle.markdown' version '0.0.1'
