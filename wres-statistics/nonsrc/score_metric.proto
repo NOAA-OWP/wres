@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package wres.statistics.generated;
+
+import "metric_name.proto";
+
+option java_package = "wres.statistics.generated";
+option java_outer_classname = "ScoreMetricProto";
+option java_multiple_files = true;
+
+/* A message that encapsulates a score metric or scoring rule, which is composed 
+of one or more scalar values. */
+message ScoreMetric
+{
+
+    // Metric name.
+    MetricName name = 1;
+
+    // The score components
+    repeated ScoreMetricComponent components = 2;
+
+    // A score component
+    message ScoreMetricComponent
+    {
+
+        enum ScoreComponentName 
+        {            
+            UNKNOWN = 0;
+            MAIN_SCORE = 1;
+            RELIABILITY = 2; // Type-I bias
+            RESOLUTION = 3;
+            UNCERTAINTY = 4;
+            TYPE_II_BIAS = 5;
+            DISCRIMINATION = 6;
+            SHARPNESS = 7;
+            POTENTIAL = 8; 
+        }
+
+        ScoreComponentName name = 1;
+
+        // Units of the score
+        string units = 2;
+
+        // Optimum value of the score (e.g., 1.0 for skill)
+        double optimum = 3; 
+
+        // The lower bound of the score (e.g., 0 for the mean absolute error)
+        double minimum = 4;
+        
+        // The upper bound of the score (e.g., 1 for pearson's correlation)
+        double maximum = 5;
+    }
+}

@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package wres.statistics.generated;
+
+import "google/protobuf/timestamp.proto";
+
+option java_package = "wres.statistics.generated";
+option java_outer_classname = "ReferenceTimeProto";
+option java_multiple_files = true;
+
+/* A message that encapsulates a reference time and associated type, such as an
+issued time. */
+message ReferenceTime
+{
+    // Type of forecast reference time
+    enum ReferenceTimeType
+    {
+        // An unknown reference time type.        
+        UNKNOWN = 0;
+    
+        /* The time at which a model begins forward integration into a 
+        forecasting horizon, a.k.a. a forecast initialization time. */
+        T0 = 1;
+        
+        /* The start time of an analysis and assimilation period. The model 
+        begins forward integration at this time and continues until the forecast 
+        initialization time or T0. */
+        ANALYSIS_START_TIME = 2;
+        
+        // The time at which a time-series was published or "issued"
+        ISSUED_TIME = 3;
+    }
+
+    // The reference time
+    google.protobuf.Timestamp reference_time = 1;
+    
+    // The typeof reference time
+    ReferenceTimeType reference_time_type = 2;
+}

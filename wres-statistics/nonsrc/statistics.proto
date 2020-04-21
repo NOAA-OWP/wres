@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package wres.statistics.generated;
+
+import "pool.proto";
+import "score_statistic.proto";
+import "diagram_statistic.proto";
+
+option java_package = "wres.statistics.generated";
+option java_outer_classname = "StatisticsProto";
+option java_multiple_files = true;
+
+/* A message that encapsulates an atomic collection of statistics, namely the 
+statistics associated with one pool */
+message Statistics
+{
+    // The pool whose pairs were used to create the statistics here
+    Pool pool = 1;
+
+    // Zero or more score statistics
+    repeated ScoreStatistic scores = 2;
+
+    // Zero or more diagram statistics
+    repeated DiagramStatistic diagrams = 3;
+}

@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package wres.statistics.generated;
+
+import "metric_name.proto";
+
+option java_package = "wres.statistics.generated";
+option java_outer_classname = "DiagramMetricProto";
+option java_multiple_files = true;
+
+/* A message that encapsulates a diagram metric, such as a reliability 
+diagram */
+
+message DiagramMetric
+{
+
+    /* Metric name. For example, if the diagram is the reliability diagram, 
+    which includes a sharpness plot, then the metric name is the reliability 
+    diagram and the metric has three DiagramMetricComponent, one for the 
+    forecast probability, one for the observed relative frequency and one for 
+    the sample size or sharpness. */
+    MetricName name = 1;    
+
+    // The metric components
+    repeated DiagramMetricComponent components = 2;
+
+    // A diagram component
+    message DiagramMetricComponent
+    {
+        // Type of component
+        enum DiagramComponentName 
+        {
+            UNKNOWN = 0;
+            PROBABILITY_OF_FALSE_DETECTION = 1;
+            PROBABILITY_OF_DETECTION = 2;
+            RANK_ORDER = 3;
+            FORECAST_PROBABILITY = 4;
+            OBSERVED_RELATIVE_FREQUENCY = 5;
+            OBSERVED_QUANTILES = 6;
+            PREDICTED_QUANTILES = 7;
+            SAMPLE_SIZE = 8;
+        }
+
+        DiagramComponentName name = 1;               
+
+        // Units of the component
+        string units = 2;
+
+        /* Limits of the component, which can help in consumption (e.g., in 
+        setting plot bounds). When undefined, the statistic data dictates the 
+        limits of the range of the diagram */
+        double minimum_value = 3;
+        double maximum_value = 4;
+    }
+
+}

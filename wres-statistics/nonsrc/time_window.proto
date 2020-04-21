@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package wres.statistics.generated;
+
+import "reference_time.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+option java_package = "wres.statistics.generated";
+option java_outer_classname = "TimeWindowProto";
+option java_multiple_files = true;
+
+/* A message that encapsulates the temporal boundaries of a pool. */
+message TimeWindow
+{
+    google.protobuf.Timestamp earliest_reference_time = 1;
+    google.protobuf.Timestamp latest_reference_time = 2;
+    google.protobuf.Timestamp earliest_valid_time = 3;
+    google.protobuf.Timestamp latest_valid_time = 4;
+    google.protobuf.Duration earliest_lead_duration = 5;
+    google.protobuf.Duration latest_lead_duration = 6;
+
+    // The types of reference times to which the time window applies
+    repeated ReferenceTime.ReferenceTimeType reference_time_type = 7;
+}

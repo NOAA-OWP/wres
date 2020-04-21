@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package wres.statistics.generated;
+
+import "season.proto";
+import "time_scale.proto";
+import "value_filter.proto";
+import "google/protobuf/timestamp.proto";
+
+option java_package = "wres.statistics.generated";
+option java_outer_classname = "EvaluationProto";
+option java_multiple_files = true;
+
+/* A message that encapsulates an evaluation. An evaluation is composed of N
+pools of pairs and M metrics. The pairs represent a single variable and time-
+scale. Each pool of pairs is composed of G geospatial features and one time 
+window. In the absence of thresholds that further partition a pool, each 
+evaluation produces N*M statistics. */ 
+
+message Evaluation
+{
+    // Version identifier
+    string software_version = 1;
+    
+    // Unique job identifier
+    string job_identifier = 2;
+    
+    // Number of pools per evaluation
+    int32 pool_message_count = 3;
+    
+    // Number of metrics per evaluation. Always positive.
+    int32 metric_message_count = 4;
+
+    google.protobuf.Timestamp evaluation_start_time = 5;
+    google.protobuf.Timestamp evaluation_end_time = 6;
+    google.protobuf.Timestamp message_creation_time = 7;
+
+    // Fields that are fixed across all pools within an evaluation
+    string left_source_name = 8; 
+    string right_source_name = 9; 
+    string baseline_source_name = 10; 
+    string variable_name = 11;
+    string measurement_unit = 12;
+    Season season = 13;
+    TimeScale time_scale = 14;
+    repeated string ensemble_member_subset = 15;
+    ValueFilter value_filter = 16;
+}

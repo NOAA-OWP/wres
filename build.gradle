@@ -73,25 +73,35 @@ subprojects
 
     // Each module does not need a version update unless code in it has changed.
     def gitCommit = grgit.log(paths: [project.name], maxCommits:1).find()
-    def gitCommitId = gitCommit.id
-    def gitCommitDate = gitCommit.dateTime.withZoneSameInstant( ZoneId.of( "UTC" ) )
-
-    // ...Or if this build script which controls dependencies has changed.
-    def gitCommitOfThis = grgit.log( paths: ['build.gradle'], maxCommits:1 ).find()
-    def gitCommitIdOfThis = gitCommitOfThis.id
-    def gitCommitDateOfThis = gitCommitOfThis.dateTime.withZoneSameInstant( ZoneId.of( "UTC" ) )
-
-    version = gitCommitDate.format('yyyyMMdd') + '-' + gitCommitId[0..6]
-
-    // If the build script tip commit has a later date, use that instead.
-    // This means we have multiple unneeded version updates of submodule
-    // versions but will not have the converse. The version will change when
-    // changes really did happen, whether to the module or this build script.
-    def versionOfThis = gitCommitDateOfThis.format( 'yyyyMMdd' ) + '-' + gitCommitIdOfThis[0..6]
-
-    if ( gitCommitDateOfThis.isAfter( gitCommitDate ) )
+    // Null check in case there is a new module with no history
+    if( gitCommit != null )
     {
-        version = versionOfThis
+        def gitCommitId = gitCommit.id;
+        def gitCommitDate = gitCommit.dateTime.withZoneSameInstant( ZoneId.of( "UTC" ) )
+
+        // ...Or if this build script which controls dependencies has changed.
+        def gitCommitOfThis = grgit.log( paths: ['build.gradle'], maxCommits:1 ).find()
+        def gitCommitIdOfThis = gitCommitOfThis.id
+        def gitCommitDateOfThis = gitCommitOfThis.dateTime.withZoneSameInstant( ZoneId.of( "UTC" ) )
+
+        version = gitCommitDate.format('yyyyMMdd') + '-' + gitCommitId[0..6]
+
+        // If the build script tip commit has a later date, use that instead.
+        // This means we have multiple unneeded version updates of submodule
+        // versions but will not have the converse. The version will change when
+        // changes really did happen, whether to the module or this build script.
+        def versionOfThis = gitCommitDateOfThis.format( 'yyyyMMdd' ) + '-' + gitCommitIdOfThis[0..6]
+
+        if ( gitCommitDateOfThis.isAfter( gitCommitDate ) )
+        {
+            version = versionOfThis
+        }
+    }
+    // Default version string for new module with no history
+    else
+    {
+        String currentDate = OffsetDateTime.now( ZoneOffset.UTC ).format('yyyyMMdd' )
+        version = currentDate + '-0000000'
     }
 
     // Whenever there are local changes, flag the version with a "-dev" suffix.
@@ -397,6 +407,65 @@ project(':wres-metrics')
         testCompile project (':wres-datamodel')
         testCompile 'junit:junit:4.13'
         testCompile 'org.mockito:mockito-core:3.2.4'
+    }
+}
+
+project(':wres-statistics')
+{
+    apply plugin: 'com.google.protobuf'
+
+    def generatedDir = "${project.projectDir}/src"
+
+    protobuf
+    {
+        // Automatically download and use the correct protobuf compiler
+        protoc
+        {
+            artifact = 'com.google.protobuf:protoc:3.11.4'
+        }
+        // So all IDEs/editors can see generated files, use actual src dir:
+        generatedFilesBaseDir = "${generatedDir}"
+    }
+
+    sourceSets
+    {
+        main
+        {
+            // Deviate from our typical source tree here to work around plugin's
+            // inflexibility on paths plus IDEs handling generated code, see
+            // https://github.com/google/protobuf-gradle-plugin/issues/190
+            // The different srcDirs seems to work for eclipse, not IDEA.
+            // But somehow a bunch of weird src tree shows up too.
+            java
+            {
+                srcDirs = ['src/main/java']
+            }
+
+            // Tell protobuf plugin where to find .proto schema files:
+            proto
+            {
+                srcDirs = ['nonsrc']
+            }
+        }
+    }
+
+    javadoc
+    {
+        // Protobuf does not appear to generate javadoc, so neither will we.
+        excludes = ['**/generated/*.java']
+    }
+
+    dependencies
+    {
+        compile 'org.slf4j:slf4j-api:1.8.0-beta4'
+        compile 'com.google.protobuf:protobuf-java:3.11.4'
+        compile project(':wres-datamodel')
+        compile project(':wres-config')
+
+        testCompile group: 'com.google.protobuf', name: 'protobuf-java-util', version: '3.0.0-beta-1'
+        testCompile 'junit:junit:4.13'
+        testCompile project(':wres-datamodel')
+        testCompile project(':wres-config')
     }
 }
 

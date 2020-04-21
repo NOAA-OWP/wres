@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package wres.statistics.generated;
+
+option java_package = "wres.statistics.generated";
+option java_outer_classname = "ThresholdProto";
+option java_multiple_files = true;
+
+/* A message that encapsulates a threshold, which may contain one or two values
+with prescribed units and a user-friendly name. */
+
+message Threshold
+{
+    ThresholdType type = 1;
+
+    // A user-friendly name for a threshold (e.g., MINOR FLOOD)
+    string name = 2;
+
+    // A real-valued left threshold
+    double left_threshold_value = 3;
+    
+    // A real-valued right threshold when the ThresholdType is BETWEEN
+    double right_threshold_value = 4;
+    
+    // The probability associated with the left threshold
+    double left_threshold_probability = 5;
+    
+    // The probability associated with the right threshold when BETWEEN
+    double right_threshold_probability = 6;
+    string threshold_value_units = 7;
+    
+    enum ThresholdType 
+    {
+        // Identifier for less than.
+        LESS = 0;
+
+        // Identifier for greater than.
+        GREATER = 1;
+
+        // Identifier for less than or equal to.
+        LESS_EQUAL = 2;
+
+        // Identifier for greater than or equal to.
+        GREATER_EQUAL = 3;
+
+        // Identifier for equality.
+        EQUAL = 4;
+
+        // Between condition with left exclusive and right inclusive
+        BETWEEN = 5;
+    }
+}

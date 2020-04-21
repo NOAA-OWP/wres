@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package wres.statistics.generated;
+
+import "diagram_metric.proto";
+import "threshold.proto";
+
+option java_package = "wres.statistics.generated";
+option java_outer_classname = "DiagramStatisticProto";
+option java_multiple_files = true;
+
+/* A message that encapsulates a diagram statistic, such as the binned 
+statistics associated with a reliability diagram. */
+
+message DiagramStatistic
+{
+    /* This could be promoted to an Evaluation; however, there is one 
+    DiagramMetric per DiagramStatistic while the atomic collection is a pool, so 
+    there is no efficiency to be gained and some context to be lost.*/
+    DiagramMetric metric = 1;
+
+    // Threshold used to define a partition of pairs or categorical event
+    Threshold event_threshold = 2;
+    
+    // Threshold used to convert a probability into a dichotomous outcome
+    Threshold decision_threshold = 3;
+
+    // The diagram component values.
+    repeated DiagramStatisticComponent statistics = 4;
+
+    // A diagram component
+    message DiagramStatisticComponent 
+    {
+        // Metric component name
+        DiagramMetric.DiagramMetricComponent.DiagramComponentName name = 1;
+
+        // Values
+        repeated double values = 2;
+    }
+}
