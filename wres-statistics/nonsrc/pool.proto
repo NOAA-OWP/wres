@@ -16,22 +16,12 @@ and statistics.*/
 
 message Pool
 {
-    /* Fields that help identify an evaluation. We choose a sample or "pool" as 
-    the atomic unit for gathering statistics, so the evaluation information is 
-    included here, even though it is common to all samples/pools within an 
-    evaluation */
-    Evaluation evaluation = 1;
-
-    /* Field that helps quickly order a pool within an evaluation. Always a 
-    positive number. */
-    int32 pool_number_within_evaluation = 2;   
-
     // Zero or more geometries that characterize this pool
-    repeated Geometry geometries = 3;
+    repeated Geometry geometries = 1;
     
     // Exactly one time window
-    TimeWindow time_window = 4;
+    TimeWindow time_window = 2;
 
     // The paired values that form the pool
-    Pairs pairs = 8;
+    Pairs pairs = 3;
 }

@@ -23,10 +23,15 @@ import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
+import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
+import wres.statistics.generated.BoxplotMetric;
+import wres.statistics.generated.BoxplotMetric.LinkedValueType;
+import wres.statistics.generated.BoxplotStatistic;
 import wres.statistics.generated.DiagramMetric;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent;
@@ -67,26 +72,45 @@ public class StatisticsMessageCreator
      * Creates a {@link wres.statistics.generated.Statistics} from a list of 
      * {@link wres.datamodel.statistics.DoubleScoreStatistic} and {@link wres.datamodel.statistics.DiagramStatistic}
      * for a common pool/sample. The common metadata is populated from any statistic discovered.
-     * TODO: need a better abstraction of an evaluation within the software. See #61388. For now, use the message
-     * representation and fill in any missing blanks that can be filled from the statistics metadata.
      * 
-     * @param evaluation the broad outlines of an evaluation
      * @param doubleScores the scores
      * @param diagrams the diagrams
+     * @param pairs the optional pairs
+     * @throws IllegalArgumentException if there are zero statistics in total
+     * @throws NullPointerException if any input except the pairs is null
+     * @return the statistics message
+     */
+
+    public static Statistics parse( List<wres.datamodel.statistics.DoubleScoreStatistic> doubleScores,
+                                    List<wres.datamodel.statistics.DiagramStatistic> diagrams,
+                                    PoolOfPairs<Double, Ensemble> pairs )
+    {
+        return StatisticsMessageCreator.parse( doubleScores, diagrams, List.of(), pairs );
+    }
+
+    /**
+     * Creates a {@link wres.statistics.generated.Statistics} from a list of 
+     * {@link wres.datamodel.statistics.DoubleScoreStatistic} and {@link wres.datamodel.statistics.DiagramStatistic}
+     * and {@link wres.datamodel.statistics.BoxPlotStatistics} for a common pool/sample. The common metadata is 
+     * populated from any statistic discovered.
+     * 
+     * @param doubleScores the scores
+     * @param diagrams the diagrams
+     * @param boxplots the box plots
      * @throws IllegalArgumentException if there are zero statistics in total
      * @throws NullPointerException if any input is null
      * @return the statistics message
      */
 
-    public static Statistics parse( Evaluation evaluation,
-                                    List<wres.datamodel.statistics.DoubleScoreStatistic> doubleScores,
-                                    List<wres.datamodel.statistics.DiagramStatistic> diagrams )
+    public static Statistics parse( List<wres.datamodel.statistics.DoubleScoreStatistic> doubleScores,
+                                    List<wres.datamodel.statistics.DiagramStatistic> diagrams,
+                                    List<wres.datamodel.statistics.BoxPlotStatistics> boxplots )
     {
-        Objects.requireNonNull( evaluation );
         Objects.requireNonNull( doubleScores );
         Objects.requireNonNull( diagrams );
+        Objects.requireNonNull( boxplots );
 
-        if ( doubleScores.isEmpty() && diagrams.isEmpty() )
+        if ( doubleScores.isEmpty() && diagrams.isEmpty() && boxplots.isEmpty() )
         {
             throw new IllegalArgumentException( "Expected at least one statistic to serialize but found none." );
         }
@@ -109,11 +133,14 @@ public class StatisticsMessageCreator
             metadata = nextDiagram.getMetadata().getSampleMetadata();
         }
 
-        Evaluation evaluationPlus = StatisticsMessageCreator.parse( evaluation, metadata );
+        // Add the boxplots
+        for ( wres.datamodel.statistics.BoxPlotStatistics nextDiagram : boxplots )
+        {
+            statistics.addBoxplots( StatisticsMessageCreator.parse( nextDiagram ) );
+            metadata = nextDiagram.getMetadata().getSampleMetadata();
+        }
 
         Pool.Builder sample = Pool.newBuilder();
-
-        sample.setEvaluation( evaluationPlus );
 
         if ( metadata.hasTimeWindow() )
         {
@@ -137,24 +164,22 @@ public class StatisticsMessageCreator
      * Creates a {@link wres.statistics.generated.Statistics} from a list of 
      * {@link wres.datamodel.statistics.DoubleScoreStatistic} and {@link wres.datamodel.statistics.DiagramStatistic}
      * for a common pool/sample. The common metadata is populated from any statistic discovered.
-     * TODO: need a better abstraction of an evaluation within the software. See #61388. For now, use the message
-     * representation and fill in any missing blanks that can be filled from the statistics metadata.
      * 
-     * @param evaluation the broad outlines of an evaluation
      * @param doubleScores the scores
      * @param diagrams the diagrams
+     * @param boxplots the box plots
      * @param pairs the optional pairs
      * @throws IllegalArgumentException if there are zero statistics in total
      * @throws NullPointerException if any input except the pairs is null
      * @return the statistics message
      */
 
-    public static Statistics parse( Evaluation evaluation,
-                                    List<wres.datamodel.statistics.DoubleScoreStatistic> doubleScores,
+    public static Statistics parse( List<wres.datamodel.statistics.DoubleScoreStatistic> doubleScores,
                                     List<wres.datamodel.statistics.DiagramStatistic> diagrams,
+                                    List<wres.datamodel.statistics.BoxPlotStatistics> boxplots,
                                     PoolOfPairs<Double, Ensemble> pairs )
     {
-        Statistics prototype = StatisticsMessageCreator.parse( evaluation, doubleScores, diagrams );
+        Statistics prototype = StatisticsMessageCreator.parse( doubleScores, diagrams, boxplots );
 
         Statistics.Builder statistics = Statistics.newBuilder( prototype );
 
@@ -190,22 +215,6 @@ public class StatisticsMessageCreator
         // For now, hints like a job identifier and start/end time will need to come from the 
         // message instance provided.
         Evaluation.Builder evaluationPlus = Evaluation.newBuilder( evaluation );
-
-        Package pack = metadata.getClass().getPackage();
-        String implementation = pack.getImplementationVersion();
-        if ( Objects.isNull( implementation ) )
-        {
-            implementation = "WRES version is unknown, probably developer version";
-        }
-
-        evaluationPlus.setSoftwareVersion( implementation );
-
-        Instant now = Instant.now();
-        Timestamp.Builder messageCreationTime = Timestamp.newBuilder()
-                                                         .setSeconds( now.getEpochSecond() )
-                                                         .setNanos( now.getNano() );
-
-        evaluationPlus.setMessageCreationTime( messageCreationTime );
 
         evaluationPlus.setMeasurementUnit( metadata.getMeasurementUnit().getUnit() );
 
@@ -443,7 +452,6 @@ public class StatisticsMessageCreator
         MetricConstants metricName = statistic.getMetadata().getMetricID();
 
         // Set the metric components and score values
-        // TODO: add the minimum and maximum permissible values and perfect score to MetricConstants
         // and then propagate to the payload here
         for ( MetricConstants next : statistic.getComponents() )
         {
@@ -521,7 +529,6 @@ public class StatisticsMessageCreator
         }
 
         // Set the diagram components and values
-        // TODO: add boundaries and perfect score to MetricConstants
         for ( Map.Entry<MetricDimension, VectorOfDoubles> nextDimension : statistic.getData().entrySet() )
         {
             DiagramComponentName componentName = DiagramComponentName.valueOf( nextDimension.getKey()
@@ -545,6 +552,52 @@ public class StatisticsMessageCreator
         return diagramBuilder.build();
     }
 
+    /**
+     * Creates a {@link wres.statistics.generated.DiagramStatistic} from a 
+     * {@link wres.datamodel.statistics.BoxPlotStatistics}.
+     * 
+     * @param statistic the statistic from which to create a message
+     * @return the message
+     */
+
+    public static BoxplotStatistic parse( wres.datamodel.statistics.BoxPlotStatistics statistic )
+    {
+        Objects.requireNonNull( statistic );
+
+        BoxplotMetric.Builder metricBuilder = BoxplotMetric.newBuilder();
+        BoxplotStatistic.Builder statisticBuilder = BoxplotStatistic.newBuilder();
+
+        if ( !statistic.getData().isEmpty() )
+        {
+            StatisticMetadata meta =  statistic.getMetadata();
+            
+            // Add the quantiles, which are common to all boxes
+            BoxPlotStatistic first = statistic.getData().get( 0 );
+            double[] quantiles = first.getProbabilities().getDoubles();
+            Arrays.stream( quantiles ).forEach( metricBuilder::addQuantiles );
+            
+            MetricConstants metricName = meta.getMetricID();
+
+            metricBuilder.setLinkedValueType( LinkedValueType.valueOf( first.getLinkedValueType().name() ) )
+                         .setName( MetricName.valueOf( metricName.name() ) )
+                         .setUnits( meta.getSampleMetadata().getMeasurementUnit().toString() )
+                         .setMinimum( metricName.getMinimum() )
+                         .setMaximum( metricName.getMaximum() )
+                         .setOptimum( metricName.getOptimum() );            
+            
+            // Set the individual boxes
+            for ( BoxPlotStatistic next : statistic.getData() )
+            {
+                double[] doubles = next.getData().getDoubles();
+                BoxplotStatistic.Box.Builder box = BoxplotStatistic.Box.newBuilder();
+                Arrays.stream( doubles ).forEach( box::addQuantiles );
+                box.setLinkedValue( next.getLinkedValue() );
+                statisticBuilder.addStatistics( box );
+            }
+        }
+        
+        return statisticBuilder.setMetric( metricBuilder ).build();
+    }
 
     /**
      * Creates a {@link wres.statistics.generated.Geometry} from a 

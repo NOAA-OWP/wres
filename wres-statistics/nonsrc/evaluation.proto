@@ -5,7 +5,6 @@ package wres.statistics.generated;
 import "season.proto";
 import "time_scale.proto";
 import "value_filter.proto";
-import "google/protobuf/timestamp.proto";
 
 option java_package = "wres.statistics.generated";
 option java_outer_classname = "EvaluationProto";
@@ -19,30 +18,20 @@ evaluation produces N*M statistics. */
 
 message Evaluation
 {
-    // Version identifier
-    string software_version = 1;
-    
-    // Unique job identifier
-    string job_identifier = 2;
-    
     // Number of pools per evaluation
-    int32 pool_message_count = 3;
+    int32 pool_message_count = 1;
     
     // Number of metrics per evaluation. Always positive.
-    int32 metric_message_count = 4;
-
-    google.protobuf.Timestamp evaluation_start_time = 5;
-    google.protobuf.Timestamp evaluation_end_time = 6;
-    google.protobuf.Timestamp message_creation_time = 7;
+    int32 metric_message_count = 2;
 
     // Fields that are fixed across all pools within an evaluation
-    string left_source_name = 8; 
-    string right_source_name = 9; 
-    string baseline_source_name = 10; 
-    string variable_name = 11;
-    string measurement_unit = 12;
-    Season season = 13;
-    TimeScale time_scale = 14;
-    repeated string ensemble_member_subset = 15;
-    ValueFilter value_filter = 16;
+    string left_source_name = 3; 
+    string right_source_name = 4; 
+    string baseline_source_name = 5; 
+    string variable_name = 6;
+    string measurement_unit = 7;
+    Season season = 8;
+    TimeScale time_scale = 9;
+    repeated string ensemble_member_subset = 10;
+    ValueFilter value_filter = 11;
 }

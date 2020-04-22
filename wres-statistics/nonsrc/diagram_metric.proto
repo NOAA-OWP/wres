@@ -49,8 +49,8 @@ message DiagramMetric
         /* Limits of the component, which can help in consumption (e.g., in 
         setting plot bounds). When undefined, the statistic data dictates the 
         limits of the range of the diagram */
-        double minimum_value = 3;
-        double maximum_value = 4;
+        double minimum = 3;
+        double maximum = 4;
     }
 
 }

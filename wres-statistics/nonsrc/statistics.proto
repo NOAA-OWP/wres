@@ -5,13 +5,16 @@ package wres.statistics.generated;
 import "pool.proto";
 import "score_statistic.proto";
 import "diagram_statistic.proto";
+import "boxplot_statistic.proto";
 
 option java_package = "wres.statistics.generated";
 option java_outer_classname = "StatisticsProto";
 option java_multiple_files = true;
 
 /* A message that encapsulates an atomic collection of statistics, namely the 
-statistics associated with one pool */
+statistics associated with one pool. An evaluation identifier is required to 
+connect a Statistics message to an Evaluation message. It is assumed that this 
+identifier is packaged with the protocol; it is not provided inband. */
 message Statistics
 {
     // The pool whose pairs were used to create the statistics here
@@ -22,4 +25,7 @@ message Statistics
 
     // Zero or more diagram statistics
     repeated DiagramStatistic diagrams = 3;
+
+    // Zero or more boxplot statistics
+    repeated BoxplotStatistic boxplots = 4;
 }
