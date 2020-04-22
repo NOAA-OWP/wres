@@ -24,8 +24,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.protobuf.Timestamp;
-
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.Ensemble;
@@ -40,6 +38,8 @@ import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
 import wres.datamodel.scale.TimeScale;
+import wres.datamodel.statistics.BoxPlotStatistic;
+import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
@@ -50,7 +50,6 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Statistics;
 
 /**
@@ -62,6 +61,10 @@ import wres.statistics.generated.Statistics;
 public class StatisticsMessageCreatorTest
 {
 
+    private static final Instant TWELFTH_TIME = Instant.parse( "2551-03-20T12:00:00Z" );
+    private static final Instant ELEVENTH_TIME = Instant.parse( "2551-03-20T01:00:00Z" );
+    private static final Instant TENTH_TIME = Instant.parse( "2551-03-19T12:00:00Z" );
+    private static final Instant NINTH_TIME = Instant.parse( "2551-03-19T00:00:00Z" );
     private static final Instant EIGHTH_TIME = Instant.parse( "1985-01-03T01:00:00Z" );
     private static final Instant SEVENTH_TIME = Instant.parse( "1985-01-03T00:00:00Z" );
     private static final Instant SIXTH_TIME = Instant.parse( "1985-01-02T02:00:00Z" );
@@ -71,9 +74,19 @@ public class StatisticsMessageCreatorTest
     private static final Instant SECOND_TIME = Instant.parse( "1985-01-01T01:00:00Z" );
     private static final Instant FIRST_TIME = Instant.parse( "1985-01-01T00:00:00Z" );
 
+    private static final Duration EARLIEST_LEAD = Duration.ofHours( 1 );
+    private static final Duration LATEST_LEAD = Duration.ofHours( 7 );
+
     private static final String VARIABLE_NAME = "Streamflow";
     private static final String FEATURE_NAME = "DRRC2";
     private static final String UNIT = "CMS";
+
+    private static final wres.datamodel.time.TimeWindow TIME_WINDOW = wres.datamodel.time.TimeWindow.of( NINTH_TIME,
+                                                                                                         TENTH_TIME,
+                                                                                                         ELEVENTH_TIME,
+                                                                                                         TWELFTH_TIME,
+                                                                                                         EARLIEST_LEAD,
+                                                                                                         LATEST_LEAD );
 
     /**
      * Scores to serialize.
@@ -88,16 +101,16 @@ public class StatisticsMessageCreatorTest
     private List<DiagramStatistic> diagrams = null;
 
     /**
+     * Box plot statistics.
+     */
+
+    private List<BoxPlotStatistics> boxplots = null;
+
+    /**
      * Pairs to serialize.
      */
 
     private PoolOfPairs<Double, Ensemble> ensemblePairs = null;
-
-    /**
-     * Minimal representation of an evaluation.
-     */
-
-    private Evaluation evaluation = null;
 
     /**
      * Output directory.
@@ -110,8 +123,8 @@ public class StatisticsMessageCreatorTest
     {
         this.scores = this.getScoreStatisticsForOnePool();
         this.diagrams = this.getReliabilityDiagramForOnePool();
+        this.boxplots = this.getBoxPlotsForOnePool();
         this.ensemblePairs = this.getPoolOfEnsemblePairs();
-        this.evaluation = this.createEvaluation();
     }
 
     @Test
@@ -119,9 +132,9 @@ public class StatisticsMessageCreatorTest
     {
         // Create a statistics message
         Statistics statisticsOut =
-                StatisticsMessageCreator.parse( this.evaluation, this.scores, this.diagrams, this.ensemblePairs );
+                StatisticsMessageCreator.parse( this.scores, this.diagrams, this.ensemblePairs );
 
-        Path path = outputDirectory.resolve( "statistics.pb3" );
+        Path path = this.outputDirectory.resolve( "statistics.pb3" );
 
         try ( OutputStream stream =
                 Files.newOutputStream( path, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING ) )
@@ -146,23 +159,17 @@ public class StatisticsMessageCreatorTest
     @Test
     public void testCreationOfTwoStatisticsMessagesEachWithThreeScoresAndOneDiagram() throws IOException
     {
-        // Create two statistics message, mostly with the same payload, but with a different job identifier
+        // Create two statistics messages with the same payload
         Statistics firstOut =
-                StatisticsMessageCreator.parse( this.evaluation, this.scores, this.diagrams, this.ensemblePairs );
+                StatisticsMessageCreator.parse( this.scores, this.diagrams, this.ensemblePairs );
 
-        Evaluation evaluationTwo =
-                Evaluation.newBuilder( this.evaluation ).setJobIdentifier( "14187222026701703271" ).build();
-
-        Statistics secondOut =
-                StatisticsMessageCreator.parse( evaluationTwo, this.scores, this.diagrams, this.ensemblePairs );
-
-        Path path = outputDirectory.resolve( "statistics.pb3" );
+        Path path = this.outputDirectory.resolve( "statistics.pb3" );
 
         try ( OutputStream stream =
                 Files.newOutputStream( path, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING ) )
         {
             firstOut.writeDelimitedTo( stream );
-            secondOut.writeTo( stream );
+            firstOut.writeTo( stream );
         }
 
         Statistics firstIn = null;
@@ -176,7 +183,38 @@ public class StatisticsMessageCreatorTest
         }
 
         assertEquals( firstOut, firstIn );
-        assertEquals( secondOut, secondIn );
+        assertEquals( firstOut, secondIn );
+
+        // Delete if succeeded
+        Files.deleteIfExists( path );
+    }
+
+    @Test
+    public void testCreationOfOneStatisticsMessageWithTwoBoxPlots() throws IOException
+    {
+        // Create a statistics message
+        Statistics statisticsOut =
+                StatisticsMessageCreator.parse( List.of(),
+                                                List.of(),
+                                                this.boxplots,
+                                                this.ensemblePairs );
+
+        Path path = this.outputDirectory.resolve( "box_plot_statistics.pb3" );
+
+        try ( OutputStream stream =
+                Files.newOutputStream( path, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING ) )
+        {
+            statisticsOut.writeTo( stream );
+        }
+
+        Statistics statisticsIn = null;
+        try ( InputStream stream =
+                Files.newInputStream( path ) )
+        {
+            statisticsIn = Statistics.parseFrom( stream );
+        }
+
+        assertEquals( statisticsOut, statisticsIn );
 
         // Delete if succeeded
         Files.deleteIfExists( path );
@@ -190,21 +228,6 @@ public class StatisticsMessageCreatorTest
 
     private List<DoubleScoreStatistic> getScoreStatisticsForOnePool()
     {
-
-        Instant earliestValidTime = Instant.parse( "2551-03-20T01:00:00Z" );
-        Instant latestValidTime = Instant.parse( "2551-03-20T12:00:00Z" );
-        Instant earliestReferenceTime = Instant.parse( "2551-03-19T00:00:00Z" );
-        Instant latestReferenceTime = Instant.parse( "2551-03-19T12:00:00Z" );
-        java.time.Duration earliestLead = java.time.Duration.ofHours( 1 );
-        java.time.Duration latestLead = java.time.Duration.ofHours( 7 );
-
-        wres.datamodel.time.TimeWindow timeWindow = wres.datamodel.time.TimeWindow.of( earliestReferenceTime,
-                                                                                       latestReferenceTime,
-                                                                                       earliestValidTime,
-                                                                                       latestValidTime,
-                                                                                       earliestLead,
-                                                                                       latestLead );
-
         wres.datamodel.scale.TimeScale timeScale =
                 wres.datamodel.scale.TimeScale.of( java.time.Duration.ofHours( 1 ),
                                                    wres.datamodel.scale.TimeScale.TimeScaleFunction.MEAN );
@@ -221,7 +244,7 @@ public class StatisticsMessageCreatorTest
 
         SampleMetadata metadata = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
                                                              .setTimeScale( timeScale )
-                                                             .setTimeWindow( timeWindow )
+                                                             .setTimeWindow( TIME_WINDOW )
                                                              .setThresholds( threshold )
                                                              .setIdentifier( datasetIdentifier )
                                                              .build();
@@ -263,21 +286,6 @@ public class StatisticsMessageCreatorTest
 
     private List<DiagramStatistic> getReliabilityDiagramForOnePool()
     {
-
-        Instant earliestValidTime = Instant.parse( "2551-03-20T01:00:00Z" );
-        Instant latestValidTime = Instant.parse( "2551-03-20T12:00:00Z" );
-        Instant earliestReferenceTime = Instant.parse( "2551-03-19T00:00:00Z" );
-        Instant latestReferenceTime = Instant.parse( "2551-03-19T12:00:00Z" );
-        java.time.Duration earliestLead = java.time.Duration.ofHours( 1 );
-        java.time.Duration latestLead = java.time.Duration.ofHours( 7 );
-
-        wres.datamodel.time.TimeWindow timeWindow = wres.datamodel.time.TimeWindow.of( earliestReferenceTime,
-                                                                                       latestReferenceTime,
-                                                                                       earliestValidTime,
-                                                                                       latestValidTime,
-                                                                                       earliestLead,
-                                                                                       latestLead );
-
         wres.datamodel.scale.TimeScale timeScale =
                 wres.datamodel.scale.TimeScale.of( java.time.Duration.ofHours( 1 ),
                                                    wres.datamodel.scale.TimeScale.TimeScaleFunction.MEAN );
@@ -295,7 +303,7 @@ public class StatisticsMessageCreatorTest
 
         SampleMetadata metadata = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
                                                              .setTimeScale( timeScale )
-                                                             .setTimeWindow( timeWindow )
+                                                             .setTimeWindow( TIME_WINDOW )
                                                              .setThresholds( threshold )
                                                              .setIdentifier( datasetIdentifier )
                                                              .build();
@@ -316,6 +324,106 @@ public class StatisticsMessageCreatorTest
 
         // Fake output wrapper.
         return Collections.singletonList( DiagramStatistic.of( fakeOutputs, fakeMetadata ) );
+    }
+
+    /**
+     * Returns a {@link List} containing a {@link BoxPlotStatistics} for one pool.
+     * 
+     * @return the box plot statistics for one pool
+     */
+
+    private List<BoxPlotStatistics> getBoxPlotsForOnePool()
+    {
+        wres.datamodel.scale.TimeScale timeScale =
+                wres.datamodel.scale.TimeScale.of( java.time.Duration.ofHours( 1 ),
+                                                   wres.datamodel.scale.TimeScale.TimeScaleFunction.MEAN );
+
+        OneOrTwoThresholds threshold =
+                OneOrTwoThresholds.of( wres.datamodel.thresholds.Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( 11.94128 ),
+                                                                                                OneOrTwoDoubles.of( 0.9 ),
+                                                                                                Operator.GREATER_EQUAL,
+                                                                                                ThresholdDataType.LEFT ) );
+
+        Location location = Location.of( (Long) null, FEATURE_NAME, 23.45F, 56.21F, (String) null );
+
+        DatasetIdentifier datasetIdentifier =
+                DatasetIdentifier.of( location, "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
+
+        SampleMetadata metadata = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+                                                             .setTimeScale( timeScale )
+                                                             .setTimeWindow( TIME_WINDOW )
+                                                             .setThresholds( threshold )
+                                                             .setIdentifier( datasetIdentifier )
+                                                             .build();
+
+        StatisticMetadata fakeMetadata =
+                StatisticMetadata.of( metadata,
+                                      1000,
+                                      MeasurementUnit.of(),
+                                      MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
+                                      null );
+
+        List<BoxPlotStatistic> fakeOutputs = new ArrayList<>();
+
+        VectorOfDoubles probabilities = VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 );
+
+        BoxPlotStatistic one = BoxPlotStatistic.of( probabilities,
+                                                    VectorOfDoubles.of( 1, 2, 3, 4, 5 ),
+                                                    fakeMetadata,
+                                                    11,
+                                                    MetricDimension.OBSERVED_VALUE );
+
+        BoxPlotStatistic two = BoxPlotStatistic.of( probabilities,
+                                                    VectorOfDoubles.of( 6, 7, 8, 9, 10 ),
+                                                    fakeMetadata,
+                                                    22,
+                                                    MetricDimension.OBSERVED_VALUE );
+
+        BoxPlotStatistic three = BoxPlotStatistic.of( probabilities,
+                                                      VectorOfDoubles.of( 11, 12, 13, 14, 15 ),
+                                                      fakeMetadata,
+                                                      33,
+                                                      MetricDimension.OBSERVED_VALUE );
+
+
+        fakeOutputs.add( one );
+        fakeOutputs.add( two );
+        fakeOutputs.add( three );
+
+        StatisticMetadata fakeMetadataTwo =
+                StatisticMetadata.of( metadata,
+                                      1000,
+                                      MeasurementUnit.of(),
+                                      MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
+                                      null );
+
+        List<BoxPlotStatistic> fakeOutputsTwo = new ArrayList<>();
+
+        BoxPlotStatistic four = BoxPlotStatistic.of( probabilities,
+                                                     VectorOfDoubles.of( 16, 17, 18, 19, 20 ),
+                                                     fakeMetadataTwo,
+                                                     73,
+                                                     MetricDimension.ENSEMBLE_MEAN );
+
+        BoxPlotStatistic five = BoxPlotStatistic.of( probabilities,
+                                                     VectorOfDoubles.of( 21, 22, 23, 24, 25 ),
+                                                     fakeMetadataTwo,
+                                                     92,
+                                                     MetricDimension.ENSEMBLE_MEAN );
+
+        BoxPlotStatistic six = BoxPlotStatistic.of( probabilities,
+                                                    VectorOfDoubles.of( 26, 27, 28, 29, 30 ),
+                                                    fakeMetadataTwo,
+                                                    111,
+                                                    MetricDimension.ENSEMBLE_MEAN );
+
+        fakeOutputsTwo.add( four );
+        fakeOutputsTwo.add( five );
+        fakeOutputsTwo.add( six );
+
+        // Fake output wrapper.
+        return List.of( BoxPlotStatistics.of( fakeOutputs, fakeMetadata ),
+                        BoxPlotStatistics.of( fakeOutputsTwo, fakeMetadataTwo ) );
     }
 
     private PoolOfPairs<Double, Ensemble> getPoolOfEnsemblePairs()
@@ -358,24 +466,6 @@ public class StatisticsMessageCreatorTest
                                       VARIABLE_NAME,
                                       FEATURE_NAME,
                                       UNIT );
-    }
-
-    private Evaluation createEvaluation()
-    {
-
-        // Create a minimal representation of an evaluation, to be augmented by 
-        // that statistics metadata. See #61388
-        Instant startInstant = Instant.parse( "2555-12-28T00:00:00Z" );
-        Instant endInstant = Instant.parse( "2555-12-28T00:03:22Z" );
-
-        Timestamp start = Timestamp.newBuilder().setSeconds( startInstant.getEpochSecond() ).build();
-        Timestamp end = Timestamp.newBuilder().setSeconds( endInstant.getEpochSecond() ).build();
-
-        return Evaluation.newBuilder()
-                         .setEvaluationStartTime( start )
-                         .setEvaluationEndTime( end )
-                         .setJobIdentifier( "8391007476435859400" )
-                         .build();
     }
 
 }

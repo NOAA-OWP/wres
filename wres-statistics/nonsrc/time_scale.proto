@@ -26,6 +26,6 @@ message TimeScale
     // The time-scale function
     TimeScaleFunction function = 1;
     
-    // Period in seconds
+    // Period over which the value is distributed
     google.protobuf.Duration period = 2;
 }
