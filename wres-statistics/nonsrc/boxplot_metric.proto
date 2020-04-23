@@ -30,7 +30,7 @@ message BoxplotMetric
 
     /* The type of value linked to each box. For example,
     when plotting boxes by observed value, this is 
-    LinkedValueType.OBSERVED */
+    LinkedValueType.OBSERVED_VALUE */
     LinkedValueType linked_value_type = 3;
 
     // Units of the quantiles

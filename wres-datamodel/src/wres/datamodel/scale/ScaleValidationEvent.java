@@ -2,6 +2,8 @@ package wres.datamodel.scale;
 
 import java.util.Objects;
 
+import wres.datamodel.EvaluationEvent;
+
 /**
  * <p>Records a validation event related to scale information or rescaling. There are two types of validation event, 
  * represented by the {@link EventType} enumeration within this class, namely {@link EventType#WARN}, which represents 
@@ -17,41 +19,8 @@ import java.util.Objects;
  * @author james.brown@hydrosolved.com
  */
 
-public class ScaleValidationEvent implements Comparable<ScaleValidationEvent>
+public class ScaleValidationEvent implements Comparable<ScaleValidationEvent>, EvaluationEvent
 {
-    /**
-     * Describes a type of scale validation event.
-     * 
-     * @author james.brown@hydrosolved.com
-     */
-
-    public enum EventType
-    {
-        /**
-         * An event that represents a warning.
-         */
-        WARN,
-        
-        /**
-         * An event that represents a debug level of information, but still user facing.
-         */
-        DEBUG,
-        
-        /**
-         * An event that represents an error.
-         */
-        ERROR,
-        
-        /**
-         * A neutral information message.
-         */
-        INFO,
-        
-        /**
-         * An event that represents a validation pass.
-         */
-        PASS;
-    }
 
     /**
      * The event type.
@@ -64,7 +33,7 @@ public class ScaleValidationEvent implements Comparable<ScaleValidationEvent>
      */
 
     private final String message;
-    
+
     /**
      * Construct a validation event.
      * 
@@ -103,21 +72,8 @@ public class ScaleValidationEvent implements Comparable<ScaleValidationEvent>
     public static ScaleValidationEvent error( String message )
     {
         return new ScaleValidationEvent( EventType.ERROR, message );
-    }   
-
-    /**
-     * Construct a validation event of type {@link EventType#PASS}.
-     * 
-     * @param message the message
-     * @throws NullPointerException if the message is null
-     * @return a validation event
-     */
-    
-    public static ScaleValidationEvent pass( String message )
-    {
-        return new ScaleValidationEvent( EventType.PASS, message );
     }
-    
+
     /**
      * Construct a validation event of type {@link EventType#ERROR}.
      * 
@@ -125,11 +81,11 @@ public class ScaleValidationEvent implements Comparable<ScaleValidationEvent>
      * @throws NullPointerException if the message is null
      * @return a validation event
      */
-    
+
     public static ScaleValidationEvent info( String message )
     {
         return new ScaleValidationEvent( EventType.INFO, message );
-    }    
+    }
 
     /**
      * Construct a validation event of type {@link EventType#DEBUG}.
@@ -138,12 +94,12 @@ public class ScaleValidationEvent implements Comparable<ScaleValidationEvent>
      * @throws NullPointerException if the message is null
      * @return a validation event
      */
-    
+
     public static ScaleValidationEvent debug( String message )
     {
         return new ScaleValidationEvent( EventType.DEBUG, message );
-    } 
-    
+    }
+
     /**
      * Returns the event type.
      * 
@@ -182,17 +138,17 @@ public class ScaleValidationEvent implements Comparable<ScaleValidationEvent>
     public int compareTo( ScaleValidationEvent o )
     {
         Objects.requireNonNull( o );
-        
+
         int returnMe = this.getEventType().compareTo( o.getEventType() );
-        
-        if(  returnMe != 0 )
+
+        if ( returnMe != 0 )
         {
             return returnMe;
         }
-        
+
         return this.getMessage().compareTo( o.getMessage() );
     }
-    
+
     @Override
     public boolean equals( Object obj )
     {
@@ -205,12 +161,12 @@ public class ScaleValidationEvent implements Comparable<ScaleValidationEvent>
 
         return input.getEventType().equals( this.getEventType() ) && input.getMessage().equals( this.getMessage() );
     }
-    
+
     @Override
     public int hashCode()
     {
         return Objects.hash( this.getEventType(), this.getMessage() );
-    } 
+    }
 
     /**
      * Hidden constructor.

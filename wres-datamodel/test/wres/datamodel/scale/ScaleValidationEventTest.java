@@ -1,15 +1,13 @@
 package wres.datamodel.scale;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
-import wres.datamodel.scale.ScaleValidationEvent.EventType;
+import wres.datamodel.EvaluationEvent.EventType;
 
 /**
  * Tests the {@link ScaleValidationEvent}.
@@ -19,81 +17,77 @@ import wres.datamodel.scale.ScaleValidationEvent.EventType;
 public final class ScaleValidationEventTest
 {
 
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
-
     private final ScaleValidationEvent event = ScaleValidationEvent.of( EventType.WARN, "A warning" );
 
     @Test
     public void testConstructionOfWarnEvent()
     {
-        assertThat( ScaleValidationEvent.warn( "A warning" ), equalTo( this.event ) );
+        assertEquals( ScaleValidationEvent.warn( "A warning" ), this.event );
     }
 
     @Test
     public void testConstructionOfErrorEvent()
     {
-        assertThat( ScaleValidationEvent.error( "An error" ),
-                    equalTo( ScaleValidationEvent.of( EventType.ERROR, "An error" ) ) );
+        assertEquals( ScaleValidationEvent.error( "An error" ),
+                      ScaleValidationEvent.of( EventType.ERROR, "An error" ) );
     }
 
     @Test
     public void testConstructionOfPassEvent()
     {
-        assertThat( ScaleValidationEvent.pass( "No issues" ),
-                    equalTo( ScaleValidationEvent.of( EventType.PASS, "No issues" ) ) );
+        assertEquals( ScaleValidationEvent.debug( "No issues" ),
+                      ScaleValidationEvent.of( EventType.DEBUG, "No issues" ) );
     }
-    
+
     @Test
     public void testGetEventTypeReturnsExpectedType()
     {
-        assertThat( EventType.WARN, equalTo( this.event.getEventType() ) );
+        assertEquals( EventType.WARN, this.event.getEventType() );
     }
 
     @Test
     public void testGetMessageReturnsExpectedString()
     {
-        assertThat( "A warning", equalTo( this.event.getMessage() ) );
+        assertEquals( "A warning", this.event.getMessage() );
     }
 
     @Test
     public void testToStringReturnsExpectedString()
     {
-        assertThat( "WARN: A warning", equalTo( this.event.toString() ) );
+        assertEquals( "WARN: A warning", this.event.toString() );
     }
 
     @Test
     public void testEquals()
     {
         // Reflexive 
-        assertThat( this.event, equalTo( this.event ) );
+        assertEquals( this.event, this.event );
 
         // Symmetric
         ScaleValidationEvent otherEvent = ScaleValidationEvent.of( EventType.WARN, "A warning" );
-        assertThat( this.event, equalTo( otherEvent ) );
+        assertEquals( this.event, otherEvent );
 
         // Transitive, noting that event and otherEvent are equal above
         ScaleValidationEvent oneMoreEvent = ScaleValidationEvent.of( EventType.WARN, "A warning" );
-        assertThat( otherEvent, equalTo( oneMoreEvent ) );
-        assertThat( this.event, equalTo( oneMoreEvent ) );
+        assertEquals( otherEvent, oneMoreEvent );
+        assertEquals( this.event, oneMoreEvent );
 
         // Consistent
         for ( int i = 0; i < 100; i++ )
         {
-            assertThat( this.event, equalTo( this.event ) );
+            assertEquals( this.event, this.event );
         }
 
         // Object unequal to null
-        assertThat( this.event, not( equalTo( null ) ) );
+        assertNotEquals( this.event, null );
 
         // Unequal on event type
-        ScaleValidationEvent anError = ScaleValidationEvent.of( EventType.PASS, "A warning" );
-        assertThat( this.event, not( equalTo( anError ) ) );
+        ScaleValidationEvent aDebug = ScaleValidationEvent.of( EventType.DEBUG, "A warning" );
+        assertNotEquals( this.event, aDebug );
 
         // Unequal on message
         ScaleValidationEvent aWarning = ScaleValidationEvent.of( EventType.WARN, "An error" );
-        assertThat( this.event, not( equalTo( aWarning ) ) );
-
+        assertNotEquals( this.event, aWarning );
     }
 
     @Test
@@ -102,22 +96,22 @@ public final class ScaleValidationEventTest
         // Consistent with equals 
         ScaleValidationEvent otherEvent = ScaleValidationEvent.of( EventType.WARN, "A warning" );
 
-        assertThat( this.event.hashCode(), equalTo( otherEvent.hashCode() ) );
+        assertEquals( this.event.hashCode(), otherEvent.hashCode() );
 
         ScaleValidationEvent anError = ScaleValidationEvent.of( EventType.ERROR, "An error" );
         ScaleValidationEvent anotherError = ScaleValidationEvent.of( EventType.ERROR, "An error" );
 
-        assertThat( anError.hashCode(), equalTo( anotherError.hashCode() ) );
+        assertEquals( anError.hashCode(), anotherError.hashCode() );
 
         // Repeatable within one execution context
         for ( int i = 0; i < 100; i++ )
         {
-            assertThat( this.event.hashCode(), equalTo( otherEvent.hashCode() ) );
+            assertEquals( this.event.hashCode(), otherEvent.hashCode() );
         }
 
     }
-    
-    @Test 
+
+    @Test
     public void testCompareTo()
     {
         // Consistent with equals 
@@ -127,36 +121,34 @@ public final class ScaleValidationEventTest
 
         ScaleValidationEvent anError = ScaleValidationEvent.of( EventType.ERROR, "1" );
         ScaleValidationEvent anotherError = ScaleValidationEvent.of( EventType.ERROR, "2" );
-        
-        assertTrue( anError.compareTo( anotherError ) < 0 );
-        
-        assertTrue( anotherError.compareTo( anError ) > 0 );
-        
-        ScaleValidationEvent otherEventError = ScaleValidationEvent.of( EventType.ERROR, "A warning" );
-        
-        assertTrue( otherEvent.compareTo( otherEventError ) < 0 );
-        
-        exception.expect( NullPointerException.class );
 
-        this.event.compareTo( null );
+        assertTrue( anError.compareTo( anotherError ) < 0 );
+
+        assertTrue( anotherError.compareTo( anError ) > 0 );
+
+        ScaleValidationEvent otherEventError = ScaleValidationEvent.of( EventType.ERROR, "A warning" );
+
+        assertTrue( otherEvent.compareTo( otherEventError ) < 0 );
+
+        assertThrows( NullPointerException.class, () -> this.event.compareTo( null ) );
     }
 
     @Test
     public void testThrowNPEOnConstructionIfEventTypeIsNull()
     {
-        exception.expect( NullPointerException.class );
-        exception.expectMessage( "Specify a non-null event type for the scale validation event." );
+        NullPointerException exception =
+                assertThrows( NullPointerException.class, () -> ScaleValidationEvent.of( null, "A message" ) );
 
-        ScaleValidationEvent.of( null, "A message" );
+        assertEquals( "Specify a non-null event type for the scale validation event.", exception.getMessage() );
     }
 
     @Test
     public void testThrowNPEOnConstructionIfMessageIsNull()
     {
-        exception.expect( NullPointerException.class );
-        exception.expectMessage( "Specify a non-null message for the scale validation event." );
+        NullPointerException exception =
+                assertThrows( NullPointerException.class, () -> ScaleValidationEvent.of( EventType.ERROR, null ) );
 
-        ScaleValidationEvent.of( EventType.ERROR, null );
+        assertEquals( "Specify a non-null message for the scale validation event.", exception.getMessage() );
     }
 
 }

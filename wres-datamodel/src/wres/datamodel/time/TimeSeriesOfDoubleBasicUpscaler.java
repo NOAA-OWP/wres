@@ -27,7 +27,7 @@ import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 import wres.datamodel.MissingValues;
 import wres.datamodel.scale.RescalingException;
 import wres.datamodel.scale.ScaleValidationEvent;
-import wres.datamodel.scale.ScaleValidationEvent.EventType;
+import wres.datamodel.EvaluationEvent.EventType;
 
 /**
  * <p>A minimal implementation of a {@link TimeSeriesUpscaler} for a {@link TimeSeries} comprised of {@link Double} 
@@ -52,26 +52,26 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
      */
 
     private static final ScaleValidationEvent DID_NOT_DETECT_AN_ATTEMPT_TO_ACCUMULATE =
-            ScaleValidationEvent.pass( "Did not detect an attempt to accumulate "
+            ScaleValidationEvent.debug( "Did not detect an attempt to accumulate "
                                        + "something that is not an accumulation." );
 
     private static final ScaleValidationEvent NOT_ATTEMPTING_TO_ACCUMULATE_AN_INSTANTANEOUS_VALUE =
-            ScaleValidationEvent.pass( "Not attempting to accumulate an instantaneous value." );
+            ScaleValidationEvent.debug( "Not attempting to accumulate an instantaneous value." );
 
     private static final ScaleValidationEvent NO_ATTEMPT_WAS_MADE_TO_CHANGE_THE_TIME_SCALE_FUNCTION =
-            ScaleValidationEvent.pass( "No attempt was made to change the time scale function without "
+            ScaleValidationEvent.debug( "No attempt was made to change the time scale function without "
                                        + "also changing the period." );
 
     private static final ScaleValidationEvent THE_DESIRED_PERIOD_OF_ZERO_IS_AN_INTEGER_MULTIPLE =
-            ScaleValidationEvent.pass( "The desired period is an integer multiple of the existing "
+            ScaleValidationEvent.debug( "The desired period is an integer multiple of the existing "
                                        + "period and is, therefore, acceptable." );
 
     private static final ScaleValidationEvent THE_EXISTING_PERIOD_OF_ZERO_IS_NOT_LARGER_THAN_THE_DESIRED_PERIOD =
-            ScaleValidationEvent.pass( "The existing period is not larger than the desired period and "
+            ScaleValidationEvent.debug( "The existing period is not larger than the desired period and "
                                        + "is, therefore, acceptable." );
 
     private static final ScaleValidationEvent THE_DESIRED_FUNCTION_IS_NOT_UNKNOWN_AND_IS_THEREFORE_ACCEPTABLE =
-            ScaleValidationEvent.pass( "The desired function is not unknown and is, therefore, acceptable." );
+            ScaleValidationEvent.debug( "The desired function is not unknown and is, therefore, acceptable." );
 
     private static final String THE_FUNCTION_ASSOCIATED_WITH = "The function associated with "
                                                                + "the desired time scale is a ''{0}'', "
@@ -104,7 +104,7 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
                                                                                        + "the project declaration. "
                                                                                        + "Assuming that the existing "
                                                                                        + "time scale is instantaneous.";
-    
+
     private static final String THESE_INTERVALS_BEFORE_STOPPING = "these intervals before stopping: ";
 
     private static final String DISCOVERED_THAT_THE_VALUES_WERE_NOT_EVENLY_SPACED_WITHIN_THE_PERIOD_IDENTIFIED =
@@ -120,7 +120,7 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
     private static final String EVENTS_TO_A_PERIOD_OF = " events to a period of ";
 
     private static final String WHILE_ATTEMPING_TO_UPSCALE_A_COLLECTION_OF =
-            "While attemping to upscale a collection of ";    
+            "While attemping to upscale a collection of ";
 
     private static final String THREE_MEMBER_MESSAGE = "{}{}{}";
 
@@ -236,9 +236,9 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
 
             TimeSeriesMetadata existingMetadata = timeSeries.getMetadata();
             // Create new series in case the function differs
-            TimeSeriesMetadata metadata = new TimeSeriesMetadata.Builder().setMetadata( existingMetadata )
-                                                                          .setTimeScale( desiredTimeScale )
-                                                                          .build();
+            TimeSeriesMetadata metadata =
+                    new TimeSeriesMetadata.Builder( existingMetadata ).setTimeScale( desiredTimeScale )
+                                                                      .build();
 
             TimeSeries<Double> returnMe = new TimeSeriesBuilder<Double>().setMetadata( metadata )
                                                                          .addEvents( timeSeries.getEvents() )

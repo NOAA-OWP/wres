@@ -96,13 +96,13 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
      */
 
     private final TimeSeriesPairer<L, R> pairer;
-    
+
     /**
      * An optional cross-pairer to use common pairs (by time) for the main and baseline pairs.
      */
 
-    private final TimeSeriesCrossPairer<L,R> crossPairer;
-    
+    private final TimeSeriesCrossPairer<L, R> crossPairer;
+
     /**
      * A transformer that applies value constraints to left-ish values.
      */
@@ -182,12 +182,12 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
          */
 
         private TimeSeriesPairer<L, R> pairer;
-        
+
         /**
          * An optional cross-pairer to use common pairs (by time) for the main and baseline pairs.
          */
 
-        private TimeSeriesCrossPairer<L,R> crossPairer;
+        private TimeSeriesCrossPairer<L, R> crossPairer;
 
         /**
          * A function to upscale left data.
@@ -298,7 +298,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
 
             return this;
         }
-        
+
         /**
          * @param leftUpscaler the upscaler for left values
          * @return the builder
@@ -598,7 +598,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
     {
         return this.pairer;
     }
-    
+
     /**
      * Returns the cross pairer.
      * 
@@ -768,7 +768,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
         TimeSeriesBuilder<L> builder = new TimeSeriesBuilder<>();
 
         TimeSeriesMetadata existingMetadata = null;
-        
+
         for ( TimeSeries<L> next : climData )
         {
             TimeSeries<L> nextSeries = next;
@@ -800,9 +800,9 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
                               desiredTimeScale );
 
             }
-            
+
             // Transform?
-            if( Objects.nonNull( transformer ) )
+            if ( Objects.nonNull( transformer ) )
             {
                 nextSeries = TimeSeriesSlicer.transform( nextSeries, transformer );
             }
@@ -815,11 +815,11 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
             builder.addEvents( nextSeries.getEvents() );
         }
 
-        TimeSeriesMetadata metadata = new TimeSeriesMetadata.Builder().setMetadata( existingMetadata )
-                                                                      .setTimeScale( desiredTimeScale )
-                                                                      .build();
+        TimeSeriesMetadata metadata =
+                new TimeSeriesMetadata.Builder( existingMetadata ).setTimeScale( desiredTimeScale )
+                                                                  .build();
         builder.setMetadata( metadata );
-        
+
         TimeSeries<L> climatologyAtScale = builder.build();
 
         LOGGER.debug( "Created a new climatological time-series {} with {} climatological values.",

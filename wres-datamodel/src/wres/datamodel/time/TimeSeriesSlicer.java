@@ -189,8 +189,8 @@ public final class TimeSeriesSlicer
         }
 
         return builder.build();
-    }   
-    
+    }
+
     /**
      * Returns a filtered {@link TimeSeries} whose events are within the right-closed time intervals contained in the 
      * prescribed {@link TimeWindow}.
@@ -202,11 +202,11 @@ public final class TimeSeriesSlicer
      * @throws NullPointerException if any input is null
      */
 
-    public static <T> TimeSeries<T> filter( TimeSeries<T> input, 
+    public static <T> TimeSeries<T> filter( TimeSeries<T> input,
                                             TimeWindow timeWindow )
     {
         Objects.requireNonNull( input );
-        
+
         return TimeSeriesSlicer.filter( input, timeWindow, input.getReferenceTimes().keySet() );
     }
 
@@ -223,8 +223,8 @@ public final class TimeSeriesSlicer
      * @throws NullPointerException if any input is null
      */
 
-    public static <T> TimeSeries<T> filter( TimeSeries<T> input, 
-                                            TimeWindow timeWindow, 
+    public static <T> TimeSeries<T> filter( TimeSeries<T> input,
+                                            TimeWindow timeWindow,
                                             Set<ReferenceTimeType> referenceTimeTypes )
     {
         Objects.requireNonNull( input );
@@ -232,7 +232,7 @@ public final class TimeSeriesSlicer
         Objects.requireNonNull( timeWindow );
 
         Objects.requireNonNull( referenceTimeTypes );
-        
+
         // Find the subset of reference times to consider
         Map<ReferenceTimeType, Instant> subset = input.getReferenceTimes()
                                                       .entrySet()
@@ -243,18 +243,18 @@ public final class TimeSeriesSlicer
         // Filter the subset of reference times according to the pool boundaries
         Map<ReferenceTimeType, Instant> referenceTimes =
                 TimeSeriesSlicer.filterReferenceTimes( subset, timeWindow );
-        
+
         // Find the references times that were not in the subset, plus the ones that were and are within bounds
         Map<ReferenceTimeType, Instant> notConsideredOrWithinBounds = new TreeMap<>();
         notConsideredOrWithinBounds.putAll( input.getReferenceTimes() );
         notConsideredOrWithinBounds.keySet().removeAll( subset.keySet() );
         notConsideredOrWithinBounds.putAll( referenceTimes );
 
-        TimeSeriesMetadata metadata = new TimeSeriesMetadata.Builder().setMetadata( input.getMetadata() )
-                                                                      .setReferenceTimes( notConsideredOrWithinBounds )
-                                                                      .build();
+        TimeSeriesMetadata metadata =
+                new TimeSeriesMetadata.Builder( input.getMetadata() ).setReferenceTimes( notConsideredOrWithinBounds )
+                                                                     .build();
 
-        TimeSeriesBuilder<T> builder = new TimeSeriesBuilder<>();       
+        TimeSeriesBuilder<T> builder = new TimeSeriesBuilder<>();
         builder.setMetadata( metadata );
 
         // Some reference times existed and none were within the filter bounds?
@@ -299,7 +299,7 @@ public final class TimeSeriesSlicer
 
         return builder.build();
     }
-    
+
     /**
      * Returns a filtered view of a time-series based on the input predicate.
      * 
@@ -326,7 +326,7 @@ public final class TimeSeriesSlicer
                   .forEach( builder::addEvent );
 
         return builder.build();
-    }     
+    }
 
     /**
      * Groups the input events according to the event valid time. An event falls within a group if its valid time falls 
@@ -963,7 +963,7 @@ public final class TimeSeriesSlicer
 
             return toSnip;
         }
-        
+
         Instant lower = snipTo.getEvents().first().getTime();
         Instant upper = snipTo.getEvents().last().getTime();
 

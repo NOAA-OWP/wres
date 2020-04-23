@@ -192,9 +192,9 @@ public class TimeSeriesPairerByExactTime<L, R> implements TimeSeriesPairer<L, R>
         // Log inadmissible cases
         this.logInadmissibleCases( left, right, leftInadmissible, rightInadmissible );
 
-        TimeSeriesMetadata metadata = new TimeSeriesMetadata.Builder().setMetadata( right.getMetadata() )
-                                                                      .setReferenceTimes( referenceTimes )
-                                                                      .build();
+        TimeSeriesMetadata metadata =
+                new TimeSeriesMetadata.Builder( right.getMetadata() ).setReferenceTimes( referenceTimes )
+                                                                     .build();
 
         return new TimeSeriesBuilder<Pair<L, R>>().setMetadata( metadata )
                                                   .addEvents( pairs )
@@ -262,20 +262,20 @@ public class TimeSeriesPairerByExactTime<L, R> implements TimeSeriesPairer<L, R>
      * @param right the right time scale 
      * @return true if the time scales are equal, otherwise false
      */
-    
+
     private boolean timeScalesAreEqual( TimeScale left, TimeScale right )
     {
         Objects.requireNonNull( left );
         Objects.requireNonNull( right );
-        
-        if( left.isInstantaneous() && right.isInstantaneous() )
+
+        if ( left.isInstantaneous() && right.isInstantaneous() )
         {
             return true;
         }
-        
+
         return left.equals( right );
     }
-    
+
     /**
      * Returns:
      * 

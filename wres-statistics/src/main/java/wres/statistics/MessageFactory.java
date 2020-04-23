@@ -17,6 +17,7 @@ import wres.config.generated.DoubleBoundsType;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.Ensemble;
+import wres.datamodel.EvaluationEvent;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.VectorOfDoubles;
@@ -37,6 +38,10 @@ import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramCom
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.Evaluation;
+import wres.statistics.generated.EvaluationStatus;
+import wres.statistics.generated.EvaluationStatus.CompletionStatus;
+import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;
+import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusMessageType;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
@@ -65,7 +70,7 @@ import wres.statistics.generated.ValueFilter;
  * @author james.brown@hydrosolved.com
  */
 
-public class StatisticsMessageCreator
+public class MessageFactory
 {
 
     /**
@@ -85,7 +90,7 @@ public class StatisticsMessageCreator
                                     List<wres.datamodel.statistics.DiagramStatistic> diagrams,
                                     PoolOfPairs<Double, Ensemble> pairs )
     {
-        return StatisticsMessageCreator.parse( doubleScores, diagrams, List.of(), pairs );
+        return MessageFactory.parse( doubleScores, diagrams, List.of(), pairs );
     }
 
     /**
@@ -122,21 +127,21 @@ public class StatisticsMessageCreator
         // Add the scores
         for ( DoubleScoreStatistic nextScore : doubleScores )
         {
-            statistics.addScores( StatisticsMessageCreator.parse( nextScore ) );
+            statistics.addScores( MessageFactory.parse( nextScore ) );
             metadata = nextScore.getMetadata().getSampleMetadata();
         }
 
         // Add the diagrams
         for ( wres.datamodel.statistics.DiagramStatistic nextDiagram : diagrams )
         {
-            statistics.addDiagrams( StatisticsMessageCreator.parse( nextDiagram ) );
+            statistics.addDiagrams( MessageFactory.parse( nextDiagram ) );
             metadata = nextDiagram.getMetadata().getSampleMetadata();
         }
 
         // Add the boxplots
         for ( wres.datamodel.statistics.BoxPlotStatistics nextDiagram : boxplots )
         {
-            statistics.addBoxplots( StatisticsMessageCreator.parse( nextDiagram ) );
+            statistics.addBoxplots( MessageFactory.parse( nextDiagram ) );
             metadata = nextDiagram.getMetadata().getSampleMetadata();
         }
 
@@ -144,14 +149,14 @@ public class StatisticsMessageCreator
 
         if ( metadata.hasTimeWindow() )
         {
-            TimeWindow timeWindow = StatisticsMessageCreator.parse( metadata.getTimeWindow() );
+            TimeWindow timeWindow = MessageFactory.parse( metadata.getTimeWindow() );
             sample.setTimeWindow( timeWindow );
         }
 
         if ( metadata.hasIdentifier() && metadata.getIdentifier().hasGeospatialID() )
         {
             Location location = metadata.getIdentifier().getGeospatialID();
-            Geometry geometry = StatisticsMessageCreator.parse( location );
+            Geometry geometry = MessageFactory.parse( location );
             sample.addGeometries( geometry );
         }
 
@@ -179,7 +184,7 @@ public class StatisticsMessageCreator
                                     List<wres.datamodel.statistics.BoxPlotStatistics> boxplots,
                                     PoolOfPairs<Double, Ensemble> pairs )
     {
-        Statistics prototype = StatisticsMessageCreator.parse( doubleScores, diagrams, boxplots );
+        Statistics prototype = MessageFactory.parse( doubleScores, diagrams, boxplots );
 
         Statistics.Builder statistics = Statistics.newBuilder( prototype );
 
@@ -187,7 +192,7 @@ public class StatisticsMessageCreator
         {
             Pool prototypeSample = statistics.getPool();
             Pool.Builder sampleBuilder = Pool.newBuilder( prototypeSample );
-            sampleBuilder.setPairs( StatisticsMessageCreator.parseEnsemblePairs( pairs ) );
+            sampleBuilder.setPairs( MessageFactory.parseEnsemblePairs( pairs ) );
             statistics.setPool( sampleBuilder );
         }
 
@@ -220,7 +225,7 @@ public class StatisticsMessageCreator
 
         if ( metadata.hasTimeScale() )
         {
-            evaluationPlus.setTimeScale( StatisticsMessageCreator.parse( metadata.getTimeScale() ) );
+            evaluationPlus.setTimeScale( MessageFactory.parse( metadata.getTimeScale() ) );
         }
 
         if ( metadata.hasIdentifier() )
@@ -247,18 +252,69 @@ public class StatisticsMessageCreator
             ProjectConfig project = metadata.getProjectConfig();
             if ( Objects.nonNull( project.getPair().getSeason() ) )
             {
-                evaluationPlus.setSeason( StatisticsMessageCreator.parse( project.getPair().getSeason() ) );
+                evaluationPlus.setSeason( MessageFactory.parse( project.getPair().getSeason() ) );
             }
 
             if ( Objects.nonNull( project.getPair().getValues() ) )
             {
-                evaluationPlus.setValueFilter( StatisticsMessageCreator.parse( project.getPair().getValues() ) );
+                evaluationPlus.setValueFilter( MessageFactory.parse( project.getPair().getValues() ) );
             }
 
         }
 
         return evaluationPlus.build();
     }
+
+    /**
+     * Creates a {@link EvaluationStatus} message from a list of {@link EvaluationEvent} and other metadata.
+     * 
+     * @param startTime the evaluation start time
+     * @param endTime the evaluation end time
+     * @param status the completion status
+     * @param events a list of evaluation events
+     * @return a status message
+     * @throws NullPointerException if the completion status or list of events is null
+     */
+
+    public static EvaluationStatus parse( Instant startTime,
+                                          Instant endTime,
+                                          CompletionStatus status,
+                                          List<EvaluationEvent> events )
+    {
+        Objects.requireNonNull( status );
+        Objects.requireNonNull( events );
+
+        EvaluationStatus.Builder builder = EvaluationStatus.newBuilder();
+
+        if ( Objects.nonNull( startTime ) )
+        {
+            Timestamp start = Timestamp.newBuilder()
+                                       .setSeconds( startTime.getEpochSecond() )
+                                       .build();
+            builder.setEvaluationStartTime( start );
+        }
+
+        if ( Objects.nonNull( startTime ) )
+        {
+            Timestamp end = Timestamp.newBuilder()
+                                     .setSeconds( endTime.getEpochSecond() )
+                                     .build();
+            builder.setEvaluationEndTime( end );
+        }
+
+        builder.setCompletionStatus( status );
+
+        for ( EvaluationEvent event : events )
+        {
+            EvaluationStatusEvent.Builder statusEvent = EvaluationStatusEvent.newBuilder();
+            statusEvent.setEventType( StatusMessageType.valueOf( event.getEventType().name() ) )
+                       .setEventMessage( event.getMessage() );
+            builder.addStatusEvents( statusEvent );
+        }
+
+        return builder.build();
+    }
+
 
     /**
      * Creates a {@link Season} message from a {@link wres.config.generated.PairConfig.Season}.
@@ -440,11 +496,11 @@ public class StatisticsMessageCreator
         if ( metadata.hasThresholds() )
         {
             OneOrTwoThresholds thresholds = metadata.getThresholds();
-            Threshold evenThreshold = StatisticsMessageCreator.parse( thresholds.first() );
+            Threshold evenThreshold = MessageFactory.parse( thresholds.first() );
             scoreBuilder.setEventThreshold( evenThreshold );
             if ( thresholds.hasTwo() )
             {
-                Threshold decisionThreshold = StatisticsMessageCreator.parse( thresholds.second() );
+                Threshold decisionThreshold = MessageFactory.parse( thresholds.second() );
                 scoreBuilder.setDecisionThreshold( decisionThreshold );
             }
         }
@@ -519,11 +575,11 @@ public class StatisticsMessageCreator
         if ( metadata.hasThresholds() )
         {
             OneOrTwoThresholds thresholds = metadata.getThresholds();
-            Threshold evenThreshold = StatisticsMessageCreator.parse( thresholds.first() );
+            Threshold evenThreshold = MessageFactory.parse( thresholds.first() );
             diagramBuilder.setEventThreshold( evenThreshold );
             if ( thresholds.hasTwo() )
             {
-                Threshold decisionThreshold = StatisticsMessageCreator.parse( thresholds.second() );
+                Threshold decisionThreshold = MessageFactory.parse( thresholds.second() );
                 diagramBuilder.setDecisionThreshold( decisionThreshold );
             }
         }
@@ -569,13 +625,13 @@ public class StatisticsMessageCreator
 
         if ( !statistic.getData().isEmpty() )
         {
-            StatisticMetadata meta =  statistic.getMetadata();
-            
+            StatisticMetadata meta = statistic.getMetadata();
+
             // Add the quantiles, which are common to all boxes
             BoxPlotStatistic first = statistic.getData().get( 0 );
             double[] quantiles = first.getProbabilities().getDoubles();
             Arrays.stream( quantiles ).forEach( metricBuilder::addQuantiles );
-            
+
             MetricConstants metricName = meta.getMetricID();
 
             metricBuilder.setLinkedValueType( LinkedValueType.valueOf( first.getLinkedValueType().name() ) )
@@ -583,8 +639,8 @@ public class StatisticsMessageCreator
                          .setUnits( meta.getSampleMetadata().getMeasurementUnit().toString() )
                          .setMinimum( metricName.getMinimum() )
                          .setMaximum( metricName.getMaximum() )
-                         .setOptimum( metricName.getOptimum() );            
-            
+                         .setOptimum( metricName.getOptimum() );
+
             // Set the individual boxes
             for ( BoxPlotStatistic next : statistic.getData() )
             {
@@ -595,7 +651,7 @@ public class StatisticsMessageCreator
                 statisticBuilder.addStatistics( box );
             }
         }
-        
+
         return statisticBuilder.setMetric( metricBuilder ).build();
     }
 
@@ -690,7 +746,7 @@ public class StatisticsMessageCreator
      * Do not construct.
      */
 
-    private StatisticsMessageCreator()
+    private MessageFactory()
     {
     }
 
