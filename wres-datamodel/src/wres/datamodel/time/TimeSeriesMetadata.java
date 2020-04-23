@@ -254,27 +254,6 @@ public class TimeSeriesMetadata
         }
         
         /**
-         * Sets an existing source of metadata.
-         * 
-         * @param metadata the existing metadata
-         * @return the builder
-         */
-        
-        public Builder setMetadata( TimeSeriesMetadata metadata )
-        {
-            if( Objects.nonNull( metadata ) )
-            {
-                this.setFeatureName( metadata.getFeatureName() );
-                this.setVariableName( metadata.getVariableName() );
-                this.setReferenceTimes( metadata.getReferenceTimes() );
-                this.setTimeScale( metadata.getTimeScale() );
-                this.setUnit( metadata.getUnit() );
-            }
-            
-            return this;
-        }
-        
-        /**
          * Builds an instance of the metadata.
          * 
          * @return the metadata
@@ -284,6 +263,33 @@ public class TimeSeriesMetadata
         {
             return new TimeSeriesMetadata( this );
         }
+        
+        /**
+         * Default constructor.
+         */
+        
+        public Builder()
+        {            
+        }
+        
+        /**
+         * Creates a builder initialized with a prototype.
+         * 
+         * @param prototype the prototype metadata
+         */
+        
+        public Builder( TimeSeriesMetadata prototype )
+        {
+            if( Objects.nonNull( prototype ) )
+            {
+                this.setFeatureName( prototype.getFeatureName() );
+                this.setVariableName( prototype.getVariableName() );
+                this.setReferenceTimes( prototype.getReferenceTimes() );
+                this.setTimeScale( prototype.getTimeScale() );
+                this.setUnit( prototype.getUnit() );
+            }
+        }        
+        
     }
     
     /**

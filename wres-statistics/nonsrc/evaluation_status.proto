@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+package wres.statistics.generated;
+
+import "google/protobuf/timestamp.proto";
+
+option java_package = "wres.statistics.generated";
+option java_outer_classname = "EvaluationStatusProto";
+option java_multiple_files = true;
+
+/* A message that encapsulates the status of an evaluation that has been 
+started. An evaluation identifier is required to connect an EvaluationStatus 
+message to an Evaluation message. It is assumed that this identifier is 
+packaged with the protocol; it is not provided inband. An EvaluationStatus 
+message may record some or all of the EvaluationStatusEvent associated with an 
+evaluation at the point of request. For example, it may record only those "new" 
+events surfaced since the last request. */
+
+message EvaluationStatus
+{
+    google.protobuf.Timestamp evaluation_start_time = 1;
+    google.protobuf.Timestamp evaluation_end_time = 2;
+    
+    // Captures the status of an evaluation that has been started 
+    enum CompletionStatus
+    {
+    	UNKNOWN = 0;
+    	ONGOING = 1;
+    	COMPLETE_REPORTED_SUCCESS = 2;
+    	COMPLETE_REPORTED_FAILURE = 3;
+    }
+    
+    CompletionStatus completion_status = 3;
+    
+    // Zero or more caller-facing status events
+    repeated EvaluationStatusEvent status_events = 4;
+
+    /* A message that encapsulates an evaluation status event, such as
+    a warning to a user. */
+    message EvaluationStatusEvent
+    {
+        // The type of value linked to each box
+        enum StatusMessageType
+        {   
+            // Undefined status
+            UNDEFINED = 0;
+
+            // An event that represents an error.
+            ERROR = 1;
+
+            // An event that represents a warning.
+            WARN = 2;
+        
+            // A neutral information message.
+            INFO = 3;
+
+            /* An event that represents a detailed level of caller-facing 
+            information, as distinct from developer-facing/logging */
+            DEBUG = 4;
+        }
+        
+        StatusMessageType event_type = 1;
+
+        string event_message = 2;        
+    }
+}

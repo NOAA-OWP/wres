@@ -27,6 +27,8 @@ import org.junit.Test;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.Ensemble;
+import wres.datamodel.EvaluationEvent;
+import wres.datamodel.EvaluationEvent.EventType;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.VectorOfDoubles;
@@ -37,6 +39,7 @@ import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
+import wres.datamodel.scale.ScaleValidationEvent;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.BoxPlotStatistics;
@@ -50,15 +53,17 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
+import wres.statistics.generated.EvaluationStatus;
+import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 import wres.statistics.generated.Statistics;
 
 /**
- * Tests the {@link StatisticsMessageCreator}.
+ * Tests the {@link MessageFactory}.
  * 
  * @author james.brown@hydrosolved.com
  */
 
-public class StatisticsMessageCreatorTest
+public class MessageFactoryTest
 {
 
     private static final Instant TWELFTH_TIME = Instant.parse( "2551-03-20T12:00:00Z" );
@@ -132,7 +137,7 @@ public class StatisticsMessageCreatorTest
     {
         // Create a statistics message
         Statistics statisticsOut =
-                StatisticsMessageCreator.parse( this.scores, this.diagrams, this.ensemblePairs );
+                MessageFactory.parse( this.scores, this.diagrams, this.ensemblePairs );
 
         Path path = this.outputDirectory.resolve( "statistics.pb3" );
 
@@ -161,7 +166,7 @@ public class StatisticsMessageCreatorTest
     {
         // Create two statistics messages with the same payload
         Statistics firstOut =
-                StatisticsMessageCreator.parse( this.scores, this.diagrams, this.ensemblePairs );
+                MessageFactory.parse( this.scores, this.diagrams, this.ensemblePairs );
 
         Path path = this.outputDirectory.resolve( "statistics.pb3" );
 
@@ -194,10 +199,10 @@ public class StatisticsMessageCreatorTest
     {
         // Create a statistics message
         Statistics statisticsOut =
-                StatisticsMessageCreator.parse( List.of(),
-                                                List.of(),
-                                                this.boxplots,
-                                                this.ensemblePairs );
+                MessageFactory.parse( List.of(),
+                                      List.of(),
+                                      this.boxplots,
+                                      this.ensemblePairs );
 
         Path path = this.outputDirectory.resolve( "box_plot_statistics.pb3" );
 
@@ -215,6 +220,41 @@ public class StatisticsMessageCreatorTest
         }
 
         assertEquals( statisticsOut, statisticsIn );
+
+        // Delete if succeeded
+        Files.deleteIfExists( path );
+    }
+
+    @Test
+    public void testCreationOfOneEvaluationStatusMessage() throws IOException
+    {
+        EvaluationEvent warning = ScaleValidationEvent.of( EventType.WARN, "This is a warning event." );
+        EvaluationEvent error = ScaleValidationEvent.of( EventType.ERROR, "This is an error event." );
+        EvaluationEvent info = ScaleValidationEvent.of( EventType.INFO, "This is an info event." );
+        
+        // Create a message
+        EvaluationStatus statusOut =
+                MessageFactory.parse( ELEVENTH_TIME,
+                                      TWELFTH_TIME,
+                                      CompletionStatus.COMPLETE_REPORTED_SUCCESS,
+                                      List.of( warning, error, info ) );
+
+        Path path = this.outputDirectory.resolve( "status.pb3" );
+
+        try ( OutputStream stream =
+                Files.newOutputStream( path, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING ) )
+        {
+            statusOut.writeTo( stream );
+        }
+
+        EvaluationStatus statusIn = null;
+        try ( InputStream stream =
+                Files.newInputStream( path ) )
+        {
+            statusIn = EvaluationStatus.parseFrom( stream );
+        }
+
+        assertEquals( statusOut, statusIn );
 
         // Delete if succeeded
         Files.deleteIfExists( path );
