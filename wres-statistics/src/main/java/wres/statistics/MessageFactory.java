@@ -273,7 +273,7 @@ public class MessageFactory
      * @param status the completion status
      * @param events a list of evaluation events
      * @return a status message
-     * @throws NullPointerException if the completion status or list of events is null
+     * @throws NullPointerException if the start time completion status or list of events is null
      */
 
     public static EvaluationStatus parse( Instant startTime,
@@ -281,20 +281,19 @@ public class MessageFactory
                                           CompletionStatus status,
                                           List<EvaluationEvent> events )
     {
+        Objects.requireNonNull( startTime );
         Objects.requireNonNull( status );
         Objects.requireNonNull( events );
 
         EvaluationStatus.Builder builder = EvaluationStatus.newBuilder();
 
-        if ( Objects.nonNull( startTime ) )
-        {
-            Timestamp start = Timestamp.newBuilder()
-                                       .setSeconds( startTime.getEpochSecond() )
-                                       .build();
-            builder.setEvaluationStartTime( start );
-        }
+        Timestamp start = Timestamp.newBuilder()
+                                   .setSeconds( startTime.getEpochSecond() )
+                                   .build();
+        builder.setEvaluationStartTime( start );
 
-        if ( Objects.nonNull( startTime ) )
+
+        if ( Objects.nonNull( endTime ) )
         {
             Timestamp end = Timestamp.newBuilder()
                                      .setSeconds( endTime.getEpochSecond() )
