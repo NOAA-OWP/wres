@@ -361,12 +361,12 @@ public abstract class MetricProcessor<S extends SampleData<?>>
         }
 
         // Diagrams
-        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.MULTIVECTOR ) )
+        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.DIAGRAM ) )
         {
             this.singleValuedMultiVector =
                     MetricFactory.ofSingleValuedMultiVectorCollection( metricExecutor,
                                                                        this.getMetrics( SampleDataGroup.SINGLE_VALUED,
-                                                                                        StatisticType.MULTIVECTOR ) );
+                                                                                        StatisticType.DIAGRAM ) );
 
             LOGGER.debug( "Created the single-valued diagrams for processing. {}", this.singleValuedMultiVector );
         }

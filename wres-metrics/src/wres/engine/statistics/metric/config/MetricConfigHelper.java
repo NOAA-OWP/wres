@@ -264,7 +264,7 @@ public final class MetricConfigHelper
      * 
      * @param projectConfig the project configuration
      * @param outGroup the output group to test
-     * @return true if the input configuration requires outputs of the {@link StatisticType#MULTIVECTOR} 
+     * @return true if the input configuration requires outputs of the {@link StatisticType#DIAGRAM} 
      *            type whose output type is {@link OutputTypeSelection#THRESHOLD_LEAD}, false otherwise
      * @throws MetricConfigException if the configuration is invalid
      * @throws NullPointerException if the input is null

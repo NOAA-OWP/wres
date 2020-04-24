@@ -284,7 +284,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             {
                 // Obtain the output for the current statistic
                 List<PairedStatistic<Instant, Duration>> output =
-                        Slicer.filter( this.getCachedMetricOutputInternal().getPairedStatistics(), nextStats.getKey() );
+                        Slicer.filter( this.getCachedMetricOutputInternal().getInstantDurationPairStatistics(), nextStats.getKey() );
 
                 // Compute the collection of statistics for the next timing error metric
                 TimingErrorDurationStatistics timeToPeakErrorStats = nextStats.getValue();

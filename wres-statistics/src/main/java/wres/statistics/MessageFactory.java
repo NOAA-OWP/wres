@@ -1,6 +1,7 @@
 package wres.statistics;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +21,7 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.EvaluationEvent;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.SampleMetadata;
@@ -27,6 +29,7 @@ import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
+import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
@@ -74,75 +77,61 @@ public class MessageFactory
 {
 
     /**
-     * Creates a {@link wres.statistics.generated.Statistics} from a list of 
-     * {@link wres.datamodel.statistics.DoubleScoreStatistic} and {@link wres.datamodel.statistics.DiagramStatistic}
-     * for a common pool/sample. The common metadata is populated from any statistic discovered.
+     * Creates a {@link wres.statistics.generated.Statistics} from a
+     * {@link wres.datamodel.statistics.StatisticsForProject}.
      * 
-     * @param doubleScores the scores
-     * @param diagrams the diagrams
-     * @param pairs the optional pairs
+     * @param project the project statistics
      * @throws IllegalArgumentException if there are zero statistics in total
-     * @throws NullPointerException if any input except the pairs is null
+     * @throws NullPointerException if the input is null
      * @return the statistics message
+     * @throws InterruptedException if the statistics could not be retrieved from the project
      */
 
-    public static Statistics parse( List<wres.datamodel.statistics.DoubleScoreStatistic> doubleScores,
-                                    List<wres.datamodel.statistics.DiagramStatistic> diagrams,
-                                    PoolOfPairs<Double, Ensemble> pairs )
+    public static Statistics parse( StatisticsForProject project ) throws InterruptedException
     {
-        return MessageFactory.parse( doubleScores, diagrams, List.of(), pairs );
-    }
-
-    /**
-     * Creates a {@link wres.statistics.generated.Statistics} from a list of 
-     * {@link wres.datamodel.statistics.DoubleScoreStatistic} and {@link wres.datamodel.statistics.DiagramStatistic}
-     * and {@link wres.datamodel.statistics.BoxPlotStatistics} for a common pool/sample. The common metadata is 
-     * populated from any statistic discovered.
-     * 
-     * @param doubleScores the scores
-     * @param diagrams the diagrams
-     * @param boxplots the box plots
-     * @throws IllegalArgumentException if there are zero statistics in total
-     * @throws NullPointerException if any input is null
-     * @return the statistics message
-     */
-
-    public static Statistics parse( List<wres.datamodel.statistics.DoubleScoreStatistic> doubleScores,
-                                    List<wres.datamodel.statistics.DiagramStatistic> diagrams,
-                                    List<wres.datamodel.statistics.BoxPlotStatistics> boxplots )
-    {
-        Objects.requireNonNull( doubleScores );
-        Objects.requireNonNull( diagrams );
-        Objects.requireNonNull( boxplots );
-
-        if ( doubleScores.isEmpty() && diagrams.isEmpty() && boxplots.isEmpty() )
-        {
-            throw new IllegalArgumentException( "Expected at least one statistic to serialize but found none." );
-        }
+        Objects.requireNonNull( project );
 
         Statistics.Builder statistics = Statistics.newBuilder();
 
         SampleMetadata metadata = SampleMetadata.of();
 
         // Add the scores
-        for ( DoubleScoreStatistic nextScore : doubleScores )
+        if ( project.hasStatistic( StatisticType.DOUBLE_SCORE ) )
         {
-            statistics.addScores( MessageFactory.parse( nextScore ) );
-            metadata = nextScore.getMetadata().getSampleMetadata();
+            List<wres.datamodel.statistics.DoubleScoreStatistic> doubleScores = project.getDoubleScoreStatistics();
+
+            for ( DoubleScoreStatistic nextScore : doubleScores )
+            {
+                statistics.addScores( MessageFactory.parse( nextScore ) );
+                metadata = nextScore.getMetadata().getSampleMetadata();
+            }
         }
 
         // Add the diagrams
-        for ( wres.datamodel.statistics.DiagramStatistic nextDiagram : diagrams )
+        if ( project.hasStatistic( StatisticType.DIAGRAM ) )
         {
-            statistics.addDiagrams( MessageFactory.parse( nextDiagram ) );
-            metadata = nextDiagram.getMetadata().getSampleMetadata();
+            List<wres.datamodel.statistics.DiagramStatistic> diagrams = project.getDiagramStatistics();
+
+            for ( wres.datamodel.statistics.DiagramStatistic nextDiagram : diagrams )
+            {
+                statistics.addDiagrams( MessageFactory.parse( nextDiagram ) );
+                metadata = nextDiagram.getMetadata().getSampleMetadata();
+            }
         }
 
         // Add the boxplots
-        for ( wres.datamodel.statistics.BoxPlotStatistics nextDiagram : boxplots )
+        if ( project.hasStatistic( StatisticType.BOXPLOT_PER_PAIR )
+             || project.hasStatistic( StatisticType.BOXPLOT_PER_POOL ) )
         {
-            statistics.addBoxplots( MessageFactory.parse( nextDiagram ) );
-            metadata = nextDiagram.getMetadata().getSampleMetadata();
+            List<wres.datamodel.statistics.BoxPlotStatistics> boxplots =
+                    new ArrayList<>( project.getBoxPlotStatisticsPerPair() );
+            boxplots.addAll( project.getBoxPlotStatisticsPerPool() );
+
+            for ( wres.datamodel.statistics.BoxPlotStatistics nextBoxplot : boxplots )
+            {
+                statistics.addBoxplots( MessageFactory.parse( nextBoxplot ) );
+                metadata = nextBoxplot.getMetadata().getSampleMetadata();
+            }
         }
 
         Pool.Builder sample = Pool.newBuilder();
@@ -166,25 +155,22 @@ public class MessageFactory
     }
 
     /**
-     * Creates a {@link wres.statistics.generated.Statistics} from a list of 
-     * {@link wres.datamodel.statistics.DoubleScoreStatistic} and {@link wres.datamodel.statistics.DiagramStatistic}
-     * for a common pool/sample. The common metadata is populated from any statistic discovered.
+     * Creates a {@link wres.statistics.generated.Statistics} from a
+     * {@link wres.datamodel.statistics.StatisticsForProject}.
      * 
-     * @param doubleScores the scores
-     * @param diagrams the diagrams
-     * @param boxplots the box plots
+     * @param project the project statistics
      * @param pairs the optional pairs
      * @throws IllegalArgumentException if there are zero statistics in total
-     * @throws NullPointerException if any input except the pairs is null
+     * @throws NullPointerException if the input is null
      * @return the statistics message
+     * @throws InterruptedException if the statistics could not be retrieved from the project
      */
 
-    public static Statistics parse( List<wres.datamodel.statistics.DoubleScoreStatistic> doubleScores,
-                                    List<wres.datamodel.statistics.DiagramStatistic> diagrams,
-                                    List<wres.datamodel.statistics.BoxPlotStatistics> boxplots,
+    public static Statistics parse( StatisticsForProject project,
                                     PoolOfPairs<Double, Ensemble> pairs )
+            throws InterruptedException
     {
-        Statistics prototype = MessageFactory.parse( doubleScores, diagrams, boxplots );
+        Statistics prototype = MessageFactory.parse( project );
 
         Statistics.Builder statistics = Statistics.newBuilder( prototype );
 
@@ -313,7 +299,6 @@ public class MessageFactory
 
         return builder.build();
     }
-
 
     /**
      * Creates a {@link Season} message from a {@link wres.config.generated.PairConfig.Season}.
@@ -632,9 +617,14 @@ public class MessageFactory
             Arrays.stream( quantiles ).forEach( metricBuilder::addQuantiles );
 
             MetricConstants metricName = meta.getMetricID();
+            if ( first.hasLinkedValue() )
+            {
+                MetricDimension dimension = first.getLinkedValueType();
+                LinkedValueType valueType = LinkedValueType.valueOf( dimension.name() );
+                metricBuilder.setLinkedValueType( valueType );
+            }
 
-            metricBuilder.setLinkedValueType( LinkedValueType.valueOf( first.getLinkedValueType().name() ) )
-                         .setName( MetricName.valueOf( metricName.name() ) )
+            metricBuilder.setName( MetricName.valueOf( metricName.name() ) )
                          .setUnits( meta.getSampleMetadata().getMeasurementUnit().toString() )
                          .setMinimum( metricName.getMinimum() )
                          .setMaximum( metricName.getMaximum() )
@@ -646,7 +636,10 @@ public class MessageFactory
                 double[] doubles = next.getData().getDoubles();
                 BoxplotStatistic.Box.Builder box = BoxplotStatistic.Box.newBuilder();
                 Arrays.stream( doubles ).forEach( box::addQuantiles );
-                box.setLinkedValue( next.getLinkedValue() );
+                if ( next.hasLinkedValue() )
+                {
+                    box.setLinkedValue( next.getLinkedValue() );
+                }
                 statisticBuilder.addStatistics( box );
             }
         }

@@ -21,7 +21,7 @@ import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.StatisticsForProject;
-import wres.datamodel.statistics.StatisticsForProject.StatisticsForProjectBuilder;
+import wres.datamodel.statistics.StatisticsForProject.Builder;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindow;
 
@@ -79,16 +79,16 @@ class MetricFuturesByTime
 
     StatisticsForProject getMetricOutput()
     {
-        StatisticsForProjectBuilder builder =
+        Builder builder =
                 DataFactory.ofMetricOutputForProjectByTimeAndThreshold();
 
         //Add outputs for current futures
         doubleScore.forEach( builder::addDoubleScoreStatistics );
         durationScore.forEach( builder::addDurationScoreStatistics );
-        multiVector.forEach( builder::addMultiVectorStatistics );
+        multiVector.forEach( builder::addDiagramStatistics );
         boxplotPerPair.forEach( builder::addBoxPlotStatisticsPerPair );
         boxplotPerPool.forEach( builder::addBoxPlotStatisticsPerPool );
-        paired.forEach( builder::addPairedStatistics );
+        paired.forEach( builder::addInstantDurationPairStatistics );
         return builder.build();
     }
 
@@ -114,7 +114,7 @@ class MetricFuturesByTime
 
         if ( !this.multiVector.isEmpty() )
         {
-            returnMe.add( StatisticType.MULTIVECTOR );
+            returnMe.add( StatisticType.DIAGRAM );
         }
 
         if ( !this.boxplotPerPair.isEmpty() )
@@ -348,7 +348,7 @@ class MetricFuturesByTime
                     {
                         this.durationScore.addAll( futures.durationScore );
                     }
-                    else if ( nextGroup == StatisticType.MULTIVECTOR )
+                    else if ( nextGroup == StatisticType.DIAGRAM )
                     {
                         this.multiVector.addAll( futures.multiVector );
                     }

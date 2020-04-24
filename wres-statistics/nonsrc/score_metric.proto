@@ -12,7 +12,6 @@ option java_multiple_files = true;
 of one or more scalar values. */
 message ScoreMetric
 {
-
     // Metric name.
     MetricName name = 1;
 
@@ -22,7 +21,6 @@ message ScoreMetric
     // A score component
     message ScoreMetricComponent
     {
-
         enum ScoreComponentName 
         {            
             UNKNOWN = 0;
@@ -41,7 +39,7 @@ message ScoreMetric
         // Units of the score
         string units = 2;
 
-        // Optimum value of the score (e.g., 1.0 for skill)
+        // The optimum value of the score (e.g., 1.0 for skill)
         double optimum = 3; 
 
         // The lower bound of the score (e.g., 0 for the mean absolute error)

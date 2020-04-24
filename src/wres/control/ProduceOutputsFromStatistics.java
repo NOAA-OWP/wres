@@ -222,9 +222,9 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         try
         {
             // Multivector output available
-            if ( input.hasStatistic( StatisticType.MULTIVECTOR ) )
+            if ( input.hasStatistic( StatisticType.DIAGRAM ) )
             {
-                this.processDiagramOutputs( input.getMultiVectorStatistics() );
+                this.processDiagramOutputs( input.getDiagramStatistics() );
             }
 
             // Box-plot output available per pair
@@ -254,7 +254,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
             // Paired metric output available
             if ( input.hasStatistic( StatisticType.PAIRED ) )
             {
-                this.processPairedOutputByInstantDuration( input.getPairedStatistics() );
+                this.processPairedOutputByInstantDuration( input.getInstantDurationPairStatistics() );
             }
         }
         catch ( InterruptedException e )
@@ -337,7 +337,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         Path outputDirectory = this.getResolvedProject().getOutputDirectory();
 
         // Build the consumers conditionally
-        if ( this.writeWhenTrue.test( StatisticType.MULTIVECTOR, DestinationType.CSV ) )
+        if ( this.writeWhenTrue.test( StatisticType.DIAGRAM, DestinationType.CSV ) )
         {
             CommaSeparatedDiagramWriter diagramWriter =
                     CommaSeparatedDiagramWriter.of( projectConfig,
@@ -416,7 +416,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         Path outputDirectory = this.getResolvedProject().getOutputDirectory();
 
         // Build the consumers conditionally
-        if ( this.writeWhenTrue.test( StatisticType.MULTIVECTOR, DestinationType.PNG ) )
+        if ( this.writeWhenTrue.test( StatisticType.DIAGRAM, DestinationType.PNG ) )
         {
             PNGDiagramWriter diagramWriter = PNGDiagramWriter.of( this.getSystemSettings(),
                                                                   projectConfigPlus,
@@ -544,7 +544,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         for ( Entry<DestinationType, Consumer<List<DiagramStatistic>>> next : this.diagramConsumers.entrySet() )
         {
             // Consume conditionally
-            if ( this.writeWhenTrue.test( StatisticType.MULTIVECTOR, next.getKey() ) )
+            if ( this.writeWhenTrue.test( StatisticType.DIAGRAM, next.getKey() ) )
             {
                 log( outputs, next.getKey(), true );
 

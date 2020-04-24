@@ -31,7 +31,7 @@ import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.statistics.StatisticsForProject;
-import wres.datamodel.statistics.StatisticsForProject.StatisticsForProjectBuilder;
+import wres.datamodel.statistics.StatisticsForProject.Builder;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.time.TimeWindow;
@@ -454,13 +454,13 @@ public final class DataFactory
     /**
      * Returns a builder for a {@link StatisticsForProject}.
      * 
-     * @return a {@link StatisticsForProjectBuilder} for a map of metric outputs by time window and
+     * @return a {@link Builder} for a map of metric outputs by time window and
      *         threshold
      */
 
-    public static StatisticsForProjectBuilder ofMetricOutputForProjectByTimeAndThreshold()
+    public static Builder ofMetricOutputForProjectByTimeAndThreshold()
     {
-        return new StatisticsForProject.StatisticsForProjectBuilder();
+        return new StatisticsForProject.Builder();
     }
 
     /**

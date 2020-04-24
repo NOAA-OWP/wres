@@ -26,7 +26,7 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.statistics.StatisticsForProject;
-import wres.datamodel.statistics.StatisticsForProject.StatisticsForProjectBuilder;
+import wres.datamodel.statistics.StatisticsForProject.Builder;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -421,7 +421,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
             {
                 LOGGER.debug( "Empty pool discovered for {}: no statistics will be produced.", pool.getMetadata() );
 
-                StatisticsForProjectBuilder builder = new StatisticsForProjectBuilder();
+                Builder builder = new Builder();
 
                 // Empty container
                 return builder.build();
@@ -440,7 +440,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
 
                 try
                 {
-                    statistics = new StatisticsForProjectBuilder().addStatistics( statistics )
+                    statistics = new Builder().addStatistics( statistics )
                                                                   .addStatistics( baselineStatistics )
                                                                   .build();
                 }
